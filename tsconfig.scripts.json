@@ -1,0 +1,13 @@
+// tsconfig.scripts.json
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+      "module": "commonjs",
+      "moduleResolution": "node",
+      "noEmit": false,
+      "outDir": "./dist",
+      "isolatedModules": false
+    },
+    "include": ["scripts/**/*"],
+    "exclude": ["node_modules"]
+  }

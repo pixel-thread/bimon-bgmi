@@ -1,0 +1,121 @@
+screenshot.css
+
+/* Scoped to .screenshot-container for safety */
+.screenshot-container .force-desktop .mobile-table {
+    display: none !important;
+  }
+  
+  .screenshot-container .force-desktop .desktop-view {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 1.5rem !important;
+  }
+  
+  .screenshot-container .force-desktop .modal-container {
+    width: 1300px !important;
+    max-width: 1300px !important;
+    padding: 1.5rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: auto !important;
+    margin: 0 auto !important;
+  }
+  
+  .screenshot-container .force-desktop {
+    width: 1400px !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  /* Remove height restrictions for tables when downloading */
+  .screenshot-container .force-desktop .max-h-\[650px\] {
+    max-height: none !important;
+  }
+  
+  .screenshot-container .force-desktop .overflow-y-auto {
+    overflow-y: visible !important;
+  }
+  
+  .screenshot-container .force-desktop .absolute.inset-0.bg-black\/50 {
+    background-color: rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  .screenshot-container .force-desktop h1 {
+    font-size: 1.75rem !important;
+  }
+  
+  .screenshot-container .force-desktop p {
+    font-size: 0.85rem !important;
+    margin-top: 0.25rem !important;
+  }
+  
+  .screenshot-container .force-desktop th {
+    font-size: 0.65rem !important;
+    padding: 0.4rem !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+  }
+  
+  .screenshot-container .force-desktop td {
+    font-size: 0.7rem !important;
+    padding: 0.4rem !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+  }
+  
+  .screenshot-container .force-desktop th.text-left,
+  .screenshot-container .force-desktop td.text-left {
+    text-align: left !important;
+  }
+  
+  .screenshot-container .force-desktop .text-base {
+    font-size: 0.85rem !important;
+  }
+  
+  .screenshot-container .force-desktop .text-lg {
+    font-size: 0.9rem !important;
+  }
+  
+  .screenshot-container .force-desktop .desktop-view > div {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 1.5rem !important;
+    justify-content: center !important;
+    margin-top: 1rem !important;
+    max-width: 1100px !important;
+    width: 100% !important;
+  }
+  
+  .screenshot-container .force-desktop .desktop-view table {
+    width: 100% !important;
+    max-width: 540px !important;
+    table-layout: fixed !important;
+  }
+  
+  .screenshot-container .force-desktop .desktop-view .single-table {
+    max-width: 1000px !important;
+  }
+  
+  .screenshot-container .force-desktop .flex-1 {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: 540px !important;
+  }
+  
+  .screenshot-container .force-desktop .text-center.mb-4.sm\:mb-6 {
+    margin-bottom: 1rem !important;
+  }
+  
+  /* Specific to BulkCreateModal */
+  .screenshot-container .force-desktop .bulk-create-modal {
+    width: 1280px !important;
+    max-width: 1280px !important;
+    padding: 2rem !important;
+    height: auto !important;
+  }
