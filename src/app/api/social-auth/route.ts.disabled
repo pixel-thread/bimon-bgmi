@@ -1,0 +1,98 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { admin } from '@/src/lib/firebaseAdmin';
+
+export async function POST(request: NextRequest) {
+  try {
+    const { idToken, provider, action } = await request.json();
+
+    if (!idToken || !provider || !action) {
+      return NextResponse.json(
+        { error: 'Missing required parameters' },
+        { status: 400 }
+      );
+    }
+
+    // Verify the ID token
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+
+    const db = admin.firestore();
+    
+    if (action === 'link') {
+      // Handle account linking - this would typically be done client-side
+      // but we can store metadata about the linking
+      await db.collection('users').doc(uid).update({
+        [`linkedAccounts.${provider}`]: {
+          linkedAt: admin.firestore.FieldValue.serverTimestamp(),
+          provider: provider,
+        },
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      return NextResponse.json({ 
+        success: true, 
+        message: `${provider} account linked successfully` 
+      });
+    } 
+    
+    if (action === 'unlink') {
+      // Handle account unlinking
+      await db.collection('users').doc(uid).update({
+        [`linkedAccounts.${provider}`]: admin.firestore.FieldValue.delete(),
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      return NextResponse.json({ 
+        success: true, 
+        message: `${provider} account unlinked successfully` 
+      });
+    }
+
+    return NextResponse.json(
+      { error: 'Invalid action' },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error('Social auth API error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const idToken = searchParams.get('idToken');
+    
+    if (!idToken) {
+      return NextResponse.json(
+        { error: 'Missing ID token' },
+        { status: 400 }
+      );
+    }
+
+    // Verify the ID token
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+
+    const db = admin.firestore();
+    const userDoc = await db.collection('users').doc(uid).get();
+    
+    if (!userDoc.exists) {
+      return NextResponse.json({ linkedAccounts: {} });
+    }
+
+    const userData = userDoc.data();
+    return NextResponse.json({ 
+      linkedAccounts: userData?.linkedAccounts || {} 
+    });
+  } catch (error) {
+    console.error('Get linked accounts error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
