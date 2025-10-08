@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/**
+ * --------------------------
+ * ENUMS
+ * ---------------------------
+ */
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  PLAYER
+}
+
+enum PlayerCategory {
+  ULTRA_NOOB
+  NOOB
+  PRO
+  ULTRA_PRO
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  DELETED
+}
+
+/**
+ * --------------------------
+ * MODELS
+ * ---------------------------
+ */
+
+model User {
+  id            String   @id @default(uuid())
+  email         String?  @unique
+  clerkId       String   @unique
+  isEmailLinked Boolean  @default(false)
+  userName      String   @unique
+  role          Role     @default(PLAYER)
+  balance       Int      @default(0)
+  isInternal    Boolean  @default(false)
+  isVerified    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  playerId     String?     @unique
+  player       Player?
+  Tournament   Tournament? @relation(fields: [tournamentId], references: [id])
+  tournamentId String?
+  Wallet       Wallet?
+}
+
+model Player {
+  id               String             @id @default(uuid())
+  avatarUrl        String
+  characterUrl     String
+  isBanned         Boolean            @default(false)
+  category         PlayerCategory     @default(NOOB)
+  gameScore        GameScore[]
+  pollVote         PollVote?
+  userId           String             @unique
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  TournamentWinner TournamentWinner[]
+  Wallet           Wallet?
+  PlayerStats      PlayerStats?
+  Team             Team?              @relation(fields: [teamId], references: [id])
+  teamId           String?
+}
+
+model GameScore {
+  highScore    Int
+  lastPlayedAt DateTime
+  playerId     String   @unique
+  player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+}
+
+enum SeasonStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Season {
+  id        String       @id @default(uuid())
+  name      String
+  createdAt DateTime     @default(now())
+  status    SeasonStatus
+
+  tournament Tournament[]
+}
+
+model Tournament {
+  id               String             @id @default(uuid())
+  name             String
+  fee              Int
+  createdAt        DateTime           @default(now())
+  team             Team[]
+  user             User[]
+  Season           Season?            @relation(fields: [seasonId], references: [id])
+  seasonId         String?
+  TournamentWinner TournamentWinner[]
+  PollVote         PollVote[]
+  Match            Match[]
+}
+
+enum Vote {
+  IN
+  OUT
+  SOLO
+}
+
+model PollVote {
+  id           String     @id @default(uuid())
+  vote         Vote
+  inOption     String
+  outOption    String
+  soloOption   String
+  startDate    DateTime
+  endDate      DateTime
+  playerId     String     @unique
+  player       Player     @relation(fields: [playerId], references: [id])
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  createdAt    DateTime   @default(now())
+}
+
+model TournamentWinner {
+  id           String     @id @default(uuid())
+  playerId     String
+  player       Player     @relation(fields: [playerId], references: [id])
+  position     Int
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  createdAt    DateTime   @default(now())
+}
+
+model Match {
+  id           String     @id @default(uuid())
+  matchName    String
+  Tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  tournamentId String
+
+  createdAt DateTime @default(now())
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  amount    Int
+  createdAt DateTime @default(now())
+  playerId  String?  @unique
+  player    Player?  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PlayerStats {
+  id        String   @id @default(uuid())
+  playerId  String   @unique
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  matches   Int
+  wins      Int
+  deaths    Int
+  kills     Int
+  kd        Float
+  createdAt DateTime @default(now())
+}
+
+// Category enum
+enum Category {
+  NOOB
+  PRO
+  ULTRA_NOOB
+  ULTRA_PRO
+}
+
+model Team {
+  id            String      @id @default(uuid())
+  name          String
+  players       Player[]
+  createdAt     DateTime    @default(now())
+  teamNumber    Int
+  playerStatsId String?
+  tournamentId  String?
+  tournament    Tournament? @relation(fields: [tournamentId], references: [id])
+}
+
+model KDStats {
+  id       String @id @default(uuid())
+  playerId String @unique
+  kd       Float
+}

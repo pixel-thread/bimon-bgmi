@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { auth } from "@/src/lib/firebase";
-import { User, updateProfile, fetchSignInMethodsForEmail } from "firebase/auth";
+import { updateProfile, fetchSignInMethodsForEmail } from "firebase/auth";
 import {
   SocialAuthService,
   socialProviders,
@@ -27,6 +27,7 @@ import {
   IconCheck,
   IconLoader,
 } from "@tabler/icons-react";
+import { Prisma } from "../lib/db/prisma/generated/prisma";
 
 interface SocialProviderConfig {
   id: string;
@@ -63,7 +64,7 @@ const socialProviderConfigs: SocialProviderConfig[] = [
 ];
 
 interface SocialAuthProps {
-  user: User;
+  user: Prisma.UserGetPayload<{ include: { player: true } }> | null;
   userRole?: string;
   refreshAuthState?: () => void;
   onAccountLinked?: () => void;
@@ -134,7 +135,7 @@ export default function SocialAuth({
       const result = await SocialAuthService.linkSocialAccount(
         user,
         provider,
-        isAdmin ? "admin" : undefined
+        isAdmin ? "admin" : undefined,
       );
 
       if (result.success) {
@@ -151,7 +152,7 @@ export default function SocialAuth({
     } catch (error: any) {
       console.error(`Error linking ${providerConfig.name} account:`, error);
       toast.error(
-        `Failed to link ${providerConfig.name} account: ${error.message}`
+        `Failed to link ${providerConfig.name} account: ${error.message}`,
       );
     } finally {
       setLoading((prev) => ({ ...prev, [providerConfig.id]: false }));
@@ -164,7 +165,7 @@ export default function SocialAuth({
     try {
       const result = await SocialAuthService.unlinkSocialAccount(
         user,
-        providerId
+        providerId,
       );
 
       if (result.success) {
@@ -191,7 +192,7 @@ export default function SocialAuth({
 
   const getProviderEmail = (providerId: string) => {
     const providerData = user.providerData.find(
-      (p) => p.providerId === providerId
+      (p) => p.providerId === providerId,
     );
     return providerData?.email || linkedAccounts[providerId]?.email;
   };
@@ -228,7 +229,7 @@ export default function SocialAuth({
                   "flex items-center justify-between p-3 rounded-lg border",
                   isLinked
                     ? "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800"
-                    : "bg-gray-50 dark:bg-gray-800"
+                    : "bg-gray-50 dark:bg-gray-800",
                 )}
               >
                 <div className="flex items-center space-x-3">

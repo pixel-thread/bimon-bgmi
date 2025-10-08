@@ -2,9 +2,7 @@
 "use client";
 
 import { FiUsers } from "react-icons/fi";
-import { formatDateDDMMYYYY } from "../utils/dateFormat";
 import { useAuth } from "@/src/hooks/useAuth";
-import { auth } from "@/src/lib/firebase";
 import { useRouter } from "next/navigation";
 
 interface AdminHeaderProps {

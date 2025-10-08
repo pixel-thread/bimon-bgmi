@@ -1,5 +1,9 @@
 import { SignIn } from "@clerk/nextjs";
 
 export default function page() {
-  return <SignIn signUpUrl="/auth/signup" />;
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <SignIn signUpUrl="/auth/signup" />;
+    </div>
+  );
 }

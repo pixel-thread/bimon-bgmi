@@ -9,9 +9,10 @@ import {
 } from "@/src/config/adminAccess";
 import Link from "next/link";
 import AdBanner from "@/src/components/AdBanner";
-
 export default function HomePage() {
-  const { user, loading, isAuthorized, role, username } = useAuth();
+  const { user, isSignedIn: isAuthorized } = useAuth();
+  const role = user?.role || "PLAYER";
+  const username = user?.userName;
 
   // Load AdSense script only when authorized (pages with meaningful content)
   useEffect(() => {
@@ -19,7 +20,7 @@ export default function HomePage() {
     const src =
       "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2651043074081875";
     const existing = document.querySelector(
-      'script[src^="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]'
+      'script[src^="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]',
     );
     if (!existing) {
       const script = document.createElement("script");
@@ -29,18 +30,7 @@ export default function HomePage() {
       document.head.appendChild(script);
     }
   }, [isAuthorized]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
+  console.log(user);
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <div className="container mx-auto px-4 py-16">
@@ -85,7 +75,7 @@ export default function HomePage() {
               </p>
               <div className="space-y-4">
                 <Link
-                  href="/login"
+                  href="/auth"
                   className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                 >
                   Sign In
@@ -154,7 +144,7 @@ export default function HomePage() {
                     Admin Access
                   </h3>
                   <div className="space-y-3">
-                    {canAccessFullAdmin(role) && (
+                    {user?.role === "SUPER_ADMIN" && (
                       <Link
                         href="/admin"
                         className="block w-full px-4 py-2 bg-indigo-600 text-white text-center rounded-lg hover:bg-indigo-700 transition-colors"
@@ -162,7 +152,7 @@ export default function HomePage() {
                         Full Admin Panel
                       </Link>
                     )}
-                    {canAccessTeamsAdmin(role) && (
+                    {user?.role === "ADMIN" && (
                       <Link
                         href="/admin"
                         className="block w-full px-4 py-2 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors"

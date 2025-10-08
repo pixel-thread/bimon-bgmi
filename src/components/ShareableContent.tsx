@@ -132,7 +132,6 @@ export function ShareableContent({
 
   // Example usage:
   const todayFormatted = formatDateDDMMYYYY(new Date());
-
   return (
     <div
       id="shareable-content"
@@ -173,4 +172,3 @@ export function ShareableContent({
     </div>
   );
 }
-

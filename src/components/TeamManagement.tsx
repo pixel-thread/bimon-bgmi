@@ -9,11 +9,7 @@ import {
   TooltipProvider,
 } from "@/src/components/ui/tooltip";
 import * as imports from "./teamManagementImports";
-import { Card, CardContent } from "@/src/components/ui/card";
 import {
-  validatePlacementPoints,
-  calculateTotalKills,
-  validateTotalKills,
   handleSetTempEdit,
   handleExportCSV,
   handleSequentialClose,
@@ -39,13 +35,14 @@ export default function TeamManagement({
   readOnly = false,
 }: TeamManagementProps) {
   // Auth state for role-based UI
-  const { role, loading: authLoading } = useAuth();
+  const { user } = useAuth();
+  const role = user?.role;
 
   // Basic states
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMatch, setSelectedMatch] = useState<string>("All");
   const [selectedTournament, setSelectedTournament] = useState<string | null>(
-    null
+    null,
   );
   const [editingTeam, setEditingTeam] =
     useState<imports.CombinedTeamData | null>(null);
@@ -76,7 +73,7 @@ export default function TeamManagement({
       return allTournaments;
     }
     return allTournaments.filter(
-      (tournament) => tournament.seasonId === selectedSeason
+      (tournament) => tournament.seasonId === selectedSeason,
     );
   }, [allTournaments, selectedSeason]);
 
@@ -84,12 +81,12 @@ export default function TeamManagement({
   useEffect(() => {
     if (selectedTournament && tournaments.length > 0) {
       const isSelectedTournamentInList = tournaments.some(
-        (t) => t.id === selectedTournament
+        (t) => t.id === selectedTournament,
       );
       if (!isSelectedTournamentInList) {
         // Select the first tournament from the filtered list
         const sorted = [...tournaments].sort((a, b) =>
-          b.id.localeCompare(a.id)
+          b.id.localeCompare(a.id),
         );
         setSelectedTournament(sorted[0]?.id || null);
       }
@@ -146,7 +143,7 @@ export default function TeamManagement({
           console.error("Error selecting best tournament:", error);
           // Fallback to the old logic if there's an error
           const sorted = [...tournaments].sort((a, b) =>
-            b.id.localeCompare(a.id)
+            b.id.localeCompare(a.id),
           );
           setSelectedTournament(sorted[0].id);
         });
@@ -167,7 +164,7 @@ export default function TeamManagement({
     for (const team of teams) {
       const updatedScores = { ...team.matchScores };
       const editablePlayers = team.players.filter(
-        (p) => p.ign.trim() !== ""
+        (p) => p.ign.trim() !== "",
       ).length;
       if (!updatedScores[newMatchNumber]) {
         updatedScores[newMatchNumber] = {
@@ -203,8 +200,8 @@ export default function TeamManagement({
       (team) =>
         team.teamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         team.players.some((player) =>
-          player.ign.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+          player.ign.toLowerCase().includes(searchTerm.toLowerCase()),
+        ),
     );
   }, [teams, searchTerm]);
 
@@ -242,7 +239,7 @@ export default function TeamManagement({
   const handleTempEditChange = (
     teamId: string,
     field: "placement" | "kills" | "teamName",
-    value: string
+    value: string,
   ) => {
     setTempEdit(teamId, field, value);
   };
@@ -322,7 +319,7 @@ export default function TeamManagement({
 
       // Get the season ID from the selected tournament
       const selectedTournamentData = allTournaments.find(
-        (t) => t.id === selectedTournament
+        (t) => t.id === selectedTournament,
       );
       const seasonId = selectedTournamentData?.seasonId || undefined;
 
@@ -342,7 +339,7 @@ export default function TeamManagement({
 
       const docRef = await imports.addDoc(
         imports.collection(imports.db, "tournamentEntries"),
-        newTeam
+        newTeam,
       );
       setShowAddTeamModal(false);
     } catch (error) {
@@ -363,13 +360,13 @@ export default function TeamManagement({
 
       // Load tournament for seasonId
       const tDoc = await imports.getDoc(
-        imports.doc(imports.db, "tournaments", selectedTournament)
+        imports.doc(imports.db, "tournaments", selectedTournament),
       );
       const seasonId = tDoc.exists() ? (tDoc.data() as any).seasonId : null;
 
       // Load all players into maps (exclude soft-deleted)
       const playersSnapshot = await imports.getDocs(
-        imports.collection(imports.db, "players")
+        imports.collection(imports.db, "players"),
       );
       const playerByName = new Map<string, any>();
       playersSnapshot.forEach((p) => {
@@ -383,8 +380,8 @@ export default function TeamManagement({
       const entriesSnapshot = await imports.getDocs(
         imports.query(
           imports.collection(imports.db, "tournamentEntries"),
-          imports.where("tournamentId", "==", selectedTournament)
-        )
+          imports.where("tournamentId", "==", selectedTournament),
+        ),
       );
 
       const batch = imports.writeBatch(imports.db);
@@ -396,7 +393,7 @@ export default function TeamManagement({
         const docRef = imports.doc(
           imports.db,
           "tournamentEntries",
-          entryDoc.id
+          entryDoc.id,
         );
 
         let changed = false;
@@ -414,7 +411,7 @@ export default function TeamManagement({
           if (!ign) continue;
           if (!playerByName.has(ign)) {
             const newRef = imports.doc(
-              imports.collection(imports.db, "players")
+              imports.collection(imports.db, "players"),
             );
             const newDoc = {
               name: ign,
@@ -453,7 +450,7 @@ export default function TeamManagement({
             ms.playerKills = normPK;
             ms.playerParticipation = normPart;
             ms.playerKD = normPK.map((kills: number, idx: number) =>
-              normPart[idx] ? parseFloat((kills / 1).toFixed(1)) : 0
+              normPart[idx] ? parseFloat((kills / 1).toFixed(1)) : 0,
             );
             updatedScores[k] = ms;
             scoresChanged = true;
@@ -525,7 +522,7 @@ export default function TeamManagement({
                       options={[
                         "All",
                         ...Array.from({ length: matchCount }, (_, i) =>
-                          (i + 1).toString()
+                          (i + 1).toString(),
                         ),
                       ]}
                       onSelect={setSelectedMatch}
@@ -613,7 +610,7 @@ export default function TeamManagement({
                               sortedTeams.map(({ team }) => team),
                               selectedMatch,
                               selectedConfig?.title || "Tournament",
-                              tempEdits
+                              tempEdits,
                             )
                           }
                           disabled={!selectedTournament || teams.length === 0}
@@ -628,7 +625,7 @@ export default function TeamManagement({
                       </TooltipContent>
                     </Tooltip>
 
-                    {role === "super_admin" && (
+                    {role === "SUPER_ADMIN" && (
                       <button
                         onClick={handleFixData}
                         className="ml-2 px-3 h-8 rounded bg-amber-500 text-white text-xs hover:bg-amber-600 flex-shrink-0"
@@ -695,10 +692,10 @@ export default function TeamManagement({
                                 resetTempEdits();
                                 setEditingTeam(team);
                                 setEditingPlayer1Ign(
-                                  team.players[0]?.ign || ""
+                                  team.players[0]?.ign || "",
                                 );
                                 setEditingPlayer2Ign(
-                                  team.players[1]?.ign || ""
+                                  team.players[1]?.ign || "",
                                 );
                               }
                             : undefined
@@ -708,7 +705,7 @@ export default function TeamManagement({
                             ? async () => {
                                 if (
                                   window.confirm(
-                                    `Are you sure you want to delete ${team.teamName}?`
+                                    `Are you sure you want to delete ${team.teamName}?`,
                                   )
                                 ) {
                                   await deleteTeams([team.id]);
@@ -737,10 +734,10 @@ export default function TeamManagement({
           team={editingTeam}
           playerKills={
             editingTeam.matchScores?.[selectedMatch]?.playerKills?.map(
-              String
+              String,
             ) ||
             Array(
-              editingTeam.players.filter((p) => p.ign.trim() !== "").length
+              editingTeam.players.filter((p) => p.ign.trim() !== "").length,
             ).fill("0")
           }
           setPlayerKills={(kills) => {
@@ -755,14 +752,14 @@ export default function TeamManagement({
                 playerKD: [],
               };
             updatedTeam.matchScores[selectedMatch].playerKills = kills.map(
-              (k) => parseInt(k) || 0
+              (k) => parseInt(k) || 0,
             );
             setEditingTeam(updatedTeam);
           }}
           playerParticipation={
             editingTeam.matchScores?.[selectedMatch]?.playerParticipation ||
             Array(
-              editingTeam.players.filter((p) => p.ign.trim() !== "").length
+              editingTeam.players.filter((p) => p.ign.trim() !== "").length,
             ).fill(true)
           }
           setPlayerParticipation={(participation) => {
@@ -783,7 +780,7 @@ export default function TeamManagement({
           placementInput={
             editingTeam.matchScores?.[selectedMatch]?.placementPoints
               ? getPositionFromPoints(
-                  editingTeam.matchScores[selectedMatch].placementPoints
+                  editingTeam.matchScores[selectedMatch].placementPoints,
                 ).toString()
               : "0"
           }
@@ -844,7 +841,7 @@ export default function TeamManagement({
                 selectedMatch
               ].playerKills.reduce((sum, k) => sum + (k || 0), 0);
               const editablePlayers = editingTeam.players.filter(
-                (p) => p.ign.trim() !== ""
+                (p) => p.ign.trim() !== "",
               ).length;
               updatedScores[selectedMatch].playerKills = updatedScores[
                 selectedMatch
@@ -858,7 +855,7 @@ export default function TeamManagement({
               const docRef = imports.doc(
                 imports.db,
                 "tournamentEntries",
-                editingTeam.id
+                editingTeam.id,
               );
 
               // Construct the new team name from player IGNs
@@ -899,7 +896,7 @@ export default function TeamManagement({
 
               // Ensure playerKills and playerParticipation in matchScores matches the new number of players
               const finalPlayersCount = updatedPlayersData.filter(
-                (p) => p.ign.trim() !== ""
+                (p) => p.ign.trim() !== "",
               ).length;
               const finalPlayerKills = (
                 updatedScores[selectedMatch]?.playerKills || []
@@ -953,7 +950,7 @@ export default function TeamManagement({
             setPlacementErrors,
             setTotalPlayersPlayed,
             setTotalKillsError,
-            setShowSequentialModal
+            setShowSequentialModal,
           )
         }
         sequentialMatch={sequentialMatch}
@@ -972,7 +969,7 @@ export default function TeamManagement({
             setPlacementErrors,
             teams,
             sequentialMatch,
-            tempEdits
+            tempEdits,
           )
         }
         onSave={() =>
@@ -986,7 +983,7 @@ export default function TeamManagement({
             setShowSequentialModal,
             setPlacementErrors,
             setTotalPlayersPlayed,
-            setTotalKillsError
+            setTotalKillsError,
           )
         }
       />

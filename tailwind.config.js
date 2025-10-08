@@ -1,26 +1,26 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./app/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/components/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class',
+  darkMode: "class",
   theme: {
     extend: {
       fontFamily: {
-        'pixel': ['"Press Start 2P"', '"Courier New"', 'monospace'],
+        pixel: ['"Press Start 2P"', '"Courier New"', "monospace"],
       },
       colors: {
         primary: {
-          DEFAULT: "#2563eb",  // blue-600
+          DEFAULT: "#2563eb", // blue-600
           foreground: "#ffffff", // white
         },
         secondary: {
-          DEFAULT: "#4f46e5",  // indigo-600
+          DEFAULT: "#4f46e5", // indigo-600
           foreground: "#ffffff",
         },
         destructive: {
-          DEFAULT: "#dc2626",  // red-600
+          DEFAULT: "#dc2626", // red-600
           foreground: "#ffffff",
         },
         background: {
@@ -40,9 +40,10 @@ module.exports = {
         sm: "calc(0.5rem - 4px)",
       },
       animation: {
-        'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        "pulse-slow": "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
     },
   },
   plugins: [],
 };
+

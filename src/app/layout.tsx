@@ -1,14 +1,8 @@
 import { Suspense } from "react";
-import { Toaster } from "sonner";
 import "./globals.css";
-import { InitializeSuperAdmin } from "../components/InitializeSuperAdmin";
-import { NetworkStatus } from "../components/NetworkStatus";
-import { AppUpdateManager } from "@/src/components/AppUpdateManager";
-import InstallPrompt from "@/src/components/InstallPrompt";
-import Footer from "@/src/components/common/Footer";
-import { ClerkProvider } from "@clerk/nextjs";
 import { HtmlHead } from "@/src/components/common/html/head";
-import { Header } from "@/src/components/common/header";
+import { ClerkProvider } from "@clerk/nextjs";
+import { Wrapper } from "../components/provider/wrapper";
 
 export const metadata = {
   title: "PUBGMI Tournament Management System",
@@ -70,28 +64,16 @@ export default function RootLayout({
     <ClerkProvider
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
     >
-      <html lang="en" className="dark">
-        <HtmlHead />
-        <body className="min-h-screen bg-background text-foreground">
-          <Header />
-          <InitializeSuperAdmin />
-          <NetworkStatus />
-          <AppUpdateManager
-            updateStrategy={{
-              immediate: false,
-              delay: 2000,
-              retryAttempts: 3,
-            }}
-            debug={process.env.NODE_ENV === "development"}
-          />
-          <Suspense fallback={null}>
-            <main className="pt-16 min-h-screen">{children}</main>
-          </Suspense>
-          <Footer />
-          <InstallPrompt />
-          <Toaster richColors position="top-right" />
-        </body>
-      </html>
+      <Wrapper>
+        <html lang="en" className="dark">
+          <HtmlHead />
+          <body className="min-h-screen bg-background text-foreground">
+            <Suspense fallback={null}>
+              <main className="pt-16 min-h-screen">{children}</main>
+            </Suspense>
+          </body>
+        </html>
+      </Wrapper>
     </ClerkProvider>
   );
 }

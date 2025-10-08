@@ -20,14 +20,7 @@ export default function HamburgerMenu() {
   const [darkMode, setDarkMode] = useState(false);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const { isAuthorized, authType, playerUser, logout } = useAuth();
-
-  // Force re-render when auth state changes
-  const [authKey, setAuthKey] = useState(0);
-
-  useEffect(() => {
-    setAuthKey((prev) => prev + 1);
-  }, [isAuthorized, authType, playerUser]);
+  const { isSignedIn: isAuthorized, user: playerUser, logout } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -262,10 +255,10 @@ export default function HamburgerMenu() {
                         Logged in as:
                       </p>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {playerUser.name}
+                        {playerUser.userName}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {authType === "player" ? "Player" : "Admin"}
+                        {playerUser.role === "PLAYER" ? "Player" : "Admin"}
                       </p>
                     </div>
                   )}

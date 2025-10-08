@@ -9,7 +9,7 @@ export default function DesktopNavigation() {
   const [darkMode, setDarkMode] = useState(false);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const { isAuthorized, authType, playerUser, logout } = useAuth();
+  const { isSignedIn: isAuthorized, user: playerUser, logout } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -33,7 +33,7 @@ export default function DesktopNavigation() {
   }, [darkMode, mounted]);
 
   const handleLogin = () => {
-    router.push("/login");
+    router.push("/auth");
   };
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -44,11 +44,6 @@ export default function DesktopNavigation() {
     try {
       setIsLoggingOut(true);
       await logout();
-
-      // Set flag to prevent immediate redirect back
-      sessionStorage.setItem("just_logged_out", "true");
-      // Force a complete page reload to ensure fresh state
-      window.location.href = "/login";
     } catch (error) {
       console.error("Logout error:", error);
       setIsLoggingOut(false);
@@ -121,7 +116,7 @@ export default function DesktopNavigation() {
           >
             <FiUser className="h-4 w-4" />
             <span className="hidden lg:inline">
-              {playerUser?.name || "Profile"}
+              {playerUser?.userName || "Profile"}
             </span>
           </button>
         )}

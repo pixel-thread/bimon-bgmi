@@ -47,48 +47,42 @@ const GamesContent = () => {
   ];
 
   return (
-    <TournamentLayoutContent
-      title="Games"
-      description="Have some fun with these games between matches!"
-      icon={GamepadIcon}
-    >
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {games.map((game) => (
-          <Card
-            key={game.id}
-            className="group overflow-hidden transition-all hover:shadow-lg h-full flex flex-col relative"
-          >
-            {game.isBeta && (
-              <div className="absolute top-2 right-2 z-10">
-                <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
-                  BETA
-                </span>
-              </div>
-            )}
-            <div className="relative h-40 w-full">
-              <Image
-                src={game.image}
-                alt={game.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              />
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {games.map((game) => (
+        <Card
+          key={game.id}
+          className="group overflow-hidden transition-all hover:shadow-lg h-full flex flex-col relative"
+        >
+          {game.isBeta && (
+            <div className="absolute top-2 right-2 z-10">
+              <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
+                BETA
+              </span>
             </div>
-            <CardHeader className="flex-1">
-              <CardTitle className="text-xl">{game.title}</CardTitle>
-              <CardDescription>{game.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link href={`/tournament/games/${game.id}`}>
-                <Button className="w-full group-hover:bg-primary/90 transition-colors">
-                  Play Now <FiArrowRight className="ml-2" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </TournamentLayoutContent>
+          )}
+          <div className="relative h-40 w-full">
+            <Image
+              src={game.image}
+              alt={game.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
+          <CardHeader className="flex-1">
+            <CardTitle className="text-xl">{game.title}</CardTitle>
+            <CardDescription>{game.description}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href={`/tournament/games/${game.id}`}>
+              <Button className="w-full group-hover:bg-primary/90 transition-colors">
+                Play Now <FiArrowRight className="ml-2" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 };
 

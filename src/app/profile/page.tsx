@@ -15,7 +15,6 @@ import { ProfilePictureUpload } from "@/src/components/ui/profile-picture-upload
 import { CharacterImageUpload } from "@/src/components/ui/character-image-upload";
 import { toast } from "sonner";
 import { FiUser, FiLock, FiSave } from "react-icons/fi";
-import { withAnyAuth } from "@/src/components/withAuth";
 import { playerAuthService } from "@/src/lib/playerAuthService";
 import { AvatarService } from "@/src/lib/avatarService";
 import { CharacterImageService } from "@/src/lib/characterImageService";
@@ -25,7 +24,7 @@ import PlayerSocialAuth from "@/src/components/PlayerSocialAuth";
 
 // Helper function to format remaining time
 const formatRemainingTime = (
-  lastChangeDate: string
+  lastChangeDate: string,
 ): { days: number; hours: number; minutes: number } => {
   const lastChange = new Date(lastChangeDate);
   const now = new Date();
@@ -39,15 +38,17 @@ const formatRemainingTime = (
 
   const days = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
   const hours = Math.floor(
-    (remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)
+    (remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000),
   );
   const minutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
 
   return { days, hours, minutes };
 };
 
-function ProfilePage() {
-  const { playerUser, user, authType, refreshAuthState, role } = useAuth();
+export default function page() {
+  const { user: playerUser, user } = useAuth();
+  const role = playerUser?.role;
+  const authType = user ? "firebase" : "player";
   const [loading, setLoading] = useState(false);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
   const [playerCategory, setPlayerCategory] = useState<string>("Not Set");
@@ -82,7 +83,7 @@ function ProfilePage() {
       if (playerUser?.id) {
         try {
           const playerData = await playerAuthService.getPlayerById(
-            playerUser.id
+            playerUser.id,
           );
           if (playerData?.category) {
             setPlayerCategory(playerData.category);
@@ -154,12 +155,12 @@ function ProfilePage() {
           toast.loading("Updating name...");
           await playerAuthService.updatePlayerName(
             playerUser.id,
-            formData.name
+            formData.name,
           );
 
           // Fetch the updated player data from Firestore
           const updatedPlayerData = await playerAuthService.getPlayerById(
-            playerUser.id
+            playerUser.id,
           );
           if (updatedPlayerData) {
             // Update local storage with fresh data from Firestore
@@ -171,7 +172,7 @@ function ProfilePage() {
             };
             localStorage.setItem(
               "playerSession",
-              JSON.stringify(updatedPlayer)
+              JSON.stringify(updatedPlayer),
             );
 
             // Force refresh auth state to sync across all components
@@ -183,7 +184,7 @@ function ProfilePage() {
                 key: "playerSession",
                 newValue: JSON.stringify(updatedPlayer),
                 oldValue: JSON.stringify(playerUser),
-              })
+              }),
             );
           }
 
@@ -202,7 +203,7 @@ function ProfilePage() {
           console.error("Name update failed:", error);
           toast.dismiss();
           toast.error(
-            error instanceof Error ? error.message : "Failed to update name"
+            error instanceof Error ? error.message : "Failed to update name",
           );
           throw error;
         }
@@ -213,7 +214,7 @@ function ProfilePage() {
       if (formData.password) {
         await playerAuthService.updatePlayerPassword(
           playerUser.id,
-          formData.password
+          formData.password,
         );
         passwordChanged = true;
       }
@@ -239,13 +240,13 @@ function ProfilePage() {
         // The localStorage update will be picked up by the auth context
         // No need to reload the page
         console.log(
-          "Name updated successfully - auth context will sync automatically"
+          "Name updated successfully - auth context will sync automatically",
         );
       }
     } catch (error) {
       console.error("Profile update error:", error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to update profile"
+        error instanceof Error ? error.message : "Failed to update profile",
       );
     } finally {
       setLoading(false);
@@ -278,11 +279,11 @@ function ProfilePage() {
       console.log("Profile page: Calling AvatarService.uploadAvatar...");
       const base64String = await AvatarService.uploadAvatar(
         playerUser.id,
-        file
+        file,
       );
       console.log(
         "Profile page: Upload successful, Base64 length:",
-        base64String.length
+        base64String.length,
       );
 
       setPlayerAvatarBase64(base64String);
@@ -319,15 +320,15 @@ function ProfilePage() {
 
     try {
       console.log(
-        "Profile page: Calling CharacterImageService.uploadCharacterImage..."
+        "Profile page: Calling CharacterImageService.uploadCharacterImage...",
       );
       const base64String = await CharacterImageService.uploadCharacterImage(
         playerUser.id,
-        file
+        file,
       );
       console.log(
         "Profile page: Character image upload successful, Base64 length:",
-        base64String.length
+        base64String.length,
       );
 
       setCharacterAvatarBase64(base64String);
@@ -413,7 +414,7 @@ function ProfilePage() {
                     <p>⚠️ Name changes are limited to once every 7 days.</p>
                     {(() => {
                       const remaining = formatRemainingTime(
-                        nameChangeInfo.lastChangeDate
+                        nameChangeInfo.lastChangeDate,
                       );
                       if (remaining.days > 0) {
                         return (
@@ -453,11 +454,11 @@ function ProfilePage() {
                     <p className="text-xs text-gray-500 mt-1">
                       Last changed:{" "}
                       {new Date(
-                        nameChangeInfo.lastChangeDate
+                        nameChangeInfo.lastChangeDate,
                       ).toLocaleDateString()}{" "}
                       at{" "}
                       {new Date(
-                        nameChangeInfo.lastChangeDate
+                        nameChangeInfo.lastChangeDate,
                       ).toLocaleTimeString()}
                     </p>
                   </div>
@@ -521,7 +522,7 @@ function ProfilePage() {
             <div className="mt-6 pt-6 border-t">
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 <p>
-                  <strong>Account ID:</strong> {playerUser?.id || user?.uid}
+                  <strong>Account ID:</strong> {playerUser?.id}
                 </p>
                 <p>
                   <strong>Account Type:</strong>{" "}
@@ -551,7 +552,7 @@ function ProfilePage() {
             <SocialAuth
               user={user}
               userRole={role || undefined}
-              onAccountLinked={refreshAuthState}
+              onAccountLinked={() => {}}
             />
           </div>
         )}
@@ -559,12 +560,10 @@ function ProfilePage() {
         {/* Social Authentication Section - Only for Player users */}
         {playerUser && authType === "player" && (
           <div className="mt-6">
-            <PlayerSocialAuth onAccountLinked={refreshAuthState} />
+            <PlayerSocialAuth onAccountLinked={() => {}} />
           </div>
         )}
       </div>
     </div>
   );
 }
-
-export default withAnyAuth(ProfilePage);
