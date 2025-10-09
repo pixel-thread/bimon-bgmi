@@ -5,6 +5,28 @@ import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 type Props = {
   data: Omit<Prisma.UserCreateInput, "clerkId"> & { password: string };
 };
+type ClerkUser = {
+  clerkId: string;
+  username: string;
+};
+export async function createUserIfNotExistInDB({
+  clerkId,
+  username,
+}: ClerkUser) {
+  return await prisma.user.create({
+    data: {
+      userName: username,
+      clerkId: clerkId,
+      player: {
+        create: {
+          avatarUrl: "",
+          characterUrl: "",
+        },
+      },
+    },
+    include: { player: true },
+  });
+}
 
 export async function createUser({ data }: Props) {
   const userC = await clientClerk.users.createUser({

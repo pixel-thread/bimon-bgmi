@@ -110,7 +110,7 @@ export default function DesktopNavigation() {
 
         {/* Profile Button - Only show if authenticated */}
         {isAuthorized && (
-          <UserButton>
+          <UserButton showName={false}>
             <UserAvatar />
           </UserButton>
         )}

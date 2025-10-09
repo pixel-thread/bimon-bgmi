@@ -280,202 +280,201 @@ export default function page() {
 
   return (
     <div className="container mx-auto flex h-screen items-center justify-center px-4 py-8">
-      <UserProfile />
-      {/* <div className="max-w-md mx-auto"> */}
-      {/*   <Card> */}
-      {/*     <CardHeader> */}
-      {/*       <CardTitle className="text-2xl font-bold text-center"> */}
-      {/*         Profile Settings */}
-      {/*       </CardTitle> */}
-      {/*     </CardHeader> */}
-      {/*     <CardContent> */}
-      {/*       <form onSubmit={handleSubmit} className="space-y-6"> */}
-      {/*         <div className="flex justify-center"> */}
-      {/*           <ProfilePictureUpload */}
-      {/*             currentAvatarUrl={user?.player?.avatarUrl} */}
-      {/*             onUpload={handleAvatarUpload} */}
-      {/*             onRemove={handleAvatarRemove} */}
-      {/*             disabled={loading} */}
-      {/*           /> */}
-      {/*         </div> */}
+      <div className="max-w-md mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">
+              Profile Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="flex justify-center">
+                <ProfilePictureUpload
+                  currentAvatarUrl={user?.player?.avatarUrl}
+                  onUpload={handleAvatarUpload}
+                  onRemove={handleAvatarRemove}
+                  disabled={loading}
+                />
+              </div>
 
-      {/*         <div className="flex justify-center"> */}
-      {/*           <CharacterImageUpload */}
-      {/*             currentImageBase64={user?.player?.characterUrl} */}
-      {/*             onUpload={handleCharacterImageUpload} */}
-      {/*             onRemove={handleCharacterImageRemove} */}
-      {/*             disabled={loading} */}
-      {/*           /> */}
-      {/*         </div> */}
+              <div className="flex justify-center">
+                <CharacterImageUpload
+                  currentImageBase64={user?.player?.characterUrl}
+                  onUpload={handleCharacterImageUpload}
+                  onRemove={handleCharacterImageRemove}
+                  disabled={loading}
+                />
+              </div>
 
-      {/*         <div> */}
-      {/*           <Label htmlFor="name" className="flex items-center gap-2"> */}
-      {/*             <FiUser className="h-4 w-4" /> */}
-      {/*             Display Name */}
-      {/*           </Label> */}
-      {/*           <Input */}
-      {/*             id="name" */}
-      {/*             name="name" */}
-      {/*             type="text" */}
-      {/*             value={formData.name} */}
-      {/*             onChange={handleChange} */}
-      {/*             required */}
-      {/*             disabled={loading} */}
-      {/*             className="mt-1" */}
-      {/*             pattern=".*" */}
-      {/*             title="Any characters including symbols and capital letters are allowed" */}
-      {/*           /> */}
-      {/*           {!user?.usernameLastChangeAt && !isAbleToChangeUsername && ( */}
-      {/*             <div className="mt-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 p-2 rounded"> */}
-      {/*               <p>⚠️ Name changes are limited to once every 7 days.</p> */}
-      {/*               {(() => { */}
-      {/*                 const remaining = formatRemainingTime(""); */}
-      {/*                 if (remaining.days > 0) { */}
-      {/*                   return ( */}
-      {/*                     <p> */}
-      {/*                       You can change your name again in{" "} */}
-      {/*                       <strong> */}
-      {/*                         {remaining.days} day */}
-      {/*                         {remaining.days !== 1 ? "s" : ""} */}
-      {/*                       </strong> */}
-      {/*                       . */}
-      {/*                     </p> */}
-      {/*                   ); */}
-      {/*                 } else if (remaining.hours > 0) { */}
-      {/*                   return ( */}
-      {/*                     <p> */}
-      {/*                       You can change your name again in{" "} */}
-      {/*                       <strong> */}
-      {/*                         {remaining.hours} hour */}
-      {/*                         {remaining.hours !== 1 ? "s" : ""} */}
-      {/*                       </strong> */}
-      {/*                       . */}
-      {/*                     </p> */}
-      {/*                   ); */}
-      {/*                 } else { */}
-      {/*                   return ( */}
-      {/*                     <p> */}
-      {/*                       You can change your name again in{" "} */}
-      {/*                       <strong> */}
-      {/*                         {remaining.minutes} minute */}
-      {/*                         {remaining.minutes !== 1 ? "s" : ""} */}
-      {/*                       </strong> */}
-      {/*                       . */}
-      {/*                     </p> */}
-      {/*                   ); */}
-      {/*                 } */}
-      {/*               })()} */}
-      {/*               {user?.usernameLastChangeAt && ( */}
-      {/*                 <p className="text-xs text-gray-500 mt-1"> */}
-      {/*                   Last changed:{" "} */}
-      {/*                   {new Date( */}
-      {/*                     user?.usernameLastChangeAt || "", */}
-      {/*                   ).toLocaleDateString()}{" "} */}
-      {/*                   at{" "} */}
-      {/*                   {new Date( */}
-      {/*                     user?.usernameLastChangeAt || "", */}
-      {/*                   ).toLocaleTimeString()} */}
-      {/*                 </p> */}
-      {/*               )} */}
-      {/*             </div> */}
-      {/*           )} */}
-      {/*         </div> */}
+              <div>
+                <Label htmlFor="name" className="flex items-center gap-2">
+                  <FiUser className="h-4 w-4" />
+                  Display Name
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                  className="mt-1"
+                  pattern=".*"
+                  title="Any characters including symbols and capital letters are allowed"
+                />
+                {!user?.usernameLastChangeAt && !isAbleToChangeUsername && (
+                  <div className="mt-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 p-2 rounded">
+                    <p>⚠️ Name changes are limited to once every 7 days.</p>
+                    {(() => {
+                      const remaining = formatRemainingTime("");
+                      if (remaining.days > 0) {
+                        return (
+                          <p>
+                            You can change your name again in{" "}
+                            <strong>
+                              {remaining.days} day
+                              {remaining.days !== 1 ? "s" : ""}
+                            </strong>
+                            .
+                          </p>
+                        );
+                      } else if (remaining.hours > 0) {
+                        return (
+                          <p>
+                            You can change your name again in{" "}
+                            <strong>
+                              {remaining.hours} hour
+                              {remaining.hours !== 1 ? "s" : ""}
+                            </strong>
+                            .
+                          </p>
+                        );
+                      } else {
+                        return (
+                          <p>
+                            You can change your name again in{" "}
+                            <strong>
+                              {remaining.minutes} minute
+                              {remaining.minutes !== 1 ? "s" : ""}
+                            </strong>
+                            .
+                          </p>
+                        );
+                      }
+                    })()}
+                    {user?.usernameLastChangeAt && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Last changed:{" "}
+                        {new Date(
+                          user?.usernameLastChangeAt || "",
+                        ).toLocaleDateString()}{" "}
+                        at{" "}
+                        {new Date(
+                          user?.usernameLastChangeAt || "",
+                        ).toLocaleTimeString()}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
 
-      {/*         <div> */}
-      {/*           <Label htmlFor="password" className="flex items-center gap-2"> */}
-      {/*             <FiLock className="h-4 w-4" /> */}
-      {/*             New Password */}
-      {/*           </Label> */}
-      {/*           <Input */}
-      {/*             id="password" */}
-      {/*             name="password" */}
-      {/*             type="password" */}
-      {/*             value={formData.password} */}
-      {/*             onChange={handleChange} */}
-      {/*             placeholder="Leave blank to keep current password" */}
-      {/*             disabled={loading} */}
-      {/*             className="mt-1" */}
-      {/*           /> */}
-      {/*         </div> */}
+              <div>
+                <Label htmlFor="password" className="flex items-center gap-2">
+                  <FiLock className="h-4 w-4" />
+                  New Password
+                </Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Leave blank to keep current password"
+                  disabled={loading}
+                  className="mt-1"
+                />
+              </div>
 
-      {/*         {formData.password && ( */}
-      {/*           <div> */}
-      {/*             <Label */}
-      {/*               htmlFor="confirmPassword" */}
-      {/*               className="flex items-center gap-2" */}
-      {/*             > */}
-      {/*               <FiLock className="h-4 w-4" /> */}
-      {/*               Confirm New Password */}
-      {/*             </Label> */}
-      {/*             <Input */}
-      {/*               id="confirmPassword" */}
-      {/*               name="confirmPassword" */}
-      {/*               type="password" */}
-      {/*               value={formData.confirmPassword} */}
-      {/*               onChange={handleChange} */}
-      {/*               placeholder="Confirm new password" */}
-      {/*               required */}
-      {/*               disabled={loading} */}
-      {/*               className="mt-1" */}
-      {/*             /> */}
-      {/*           </div> */}
-      {/*         )} */}
+              {formData.password && (
+                <div>
+                  <Label
+                    htmlFor="confirmPassword"
+                    className="flex items-center gap-2"
+                  >
+                    <FiLock className="h-4 w-4" />
+                    Confirm New Password
+                  </Label>
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Confirm new password"
+                    required
+                    disabled={loading}
+                    className="mt-1"
+                  />
+                </div>
+              )}
 
-      {/*         {user?.usernameLastChangeAt && !isAbleToChangeUsername && ( */}
-      {/*           <div className="text-xs text-red-600 dark:text-red-400"> */}
-      {/*             Note: You can change your display name once every 7 days. */}
-      {/*           </div> */}
-      {/*         )} */}
+              {user?.usernameLastChangeAt && !isAbleToChangeUsername && (
+                <div className="text-xs text-red-600 dark:text-red-400">
+                  Note: You can change your display name once every 7 days.
+                </div>
+              )}
 
-      {/*         <LoadingButton type="submit" loading={loading} className="w-full"> */}
-      {/*           <FiSave className="h-4 w-4 mr-2" /> */}
-      {/*           Save Changes */}
-      {/*         </LoadingButton> */}
-      {/*       </form> */}
+              <LoadingButton type="submit" loading={loading} className="w-full">
+                <FiSave className="h-4 w-4 mr-2" />
+                Save Changes
+              </LoadingButton>
+            </form>
 
-      {/*       <div className="mt-6 pt-6 border-t"> */}
-      {/*         <div className="text-sm text-gray-600 dark:text-gray-400"> */}
-      {/*           <p> */}
-      {/*             <strong>Account ID:</strong> {playerUser?.id} */}
-      {/*           </p> */}
-      {/*           <p> */}
-      {/*             <strong>Role Type:</strong>{" "} */}
-      {/*             {user?.role === "PLAYER" ? "Player" : "Admin"} */}
-      {/*           </p> */}
-      {/*           {user?.email && ( */}
-      {/*             <p> */}
-      {/*               <strong>Email:</strong> {user.email} */}
-      {/*             </p> */}
-      {/*           )} */}
-      {/*           {playerUser && ( */}
-      {/*             <p> */}
-      {/*               <strong>Player Category:</strong> */}
-      {/*               <span className="ml-2 px-2 py-1 bg-primary/10 text-primary rounded text-xs"> */}
-      {/*                 {user?.player?.category} */}
-      {/*               </span> */}
-      {/*             </p> */}
-      {/*           )} */}
-      {/*         </div> */}
-      {/*       </div> */}
-      {/*     </CardContent> */}
-      {/*   </Card> */}
+            <div className="mt-6 pt-6 border-t">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                <p>
+                  <strong>Account ID:</strong> {playerUser?.id}
+                </p>
+                <p>
+                  <strong>Role Type:</strong>{" "}
+                  {user?.role === "PLAYER" ? "Player" : "Admin"}
+                </p>
+                {user?.email && (
+                  <p>
+                    <strong>Email:</strong> {user.email}
+                  </p>
+                )}
+                {playerUser && (
+                  <p>
+                    <strong>Player Category:</strong>
+                    <span className="ml-2 px-2 py-1 bg-primary/10 text-primary rounded text-xs">
+                      {user?.player?.category}
+                    </span>
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/*   {user && ( */}
-      {/*     <div className="mt-6"> */}
-      {/*       <SocialAuth */}
-      {/*         user={user} */}
-      {/*         userRole={role || undefined} */}
-      {/*         onAccountLinked={() => {}} */}
-      {/*       /> */}
-      {/*     </div> */}
-      {/*   )} */}
+        {user && (
+          <div className="mt-6">
+            <SocialAuth
+              user={user}
+              userRole={role || undefined}
+              onAccountLinked={() => {}}
+            />
+          </div>
+        )}
 
-      {/*   {playerUser && user?.role === "PLAYER" && ( */}
-      {/*     <div className="mt-6"> */}
-      {/*       <PlayerSocialAuth onAccountLinked={() => {}} /> */}
-      {/*     </div> */}
-      {/*   )} */}
-      {/* </div> */}
+        {playerUser && user?.role === "PLAYER" && (
+          <div className="mt-6">
+            <PlayerSocialAuth onAccountLinked={() => {}} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

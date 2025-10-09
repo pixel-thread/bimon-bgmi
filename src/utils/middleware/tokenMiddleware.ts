@@ -2,6 +2,12 @@ import { NextRequest } from "next/server";
 import { UnauthorizedError } from "../errors/unAuthError";
 import { verifyToken } from "@clerk/backend";
 import { getUserByClerkId } from "@/src/services/user/getUserByClerkId";
+import {
+  createUser,
+  createUserIfNotExistInDB,
+} from "@/src/services/user/createUser";
+import { clientClerk } from "@/src/lib/clerk/client";
+import { getUserByUserName } from "@/src/services/user/getUserByUserName";
 /**
  * Middleware to validate and manage authentication tokens
  *
@@ -36,14 +42,24 @@ export async function tokenMiddleware(req: NextRequest | Request) {
     throw new UnauthorizedError("Unauthorized");
   }
 
-  const user = await getUserByClerkId({ id: claims.sub });
+  let user = await getUserByClerkId({ id: claims.sub });
 
   if (!user) {
-    throw new UnauthorizedError("Unauthorized");
+    const clerkUser = await clientClerk.users.getUser(claims.sub);
+
+    const isUserExistbyUserName = await getUserByUserName({
+      userName: clerkUser.username ?? claims.sub,
+    });
+
+    if (isUserExistbyUserName) {
+      throw new UnauthorizedError("Unauthorized");
+    }
+
+    user = await createUserIfNotExistInDB({
+      username: clerkUser.username || claims.sub,
+      clerkId: clerkUser?.id,
+    });
   }
 
-  if (user.role !== "SUPER_ADMIN") {
-    throw new UnauthorizedError("Permission Denied");
-  }
   return user;
 }
