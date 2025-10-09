@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
 import { FiUser, FiLogIn, FiLogOut, FiSun, FiMoon } from "react-icons/fi";
+import { UserAvatar, UserButton } from "@clerk/nextjs";
 
 export default function DesktopNavigation() {
   const [darkMode, setDarkMode] = useState(false);
@@ -109,16 +110,9 @@ export default function DesktopNavigation() {
 
         {/* Profile Button - Only show if authenticated */}
         {isAuthorized && (
-          <button
-            onClick={handleProfile}
-            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
-            aria-label="Profile"
-          >
-            <FiUser className="h-4 w-4" />
-            <span className="hidden lg:inline">
-              {playerUser?.userName || "Profile"}
-            </span>
-          </button>
+          <UserButton>
+            <UserAvatar />
+          </UserButton>
         )}
 
         {/* Login/Logout Button */}

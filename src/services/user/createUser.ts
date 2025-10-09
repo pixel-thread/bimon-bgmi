@@ -10,6 +10,7 @@ export async function createUser({ data }: Props) {
   const userC = await clientClerk.users.createUser({
     password: data.password,
     username: data.userName,
+    emailAddress: [],
   });
   // clerkId is injected from Clerk; not present in data
   return await prisma.user.create({

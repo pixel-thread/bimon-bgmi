@@ -13,6 +13,7 @@ import {
   FiSun,
   FiMoon,
 } from "react-icons/fi";
+import { UserAvatar, UserButton } from "@clerk/nextjs";
 // Notifications removed
 
 export default function HamburgerMenu() {
@@ -20,7 +21,7 @@ export default function HamburgerMenu() {
   const [darkMode, setDarkMode] = useState(false);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const { isSignedIn: isAuthorized, user: playerUser, logout } = useAuth();
+  const { isSignedIn: isAuthorized, user: playerUser } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -45,31 +46,9 @@ export default function HamburgerMenu() {
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = async () => {
-    if (isLoggingOut) return; // Prevent multiple logout attempts
-
-    try {
-      setIsLoggingOut(true);
-      await logout();
-      setIsOpen(false);
-      // Set flag to prevent immediate redirect back
-      sessionStorage.setItem("just_logged_out", "true");
-      // Force a complete page reload to ensure fresh state
-      window.location.href = "/login";
-    } catch (error) {
-      console.error("Logout error:", error);
-      setIsLoggingOut(false);
-    }
-  };
-
   const handleLogin = () => {
     setIsOpen(false);
     router.push("/login");
-  };
-
-  const handleProfile = () => {
-    setIsOpen(false);
-    router.push("/profile");
   };
 
   const toggleTheme = () => {
@@ -170,38 +149,21 @@ export default function HamburgerMenu() {
                   </div>
 
                   {/* User Actions */}
+
+                  {/* Profile Button - Only show if authenticated */}
+                  {isAuthorized && (
+                    <UserButton>
+                      <UserAvatar />
+                    </UserButton>
+                  )}
                   {/* Login/Logout Button */}
-                  {isAuthorized ? (
-                    <button
-                      onClick={handleLogout}
-                      disabled={isLoggingOut}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isLoggingOut ? (
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
-                      ) : (
-                        <FiLogOut className="h-5 w-5" />
-                      )}
-                      {isLoggingOut ? "Logging out..." : "Logout"}
-                    </button>
-                  ) : (
+                  {!isAuthorized && (
                     <button
                       onClick={handleLogin}
                       className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                     >
                       <FiLogIn className="h-5 w-5" />
                       Login
-                    </button>
-                  )}
-
-                  {/* Profile Button - Only show if authenticated */}
-                  {isAuthorized && (
-                    <button
-                      onClick={handleProfile}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-                    >
-                      <FiUser className="h-5 w-5" />
-                      Profile
                     </button>
                   )}
 

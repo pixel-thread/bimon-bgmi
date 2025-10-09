@@ -41,17 +41,18 @@ enum Status {
  */
 
 model User {
-  id            String   @id @default(uuid())
-  email         String?  @unique
-  clerkId       String   @unique
-  isEmailLinked Boolean  @default(false)
-  userName      String   @unique
-  role          Role     @default(PLAYER)
-  balance       Int      @default(0)
-  isInternal    Boolean  @default(false)
-  isVerified    Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                   String   @id @default(uuid())
+  email                String?  @unique
+  clerkId              String   @unique
+  isEmailLinked        Boolean  @default(false)
+  userName             String   @unique
+  usernameLastChangeAt DateTime @default(now())
+  role                 Role     @default(PLAYER)
+  balance              Int      @default(0)
+  isInternal           Boolean  @default(false)
+  isVerified           Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   playerId     String?     @unique
   player       Player?

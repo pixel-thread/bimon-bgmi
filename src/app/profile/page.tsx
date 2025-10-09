@@ -21,7 +21,8 @@ import { CharacterImageService } from "@/src/lib/characterImageService";
 import { BackButton } from "@/src/components/common/BackButton";
 import SocialAuth from "@/src/components/SocialAuth";
 import PlayerSocialAuth from "@/src/components/PlayerSocialAuth";
-
+import { useSignIn } from "@clerk/nextjs";
+import { UserProfile } from "@clerk/clerk-react";
 // Helper function to format remaining time
 const formatRemainingTime = (
   lastChangeDate: string,
@@ -46,22 +47,11 @@ const formatRemainingTime = (
 };
 
 export default function page() {
-  const { user: playerUser, user } = useAuth();
+  const { user: playerUser, user, isAuthLoading: loading } = useAuth();
+  const { signIn } = useSignIn();
   const role = playerUser?.role;
-  const authType = user ? "firebase" : "player";
-  const [loading, setLoading] = useState(false);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
-  const [playerCategory, setPlayerCategory] = useState<string>("Not Set");
-  const [playerAvatarBase64, setPlayerAvatarBase64] = useState<
-    string | undefined
-  >(undefined);
-  const [characterAvatarBase64, setCharacterAvatarBase64] = useState<
-    string | undefined
-  >(undefined);
-  const [nameChangeInfo, setNameChangeInfo] = useState<{
-    canChange: boolean;
-    lastChangeDate?: string;
-  }>({ canChange: true });
+  const [isAbleToChangeUsername, setIsAbleToChangeUsername] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     password: "",
@@ -72,67 +62,28 @@ export default function page() {
     if (playerUser && !initialDataLoaded) {
       setFormData((prev) => ({
         ...prev,
-        name: playerUser.name || "",
+        name: playerUser.userName || "",
       }));
       setInitialDataLoaded(true);
     }
   }, [playerUser, initialDataLoaded]);
 
   useEffect(() => {
-    const fetchPlayerData = async () => {
-      if (playerUser?.id) {
-        try {
-          const playerData = await playerAuthService.getPlayerById(
-            playerUser.id,
-          );
-          if (playerData?.category) {
-            setPlayerCategory(playerData.category);
-          }
-
-          // Set avatar (prefer Base64 over URL)
-          if (playerData?.avatarBase64) {
-            setPlayerAvatarBase64(playerData.avatarBase64);
-          } else if (playerData?.avatarUrl) {
-            // Fallback to old avatarUrl if Base64 not available
-            setPlayerAvatarBase64(playerData.avatarUrl);
-          }
-
-          // Set character avatar
-          if (playerData?.characterAvatarBase64) {
-            setCharacterAvatarBase64(playerData.characterAvatarBase64);
-          }
-
-          // Check name change timeout status
-          if (playerData?.lastNameChangeAt) {
-            const lastChangeDate = new Date(playerData.lastNameChangeAt);
-            const currentDate = new Date();
-            const daysSinceLastChange =
-              (currentDate.getTime() - lastChangeDate.getTime()) /
-              (1000 * 60 * 60 * 24);
-
-            if (daysSinceLastChange < 7) {
-              setNameChangeInfo({
-                canChange: false,
-                lastChangeDate: playerData.lastNameChangeAt,
-              });
-            } else {
-              setNameChangeInfo({
-                canChange: true,
-                lastChangeDate: playerData.lastNameChangeAt,
-              });
-            }
-          } else {
-            setNameChangeInfo({ canChange: true });
-          }
-        } catch (error) {
-          console.error("Failed to fetch player data:", error);
-        }
-      }
-    };
-
-    fetchPlayerData();
-  }, [playerUser?.id]);
-
+    const lastChangeDate = playerUser?.usernameLastChangeAt;
+    if (!lastChangeDate) {
+      setIsAbleToChangeUsername(true);
+      return;
+    }
+    const now = new Date();
+    const lastDate = new Date(lastChangeDate);
+    const daysSinceChange =
+      (now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
+    setIsAbleToChangeUsername(daysSinceChange >= 7);
+  }, [playerUser]);
+  const onLinkAccount = () => {
+    if (playerUser) {
+    }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -141,8 +92,6 @@ export default function page() {
       return;
     }
 
-    setLoading(true);
-
     try {
       if (!playerUser?.id) {
         throw new Error("Player not authenticated");
@@ -150,7 +99,7 @@ export default function page() {
 
       let nameChanged = false;
 
-      if (formData.name !== playerUser.name) {
+      if (formData.name !== playerUser.userName) {
         try {
           toast.loading("Updating name...");
           await playerAuthService.updatePlayerName(
@@ -167,8 +116,8 @@ export default function page() {
             const updatedPlayer = {
               id: playerUser.id,
               name: updatedPlayerData.name,
-              hasVoted: playerUser.hasVoted,
-              loginPassword: playerUser.loginPassword,
+              // hasVoted: playerUser.hasVotedkj,
+              // loginPassword: playerUser.loginPassword,
             };
             localStorage.setItem(
               "playerSession",
@@ -176,16 +125,7 @@ export default function page() {
             );
 
             // Force refresh auth state to sync across all components
-            await refreshAuthState();
-
-            // Dispatch storage event to notify other tabs/components
-            window.dispatchEvent(
-              new StorageEvent("storage", {
-                key: "playerSession",
-                newValue: JSON.stringify(updatedPlayer),
-                oldValue: JSON.stringify(playerUser),
-              }),
-            );
+            // await refreshAuthState();
           }
 
           nameChanged = true;
@@ -193,12 +133,6 @@ export default function page() {
           toast.success("Name updated successfully!");
 
           // Refresh name change info after successful update
-          if (updatedPlayerData?.lastNameChangeAt) {
-            setNameChangeInfo({
-              canChange: false,
-              lastChangeDate: updatedPlayerData.lastNameChangeAt,
-            });
-          }
         } catch (error) {
           console.error("Name update failed:", error);
           toast.dismiss();
@@ -248,8 +182,6 @@ export default function page() {
       toast.error(
         error instanceof Error ? error.message : "Failed to update profile",
       );
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -286,7 +218,6 @@ export default function page() {
         base64String.length,
       );
 
-      setPlayerAvatarBase64(base64String);
       console.log("Profile page: Avatar Base64 state updated");
 
       return base64String;
@@ -302,7 +233,6 @@ export default function page() {
     }
 
     await AvatarService.deleteAvatar(playerUser.id);
-    setPlayerAvatarBase64(undefined);
   };
 
   const handleCharacterImageUpload = async (file: File): Promise<string> => {
@@ -331,7 +261,6 @@ export default function page() {
         base64String.length,
       );
 
-      setCharacterAvatarBase64(base64String);
       console.log("Profile page: Character avatar Base64 state updated");
 
       return base64String;
@@ -347,223 +276,206 @@ export default function page() {
     }
 
     await CharacterImageService.deleteCharacterImage(playerUser.id);
-    setCharacterAvatarBase64(undefined);
   };
 
-  if (!playerUser && !user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <BackButton />
-      </div>
-      <div className="max-w-md mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">
-              Profile Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Profile Picture Upload */}
-              <div className="flex justify-center">
-                <ProfilePictureUpload
-                  currentAvatarUrl={playerAvatarBase64}
-                  onUpload={handleAvatarUpload}
-                  onRemove={handleAvatarRemove}
-                  disabled={loading}
-                />
-              </div>
+    <div className="container mx-auto flex h-screen items-center justify-center px-4 py-8">
+      <UserProfile />
+      {/* <div className="max-w-md mx-auto"> */}
+      {/*   <Card> */}
+      {/*     <CardHeader> */}
+      {/*       <CardTitle className="text-2xl font-bold text-center"> */}
+      {/*         Profile Settings */}
+      {/*       </CardTitle> */}
+      {/*     </CardHeader> */}
+      {/*     <CardContent> */}
+      {/*       <form onSubmit={handleSubmit} className="space-y-6"> */}
+      {/*         <div className="flex justify-center"> */}
+      {/*           <ProfilePictureUpload */}
+      {/*             currentAvatarUrl={user?.player?.avatarUrl} */}
+      {/*             onUpload={handleAvatarUpload} */}
+      {/*             onRemove={handleAvatarRemove} */}
+      {/*             disabled={loading} */}
+      {/*           /> */}
+      {/*         </div> */}
 
-              {/* Character Image Upload */}
-              <div className="flex justify-center">
-                <CharacterImageUpload
-                  currentImageBase64={characterAvatarBase64}
-                  onUpload={handleCharacterImageUpload}
-                  onRemove={handleCharacterImageRemove}
-                  disabled={loading}
-                />
-              </div>
+      {/*         <div className="flex justify-center"> */}
+      {/*           <CharacterImageUpload */}
+      {/*             currentImageBase64={user?.player?.characterUrl} */}
+      {/*             onUpload={handleCharacterImageUpload} */}
+      {/*             onRemove={handleCharacterImageRemove} */}
+      {/*             disabled={loading} */}
+      {/*           /> */}
+      {/*         </div> */}
 
-              <div>
-                <Label htmlFor="name" className="flex items-center gap-2">
-                  <FiUser className="h-4 w-4" />
-                  Display Name
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  disabled={loading || !nameChangeInfo.canChange}
-                  className="mt-1"
-                  pattern=".*"
-                  title="Any characters including symbols and capital letters are allowed"
-                />
-                {!nameChangeInfo.canChange && nameChangeInfo.lastChangeDate && (
-                  <div className="mt-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 p-2 rounded">
-                    <p>⚠️ Name changes are limited to once every 7 days.</p>
-                    {(() => {
-                      const remaining = formatRemainingTime(
-                        nameChangeInfo.lastChangeDate,
-                      );
-                      if (remaining.days > 0) {
-                        return (
-                          <p>
-                            You can change your name again in{" "}
-                            <strong>
-                              {remaining.days} day
-                              {remaining.days !== 1 ? "s" : ""}
-                            </strong>
-                            .
-                          </p>
-                        );
-                      } else if (remaining.hours > 0) {
-                        return (
-                          <p>
-                            You can change your name again in{" "}
-                            <strong>
-                              {remaining.hours} hour
-                              {remaining.hours !== 1 ? "s" : ""}
-                            </strong>
-                            .
-                          </p>
-                        );
-                      } else {
-                        return (
-                          <p>
-                            You can change your name again in{" "}
-                            <strong>
-                              {remaining.minutes} minute
-                              {remaining.minutes !== 1 ? "s" : ""}
-                            </strong>
-                            .
-                          </p>
-                        );
-                      }
-                    })()}
-                    <p className="text-xs text-gray-500 mt-1">
-                      Last changed:{" "}
-                      {new Date(
-                        nameChangeInfo.lastChangeDate,
-                      ).toLocaleDateString()}{" "}
-                      at{" "}
-                      {new Date(
-                        nameChangeInfo.lastChangeDate,
-                      ).toLocaleTimeString()}
-                    </p>
-                  </div>
-                )}
-                {/* When allowed, don't show success box to avoid duplication; show policy note below instead */}
-              </div>
+      {/*         <div> */}
+      {/*           <Label htmlFor="name" className="flex items-center gap-2"> */}
+      {/*             <FiUser className="h-4 w-4" /> */}
+      {/*             Display Name */}
+      {/*           </Label> */}
+      {/*           <Input */}
+      {/*             id="name" */}
+      {/*             name="name" */}
+      {/*             type="text" */}
+      {/*             value={formData.name} */}
+      {/*             onChange={handleChange} */}
+      {/*             required */}
+      {/*             disabled={loading} */}
+      {/*             className="mt-1" */}
+      {/*             pattern=".*" */}
+      {/*             title="Any characters including symbols and capital letters are allowed" */}
+      {/*           /> */}
+      {/*           {!user?.usernameLastChangeAt && !isAbleToChangeUsername && ( */}
+      {/*             <div className="mt-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 p-2 rounded"> */}
+      {/*               <p>⚠️ Name changes are limited to once every 7 days.</p> */}
+      {/*               {(() => { */}
+      {/*                 const remaining = formatRemainingTime(""); */}
+      {/*                 if (remaining.days > 0) { */}
+      {/*                   return ( */}
+      {/*                     <p> */}
+      {/*                       You can change your name again in{" "} */}
+      {/*                       <strong> */}
+      {/*                         {remaining.days} day */}
+      {/*                         {remaining.days !== 1 ? "s" : ""} */}
+      {/*                       </strong> */}
+      {/*                       . */}
+      {/*                     </p> */}
+      {/*                   ); */}
+      {/*                 } else if (remaining.hours > 0) { */}
+      {/*                   return ( */}
+      {/*                     <p> */}
+      {/*                       You can change your name again in{" "} */}
+      {/*                       <strong> */}
+      {/*                         {remaining.hours} hour */}
+      {/*                         {remaining.hours !== 1 ? "s" : ""} */}
+      {/*                       </strong> */}
+      {/*                       . */}
+      {/*                     </p> */}
+      {/*                   ); */}
+      {/*                 } else { */}
+      {/*                   return ( */}
+      {/*                     <p> */}
+      {/*                       You can change your name again in{" "} */}
+      {/*                       <strong> */}
+      {/*                         {remaining.minutes} minute */}
+      {/*                         {remaining.minutes !== 1 ? "s" : ""} */}
+      {/*                       </strong> */}
+      {/*                       . */}
+      {/*                     </p> */}
+      {/*                   ); */}
+      {/*                 } */}
+      {/*               })()} */}
+      {/*               {user?.usernameLastChangeAt && ( */}
+      {/*                 <p className="text-xs text-gray-500 mt-1"> */}
+      {/*                   Last changed:{" "} */}
+      {/*                   {new Date( */}
+      {/*                     user?.usernameLastChangeAt || "", */}
+      {/*                   ).toLocaleDateString()}{" "} */}
+      {/*                   at{" "} */}
+      {/*                   {new Date( */}
+      {/*                     user?.usernameLastChangeAt || "", */}
+      {/*                   ).toLocaleTimeString()} */}
+      {/*                 </p> */}
+      {/*               )} */}
+      {/*             </div> */}
+      {/*           )} */}
+      {/*         </div> */}
 
-              <div>
-                <Label htmlFor="password" className="flex items-center gap-2">
-                  <FiLock className="h-4 w-4" />
-                  New Password
-                </Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Leave blank to keep current password"
-                  disabled={loading}
-                  className="mt-1"
-                />
-              </div>
+      {/*         <div> */}
+      {/*           <Label htmlFor="password" className="flex items-center gap-2"> */}
+      {/*             <FiLock className="h-4 w-4" /> */}
+      {/*             New Password */}
+      {/*           </Label> */}
+      {/*           <Input */}
+      {/*             id="password" */}
+      {/*             name="password" */}
+      {/*             type="password" */}
+      {/*             value={formData.password} */}
+      {/*             onChange={handleChange} */}
+      {/*             placeholder="Leave blank to keep current password" */}
+      {/*             disabled={loading} */}
+      {/*             className="mt-1" */}
+      {/*           /> */}
+      {/*         </div> */}
 
-              {formData.password && (
-                <div>
-                  <Label
-                    htmlFor="confirmPassword"
-                    className="flex items-center gap-2"
-                  >
-                    <FiLock className="h-4 w-4" />
-                    Confirm New Password
-                  </Label>
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Confirm new password"
-                    required
-                    disabled={loading}
-                    className="mt-1"
-                  />
-                </div>
-              )}
+      {/*         {formData.password && ( */}
+      {/*           <div> */}
+      {/*             <Label */}
+      {/*               htmlFor="confirmPassword" */}
+      {/*               className="flex items-center gap-2" */}
+      {/*             > */}
+      {/*               <FiLock className="h-4 w-4" /> */}
+      {/*               Confirm New Password */}
+      {/*             </Label> */}
+      {/*             <Input */}
+      {/*               id="confirmPassword" */}
+      {/*               name="confirmPassword" */}
+      {/*               type="password" */}
+      {/*               value={formData.confirmPassword} */}
+      {/*               onChange={handleChange} */}
+      {/*               placeholder="Confirm new password" */}
+      {/*               required */}
+      {/*               disabled={loading} */}
+      {/*               className="mt-1" */}
+      {/*             /> */}
+      {/*           </div> */}
+      {/*         )} */}
 
-              {/* Name change policy note (only when change is allowed) */}
-              {nameChangeInfo.canChange && (
-                <div className="text-xs text-red-600 dark:text-red-400">
-                  Note: You can change your display name once every 7 days.
-                </div>
-              )}
+      {/*         {user?.usernameLastChangeAt && !isAbleToChangeUsername && ( */}
+      {/*           <div className="text-xs text-red-600 dark:text-red-400"> */}
+      {/*             Note: You can change your display name once every 7 days. */}
+      {/*           </div> */}
+      {/*         )} */}
 
-              <LoadingButton type="submit" loading={loading} className="w-full">
-                <FiSave className="h-4 w-4 mr-2" />
-                Save Changes
-              </LoadingButton>
-            </form>
+      {/*         <LoadingButton type="submit" loading={loading} className="w-full"> */}
+      {/*           <FiSave className="h-4 w-4 mr-2" /> */}
+      {/*           Save Changes */}
+      {/*         </LoadingButton> */}
+      {/*       </form> */}
 
-            <div className="mt-6 pt-6 border-t">
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                <p>
-                  <strong>Account ID:</strong> {playerUser?.id}
-                </p>
-                <p>
-                  <strong>Account Type:</strong>{" "}
-                  {authType === "player" ? "Player" : "Admin"}
-                </p>
-                {user?.email && (
-                  <p>
-                    <strong>Email:</strong> {user.email}
-                  </p>
-                )}
-                {playerUser && (
-                  <p>
-                    <strong>Player Category:</strong>
-                    <span className="ml-2 px-2 py-1 bg-primary/10 text-primary rounded text-xs">
-                      {playerCategory}
-                    </span>
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/*       <div className="mt-6 pt-6 border-t"> */}
+      {/*         <div className="text-sm text-gray-600 dark:text-gray-400"> */}
+      {/*           <p> */}
+      {/*             <strong>Account ID:</strong> {playerUser?.id} */}
+      {/*           </p> */}
+      {/*           <p> */}
+      {/*             <strong>Role Type:</strong>{" "} */}
+      {/*             {user?.role === "PLAYER" ? "Player" : "Admin"} */}
+      {/*           </p> */}
+      {/*           {user?.email && ( */}
+      {/*             <p> */}
+      {/*               <strong>Email:</strong> {user.email} */}
+      {/*             </p> */}
+      {/*           )} */}
+      {/*           {playerUser && ( */}
+      {/*             <p> */}
+      {/*               <strong>Player Category:</strong> */}
+      {/*               <span className="ml-2 px-2 py-1 bg-primary/10 text-primary rounded text-xs"> */}
+      {/*                 {user?.player?.category} */}
+      {/*               </span> */}
+      {/*             </p> */}
+      {/*           )} */}
+      {/*         </div> */}
+      {/*       </div> */}
+      {/*     </CardContent> */}
+      {/*   </Card> */}
 
-        {/* Social Authentication Section - Only for Firebase users */}
-        {user && authType === "firebase" && (
-          <div className="mt-6">
-            <SocialAuth
-              user={user}
-              userRole={role || undefined}
-              onAccountLinked={() => {}}
-            />
-          </div>
-        )}
+      {/*   {user && ( */}
+      {/*     <div className="mt-6"> */}
+      {/*       <SocialAuth */}
+      {/*         user={user} */}
+      {/*         userRole={role || undefined} */}
+      {/*         onAccountLinked={() => {}} */}
+      {/*       /> */}
+      {/*     </div> */}
+      {/*   )} */}
 
-        {/* Social Authentication Section - Only for Player users */}
-        {playerUser && authType === "player" && (
-          <div className="mt-6">
-            <PlayerSocialAuth onAccountLinked={() => {}} />
-          </div>
-        )}
-      </div>
+      {/*   {playerUser && user?.role === "PLAYER" && ( */}
+      {/*     <div className="mt-6"> */}
+      {/*       <PlayerSocialAuth onAccountLinked={() => {}} /> */}
+      {/*     </div> */}
+      {/*   )} */}
+      {/* </div> */}
     </div>
   );
 }

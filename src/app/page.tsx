@@ -3,15 +3,10 @@
 
 import { useAuth } from "@/src/hooks/useAuth";
 import { useEffect } from "react";
-import {
-  canAccessFullAdmin,
-  canAccessTeamsAdmin,
-} from "@/src/config/adminAccess";
 import Link from "next/link";
 import AdBanner from "@/src/components/AdBanner";
 export default function HomePage() {
   const { user, isSignedIn: isAuthorized } = useAuth();
-  const role = user?.role || "PLAYER";
   const username = user?.userName;
 
   // Load AdSense script only when authorized (pages with meaningful content)
