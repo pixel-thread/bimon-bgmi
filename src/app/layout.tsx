@@ -64,16 +64,16 @@ export default function RootLayout({
     <ClerkProvider
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
     >
-      <Wrapper>
-        <html lang="en" className="dark">
-          <HtmlHead />
-          <body className="min-h-screen bg-background text-foreground">
-            <Suspense fallback={null}>
+      <html lang="en" className="dark">
+        <HtmlHead />
+        <body className="min-h-screen bg-background text-foreground">
+          <Suspense fallback={null}>
+            <Wrapper>
               <main className="pt-16 min-h-screen">{children}</main>
-            </Suspense>
-          </body>
-        </html>
-      </Wrapper>
+            </Wrapper>
+          </Suspense>
+        </body>
+      </html>
     </ClerkProvider>
   );
 }

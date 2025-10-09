@@ -28,14 +28,14 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   useEffect(() => {
     if (isAuthLoading) return;
     setIsLoading(false);
-    const timer = setTimeout(() => setIsLoading(false), 1); // delay in ms
+    const timer = setTimeout(() => setIsLoading(false), 1000); // delay in ms
     return () => clearTimeout(timer); // Cleanup the timer
   }, [isAuthLoading, pathName]);
 
   // Handle authentication and role-based redirects
   useEffect(() => {
     // Wait until authentication loading is complete to proceed
-    if (isAuthLoading) return;
+    if (isAuthLoading && user?.role) return;
 
     // Step 1: Identify the current route from the `routeRoles` configuration
     const currentRoute = routeRoles.find((route) => {

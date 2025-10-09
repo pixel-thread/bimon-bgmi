@@ -2,7 +2,6 @@
 import { AuthContext } from "@/src/lib/context/auth";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import http from "@/src/utils/http";
-import { logger } from "@/src/utils/logger";
 import { useAuth } from "@clerk/clerk-react";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
@@ -64,9 +63,6 @@ export const AuthProvider = ({ children }: Props) => {
         logout: () => onLogout(),
       }}
     >
-      <div className="z-50 absolute">
-        {isSignedIn ? "signed in" : "not signed in"}
-      </div>
       {children}
     </AuthContext.Provider>
   );

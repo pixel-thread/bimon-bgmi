@@ -371,3 +371,12 @@ link[rel="mask-icon"] {
 .scroll-snap-center {
   scroll-snap-align: center;
 }
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
