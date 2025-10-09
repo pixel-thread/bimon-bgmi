@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { gameScoreService } from "@/src/lib/gameScoreService";
-import { AuthGuard } from "@/src/components/AuthGuard";
 import SnakeGame from "@/src/components/games/snake/SnakeGame";
 import { toast } from "sonner";
 import {
@@ -75,7 +74,7 @@ const AdminSnakeContent = () => {
       // Load leaderboard
       const leaderboardData = await gameScoreService.getLeaderboard(
         "snake-game",
-        50
+        50,
       );
       setLeaderboard(leaderboardData);
 
@@ -140,7 +139,7 @@ const AdminSnakeContent = () => {
             gamesPlayed: playerScores.length,
             highestScore: Math.max(...playerScores),
             averageScore: Math.round(
-              playerScores.reduce((a, b) => a + b, 0) / playerScores.length
+              playerScores.reduce((a, b) => a + b, 0) / playerScores.length,
             ),
             lastPlayed: data.lastPlayed,
           };
@@ -161,7 +160,7 @@ const AdminSnakeContent = () => {
   const resetAllScores = async () => {
     if (
       !confirm(
-        "Are you sure you want to delete ALL Snake Game scores? This action cannot be undone!"
+        "Are you sure you want to delete ALL Snake Game scores? This action cannot be undone!",
       )
     ) {
       return;
@@ -169,7 +168,7 @@ const AdminSnakeContent = () => {
 
     if (
       !confirm(
-        "This will permanently delete all player scores and leaderboard data. Type 'DELETE' if you're absolutely sure."
+        "This will permanently delete all player scores and leaderboard data. Type 'DELETE' if you're absolutely sure.",
       )
     ) {
       return;
@@ -183,7 +182,7 @@ const AdminSnakeContent = () => {
       const querySnapshot = await getDocs(q);
 
       const deletePromises = querySnapshot.docs.map((docSnapshot) =>
-        deleteDoc(doc(db, "gameScores", docSnapshot.id))
+        deleteDoc(doc(db, "gameScores", docSnapshot.id)),
       );
 
       await Promise.all(deletePromises);
@@ -215,7 +214,7 @@ const AdminSnakeContent = () => {
       }
 
       toast.success(
-        `Successfully deleted ${deletePromises.length} score records and cleared player high scores`
+        `Successfully deleted ${deletePromises.length} score records and cleared player high scores`,
       );
 
       // Reload data
@@ -604,9 +603,5 @@ const AdminSnakeContent = () => {
 };
 
 export default function AdminSnakePage() {
-  return (
-    <AuthGuard requireAuth={true}>
-      <AdminSnakeContent />
-    </AuthGuard>
-  );
+  return <AdminSnakeContent />;
 }

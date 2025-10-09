@@ -51,10 +51,6 @@ export default function DesktopNavigation() {
     }
   };
 
-  const handleProfile = () => {
-    router.push("/profile");
-  };
-
   const toggleTheme = () => {
     setDarkMode(!darkMode);
   };
@@ -65,6 +61,7 @@ export default function DesktopNavigation() {
     { href: "/", label: "Home" },
     { href: "/about", label: "About" },
     { href: "/tournament", label: "Tournament" },
+    { href: "/settings", label: "Settings" },
     { href: "/guides", label: "Guides" },
     { href: "/blog", label: "Blog" },
     { href: "/faq", label: "FAQ" },
@@ -110,7 +107,7 @@ export default function DesktopNavigation() {
 
         {/* Profile Button - Only show if authenticated */}
         {isAuthorized && (
-          <UserButton showName={false}>
+          <UserButton showName={true}>
             <UserAvatar />
           </UserButton>
         )}

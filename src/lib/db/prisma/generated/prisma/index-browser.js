@@ -141,6 +141,7 @@ exports.Prisma.PlayerScalarFieldEnum = {
   id: 'id',
   avatarUrl: 'avatarUrl',
   characterUrl: 'characterUrl',
+  characterUrlBase64: 'characterUrlBase64',
   isBanned: 'isBanned',
   category: 'category',
   userId: 'userId',

@@ -20,8 +20,6 @@ const AdminSettingsPage = () => {
           </div>
         </header>
 
-        <AdminNavigation />
-
         <div className="space-y-6">
           <TournamentSettings />
         </div>

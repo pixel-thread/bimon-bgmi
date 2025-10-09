@@ -20,8 +20,6 @@ const AdminPollsPage = () => {
           </div>
         </header>
 
-        <AdminNavigation />
-
         <div className="space-y-6">
           <PollManagement />
         </div>

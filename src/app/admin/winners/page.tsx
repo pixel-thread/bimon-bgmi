@@ -2,7 +2,6 @@
 
 import { FiAward } from "react-icons/fi";
 import { WinnersTab } from "@/src/components/WinnersTab";
-import AdminNavigation from "@/src/components/AdminNavigation";
 import { useAuth } from "@/src/hooks/useAuth";
 
 const AdminWinnersPage = () => {
@@ -24,8 +23,6 @@ const AdminWinnersPage = () => {
             </p>
           </div>
         </header>
-
-        <AdminNavigation />
 
         <div className="space-y-6">
           <WinnersTab readOnly={isTeamsAdmin} />

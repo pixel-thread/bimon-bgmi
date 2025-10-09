@@ -4,15 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
-import {
-  FiMenu,
-  FiX,
-  FiUser,
-  FiLogIn,
-  FiLogOut,
-  FiSun,
-  FiMoon,
-} from "react-icons/fi";
+import { FiMenu, FiX, FiLogIn, FiSun, FiMoon } from "react-icons/fi";
 import { UserAvatar, UserButton } from "@clerk/nextjs";
 // Notifications removed
 
@@ -44,11 +36,9 @@ export default function HamburgerMenu() {
     }
   }, [darkMode, mounted]);
 
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
   const handleLogin = () => {
     setIsOpen(false);
-    router.push("/login");
+    router.push("/auth");
   };
 
   const toggleTheme = () => {

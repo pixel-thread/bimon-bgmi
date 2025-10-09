@@ -2,30 +2,14 @@
 "use client";
 
 import { useAuth } from "@/src/hooks/useAuth";
-import { useEffect } from "react";
 import Link from "next/link";
 import AdBanner from "@/src/components/AdBanner";
+import { SignInButton, SignOutButton } from "@clerk/nextjs";
+import { Ternary } from "../components/common/Ternary";
 export default function HomePage() {
   const { user, isSignedIn: isAuthorized } = useAuth();
   const username = user?.userName;
 
-  // Load AdSense script only when authorized (pages with meaningful content)
-  useEffect(() => {
-    if (!isAuthorized) return;
-    const src =
-      "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2651043074081875";
-    const existing = document.querySelector(
-      'script[src^="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]',
-    );
-    if (!existing) {
-      const script = document.createElement("script");
-      script.async = true;
-      script.src = src;
-      script.crossOrigin = "anonymous";
-      document.head.appendChild(script);
-    }
-  }, [isAuthorized]);
-  console.log(user);
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <div className="container mx-auto px-4 py-16">
@@ -69,12 +53,7 @@ export default function HomePage() {
                 gaming community.
               </p>
               <div className="space-y-4">
-                <Link
-                  href="/auth"
-                  className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  Sign In
-                </Link>
+                <SignInButton fallbackRedirectUrl={"/auth"} />
                 <div className="text-sm text-slate-500 dark:text-slate-400 space-y-2">
                   <div>
                     <Link
@@ -132,58 +111,65 @@ export default function HomePage() {
                 <div className="mt-2"></div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid gap-6">
                 {/* Admin Access */}
                 <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">
-                    Admin Access
-                  </h3>
                   <div className="space-y-3">
-                    {user?.role === "SUPER_ADMIN" && (
-                      <Link
-                        href="/admin"
-                        className="block w-full px-4 py-2 bg-indigo-600 text-white text-center rounded-lg hover:bg-indigo-700 transition-colors"
-                      >
-                        Full Admin Panel
-                      </Link>
-                    )}
-                    {user?.role === "ADMIN" && (
-                      <Link
-                        href="/admin"
-                        className="block w-full px-4 py-2 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        Team Management
-                      </Link>
-                    )}
-                  </div>
-                </div>
-
-                {/* Public Access */}
-                <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">
-                    Public Access
-                  </h3>
-                  <div className="space-y-3">
-                    <Link
-                      href="/tournament"
-                      className="block w-full px-4 py-2 bg-slate-600 text-white text-center rounded-lg hover:bg-slate-700 transition-colors"
-                    >
-                      View Tournament
-                    </Link>
+                    <Ternary
+                      condition={user?.role === "SUPER_ADMIN"}
+                      trueComponent={
+                        <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-6">
+                          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">
+                            Admin Access
+                          </h3>
+                          <Link
+                            href="/admin"
+                            className="block w-full px-4 py-2 bg-indigo-600 text-white text-center rounded-lg hover:bg-indigo-700 transition-colors"
+                          >
+                            Full Admin Panel
+                          </Link>
+                        </div>
+                      }
+                      falseComponent={
+                        <Ternary
+                          condition={user?.role === "ADMIN"}
+                          trueComponent={
+                            <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-6">
+                              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">
+                                Admin Access
+                              </h3>
+                              <Link
+                                href="/admin"
+                                className="block w-full px-4 py-2 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors"
+                              >
+                                Team Management
+                              </Link>
+                            </div>
+                          }
+                          falseComponent={
+                            <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-6">
+                              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">
+                                Public Access
+                              </h3>
+                              <div className="space-y-3">
+                                <Link
+                                  href="/tournament"
+                                  className="block w-full px-4 py-2 bg-slate-600 text-white text-center rounded-lg hover:bg-slate-700 transition-colors"
+                                >
+                                  View Tournament
+                                </Link>
+                              </div>
+                            </div>
+                          }
+                        />
+                      }
+                    />
                   </div>
                 </div>
               </div>
 
               <div className="mt-8 text-center">
-                <button
-                  onClick={async () => {
-                    const { auth } = await import("@/src/lib/firebase");
-                    await auth.signOut();
-                  }}
-                  className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 text-sm"
-                >
-                  Sign Out
-                </button>
+                <SignOutButton />
               </div>
             </div>
           )}

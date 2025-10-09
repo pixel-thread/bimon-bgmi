@@ -23,8 +23,6 @@ const AdminWheelPage = () => {
           </div>
         </header>
 
-        <AdminNavigation />
-
         <div className="space-y-6">
           <RevealTab
             hideSelectors={!shouldRender({ requireFullAdmin: true })}

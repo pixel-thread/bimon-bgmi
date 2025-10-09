@@ -25,8 +25,6 @@ const AdminRulesPage = () => {
           </div>
         </header>
 
-        <AdminNavigation />
-
         <div className="space-y-6">
           <RulesTab readOnly={isTeamsAdmin} />
         </div>

@@ -3401,6 +3401,7 @@ export namespace Prisma {
     id: string | null
     avatarUrl: string | null
     characterUrl: string | null
+    characterUrlBase64: string | null
     isBanned: boolean | null
     category: $Enums.PlayerCategory | null
     userId: string | null
@@ -3411,6 +3412,7 @@ export namespace Prisma {
     id: string | null
     avatarUrl: string | null
     characterUrl: string | null
+    characterUrlBase64: string | null
     isBanned: boolean | null
     category: $Enums.PlayerCategory | null
     userId: string | null
@@ -3421,6 +3423,7 @@ export namespace Prisma {
     id: number
     avatarUrl: number
     characterUrl: number
+    characterUrlBase64: number
     isBanned: number
     category: number
     userId: number
@@ -3433,6 +3436,7 @@ export namespace Prisma {
     id?: true
     avatarUrl?: true
     characterUrl?: true
+    characterUrlBase64?: true
     isBanned?: true
     category?: true
     userId?: true
@@ -3443,6 +3447,7 @@ export namespace Prisma {
     id?: true
     avatarUrl?: true
     characterUrl?: true
+    characterUrlBase64?: true
     isBanned?: true
     category?: true
     userId?: true
@@ -3453,6 +3458,7 @@ export namespace Prisma {
     id?: true
     avatarUrl?: true
     characterUrl?: true
+    characterUrlBase64?: true
     isBanned?: true
     category?: true
     userId?: true
@@ -3536,6 +3542,7 @@ export namespace Prisma {
     id: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64: string | null
     isBanned: boolean
     category: $Enums.PlayerCategory
     userId: string
@@ -3563,6 +3570,7 @@ export namespace Prisma {
     id?: boolean
     avatarUrl?: boolean
     characterUrl?: boolean
+    characterUrlBase64?: boolean
     isBanned?: boolean
     category?: boolean
     userId?: boolean
@@ -3581,6 +3589,7 @@ export namespace Prisma {
     id?: boolean
     avatarUrl?: boolean
     characterUrl?: boolean
+    characterUrlBase64?: boolean
     isBanned?: boolean
     category?: boolean
     userId?: boolean
@@ -3593,6 +3602,7 @@ export namespace Prisma {
     id?: boolean
     avatarUrl?: boolean
     characterUrl?: boolean
+    characterUrlBase64?: boolean
     isBanned?: boolean
     category?: boolean
     userId?: boolean
@@ -3605,13 +3615,14 @@ export namespace Prisma {
     id?: boolean
     avatarUrl?: boolean
     characterUrl?: boolean
+    characterUrlBase64?: boolean
     isBanned?: boolean
     category?: boolean
     userId?: boolean
     teamId?: boolean
   }
 
-  export type PlayerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "avatarUrl" | "characterUrl" | "isBanned" | "category" | "userId" | "teamId", ExtArgs["result"]["player"]>
+  export type PlayerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "avatarUrl" | "characterUrl" | "characterUrlBase64" | "isBanned" | "category" | "userId" | "teamId", ExtArgs["result"]["player"]>
   export type PlayerInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     gameScore?: boolean | Player$gameScoreArgs<ExtArgs>
     pollVote?: boolean | Player$pollVoteArgs<ExtArgs>
@@ -3646,6 +3657,7 @@ export namespace Prisma {
       id: string
       avatarUrl: string
       characterUrl: string
+      characterUrlBase64: string | null
       isBanned: boolean
       category: $Enums.PlayerCategory
       userId: string
@@ -4083,6 +4095,7 @@ export namespace Prisma {
     readonly id: FieldRef<"Player", 'String'>
     readonly avatarUrl: FieldRef<"Player", 'String'>
     readonly characterUrl: FieldRef<"Player", 'String'>
+    readonly characterUrlBase64: FieldRef<"Player", 'String'>
     readonly isBanned: FieldRef<"Player", 'Boolean'>
     readonly category: FieldRef<"Player", 'PlayerCategory'>
     readonly userId: FieldRef<"Player", 'String'>
@@ -15738,6 +15751,7 @@ export namespace Prisma {
     id: 'id',
     avatarUrl: 'avatarUrl',
     characterUrl: 'characterUrl',
+    characterUrlBase64: 'characterUrlBase64',
     isBanned: 'isBanned',
     category: 'category',
     userId: 'userId',
@@ -16126,6 +16140,7 @@ export namespace Prisma {
     id?: StringFilter<"Player"> | string
     avatarUrl?: StringFilter<"Player"> | string
     characterUrl?: StringFilter<"Player"> | string
+    characterUrlBase64?: StringNullableFilter<"Player"> | string | null
     isBanned?: BoolFilter<"Player"> | boolean
     category?: EnumPlayerCategoryFilter<"Player"> | $Enums.PlayerCategory
     userId?: StringFilter<"Player"> | string
@@ -16143,6 +16158,7 @@ export namespace Prisma {
     id?: SortOrder
     avatarUrl?: SortOrder
     characterUrl?: SortOrder
+    characterUrlBase64?: SortOrderInput | SortOrder
     isBanned?: SortOrder
     category?: SortOrder
     userId?: SortOrder
@@ -16164,6 +16180,7 @@ export namespace Prisma {
     NOT?: PlayerWhereInput | PlayerWhereInput[]
     avatarUrl?: StringFilter<"Player"> | string
     characterUrl?: StringFilter<"Player"> | string
+    characterUrlBase64?: StringNullableFilter<"Player"> | string | null
     isBanned?: BoolFilter<"Player"> | boolean
     category?: EnumPlayerCategoryFilter<"Player"> | $Enums.PlayerCategory
     teamId?: StringNullableFilter<"Player"> | string | null
@@ -16180,6 +16197,7 @@ export namespace Prisma {
     id?: SortOrder
     avatarUrl?: SortOrder
     characterUrl?: SortOrder
+    characterUrlBase64?: SortOrderInput | SortOrder
     isBanned?: SortOrder
     category?: SortOrder
     userId?: SortOrder
@@ -16196,6 +16214,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"Player"> | string
     avatarUrl?: StringWithAggregatesFilter<"Player"> | string
     characterUrl?: StringWithAggregatesFilter<"Player"> | string
+    characterUrlBase64?: StringNullableWithAggregatesFilter<"Player"> | string | null
     isBanned?: BoolWithAggregatesFilter<"Player"> | boolean
     category?: EnumPlayerCategoryWithAggregatesFilter<"Player"> | $Enums.PlayerCategory
     userId?: StringWithAggregatesFilter<"Player"> | string
@@ -16935,6 +16954,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     gameScore?: GameScoreCreateNestedManyWithoutPlayerInput
@@ -16950,6 +16970,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     userId: string
@@ -16965,6 +16986,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     gameScore?: GameScoreUpdateManyWithoutPlayerNestedInput
@@ -16980,6 +17002,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
@@ -16995,6 +17018,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     userId: string
@@ -17005,6 +17029,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
   }
@@ -17013,6 +17038,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
@@ -17895,6 +17921,7 @@ export namespace Prisma {
     id?: SortOrder
     avatarUrl?: SortOrder
     characterUrl?: SortOrder
+    characterUrlBase64?: SortOrder
     isBanned?: SortOrder
     category?: SortOrder
     userId?: SortOrder
@@ -17905,6 +17932,7 @@ export namespace Prisma {
     id?: SortOrder
     avatarUrl?: SortOrder
     characterUrl?: SortOrder
+    characterUrlBase64?: SortOrder
     isBanned?: SortOrder
     category?: SortOrder
     userId?: SortOrder
@@ -17915,6 +17943,7 @@ export namespace Prisma {
     id?: SortOrder
     avatarUrl?: SortOrder
     characterUrl?: SortOrder
+    characterUrlBase64?: SortOrder
     isBanned?: SortOrder
     category?: SortOrder
     userId?: SortOrder
@@ -19409,6 +19438,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     gameScore?: GameScoreCreateNestedManyWithoutPlayerInput
@@ -19423,6 +19453,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     teamId?: string | null
@@ -19501,6 +19532,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     gameScore?: GameScoreUpdateManyWithoutPlayerNestedInput
@@ -19515,6 +19547,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     teamId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -19989,6 +20022,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     pollVote?: PollVoteCreateNestedOneWithoutPlayerInput
@@ -20003,6 +20037,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     userId: string
@@ -20033,6 +20068,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     pollVote?: PollVoteUpdateOneWithoutPlayerNestedInput
@@ -20047,6 +20083,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
@@ -20458,6 +20495,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     gameScore?: GameScoreCreateNestedManyWithoutPlayerInput
@@ -20472,6 +20510,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     userId: string
@@ -20531,6 +20570,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     gameScore?: GameScoreUpdateManyWithoutPlayerNestedInput
@@ -20545,6 +20585,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
@@ -20594,6 +20635,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     gameScore?: GameScoreCreateNestedManyWithoutPlayerInput
@@ -20608,6 +20650,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     userId: string
@@ -20667,6 +20710,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     gameScore?: GameScoreUpdateManyWithoutPlayerNestedInput
@@ -20681,6 +20725,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
@@ -20794,6 +20839,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     gameScore?: GameScoreCreateNestedManyWithoutPlayerInput
@@ -20808,6 +20854,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     userId: string
@@ -20879,6 +20926,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     gameScore?: GameScoreUpdateManyWithoutPlayerNestedInput
@@ -20893,6 +20941,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
@@ -20954,6 +21003,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     gameScore?: GameScoreCreateNestedManyWithoutPlayerInput
@@ -20968,6 +21018,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     userId: string
@@ -20998,6 +21049,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     gameScore?: GameScoreUpdateManyWithoutPlayerNestedInput
@@ -21012,6 +21064,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
@@ -21026,6 +21079,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     gameScore?: GameScoreCreateNestedManyWithoutPlayerInput
@@ -21040,6 +21094,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     userId: string
@@ -21112,6 +21167,7 @@ export namespace Prisma {
     id?: StringFilter<"Player"> | string
     avatarUrl?: StringFilter<"Player"> | string
     characterUrl?: StringFilter<"Player"> | string
+    characterUrlBase64?: StringNullableFilter<"Player"> | string | null
     isBanned?: BoolFilter<"Player"> | boolean
     category?: EnumPlayerCategoryFilter<"Player"> | $Enums.PlayerCategory
     userId?: StringFilter<"Player"> | string
@@ -21445,6 +21501,7 @@ export namespace Prisma {
     id?: string
     avatarUrl: string
     characterUrl: string
+    characterUrlBase64?: string | null
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     userId: string
@@ -21454,6 +21511,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     gameScore?: GameScoreUpdateManyWithoutPlayerNestedInput
@@ -21468,6 +21526,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
@@ -21482,6 +21541,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     avatarUrl?: StringFieldUpdateOperationsInput | string
     characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableStringFieldUpdateOperationsInput | string | null
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string

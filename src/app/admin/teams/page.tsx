@@ -20,8 +20,6 @@ const AdminTeamsPage = () => {
           </div>
         </header>
 
-        <AdminNavigation />
-
         <div className="space-y-6">
           <TeamManagement readOnly={false} />
         </div>

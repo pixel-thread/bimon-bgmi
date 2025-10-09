@@ -9,16 +9,16 @@ import { toast } from "sonner";
 
 export interface CharacterImageUploadProps {
   currentImageBase64?: string | null;
-  onUpload: (file: File) => Promise<string>; // Returns the uploaded image as Base64
-  onRemove?: () => Promise<void>;
+  // onUpload: (file: File) => Promise<string>; // Returns the uploaded image as Base64
+  // onRemove?: () => Promise<void>;
   disabled?: boolean;
   className?: string;
 }
 
 export function CharacterImageUpload({
   currentImageBase64,
-  onUpload,
-  onRemove,
+  // onUpload,
+  // onRemove,
   disabled = false,
   className,
 }: CharacterImageUploadProps) {
@@ -57,7 +57,7 @@ export function CharacterImageUpload({
     ];
     if (!allowedTypes.includes(file.type)) {
       toast.error(
-        "Please select a valid image file (PNG, JPEG, WebP, GIF, BMP)"
+        "Please select a valid image file (PNG, JPEG, WebP, GIF, BMP)",
       );
       return;
     }
@@ -78,7 +78,7 @@ export function CharacterImageUpload({
       toast.loading("Compressing and uploading character image...");
 
       // Upload the file
-      await onUpload(file);
+      // await onUpload(file);
       toast.dismiss();
       toast.success("Character image uploaded and compressed successfully!");
     } catch (error) {
@@ -148,7 +148,7 @@ export function CharacterImageUpload({
         <div
           className={cn(
             "absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer",
-            uploading && "opacity-100"
+            uploading && "opacity-100",
           )}
         >
           {uploading ? (

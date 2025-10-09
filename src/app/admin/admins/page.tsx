@@ -20,8 +20,6 @@ const AdminManagementPage = () => {
           </div>
         </header>
 
-        <AdminNavigation />
-
         <div className="space-y-6">
           <AdminManagement />
         </div>

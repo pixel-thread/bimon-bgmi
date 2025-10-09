@@ -62,20 +62,21 @@ model User {
 }
 
 model Player {
-  id               String             @id @default(uuid())
-  avatarUrl        String
-  characterUrl     String
-  isBanned         Boolean            @default(false)
-  category         PlayerCategory     @default(NOOB)
-  gameScore        GameScore[]
-  pollVote         PollVote?
-  userId           String             @unique
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  TournamentWinner TournamentWinner[]
-  Wallet           Wallet?
-  PlayerStats      PlayerStats?
-  Team             Team?              @relation(fields: [teamId], references: [id])
-  teamId           String?
+  id                 String             @id @default(uuid())
+  avatarUrl          String
+  characterUrl       String
+  characterUrlBase64 String?
+  isBanned           Boolean            @default(false)
+  category           PlayerCategory     @default(NOOB)
+  gameScore          GameScore[]
+  pollVote           PollVote?
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  TournamentWinner   TournamentWinner[]
+  Wallet             Wallet?
+  PlayerStats        PlayerStats?
+  Team               Team?              @relation(fields: [teamId], references: [id])
+  teamId             String?
 }
 
 model GameScore {

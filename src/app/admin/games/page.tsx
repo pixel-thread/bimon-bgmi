@@ -3,7 +3,6 @@
 import { GamepadIcon } from "lucide-react";
 import AdminNavigation from "@/src/components/AdminNavigation";
 import { useAuth } from "@/src/hooks/useAuth";
-import { AuthGuard } from "@/src/components/AuthGuard";
 import { TournamentLoader } from "@/src/components/TournamentLoader";
 import Link from "next/link";
 import Image from "next/image";
@@ -15,10 +14,9 @@ import {
   CardTitle,
 } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
-import { ArrowLeft } from "lucide-react";
 
 const AdminGamesContent = () => {
-  const { isLoading } = useAuth();
+  const { isAuthLoading: isLoading } = useAuth();
 
   // Show loading state while auth is being checked
   if (isLoading) {
@@ -68,8 +66,6 @@ const AdminGamesContent = () => {
           </div>
         </header>
 
-        <AdminNavigation />
-
         <div className="space-y-6 pb-0">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {games.map((game) => (
@@ -107,11 +103,7 @@ const AdminGamesContent = () => {
 };
 
 const AdminGamesPage = () => {
-  return (
-    <AuthGuard requireAuth={true}>
-      <AdminGamesContent />
-    </AuthGuard>
-  );
+  return <AdminGamesContent />;
 };
 
 export default AdminGamesPage;

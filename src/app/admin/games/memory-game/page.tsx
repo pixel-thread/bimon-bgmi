@@ -28,7 +28,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { gameScoreService } from "@/src/lib/gameScoreService";
-import { AuthGuard } from "@/src/components/AuthGuard";
 import MemoryGame from "@/src/components/games/memory-game/MemoryGame";
 import { toast } from "sonner";
 import {
@@ -83,7 +82,7 @@ const AdminMemoryGameContent = () => {
       // Load leaderboard
       const leaderboardData = await gameScoreService.getLeaderboard(
         "memory-game",
-        50
+        50,
       );
       setLeaderboard(leaderboardData);
 
@@ -175,18 +174,18 @@ const AdminMemoryGameContent = () => {
             gamesPlayed: playerScores.length,
             highestScore: Math.max(...playerScores),
             averageScore: Math.round(
-              playerScores.reduce((a, b) => a + b, 0) / playerScores.length
+              playerScores.reduce((a, b) => a + b, 0) / playerScores.length,
             ),
             averageMoves:
               playerMoves.length > 0
                 ? Math.round(
-                    playerMoves.reduce((a, b) => a + b, 0) / playerMoves.length
+                    playerMoves.reduce((a, b) => a + b, 0) / playerMoves.length,
                   )
                 : 0,
             averageTime:
               playerTimes.length > 0
                 ? Math.round(
-                    playerTimes.reduce((a, b) => a + b, 0) / playerTimes.length
+                    playerTimes.reduce((a, b) => a + b, 0) / playerTimes.length,
                   )
                 : 0,
             lastPlayed: data.lastPlayed,
@@ -208,7 +207,7 @@ const AdminMemoryGameContent = () => {
   const resetAllScores = async () => {
     if (
       !confirm(
-        "Are you sure you want to delete ALL Memory Game scores? This action cannot be undone!"
+        "Are you sure you want to delete ALL Memory Game scores? This action cannot be undone!",
       )
     ) {
       return;
@@ -216,7 +215,7 @@ const AdminMemoryGameContent = () => {
 
     if (
       !confirm(
-        "This will permanently delete all player scores and reset the leaderboard. Type 'DELETE' if you're absolutely sure."
+        "This will permanently delete all player scores and reset the leaderboard. Type 'DELETE' if you're absolutely sure.",
       )
     ) {
       return;
@@ -230,7 +229,7 @@ const AdminMemoryGameContent = () => {
       const querySnapshot = await getDocs(q);
 
       const deletePromises = querySnapshot.docs.map((docSnapshot) =>
-        deleteDoc(doc(db, "gameScores", docSnapshot.id))
+        deleteDoc(doc(db, "gameScores", docSnapshot.id)),
       );
 
       await Promise.all(deletePromises);
@@ -262,7 +261,7 @@ const AdminMemoryGameContent = () => {
       }
 
       toast.success(
-        `Successfully deleted ${deletePromises.length} score records and cleared player high scores`
+        `Successfully deleted ${deletePromises.length} score records and cleared player high scores`,
       );
 
       // Reload data
@@ -607,9 +606,5 @@ const AdminMemoryGameContent = () => {
 };
 
 export default function AdminMemoryGamePage() {
-  return (
-    <AuthGuard requireAuth={true}>
-      <AdminMemoryGameContent />
-    </AuthGuard>
-  );
+  return <AdminMemoryGameContent />;
 }

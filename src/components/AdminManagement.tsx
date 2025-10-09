@@ -24,7 +24,8 @@ import { NameAutocomplete } from "@/src/components/ui/name-autocomplete";
 import { Player } from "@/src/lib/types";
 
 export default function AdminManagement() {
-  const { user, role } = useAuth();
+  const { user } = useAuth();
+  const role = user?.role;
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -38,7 +39,7 @@ export default function AdminManagement() {
   const [linkingInProgress, setLinkingInProgress] = useState(false);
 
   const loadAdmins = async () => {
-    if (role !== "super_admin") return;
+    if (role !== "SUPER_ADMIN") return;
 
     setLoading(true);
     try {
@@ -52,9 +53,9 @@ export default function AdminManagement() {
   };
 
   useEffect(() => {
-    if (role === "super_admin") {
+    if (role === "SUPER_ADMIN") {
       loadAdmins();
-    } else if (role !== "none") {
+    } else {
       setLoading(false);
     }
   }, [role]);
@@ -128,7 +129,7 @@ export default function AdminManagement() {
       const success = await linkAdminToPlayer(
         linkingAdmin.email,
         selectedPlayer.id,
-        selectedPlayer.name
+        selectedPlayer.name,
       );
 
       if (success) {
@@ -182,7 +183,7 @@ export default function AdminManagement() {
     );
   };
 
-  if (role !== "super_admin") {
+  if (role !== "SUPER_ADMIN") {
     if (loading) {
       return (
         <div className="flex justify-center py-8">
