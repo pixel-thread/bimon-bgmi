@@ -28,6 +28,11 @@ type Props = {
 export const CreateSeasonDialog = ({ open, onOpenChange }: Props) => {
   const form = useForm({
     resolver: zodResolver(seasonSchema),
+    defaultValues: {
+      startDate: new Date().toISOString().split("T")[0],
+      description: "",
+      name: "Season",
+    },
   });
 
   const queryClient = useQueryClient();
@@ -71,10 +76,11 @@ export const CreateSeasonDialog = ({ open, onOpenChange }: Props) => {
               <FormField
                 control={form.control}
                 name="startDate"
-                render={({ field }) => (
+                render={({ field: { onChange, ...field } }) => (
                   <FormItem>
                     <FormLabel>Start Date</FormLabel>
                     <FormControl>
+                      {/* @ts-ignore */}
                       <Input type="date" placeholder="shadcn" {...field} />
                     </FormControl>
                     <FormMessage />
@@ -104,7 +110,7 @@ export const CreateSeasonDialog = ({ open, onOpenChange }: Props) => {
             <DialogFooter className="flex flex-col gap-2 sm:flex-row">
               <Button
                 className="h-8 text-xs"
-                disabled={form.formState.isValid || isPending}
+                disabled={!form.formState.isValid || isPending}
               >
                 Save
               </Button>
