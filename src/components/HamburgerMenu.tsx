@@ -1,51 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
 import { FiMenu, FiX, FiLogIn, FiSun, FiMoon } from "react-icons/fi";
 import { UserAvatar, UserButton } from "@clerk/nextjs";
+import { useTheme } from "next-themes";
 // Notifications removed
 
 export default function HamburgerMenu() {
   const [isOpen, setIsOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const { isSignedIn: isAuthorized, user: playerUser } = useAuth();
-
-  useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem("theme");
-    if (saved === "dark") setDarkMode(true);
-    else if (saved === "light") setDarkMode(false);
-    else if (window.matchMedia("(prefers-color-scheme: dark)").matches)
-      setDarkMode(true);
-  }, []);
-
-  useEffect(() => {
-    if (mounted) {
-      if (darkMode) {
-        document.documentElement.classList.add("dark");
-        localStorage.setItem("theme", "dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-        localStorage.setItem("theme", "light");
-      }
+  const { theme, setTheme } = useTheme();
+  const onToggleTheme = () => {
+    if (theme === "light") {
+      setTheme("dark");
+    } else {
+      setTheme("light");
     }
-  }, [darkMode, mounted]);
+  };
 
   const handleLogin = () => {
     setIsOpen(false);
     router.push("/auth");
   };
-
-  const toggleTheme = () => {
-    setDarkMode(!darkMode);
-  };
-
-  if (!mounted) return null;
 
   return (
     <>
@@ -159,10 +139,10 @@ export default function HamburgerMenu() {
 
                   {/* Theme Toggle */}
                   <button
-                    onClick={toggleTheme}
+                    onClick={onToggleTheme}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                   >
-                    {darkMode ? (
+                    {theme === "dark" ? (
                       <>
                         <FiSun className="h-5 w-5" />
                         Light Mode
