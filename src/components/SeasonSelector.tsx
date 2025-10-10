@@ -12,6 +12,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/src/lib/firebase";
 import { Season } from "@/src/lib/types";
 import { toast } from "sonner";
+import { useGetSeasons } from "../hooks/season/useGetSeasons";
 
 interface SeasonSelectorProps {
   selectedSeason: string;
@@ -32,46 +33,7 @@ export function SeasonSelector({
   size = "md",
   variant = "green",
 }: SeasonSelectorProps) {
-  const [seasons, setSeasons] = useState<Season[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchSeasons = async () => {
-      setIsLoading(true);
-      try {
-        const seasonsSnapshot = await getDocs(collection(db, "seasons"));
-        const seasonsData = seasonsSnapshot.docs.map(
-          (doc) =>
-            ({
-              id: doc.id,
-              ...doc.data(),
-            } as Season)
-        );
-
-        // Sort by creation date, newest first
-        seasonsData.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        setSeasons(seasonsData);
-
-        // If seasons exist and no specific season is selected, default to active season
-        if (selectedSeason === "all" && seasonsData.length > 0) {
-          const activeSeason = seasonsData.find((season) => season.isActive);
-          if (activeSeason) {
-            onSeasonChange(activeSeason.id);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching seasons:", error);
-        toast.error("Failed to load seasons");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSeasons();
-  }, []);
+  const { isFetching, data, isLoading } = useGetSeasons();
 
   // Size configurations
   const sizeClasses = {
@@ -86,24 +48,18 @@ export function SeasonSelector({
     ${className}
   `.trim();
 
-  if (isLoading) {
-    return (
-      <Select disabled>
-        <SelectTrigger className={triggerClasses}>
-          <SelectValue placeholder="Loading..." />
-        </SelectTrigger>
-      </Select>
-    );
-  }
-
   return (
-    <Select value={selectedSeason} onValueChange={onSeasonChange}>
+    <Select
+      value={selectedSeason}
+      disabled={isFetching || isLoading}
+      onValueChange={onSeasonChange}
+    >
       <SelectTrigger className={triggerClasses}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
         {showAllSeasons && <SelectItem value="all">All Seasons</SelectItem>}
-        {seasons.map((season) => (
+        {data?.map((season) => (
           <SelectItem key={season.id} value={season.id}>
             {season.name}
           </SelectItem>

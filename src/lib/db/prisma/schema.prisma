@@ -95,7 +95,10 @@ model Season {
   id          String       @id @default(uuid())
   name        String
   description String?
-  status      SeasonStatus
+  startDate   DateTime
+  endDate     DateTime     @default(now())
+  status      SeasonStatus @default(ACTIVE)
+  createdBy   String
   createdAt   DateTime     @default(now())
 
   tournament Tournament[]

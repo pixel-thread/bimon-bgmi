@@ -30,6 +30,10 @@ import { db } from "@/src/lib/firebase";
 import { toast } from "sonner";
 import { PlusCircle, Calendar, Trophy } from "lucide-react";
 import { ensureSingleActiveSeason } from "@/src/utils/seasonUtils";
+import { useGetSeasons } from "../../../hooks/season/useGetSeasons";
+import { useMutation } from "@tanstack/react-query";
+import http from "../../../utils/http";
+import { CreateSeasonDialog } from "./create-season-dialog";
 
 interface Season {
   id: string;
@@ -42,45 +46,16 @@ interface Season {
 }
 
 export function SeasonManagement() {
-  const [seasons, setSeasons] = useState<Season[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
+  const { isFetching: isLoading, data } = useGetSeasons();
+  const { mutate, isPending: isSaving } = useMutation({
+    mutationFn: (data: any) => http.post("/admin/season"),
+  });
   const [newSeason, setNewSeason] = useState({
     name: "",
     startDate: new Date().toISOString().split("T")[0],
     description: "",
   });
-
-  useEffect(() => {
-    fetchSeasons();
-  }, []);
-
-  const fetchSeasons = async () => {
-    setIsLoading(true);
-    try {
-      const seasonsSnapshot = await getDocs(collection(db, "seasons"));
-      const seasonsData = seasonsSnapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            ...doc.data(),
-          } as Season)
-      );
-
-      seasonsData.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      setSeasons(seasonsData);
-    } catch (error) {
-      console.error("Error fetching seasons:", error);
-      toast.error("Failed to load seasons");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleCreateSeason = async () => {
     if (!newSeason.name.trim()) {
@@ -88,7 +63,6 @@ export function SeasonManagement() {
       return;
     }
 
-    setIsSaving(true);
     try {
       const seasonId = `season_${Date.now()}`;
       const seasonData: any = {
@@ -120,7 +94,6 @@ export function SeasonManagement() {
         description: "",
       });
       setIsDialogOpen(false);
-      fetchSeasons();
     } catch (error) {
       console.error("Error creating season:", error);
       toast.error("Failed to create season");
@@ -181,13 +154,13 @@ export function SeasonManagement() {
         </CardHeader>
         <CardContent className="p-3">
           <div className="space-y-2">
-            {seasons.length === 0 ? (
+            {data?.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground text-xs">
                 <Trophy className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 No seasons found.
               </div>
             ) : (
-              seasons.map((season) => (
+              data?.map((season) => (
                 <div
                   key={season.id}
                   className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-muted/20 rounded-md"
@@ -195,7 +168,7 @@ export function SeasonManagement() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-medium text-sm">{season.name}</h3>
-                      {season.isActive && (
+                      {season.status === "ACTIVE" && (
                         <Badge className="bg-green-100 text-green-800 text-[10px] py-0">
                           Active
                         </Badge>
@@ -206,14 +179,14 @@ export function SeasonManagement() {
                         <Calendar className="w-2.5 h-2.5" />
                         Started: {formatDate(season.startDate)}
                       </span>
-                      {season.endDate && (
+                      {season?.endDate && (
                         <span className="flex items-center gap-1">
                           <Calendar className="w-2.5 h-2.5" />
                           Ended: {formatDate(season.endDate)}
                         </span>
                       )}
                     </div>
-                    {season.description && (
+                    {season?.description && (
                       <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">
                         {season.description}
                       </p>
@@ -227,86 +200,7 @@ export function SeasonManagement() {
       </Card>
 
       {/* Create Season Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle className="text-sm">Create New Season</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="seasonName" className="text-xs">
-                Season Name
-              </Label>
-              <Input
-                id="seasonName"
-                value={newSeason.name}
-                onChange={(e) =>
-                  setNewSeason((prev) => ({ ...prev, name: e.target.value }))
-                }
-                placeholder="e.g., Season 2, Winter 2024"
-                className="h-8 text-sm"
-              />
-            </div>
-            <div>
-              <Label htmlFor="startDate" className="text-xs">
-                Start Date
-              </Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={newSeason.startDate}
-                onChange={(e) =>
-                  setNewSeason((prev) => ({
-                    ...prev,
-                    startDate: e.target.value,
-                  }))
-                }
-                className="h-8 text-sm"
-              />
-            </div>
-            <div>
-              <Label htmlFor="description" className="text-xs">
-                Description (Optional)
-              </Label>
-              <Textarea
-                id="description"
-                value={newSeason.description}
-                onChange={(e) =>
-                  setNewSeason((prev) => ({
-                    ...prev,
-                    description: e.target.value,
-                  }))
-                }
-                placeholder="Brief description of this season..."
-                rows={3}
-                className="text-sm"
-              />
-            </div>
-            <div className="bg-yellow-50 rounded-md p-2">
-              <p className="text-xs text-yellow-800">
-                <strong>Note:</strong> Creating a new season will end the
-                current active season and start fresh statistics tracking.
-              </p>
-            </div>
-          </div>
-          <DialogFooter className="flex flex-col gap-2 sm:flex-row">
-            <Button
-              variant="outline"
-              className="h-8 text-xs"
-              onClick={() => setIsDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="h-8 text-xs"
-              onClick={handleCreateSeason}
-              disabled={isSaving}
-            >
-              {isSaving ? "Creating..." : "Create Season"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreateSeasonDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
     </div>
   );
 }

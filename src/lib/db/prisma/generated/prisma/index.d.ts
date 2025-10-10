@@ -5718,24 +5718,33 @@ export namespace Prisma {
     id: string | null
     name: string | null
     description: string | null
-    createdAt: Date | null
+    startDate: Date | null
+    endDate: Date | null
     status: $Enums.SeasonStatus | null
+    createdBy: string | null
+    createdAt: Date | null
   }
 
   export type SeasonMaxAggregateOutputType = {
     id: string | null
     name: string | null
     description: string | null
-    createdAt: Date | null
+    startDate: Date | null
+    endDate: Date | null
     status: $Enums.SeasonStatus | null
+    createdBy: string | null
+    createdAt: Date | null
   }
 
   export type SeasonCountAggregateOutputType = {
     id: number
     name: number
     description: number
-    createdAt: number
+    startDate: number
+    endDate: number
     status: number
+    createdBy: number
+    createdAt: number
     _all: number
   }
 
@@ -5744,24 +5753,33 @@ export namespace Prisma {
     id?: true
     name?: true
     description?: true
-    createdAt?: true
+    startDate?: true
+    endDate?: true
     status?: true
+    createdBy?: true
+    createdAt?: true
   }
 
   export type SeasonMaxAggregateInputType = {
     id?: true
     name?: true
     description?: true
-    createdAt?: true
+    startDate?: true
+    endDate?: true
     status?: true
+    createdBy?: true
+    createdAt?: true
   }
 
   export type SeasonCountAggregateInputType = {
     id?: true
     name?: true
     description?: true
-    createdAt?: true
+    startDate?: true
+    endDate?: true
     status?: true
+    createdBy?: true
+    createdAt?: true
     _all?: true
   }
 
@@ -5841,8 +5859,11 @@ export namespace Prisma {
     id: string
     name: string
     description: string | null
-    createdAt: Date
+    startDate: Date
+    endDate: Date
     status: $Enums.SeasonStatus
+    createdBy: string
+    createdAt: Date
     _count: SeasonCountAggregateOutputType | null
     _min: SeasonMinAggregateOutputType | null
     _max: SeasonMaxAggregateOutputType | null
@@ -5866,8 +5887,11 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     description?: boolean
-    createdAt?: boolean
+    startDate?: boolean
+    endDate?: boolean
     status?: boolean
+    createdBy?: boolean
+    createdAt?: boolean
     tournament?: boolean | Season$tournamentArgs<ExtArgs>
     _count?: boolean | SeasonCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["season"]>
@@ -5876,27 +5900,36 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     description?: boolean
-    createdAt?: boolean
+    startDate?: boolean
+    endDate?: boolean
     status?: boolean
+    createdBy?: boolean
+    createdAt?: boolean
   }, ExtArgs["result"]["season"]>
 
   export type SeasonSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     name?: boolean
     description?: boolean
-    createdAt?: boolean
+    startDate?: boolean
+    endDate?: boolean
     status?: boolean
+    createdBy?: boolean
+    createdAt?: boolean
   }, ExtArgs["result"]["season"]>
 
   export type SeasonSelectScalar = {
     id?: boolean
     name?: boolean
     description?: boolean
-    createdAt?: boolean
+    startDate?: boolean
+    endDate?: boolean
     status?: boolean
+    createdBy?: boolean
+    createdAt?: boolean
   }
 
-  export type SeasonOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "description" | "createdAt" | "status", ExtArgs["result"]["season"]>
+  export type SeasonOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "description" | "startDate" | "endDate" | "status" | "createdBy" | "createdAt", ExtArgs["result"]["season"]>
   export type SeasonInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tournament?: boolean | Season$tournamentArgs<ExtArgs>
     _count?: boolean | SeasonCountOutputTypeDefaultArgs<ExtArgs>
@@ -5913,8 +5946,11 @@ export namespace Prisma {
       id: string
       name: string
       description: string | null
-      createdAt: Date
+      startDate: Date
+      endDate: Date
       status: $Enums.SeasonStatus
+      createdBy: string
+      createdAt: Date
     }, ExtArgs["result"]["season"]>
     composites: {}
   }
@@ -6342,8 +6378,11 @@ export namespace Prisma {
     readonly id: FieldRef<"Season", 'String'>
     readonly name: FieldRef<"Season", 'String'>
     readonly description: FieldRef<"Season", 'String'>
-    readonly createdAt: FieldRef<"Season", 'DateTime'>
+    readonly startDate: FieldRef<"Season", 'DateTime'>
+    readonly endDate: FieldRef<"Season", 'DateTime'>
     readonly status: FieldRef<"Season", 'SeasonStatus'>
+    readonly createdBy: FieldRef<"Season", 'String'>
+    readonly createdAt: FieldRef<"Season", 'DateTime'>
   }
     
 
@@ -15787,8 +15826,11 @@ export namespace Prisma {
     id: 'id',
     name: 'name',
     description: 'description',
-    createdAt: 'createdAt',
-    status: 'status'
+    startDate: 'startDate',
+    endDate: 'endDate',
+    status: 'status',
+    createdBy: 'createdBy',
+    createdAt: 'createdAt'
   };
 
   export type SeasonScalarFieldEnum = (typeof SeasonScalarFieldEnum)[keyof typeof SeasonScalarFieldEnum]
@@ -16303,8 +16345,11 @@ export namespace Prisma {
     id?: StringFilter<"Season"> | string
     name?: StringFilter<"Season"> | string
     description?: StringNullableFilter<"Season"> | string | null
-    createdAt?: DateTimeFilter<"Season"> | Date | string
+    startDate?: DateTimeFilter<"Season"> | Date | string
+    endDate?: DateTimeFilter<"Season"> | Date | string
     status?: EnumSeasonStatusFilter<"Season"> | $Enums.SeasonStatus
+    createdBy?: StringFilter<"Season"> | string
+    createdAt?: DateTimeFilter<"Season"> | Date | string
     tournament?: TournamentListRelationFilter
   }
 
@@ -16312,8 +16357,11 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     description?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
+    startDate?: SortOrder
+    endDate?: SortOrder
     status?: SortOrder
+    createdBy?: SortOrder
+    createdAt?: SortOrder
     tournament?: TournamentOrderByRelationAggregateInput
   }
 
@@ -16325,8 +16373,11 @@ export namespace Prisma {
     NOT?: SeasonWhereInput | SeasonWhereInput[]
     name?: StringFilter<"Season"> | string
     description?: StringNullableFilter<"Season"> | string | null
-    createdAt?: DateTimeFilter<"Season"> | Date | string
+    startDate?: DateTimeFilter<"Season"> | Date | string
+    endDate?: DateTimeFilter<"Season"> | Date | string
     status?: EnumSeasonStatusFilter<"Season"> | $Enums.SeasonStatus
+    createdBy?: StringFilter<"Season"> | string
+    createdAt?: DateTimeFilter<"Season"> | Date | string
     tournament?: TournamentListRelationFilter
   }, "id" | "id_status">
 
@@ -16334,8 +16385,11 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     description?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
+    startDate?: SortOrder
+    endDate?: SortOrder
     status?: SortOrder
+    createdBy?: SortOrder
+    createdAt?: SortOrder
     _count?: SeasonCountOrderByAggregateInput
     _max?: SeasonMaxOrderByAggregateInput
     _min?: SeasonMinOrderByAggregateInput
@@ -16348,8 +16402,11 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"Season"> | string
     name?: StringWithAggregatesFilter<"Season"> | string
     description?: StringNullableWithAggregatesFilter<"Season"> | string | null
-    createdAt?: DateTimeWithAggregatesFilter<"Season"> | Date | string
+    startDate?: DateTimeWithAggregatesFilter<"Season"> | Date | string
+    endDate?: DateTimeWithAggregatesFilter<"Season"> | Date | string
     status?: EnumSeasonStatusWithAggregatesFilter<"Season"> | $Enums.SeasonStatus
+    createdBy?: StringWithAggregatesFilter<"Season"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"Season"> | Date | string
   }
 
   export type TournamentWhereInput = {
@@ -17124,8 +17181,11 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
+    startDate: Date | string
+    endDate?: Date | string
+    status?: $Enums.SeasonStatus
+    createdBy: string
     createdAt?: Date | string
-    status: $Enums.SeasonStatus
     tournament?: TournamentCreateNestedManyWithoutSeasonInput
   }
 
@@ -17133,8 +17193,11 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
+    startDate: Date | string
+    endDate?: Date | string
+    status?: $Enums.SeasonStatus
+    createdBy: string
     createdAt?: Date | string
-    status: $Enums.SeasonStatus
     tournament?: TournamentUncheckedCreateNestedManyWithoutSeasonInput
   }
 
@@ -17142,8 +17205,11 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumSeasonStatusFieldUpdateOperationsInput | $Enums.SeasonStatus
+    createdBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tournament?: TournamentUpdateManyWithoutSeasonNestedInput
   }
 
@@ -17151,8 +17217,11 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumSeasonStatusFieldUpdateOperationsInput | $Enums.SeasonStatus
+    createdBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tournament?: TournamentUncheckedUpdateManyWithoutSeasonNestedInput
   }
 
@@ -17160,24 +17229,33 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
+    startDate: Date | string
+    endDate?: Date | string
+    status?: $Enums.SeasonStatus
+    createdBy: string
     createdAt?: Date | string
-    status: $Enums.SeasonStatus
   }
 
   export type SeasonUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumSeasonStatusFieldUpdateOperationsInput | $Enums.SeasonStatus
+    createdBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SeasonUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumSeasonStatusFieldUpdateOperationsInput | $Enums.SeasonStatus
+    createdBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type TournamentCreateInput = {
@@ -18075,24 +18153,33 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     description?: SortOrder
-    createdAt?: SortOrder
+    startDate?: SortOrder
+    endDate?: SortOrder
     status?: SortOrder
+    createdBy?: SortOrder
+    createdAt?: SortOrder
   }
 
   export type SeasonMaxOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
     description?: SortOrder
-    createdAt?: SortOrder
+    startDate?: SortOrder
+    endDate?: SortOrder
     status?: SortOrder
+    createdBy?: SortOrder
+    createdAt?: SortOrder
   }
 
   export type SeasonMinOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
     description?: SortOrder
-    createdAt?: SortOrder
+    startDate?: SortOrder
+    endDate?: SortOrder
     status?: SortOrder
+    createdBy?: SortOrder
+    createdAt?: SortOrder
   }
 
   export type EnumSeasonStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -20320,16 +20407,22 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
+    startDate: Date | string
+    endDate?: Date | string
+    status?: $Enums.SeasonStatus
+    createdBy: string
     createdAt?: Date | string
-    status: $Enums.SeasonStatus
   }
 
   export type SeasonUncheckedCreateWithoutTournamentInput = {
     id?: string
     name: string
     description?: string | null
+    startDate: Date | string
+    endDate?: Date | string
+    status?: $Enums.SeasonStatus
+    createdBy: string
     createdAt?: Date | string
-    status: $Enums.SeasonStatus
   }
 
   export type SeasonCreateOrConnectWithoutTournamentInput = {
@@ -20496,16 +20589,22 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumSeasonStatusFieldUpdateOperationsInput | $Enums.SeasonStatus
+    createdBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SeasonUncheckedUpdateWithoutTournamentInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumSeasonStatusFieldUpdateOperationsInput | $Enums.SeasonStatus
+    createdBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type TournamentWinnerUpsertWithWhereUniqueWithoutTournamentInput = {

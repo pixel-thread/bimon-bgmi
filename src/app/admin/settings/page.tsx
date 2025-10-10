@@ -2,7 +2,6 @@
 
 import { FiSettings } from "react-icons/fi";
 import { TournamentSettings } from "@/src/components/TournamentSettings";
-import AdminNavigation from "@/src/components/AdminNavigation";
 
 const AdminSettingsPage = () => {
   return (

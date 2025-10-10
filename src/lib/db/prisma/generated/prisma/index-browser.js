@@ -158,8 +158,11 @@ exports.Prisma.SeasonScalarFieldEnum = {
   id: 'id',
   name: 'name',
   description: 'description',
-  createdAt: 'createdAt',
-  status: 'status'
+  startDate: 'startDate',
+  endDate: 'endDate',
+  status: 'status',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.TournamentScalarFieldEnum = {

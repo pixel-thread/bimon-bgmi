@@ -1,13 +1,13 @@
 import { prisma } from "@/src/lib/db/prisma";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
+import { getActiveSeason } from "./getActiveSeason";
 
 type Props = {
   data: Prisma.SeasonCreateInput;
 };
 export async function createSeason({ data }: Props) {
-  const activeSeasion = await prisma.season.findFirst({
-    where: { status: "ACTIVE" },
-  });
+  const activeSeasion = await getActiveSeason();
+
   if (activeSeasion) {
     await prisma.season.update({
       where: { id: activeSeasion.id },
@@ -15,5 +15,12 @@ export async function createSeason({ data }: Props) {
     });
   }
 
-  return await prisma.season.create({ data });
+  return await prisma.season.create({
+    data: {
+      startDate: new Date(data.startDate),
+      description: data.description,
+      name: data.name,
+      createdBy: data.createdBy,
+    },
+  });
 }
