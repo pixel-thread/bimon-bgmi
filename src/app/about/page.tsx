@@ -216,7 +216,7 @@ export default function AboutPage() {
               View Tournament
             </Link>
             <Link
-              href="/login"
+              href="/auth"
               className="inline-block px-8 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors font-semibold"
             >
               Get Started

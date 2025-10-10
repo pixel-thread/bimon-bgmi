@@ -121,11 +121,7 @@ export default function HamburgerMenu() {
                   {/* User Actions */}
 
                   {/* Profile Button - Only show if authenticated */}
-                  {isAuthorized && (
-                    <UserButton>
-                      <UserAvatar />
-                    </UserButton>
-                  )}
+                  {isAuthorized && <UserButton />}
                   {/* Login/Logout Button */}
                   {!isAuthorized && (
                     <button

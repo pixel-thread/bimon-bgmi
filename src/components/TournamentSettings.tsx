@@ -14,7 +14,7 @@ import TournamentForm from "./TournamentForm";
 import TeamConfirmationModal from "./TeamConfirmationModal";
 import TournamentCreateModal from "./TournamentCreateModal";
 import TeamCreationModal from "./TeamCreationModal";
-import { SeasonManagement } from "./SeasonManagement";
+import { SeasonManagement } from "./admin/season/SeasonManagement";
 import { useTournaments } from "@/src/hooks/useTournaments";
 import { useTeams } from "@/src/hooks/useTeams";
 import { getBestTournamentForAutoSelect } from "@/src/lib/utils";
@@ -30,18 +30,6 @@ import {
   Plus,
   Calendar,
   Edit,
-  Settings,
-  Trophy,
-  Users,
-  Palette,
-  TrendingUp,
-  Shield,
-  Zap,
-  ChevronRight,
-  ChevronDown,
-  Star,
-  Clock,
-  Filter,
 } from "lucide-react";
 import {
   collection,
@@ -103,7 +91,7 @@ export function TournamentSettings() {
   const [showTeamCreationModal, setShowTeamCreationModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState<string | null>(
-    null
+    null,
   );
   const [selectedSeason, setSelectedSeason] = useState<string>("all");
   const [teamsToCreate, setTeamsToCreate] = useState<
@@ -152,13 +140,12 @@ export function TournamentSettings() {
       return allTournaments;
     }
     return allTournaments.filter(
-      (tournament) => tournament.seasonId === selectedSeason
+      (tournament) => tournament.seasonId === selectedSeason,
     );
   }, [allTournaments, selectedSeason]);
   const { teams, deleteTeams } = useTeams(selectedTournament);
   const selectedConfig =
     tournaments.find((t) => t.id === selectedTournament) || null;
-
   // Auto-select the latest tournament (preferring those with teams)
   useEffect(() => {
     if (tournaments.length > 0 && !selectedTournament) {
@@ -188,7 +175,7 @@ export function TournamentSettings() {
   useEffect(() => {
     if (selectedTournament && tournaments.length > 0) {
       const isSelectedTournamentInList = tournaments.some(
-        (t) => t.id === selectedTournament
+        (t) => t.id === selectedTournament,
       );
       if (!isSelectedTournamentInList) {
         const sorted = [...tournaments].sort((a, b) => {
@@ -249,7 +236,7 @@ export function TournamentSettings() {
 
   const saveBackgroundGallery = async (
     imageIds: string[],
-    images: string[]
+    images: string[],
   ) => {
     try {
       await setDoc(doc(db, "settings", "backgroundGallery"), {
@@ -295,7 +282,7 @@ export function TournamentSettings() {
 
   const saveBackgroundToDatabase = async (
     base64Image: string,
-    fileName: string
+    fileName: string,
   ) => {
     try {
       const imageId = `bg_${Date.now()}_${Math.random()
@@ -317,7 +304,7 @@ export function TournamentSettings() {
   };
 
   const loadBackgroundFromDatabase = async (
-    imageId: string
+    imageId: string,
   ): Promise<string | null> => {
     try {
       const imageDoc = await getDoc(doc(db, "backgroundImages", imageId));
@@ -350,7 +337,7 @@ export function TournamentSettings() {
         });
       }
       const tournamentsToUpdate = allTournaments.filter(
-        (t) => !t.backgroundImage
+        (t) => !t.backgroundImage,
       );
       for (const tournament of tournamentsToUpdate) {
         await updateTournament(tournament.id, {
@@ -359,7 +346,7 @@ export function TournamentSettings() {
         });
       }
       toast.success(
-        "Background image saved to database! Applied to tournaments without custom backgrounds."
+        "Background image saved to database! Applied to tournaments without custom backgrounds.",
       );
     } catch (error) {
       console.error("Error uploading background:", error);
@@ -410,7 +397,7 @@ export function TournamentSettings() {
           });
         }
         const newImageIds = imageIds.filter(
-          (_: string, i: number) => i !== index
+          (_: string, i: number) => i !== index,
         );
         const newImages = backgroundGallery.filter((_, i) => i !== index);
         await saveBackgroundGallery(newImageIds, newImages);
@@ -468,7 +455,7 @@ export function TournamentSettings() {
       (error) => {
         console.error("Error fetching fund transactions:", error);
         setIsLoadingFunds(false);
-      }
+      },
     );
     return () => unsubscribe();
   }, []);
@@ -560,7 +547,7 @@ export function TournamentSettings() {
 
   const mainIncomeTransactions = useMemo(() => {
     return filteredFundTransactions.filter(
-      (transaction) => !transaction.isSubIncome
+      (transaction) => !transaction.isSubIncome,
     );
   }, [filteredFundTransactions]);
 
@@ -608,17 +595,17 @@ export function TournamentSettings() {
 
   const handleDeleteIncome = async (
     incomeId: string,
-    isMainIncome: boolean
+    isMainIncome: boolean,
   ) => {
     if (!confirm("Are you sure you want to delete this income entry?")) return;
     try {
       if (isMainIncome) {
         const subEntries = fundTransactions.filter(
-          (t) => t.parentId === incomeId
+          (t) => t.parentId === incomeId,
         );
         if (subEntries.length > 0) {
           const deleteSubPromises = subEntries.map((entry) =>
-            deleteDoc(doc(db, "fundTransactions", entry.id))
+            deleteDoc(doc(db, "fundTransactions", entry.id)),
           );
           await Promise.all(deleteSubPromises);
         }
@@ -876,7 +863,7 @@ export function TournamentSettings() {
                         const subIncomeEntries =
                           filteredFundTransactions.filter(
                             (t) =>
-                              t.isSubIncome && t.parentId === transaction.id
+                              t.isSubIncome && t.parentId === transaction.id,
                           );
                         const hasSubIncome = subIncomeEntries.length > 0;
                         return (
@@ -898,7 +885,7 @@ export function TournamentSettings() {
                                   <span className="flex items-center gap-1">
                                     <Calendar className="w-2 h-2" />
                                     {new Date(
-                                      transaction.createdAt
+                                      transaction.createdAt,
                                     ).toLocaleDateString()}
                                   </span>
                                 </div>
@@ -992,7 +979,7 @@ export function TournamentSettings() {
                                           onClick={() =>
                                             handleDeleteIncome(
                                               subIncome.id,
-                                              false
+                                              false,
                                             )
                                           }
                                           title="Delete sub-income"
@@ -1018,7 +1005,7 @@ export function TournamentSettings() {
                           Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
                           {Math.min(
                             currentPage * itemsPerPage,
-                            mainIncomeTransactions.length
+                            mainIncomeTransactions.length,
                           )}{" "}
                           of {mainIncomeTransactions.length} entries
                         </span>
@@ -1037,7 +1024,7 @@ export function TournamentSettings() {
                               <PaginationPrevious
                                 onClick={() =>
                                   setCurrentPage((prev) =>
-                                    Math.max(1, prev - 1)
+                                    Math.max(1, prev - 1),
                                   )
                                 }
                                 className={
@@ -1050,7 +1037,7 @@ export function TournamentSettings() {
 
                             {Array.from(
                               { length: totalPages },
-                              (_, i) => i + 1
+                              (_, i) => i + 1,
                             ).map((page) => (
                               <PaginationItem key={page}>
                                 <PaginationLink
@@ -1067,7 +1054,7 @@ export function TournamentSettings() {
                               <PaginationNext
                                 onClick={() =>
                                   setCurrentPage((prev) =>
-                                    Math.min(totalPages, prev + 1)
+                                    Math.min(totalPages, prev + 1),
                                   )
                                 }
                                 className={
@@ -1122,8 +1109,8 @@ export function TournamentSettings() {
               {isEditing
                 ? "Edit Income Entry"
                 : selectedParentIncome
-                ? "Add Sub-Income Entry"
-                : "Add Income Entry"}
+                  ? "Add Sub-Income Entry"
+                  : "Add Income Entry"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
@@ -1213,8 +1200,8 @@ export function TournamentSettings() {
               {isEditing
                 ? "Update Income"
                 : selectedParentIncome
-                ? "Add Sub-Income"
-                : "Add Income"}
+                  ? "Add Sub-Income"
+                  : "Add Income"}
             </Button>
           </DialogFooter>
         </DialogContent>

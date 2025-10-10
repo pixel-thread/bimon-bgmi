@@ -45,7 +45,7 @@ export default function GoogleAuth({ onVerificationSuccess }: GoogleAuthProps) {
     await auth.signOut();
     setUser(null);
     setError("");
-    window.location.href = "/login";
+    window.location.href = "/auth";
   };
 
   useEffect(() => {

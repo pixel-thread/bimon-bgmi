@@ -2,7 +2,6 @@
 import { CookiesProvider } from "react-cookie";
 import { AuthProvider } from "./auth";
 import { RoleBaseRoute } from "../common/RoleBaseRouting";
-import { AppUpdateManager } from "../AppUpdateManager";
 import InstallPrompt from "../InstallPrompt";
 import { Toaster } from "sonner";
 import { TQueryProvider } from "./query";
@@ -35,15 +34,6 @@ export const Wrapper = ({ children }: Props) => {
               </RoleBaseRoute>
             </AuthProvider>
           </TQueryProvider>
-
-          {/* <AppUpdateManager */}
-          {/*   updateStrategy={{ */}
-          {/*     immediate: true, */}
-          {/*     delay: 0, */}
-          {/*     retryAttempts: 0, */}
-          {/*   }} */}
-          {/*   debug={process.env.NODE_ENV === "development"} */}
-          {/* /> */}
         </CookiesProvider>
       </ClerkLoaded>
     </ClerkProvider>

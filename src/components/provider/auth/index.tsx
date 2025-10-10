@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }: Props) => {
   });
 
   const getUser = useCallback(async () => {
-    if (isSignedIn) {
+    if (isSignedIn || isPending === false) {
       const token = await getToken({ template: "jwt" });
       if (token) {
         setCookies("token", token);
@@ -48,10 +48,10 @@ export const AuthProvider = ({ children }: Props) => {
     setUser(null);
   };
   useEffect(() => {
-    if (isSignedIn && user === null) {
+    if (isSignedIn && user === null && isPending === false) {
       getUser();
     }
-  }, [isSignedIn, user, getUser]);
+  }, [isSignedIn, user]);
 
   return (
     <AuthContext.Provider

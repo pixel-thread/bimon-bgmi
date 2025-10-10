@@ -1,6 +1,6 @@
-import { getUserById } from "@/src/services/user/getUserById";
 import { UnauthorizedError } from "../errors/unAuthError";
 import { verifyToken } from "@clerk/backend";
+import { getUserByClerkId } from "@/src/services/user/getUserByClerkId";
 
 export async function superAdminMiddleware(req: Request) {
   const authHeader = req.headers.get("authorization");
@@ -17,7 +17,7 @@ export async function superAdminMiddleware(req: Request) {
     throw new UnauthorizedError("Unauthorized");
   }
 
-  const user = await getUserById({ id: claims.sub });
+  const user = await getUserByClerkId({ id: claims.sub });
 
   if (!user) {
     throw new UnauthorizedError("Unauthorized");

@@ -21,7 +21,7 @@ export default async function TournamentEntryPage({ searchParams }: PageProps) {
       ? !/^\d{10}$/.test(phoneNumber[0])
       : !/^\d{10}$/.test(phoneNumber))
   ) {
-    redirect("/login?error=invalid_phone");
+    redirect("/auth?error=invalid_phone");
   }
 
   const validatedPhoneNumber = Array.isArray(phoneNumber)
