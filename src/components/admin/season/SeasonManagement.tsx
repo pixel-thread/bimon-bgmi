@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -8,99 +8,14 @@ import {
   CardTitle,
 } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
-import { Input } from "@/src/components/ui/input";
 import { Badge } from "@/src/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/src/components/ui/dialog";
-import { Label } from "@/src/components/ui/label";
-import { Textarea } from "@/src/components/ui/textarea";
-import {
-  collection,
-  getDocs,
-  doc,
-  setDoc,
-  updateDoc,
-} from "firebase/firestore";
-import { db } from "@/src/lib/firebase";
-import { toast } from "sonner";
 import { PlusCircle, Calendar, Trophy } from "lucide-react";
-import { ensureSingleActiveSeason } from "@/src/utils/seasonUtils";
 import { useGetSeasons } from "../../../hooks/season/useGetSeasons";
-import { useMutation } from "@tanstack/react-query";
-import http from "../../../utils/http";
 import { CreateSeasonDialog } from "./create-season-dialog";
-
-interface Season {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate?: string;
-  isActive: boolean;
-  createdAt: string;
-  description?: string;
-}
 
 export function SeasonManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { isFetching: isLoading, data } = useGetSeasons();
-  const { mutate, isPending: isSaving } = useMutation({
-    mutationFn: (data: any) => http.post("/admin/season"),
-  });
-  const [newSeason, setNewSeason] = useState({
-    name: "",
-    startDate: new Date().toISOString().split("T")[0],
-    description: "",
-  });
-
-  const handleCreateSeason = async () => {
-    if (!newSeason.name.trim()) {
-      toast.error("Season name is required");
-      return;
-    }
-
-    try {
-      const seasonId = `season_${Date.now()}`;
-      const seasonData: any = {
-        id: seasonId,
-        name: newSeason.name,
-        startDate: newSeason.startDate,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      };
-
-      if (newSeason.description && newSeason.description.trim()) {
-        seasonData.description = newSeason.description.trim();
-      }
-
-      await setDoc(doc(db, "seasons", seasonId), seasonData);
-      await ensureSingleActiveSeason(seasonId);
-
-      const activeSeason = seasons.find((s) => s.isActive && s.id !== seasonId);
-      if (activeSeason) {
-        await updateDoc(doc(db, "seasons", activeSeason.id), {
-          endDate: new Date().toISOString().split("T")[0],
-        });
-      }
-
-      toast.success(`${newSeason.name} created successfully!`);
-      setNewSeason({
-        name: "",
-        startDate: new Date().toISOString().split("T")[0],
-        description: "",
-      });
-      setIsDialogOpen(false);
-    } catch (error) {
-      console.error("Error creating season:", error);
-      toast.error("Failed to create season");
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const formatDate = (dateValue: any) => {
     if (!dateValue) return "Not set";
@@ -199,7 +114,6 @@ export function SeasonManagement() {
         </CardContent>
       </Card>
 
-      {/* Create Season Dialog */}
       <CreateSeasonDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
     </div>
   );
