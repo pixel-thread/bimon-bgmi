@@ -1,12 +1,13 @@
+"use client";
 export const HtmlHead = () => {
   return (
     <head>
       <meta name="google-adsense-account" content="ca-pub-2651043074081875" />
-      <script
-        async
-        src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID || "ca-pub-2651043074081875"}`}
-        crossOrigin="anonymous"
-      ></script>
+      {/* <script */}
+      {/*   async */}
+      {/*   src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID || "ca-pub-2651043074081875"}`} */}
+      {/*   crossOrigin="anonymous" */}
+      {/* /> */}
       {/* Open Graph meta tags for social preview */}
       <meta property="og:title" content="PUBGMI Tournament Management System" />
       <meta

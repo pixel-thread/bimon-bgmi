@@ -92,12 +92,17 @@ enum SeasonStatus {
 }
 
 model Season {
-  id        String       @id @default(uuid())
-  name      String
-  createdAt DateTime     @default(now())
-  status    SeasonStatus
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  status      SeasonStatus
+  createdAt   DateTime     @default(now())
 
   tournament Tournament[]
+
+  @@unique([id, status]) // only one active season
+  @@index([id])
+  @@index([name])
 }
 
 model Tournament {

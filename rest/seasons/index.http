@@ -1,0 +1,5 @@
+### 
+
+GET http://localhost:3000/api/season HTTP/1.1
+Accept: application/json
+Content-Type: application/json

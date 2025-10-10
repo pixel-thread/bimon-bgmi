@@ -5,7 +5,7 @@ import TeamManagement from "@/src/components/TeamManagement";
 
 const AdminTeamsPage = () => {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen">
       <div className="mx-auto space-y-6">
         <header className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
           <div>

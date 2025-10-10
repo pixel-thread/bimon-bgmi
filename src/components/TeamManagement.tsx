@@ -491,241 +491,233 @@ export default function TeamManagement({
     <>
       <div className="border-none shadow-lg bg-background text-foreground">
         <div className="p-6 bg-background text-foreground">
-          <TooltipProvider>
-            <imports.ActionToolbar
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              actions={
-                <div className="flex flex-col gap-2 w-full">
-                  {/* First row: Season and Tournament selectors */}
-                  <div className="flex flex-wrap gap-2">
-                    <SeasonSelector
-                      selectedSeason={selectedSeason}
-                      onSeasonChange={setSelectedSeason}
-                      size="sm"
-                      variant="blue"
-                      placeholder="Season"
-                      showAllSeasons={true}
-                      className="w-28 sm:w-32 md:w-36 flex-1 min-w-0"
-                    />
-                    <imports.TournamentSelector
-                      selected={selectedTournament}
-                      onSelect={handleTournamentSelect}
-                      tournaments={tournaments}
-                      className="w-40 sm:w-48 md:w-56 flex-1 min-w-0"
-                    />
-                  </div>
-                  {/* Second row: Match dropdown and buttons */}
-                  <div className="flex flex-nowrap gap-1.5 items-center overflow-x-auto pb-1 -mx-1 px-1">
-                    <imports.MatchDropdown
-                      selected={selectedMatch}
-                      options={[
-                        "All",
-                        ...Array.from({ length: matchCount }, (_, i) =>
-                          (i + 1).toString(),
-                        ),
-                      ]}
-                      onSelect={setSelectedMatch}
-                      onAddMatch={
-                        !readOnly && teams.length > 0
-                          ? handleAddMatch
+          <imports.ActionToolbar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            actions={
+              <div className="flex flex-col gap-2 w-full">
+                {/* First row: Season and Tournament selectors */}
+                <div className="flex flex-wrap gap-2">
+                  <SeasonSelector
+                    selectedSeason={selectedSeason}
+                    onSeasonChange={setSelectedSeason}
+                    size="sm"
+                    variant="blue"
+                    placeholder="Season"
+                    showAllSeasons={true}
+                    className="w-28 sm:w-32 md:w-36 flex-1 min-w-0"
+                  />
+                  <imports.TournamentSelector
+                    selected={selectedTournament}
+                    onSelect={handleTournamentSelect}
+                    tournaments={tournaments}
+                    className="w-40 sm:w-48 md:w-56 flex-1 min-w-0"
+                  />
+                </div>
+                {/* Second row: Match dropdown and buttons */}
+                <div className="flex flex-nowrap gap-1.5 items-center overflow-x-auto pb-1 -mx-1 px-1">
+                  <imports.MatchDropdown
+                    selected={selectedMatch}
+                    options={[
+                      "All",
+                      ...Array.from({ length: matchCount }, (_, i) =>
+                        (i + 1).toString(),
+                      ),
+                    ]}
+                    onSelect={setSelectedMatch}
+                    onAddMatch={
+                      !readOnly && teams.length > 0 ? handleAddMatch : undefined
+                    }
+                    className="w-20 sm:w-24 md:w-28 flex-shrink-0"
+                    disabled={isSaving || !selectedTournament}
+                  />
+                  {!readOnly && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <imports.Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSequentialMatch(selectedMatch);
+                              setShowSequentialModal(true);
+                            }}
+                            disabled={
+                              selectedMatch === "All" || selectedMatch === ""
+                            }
+                            className="flex items-center gap-1.5 hover:bg-gray-100 transition-colors flex-shrink-0 px-2 py-1 text-xs sm:text-sm"
+                          >
+                            <FiEdit className="h-4 w-4" />
+                            <span className="hidden lg:inline">
+                              Sequential Edit
+                            </span>
+                          </imports.Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Sequential Edit</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <imports.Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowAddTeamModal(true)}
+                            disabled={!selectedTournament}
+                            className="flex items-center gap-1.5 hover:bg-gray-100 transition-colors flex-shrink-0 px-2 py-1 text-xs sm:text-sm"
+                          >
+                            <FiPlus className="h-4 w-4" />
+                            <span className="hidden lg:inline">Add Team</span>
+                          </imports.Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Add New Team</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <imports.Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowStandingsModal(true)}
+                        disabled={
+                          !selectedTournament ||
+                          teams.length === 0 ||
+                          selectedMatch === ""
+                        }
+                        className="flex items-center gap-1.5 hover:bg-gray-100 transition-colors flex-shrink-0 px-2 py-1 text-xs sm:text-sm"
+                      >
+                        <FiAward className="h-4 w-4" />
+                        <span className="hidden lg:inline">Standings</span>
+                      </imports.Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>View Standings</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <imports.Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleExportCSV(
+                            sortedTeams.map(({ team }) => team),
+                            selectedMatch,
+                            selectedConfig?.title || "Tournament",
+                            tempEdits,
+                          )
+                        }
+                        disabled={!selectedTournament || teams.length === 0}
+                        className="flex items-center gap-1.5 hover:bg-gray-100 transition-colors flex-shrink-0 px-2 py-1 text-xs sm:text-sm"
+                      >
+                        <FiDownload className="h-4 w-4" />
+                        <span className="hidden lg:inline">Export CSV</span>
+                      </imports.Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Export to CSV</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {role === "SUPER_ADMIN" && (
+                    <button
+                      onClick={handleFixData}
+                      className="ml-2 px-3 h-8 rounded bg-amber-500 text-white text-xs hover:bg-amber-600 flex-shrink-0"
+                      title="Backfill seasonId, ensure players exist, and normalize match scores for the selected tournament"
+                    >
+                      Fix Data
+                    </button>
+                  )}
+                </div>
+              </div>
+            }
+          />
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2"></div>
+                <p className="text-sm text-muted-foreground">
+                  Hunting for teams...
+                </p>
+              </div>
+            </div>
+          ) : sortedTeams.length === 0 ? (
+            <div className="text-center text-gray-500 py-4">
+              <div className="w-12 h-12 mx-auto mb-4 opacity-50">
+                <svg
+                  className="w-full h-full"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+              <p className="text-lg font-medium mb-2">
+                No teams match your filters
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Try adjusting your search or match selection
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+              <AnimatePresence>
+                {sortedTeams.map(({ team, position }) => (
+                  <motion.div
+                    key={team.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    <imports.TeamCard
+                      team={team}
+                      searchTerm={searchTerm}
+                      selectedMatch={selectedMatch}
+                      onClick={
+                        !readOnly && selectedMatch !== "All"
+                          ? () => {
+                              resetTempEdits();
+                              setEditingTeam(team);
+                              setEditingPlayer1Ign(team.players[0]?.ign || "");
+                              setEditingPlayer2Ign(team.players[1]?.ign || "");
+                            }
                           : undefined
                       }
-                      className="w-20 sm:w-24 md:w-28 flex-shrink-0"
-                      disabled={isSaving || !selectedTournament}
+                      onDelete={
+                        !readOnly
+                          ? async () => {
+                              if (
+                                window.confirm(
+                                  `Are you sure you want to delete ${team.teamName}?`,
+                                )
+                              ) {
+                                await deleteTeams([team.id]);
+                              }
+                            }
+                          : undefined
+                      }
+                      tempEdits={tempEdits}
+                      onTempEditChange={
+                        !readOnly ? handleTempEditChange : undefined
+                      }
+                      position={position}
+                      readOnly={readOnly}
                     />
-                    {!readOnly && (
-                      <>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <imports.Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSequentialMatch(selectedMatch);
-                                setShowSequentialModal(true);
-                              }}
-                              disabled={
-                                selectedMatch === "All" || selectedMatch === ""
-                              }
-                              className="flex items-center gap-1.5 hover:bg-gray-100 transition-colors flex-shrink-0 px-2 py-1 text-xs sm:text-sm"
-                            >
-                              <FiEdit className="h-4 w-4" />
-                              <span className="hidden lg:inline">
-                                Sequential Edit
-                              </span>
-                            </imports.Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Sequential Edit</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <imports.Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setShowAddTeamModal(true)}
-                              disabled={!selectedTournament}
-                              className="flex items-center gap-1.5 hover:bg-gray-100 transition-colors flex-shrink-0 px-2 py-1 text-xs sm:text-sm"
-                            >
-                              <FiPlus className="h-4 w-4" />
-                              <span className="hidden lg:inline">Add Team</span>
-                            </imports.Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Add New Team</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </>
-                    )}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <imports.Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowStandingsModal(true)}
-                          disabled={
-                            !selectedTournament ||
-                            teams.length === 0 ||
-                            selectedMatch === ""
-                          }
-                          className="flex items-center gap-1.5 hover:bg-gray-100 transition-colors flex-shrink-0 px-2 py-1 text-xs sm:text-sm"
-                        >
-                          <FiAward className="h-4 w-4" />
-                          <span className="hidden lg:inline">Standings</span>
-                        </imports.Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>View Standings</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <imports.Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            handleExportCSV(
-                              sortedTeams.map(({ team }) => team),
-                              selectedMatch,
-                              selectedConfig?.title || "Tournament",
-                              tempEdits,
-                            )
-                          }
-                          disabled={!selectedTournament || teams.length === 0}
-                          className="flex items-center gap-1.5 hover:bg-gray-100 transition-colors flex-shrink-0 px-2 py-1 text-xs sm:text-sm"
-                        >
-                          <FiDownload className="h-4 w-4" />
-                          <span className="hidden lg:inline">Export CSV</span>
-                        </imports.Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Export to CSV</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    {role === "SUPER_ADMIN" && (
-                      <button
-                        onClick={handleFixData}
-                        className="ml-2 px-3 h-8 rounded bg-amber-500 text-white text-xs hover:bg-amber-600 flex-shrink-0"
-                        title="Backfill seasonId, ensure players exist, and normalize match scores for the selected tournament"
-                      >
-                        Fix Data
-                      </button>
-                    )}
-                  </div>
-                </div>
-              }
-            />
-            {loading ? (
-              <div className="flex justify-center items-center py-12">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2"></div>
-                  <p className="text-sm text-muted-foreground">
-                    Hunting for teams...
-                  </p>
-                </div>
-              </div>
-            ) : sortedTeams.length === 0 ? (
-              <div className="text-center text-gray-500 py-4">
-                <div className="w-12 h-12 mx-auto mb-4 opacity-50">
-                  <svg
-                    className="w-full h-full"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </div>
-                <p className="text-lg font-medium mb-2">
-                  No teams match your filters
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Try adjusting your search or match selection
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                <AnimatePresence>
-                  {sortedTeams.map(({ team, position }) => (
-                    <motion.div
-                      key={team.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ duration: 0.4 }}
-                    >
-                      <imports.TeamCard
-                        team={team}
-                        searchTerm={searchTerm}
-                        selectedMatch={selectedMatch}
-                        onClick={
-                          !readOnly && selectedMatch !== "All"
-                            ? () => {
-                                resetTempEdits();
-                                setEditingTeam(team);
-                                setEditingPlayer1Ign(
-                                  team.players[0]?.ign || "",
-                                );
-                                setEditingPlayer2Ign(
-                                  team.players[1]?.ign || "",
-                                );
-                              }
-                            : undefined
-                        }
-                        onDelete={
-                          !readOnly
-                            ? async () => {
-                                if (
-                                  window.confirm(
-                                    `Are you sure you want to delete ${team.teamName}?`,
-                                  )
-                                ) {
-                                  await deleteTeams([team.id]);
-                                }
-                              }
-                            : undefined
-                        }
-                        tempEdits={tempEdits}
-                        onTempEditChange={
-                          !readOnly ? handleTempEditChange : undefined
-                        }
-                        position={position}
-                        readOnly={readOnly}
-                      />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            )}
-          </TooltipProvider>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
         </div>
       </div>
       {/* Edit Team Modal */}

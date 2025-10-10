@@ -5,9 +5,5 @@ type Props = {
 const client = new QueryClient();
 
 export const TQueryProvider = ({ children }: Props) => {
-  return (
-    <QueryClientProvider client={client}>
-      <>{children}</>
-    </QueryClientProvider>
-  );
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 };

@@ -35,7 +35,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   // Handle authentication and role-based redirects
   useEffect(() => {
     // Wait until authentication loading is complete to proceed
-    if (isAuthLoading && user?.role) return;
+    if (isAuthLoading || user === null) return;
 
     // Step 1: Identify the current route from the `routeRoles` configuration
     const currentRoute = routeRoles.find((route) => {

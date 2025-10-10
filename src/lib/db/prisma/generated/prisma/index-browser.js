@@ -157,6 +157,7 @@ exports.Prisma.GameScoreScalarFieldEnum = {
 exports.Prisma.SeasonScalarFieldEnum = {
   id: 'id',
   name: 'name',
+  description: 'description',
   createdAt: 'createdAt',
   status: 'status'
 };

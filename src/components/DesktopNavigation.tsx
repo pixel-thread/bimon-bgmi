@@ -1,61 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
-import { FiUser, FiLogIn, FiLogOut, FiSun, FiMoon } from "react-icons/fi";
-import { UserAvatar, UserButton } from "@clerk/nextjs";
+import { FiLogIn, FiSun, FiMoon } from "react-icons/fi";
+import { UserButton } from "@clerk/nextjs";
+import { useTheme } from "next-themes";
 
 export default function DesktopNavigation() {
-  const [darkMode, setDarkMode] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
   const router = useRouter();
-  const { isSignedIn: isAuthorized, user: playerUser, logout } = useAuth();
-
-  useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem("theme");
-    if (saved === "dark") setDarkMode(true);
-    else if (saved === "light") setDarkMode(false);
-    else if (window.matchMedia("(prefers-color-scheme: dark)").matches)
-      setDarkMode(true);
-  }, []);
-
-  useEffect(() => {
-    if (mounted) {
-      if (darkMode) {
-        document.documentElement.classList.add("dark");
-        localStorage.setItem("theme", "dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-        localStorage.setItem("theme", "light");
-      }
+  const { isSignedIn: isAuthorized } = useAuth();
+  const onToggleTheme = () => {
+    if (theme === "light") {
+      setTheme("dark");
+    } else {
+      setTheme("light");
     }
-  }, [darkMode, mounted]);
+  };
 
   const handleLogin = () => {
     router.push("/auth");
   };
-
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  const handleLogout = async () => {
-    if (isLoggingOut) return; // Prevent multiple logout attempts
-
-    try {
-      setIsLoggingOut(true);
-      await logout();
-    } catch (error) {
-      console.error("Logout error:", error);
-      setIsLoggingOut(false);
-    }
-  };
-
-  const toggleTheme = () => {
-    setDarkMode(!darkMode);
-  };
-
-  if (!mounted) return null;
 
   const navItems = [
     { href: "/", label: "Home" },
@@ -94,11 +59,13 @@ export default function DesktopNavigation() {
       <div className="flex items-center space-x-2">
         {/* Theme Toggle */}
         <button
-          onClick={toggleTheme}
+          onClick={onToggleTheme}
           className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
-          aria-label={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          aria-label={
+            theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"
+          }
         >
-          {darkMode ? (
+          {theme === "dark" ? (
             <FiSun className="h-4 w-4" />
           ) : (
             <FiMoon className="h-4 w-4" />
@@ -106,30 +73,10 @@ export default function DesktopNavigation() {
         </button>
 
         {/* Profile Button - Only show if authenticated */}
-        {isAuthorized && (
-          <UserButton showName={true}>
-            <UserAvatar />
-          </UserButton>
-        )}
+        {isAuthorized && <UserButton showName={false} />}
 
         {/* Login/Logout Button */}
-        {isAuthorized ? (
-          <button
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Logout"
-          >
-            {isLoggingOut ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-            ) : (
-              <FiLogOut className="h-4 w-4" />
-            )}
-            <span className="hidden lg:inline">
-              {isLoggingOut ? "Logging out..." : "Logout"}
-            </span>
-          </button>
-        ) : (
+        {!isAuthorized && (
           <button
             onClick={handleLogin}
             className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
