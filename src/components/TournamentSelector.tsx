@@ -4,19 +4,18 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/src/components/ui/select";
-import { Prisma } from "../lib/db/prisma/generated/prisma";
 import { useTournamentStore } from "../store/tournament";
 import { useTournaments } from "../hooks/tournament/useTournaments";
 import { useSeasonStore } from "../store/season";
+import { Ternary } from "./common/Ternary";
+import { SelectGroup } from "@radix-ui/react-select";
 
 interface TournamentSelectorProps {
-  selected: string | null;
-  onSelect: (value: string | null) => void;
   className?: string;
-  data: Prisma.TournamentGetPayload<{}>[];
 }
 export default function TournamentSelector({
   className,
@@ -33,15 +32,32 @@ export default function TournamentSelector({
       value={tournamentId || ""}
       onValueChange={(value) => onSelect(value || null)}
     >
-      <SelectTrigger className={className || "w-fit min-w-[200px]"}>
+      <SelectTrigger
+        disabled={!seasonId}
+        className={className || "w-fit min-w-[200px]"}
+      >
         <SelectValue placeholder="Select Tournament" />
       </SelectTrigger>
       <SelectContent className="max-h-[200px] overflow-y-auto">
-        {allTournaments?.map((tournament) => (
-          <SelectItem key={tournament.id} value={tournament.id}>
-            {tournament.name}
-          </SelectItem>
-        ))}
+        <Ternary
+          condition={
+            allTournaments?.length && allTournaments?.length > 0 ? true : false
+          }
+          trueComponent={
+            <>
+              {allTournaments?.map((tournament) => (
+                <SelectItem key={tournament.id} value={tournament.id}>
+                  {tournament.name}
+                </SelectItem>
+              ))}
+            </>
+          }
+          falseComponent={
+            <SelectGroup>
+              <SelectLabel>No Tournaments</SelectLabel>
+            </SelectGroup>
+          }
+        />
       </SelectContent>
     </Select>
   );
