@@ -15,7 +15,7 @@ import TeamConfirmationModal from "./TeamConfirmationModal";
 import TournamentCreateModal from "./TournamentCreateModal";
 import TeamCreationModal from "./TeamCreationModal";
 import { SeasonManagement } from "./admin/season/SeasonManagement";
-import { useTournaments } from "@/src/hooks/useTournaments";
+import { useTournaments as useBimonTernament } from "@/src/hooks/useTournaments";
 import { useTeams } from "@/src/hooks/useTeams";
 import { getBestTournamentForAutoSelect } from "@/src/lib/utils";
 import { TournamentConfig } from "@/src/lib/types";
@@ -38,12 +38,10 @@ import {
   getDoc,
   updateDoc,
   deleteField,
-  getDocs,
   addDoc,
   onSnapshot,
   query,
   orderBy,
-  where,
   deleteDoc,
 } from "firebase/firestore";
 import { Input } from "@/src/components/ui/input";
@@ -65,18 +63,6 @@ import {
 } from "@/src/components/ui/dialog";
 import { LoaderFive } from "@/src/components/ui/loader";
 import { db } from "@/src/lib/firebase";
-import { Separator } from "@/src/components/ui/separator";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/src/components/ui/tabs";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/src/components/ui/collapsible";
 import {
   Pagination,
   PaginationContent,
@@ -86,6 +72,9 @@ import {
   PaginationPrevious,
 } from "@/src/components/ui/pagination";
 
+import { useTournaments } from "../hooks/tournament/useTournaments";
+import { useSeasonStore } from "../store/season";
+
 export function TournamentSettings() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTeamCreationModal, setShowTeamCreationModal] = useState(false);
@@ -93,7 +82,8 @@ export function TournamentSettings() {
   const [selectedTournament, setSelectedTournament] = useState<string | null>(
     null,
   );
-  const [selectedSeason, setSelectedSeason] = useState<string>("all");
+  const { seasonId: selectedSeason, setSeasonId: setSelectedSeason } =
+    useSeasonStore();
   const [teamsToCreate, setTeamsToCreate] = useState<
     { teamName: string; players: { ign: string; kills: number }[] }[]
   >([]);
@@ -134,46 +124,43 @@ export function TournamentSettings() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  const { tournaments: allTournaments, updateTournament } = useTournaments();
-  const tournaments = useMemo(() => {
-    if (selectedSeason === "all") {
-      return allTournaments;
-    }
-    return allTournaments.filter(
-      (tournament) => tournament.seasonId === selectedSeason,
-    );
-  }, [allTournaments, selectedSeason]);
+  const { data: tournaments } = useTournaments({ seasonId: selectedSeason });
+
+  const { updateTournament } = useBimonTernament();
+
   const { teams, deleteTeams } = useTeams(selectedTournament);
+
   const selectedConfig =
-    tournaments.find((t) => t.id === selectedTournament) || null;
+    tournaments?.find((t) => t.id === selectedTournament) || null;
   // Auto-select the latest tournament (preferring those with teams)
+
   useEffect(() => {
-    if (tournaments.length > 0 && !selectedTournament) {
+    if (tournaments && tournaments?.length > 0 && !selectedTournament) {
       // Use the new utility function to get the best tournament (preferring those with teams)
-      getBestTournamentForAutoSelect(tournaments)
-        .then((bestTournamentId) => {
-          if (bestTournamentId) {
-            setSelectedTournament(bestTournamentId);
-          }
-        })
-        .catch((error) => {
-          console.error("Error selecting best tournament:", error);
-          // Fallback to the old logic if there's an error
-          const sortedTournaments = [...tournaments].sort((a, b) => {
-            const aTime = a.id.includes("_") ? parseInt(a.id.split("_")[1]) : 0;
-            const bTime = b.id.includes("_") ? parseInt(b.id.split("_")[1]) : 0;
-            return bTime - aTime;
-          });
-          if (sortedTournaments.length > 0) {
-            setSelectedTournament(sortedTournaments[0].id);
-          }
-        });
+      // getBestTournamentForAutoSelect(tournaments)
+      //   .then((bestTournamentId) => {
+      //     if (bestTournamentId) {
+      //       setSelectedTournament(bestTournamentId);
+      //     }
+      //   })
+      //   .catch((error) => {
+      //     console.error("Error selecting best tournament:", error);
+      //     // Fallback to the old logic if there's an error
+      //     const sortedTournaments = [...tournaments].sort((a, b) => {
+      //       const aTime = a.id.includes("_") ? parseInt(a.id.split("_")[1]) : 0;
+      //       const bTime = b.id.includes("_") ? parseInt(b.id.split("_")[1]) : 0;
+      //       return bTime - aTime;
+      //     });
+      //     if (sortedTournaments.length > 0) {
+      //       setSelectedTournament(sortedTournaments[0].id);
+      //     }
+      //   });
     }
   }, [tournaments, selectedTournament]);
 
   // Reset selected tournament if not in filtered list
   useEffect(() => {
-    if (selectedTournament && tournaments.length > 0) {
+    if (tournaments && selectedTournament && tournaments.length > 0) {
       const isSelectedTournamentInList = tournaments.some(
         (t) => t.id === selectedTournament,
       );
@@ -191,7 +178,7 @@ export function TournamentSettings() {
   // Sync form with selected tournament config
   useEffect(() => {
     if (selectedConfig) {
-      setFormData({ ...selectedConfig });
+      // setFormData({ ...selectedConfig });
     } else {
       setFormData({});
     }
@@ -204,15 +191,15 @@ export function TournamentSettings() {
 
   // Load current background image
   useEffect(() => {
-    if (selectedConfig?.backgroundImage) {
-      setCurrentBackgroundImage(selectedConfig.backgroundImage);
-    } else {
-      if (backgroundGallery.length > 0) {
-        setCurrentBackgroundImage(backgroundGallery[0]);
-      } else {
-        setCurrentBackgroundImage("");
-      }
-    }
+    // if (selectedConfig?.backgroundImage) {
+    //   setCurrentBackgroundImage(selectedConfig.backgroundImage);
+    // } else {
+    //   if (backgroundGallery.length > 0) {
+    //     setCurrentBackgroundImage(backgroundGallery[0]);
+    //   } else {
+    //     setCurrentBackgroundImage("");
+    //   }
+    // }
   }, [selectedConfig, backgroundGallery]);
 
   const loadBackgroundGallery = async () => {
@@ -324,30 +311,30 @@ export function TournamentSettings() {
     setBackgroundFiles(files);
     setIsUploadingBackground(true);
     try {
-      const file = files[0];
-      const base64Image = await fileToBase64(file);
-      setCurrentBackgroundImage(base64Image);
-      const imageId = await saveBackgroundToDatabase(base64Image, file.name);
-      await addToGallery(imageId, base64Image);
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      if (selectedConfig && selectedTournament) {
-        await updateTournament(selectedTournament, {
-          ...selectedConfig,
-          backgroundImage: base64Image,
-        });
-      }
-      const tournamentsToUpdate = allTournaments.filter(
-        (t) => !t.backgroundImage,
-      );
-      for (const tournament of tournamentsToUpdate) {
-        await updateTournament(tournament.id, {
-          ...tournament,
-          backgroundImage: base64Image,
-        });
-      }
-      toast.success(
-        "Background image saved to database! Applied to tournaments without custom backgrounds.",
-      );
+      // const file = files[0];
+      // const base64Image = await fileToBase64(file);
+      // setCurrentBackgroundImage(base64Image);
+      // const imageId = await saveBackgroundToDatabase(base64Image, file.name);
+      // await addToGallery(imageId, base64Image);
+      // await new Promise((resolve) => setTimeout(resolve, 500));
+      // if (selectedConfig && selectedTournament) {
+      //   await updateTournament(selectedTournament, {
+      //     ...selectedConfig,
+      //     backgroundImage: base64Image,
+      //   });
+      // }
+      // const tournamentsToUpdate = allTournaments.filter(
+      //   (t) => !t.backgroundImage,
+      // );
+      // for (const tournament of tournamentsToUpdate) {
+      //   await updateTournament(tournament.id, {
+      //     ...tournament,
+      //     backgroundImage: base64Image,
+      //   });
+      // }
+      // toast.success(
+      //   "Background image saved to database! Applied to tournaments without custom backgrounds.",
+      // );
     } catch (error) {
       console.error("Error uploading background:", error);
       toast.error("Failed to upload background image");
@@ -370,10 +357,10 @@ export function TournamentSettings() {
         }
       }
       if (selectedConfig && selectedTournament) {
-        await updateTournament(selectedTournament, {
-          ...selectedConfig,
-          backgroundImage: imageUrl,
-        });
+        // await updateTournament(selectedTournament, {
+        //   ...selectedConfig,
+        //   backgroundImage: imageUrl,
+        // });
         toast.success("Background image selected!");
       }
       setShowGallery(false);
@@ -405,10 +392,10 @@ export function TournamentSettings() {
           setCurrentBackgroundImage(newImages.length > 0 ? newImages[0] : "");
           if (selectedConfig && selectedTournament) {
             if (newImages.length > 0) {
-              await updateTournament(selectedTournament, {
-                ...selectedConfig,
-                backgroundImage: newImages[0],
-              });
+              // await updateTournament(selectedTournament, {
+              //   ...selectedConfig,
+              //   backgroundImage: newImages[0],
+              // });
             } else {
               await updateDoc(doc(db, "tournaments", selectedTournament), {
                 backgroundImage: deleteField(),
@@ -487,7 +474,7 @@ export function TournamentSettings() {
             : fundForm.tournamentId || null,
         tournamentName:
           fundForm.tournamentId && fundForm.tournamentId !== "general"
-            ? tournaments.find((t) => t.id === fundForm.tournamentId)?.title ||
+            ? tournaments?.find((t) => t.id === fundForm.tournamentId)?.name ||
               "Unknown Tournament"
             : null,
         parentId: fundForm.parentId || null,
@@ -507,24 +494,24 @@ export function TournamentSettings() {
         });
         toast.success("Income added successfully!");
       }
-      const latestTournament =
-        tournaments.length > 0
-          ? [...tournaments].sort((a, b) => {
-              const aTime = a.id.includes("_")
-                ? parseInt(a.id.split("_")[1])
-                : 0;
-              const bTime = b.id.includes("_")
-                ? parseInt(b.id.split("_")[1])
-                : 0;
-              return bTime - aTime;
-            })[0]
-          : null;
-      setFundForm({
-        amount: "",
-        description: latestTournament ? latestTournament.title : "",
-        tournamentId: latestTournament ? latestTournament.id : "",
-        parentId: "",
-      });
+      // const latestTournament =
+      //   tournaments?.length > 0
+      //     ? [...tournaments].sort((a, b) => {
+      //         const aTime = a.id.includes("_")
+      //           ? parseInt(a.id.split("_")[1])
+      //           : 0;
+      //         const bTime = b.id.includes("_")
+      //           ? parseInt(b.id.split("_")[1])
+      //           : 0;
+      //         return bTime - aTime;
+      //       })[0]
+      //     : null;
+      // setFundForm({
+      //   amount: "",
+      //   description: latestTournament ? latestTournament.title : "",
+      //   tournamentId: latestTournament ? latestTournament.id : "",
+      //   parentId: "",
+      // });
       setSelectedParentIncome(null);
       setIsEditing(false);
       setEditingIncomeId(null);
@@ -564,7 +551,7 @@ export function TournamentSettings() {
   }, [fundFilter.tournament]);
 
   useEffect(() => {
-    if (showFundDialog && tournaments.length > 0) {
+    if (tournaments && showFundDialog && tournaments.length > 0) {
       const sortedTournaments = [...tournaments].sort((a, b) => {
         const aTime = a.id.includes("_") ? parseInt(a.id.split("_")[1]) : 0;
         const bTime = b.id.includes("_") ? parseInt(b.id.split("_")[1]) : 0;
@@ -574,7 +561,7 @@ export function TournamentSettings() {
         setFundForm((prev) => ({
           ...prev,
           tournamentId: sortedTournaments[0].id,
-          description: sortedTournaments[0].title,
+          description: sortedTournaments[0].name,
         }));
       }
     }
@@ -657,18 +644,12 @@ export function TournamentSettings() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-3 pt-4">
-              {selectedTournament && selectedConfig ? (
-                <TournamentForm
-                  formData={formData}
-                  setFormData={setFormData}
-                  selectedConfig={selectedConfig}
-                  selectedTournament={selectedTournament}
-                />
-              ) : (
-                <div className="text-center text-muted-foreground py-8 text-xs">
-                  Select a tournament to configure its settings
-                </div>
-              )}
+              <TournamentForm
+                formData={formData}
+                setFormData={setFormData}
+                selectedConfig={selectedConfig}
+                selectedTournament={selectedTournament}
+              />
             </CardContent>
           </Card>
 
@@ -839,9 +820,9 @@ export function TournamentSettings() {
                   <SelectItem value="general">
                     General (No Tournament)
                   </SelectItem>
-                  {tournaments.map((tournament) => (
+                  {tournaments?.map((tournament) => (
                     <SelectItem key={tournament.id} value={tournament.id}>
-                      {tournament.title}
+                      {tournament.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1096,8 +1077,6 @@ export function TournamentSettings() {
       <TournamentCreateModal
         showCreateModal={showCreateModal}
         setShowCreateModal={setShowCreateModal}
-        formData={formData}
-        setFormData={setFormData}
         setSelectedTournament={setSelectedTournament}
       />
 
@@ -1166,9 +1145,9 @@ export function TournamentSettings() {
                     <SelectItem value="general">
                       General (No specific tournament)
                     </SelectItem>
-                    {tournaments.map((tournament) => (
+                    {tournaments?.map((tournament) => (
                       <SelectItem key={tournament.id} value={tournament.id}>
-                        {tournament.title}
+                        {tournament.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

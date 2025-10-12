@@ -168,9 +168,12 @@ exports.Prisma.SeasonScalarFieldEnum = {
 exports.Prisma.TournamentScalarFieldEnum = {
   id: 'id',
   name: 'name',
+  startDate: 'startDate',
+  backgroundUrl: 'backgroundUrl',
   fee: 'fee',
-  createdAt: 'createdAt',
-  seasonId: 'seasonId'
+  seasonId: 'seasonId',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.PollVoteScalarFieldEnum = {

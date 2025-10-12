@@ -39,8 +39,8 @@ export default function TournamentToolbar({
         <TournamentSelector
           selected={selectedTournament}
           onSelect={setSelectedTournament}
-          tournaments={tournaments}
           className="w-full"
+          data={tournaments}
         />
       </div>
       <div className="flex flex-wrap gap-2">

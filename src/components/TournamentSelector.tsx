@@ -1,7 +1,5 @@
 "use client";
 
-import { useTournaments } from "@/src/hooks/useTournaments";
-import { useMemo } from "react";
 import {
   Select,
   SelectContent,
@@ -9,56 +7,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/src/components/ui/select";
+import { Prisma } from "../lib/db/prisma/generated/prisma";
+import { useTournamentStore } from "../store/tournament";
+import { useTournaments } from "../hooks/tournament/useTournaments";
+import { useSeasonStore } from "../store/season";
 
 interface TournamentSelectorProps {
   selected: string | null;
   onSelect: (value: string | null) => void;
   className?: string;
-  tournaments?: any[]; // Accept tournaments as prop for filtering
+  data: Prisma.TournamentGetPayload<{}>[];
 }
-
 export default function TournamentSelector({
-  selected,
-  onSelect,
   className,
-  tournaments: propTournaments,
 }: TournamentSelectorProps) {
-  const { tournaments: allTournaments } = useTournaments();
-
-  // Use prop tournaments if provided, otherwise use all tournaments
-  const tournaments = propTournaments || allTournaments;
-
-  // Reverse tournaments order (assuming newly added ones are last in the array)
-  const sortedTournaments = useMemo(() => {
-    return [...tournaments].reverse();
-  }, [tournaments]);
-
-  // Display label with truncation for long tournament names
-  const displayLabel = selected
-    ? sortedTournaments.find((t) => t.id === selected)?.title ||
-      "Select Tournament"
-    : "Select Tournament";
-
-  // Truncate long tournament names for display
-  const truncatedLabel =
-    displayLabel.length > 25
-      ? displayLabel.substring(0, 22) + "..."
-      : displayLabel;
+  const { setTournamentId, tournamentId } = useTournamentStore();
+  const { seasonId } = useSeasonStore();
+  const { data: allTournaments } = useTournaments({ seasonId });
+  const onSelect = (value: string | null) => {
+    setTournamentId(value || "");
+  };
 
   return (
     <Select
-      value={selected || ""}
+      value={tournamentId || ""}
       onValueChange={(value) => onSelect(value || null)}
     >
       <SelectTrigger className={className || "w-fit min-w-[200px]"}>
-        <SelectValue placeholder="Select Tournament">
-          <span className="truncate block max-w-full">{truncatedLabel}</span>
-        </SelectValue>
+        <SelectValue placeholder="Select Tournament" />
       </SelectTrigger>
       <SelectContent className="max-h-[200px] overflow-y-auto">
-        {sortedTournaments.map((tournament) => (
+        {allTournaments?.map((tournament) => (
           <SelectItem key={tournament.id} value={tournament.id}>
-            {tournament.title}
+            {tournament.name}
           </SelectItem>
         ))}
       </SelectContent>

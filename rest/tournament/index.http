@@ -1,0 +1,13 @@
+### 
+
+# @name Create Tournament
+
+POST http://localhost:3000/api/admin/tournament HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "name": "Tournament 1",
+  "startDate": "{{$date}}"
+}

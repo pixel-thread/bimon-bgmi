@@ -109,14 +109,18 @@ model Season {
 }
 
 model Tournament {
-  id               String             @id @default(uuid())
-  name             String
-  fee              Int
-  createdAt        DateTime           @default(now())
-  team             Team[]
-  user             User[]
-  Season           Season?            @relation(fields: [seasonId], references: [id])
-  seasonId         String?
+  id            String   @id @default(uuid())
+  name          String
+  startDate     DateTime
+  backgroundUrl String?
+  fee           Int?
+  team          Team[]
+  user          User[]
+  Season        Season?  @relation(fields: [seasonId], references: [id])
+  seasonId      String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+
   TournamentWinner TournamentWinner[]
   PollVote         PollVote[]
   Match            Match[]
