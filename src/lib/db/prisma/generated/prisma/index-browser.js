@@ -145,13 +145,24 @@ exports.Prisma.PlayerScalarFieldEnum = {
   isBanned: 'isBanned',
   category: 'category',
   userId: 'userId',
-  teamId: 'teamId'
+  teamId: 'teamId',
+  characterImageId: 'characterImageId'
 };
 
 exports.Prisma.GameScoreScalarFieldEnum = {
   highScore: 'highScore',
   lastPlayedAt: 'lastPlayedAt',
   playerId: 'playerId'
+};
+
+exports.Prisma.GalleryScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  path: 'path',
+  fullPath: 'fullPath',
+  publicUrl: 'publicUrl',
+  playerId: 'playerId',
+  tournamentId: 'tournamentId'
 };
 
 exports.Prisma.SeasonScalarFieldEnum = {
@@ -173,7 +184,8 @@ exports.Prisma.TournamentScalarFieldEnum = {
   fee: 'fee',
   seasonId: 'seasonId',
   createdBy: 'createdBy',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  galleryId: 'galleryId'
 };
 
 exports.Prisma.PollVoteScalarFieldEnum = {
@@ -280,6 +292,7 @@ exports.Prisma.ModelName = {
   User: 'User',
   Player: 'Player',
   GameScore: 'GameScore',
+  Gallery: 'Gallery',
   Season: 'Season',
   Tournament: 'Tournament',
   PollVote: 'PollVote',

@@ -20,6 +20,7 @@ import {
 } from "./ui/form";
 import { Input } from "./ui/input";
 import z from "zod";
+import { useSeasonStore } from "../store/season";
 
 const schema = tournamentSchema.pick({ name: true, fee: true });
 
@@ -27,6 +28,7 @@ type FormValueT = z.infer<typeof schema>;
 
 export default function TournamentForm() {
   const { tournamentId } = useTournamentStore();
+  const { seasonId } = useSeasonStore();
   const { data: selectedTournament, isLoading } = useTournament({
     id: tournamentId,
   });
@@ -41,7 +43,7 @@ export default function TournamentForm() {
     },
   });
 
-  const { mutate: updateTournament } = useMutation({
+  const { mutate: updateTournament, isPending } = useMutation({
     mutationFn: (data: FormValueT) =>
       http.put("/admin/tournament/" + tournamentId, data),
     onSuccess: (data) => {
@@ -65,6 +67,8 @@ export default function TournamentForm() {
       });
     }
   }, [selectedTournament]);
+
+  const isUpdating = isLoading || !tournamentId || !seasonId || isPending;
 
   return (
     <div className="">
@@ -100,10 +104,10 @@ export default function TournamentForm() {
             />
           </div>
           <div className="col-span-full flex items-center justify-end gap-3 mt-6">
-            <Button disabled={isLoading}>
+            <Button disabled={isUpdating}>
               {isLoading ? "Updating..." : "Save Changes"}
             </Button>
-            <Button variant="destructive" disabled={isLoading}>
+            <Button variant="destructive" disabled={isUpdating}>
               {isLoading ? "Deleting..." : "Delete"}
             </Button>
           </div>

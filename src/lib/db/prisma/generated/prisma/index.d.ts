@@ -29,6 +29,11 @@ export type Player = $Result.DefaultSelection<Prisma.$PlayerPayload>
  */
 export type GameScore = $Result.DefaultSelection<Prisma.$GameScorePayload>
 /**
+ * Model Gallery
+ * 
+ */
+export type Gallery = $Result.DefaultSelection<Prisma.$GalleryPayload>
+/**
  * Model Season
  * 
  */
@@ -305,6 +310,16 @@ export class PrismaClient<
     * ```
     */
   get gameScore(): Prisma.GameScoreDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.gallery`: Exposes CRUD operations for the **Gallery** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Galleries
+    * const galleries = await prisma.gallery.findMany()
+    * ```
+    */
+  get gallery(): Prisma.GalleryDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.season`: Exposes CRUD operations for the **Season** model.
@@ -838,6 +853,7 @@ export namespace Prisma {
     User: 'User',
     Player: 'Player',
     GameScore: 'GameScore',
+    Gallery: 'Gallery',
     Season: 'Season',
     Tournament: 'Tournament',
     PollVote: 'PollVote',
@@ -865,7 +881,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "player" | "gameScore" | "season" | "tournament" | "pollVote" | "tournamentWinner" | "match" | "wallet" | "playerStats" | "team" | "kDStats"
+      modelProps: "user" | "player" | "gameScore" | "gallery" | "season" | "tournament" | "pollVote" | "tournamentWinner" | "match" | "wallet" | "playerStats" | "team" | "kDStats"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1088,6 +1104,80 @@ export namespace Prisma {
           count: {
             args: Prisma.GameScoreCountArgs<ExtArgs>
             result: $Utils.Optional<GameScoreCountAggregateOutputType> | number
+          }
+        }
+      }
+      Gallery: {
+        payload: Prisma.$GalleryPayload<ExtArgs>
+        fields: Prisma.GalleryFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.GalleryFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GalleryPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.GalleryFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GalleryPayload>
+          }
+          findFirst: {
+            args: Prisma.GalleryFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GalleryPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.GalleryFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GalleryPayload>
+          }
+          findMany: {
+            args: Prisma.GalleryFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GalleryPayload>[]
+          }
+          create: {
+            args: Prisma.GalleryCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GalleryPayload>
+          }
+          createMany: {
+            args: Prisma.GalleryCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.GalleryCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GalleryPayload>[]
+          }
+          delete: {
+            args: Prisma.GalleryDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GalleryPayload>
+          }
+          update: {
+            args: Prisma.GalleryUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GalleryPayload>
+          }
+          deleteMany: {
+            args: Prisma.GalleryDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.GalleryUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.GalleryUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GalleryPayload>[]
+          }
+          upsert: {
+            args: Prisma.GalleryUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GalleryPayload>
+          }
+          aggregate: {
+            args: Prisma.GalleryAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateGallery>
+          }
+          groupBy: {
+            args: Prisma.GalleryGroupByArgs<ExtArgs>
+            result: $Utils.Optional<GalleryGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.GalleryCountArgs<ExtArgs>
+            result: $Utils.Optional<GalleryCountAggregateOutputType> | number
           }
         }
       }
@@ -1856,6 +1946,7 @@ export namespace Prisma {
     user?: UserOmit
     player?: PlayerOmit
     gameScore?: GameScoreOmit
+    gallery?: GalleryOmit
     season?: SeasonOmit
     tournament?: TournamentOmit
     pollVote?: PollVoteOmit
@@ -3406,6 +3497,7 @@ export namespace Prisma {
     category: $Enums.PlayerCategory | null
     userId: string | null
     teamId: string | null
+    characterImageId: string | null
   }
 
   export type PlayerMaxAggregateOutputType = {
@@ -3417,6 +3509,7 @@ export namespace Prisma {
     category: $Enums.PlayerCategory | null
     userId: string | null
     teamId: string | null
+    characterImageId: string | null
   }
 
   export type PlayerCountAggregateOutputType = {
@@ -3428,6 +3521,7 @@ export namespace Prisma {
     category: number
     userId: number
     teamId: number
+    characterImageId: number
     _all: number
   }
 
@@ -3441,6 +3535,7 @@ export namespace Prisma {
     category?: true
     userId?: true
     teamId?: true
+    characterImageId?: true
   }
 
   export type PlayerMaxAggregateInputType = {
@@ -3452,6 +3547,7 @@ export namespace Prisma {
     category?: true
     userId?: true
     teamId?: true
+    characterImageId?: true
   }
 
   export type PlayerCountAggregateInputType = {
@@ -3463,6 +3559,7 @@ export namespace Prisma {
     category?: true
     userId?: true
     teamId?: true
+    characterImageId?: true
     _all?: true
   }
 
@@ -3547,6 +3644,7 @@ export namespace Prisma {
     category: $Enums.PlayerCategory
     userId: string
     teamId: string | null
+    characterImageId: string | null
     _count: PlayerCountAggregateOutputType | null
     _min: PlayerMinAggregateOutputType | null
     _max: PlayerMaxAggregateOutputType | null
@@ -3575,6 +3673,7 @@ export namespace Prisma {
     category?: boolean
     userId?: boolean
     teamId?: boolean
+    characterImageId?: boolean
     gameScore?: boolean | Player$gameScoreArgs<ExtArgs>
     pollVote?: boolean | Player$pollVoteArgs<ExtArgs>
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -3582,6 +3681,7 @@ export namespace Prisma {
     Wallet?: boolean | Player$WalletArgs<ExtArgs>
     PlayerStats?: boolean | Player$PlayerStatsArgs<ExtArgs>
     Team?: boolean | Player$TeamArgs<ExtArgs>
+    characterImage?: boolean | Player$characterImageArgs<ExtArgs>
     _count?: boolean | PlayerCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["player"]>
 
@@ -3594,8 +3694,10 @@ export namespace Prisma {
     category?: boolean
     userId?: boolean
     teamId?: boolean
+    characterImageId?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     Team?: boolean | Player$TeamArgs<ExtArgs>
+    characterImage?: boolean | Player$characterImageArgs<ExtArgs>
   }, ExtArgs["result"]["player"]>
 
   export type PlayerSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -3607,8 +3709,10 @@ export namespace Prisma {
     category?: boolean
     userId?: boolean
     teamId?: boolean
+    characterImageId?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     Team?: boolean | Player$TeamArgs<ExtArgs>
+    characterImage?: boolean | Player$characterImageArgs<ExtArgs>
   }, ExtArgs["result"]["player"]>
 
   export type PlayerSelectScalar = {
@@ -3620,9 +3724,10 @@ export namespace Prisma {
     category?: boolean
     userId?: boolean
     teamId?: boolean
+    characterImageId?: boolean
   }
 
-  export type PlayerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "avatarUrl" | "characterUrl" | "characterUrlBase64" | "isBanned" | "category" | "userId" | "teamId", ExtArgs["result"]["player"]>
+  export type PlayerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "avatarUrl" | "characterUrl" | "characterUrlBase64" | "isBanned" | "category" | "userId" | "teamId" | "characterImageId", ExtArgs["result"]["player"]>
   export type PlayerInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     gameScore?: boolean | Player$gameScoreArgs<ExtArgs>
     pollVote?: boolean | Player$pollVoteArgs<ExtArgs>
@@ -3631,15 +3736,18 @@ export namespace Prisma {
     Wallet?: boolean | Player$WalletArgs<ExtArgs>
     PlayerStats?: boolean | Player$PlayerStatsArgs<ExtArgs>
     Team?: boolean | Player$TeamArgs<ExtArgs>
+    characterImage?: boolean | Player$characterImageArgs<ExtArgs>
     _count?: boolean | PlayerCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type PlayerIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     Team?: boolean | Player$TeamArgs<ExtArgs>
+    characterImage?: boolean | Player$characterImageArgs<ExtArgs>
   }
   export type PlayerIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     Team?: boolean | Player$TeamArgs<ExtArgs>
+    characterImage?: boolean | Player$characterImageArgs<ExtArgs>
   }
 
   export type $PlayerPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3652,6 +3760,7 @@ export namespace Prisma {
       Wallet: Prisma.$WalletPayload<ExtArgs> | null
       PlayerStats: Prisma.$PlayerStatsPayload<ExtArgs> | null
       Team: Prisma.$TeamPayload<ExtArgs> | null
+      characterImage: Prisma.$GalleryPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -3662,6 +3771,7 @@ export namespace Prisma {
       category: $Enums.PlayerCategory
       userId: string
       teamId: string | null
+      characterImageId: string | null
     }, ExtArgs["result"]["player"]>
     composites: {}
   }
@@ -4063,6 +4173,7 @@ export namespace Prisma {
     Wallet<T extends Player$WalletArgs<ExtArgs> = {}>(args?: Subset<T, Player$WalletArgs<ExtArgs>>): Prisma__WalletClient<$Result.GetResult<Prisma.$WalletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     PlayerStats<T extends Player$PlayerStatsArgs<ExtArgs> = {}>(args?: Subset<T, Player$PlayerStatsArgs<ExtArgs>>): Prisma__PlayerStatsClient<$Result.GetResult<Prisma.$PlayerStatsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     Team<T extends Player$TeamArgs<ExtArgs> = {}>(args?: Subset<T, Player$TeamArgs<ExtArgs>>): Prisma__TeamClient<$Result.GetResult<Prisma.$TeamPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    characterImage<T extends Player$characterImageArgs<ExtArgs> = {}>(args?: Subset<T, Player$characterImageArgs<ExtArgs>>): Prisma__GalleryClient<$Result.GetResult<Prisma.$GalleryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4100,6 +4211,7 @@ export namespace Prisma {
     readonly category: FieldRef<"Player", 'PlayerCategory'>
     readonly userId: FieldRef<"Player", 'String'>
     readonly teamId: FieldRef<"Player", 'String'>
+    readonly characterImageId: FieldRef<"Player", 'String'>
   }
     
 
@@ -4617,6 +4729,25 @@ export namespace Prisma {
      */
     include?: TeamInclude<ExtArgs> | null
     where?: TeamWhereInput
+  }
+
+  /**
+   * Player.characterImage
+   */
+  export type Player$characterImageArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gallery
+     */
+    select?: GallerySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gallery
+     */
+    omit?: GalleryOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GalleryInclude<ExtArgs> | null
+    where?: GalleryWhereInput
   }
 
   /**
@@ -5701,6 +5832,1118 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: GameScoreInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model Gallery
+   */
+
+  export type AggregateGallery = {
+    _count: GalleryCountAggregateOutputType | null
+    _min: GalleryMinAggregateOutputType | null
+    _max: GalleryMaxAggregateOutputType | null
+  }
+
+  export type GalleryMinAggregateOutputType = {
+    id: string | null
+    name: string | null
+    path: string | null
+    fullPath: string | null
+    publicUrl: string | null
+    playerId: string | null
+    tournamentId: string | null
+  }
+
+  export type GalleryMaxAggregateOutputType = {
+    id: string | null
+    name: string | null
+    path: string | null
+    fullPath: string | null
+    publicUrl: string | null
+    playerId: string | null
+    tournamentId: string | null
+  }
+
+  export type GalleryCountAggregateOutputType = {
+    id: number
+    name: number
+    path: number
+    fullPath: number
+    publicUrl: number
+    playerId: number
+    tournamentId: number
+    _all: number
+  }
+
+
+  export type GalleryMinAggregateInputType = {
+    id?: true
+    name?: true
+    path?: true
+    fullPath?: true
+    publicUrl?: true
+    playerId?: true
+    tournamentId?: true
+  }
+
+  export type GalleryMaxAggregateInputType = {
+    id?: true
+    name?: true
+    path?: true
+    fullPath?: true
+    publicUrl?: true
+    playerId?: true
+    tournamentId?: true
+  }
+
+  export type GalleryCountAggregateInputType = {
+    id?: true
+    name?: true
+    path?: true
+    fullPath?: true
+    publicUrl?: true
+    playerId?: true
+    tournamentId?: true
+    _all?: true
+  }
+
+  export type GalleryAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Gallery to aggregate.
+     */
+    where?: GalleryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Galleries to fetch.
+     */
+    orderBy?: GalleryOrderByWithRelationInput | GalleryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: GalleryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Galleries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Galleries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Galleries
+    **/
+    _count?: true | GalleryCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: GalleryMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: GalleryMaxAggregateInputType
+  }
+
+  export type GetGalleryAggregateType<T extends GalleryAggregateArgs> = {
+        [P in keyof T & keyof AggregateGallery]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateGallery[P]>
+      : GetScalarType<T[P], AggregateGallery[P]>
+  }
+
+
+
+
+  export type GalleryGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: GalleryWhereInput
+    orderBy?: GalleryOrderByWithAggregationInput | GalleryOrderByWithAggregationInput[]
+    by: GalleryScalarFieldEnum[] | GalleryScalarFieldEnum
+    having?: GalleryScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: GalleryCountAggregateInputType | true
+    _min?: GalleryMinAggregateInputType
+    _max?: GalleryMaxAggregateInputType
+  }
+
+  export type GalleryGroupByOutputType = {
+    id: string
+    name: string
+    path: string
+    fullPath: string
+    publicUrl: string
+    playerId: string | null
+    tournamentId: string | null
+    _count: GalleryCountAggregateOutputType | null
+    _min: GalleryMinAggregateOutputType | null
+    _max: GalleryMaxAggregateOutputType | null
+  }
+
+  type GetGalleryGroupByPayload<T extends GalleryGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<GalleryGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof GalleryGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], GalleryGroupByOutputType[P]>
+            : GetScalarType<T[P], GalleryGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type GallerySelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    name?: boolean
+    path?: boolean
+    fullPath?: boolean
+    publicUrl?: boolean
+    playerId?: boolean
+    tournamentId?: boolean
+    player?: boolean | Gallery$playerArgs<ExtArgs>
+    tournament?: boolean | Gallery$tournamentArgs<ExtArgs>
+  }, ExtArgs["result"]["gallery"]>
+
+  export type GallerySelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    name?: boolean
+    path?: boolean
+    fullPath?: boolean
+    publicUrl?: boolean
+    playerId?: boolean
+    tournamentId?: boolean
+  }, ExtArgs["result"]["gallery"]>
+
+  export type GallerySelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    name?: boolean
+    path?: boolean
+    fullPath?: boolean
+    publicUrl?: boolean
+    playerId?: boolean
+    tournamentId?: boolean
+  }, ExtArgs["result"]["gallery"]>
+
+  export type GallerySelectScalar = {
+    id?: boolean
+    name?: boolean
+    path?: boolean
+    fullPath?: boolean
+    publicUrl?: boolean
+    playerId?: boolean
+    tournamentId?: boolean
+  }
+
+  export type GalleryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "path" | "fullPath" | "publicUrl" | "playerId" | "tournamentId", ExtArgs["result"]["gallery"]>
+  export type GalleryInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    player?: boolean | Gallery$playerArgs<ExtArgs>
+    tournament?: boolean | Gallery$tournamentArgs<ExtArgs>
+  }
+  export type GalleryIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+  export type GalleryIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+
+  export type $GalleryPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Gallery"
+    objects: {
+      player: Prisma.$PlayerPayload<ExtArgs> | null
+      tournament: Prisma.$TournamentPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      name: string
+      path: string
+      fullPath: string
+      publicUrl: string
+      playerId: string | null
+      tournamentId: string | null
+    }, ExtArgs["result"]["gallery"]>
+    composites: {}
+  }
+
+  type GalleryGetPayload<S extends boolean | null | undefined | GalleryDefaultArgs> = $Result.GetResult<Prisma.$GalleryPayload, S>
+
+  type GalleryCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<GalleryFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: GalleryCountAggregateInputType | true
+    }
+
+  export interface GalleryDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Gallery'], meta: { name: 'Gallery' } }
+    /**
+     * Find zero or one Gallery that matches the filter.
+     * @param {GalleryFindUniqueArgs} args - Arguments to find a Gallery
+     * @example
+     * // Get one Gallery
+     * const gallery = await prisma.gallery.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends GalleryFindUniqueArgs>(args: SelectSubset<T, GalleryFindUniqueArgs<ExtArgs>>): Prisma__GalleryClient<$Result.GetResult<Prisma.$GalleryPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Gallery that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {GalleryFindUniqueOrThrowArgs} args - Arguments to find a Gallery
+     * @example
+     * // Get one Gallery
+     * const gallery = await prisma.gallery.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends GalleryFindUniqueOrThrowArgs>(args: SelectSubset<T, GalleryFindUniqueOrThrowArgs<ExtArgs>>): Prisma__GalleryClient<$Result.GetResult<Prisma.$GalleryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Gallery that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GalleryFindFirstArgs} args - Arguments to find a Gallery
+     * @example
+     * // Get one Gallery
+     * const gallery = await prisma.gallery.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends GalleryFindFirstArgs>(args?: SelectSubset<T, GalleryFindFirstArgs<ExtArgs>>): Prisma__GalleryClient<$Result.GetResult<Prisma.$GalleryPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Gallery that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GalleryFindFirstOrThrowArgs} args - Arguments to find a Gallery
+     * @example
+     * // Get one Gallery
+     * const gallery = await prisma.gallery.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends GalleryFindFirstOrThrowArgs>(args?: SelectSubset<T, GalleryFindFirstOrThrowArgs<ExtArgs>>): Prisma__GalleryClient<$Result.GetResult<Prisma.$GalleryPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Galleries that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GalleryFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Galleries
+     * const galleries = await prisma.gallery.findMany()
+     * 
+     * // Get first 10 Galleries
+     * const galleries = await prisma.gallery.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const galleryWithIdOnly = await prisma.gallery.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends GalleryFindManyArgs>(args?: SelectSubset<T, GalleryFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GalleryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Gallery.
+     * @param {GalleryCreateArgs} args - Arguments to create a Gallery.
+     * @example
+     * // Create one Gallery
+     * const Gallery = await prisma.gallery.create({
+     *   data: {
+     *     // ... data to create a Gallery
+     *   }
+     * })
+     * 
+     */
+    create<T extends GalleryCreateArgs>(args: SelectSubset<T, GalleryCreateArgs<ExtArgs>>): Prisma__GalleryClient<$Result.GetResult<Prisma.$GalleryPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Galleries.
+     * @param {GalleryCreateManyArgs} args - Arguments to create many Galleries.
+     * @example
+     * // Create many Galleries
+     * const gallery = await prisma.gallery.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends GalleryCreateManyArgs>(args?: SelectSubset<T, GalleryCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Galleries and returns the data saved in the database.
+     * @param {GalleryCreateManyAndReturnArgs} args - Arguments to create many Galleries.
+     * @example
+     * // Create many Galleries
+     * const gallery = await prisma.gallery.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Galleries and only return the `id`
+     * const galleryWithIdOnly = await prisma.gallery.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends GalleryCreateManyAndReturnArgs>(args?: SelectSubset<T, GalleryCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GalleryPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a Gallery.
+     * @param {GalleryDeleteArgs} args - Arguments to delete one Gallery.
+     * @example
+     * // Delete one Gallery
+     * const Gallery = await prisma.gallery.delete({
+     *   where: {
+     *     // ... filter to delete one Gallery
+     *   }
+     * })
+     * 
+     */
+    delete<T extends GalleryDeleteArgs>(args: SelectSubset<T, GalleryDeleteArgs<ExtArgs>>): Prisma__GalleryClient<$Result.GetResult<Prisma.$GalleryPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Gallery.
+     * @param {GalleryUpdateArgs} args - Arguments to update one Gallery.
+     * @example
+     * // Update one Gallery
+     * const gallery = await prisma.gallery.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends GalleryUpdateArgs>(args: SelectSubset<T, GalleryUpdateArgs<ExtArgs>>): Prisma__GalleryClient<$Result.GetResult<Prisma.$GalleryPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Galleries.
+     * @param {GalleryDeleteManyArgs} args - Arguments to filter Galleries to delete.
+     * @example
+     * // Delete a few Galleries
+     * const { count } = await prisma.gallery.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends GalleryDeleteManyArgs>(args?: SelectSubset<T, GalleryDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Galleries.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GalleryUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Galleries
+     * const gallery = await prisma.gallery.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends GalleryUpdateManyArgs>(args: SelectSubset<T, GalleryUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Galleries and returns the data updated in the database.
+     * @param {GalleryUpdateManyAndReturnArgs} args - Arguments to update many Galleries.
+     * @example
+     * // Update many Galleries
+     * const gallery = await prisma.gallery.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more Galleries and only return the `id`
+     * const galleryWithIdOnly = await prisma.gallery.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends GalleryUpdateManyAndReturnArgs>(args: SelectSubset<T, GalleryUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GalleryPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one Gallery.
+     * @param {GalleryUpsertArgs} args - Arguments to update or create a Gallery.
+     * @example
+     * // Update or create a Gallery
+     * const gallery = await prisma.gallery.upsert({
+     *   create: {
+     *     // ... data to create a Gallery
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Gallery we want to update
+     *   }
+     * })
+     */
+    upsert<T extends GalleryUpsertArgs>(args: SelectSubset<T, GalleryUpsertArgs<ExtArgs>>): Prisma__GalleryClient<$Result.GetResult<Prisma.$GalleryPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Galleries.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GalleryCountArgs} args - Arguments to filter Galleries to count.
+     * @example
+     * // Count the number of Galleries
+     * const count = await prisma.gallery.count({
+     *   where: {
+     *     // ... the filter for the Galleries we want to count
+     *   }
+     * })
+    **/
+    count<T extends GalleryCountArgs>(
+      args?: Subset<T, GalleryCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], GalleryCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Gallery.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GalleryAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends GalleryAggregateArgs>(args: Subset<T, GalleryAggregateArgs>): Prisma.PrismaPromise<GetGalleryAggregateType<T>>
+
+    /**
+     * Group by Gallery.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GalleryGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends GalleryGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: GalleryGroupByArgs['orderBy'] }
+        : { orderBy?: GalleryGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, GalleryGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetGalleryGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Gallery model
+   */
+  readonly fields: GalleryFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Gallery.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__GalleryClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    player<T extends Gallery$playerArgs<ExtArgs> = {}>(args?: Subset<T, Gallery$playerArgs<ExtArgs>>): Prisma__PlayerClient<$Result.GetResult<Prisma.$PlayerPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    tournament<T extends Gallery$tournamentArgs<ExtArgs> = {}>(args?: Subset<T, Gallery$tournamentArgs<ExtArgs>>): Prisma__TournamentClient<$Result.GetResult<Prisma.$TournamentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Gallery model
+   */
+  interface GalleryFieldRefs {
+    readonly id: FieldRef<"Gallery", 'String'>
+    readonly name: FieldRef<"Gallery", 'String'>
+    readonly path: FieldRef<"Gallery", 'String'>
+    readonly fullPath: FieldRef<"Gallery", 'String'>
+    readonly publicUrl: FieldRef<"Gallery", 'String'>
+    readonly playerId: FieldRef<"Gallery", 'String'>
+    readonly tournamentId: FieldRef<"Gallery", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Gallery findUnique
+   */
+  export type GalleryFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gallery
+     */
+    select?: GallerySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gallery
+     */
+    omit?: GalleryOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GalleryInclude<ExtArgs> | null
+    /**
+     * Filter, which Gallery to fetch.
+     */
+    where: GalleryWhereUniqueInput
+  }
+
+  /**
+   * Gallery findUniqueOrThrow
+   */
+  export type GalleryFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gallery
+     */
+    select?: GallerySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gallery
+     */
+    omit?: GalleryOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GalleryInclude<ExtArgs> | null
+    /**
+     * Filter, which Gallery to fetch.
+     */
+    where: GalleryWhereUniqueInput
+  }
+
+  /**
+   * Gallery findFirst
+   */
+  export type GalleryFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gallery
+     */
+    select?: GallerySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gallery
+     */
+    omit?: GalleryOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GalleryInclude<ExtArgs> | null
+    /**
+     * Filter, which Gallery to fetch.
+     */
+    where?: GalleryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Galleries to fetch.
+     */
+    orderBy?: GalleryOrderByWithRelationInput | GalleryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Galleries.
+     */
+    cursor?: GalleryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Galleries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Galleries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Galleries.
+     */
+    distinct?: GalleryScalarFieldEnum | GalleryScalarFieldEnum[]
+  }
+
+  /**
+   * Gallery findFirstOrThrow
+   */
+  export type GalleryFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gallery
+     */
+    select?: GallerySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gallery
+     */
+    omit?: GalleryOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GalleryInclude<ExtArgs> | null
+    /**
+     * Filter, which Gallery to fetch.
+     */
+    where?: GalleryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Galleries to fetch.
+     */
+    orderBy?: GalleryOrderByWithRelationInput | GalleryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Galleries.
+     */
+    cursor?: GalleryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Galleries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Galleries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Galleries.
+     */
+    distinct?: GalleryScalarFieldEnum | GalleryScalarFieldEnum[]
+  }
+
+  /**
+   * Gallery findMany
+   */
+  export type GalleryFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gallery
+     */
+    select?: GallerySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gallery
+     */
+    omit?: GalleryOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GalleryInclude<ExtArgs> | null
+    /**
+     * Filter, which Galleries to fetch.
+     */
+    where?: GalleryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Galleries to fetch.
+     */
+    orderBy?: GalleryOrderByWithRelationInput | GalleryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Galleries.
+     */
+    cursor?: GalleryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Galleries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Galleries.
+     */
+    skip?: number
+    distinct?: GalleryScalarFieldEnum | GalleryScalarFieldEnum[]
+  }
+
+  /**
+   * Gallery create
+   */
+  export type GalleryCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gallery
+     */
+    select?: GallerySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gallery
+     */
+    omit?: GalleryOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GalleryInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Gallery.
+     */
+    data: XOR<GalleryCreateInput, GalleryUncheckedCreateInput>
+  }
+
+  /**
+   * Gallery createMany
+   */
+  export type GalleryCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Galleries.
+     */
+    data: GalleryCreateManyInput | GalleryCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Gallery createManyAndReturn
+   */
+  export type GalleryCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gallery
+     */
+    select?: GallerySelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gallery
+     */
+    omit?: GalleryOmit<ExtArgs> | null
+    /**
+     * The data used to create many Galleries.
+     */
+    data: GalleryCreateManyInput | GalleryCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Gallery update
+   */
+  export type GalleryUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gallery
+     */
+    select?: GallerySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gallery
+     */
+    omit?: GalleryOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GalleryInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Gallery.
+     */
+    data: XOR<GalleryUpdateInput, GalleryUncheckedUpdateInput>
+    /**
+     * Choose, which Gallery to update.
+     */
+    where: GalleryWhereUniqueInput
+  }
+
+  /**
+   * Gallery updateMany
+   */
+  export type GalleryUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Galleries.
+     */
+    data: XOR<GalleryUpdateManyMutationInput, GalleryUncheckedUpdateManyInput>
+    /**
+     * Filter which Galleries to update
+     */
+    where?: GalleryWhereInput
+    /**
+     * Limit how many Galleries to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Gallery updateManyAndReturn
+   */
+  export type GalleryUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gallery
+     */
+    select?: GallerySelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gallery
+     */
+    omit?: GalleryOmit<ExtArgs> | null
+    /**
+     * The data used to update Galleries.
+     */
+    data: XOR<GalleryUpdateManyMutationInput, GalleryUncheckedUpdateManyInput>
+    /**
+     * Filter which Galleries to update
+     */
+    where?: GalleryWhereInput
+    /**
+     * Limit how many Galleries to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Gallery upsert
+   */
+  export type GalleryUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gallery
+     */
+    select?: GallerySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gallery
+     */
+    omit?: GalleryOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GalleryInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Gallery to update in case it exists.
+     */
+    where: GalleryWhereUniqueInput
+    /**
+     * In case the Gallery found by the `where` argument doesn't exist, create a new Gallery with this data.
+     */
+    create: XOR<GalleryCreateInput, GalleryUncheckedCreateInput>
+    /**
+     * In case the Gallery was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<GalleryUpdateInput, GalleryUncheckedUpdateInput>
+  }
+
+  /**
+   * Gallery delete
+   */
+  export type GalleryDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gallery
+     */
+    select?: GallerySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gallery
+     */
+    omit?: GalleryOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GalleryInclude<ExtArgs> | null
+    /**
+     * Filter which Gallery to delete.
+     */
+    where: GalleryWhereUniqueInput
+  }
+
+  /**
+   * Gallery deleteMany
+   */
+  export type GalleryDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Galleries to delete
+     */
+    where?: GalleryWhereInput
+    /**
+     * Limit how many Galleries to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * Gallery.player
+   */
+  export type Gallery$playerArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Player
+     */
+    select?: PlayerSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Player
+     */
+    omit?: PlayerOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PlayerInclude<ExtArgs> | null
+    where?: PlayerWhereInput
+  }
+
+  /**
+   * Gallery.tournament
+   */
+  export type Gallery$tournamentArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Tournament
+     */
+    select?: TournamentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Tournament
+     */
+    omit?: TournamentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TournamentInclude<ExtArgs> | null
+    where?: TournamentWhereInput
+  }
+
+  /**
+   * Gallery without action
+   */
+  export type GalleryDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gallery
+     */
+    select?: GallerySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gallery
+     */
+    omit?: GalleryOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GalleryInclude<ExtArgs> | null
   }
 
 
@@ -6842,6 +8085,7 @@ export namespace Prisma {
     seasonId: string | null
     createdBy: string | null
     createdAt: Date | null
+    galleryId: string | null
   }
 
   export type TournamentMaxAggregateOutputType = {
@@ -6853,6 +8097,7 @@ export namespace Prisma {
     seasonId: string | null
     createdBy: string | null
     createdAt: Date | null
+    galleryId: string | null
   }
 
   export type TournamentCountAggregateOutputType = {
@@ -6864,6 +8109,7 @@ export namespace Prisma {
     seasonId: number
     createdBy: number
     createdAt: number
+    galleryId: number
     _all: number
   }
 
@@ -6885,6 +8131,7 @@ export namespace Prisma {
     seasonId?: true
     createdBy?: true
     createdAt?: true
+    galleryId?: true
   }
 
   export type TournamentMaxAggregateInputType = {
@@ -6896,6 +8143,7 @@ export namespace Prisma {
     seasonId?: true
     createdBy?: true
     createdAt?: true
+    galleryId?: true
   }
 
   export type TournamentCountAggregateInputType = {
@@ -6907,6 +8155,7 @@ export namespace Prisma {
     seasonId?: true
     createdBy?: true
     createdAt?: true
+    galleryId?: true
     _all?: true
   }
 
@@ -7005,6 +8254,7 @@ export namespace Prisma {
     seasonId: string | null
     createdBy: string | null
     createdAt: Date
+    galleryId: string | null
     _count: TournamentCountAggregateOutputType | null
     _avg: TournamentAvgAggregateOutputType | null
     _sum: TournamentSumAggregateOutputType | null
@@ -7035,12 +8285,14 @@ export namespace Prisma {
     seasonId?: boolean
     createdBy?: boolean
     createdAt?: boolean
+    galleryId?: boolean
     team?: boolean | Tournament$teamArgs<ExtArgs>
     user?: boolean | Tournament$userArgs<ExtArgs>
     Season?: boolean | Tournament$SeasonArgs<ExtArgs>
     TournamentWinner?: boolean | Tournament$TournamentWinnerArgs<ExtArgs>
     PollVote?: boolean | Tournament$PollVoteArgs<ExtArgs>
     Match?: boolean | Tournament$MatchArgs<ExtArgs>
+    gallery?: boolean | Tournament$galleryArgs<ExtArgs>
     _count?: boolean | TournamentCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tournament"]>
 
@@ -7053,7 +8305,9 @@ export namespace Prisma {
     seasonId?: boolean
     createdBy?: boolean
     createdAt?: boolean
+    galleryId?: boolean
     Season?: boolean | Tournament$SeasonArgs<ExtArgs>
+    gallery?: boolean | Tournament$galleryArgs<ExtArgs>
   }, ExtArgs["result"]["tournament"]>
 
   export type TournamentSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -7065,7 +8319,9 @@ export namespace Prisma {
     seasonId?: boolean
     createdBy?: boolean
     createdAt?: boolean
+    galleryId?: boolean
     Season?: boolean | Tournament$SeasonArgs<ExtArgs>
+    gallery?: boolean | Tournament$galleryArgs<ExtArgs>
   }, ExtArgs["result"]["tournament"]>
 
   export type TournamentSelectScalar = {
@@ -7077,9 +8333,10 @@ export namespace Prisma {
     seasonId?: boolean
     createdBy?: boolean
     createdAt?: boolean
+    galleryId?: boolean
   }
 
-  export type TournamentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "startDate" | "backgroundUrl" | "fee" | "seasonId" | "createdBy" | "createdAt", ExtArgs["result"]["tournament"]>
+  export type TournamentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "startDate" | "backgroundUrl" | "fee" | "seasonId" | "createdBy" | "createdAt" | "galleryId", ExtArgs["result"]["tournament"]>
   export type TournamentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     team?: boolean | Tournament$teamArgs<ExtArgs>
     user?: boolean | Tournament$userArgs<ExtArgs>
@@ -7087,13 +8344,16 @@ export namespace Prisma {
     TournamentWinner?: boolean | Tournament$TournamentWinnerArgs<ExtArgs>
     PollVote?: boolean | Tournament$PollVoteArgs<ExtArgs>
     Match?: boolean | Tournament$MatchArgs<ExtArgs>
+    gallery?: boolean | Tournament$galleryArgs<ExtArgs>
     _count?: boolean | TournamentCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type TournamentIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     Season?: boolean | Tournament$SeasonArgs<ExtArgs>
+    gallery?: boolean | Tournament$galleryArgs<ExtArgs>
   }
   export type TournamentIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     Season?: boolean | Tournament$SeasonArgs<ExtArgs>
+    gallery?: boolean | Tournament$galleryArgs<ExtArgs>
   }
 
   export type $TournamentPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -7105,6 +8365,7 @@ export namespace Prisma {
       TournamentWinner: Prisma.$TournamentWinnerPayload<ExtArgs>[]
       PollVote: Prisma.$PollVotePayload<ExtArgs>[]
       Match: Prisma.$MatchPayload<ExtArgs>[]
+      gallery: Prisma.$GalleryPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -7115,6 +8376,7 @@ export namespace Prisma {
       seasonId: string | null
       createdBy: string | null
       createdAt: Date
+      galleryId: string | null
     }, ExtArgs["result"]["tournament"]>
     composites: {}
   }
@@ -7515,6 +8777,7 @@ export namespace Prisma {
     TournamentWinner<T extends Tournament$TournamentWinnerArgs<ExtArgs> = {}>(args?: Subset<T, Tournament$TournamentWinnerArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TournamentWinnerPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     PollVote<T extends Tournament$PollVoteArgs<ExtArgs> = {}>(args?: Subset<T, Tournament$PollVoteArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PollVotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     Match<T extends Tournament$MatchArgs<ExtArgs> = {}>(args?: Subset<T, Tournament$MatchArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MatchPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    gallery<T extends Tournament$galleryArgs<ExtArgs> = {}>(args?: Subset<T, Tournament$galleryArgs<ExtArgs>>): Prisma__GalleryClient<$Result.GetResult<Prisma.$GalleryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -7552,6 +8815,7 @@ export namespace Prisma {
     readonly seasonId: FieldRef<"Tournament", 'String'>
     readonly createdBy: FieldRef<"Tournament", 'String'>
     readonly createdAt: FieldRef<"Tournament", 'DateTime'>
+    readonly galleryId: FieldRef<"Tournament", 'String'>
   }
     
 
@@ -8084,6 +9348,25 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: MatchScalarFieldEnum | MatchScalarFieldEnum[]
+  }
+
+  /**
+   * Tournament.gallery
+   */
+  export type Tournament$galleryArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gallery
+     */
+    select?: GallerySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gallery
+     */
+    omit?: GalleryOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GalleryInclude<ExtArgs> | null
+    where?: GalleryWhereInput
   }
 
   /**
@@ -15846,7 +17129,8 @@ export namespace Prisma {
     isBanned: 'isBanned',
     category: 'category',
     userId: 'userId',
-    teamId: 'teamId'
+    teamId: 'teamId',
+    characterImageId: 'characterImageId'
   };
 
   export type PlayerScalarFieldEnum = (typeof PlayerScalarFieldEnum)[keyof typeof PlayerScalarFieldEnum]
@@ -15859,6 +17143,19 @@ export namespace Prisma {
   };
 
   export type GameScoreScalarFieldEnum = (typeof GameScoreScalarFieldEnum)[keyof typeof GameScoreScalarFieldEnum]
+
+
+  export const GalleryScalarFieldEnum: {
+    id: 'id',
+    name: 'name',
+    path: 'path',
+    fullPath: 'fullPath',
+    publicUrl: 'publicUrl',
+    playerId: 'playerId',
+    tournamentId: 'tournamentId'
+  };
+
+  export type GalleryScalarFieldEnum = (typeof GalleryScalarFieldEnum)[keyof typeof GalleryScalarFieldEnum]
 
 
   export const SeasonScalarFieldEnum: {
@@ -15883,7 +17180,8 @@ export namespace Prisma {
     fee: 'fee',
     seasonId: 'seasonId',
     createdBy: 'createdBy',
-    createdAt: 'createdAt'
+    createdAt: 'createdAt',
+    galleryId: 'galleryId'
   };
 
   export type TournamentScalarFieldEnum = (typeof TournamentScalarFieldEnum)[keyof typeof TournamentScalarFieldEnum]
@@ -16257,6 +17555,7 @@ export namespace Prisma {
     category?: EnumPlayerCategoryFilter<"Player"> | $Enums.PlayerCategory
     userId?: StringFilter<"Player"> | string
     teamId?: StringNullableFilter<"Player"> | string | null
+    characterImageId?: StringNullableFilter<"Player"> | string | null
     gameScore?: GameScoreListRelationFilter
     pollVote?: XOR<PollVoteNullableScalarRelationFilter, PollVoteWhereInput> | null
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
@@ -16264,6 +17563,7 @@ export namespace Prisma {
     Wallet?: XOR<WalletNullableScalarRelationFilter, WalletWhereInput> | null
     PlayerStats?: XOR<PlayerStatsNullableScalarRelationFilter, PlayerStatsWhereInput> | null
     Team?: XOR<TeamNullableScalarRelationFilter, TeamWhereInput> | null
+    characterImage?: XOR<GalleryNullableScalarRelationFilter, GalleryWhereInput> | null
   }
 
   export type PlayerOrderByWithRelationInput = {
@@ -16275,6 +17575,7 @@ export namespace Prisma {
     category?: SortOrder
     userId?: SortOrder
     teamId?: SortOrderInput | SortOrder
+    characterImageId?: SortOrderInput | SortOrder
     gameScore?: GameScoreOrderByRelationAggregateInput
     pollVote?: PollVoteOrderByWithRelationInput
     user?: UserOrderByWithRelationInput
@@ -16282,11 +17583,13 @@ export namespace Prisma {
     Wallet?: WalletOrderByWithRelationInput
     PlayerStats?: PlayerStatsOrderByWithRelationInput
     Team?: TeamOrderByWithRelationInput
+    characterImage?: GalleryOrderByWithRelationInput
   }
 
   export type PlayerWhereUniqueInput = Prisma.AtLeast<{
     id?: string
     userId?: string
+    characterImageId?: string
     AND?: PlayerWhereInput | PlayerWhereInput[]
     OR?: PlayerWhereInput[]
     NOT?: PlayerWhereInput | PlayerWhereInput[]
@@ -16303,7 +17606,8 @@ export namespace Prisma {
     Wallet?: XOR<WalletNullableScalarRelationFilter, WalletWhereInput> | null
     PlayerStats?: XOR<PlayerStatsNullableScalarRelationFilter, PlayerStatsWhereInput> | null
     Team?: XOR<TeamNullableScalarRelationFilter, TeamWhereInput> | null
-  }, "id" | "userId">
+    characterImage?: XOR<GalleryNullableScalarRelationFilter, GalleryWhereInput> | null
+  }, "id" | "userId" | "characterImageId">
 
   export type PlayerOrderByWithAggregationInput = {
     id?: SortOrder
@@ -16314,6 +17618,7 @@ export namespace Prisma {
     category?: SortOrder
     userId?: SortOrder
     teamId?: SortOrderInput | SortOrder
+    characterImageId?: SortOrderInput | SortOrder
     _count?: PlayerCountOrderByAggregateInput
     _max?: PlayerMaxOrderByAggregateInput
     _min?: PlayerMinOrderByAggregateInput
@@ -16331,6 +17636,7 @@ export namespace Prisma {
     category?: EnumPlayerCategoryWithAggregatesFilter<"Player"> | $Enums.PlayerCategory
     userId?: StringWithAggregatesFilter<"Player"> | string
     teamId?: StringNullableWithAggregatesFilter<"Player"> | string | null
+    characterImageId?: StringNullableWithAggregatesFilter<"Player"> | string | null
   }
 
   export type GameScoreWhereInput = {
@@ -16378,6 +17684,74 @@ export namespace Prisma {
     highScore?: IntWithAggregatesFilter<"GameScore"> | number
     lastPlayedAt?: DateTimeWithAggregatesFilter<"GameScore"> | Date | string
     playerId?: StringWithAggregatesFilter<"GameScore"> | string
+  }
+
+  export type GalleryWhereInput = {
+    AND?: GalleryWhereInput | GalleryWhereInput[]
+    OR?: GalleryWhereInput[]
+    NOT?: GalleryWhereInput | GalleryWhereInput[]
+    id?: StringFilter<"Gallery"> | string
+    name?: StringFilter<"Gallery"> | string
+    path?: StringFilter<"Gallery"> | string
+    fullPath?: StringFilter<"Gallery"> | string
+    publicUrl?: StringFilter<"Gallery"> | string
+    playerId?: StringNullableFilter<"Gallery"> | string | null
+    tournamentId?: StringNullableFilter<"Gallery"> | string | null
+    player?: XOR<PlayerNullableScalarRelationFilter, PlayerWhereInput> | null
+    tournament?: XOR<TournamentNullableScalarRelationFilter, TournamentWhereInput> | null
+  }
+
+  export type GalleryOrderByWithRelationInput = {
+    id?: SortOrder
+    name?: SortOrder
+    path?: SortOrder
+    fullPath?: SortOrder
+    publicUrl?: SortOrder
+    playerId?: SortOrderInput | SortOrder
+    tournamentId?: SortOrderInput | SortOrder
+    player?: PlayerOrderByWithRelationInput
+    tournament?: TournamentOrderByWithRelationInput
+  }
+
+  export type GalleryWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    playerId?: string
+    AND?: GalleryWhereInput | GalleryWhereInput[]
+    OR?: GalleryWhereInput[]
+    NOT?: GalleryWhereInput | GalleryWhereInput[]
+    name?: StringFilter<"Gallery"> | string
+    path?: StringFilter<"Gallery"> | string
+    fullPath?: StringFilter<"Gallery"> | string
+    publicUrl?: StringFilter<"Gallery"> | string
+    tournamentId?: StringNullableFilter<"Gallery"> | string | null
+    player?: XOR<PlayerNullableScalarRelationFilter, PlayerWhereInput> | null
+    tournament?: XOR<TournamentNullableScalarRelationFilter, TournamentWhereInput> | null
+  }, "id" | "playerId">
+
+  export type GalleryOrderByWithAggregationInput = {
+    id?: SortOrder
+    name?: SortOrder
+    path?: SortOrder
+    fullPath?: SortOrder
+    publicUrl?: SortOrder
+    playerId?: SortOrderInput | SortOrder
+    tournamentId?: SortOrderInput | SortOrder
+    _count?: GalleryCountOrderByAggregateInput
+    _max?: GalleryMaxOrderByAggregateInput
+    _min?: GalleryMinOrderByAggregateInput
+  }
+
+  export type GalleryScalarWhereWithAggregatesInput = {
+    AND?: GalleryScalarWhereWithAggregatesInput | GalleryScalarWhereWithAggregatesInput[]
+    OR?: GalleryScalarWhereWithAggregatesInput[]
+    NOT?: GalleryScalarWhereWithAggregatesInput | GalleryScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Gallery"> | string
+    name?: StringWithAggregatesFilter<"Gallery"> | string
+    path?: StringWithAggregatesFilter<"Gallery"> | string
+    fullPath?: StringWithAggregatesFilter<"Gallery"> | string
+    publicUrl?: StringWithAggregatesFilter<"Gallery"> | string
+    playerId?: StringNullableWithAggregatesFilter<"Gallery"> | string | null
+    tournamentId?: StringNullableWithAggregatesFilter<"Gallery"> | string | null
   }
 
   export type SeasonWhereInput = {
@@ -16463,12 +17837,14 @@ export namespace Prisma {
     seasonId?: StringNullableFilter<"Tournament"> | string | null
     createdBy?: StringNullableFilter<"Tournament"> | string | null
     createdAt?: DateTimeFilter<"Tournament"> | Date | string
+    galleryId?: StringNullableFilter<"Tournament"> | string | null
     team?: TeamListRelationFilter
     user?: UserListRelationFilter
     Season?: XOR<SeasonNullableScalarRelationFilter, SeasonWhereInput> | null
     TournamentWinner?: TournamentWinnerListRelationFilter
     PollVote?: PollVoteListRelationFilter
     Match?: MatchListRelationFilter
+    gallery?: XOR<GalleryNullableScalarRelationFilter, GalleryWhereInput> | null
   }
 
   export type TournamentOrderByWithRelationInput = {
@@ -16480,16 +17856,19 @@ export namespace Prisma {
     seasonId?: SortOrderInput | SortOrder
     createdBy?: SortOrderInput | SortOrder
     createdAt?: SortOrder
+    galleryId?: SortOrderInput | SortOrder
     team?: TeamOrderByRelationAggregateInput
     user?: UserOrderByRelationAggregateInput
     Season?: SeasonOrderByWithRelationInput
     TournamentWinner?: TournamentWinnerOrderByRelationAggregateInput
     PollVote?: PollVoteOrderByRelationAggregateInput
     Match?: MatchOrderByRelationAggregateInput
+    gallery?: GalleryOrderByWithRelationInput
   }
 
   export type TournamentWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    galleryId?: string
     AND?: TournamentWhereInput | TournamentWhereInput[]
     OR?: TournamentWhereInput[]
     NOT?: TournamentWhereInput | TournamentWhereInput[]
@@ -16506,7 +17885,8 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerListRelationFilter
     PollVote?: PollVoteListRelationFilter
     Match?: MatchListRelationFilter
-  }, "id">
+    gallery?: XOR<GalleryNullableScalarRelationFilter, GalleryWhereInput> | null
+  }, "id" | "galleryId">
 
   export type TournamentOrderByWithAggregationInput = {
     id?: SortOrder
@@ -16517,6 +17897,7 @@ export namespace Prisma {
     seasonId?: SortOrderInput | SortOrder
     createdBy?: SortOrderInput | SortOrder
     createdAt?: SortOrder
+    galleryId?: SortOrderInput | SortOrder
     _count?: TournamentCountOrderByAggregateInput
     _avg?: TournamentAvgOrderByAggregateInput
     _max?: TournamentMaxOrderByAggregateInput
@@ -16536,6 +17917,7 @@ export namespace Prisma {
     seasonId?: StringNullableWithAggregatesFilter<"Tournament"> | string | null
     createdBy?: StringNullableWithAggregatesFilter<"Tournament"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Tournament"> | Date | string
+    galleryId?: StringNullableWithAggregatesFilter<"Tournament"> | string | null
   }
 
   export type PollVoteWhereInput = {
@@ -17112,6 +18494,7 @@ export namespace Prisma {
     Wallet?: WalletCreateNestedOneWithoutPlayerInput
     PlayerStats?: PlayerStatsCreateNestedOneWithoutPlayerInput
     Team?: TeamCreateNestedOneWithoutPlayersInput
+    characterImage?: GalleryCreateNestedOneWithoutPlayerInput
   }
 
   export type PlayerUncheckedCreateInput = {
@@ -17123,6 +18506,7 @@ export namespace Prisma {
     category?: $Enums.PlayerCategory
     userId: string
     teamId?: string | null
+    characterImageId?: string | null
     gameScore?: GameScoreUncheckedCreateNestedManyWithoutPlayerInput
     pollVote?: PollVoteUncheckedCreateNestedOneWithoutPlayerInput
     TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutPlayerInput
@@ -17144,6 +18528,7 @@ export namespace Prisma {
     Wallet?: WalletUpdateOneWithoutPlayerNestedInput
     PlayerStats?: PlayerStatsUpdateOneWithoutPlayerNestedInput
     Team?: TeamUpdateOneWithoutPlayersNestedInput
+    characterImage?: GalleryUpdateOneWithoutPlayerNestedInput
   }
 
   export type PlayerUncheckedUpdateInput = {
@@ -17155,6 +18540,7 @@ export namespace Prisma {
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
     teamId?: NullableStringFieldUpdateOperationsInput | string | null
+    characterImageId?: NullableStringFieldUpdateOperationsInput | string | null
     gameScore?: GameScoreUncheckedUpdateManyWithoutPlayerNestedInput
     pollVote?: PollVoteUncheckedUpdateOneWithoutPlayerNestedInput
     TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutPlayerNestedInput
@@ -17171,6 +18557,7 @@ export namespace Prisma {
     category?: $Enums.PlayerCategory
     userId: string
     teamId?: string | null
+    characterImageId?: string | null
   }
 
   export type PlayerUpdateManyMutationInput = {
@@ -17191,6 +18578,7 @@ export namespace Prisma {
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
     teamId?: NullableStringFieldUpdateOperationsInput | string | null
+    characterImageId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type GameScoreCreateInput = {
@@ -17232,6 +18620,84 @@ export namespace Prisma {
     highScore?: IntFieldUpdateOperationsInput | number
     lastPlayedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     playerId?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type GalleryCreateInput = {
+    id?: string
+    name: string
+    path: string
+    fullPath: string
+    publicUrl: string
+    playerId?: string | null
+    tournamentId?: string | null
+    player?: PlayerCreateNestedOneWithoutCharacterImageInput
+    tournament?: TournamentCreateNestedOneWithoutGalleryInput
+  }
+
+  export type GalleryUncheckedCreateInput = {
+    id?: string
+    name: string
+    path: string
+    fullPath: string
+    publicUrl: string
+    playerId?: string | null
+    tournamentId?: string | null
+    player?: PlayerUncheckedCreateNestedOneWithoutCharacterImageInput
+    tournament?: TournamentUncheckedCreateNestedOneWithoutGalleryInput
+  }
+
+  export type GalleryUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    fullPath?: StringFieldUpdateOperationsInput | string
+    publicUrl?: StringFieldUpdateOperationsInput | string
+    playerId?: NullableStringFieldUpdateOperationsInput | string | null
+    tournamentId?: NullableStringFieldUpdateOperationsInput | string | null
+    player?: PlayerUpdateOneWithoutCharacterImageNestedInput
+    tournament?: TournamentUpdateOneWithoutGalleryNestedInput
+  }
+
+  export type GalleryUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    fullPath?: StringFieldUpdateOperationsInput | string
+    publicUrl?: StringFieldUpdateOperationsInput | string
+    playerId?: NullableStringFieldUpdateOperationsInput | string | null
+    tournamentId?: NullableStringFieldUpdateOperationsInput | string | null
+    player?: PlayerUncheckedUpdateOneWithoutCharacterImageNestedInput
+    tournament?: TournamentUncheckedUpdateOneWithoutGalleryNestedInput
+  }
+
+  export type GalleryCreateManyInput = {
+    id?: string
+    name: string
+    path: string
+    fullPath: string
+    publicUrl: string
+    playerId?: string | null
+    tournamentId?: string | null
+  }
+
+  export type GalleryUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    fullPath?: StringFieldUpdateOperationsInput | string
+    publicUrl?: StringFieldUpdateOperationsInput | string
+    playerId?: NullableStringFieldUpdateOperationsInput | string | null
+    tournamentId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type GalleryUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    fullPath?: StringFieldUpdateOperationsInput | string
+    publicUrl?: StringFieldUpdateOperationsInput | string
+    playerId?: NullableStringFieldUpdateOperationsInput | string | null
+    tournamentId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SeasonCreateInput = {
@@ -17329,6 +18795,7 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerCreateNestedManyWithoutTournamentInput
     PollVote?: PollVoteCreateNestedManyWithoutTournamentInput
     Match?: MatchCreateNestedManyWithoutTournamentInput
+    gallery?: GalleryCreateNestedOneWithoutTournamentInput
   }
 
   export type TournamentUncheckedCreateInput = {
@@ -17340,6 +18807,7 @@ export namespace Prisma {
     seasonId?: string | null
     createdBy?: string | null
     createdAt?: Date | string
+    galleryId?: string | null
     team?: TeamUncheckedCreateNestedManyWithoutTournamentInput
     user?: UserUncheckedCreateNestedManyWithoutTournamentInput
     TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutTournamentInput
@@ -17361,6 +18829,7 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerUpdateManyWithoutTournamentNestedInput
     PollVote?: PollVoteUpdateManyWithoutTournamentNestedInput
     Match?: MatchUpdateManyWithoutTournamentNestedInput
+    gallery?: GalleryUpdateOneWithoutTournamentNestedInput
   }
 
   export type TournamentUncheckedUpdateInput = {
@@ -17372,6 +18841,7 @@ export namespace Prisma {
     seasonId?: NullableStringFieldUpdateOperationsInput | string | null
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    galleryId?: NullableStringFieldUpdateOperationsInput | string | null
     team?: TeamUncheckedUpdateManyWithoutTournamentNestedInput
     user?: UserUncheckedUpdateManyWithoutTournamentNestedInput
     TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutTournamentNestedInput
@@ -17388,6 +18858,7 @@ export namespace Prisma {
     seasonId?: string | null
     createdBy?: string | null
     createdAt?: Date | string
+    galleryId?: string | null
   }
 
   export type TournamentUpdateManyMutationInput = {
@@ -17409,6 +18880,7 @@ export namespace Prisma {
     seasonId?: NullableStringFieldUpdateOperationsInput | string | null
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    galleryId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PollVoteCreateInput = {
@@ -18113,6 +19585,11 @@ export namespace Prisma {
     isNot?: TeamWhereInput | null
   }
 
+  export type GalleryNullableScalarRelationFilter = {
+    is?: GalleryWhereInput | null
+    isNot?: GalleryWhereInput | null
+  }
+
   export type GameScoreOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -18130,6 +19607,7 @@ export namespace Prisma {
     category?: SortOrder
     userId?: SortOrder
     teamId?: SortOrder
+    characterImageId?: SortOrder
   }
 
   export type PlayerMaxOrderByAggregateInput = {
@@ -18141,6 +19619,7 @@ export namespace Prisma {
     category?: SortOrder
     userId?: SortOrder
     teamId?: SortOrder
+    characterImageId?: SortOrder
   }
 
   export type PlayerMinOrderByAggregateInput = {
@@ -18152,6 +19631,7 @@ export namespace Prisma {
     category?: SortOrder
     userId?: SortOrder
     teamId?: SortOrder
+    characterImageId?: SortOrder
   }
 
   export type BytesNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -18203,6 +19683,36 @@ export namespace Prisma {
 
   export type GameScoreSumOrderByAggregateInput = {
     highScore?: SortOrder
+  }
+
+  export type GalleryCountOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    path?: SortOrder
+    fullPath?: SortOrder
+    publicUrl?: SortOrder
+    playerId?: SortOrder
+    tournamentId?: SortOrder
+  }
+
+  export type GalleryMaxOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    path?: SortOrder
+    fullPath?: SortOrder
+    publicUrl?: SortOrder
+    playerId?: SortOrder
+    tournamentId?: SortOrder
+  }
+
+  export type GalleryMinOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    path?: SortOrder
+    fullPath?: SortOrder
+    publicUrl?: SortOrder
+    playerId?: SortOrder
+    tournamentId?: SortOrder
   }
 
   export type EnumSeasonStatusFilter<$PrismaModel = never> = {
@@ -18335,6 +19845,7 @@ export namespace Prisma {
     seasonId?: SortOrder
     createdBy?: SortOrder
     createdAt?: SortOrder
+    galleryId?: SortOrder
   }
 
   export type TournamentAvgOrderByAggregateInput = {
@@ -18350,6 +19861,7 @@ export namespace Prisma {
     seasonId?: SortOrder
     createdBy?: SortOrder
     createdAt?: SortOrder
+    galleryId?: SortOrder
   }
 
   export type TournamentMinOrderByAggregateInput = {
@@ -18361,6 +19873,7 @@ export namespace Prisma {
     seasonId?: SortOrder
     createdBy?: SortOrder
     createdAt?: SortOrder
+    galleryId?: SortOrder
   }
 
   export type TournamentSumOrderByAggregateInput = {
@@ -18828,6 +20341,12 @@ export namespace Prisma {
     connect?: TeamWhereUniqueInput
   }
 
+  export type GalleryCreateNestedOneWithoutPlayerInput = {
+    create?: XOR<GalleryCreateWithoutPlayerInput, GalleryUncheckedCreateWithoutPlayerInput>
+    connectOrCreate?: GalleryCreateOrConnectWithoutPlayerInput
+    connect?: GalleryWhereUniqueInput
+  }
+
   export type GameScoreUncheckedCreateNestedManyWithoutPlayerInput = {
     create?: XOR<GameScoreCreateWithoutPlayerInput, GameScoreUncheckedCreateWithoutPlayerInput> | GameScoreCreateWithoutPlayerInput[] | GameScoreUncheckedCreateWithoutPlayerInput[]
     connectOrCreate?: GameScoreCreateOrConnectWithoutPlayerInput | GameScoreCreateOrConnectWithoutPlayerInput[]
@@ -18944,6 +20463,16 @@ export namespace Prisma {
     update?: XOR<XOR<TeamUpdateToOneWithWhereWithoutPlayersInput, TeamUpdateWithoutPlayersInput>, TeamUncheckedUpdateWithoutPlayersInput>
   }
 
+  export type GalleryUpdateOneWithoutPlayerNestedInput = {
+    create?: XOR<GalleryCreateWithoutPlayerInput, GalleryUncheckedCreateWithoutPlayerInput>
+    connectOrCreate?: GalleryCreateOrConnectWithoutPlayerInput
+    upsert?: GalleryUpsertWithoutPlayerInput
+    disconnect?: GalleryWhereInput | boolean
+    delete?: GalleryWhereInput | boolean
+    connect?: GalleryWhereUniqueInput
+    update?: XOR<XOR<GalleryUpdateToOneWithWhereWithoutPlayerInput, GalleryUpdateWithoutPlayerInput>, GalleryUncheckedUpdateWithoutPlayerInput>
+  }
+
   export type GameScoreUncheckedUpdateManyWithoutPlayerNestedInput = {
     create?: XOR<GameScoreCreateWithoutPlayerInput, GameScoreUncheckedCreateWithoutPlayerInput> | GameScoreCreateWithoutPlayerInput[] | GameScoreUncheckedCreateWithoutPlayerInput[]
     connectOrCreate?: GameScoreCreateOrConnectWithoutPlayerInput | GameScoreCreateOrConnectWithoutPlayerInput[]
@@ -19014,6 +20543,70 @@ export namespace Prisma {
     upsert?: PlayerUpsertWithoutGameScoreInput
     connect?: PlayerWhereUniqueInput
     update?: XOR<XOR<PlayerUpdateToOneWithWhereWithoutGameScoreInput, PlayerUpdateWithoutGameScoreInput>, PlayerUncheckedUpdateWithoutGameScoreInput>
+  }
+
+  export type PlayerCreateNestedOneWithoutCharacterImageInput = {
+    create?: XOR<PlayerCreateWithoutCharacterImageInput, PlayerUncheckedCreateWithoutCharacterImageInput>
+    connectOrCreate?: PlayerCreateOrConnectWithoutCharacterImageInput
+    connect?: PlayerWhereUniqueInput
+  }
+
+  export type TournamentCreateNestedOneWithoutGalleryInput = {
+    create?: XOR<TournamentCreateWithoutGalleryInput, TournamentUncheckedCreateWithoutGalleryInput>
+    connectOrCreate?: TournamentCreateOrConnectWithoutGalleryInput
+    connect?: TournamentWhereUniqueInput
+  }
+
+  export type PlayerUncheckedCreateNestedOneWithoutCharacterImageInput = {
+    create?: XOR<PlayerCreateWithoutCharacterImageInput, PlayerUncheckedCreateWithoutCharacterImageInput>
+    connectOrCreate?: PlayerCreateOrConnectWithoutCharacterImageInput
+    connect?: PlayerWhereUniqueInput
+  }
+
+  export type TournamentUncheckedCreateNestedOneWithoutGalleryInput = {
+    create?: XOR<TournamentCreateWithoutGalleryInput, TournamentUncheckedCreateWithoutGalleryInput>
+    connectOrCreate?: TournamentCreateOrConnectWithoutGalleryInput
+    connect?: TournamentWhereUniqueInput
+  }
+
+  export type PlayerUpdateOneWithoutCharacterImageNestedInput = {
+    create?: XOR<PlayerCreateWithoutCharacterImageInput, PlayerUncheckedCreateWithoutCharacterImageInput>
+    connectOrCreate?: PlayerCreateOrConnectWithoutCharacterImageInput
+    upsert?: PlayerUpsertWithoutCharacterImageInput
+    disconnect?: PlayerWhereInput | boolean
+    delete?: PlayerWhereInput | boolean
+    connect?: PlayerWhereUniqueInput
+    update?: XOR<XOR<PlayerUpdateToOneWithWhereWithoutCharacterImageInput, PlayerUpdateWithoutCharacterImageInput>, PlayerUncheckedUpdateWithoutCharacterImageInput>
+  }
+
+  export type TournamentUpdateOneWithoutGalleryNestedInput = {
+    create?: XOR<TournamentCreateWithoutGalleryInput, TournamentUncheckedCreateWithoutGalleryInput>
+    connectOrCreate?: TournamentCreateOrConnectWithoutGalleryInput
+    upsert?: TournamentUpsertWithoutGalleryInput
+    disconnect?: TournamentWhereInput | boolean
+    delete?: TournamentWhereInput | boolean
+    connect?: TournamentWhereUniqueInput
+    update?: XOR<XOR<TournamentUpdateToOneWithWhereWithoutGalleryInput, TournamentUpdateWithoutGalleryInput>, TournamentUncheckedUpdateWithoutGalleryInput>
+  }
+
+  export type PlayerUncheckedUpdateOneWithoutCharacterImageNestedInput = {
+    create?: XOR<PlayerCreateWithoutCharacterImageInput, PlayerUncheckedCreateWithoutCharacterImageInput>
+    connectOrCreate?: PlayerCreateOrConnectWithoutCharacterImageInput
+    upsert?: PlayerUpsertWithoutCharacterImageInput
+    disconnect?: PlayerWhereInput | boolean
+    delete?: PlayerWhereInput | boolean
+    connect?: PlayerWhereUniqueInput
+    update?: XOR<XOR<PlayerUpdateToOneWithWhereWithoutCharacterImageInput, PlayerUpdateWithoutCharacterImageInput>, PlayerUncheckedUpdateWithoutCharacterImageInput>
+  }
+
+  export type TournamentUncheckedUpdateOneWithoutGalleryNestedInput = {
+    create?: XOR<TournamentCreateWithoutGalleryInput, TournamentUncheckedCreateWithoutGalleryInput>
+    connectOrCreate?: TournamentCreateOrConnectWithoutGalleryInput
+    upsert?: TournamentUpsertWithoutGalleryInput
+    disconnect?: TournamentWhereInput | boolean
+    delete?: TournamentWhereInput | boolean
+    connect?: TournamentWhereUniqueInput
+    update?: XOR<XOR<TournamentUpdateToOneWithWhereWithoutGalleryInput, TournamentUpdateWithoutGalleryInput>, TournamentUncheckedUpdateWithoutGalleryInput>
   }
 
   export type TournamentCreateNestedManyWithoutSeasonInput = {
@@ -19101,6 +20694,12 @@ export namespace Prisma {
     connectOrCreate?: MatchCreateOrConnectWithoutTournamentInput | MatchCreateOrConnectWithoutTournamentInput[]
     createMany?: MatchCreateManyTournamentInputEnvelope
     connect?: MatchWhereUniqueInput | MatchWhereUniqueInput[]
+  }
+
+  export type GalleryCreateNestedOneWithoutTournamentInput = {
+    create?: XOR<GalleryCreateWithoutTournamentInput, GalleryUncheckedCreateWithoutTournamentInput>
+    connectOrCreate?: GalleryCreateOrConnectWithoutTournamentInput
+    connect?: GalleryWhereUniqueInput
   }
 
   export type TeamUncheckedCreateNestedManyWithoutTournamentInput = {
@@ -19224,6 +20823,16 @@ export namespace Prisma {
     update?: MatchUpdateWithWhereUniqueWithoutTournamentInput | MatchUpdateWithWhereUniqueWithoutTournamentInput[]
     updateMany?: MatchUpdateManyWithWhereWithoutTournamentInput | MatchUpdateManyWithWhereWithoutTournamentInput[]
     deleteMany?: MatchScalarWhereInput | MatchScalarWhereInput[]
+  }
+
+  export type GalleryUpdateOneWithoutTournamentNestedInput = {
+    create?: XOR<GalleryCreateWithoutTournamentInput, GalleryUncheckedCreateWithoutTournamentInput>
+    connectOrCreate?: GalleryCreateOrConnectWithoutTournamentInput
+    upsert?: GalleryUpsertWithoutTournamentInput
+    disconnect?: GalleryWhereInput | boolean
+    delete?: GalleryWhereInput | boolean
+    connect?: GalleryWhereUniqueInput
+    update?: XOR<XOR<GalleryUpdateToOneWithWhereWithoutTournamentInput, GalleryUpdateWithoutTournamentInput>, GalleryUncheckedUpdateWithoutTournamentInput>
   }
 
   export type TeamUncheckedUpdateManyWithoutTournamentNestedInput = {
@@ -19770,6 +21379,7 @@ export namespace Prisma {
     Wallet?: WalletCreateNestedOneWithoutPlayerInput
     PlayerStats?: PlayerStatsCreateNestedOneWithoutPlayerInput
     Team?: TeamCreateNestedOneWithoutPlayersInput
+    characterImage?: GalleryCreateNestedOneWithoutPlayerInput
   }
 
   export type PlayerUncheckedCreateWithoutUserInput = {
@@ -19780,6 +21390,7 @@ export namespace Prisma {
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     teamId?: string | null
+    characterImageId?: string | null
     gameScore?: GameScoreUncheckedCreateNestedManyWithoutPlayerInput
     pollVote?: PollVoteUncheckedCreateNestedOneWithoutPlayerInput
     TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutPlayerInput
@@ -19805,6 +21416,7 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerCreateNestedManyWithoutTournamentInput
     PollVote?: PollVoteCreateNestedManyWithoutTournamentInput
     Match?: MatchCreateNestedManyWithoutTournamentInput
+    gallery?: GalleryCreateNestedOneWithoutTournamentInput
   }
 
   export type TournamentUncheckedCreateWithoutUserInput = {
@@ -19816,6 +21428,7 @@ export namespace Prisma {
     seasonId?: string | null
     createdBy?: string | null
     createdAt?: Date | string
+    galleryId?: string | null
     team?: TeamUncheckedCreateNestedManyWithoutTournamentInput
     TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutTournamentInput
     PollVote?: PollVoteUncheckedCreateNestedManyWithoutTournamentInput
@@ -19870,6 +21483,7 @@ export namespace Prisma {
     Wallet?: WalletUpdateOneWithoutPlayerNestedInput
     PlayerStats?: PlayerStatsUpdateOneWithoutPlayerNestedInput
     Team?: TeamUpdateOneWithoutPlayersNestedInput
+    characterImage?: GalleryUpdateOneWithoutPlayerNestedInput
   }
 
   export type PlayerUncheckedUpdateWithoutUserInput = {
@@ -19880,6 +21494,7 @@ export namespace Prisma {
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     teamId?: NullableStringFieldUpdateOperationsInput | string | null
+    characterImageId?: NullableStringFieldUpdateOperationsInput | string | null
     gameScore?: GameScoreUncheckedUpdateManyWithoutPlayerNestedInput
     pollVote?: PollVoteUncheckedUpdateOneWithoutPlayerNestedInput
     TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutPlayerNestedInput
@@ -19911,6 +21526,7 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerUpdateManyWithoutTournamentNestedInput
     PollVote?: PollVoteUpdateManyWithoutTournamentNestedInput
     Match?: MatchUpdateManyWithoutTournamentNestedInput
+    gallery?: GalleryUpdateOneWithoutTournamentNestedInput
   }
 
   export type TournamentUncheckedUpdateWithoutUserInput = {
@@ -19922,6 +21538,7 @@ export namespace Prisma {
     seasonId?: NullableStringFieldUpdateOperationsInput | string | null
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    galleryId?: NullableStringFieldUpdateOperationsInput | string | null
     team?: TeamUncheckedUpdateManyWithoutTournamentNestedInput
     TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutTournamentNestedInput
     PollVote?: PollVoteUncheckedUpdateManyWithoutTournamentNestedInput
@@ -20132,6 +21749,33 @@ export namespace Prisma {
   export type TeamCreateOrConnectWithoutPlayersInput = {
     where: TeamWhereUniqueInput
     create: XOR<TeamCreateWithoutPlayersInput, TeamUncheckedCreateWithoutPlayersInput>
+  }
+
+  export type GalleryCreateWithoutPlayerInput = {
+    id?: string
+    name: string
+    path: string
+    fullPath: string
+    publicUrl: string
+    playerId?: string | null
+    tournamentId?: string | null
+    tournament?: TournamentCreateNestedOneWithoutGalleryInput
+  }
+
+  export type GalleryUncheckedCreateWithoutPlayerInput = {
+    id?: string
+    name: string
+    path: string
+    fullPath: string
+    publicUrl: string
+    playerId?: string | null
+    tournamentId?: string | null
+    tournament?: TournamentUncheckedCreateNestedOneWithoutGalleryInput
+  }
+
+  export type GalleryCreateOrConnectWithoutPlayerInput = {
+    where: GalleryWhereUniqueInput
+    create: XOR<GalleryCreateWithoutPlayerInput, GalleryUncheckedCreateWithoutPlayerInput>
   }
 
   export type GameScoreUpsertWithWhereUniqueWithoutPlayerInput = {
@@ -20353,6 +21997,39 @@ export namespace Prisma {
     tournamentId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type GalleryUpsertWithoutPlayerInput = {
+    update: XOR<GalleryUpdateWithoutPlayerInput, GalleryUncheckedUpdateWithoutPlayerInput>
+    create: XOR<GalleryCreateWithoutPlayerInput, GalleryUncheckedCreateWithoutPlayerInput>
+    where?: GalleryWhereInput
+  }
+
+  export type GalleryUpdateToOneWithWhereWithoutPlayerInput = {
+    where?: GalleryWhereInput
+    data: XOR<GalleryUpdateWithoutPlayerInput, GalleryUncheckedUpdateWithoutPlayerInput>
+  }
+
+  export type GalleryUpdateWithoutPlayerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    fullPath?: StringFieldUpdateOperationsInput | string
+    publicUrl?: StringFieldUpdateOperationsInput | string
+    playerId?: NullableStringFieldUpdateOperationsInput | string | null
+    tournamentId?: NullableStringFieldUpdateOperationsInput | string | null
+    tournament?: TournamentUpdateOneWithoutGalleryNestedInput
+  }
+
+  export type GalleryUncheckedUpdateWithoutPlayerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    fullPath?: StringFieldUpdateOperationsInput | string
+    publicUrl?: StringFieldUpdateOperationsInput | string
+    playerId?: NullableStringFieldUpdateOperationsInput | string | null
+    tournamentId?: NullableStringFieldUpdateOperationsInput | string | null
+    tournament?: TournamentUncheckedUpdateOneWithoutGalleryNestedInput
+  }
+
   export type PlayerCreateWithoutGameScoreInput = {
     id?: string
     avatarUrl: string
@@ -20366,6 +22043,7 @@ export namespace Prisma {
     Wallet?: WalletCreateNestedOneWithoutPlayerInput
     PlayerStats?: PlayerStatsCreateNestedOneWithoutPlayerInput
     Team?: TeamCreateNestedOneWithoutPlayersInput
+    characterImage?: GalleryCreateNestedOneWithoutPlayerInput
   }
 
   export type PlayerUncheckedCreateWithoutGameScoreInput = {
@@ -20377,6 +22055,7 @@ export namespace Prisma {
     category?: $Enums.PlayerCategory
     userId: string
     teamId?: string | null
+    characterImageId?: string | null
     pollVote?: PollVoteUncheckedCreateNestedOneWithoutPlayerInput
     TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutPlayerInput
     Wallet?: WalletUncheckedCreateNestedOneWithoutPlayerInput
@@ -20412,6 +22091,7 @@ export namespace Prisma {
     Wallet?: WalletUpdateOneWithoutPlayerNestedInput
     PlayerStats?: PlayerStatsUpdateOneWithoutPlayerNestedInput
     Team?: TeamUpdateOneWithoutPlayersNestedInput
+    characterImage?: GalleryUpdateOneWithoutPlayerNestedInput
   }
 
   export type PlayerUncheckedUpdateWithoutGameScoreInput = {
@@ -20423,10 +22103,171 @@ export namespace Prisma {
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
     teamId?: NullableStringFieldUpdateOperationsInput | string | null
+    characterImageId?: NullableStringFieldUpdateOperationsInput | string | null
     pollVote?: PollVoteUncheckedUpdateOneWithoutPlayerNestedInput
     TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutPlayerNestedInput
     Wallet?: WalletUncheckedUpdateOneWithoutPlayerNestedInput
     PlayerStats?: PlayerStatsUncheckedUpdateOneWithoutPlayerNestedInput
+  }
+
+  export type PlayerCreateWithoutCharacterImageInput = {
+    id?: string
+    avatarUrl: string
+    characterUrl: string
+    characterUrlBase64?: Uint8Array | null
+    isBanned?: boolean
+    category?: $Enums.PlayerCategory
+    gameScore?: GameScoreCreateNestedManyWithoutPlayerInput
+    pollVote?: PollVoteCreateNestedOneWithoutPlayerInput
+    user: UserCreateNestedOneWithoutPlayerInput
+    TournamentWinner?: TournamentWinnerCreateNestedManyWithoutPlayerInput
+    Wallet?: WalletCreateNestedOneWithoutPlayerInput
+    PlayerStats?: PlayerStatsCreateNestedOneWithoutPlayerInput
+    Team?: TeamCreateNestedOneWithoutPlayersInput
+  }
+
+  export type PlayerUncheckedCreateWithoutCharacterImageInput = {
+    id?: string
+    avatarUrl: string
+    characterUrl: string
+    characterUrlBase64?: Uint8Array | null
+    isBanned?: boolean
+    category?: $Enums.PlayerCategory
+    userId: string
+    teamId?: string | null
+    gameScore?: GameScoreUncheckedCreateNestedManyWithoutPlayerInput
+    pollVote?: PollVoteUncheckedCreateNestedOneWithoutPlayerInput
+    TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutPlayerInput
+    Wallet?: WalletUncheckedCreateNestedOneWithoutPlayerInput
+    PlayerStats?: PlayerStatsUncheckedCreateNestedOneWithoutPlayerInput
+  }
+
+  export type PlayerCreateOrConnectWithoutCharacterImageInput = {
+    where: PlayerWhereUniqueInput
+    create: XOR<PlayerCreateWithoutCharacterImageInput, PlayerUncheckedCreateWithoutCharacterImageInput>
+  }
+
+  export type TournamentCreateWithoutGalleryInput = {
+    id?: string
+    name: string
+    startDate: Date | string
+    backgroundUrl?: string | null
+    fee?: number | null
+    createdBy?: string | null
+    createdAt?: Date | string
+    team?: TeamCreateNestedManyWithoutTournamentInput
+    user?: UserCreateNestedManyWithoutTournamentInput
+    Season?: SeasonCreateNestedOneWithoutTournamentInput
+    TournamentWinner?: TournamentWinnerCreateNestedManyWithoutTournamentInput
+    PollVote?: PollVoteCreateNestedManyWithoutTournamentInput
+    Match?: MatchCreateNestedManyWithoutTournamentInput
+  }
+
+  export type TournamentUncheckedCreateWithoutGalleryInput = {
+    id?: string
+    name: string
+    startDate: Date | string
+    backgroundUrl?: string | null
+    fee?: number | null
+    seasonId?: string | null
+    createdBy?: string | null
+    createdAt?: Date | string
+    team?: TeamUncheckedCreateNestedManyWithoutTournamentInput
+    user?: UserUncheckedCreateNestedManyWithoutTournamentInput
+    TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutTournamentInput
+    PollVote?: PollVoteUncheckedCreateNestedManyWithoutTournamentInput
+    Match?: MatchUncheckedCreateNestedManyWithoutTournamentInput
+  }
+
+  export type TournamentCreateOrConnectWithoutGalleryInput = {
+    where: TournamentWhereUniqueInput
+    create: XOR<TournamentCreateWithoutGalleryInput, TournamentUncheckedCreateWithoutGalleryInput>
+  }
+
+  export type PlayerUpsertWithoutCharacterImageInput = {
+    update: XOR<PlayerUpdateWithoutCharacterImageInput, PlayerUncheckedUpdateWithoutCharacterImageInput>
+    create: XOR<PlayerCreateWithoutCharacterImageInput, PlayerUncheckedCreateWithoutCharacterImageInput>
+    where?: PlayerWhereInput
+  }
+
+  export type PlayerUpdateToOneWithWhereWithoutCharacterImageInput = {
+    where?: PlayerWhereInput
+    data: XOR<PlayerUpdateWithoutCharacterImageInput, PlayerUncheckedUpdateWithoutCharacterImageInput>
+  }
+
+  export type PlayerUpdateWithoutCharacterImageInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    avatarUrl?: StringFieldUpdateOperationsInput | string
+    characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableBytesFieldUpdateOperationsInput | Uint8Array | null
+    isBanned?: BoolFieldUpdateOperationsInput | boolean
+    category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
+    gameScore?: GameScoreUpdateManyWithoutPlayerNestedInput
+    pollVote?: PollVoteUpdateOneWithoutPlayerNestedInput
+    user?: UserUpdateOneRequiredWithoutPlayerNestedInput
+    TournamentWinner?: TournamentWinnerUpdateManyWithoutPlayerNestedInput
+    Wallet?: WalletUpdateOneWithoutPlayerNestedInput
+    PlayerStats?: PlayerStatsUpdateOneWithoutPlayerNestedInput
+    Team?: TeamUpdateOneWithoutPlayersNestedInput
+  }
+
+  export type PlayerUncheckedUpdateWithoutCharacterImageInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    avatarUrl?: StringFieldUpdateOperationsInput | string
+    characterUrl?: StringFieldUpdateOperationsInput | string
+    characterUrlBase64?: NullableBytesFieldUpdateOperationsInput | Uint8Array | null
+    isBanned?: BoolFieldUpdateOperationsInput | boolean
+    category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
+    userId?: StringFieldUpdateOperationsInput | string
+    teamId?: NullableStringFieldUpdateOperationsInput | string | null
+    gameScore?: GameScoreUncheckedUpdateManyWithoutPlayerNestedInput
+    pollVote?: PollVoteUncheckedUpdateOneWithoutPlayerNestedInput
+    TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutPlayerNestedInput
+    Wallet?: WalletUncheckedUpdateOneWithoutPlayerNestedInput
+    PlayerStats?: PlayerStatsUncheckedUpdateOneWithoutPlayerNestedInput
+  }
+
+  export type TournamentUpsertWithoutGalleryInput = {
+    update: XOR<TournamentUpdateWithoutGalleryInput, TournamentUncheckedUpdateWithoutGalleryInput>
+    create: XOR<TournamentCreateWithoutGalleryInput, TournamentUncheckedCreateWithoutGalleryInput>
+    where?: TournamentWhereInput
+  }
+
+  export type TournamentUpdateToOneWithWhereWithoutGalleryInput = {
+    where?: TournamentWhereInput
+    data: XOR<TournamentUpdateWithoutGalleryInput, TournamentUncheckedUpdateWithoutGalleryInput>
+  }
+
+  export type TournamentUpdateWithoutGalleryInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    backgroundUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    fee?: NullableIntFieldUpdateOperationsInput | number | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    team?: TeamUpdateManyWithoutTournamentNestedInput
+    user?: UserUpdateManyWithoutTournamentNestedInput
+    Season?: SeasonUpdateOneWithoutTournamentNestedInput
+    TournamentWinner?: TournamentWinnerUpdateManyWithoutTournamentNestedInput
+    PollVote?: PollVoteUpdateManyWithoutTournamentNestedInput
+    Match?: MatchUpdateManyWithoutTournamentNestedInput
+  }
+
+  export type TournamentUncheckedUpdateWithoutGalleryInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    backgroundUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    fee?: NullableIntFieldUpdateOperationsInput | number | null
+    seasonId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdBy?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    team?: TeamUncheckedUpdateManyWithoutTournamentNestedInput
+    user?: UserUncheckedUpdateManyWithoutTournamentNestedInput
+    TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutTournamentNestedInput
+    PollVote?: PollVoteUncheckedUpdateManyWithoutTournamentNestedInput
+    Match?: MatchUncheckedUpdateManyWithoutTournamentNestedInput
   }
 
   export type TournamentCreateWithoutSeasonInput = {
@@ -20442,6 +22283,7 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerCreateNestedManyWithoutTournamentInput
     PollVote?: PollVoteCreateNestedManyWithoutTournamentInput
     Match?: MatchCreateNestedManyWithoutTournamentInput
+    gallery?: GalleryCreateNestedOneWithoutTournamentInput
   }
 
   export type TournamentUncheckedCreateWithoutSeasonInput = {
@@ -20452,6 +22294,7 @@ export namespace Prisma {
     fee?: number | null
     createdBy?: string | null
     createdAt?: Date | string
+    galleryId?: string | null
     team?: TeamUncheckedCreateNestedManyWithoutTournamentInput
     user?: UserUncheckedCreateNestedManyWithoutTournamentInput
     TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutTournamentInput
@@ -20497,6 +22340,7 @@ export namespace Prisma {
     seasonId?: StringNullableFilter<"Tournament"> | string | null
     createdBy?: StringNullableFilter<"Tournament"> | string | null
     createdAt?: DateTimeFilter<"Tournament"> | Date | string
+    galleryId?: StringNullableFilter<"Tournament"> | string | null
   }
 
   export type TeamCreateWithoutTournamentInput = {
@@ -20680,6 +22524,33 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type GalleryCreateWithoutTournamentInput = {
+    id?: string
+    name: string
+    path: string
+    fullPath: string
+    publicUrl: string
+    playerId?: string | null
+    tournamentId?: string | null
+    player?: PlayerCreateNestedOneWithoutCharacterImageInput
+  }
+
+  export type GalleryUncheckedCreateWithoutTournamentInput = {
+    id?: string
+    name: string
+    path: string
+    fullPath: string
+    publicUrl: string
+    playerId?: string | null
+    tournamentId?: string | null
+    player?: PlayerUncheckedCreateNestedOneWithoutCharacterImageInput
+  }
+
+  export type GalleryCreateOrConnectWithoutTournamentInput = {
+    where: GalleryWhereUniqueInput
+    create: XOR<GalleryCreateWithoutTournamentInput, GalleryUncheckedCreateWithoutTournamentInput>
+  }
+
   export type TeamUpsertWithWhereUniqueWithoutTournamentInput = {
     where: TeamWhereUniqueInput
     update: XOR<TeamUpdateWithoutTournamentInput, TeamUncheckedUpdateWithoutTournamentInput>
@@ -20851,6 +22722,39 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"Match"> | Date | string
   }
 
+  export type GalleryUpsertWithoutTournamentInput = {
+    update: XOR<GalleryUpdateWithoutTournamentInput, GalleryUncheckedUpdateWithoutTournamentInput>
+    create: XOR<GalleryCreateWithoutTournamentInput, GalleryUncheckedCreateWithoutTournamentInput>
+    where?: GalleryWhereInput
+  }
+
+  export type GalleryUpdateToOneWithWhereWithoutTournamentInput = {
+    where?: GalleryWhereInput
+    data: XOR<GalleryUpdateWithoutTournamentInput, GalleryUncheckedUpdateWithoutTournamentInput>
+  }
+
+  export type GalleryUpdateWithoutTournamentInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    fullPath?: StringFieldUpdateOperationsInput | string
+    publicUrl?: StringFieldUpdateOperationsInput | string
+    playerId?: NullableStringFieldUpdateOperationsInput | string | null
+    tournamentId?: NullableStringFieldUpdateOperationsInput | string | null
+    player?: PlayerUpdateOneWithoutCharacterImageNestedInput
+  }
+
+  export type GalleryUncheckedUpdateWithoutTournamentInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    path?: StringFieldUpdateOperationsInput | string
+    fullPath?: StringFieldUpdateOperationsInput | string
+    publicUrl?: StringFieldUpdateOperationsInput | string
+    playerId?: NullableStringFieldUpdateOperationsInput | string | null
+    tournamentId?: NullableStringFieldUpdateOperationsInput | string | null
+    player?: PlayerUncheckedUpdateOneWithoutCharacterImageNestedInput
+  }
+
   export type PlayerCreateWithoutPollVoteInput = {
     id?: string
     avatarUrl: string
@@ -20864,6 +22768,7 @@ export namespace Prisma {
     Wallet?: WalletCreateNestedOneWithoutPlayerInput
     PlayerStats?: PlayerStatsCreateNestedOneWithoutPlayerInput
     Team?: TeamCreateNestedOneWithoutPlayersInput
+    characterImage?: GalleryCreateNestedOneWithoutPlayerInput
   }
 
   export type PlayerUncheckedCreateWithoutPollVoteInput = {
@@ -20875,6 +22780,7 @@ export namespace Prisma {
     category?: $Enums.PlayerCategory
     userId: string
     teamId?: string | null
+    characterImageId?: string | null
     gameScore?: GameScoreUncheckedCreateNestedManyWithoutPlayerInput
     TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutPlayerInput
     Wallet?: WalletUncheckedCreateNestedOneWithoutPlayerInput
@@ -20899,6 +22805,7 @@ export namespace Prisma {
     Season?: SeasonCreateNestedOneWithoutTournamentInput
     TournamentWinner?: TournamentWinnerCreateNestedManyWithoutTournamentInput
     Match?: MatchCreateNestedManyWithoutTournamentInput
+    gallery?: GalleryCreateNestedOneWithoutTournamentInput
   }
 
   export type TournamentUncheckedCreateWithoutPollVoteInput = {
@@ -20910,6 +22817,7 @@ export namespace Prisma {
     seasonId?: string | null
     createdBy?: string | null
     createdAt?: Date | string
+    galleryId?: string | null
     team?: TeamUncheckedCreateNestedManyWithoutTournamentInput
     user?: UserUncheckedCreateNestedManyWithoutTournamentInput
     TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutTournamentInput
@@ -20945,6 +22853,7 @@ export namespace Prisma {
     Wallet?: WalletUpdateOneWithoutPlayerNestedInput
     PlayerStats?: PlayerStatsUpdateOneWithoutPlayerNestedInput
     Team?: TeamUpdateOneWithoutPlayersNestedInput
+    characterImage?: GalleryUpdateOneWithoutPlayerNestedInput
   }
 
   export type PlayerUncheckedUpdateWithoutPollVoteInput = {
@@ -20956,6 +22865,7 @@ export namespace Prisma {
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
     teamId?: NullableStringFieldUpdateOperationsInput | string | null
+    characterImageId?: NullableStringFieldUpdateOperationsInput | string | null
     gameScore?: GameScoreUncheckedUpdateManyWithoutPlayerNestedInput
     TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutPlayerNestedInput
     Wallet?: WalletUncheckedUpdateOneWithoutPlayerNestedInput
@@ -20986,6 +22896,7 @@ export namespace Prisma {
     Season?: SeasonUpdateOneWithoutTournamentNestedInput
     TournamentWinner?: TournamentWinnerUpdateManyWithoutTournamentNestedInput
     Match?: MatchUpdateManyWithoutTournamentNestedInput
+    gallery?: GalleryUpdateOneWithoutTournamentNestedInput
   }
 
   export type TournamentUncheckedUpdateWithoutPollVoteInput = {
@@ -20997,6 +22908,7 @@ export namespace Prisma {
     seasonId?: NullableStringFieldUpdateOperationsInput | string | null
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    galleryId?: NullableStringFieldUpdateOperationsInput | string | null
     team?: TeamUncheckedUpdateManyWithoutTournamentNestedInput
     user?: UserUncheckedUpdateManyWithoutTournamentNestedInput
     TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutTournamentNestedInput
@@ -21016,6 +22928,7 @@ export namespace Prisma {
     Wallet?: WalletCreateNestedOneWithoutPlayerInput
     PlayerStats?: PlayerStatsCreateNestedOneWithoutPlayerInput
     Team?: TeamCreateNestedOneWithoutPlayersInput
+    characterImage?: GalleryCreateNestedOneWithoutPlayerInput
   }
 
   export type PlayerUncheckedCreateWithoutTournamentWinnerInput = {
@@ -21027,6 +22940,7 @@ export namespace Prisma {
     category?: $Enums.PlayerCategory
     userId: string
     teamId?: string | null
+    characterImageId?: string | null
     gameScore?: GameScoreUncheckedCreateNestedManyWithoutPlayerInput
     pollVote?: PollVoteUncheckedCreateNestedOneWithoutPlayerInput
     Wallet?: WalletUncheckedCreateNestedOneWithoutPlayerInput
@@ -21051,6 +22965,7 @@ export namespace Prisma {
     Season?: SeasonCreateNestedOneWithoutTournamentInput
     PollVote?: PollVoteCreateNestedManyWithoutTournamentInput
     Match?: MatchCreateNestedManyWithoutTournamentInput
+    gallery?: GalleryCreateNestedOneWithoutTournamentInput
   }
 
   export type TournamentUncheckedCreateWithoutTournamentWinnerInput = {
@@ -21062,6 +22977,7 @@ export namespace Prisma {
     seasonId?: string | null
     createdBy?: string | null
     createdAt?: Date | string
+    galleryId?: string | null
     team?: TeamUncheckedCreateNestedManyWithoutTournamentInput
     user?: UserUncheckedCreateNestedManyWithoutTournamentInput
     PollVote?: PollVoteUncheckedCreateNestedManyWithoutTournamentInput
@@ -21097,6 +23013,7 @@ export namespace Prisma {
     Wallet?: WalletUpdateOneWithoutPlayerNestedInput
     PlayerStats?: PlayerStatsUpdateOneWithoutPlayerNestedInput
     Team?: TeamUpdateOneWithoutPlayersNestedInput
+    characterImage?: GalleryUpdateOneWithoutPlayerNestedInput
   }
 
   export type PlayerUncheckedUpdateWithoutTournamentWinnerInput = {
@@ -21108,6 +23025,7 @@ export namespace Prisma {
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
     teamId?: NullableStringFieldUpdateOperationsInput | string | null
+    characterImageId?: NullableStringFieldUpdateOperationsInput | string | null
     gameScore?: GameScoreUncheckedUpdateManyWithoutPlayerNestedInput
     pollVote?: PollVoteUncheckedUpdateOneWithoutPlayerNestedInput
     Wallet?: WalletUncheckedUpdateOneWithoutPlayerNestedInput
@@ -21138,6 +23056,7 @@ export namespace Prisma {
     Season?: SeasonUpdateOneWithoutTournamentNestedInput
     PollVote?: PollVoteUpdateManyWithoutTournamentNestedInput
     Match?: MatchUpdateManyWithoutTournamentNestedInput
+    gallery?: GalleryUpdateOneWithoutTournamentNestedInput
   }
 
   export type TournamentUncheckedUpdateWithoutTournamentWinnerInput = {
@@ -21149,6 +23068,7 @@ export namespace Prisma {
     seasonId?: NullableStringFieldUpdateOperationsInput | string | null
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    galleryId?: NullableStringFieldUpdateOperationsInput | string | null
     team?: TeamUncheckedUpdateManyWithoutTournamentNestedInput
     user?: UserUncheckedUpdateManyWithoutTournamentNestedInput
     PollVote?: PollVoteUncheckedUpdateManyWithoutTournamentNestedInput
@@ -21168,6 +23088,7 @@ export namespace Prisma {
     Season?: SeasonCreateNestedOneWithoutTournamentInput
     TournamentWinner?: TournamentWinnerCreateNestedManyWithoutTournamentInput
     PollVote?: PollVoteCreateNestedManyWithoutTournamentInput
+    gallery?: GalleryCreateNestedOneWithoutTournamentInput
   }
 
   export type TournamentUncheckedCreateWithoutMatchInput = {
@@ -21179,6 +23100,7 @@ export namespace Prisma {
     seasonId?: string | null
     createdBy?: string | null
     createdAt?: Date | string
+    galleryId?: string | null
     team?: TeamUncheckedCreateNestedManyWithoutTournamentInput
     user?: UserUncheckedCreateNestedManyWithoutTournamentInput
     TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutTournamentInput
@@ -21214,6 +23136,7 @@ export namespace Prisma {
     Season?: SeasonUpdateOneWithoutTournamentNestedInput
     TournamentWinner?: TournamentWinnerUpdateManyWithoutTournamentNestedInput
     PollVote?: PollVoteUpdateManyWithoutTournamentNestedInput
+    gallery?: GalleryUpdateOneWithoutTournamentNestedInput
   }
 
   export type TournamentUncheckedUpdateWithoutMatchInput = {
@@ -21225,6 +23148,7 @@ export namespace Prisma {
     seasonId?: NullableStringFieldUpdateOperationsInput | string | null
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    galleryId?: NullableStringFieldUpdateOperationsInput | string | null
     team?: TeamUncheckedUpdateManyWithoutTournamentNestedInput
     user?: UserUncheckedUpdateManyWithoutTournamentNestedInput
     TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutTournamentNestedInput
@@ -21244,6 +23168,7 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerCreateNestedManyWithoutPlayerInput
     PlayerStats?: PlayerStatsCreateNestedOneWithoutPlayerInput
     Team?: TeamCreateNestedOneWithoutPlayersInput
+    characterImage?: GalleryCreateNestedOneWithoutPlayerInput
   }
 
   export type PlayerUncheckedCreateWithoutWalletInput = {
@@ -21255,6 +23180,7 @@ export namespace Prisma {
     category?: $Enums.PlayerCategory
     userId: string
     teamId?: string | null
+    characterImageId?: string | null
     gameScore?: GameScoreUncheckedCreateNestedManyWithoutPlayerInput
     pollVote?: PollVoteUncheckedCreateNestedOneWithoutPlayerInput
     TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutPlayerInput
@@ -21331,6 +23257,7 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerUpdateManyWithoutPlayerNestedInput
     PlayerStats?: PlayerStatsUpdateOneWithoutPlayerNestedInput
     Team?: TeamUpdateOneWithoutPlayersNestedInput
+    characterImage?: GalleryUpdateOneWithoutPlayerNestedInput
   }
 
   export type PlayerUncheckedUpdateWithoutWalletInput = {
@@ -21342,6 +23269,7 @@ export namespace Prisma {
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
     teamId?: NullableStringFieldUpdateOperationsInput | string | null
+    characterImageId?: NullableStringFieldUpdateOperationsInput | string | null
     gameScore?: GameScoreUncheckedUpdateManyWithoutPlayerNestedInput
     pollVote?: PollVoteUncheckedUpdateOneWithoutPlayerNestedInput
     TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutPlayerNestedInput
@@ -21408,6 +23336,7 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerCreateNestedManyWithoutPlayerInput
     Wallet?: WalletCreateNestedOneWithoutPlayerInput
     Team?: TeamCreateNestedOneWithoutPlayersInput
+    characterImage?: GalleryCreateNestedOneWithoutPlayerInput
   }
 
   export type PlayerUncheckedCreateWithoutPlayerStatsInput = {
@@ -21419,6 +23348,7 @@ export namespace Prisma {
     category?: $Enums.PlayerCategory
     userId: string
     teamId?: string | null
+    characterImageId?: string | null
     gameScore?: GameScoreUncheckedCreateNestedManyWithoutPlayerInput
     pollVote?: PollVoteUncheckedCreateNestedOneWithoutPlayerInput
     TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutPlayerInput
@@ -21454,6 +23384,7 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerUpdateManyWithoutPlayerNestedInput
     Wallet?: WalletUpdateOneWithoutPlayerNestedInput
     Team?: TeamUpdateOneWithoutPlayersNestedInput
+    characterImage?: GalleryUpdateOneWithoutPlayerNestedInput
   }
 
   export type PlayerUncheckedUpdateWithoutPlayerStatsInput = {
@@ -21465,6 +23396,7 @@ export namespace Prisma {
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
     teamId?: NullableStringFieldUpdateOperationsInput | string | null
+    characterImageId?: NullableStringFieldUpdateOperationsInput | string | null
     gameScore?: GameScoreUncheckedUpdateManyWithoutPlayerNestedInput
     pollVote?: PollVoteUncheckedUpdateOneWithoutPlayerNestedInput
     TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutPlayerNestedInput
@@ -21484,6 +23416,7 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerCreateNestedManyWithoutPlayerInput
     Wallet?: WalletCreateNestedOneWithoutPlayerInput
     PlayerStats?: PlayerStatsCreateNestedOneWithoutPlayerInput
+    characterImage?: GalleryCreateNestedOneWithoutPlayerInput
   }
 
   export type PlayerUncheckedCreateWithoutTeamInput = {
@@ -21494,6 +23427,7 @@ export namespace Prisma {
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     userId: string
+    characterImageId?: string | null
     gameScore?: GameScoreUncheckedCreateNestedManyWithoutPlayerInput
     pollVote?: PollVoteUncheckedCreateNestedOneWithoutPlayerInput
     TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutPlayerInput
@@ -21524,6 +23458,7 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerCreateNestedManyWithoutTournamentInput
     PollVote?: PollVoteCreateNestedManyWithoutTournamentInput
     Match?: MatchCreateNestedManyWithoutTournamentInput
+    gallery?: GalleryCreateNestedOneWithoutTournamentInput
   }
 
   export type TournamentUncheckedCreateWithoutTeamInput = {
@@ -21535,6 +23470,7 @@ export namespace Prisma {
     seasonId?: string | null
     createdBy?: string | null
     createdAt?: Date | string
+    galleryId?: string | null
     user?: UserUncheckedCreateNestedManyWithoutTournamentInput
     TournamentWinner?: TournamentWinnerUncheckedCreateNestedManyWithoutTournamentInput
     PollVote?: PollVoteUncheckedCreateNestedManyWithoutTournamentInput
@@ -21574,6 +23510,7 @@ export namespace Prisma {
     category?: EnumPlayerCategoryFilter<"Player"> | $Enums.PlayerCategory
     userId?: StringFilter<"Player"> | string
     teamId?: StringNullableFilter<"Player"> | string | null
+    characterImageId?: StringNullableFilter<"Player"> | string | null
   }
 
   export type TournamentUpsertWithoutTeamInput = {
@@ -21600,6 +23537,7 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerUpdateManyWithoutTournamentNestedInput
     PollVote?: PollVoteUpdateManyWithoutTournamentNestedInput
     Match?: MatchUpdateManyWithoutTournamentNestedInput
+    gallery?: GalleryUpdateOneWithoutTournamentNestedInput
   }
 
   export type TournamentUncheckedUpdateWithoutTeamInput = {
@@ -21611,6 +23549,7 @@ export namespace Prisma {
     seasonId?: NullableStringFieldUpdateOperationsInput | string | null
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    galleryId?: NullableStringFieldUpdateOperationsInput | string | null
     user?: UserUncheckedUpdateManyWithoutTournamentNestedInput
     TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutTournamentNestedInput
     PollVote?: PollVoteUncheckedUpdateManyWithoutTournamentNestedInput
@@ -21673,6 +23612,7 @@ export namespace Prisma {
     fee?: number | null
     createdBy?: string | null
     createdAt?: Date | string
+    galleryId?: string | null
   }
 
   export type TournamentUpdateWithoutSeasonInput = {
@@ -21688,6 +23628,7 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerUpdateManyWithoutTournamentNestedInput
     PollVote?: PollVoteUpdateManyWithoutTournamentNestedInput
     Match?: MatchUpdateManyWithoutTournamentNestedInput
+    gallery?: GalleryUpdateOneWithoutTournamentNestedInput
   }
 
   export type TournamentUncheckedUpdateWithoutSeasonInput = {
@@ -21698,6 +23639,7 @@ export namespace Prisma {
     fee?: NullableIntFieldUpdateOperationsInput | number | null
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    galleryId?: NullableStringFieldUpdateOperationsInput | string | null
     team?: TeamUncheckedUpdateManyWithoutTournamentNestedInput
     user?: UserUncheckedUpdateManyWithoutTournamentNestedInput
     TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutTournamentNestedInput
@@ -21713,6 +23655,7 @@ export namespace Prisma {
     fee?: NullableIntFieldUpdateOperationsInput | number | null
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    galleryId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type TeamCreateManyTournamentInput = {
@@ -21925,6 +23868,7 @@ export namespace Prisma {
     isBanned?: boolean
     category?: $Enums.PlayerCategory
     userId: string
+    characterImageId?: string | null
   }
 
   export type PlayerUpdateWithoutTeamInput = {
@@ -21940,6 +23884,7 @@ export namespace Prisma {
     TournamentWinner?: TournamentWinnerUpdateManyWithoutPlayerNestedInput
     Wallet?: WalletUpdateOneWithoutPlayerNestedInput
     PlayerStats?: PlayerStatsUpdateOneWithoutPlayerNestedInput
+    characterImage?: GalleryUpdateOneWithoutPlayerNestedInput
   }
 
   export type PlayerUncheckedUpdateWithoutTeamInput = {
@@ -21950,6 +23895,7 @@ export namespace Prisma {
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
+    characterImageId?: NullableStringFieldUpdateOperationsInput | string | null
     gameScore?: GameScoreUncheckedUpdateManyWithoutPlayerNestedInput
     pollVote?: PollVoteUncheckedUpdateOneWithoutPlayerNestedInput
     TournamentWinner?: TournamentWinnerUncheckedUpdateManyWithoutPlayerNestedInput
@@ -21965,6 +23911,7 @@ export namespace Prisma {
     isBanned?: BoolFieldUpdateOperationsInput | boolean
     category?: EnumPlayerCategoryFieldUpdateOperationsInput | $Enums.PlayerCategory
     userId?: StringFieldUpdateOperationsInput | string
+    characterImageId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
 

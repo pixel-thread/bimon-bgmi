@@ -27,6 +27,8 @@ export default function TournamentSelector({
     setTournamentId(value || "");
   };
 
+  const isTournamentExist =
+    allTournaments?.length && allTournaments?.length > 0 ? true : false;
   return (
     <Select
       value={tournamentId || ""}
@@ -40,9 +42,7 @@ export default function TournamentSelector({
       </SelectTrigger>
       <SelectContent className="max-h-[200px] overflow-y-auto">
         <Ternary
-          condition={
-            allTournaments?.length && allTournaments?.length > 0 ? true : false
-          }
+          condition={isTournamentExist}
           trueComponent={
             <>
               {allTournaments?.map((tournament) => (

@@ -72,15 +72,17 @@ import { useTournaments } from "../hooks/tournament/useTournaments";
 import { useSeasonStore } from "../store/season";
 import { Ternary } from "./common/Ternary";
 import { useTournamentStore } from "../store/tournament";
+import { useTournament } from "../hooks/tournament/useTournament";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import http from "../utils/http";
+import { useGallery } from "../hooks/gallery/useGallery";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 export function TournamentSettings() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTeamCreationModal, setShowTeamCreationModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const {
-    tournamentId: selectedTournament,
-    setTournamentId: setSelectedTournament,
-  } = useTournamentStore();
+  const { tournamentId: selectedTournament } = useTournamentStore();
   const { seasonId: selectedSeason } = useSeasonStore();
   const [teamsToCreate, setTeamsToCreate] = useState<
     { teamName: string; players: { ign: string; kills: number }[] }[]
@@ -167,8 +169,6 @@ export function TournamentSettings() {
       }
     }
   }, [tournaments, selectedTournament]);
-
-  // Sync form with selected tournament config
 
   // Load background gallery
   useEffect(() => {
@@ -289,127 +289,6 @@ export function TournamentSettings() {
     } catch (error) {
       console.error("Error loading background from database:", error);
       return null;
-    }
-  };
-
-  const handleBackgroundUpload = async (files: File[]) => {
-    if (files.length === 0) return;
-    setBackgroundFiles(files);
-    setIsUploadingBackground(true);
-    try {
-      // const file = files[0];
-      // const base64Image = await fileToBase64(file);
-      // setCurrentBackgroundImage(base64Image);
-      // const imageId = await saveBackgroundToDatabase(base64Image, file.name);
-      // await addToGallery(imageId, base64Image);
-      // await new Promise((resolve) => setTimeout(resolve, 500));
-      // if (selectedConfig && selectedTournament) {
-      //   await updateTournament(selectedTournament, {
-      //     ...selectedConfig,
-      //     backgroundImage: base64Image,
-      //   });
-      // }
-      // const tournamentsToUpdate = allTournaments.filter(
-      //   (t) => !t.backgroundImage,
-      // );
-      // for (const tournament of tournamentsToUpdate) {
-      //   await updateTournament(tournament.id, {
-      //     ...tournament,
-      //     backgroundImage: base64Image,
-      //   });
-      // }
-      // toast.success(
-      //   "Background image saved to database! Applied to tournaments without custom backgrounds.",
-      // );
-    } catch (error) {
-      console.error("Error uploading background:", error);
-      toast.error("Failed to upload background image");
-    } finally {
-      setIsUploadingBackground(false);
-    }
-  };
-
-  const selectFromGallery = async (imageUrl: string) => {
-    try {
-      setCurrentBackgroundImage(imageUrl);
-      const galleryDoc = await getDoc(doc(db, "settings", "backgroundGallery"));
-      if (galleryDoc.exists()) {
-        const data = galleryDoc.data();
-        const imageIds = data.imageIds || [];
-        const selectedIndex = backgroundGallery.indexOf(imageUrl);
-        if (selectedIndex !== -1 && selectedIndex < imageIds.length) {
-          const selectedImageId = imageIds[selectedIndex];
-          await addToGallery(selectedImageId, imageUrl);
-        }
-      }
-      if (selectedConfig && selectedTournament) {
-        // await updateTournament(selectedTournament, {
-        //   ...selectedConfig,
-        //   backgroundImage: imageUrl,
-        // });
-        toast.success("Background image selected!");
-      }
-      setShowGallery(false);
-    } catch (error) {
-      console.error("Error selecting background:", error);
-      toast.error("Failed to select background image");
-    }
-  };
-
-  const deleteFromGallery = async (imageUrl: string, index: number) => {
-    try {
-      const galleryDoc = await getDoc(doc(db, "settings", "backgroundGallery"));
-      if (galleryDoc.exists()) {
-        const data = galleryDoc.data();
-        const imageIds = data.imageIds || [];
-        const imageIdToDelete = imageIds[index];
-        if (imageIdToDelete) {
-          await updateDoc(doc(db, "backgroundImages", imageIdToDelete), {
-            deleted: true,
-            deletedAt: new Date().toISOString(),
-          });
-        }
-        const newImageIds = imageIds.filter(
-          (_: string, i: number) => i !== index,
-        );
-        const newImages = backgroundGallery.filter((_, i) => i !== index);
-        await saveBackgroundGallery(newImageIds, newImages);
-        if (currentBackgroundImage === imageUrl) {
-          setCurrentBackgroundImage(newImages.length > 0 ? newImages[0] : "");
-          if (selectedConfig && selectedTournament) {
-            if (newImages.length > 0) {
-              // await updateTournament(selectedTournament, {
-              //   ...selectedConfig,
-              //   backgroundImage: newImages[0],
-              // });
-            } else {
-              await updateDoc(doc(db, "tournaments", selectedTournament), {
-                backgroundImage: deleteField(),
-              });
-            }
-          }
-        }
-        toast.success("Background image deleted from gallery!");
-      }
-    } catch (error) {
-      console.error("Error deleting from gallery:", error);
-      toast.error("Failed to delete background image");
-    }
-  };
-
-  const handleRemoveBackground = async () => {
-    try {
-      if (selectedConfig && selectedTournament) {
-        await updateDoc(doc(db, "tournaments", selectedTournament), {
-          backgroundImage: deleteField(),
-        });
-        setCurrentBackgroundImage("");
-        setBackgroundFiles([]);
-        toast.success("Background image removed from tournament!");
-      }
-    } catch (error) {
-      console.error("Error removing background:", error);
-      toast.error("Failed to remove background image");
     }
   };
 
@@ -618,134 +497,9 @@ export function TournamentSettings() {
         {/* Left column */}
         <div className="md:col-span-2 space-y-3">
           {/* Configuration */}
-          <Card>
-            <CardHeader className="p-3 pb-0">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                Configuration
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 pt-4">
-              <Ternary
-                condition={!!selectedTournament}
-                trueComponent={<TournamentForm />}
-                falseComponent={
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="h-3 w-3 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">
-                      No tournament selected
-                    </p>
-                  </div>
-                }
-              />
-            </CardContent>
-          </Card>
-
+          <TournamentConfiguration />
           {/* Background Images */}
-          {selectedTournament && selectedConfig && (
-            <Card>
-              <CardHeader className="p-3 pb-0">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="h-3 w-3 text-muted-foreground" />
-                  <CardTitle className="text-xs font-medium text-muted-foreground">
-                    Background
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-3 pt-4 space-y-3">
-                {/* Current Background */}
-                {currentBackgroundImage && (
-                  <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground">Current</p>
-                    <div className="relative w-full max-w-full rounded-md overflow-hidden">
-                      <img
-                        src={currentBackgroundImage}
-                        alt="Current background"
-                        className="w-full h-20 object-cover border"
-                      />
-                      <Button
-                        onClick={handleRemoveBackground}
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6"
-                        aria-label="Remove background"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Gallery */}
-                {backgroundGallery.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-muted-foreground">
-                        Gallery ({backgroundGallery.length}/5)
-                      </p>
-                      <Button
-                        onClick={() => setShowGallery(!showGallery)}
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-2 text-xs"
-                      >
-                        {showGallery ? "Hide" : "Show"}
-                      </Button>
-                    </div>
-                    {showGallery && (
-                      <div className="grid grid-cols-3 gap-2 overflow-x-hidden">
-                        {backgroundGallery.map((imageUrl, index) => (
-                          <div key={index} className="relative group">
-                            <img
-                              src={imageUrl}
-                              alt={`Background ${index + 1}`}
-                              className={`w-full h-12 object-cover rounded cursor-pointer border-2 transition-all ${
-                                currentBackgroundImage === imageUrl
-                                  ? "border-blue-500"
-                                  : "border-transparent hover:border-gray-300"
-                              }`}
-                              onClick={() => selectFromGallery(imageUrl)}
-                            />
-                            {currentBackgroundImage === imageUrl && (
-                              <div className="absolute top-0.5 right-0.5 bg-blue-500 text-white rounded-full p-0.5">
-                                <Check className="h-2 w-2" />
-                              </div>
-                            )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (window.confirm("Delete this background?")) {
-                                  deleteFromGallery(imageUrl, index);
-                                }
-                              }}
-                              className="absolute top-0.5 left-0.5 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                              aria-label="Delete background"
-                            >
-                              <X className="h-2 w-2" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Upload */}
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">Upload</p>
-                  <div className="border border-dashed rounded-md p-2">
-                    <FileUpload onChange={handleBackgroundUpload} />
-                  </div>
-                  {isUploadingBackground && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Upload className="h-3 w-3 animate-pulse" />
-                      Uploading...
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
+          <TournamentImage />
           {/* Season Management */}
           <Card>
             <CardHeader className="p-3 pb-0">
@@ -1172,3 +926,176 @@ export function TournamentSettings() {
     </div>
   );
 }
+const TournamentConfiguration = () => {
+  const { tournamentId: selectedTournament } = useTournamentStore();
+  return (
+    <Card>
+      <CardHeader className="p-3 pb-0">
+        <CardTitle className="text-xs font-medium text-muted-foreground">
+          Tournament Configuration
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-3 pt-4">
+        <Ternary
+          condition={!!selectedTournament}
+          trueComponent={<TournamentForm />}
+          falseComponent={
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-3 w-3 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">
+                No tournament selected
+              </p>
+            </div>
+          }
+        />
+      </CardContent>
+    </Card>
+  );
+};
+
+const TournamentImage = () => {
+  const { tournamentId: selectedTournament } = useTournamentStore();
+  const [showGallery, setShowGallery] = useState<boolean>(true);
+  const { data: backgroundGallery } = useGallery();
+  const queryClient = useQueryClient();
+  const { data } = useTournament({
+    id: selectedTournament,
+  });
+  const { mutate } = useMutation({
+    mutationFn: (data: { image: File }) =>
+      http.post("/admin/gallery", data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }),
+    onSuccess: (data) => {
+      if (data.success)
+        queryClient.invalidateQueries({ queryKey: ["gallery"] });
+    },
+  });
+
+  const isUploadingBackground = false;
+
+  const handleRemoveBackground = () => {};
+
+  const handleBackgroundUpload = () => {};
+
+  const currentBackgroundImage = backgroundGallery ? backgroundGallery[0] : [];
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="p-3 pb-0">
+          <div className="flex items-center gap-2">
+            <CardTitle className="font-medium text-muted-foreground">
+              Tournament Background
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {data?.backgroundUrl && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">Current</p>
+              <div className="relative w-full max-w-full rounded-md overflow-hidden">
+                <img
+                  src={data.backgroundUrl}
+                  alt="Current background"
+                  className="w-full h-20 object-cover border"
+                />
+                <Button
+                  onClick={handleRemoveBackground}
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-1 right-1 h-6 w-6"
+                  aria-label="Remove background"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      <Tabs defaultValue="gallery" className="w-[400px]">
+        <TabsList>
+          <TabsTrigger value="gallery">Gallery</TabsTrigger>
+          <TabsTrigger value="upload">Upload</TabsTrigger>
+        </TabsList>
+        <TabsContent value="gallery">
+          <Card>
+            <CardContent className="p-3 pt-4 space-y-3">
+              {backgroundGallery && backgroundGallery?.length > 0 && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-3 gap-2 overflow-x-hidden">
+                    {backgroundGallery.map((imageUrl, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={imageUrl.publicUrl}
+                          alt={`Background ${index + 1}`}
+                          className={`w-full h-12 object-cover rounded cursor-pointer border-2 transition-all ${
+                            currentBackgroundImage === imageUrl
+                              ? "border-blue-500"
+                              : "border-transparent hover:border-gray-300"
+                          }`}
+                          // onClick={() => selectFromGallery(imageUrl)}
+                        />
+                        {currentBackgroundImage === imageUrl && (
+                          <div className="absolute top-0.5 right-0.5 bg-blue-500 text-white rounded-full p-0.5">
+                            <Check className="h-2 w-2" />
+                          </div>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm("Delete this background?")) {
+                              // deleteFromGallery(imageUrl, index);
+                            }
+                          }}
+                          className="absolute top-0.5 left-0.5 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label="Delete background"
+                        >
+                          <X className="h-2 w-2" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="upload">
+          <Card>
+            <CardHeader className="p-3 pb-0">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-3 w-3 text-muted-foreground" />
+                <CardTitle className="text-xs font-medium text-muted-foreground">
+                  Background
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="p-3 pt-4 space-y-3">
+              {/* Current Background */}
+              {/* Upload */}
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Upload</p>
+                <div className="border border-dashed rounded-md p-2">
+                  <FileUpload
+                    onChange={(files) => mutate({ image: files[0] })}
+                  />
+                </div>
+                {isUploadingBackground && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Upload className="h-3 w-3 animate-pulse" />
+                    Uploading...
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </>
+  );
+};
