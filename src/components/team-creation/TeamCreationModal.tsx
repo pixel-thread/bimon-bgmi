@@ -28,19 +28,19 @@ import { PlayerGrid } from "./PlayerGrid";
 import { ActionButtons } from "./ActionButtons";
 import {
   TeamCreationModalProps,
-  PlayersByCategory,
   PlayerSelectionState,
   TeamCreationState,
   TeamMode,
 } from "./types";
+import { useTournamentStore } from "@/src/store/tournament";
 
 export default function TeamCreationModal({
   showModal,
   setShowModal,
   setShowConfirmModal,
   setTeamsToCreate,
-  selectedTournament,
 }: TeamCreationModalProps) {
+  const { tournamentId: selectedTournament } = useTournamentStore();
   const [state, setState] = useState<TeamCreationState>({
     players: { ultraNoobs: [], noobs: [], pros: [], ultraPros: [] },
     teamMode: "Duo 2",

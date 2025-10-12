@@ -4,44 +4,23 @@ import { Button } from "@/src/components/ui/button";
 import { FiPlus } from "react-icons/fi";
 import TournamentSelector from "@/src/components/TournamentSelector";
 import { SeasonSelector } from "./SeasonSelector";
+import { useTournamentStore } from "../store/tournament";
 
 interface TournamentToolbarProps {
-  selectedTournament: string | null;
-  setSelectedTournament: (id: string | null) => void;
   setShowCreateModal: (show: boolean) => void;
   setShowBulkCreateModal: (show: boolean) => void;
-  selectedSeason: string;
-  setSelectedSeason: (season: string) => void;
-  tournaments: any[];
 }
 
 export default function TournamentToolbar({
-  selectedTournament,
-  setSelectedTournament,
   setShowCreateModal,
   setShowBulkCreateModal,
-  selectedSeason,
-  setSelectedSeason,
-  tournaments,
 }: TournamentToolbarProps) {
+  const { tournamentId: selectedTournament } = useTournamentStore();
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-        <SeasonSelector
-          selectedSeason={selectedSeason}
-          onSeasonChange={setSelectedSeason}
-          size="sm"
-          variant="green"
-          placeholder="Season"
-          showAllSeasons={true}
-          className="w-full"
-        />
-        <TournamentSelector
-          selected={selectedTournament}
-          onSelect={setSelectedTournament}
-          className="w-full"
-          data={tournaments}
-        />
+        <SeasonSelector size="sm" showAllSeasons={true} className="w-full" />
+        <TournamentSelector className="w-full" />
       </div>
       <div className="flex flex-wrap gap-2">
         <Button

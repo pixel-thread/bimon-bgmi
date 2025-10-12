@@ -1,22 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   Select,
   SelectContent,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/src/components/ui/select";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/src/lib/firebase";
-import { Season } from "@/src/lib/types";
-import { toast } from "sonner";
 import { useGetSeasons } from "../hooks/season/useGetSeasons";
+import { useSeasonStore } from "../store/season";
+import { Ternary } from "./common/Ternary";
+import { SelectGroup } from "@radix-ui/react-select";
 
 interface SeasonSelectorProps {
-  selectedSeason: string;
-  onSeasonChange: (seasonId: string) => void;
   className?: string;
   placeholder?: string;
   showAllSeasons?: boolean;
@@ -25,14 +23,14 @@ interface SeasonSelectorProps {
 }
 
 export function SeasonSelector({
-  selectedSeason,
-  onSeasonChange,
   className = "",
   placeholder = "Season",
   showAllSeasons = true,
   size = "md",
   variant = "green",
 }: SeasonSelectorProps) {
+  const { setSeasonId: onSeasonChange, seasonId: selectedSeason } =
+    useSeasonStore();
   const { isFetching, data, isLoading } = useGetSeasons();
 
   // Size configurations
@@ -54,16 +52,33 @@ export function SeasonSelector({
       disabled={isFetching || isLoading}
       onValueChange={onSeasonChange}
     >
-      <SelectTrigger className={triggerClasses}>
+      <SelectTrigger
+        disabled={isFetching || isLoading}
+        className={triggerClasses}
+      >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {showAllSeasons && <SelectItem value="all">All Seasons</SelectItem>}
-        {data?.map((season) => (
-          <SelectItem key={season.id} value={season.id}>
-            {season.name}
-          </SelectItem>
-        ))}
+        <Ternary
+          condition={data?.length && data?.length > 0 ? true : false}
+          trueComponent={
+            <>
+              {showAllSeasons && (
+                <SelectItem value="all">All Seasons</SelectItem>
+              )}
+              {data?.map((season) => (
+                <SelectItem key={season.id} value={season.id}>
+                  {season.name}
+                </SelectItem>
+              ))}
+            </>
+          }
+          falseComponent={
+            <SelectGroup>
+              <SelectLabel>No Seasons</SelectLabel>
+            </SelectGroup>
+          }
+        />
       </SelectContent>
     </Select>
   );

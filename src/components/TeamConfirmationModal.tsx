@@ -13,17 +13,14 @@ import {
   doc,
   writeBatch,
   getDoc,
-  updateDoc,
   collection,
-  query,
-  where,
   getDocs,
-  setDoc,
 } from "firebase/firestore";
 import { db } from "@/src/lib/firebase";
 import { toast } from "sonner";
-import { Player, TournamentConfig, PlayerTransaction } from "@/src/lib/types";
+import { Player } from "@/src/lib/types";
 import { FaEdit, FaCheck } from "react-icons/fa";
+import { useTournamentStore } from "../store/tournament";
 
 // Using crypto.randomUUID() instead of uuid package for better compatibility
 function generateUUID(): string {
@@ -47,12 +44,11 @@ interface TeamWithExclusions {
 interface TeamConfirmationModalProps {
   showConfirmModal: boolean;
   setShowConfirmModal: (show: boolean) => void;
-  selectedTournament: string | null;
   teamsToCreate: TeamWithExclusions[];
   setTeamsToCreate: (
     teams:
       | TeamWithExclusions[]
-      | ((prev: TeamWithExclusions[]) => TeamWithExclusions[])
+      | ((prev: TeamWithExclusions[]) => TeamWithExclusions[]),
   ) => void;
 }
 
@@ -69,11 +65,11 @@ function shuffleArray<T>(array: T[]): T[] {
 export default function TeamConfirmationModal({
   showConfirmModal,
   setShowConfirmModal,
-  selectedTournament,
   teamsToCreate,
   setTeamsToCreate,
 }: TeamConfirmationModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { tournamentId: selectedTournament } = useTournamentStore();
   const [editingTeamUuid, setEditingTeamUuid] = useState<string | null>(null);
   const [shuffledTeams, setShuffledTeams] = useState<
     (TeamWithExclusions & { uuid: string })[]
@@ -96,7 +92,7 @@ export default function TeamConfirmationModal({
     uuid: string,
     playerIdx: number,
     newIGN: string,
-    newPlayers?: { ign: string; kills: number; id?: string }[]
+    newPlayers?: { ign: string; kills: number; id?: string }[],
   ) => {
     setShuffledTeams((current: (TeamWithExclusions & { uuid: string })[]) =>
       current.map((team: TeamWithExclusions & { uuid: string }) => {
@@ -104,8 +100,10 @@ export default function TeamConfirmationModal({
           const updatedPlayers = newPlayers
             ? newPlayers
             : team.players.map(
-                (p: { ign: string; kills: number; id?: string }, idx: number) =>
-                  idx === playerIdx ? { ...p, ign: newIGN } : p
+                (
+                  p: { ign: string; kills: number; id?: string },
+                  idx: number,
+                ) => (idx === playerIdx ? { ...p, ign: newIGN } : p),
               );
           const autoTeamName = updatedPlayers
             .map((p: { ign: string }) => p.ign)
@@ -114,12 +112,12 @@ export default function TeamConfirmationModal({
           return { ...team, players: updatedPlayers, teamName: autoTeamName };
         }
         return team;
-      })
+      }),
     );
     setTeamsToCreate((current: TeamWithExclusions[]) =>
       current.map((team: TeamWithExclusions) => {
         const st = shuffledTeams.find(
-          (t: TeamWithExclusions & { uuid: string }) => t.uuid === uuid
+          (t: TeamWithExclusions & { uuid: string }) => t.uuid === uuid,
         );
         const match =
           st &&
@@ -134,8 +132,10 @@ export default function TeamConfirmationModal({
           const updatedPlayers = newPlayers
             ? newPlayers
             : team.players.map(
-                (p: { ign: string; kills: number; id?: string }, idx: number) =>
-                  idx === playerIdx ? { ...p, ign: newIGN } : p
+                (
+                  p: { ign: string; kills: number; id?: string },
+                  idx: number,
+                ) => (idx === playerIdx ? { ...p, ign: newIGN } : p),
               );
           const autoTeamName = updatedPlayers
             .map((p: { ign: string }) => p.ign)
@@ -144,7 +144,7 @@ export default function TeamConfirmationModal({
           return { ...team, players: updatedPlayers, teamName: autoTeamName };
         }
         return team;
-      })
+      }),
     );
   };
 
@@ -154,7 +154,7 @@ export default function TeamConfirmationModal({
     try {
       // Get tournament entry fee and title
       const tournamentDoc = await getDoc(
-        doc(db, "tournaments", selectedTournament)
+        doc(db, "tournaments", selectedTournament),
       );
       const tournamentData = tournamentDoc.exists()
         ? tournamentDoc.data()
@@ -179,14 +179,14 @@ export default function TeamConfirmationModal({
 
       // Filter out teams where all IGNs are empty
       const validTeams = teamsToCreate.filter((team) =>
-        team.players.some((player) => player.ign && player.ign.trim() !== "")
+        team.players.some((player) => player.ign && player.ign.trim() !== ""),
       );
 
       const batch = writeBatch(db);
       const now = new Date().toISOString();
       for (const team of validTeams) {
         const phoneNumber = `+91${Math.floor(
-          1000000000 + Math.random() * 9000000000
+          1000000000 + Math.random() * 9000000000,
         )}`;
         const docRef = doc(db, "tournamentEntries", phoneNumber);
 
@@ -352,7 +352,7 @@ export default function TeamConfirmationModal({
                                   kills: number;
                                   id?: string;
                                 },
-                                idx: number
+                                idx: number,
                               ) => (
                                 <li
                                   key={player.id || idx}
@@ -362,7 +362,7 @@ export default function TeamConfirmationModal({
                                     type="text"
                                     value={player.ign}
                                     onChange={(
-                                      e: React.ChangeEvent<HTMLInputElement>
+                                      e: React.ChangeEvent<HTMLInputElement>,
                                     ) => {
                                       const value = e.target.value;
                                       // Add new player if editing the extra input
@@ -377,7 +377,7 @@ export default function TeamConfirmationModal({
                                             team.uuid,
                                             idx,
                                             value,
-                                            newPlayers
+                                            newPlayers,
                                           );
                                         }
                                       } else {
@@ -385,7 +385,7 @@ export default function TeamConfirmationModal({
                                         updateTeamAndPlayers(
                                           team.uuid,
                                           idx,
-                                          value
+                                          value,
                                         );
                                       }
                                     }}
@@ -393,14 +393,14 @@ export default function TeamConfirmationModal({
                                     placeholder="IGN"
                                   />
                                   {team.excludedFromDeduction?.includes(
-                                    player.id || ""
+                                    player.id || "",
                                   ) && (
                                     <span className="ml-2 text-xs text-red-500">
                                       Excluded
                                     </span>
                                   )}
                                 </li>
-                              )
+                              ),
                             );
                           })()}
                         </ul>

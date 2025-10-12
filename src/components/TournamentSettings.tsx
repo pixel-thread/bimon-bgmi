@@ -12,13 +12,9 @@ import { Button } from "@/src/components/ui/button";
 import TournamentToolbar from "./TournamentToolbar";
 import TournamentForm from "./TournamentForm";
 import TeamConfirmationModal from "./TeamConfirmationModal";
-import TournamentCreateModal from "./TournamentCreateModal";
+import TournamentCreateModal from "@/src/components/tournaments/TournamentCreateModal";
 import TeamCreationModal from "./TeamCreationModal";
 import { SeasonManagement } from "./admin/season/SeasonManagement";
-import { useTournaments as useBimonTernament } from "@/src/hooks/useTournaments";
-import { useTeams } from "@/src/hooks/useTeams";
-import { getBestTournamentForAutoSelect } from "@/src/lib/utils";
-import { TournamentConfig } from "@/src/lib/types";
 import { toast } from "sonner";
 import {
   Upload,
@@ -74,20 +70,21 @@ import {
 
 import { useTournaments } from "../hooks/tournament/useTournaments";
 import { useSeasonStore } from "../store/season";
+import { Ternary } from "./common/Ternary";
+import { useTournamentStore } from "../store/tournament";
 
 export function TournamentSettings() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTeamCreationModal, setShowTeamCreationModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [selectedTournament, setSelectedTournament] = useState<string | null>(
-    null,
-  );
-  const { seasonId: selectedSeason, setSeasonId: setSelectedSeason } =
-    useSeasonStore();
+  const {
+    tournamentId: selectedTournament,
+    setTournamentId: setSelectedTournament,
+  } = useTournamentStore();
+  const { seasonId: selectedSeason } = useSeasonStore();
   const [teamsToCreate, setTeamsToCreate] = useState<
     { teamName: string; players: { ign: string; kills: number }[] }[]
   >([]);
-  const [formData, setFormData] = useState<Partial<TournamentConfig>>({});
   const [backgroundFiles, setBackgroundFiles] = useState<File[]>([]);
   const [currentBackgroundImage, setCurrentBackgroundImage] =
     useState<string>("");
@@ -125,10 +122,6 @@ export function TournamentSettings() {
   const itemsPerPage = 5;
 
   const { data: tournaments } = useTournaments({ seasonId: selectedSeason });
-
-  const { updateTournament } = useBimonTernament();
-
-  const { teams, deleteTeams } = useTeams(selectedTournament);
 
   const selectedConfig =
     tournaments?.find((t) => t.id === selectedTournament) || null;
@@ -170,19 +163,12 @@ export function TournamentSettings() {
           const bTime = b.id.includes("_") ? parseInt(b.id.split("_")[1]) : 0;
           return bTime - aTime;
         });
-        setSelectedTournament(sorted[0]?.id || null);
+        // setSelectedTournament(sorted[0]?.id || null);
       }
     }
   }, [tournaments, selectedTournament]);
 
   // Sync form with selected tournament config
-  useEffect(() => {
-    if (selectedConfig) {
-      // setFormData({ ...selectedConfig });
-    } else {
-      setFormData({});
-    }
-  }, [selectedTournament, selectedConfig?.id]);
 
   // Load background gallery
   useEffect(() => {
@@ -621,13 +607,8 @@ export function TournamentSettings() {
       <Card>
         <CardContent className="p-3">
           <TournamentToolbar
-            selectedTournament={selectedTournament}
-            setSelectedTournament={setSelectedTournament}
             setShowCreateModal={setShowCreateModal}
             setShowBulkCreateModal={setShowTeamCreationModal}
-            selectedSeason={selectedSeason}
-            setSelectedSeason={setSelectedSeason}
-            tournaments={tournaments}
           />
         </CardContent>
       </Card>
@@ -644,11 +625,17 @@ export function TournamentSettings() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-3 pt-4">
-              <TournamentForm
-                formData={formData}
-                setFormData={setFormData}
-                selectedConfig={selectedConfig}
-                selectedTournament={selectedTournament}
+              <Ternary
+                condition={!!selectedTournament}
+                trueComponent={<TournamentForm />}
+                falseComponent={
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="h-3 w-3 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">
+                      No tournament selected
+                    </p>
+                  </div>
+                }
               />
             </CardContent>
           </Card>
@@ -1063,13 +1050,11 @@ export function TournamentSettings() {
         setShowModal={setShowTeamCreationModal}
         setShowConfirmModal={setShowConfirmModal}
         setTeamsToCreate={setTeamsToCreate}
-        selectedTournament={selectedTournament}
       />
 
       <TeamConfirmationModal
         showConfirmModal={showConfirmModal}
         setShowConfirmModal={setShowConfirmModal}
-        selectedTournament={selectedTournament}
         teamsToCreate={teamsToCreate}
         setTeamsToCreate={setTeamsToCreate}
       />
@@ -1077,7 +1062,6 @@ export function TournamentSettings() {
       <TournamentCreateModal
         showCreateModal={showCreateModal}
         setShowCreateModal={setShowCreateModal}
-        setSelectedTournament={setSelectedTournament}
       />
 
       {/* Income Entry Dialog */}

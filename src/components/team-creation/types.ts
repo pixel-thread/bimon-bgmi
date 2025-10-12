@@ -23,7 +23,6 @@ export interface TeamCreationModalProps {
   setShowModal: (show: boolean) => void;
   setShowConfirmModal: (show: boolean) => void;
   setTeamsToCreate: (teams: Team[]) => void;
-  selectedTournament?: string | null;
 }
 
 export interface PlayerSelectionState {

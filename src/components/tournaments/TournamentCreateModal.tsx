@@ -15,24 +15,20 @@ import {
   FormMessage,
 } from "@/src/components/ui/form";
 import { Button } from "@/src/components/ui/button";
-import { useTournaments } from "@/src/hooks/useTournaments";
-import { TournamentConfig, Season } from "@/src/lib/types";
 import { toast } from "sonner";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/src/lib/firebase";
-import { useActiveSeason } from "../hooks/season/useActiveSeason";
 import { SubmitHandler, useForm } from "react-hook-form";
 import z from "zod";
-import { tournamentSchema } from "../utils/validation/tournament";
 import { useMutation } from "@tanstack/react-query";
-import http from "../utils/http";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Input } from "./ui/input";
+import { tournamentSchema } from "@/src/utils/validation/tournament";
+import { useActiveSeason } from "@/src/hooks/season/useActiveSeason";
+import http from "@/src/utils/http";
+import { Input } from "../ui/input";
+import { useTournamentStore } from "@/src/store/tournament";
 
 interface TournamentCreateModalProps {
   showCreateModal: boolean;
   setShowCreateModal: (show: boolean) => void;
-  setSelectedTournament: (id: string | null) => void;
 }
 
 type TournamentT = z.infer<typeof tournamentSchema>;
@@ -40,9 +36,9 @@ type TournamentT = z.infer<typeof tournamentSchema>;
 export default function TournamentCreateModal({
   showCreateModal,
   setShowCreateModal,
-  setSelectedTournament,
 }: TournamentCreateModalProps) {
   const { isFetching: isLoading, data: activeSeason } = useActiveSeason();
+  const { setTournamentId: setSelectedTournament } = useTournamentStore();
   const form = useForm({
     resolver: zodResolver(tournamentSchema),
   });
