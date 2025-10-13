@@ -220,14 +220,15 @@ enum Category {
 }
 
 model Team {
-  id            String      @id @default(uuid())
-  name          String
-  players       Player[]
-  createdAt     DateTime    @default(now())
-  teamNumber    Int
-  playerStatsId String?
-  tournamentId  String?
-  tournament    Tournament? @relation(fields: [tournamentId], references: [id])
+  id           String      @id @default(uuid())
+  name         String
+  players      Player[]
+  createdAt    DateTime    @default(now())
+  teamNumber   Int
+  tournamentId String?
+  tournament   Tournament? @relation(fields: [tournamentId], references: [id])
+  seasonId     String?
+  season       Season?     @relation(fields: [seasonId], references: [id])
 }
 
 model KDStats {
