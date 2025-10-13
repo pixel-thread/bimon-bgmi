@@ -26,11 +26,11 @@ export const DynamicTopPlayersPodium = React.memo(
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // Get top 3 players based on current sorting (memoized)
-    const topPlayers = React.useMemo(() => players.slice(0, 3), [players]);
+    const topPlayers = React.useMemo(() => players?.slice(0, 3), [players]);
 
     // Auto-scroll to center the #1 player
     useEffect(() => {
-      if (scrollContainerRef.current && topPlayers.length > 0) {
+      if (scrollContainerRef.current && topPlayers?.length > 0) {
         const container = scrollContainerRef.current;
 
         // Calculate the scroll position to center the #1 player (2nd card)
@@ -77,7 +77,7 @@ export const DynamicTopPlayersPodium = React.memo(
             return `${player.overallKD.toFixed(2)} K/D`;
         }
       },
-      [sortBy]
+      [sortBy],
     );
 
     // Player card component with 9:22 aspect ratio (memoized)
@@ -259,7 +259,7 @@ export const DynamicTopPlayersPodium = React.memo(
             </div>
           </div>
         );
-      }
+      },
     );
 
     if (isLoading) {
@@ -278,7 +278,7 @@ export const DynamicTopPlayersPodium = React.memo(
       );
     }
 
-    if (topPlayers.length === 0) {
+    if (topPlayers?.length === 0) {
       return (
         <div
           className={`bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-6 shadow-lg ${className}`}
@@ -294,7 +294,7 @@ export const DynamicTopPlayersPodium = React.memo(
       );
     }
 
-    const [first, second, third] = topPlayers;
+    const [first, second, third] = topPlayers || [];
 
     return (
       <div
@@ -399,5 +399,5 @@ export const DynamicTopPlayersPodium = React.memo(
         </div>
       </div>
     );
-  }
+  },
 );

@@ -3,12 +3,18 @@ import { prisma } from "@/src/lib/db/prisma";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 
 type Props = {
-  data: Omit<Prisma.UserCreateInput, "clerkId"> & { password: string };
+  data: Omit<Prisma.UserCreateInput, "clerkId"> & {
+    password: string;
+    email: string;
+    createdBy: string;
+  };
 };
+
 type ClerkUser = {
   clerkId: string;
   username: string;
 };
+
 export async function createUserIfNotExistInDB({
   clerkId,
   username,
@@ -17,10 +23,21 @@ export async function createUserIfNotExistInDB({
     data: {
       userName: username,
       clerkId: clerkId,
+      playerId: undefined,
       player: {
         create: {
-          avatarUrl: "",
-          characterUrl: "",
+          isBanned: false,
+          category: "NOOB",
+          characterImage: undefined,
+          playerStats: {
+            create: {
+              wins: 0,
+              kills: 0,
+              kd: 0,
+              deaths: 0,
+              matches: 0,
+            },
+          },
         },
       },
     },
@@ -32,17 +49,28 @@ export async function createUser({ data }: Props) {
   const userC = await clientClerk.users.createUser({
     password: data.password,
     username: data.userName,
-    emailAddress: [],
+    emailAddress: [data.email],
   });
-  // clerkId is injected from Clerk; not present in data
+
   return await prisma.user.create({
     data: {
       userName: data.userName,
       clerkId: userC.id,
+      createdBy: data.createdBy,
       player: {
         create: {
-          avatarUrl: "",
-          characterUrl: "",
+          isBanned: false,
+          category: "NOOB",
+          characterImage: undefined,
+          playerStats: {
+            create: {
+              wins: 0,
+              kills: 0,
+              kd: 0,
+              deaths: 0,
+              matches: 0,
+            },
+          },
         },
       },
     },

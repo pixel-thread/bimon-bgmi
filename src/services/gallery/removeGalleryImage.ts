@@ -16,7 +16,7 @@ export async function removeGalleryImage({
 }: Props) {
   const name = `${defaultBucket}/${bucketName}` || defaultBucket;
 
-  const { error, data } = await supabaseClient.storage
+  const { error } = await supabaseClient.storage
     .from(name)
     .remove([image.fullPath, image.path]);
 
@@ -25,9 +25,8 @@ export async function removeGalleryImage({
     logger.error(error);
   }
 
-  logger.log({
-    data,
+  return await prisma.gallery.update({
+    where: { id: image.id },
+    data: { status: "INACTIVE" },
   });
-
-  return await prisma.gallery.delete({ where: { id: image.id } });
 }

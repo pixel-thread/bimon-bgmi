@@ -59,6 +59,7 @@ model User {
   tournament   Tournament? @relation(fields: [tournamentId], references: [id])
   tournamentId String?
   wallet       Wallet?
+  createdBy    String?
 }
 
 model Player {
@@ -123,6 +124,7 @@ model Season {
   createdAt   DateTime     @default(now())
 
   tournament Tournament[]
+  Team       Team[]
 
   @@unique([id, status]) // only one active season
   @@index([id])
@@ -229,10 +231,4 @@ model Team {
   tournament   Tournament? @relation(fields: [tournamentId], references: [id])
   seasonId     String?
   season       Season?     @relation(fields: [seasonId], references: [id])
-}
-
-model KDStats {
-  id       String @id @default(uuid())
-  playerId String @unique
-  kd       Float
 }

@@ -6,28 +6,11 @@ import { LoaderFive } from "@/src/components/ui/loader";
 
 import { PlayerFilters } from "./PlayerFilters";
 import { DynamicTopPlayersPodium } from "../ui/dynamic-top-players-podium";
-import { PlayerTable } from "./PlayerTable";
 import { PlayerDialog } from "./PlayerDialog";
 import { EditPlayerDialog } from "./EditPlayerDialog";
 import { PlayerStatsModal } from "./PlayerStatsModal";
 import { usePlayerData } from "./hooks/usePlayerData";
 import { PlayersTabProps, PlayerWithStats } from "./types";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/src/components/ui/dialog";
-import { Input } from "@/src/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/src/components/ui/select";
-import { Eye, EyeOff, Copy } from "lucide-react";
 import { Button } from "../ui/button";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useTournaments } from "@/src/hooks/useTournaments";
@@ -35,7 +18,35 @@ import { useTournaments } from "@/src/hooks/useTournaments";
 import { BalanceHistoryDialog } from "./BalanceHistoryDialog";
 import { BalanceAdjustmentDialog } from "./BalanceAdjustmentDialog";
 import { CreatePlayerDialog } from "./CreatePlayerDialog";
+import { DataTable } from "../data-table";
+import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
+import { ColumnDef } from "@tanstack/react-table";
+import { usePlayers } from "@/src/hooks/player/usePlayers";
+import { Card } from "../teamManagementImports";
 
+type PlayerT = Prisma.PlayerGetPayload<{
+  include: { user: true; playerStats: true };
+}>;
+
+const columns: ColumnDef<PlayerT>[] = [
+  { header: "Username", accessorKey: "user.userName" },
+  { accessorKey: "category", header: "Category" },
+  { accessorKey: "playerStats.wins", header: "Win" },
+  { accessorKey: "playerStats.kills", header: "Kill" },
+  { accessorKey: "playerStats.deaths", header: "Death" },
+  { accessorKey: "playerStats.matches", header: "Matches" },
+  {
+    accessorKey: "playerStats.kd",
+    header: "K/D",
+    cell: ({ row }) => {
+      const kill = row?.original?.playerStats?.kills || 0;
+      const death = row?.original?.playerStats?.deaths || 0;
+      let kd = kill / death;
+      // round kd to 1 decimal place
+      return kd.toFixed(1) || 0;
+    },
+  },
+];
 export function PlayersTab({
   readOnly = false,
   showBalanceSummary = false,
@@ -54,7 +65,7 @@ export function PlayersTab({
   const { user } = useAuth();
   const role = user?.role;
   const { tournaments } = useTournaments();
-
+  const { data: allPlayers } = usePlayers();
   // States
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -281,64 +292,6 @@ export function PlayersTab({
     setIsCreatePlayerDialogOpen(true);
   };
 
-  const handleCreatePlayer = async () => {
-    if (!newPlayerForm.name.trim()) {
-      toast.error("Player name is required");
-      return;
-    }
-
-    if (role === "SUPER_ADMIN" && !newPlayerForm.password.trim()) {
-      toast.error("Password is required");
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const existingPlayer = players.find(
-        (p) => p.name.toLowerCase() === newPlayerForm.name.trim().toLowerCase(),
-      );
-
-      if (existingPlayer) {
-        toast.error("A player with this name already exists");
-        setIsSaving(false);
-        return;
-      }
-
-      const playerId = `${newPlayerForm.category
-        .toLowerCase()
-        .replace(" ", "_")}_${newPlayerForm.name
-        .replace(/\s+/g, "_")
-        .toLowerCase()}_${Date.now()}`;
-
-      const playerData = {
-        id: playerId,
-        name: newPlayerForm.name.trim(),
-        category: newPlayerForm.category,
-        phoneNumber: null,
-        balance: 0,
-        // Persist the generated/entered password for initial login
-        loginPassword:
-          role === "SUPER_ADMIN" && newPlayerForm.password
-            ? newPlayerForm.password.trim()
-            : undefined,
-      };
-
-      const success = await addPlayer(playerData);
-      if (success) {
-        toast.success("Player created successfully");
-        setNewPlayerForm({ name: "", category: "Noob", password: "" });
-        setIsCreatePlayerDialogOpen(false);
-      } else {
-        toast.error("Failed to create player account.");
-      }
-    } catch (error) {
-      console.error("Error creating player:", error);
-      toast.error("Failed to create player");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const handleViewPlayerStats = (player: PlayerWithStats) => {
     setSelectedPlayerForStats(player);
     setIsPlayerStatsOpen(true);
@@ -474,18 +427,9 @@ export function PlayersTab({
               onPlayerClick={handleViewPlayerStats}
             />
 
-            <div className="overflow-x-auto">
-              <PlayerTable
-                players={tablePlayersWithPagination}
-                sortBy={sortBy}
-                onPlayerClick={handleViewPlayerStats}
-                tournaments={tournaments}
-                startingIndex={3 + (currentPage - 1) * playersPerPage} // Start from 4 (index 3)
-                currentPage={currentPage}
-                totalPages={totalPagesForTable}
-                onPageChange={setCurrentPage}
-              />
-            </div>
+            <Card className="p-3 overflow-x-auto">
+              <DataTable<[]> data={allPlayers ?? []} columns={columns} />
+            </Card>
           </>
         )}
       </div>

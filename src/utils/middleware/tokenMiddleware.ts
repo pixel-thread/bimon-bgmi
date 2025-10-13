@@ -45,20 +45,7 @@ export async function tokenMiddleware(req: NextRequest | Request) {
   let user = await getUserByClerkId({ id: claims.sub });
 
   if (!user) {
-    const clerkUser = await clientClerk.users.getUser(claims.sub);
-
-    const isUserExistbyUserName = await getUserByUserName({
-      userName: clerkUser.username ?? claims.sub,
-    });
-
-    if (isUserExistbyUserName) {
-      throw new UnauthorizedError("Unauthorized");
-    }
-
-    user = await createUserIfNotExistInDB({
-      username: clerkUser.username || claims.sub,
-      clerkId: clerkUser?.id,
-    });
+    throw new UnauthorizedError("Unauthorized");
   }
 
   return user;

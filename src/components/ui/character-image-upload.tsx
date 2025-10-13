@@ -22,16 +22,15 @@ export function CharacterImageUpload({
   disabled = false,
   className,
 }: CharacterImageUploadProps) {
-  const { user } = useAuth();
-  const [uploading, setUploading] = useState(false);
-  const [previewBase64, setPreviewBase64] = useState<string | null>(null);
+  const { user, refreshAuth } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const playerId = user?.player?.id;
   // Clear preview when currentImageBase64 updates (after successful upload)
-  const { mutate } = useMutation({
+
+  const { mutate, isPending: uploading } = useMutation({
     mutationFn: async (file: File | undefined) =>
       http.post(
-        `/player/${user?.player?.id}/character`,
+        `/player/${playerId}/character`,
         { image: file },
         {
           headers: {
@@ -39,13 +38,43 @@ export function CharacterImageUpload({
           },
         },
       ),
+    onSuccess: async (data) => {
+      if (data.success) {
+        refreshAuth();
+        toast.success(data.message);
+        return data;
+      }
+      toast.error(data.message);
+      return data;
+    },
   });
+
+  const { mutate: remove, isPending: isDeleting } = useMutation({
+    mutationFn: async () => http.delete(`/player/${playerId}/character`),
+    onSuccess: async (data) => {
+      if (data.success) {
+        refreshAuth();
+        toast.success(data.message);
+        return data;
+      }
+      toast.error(data.message);
+      return data;
+    },
+  });
+
+  const characterImageUrl = user?.player?.characterImage?.publicUrl;
+
+  const isDisabled =
+    !user?.player?.characterImage?.publicUrl ||
+    isDeleting ||
+    disabled ||
+    uploading;
 
   return (
     <div className={cn("flex flex-col items-center space-y-4", className)}>
       <div className="relative group">
         <CharacterAvatar
-          src={user?.player?.characterImage?.publicUrl}
+          src={characterImageUrl}
           size="xl"
           className="border-4 border-white shadow-lg"
         />
@@ -67,9 +96,12 @@ export function CharacterImageUpload({
         {/* Click overlay */}
         <input
           type="file"
-          onChange={(e) => mutate(e.target.files?.[0])}
-          disabled={disabled || uploading}
-          className="absolute  inset-0 rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          onChange={(e) => {
+            e.preventDefault();
+            mutate(e.target.files?.[0]);
+          }}
+          disabled={!isDisabled}
+          className="absolute opacity-0 inset-0 rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           aria-label="Upload character image"
         />
       </div>
@@ -78,8 +110,11 @@ export function CharacterImageUpload({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={disabled || uploading}
+          onClick={(e) => {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }}
+          disabled={!isDisabled}
           className="flex items-center gap-2"
         >
           <Upload className="w-4 h-4" />
@@ -88,7 +123,11 @@ export function CharacterImageUpload({
         <Button
           variant="outline"
           size="sm"
-          disabled={disabled || uploading}
+          onClick={(e) => {
+            e.preventDefault();
+            remove();
+          }}
+          disabled={isDisabled}
           className="flex items-center gap-2 text-red-600 hover:text-red-700"
         >
           <X className="w-4 h-4" />
