@@ -154,6 +154,7 @@ exports.Prisma.GameScoreScalarFieldEnum = {
 
 exports.Prisma.GalleryScalarFieldEnum = {
   id: 'id',
+  imageId: 'imageId',
   name: 'name',
   path: 'path',
   fullPath: 'fullPath',

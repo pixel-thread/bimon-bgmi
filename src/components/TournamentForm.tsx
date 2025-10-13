@@ -107,7 +107,12 @@ export default function TournamentForm() {
             <Button disabled={isUpdating}>
               {isLoading ? "Updating..." : "Save Changes"}
             </Button>
-            <Button variant="destructive" disabled={isUpdating}>
+            <Button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              variant="destructive"
+              disabled={isUpdating}
+            >
               {isLoading ? "Deleting..." : "Delete"}
             </Button>
           </div>

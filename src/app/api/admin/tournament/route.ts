@@ -1,6 +1,5 @@
 import { getActiveSeason } from "@/src/services/season/getActiveSeason";
 import { createTournament } from "@/src/services/tournament/createTournament";
-import { deleteTournamentById } from "@/src/services/tournament/deleteTournamentById";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
@@ -20,7 +19,7 @@ export async function POST(req: Request) {
       data: {
         ...body,
         createdBy: user.id,
-        Season: { connect: { id: activeSeason.id } },
+        season: { connect: { id: activeSeason.id } },
       },
     });
 

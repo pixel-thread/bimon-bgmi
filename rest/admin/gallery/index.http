@@ -1,6 +1,6 @@
 ### 
 
-# @name Create Season
+# @name Link image to tournament
 
 POST http://localhost:3000/api/admin/gallery/tournament-background HTTP/1.1
 Accept: application/json
@@ -9,5 +9,5 @@ Authorization: Bearer {{TOKEN}}
 
 {
   "galleryId": "0c9d5763-d976-4214-a072-e01aa409fb5b",
-  "tournamentId": "f83054d5-37bb-4c0b-8f19-b4aed75cd60e"
+  "tournamentId": "f134461a-e1c9-46e0-991e-b7fc099e3ad6"
 }

@@ -9,9 +9,8 @@ type Props = {
 
 const defaultBucket = process.env.SUPABASE_BUCKET_NAME as string;
 
-export async function uploadImage({ file, bucketName }: Props) {
-  // Validate file type and size (optional but recommended)
-  const name = `${defaultBucket}/${bucketName}`;
+export async function uploadImage({ file, bucketName = "gallery" }: Props) {
+  const name = `${defaultBucket}/${bucketName}` || defaultBucket;
   const allowedTypes = ALLOWED_IMAGE_TYPE;
   const maxSize = ALLOWED_FILE_SIZE;
 
@@ -48,6 +47,7 @@ export async function uploadImage({ file, bucketName }: Props) {
   return {
     path: data?.path,
     url: publicData?.publicUrl,
+    id: data?.id,
     fileName,
     fullPath: data.fullPath,
   };

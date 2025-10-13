@@ -42,6 +42,7 @@ export async function POST(req: Request) {
 
     const gallery = await addGalleryImage({
       data: {
+        imageId: data.id,
         name: data.fileName,
         path: data.path,
         publicUrl: data.url,

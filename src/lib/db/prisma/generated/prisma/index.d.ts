@@ -5839,6 +5839,7 @@ export namespace Prisma {
 
   export type GalleryMinAggregateOutputType = {
     id: string | null
+    imageId: string | null
     name: string | null
     path: string | null
     fullPath: string | null
@@ -5849,6 +5850,7 @@ export namespace Prisma {
 
   export type GalleryMaxAggregateOutputType = {
     id: string | null
+    imageId: string | null
     name: string | null
     path: string | null
     fullPath: string | null
@@ -5859,6 +5861,7 @@ export namespace Prisma {
 
   export type GalleryCountAggregateOutputType = {
     id: number
+    imageId: number
     name: number
     path: number
     fullPath: number
@@ -5871,6 +5874,7 @@ export namespace Prisma {
 
   export type GalleryMinAggregateInputType = {
     id?: true
+    imageId?: true
     name?: true
     path?: true
     fullPath?: true
@@ -5881,6 +5885,7 @@ export namespace Prisma {
 
   export type GalleryMaxAggregateInputType = {
     id?: true
+    imageId?: true
     name?: true
     path?: true
     fullPath?: true
@@ -5891,6 +5896,7 @@ export namespace Prisma {
 
   export type GalleryCountAggregateInputType = {
     id?: true
+    imageId?: true
     name?: true
     path?: true
     fullPath?: true
@@ -5974,6 +5980,7 @@ export namespace Prisma {
 
   export type GalleryGroupByOutputType = {
     id: string
+    imageId: string
     name: string
     path: string
     fullPath: string
@@ -6001,6 +6008,7 @@ export namespace Prisma {
 
   export type GallerySelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    imageId?: boolean
     name?: boolean
     path?: boolean
     fullPath?: boolean
@@ -6014,6 +6022,7 @@ export namespace Prisma {
 
   export type GallerySelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    imageId?: boolean
     name?: boolean
     path?: boolean
     fullPath?: boolean
@@ -6024,6 +6033,7 @@ export namespace Prisma {
 
   export type GallerySelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    imageId?: boolean
     name?: boolean
     path?: boolean
     fullPath?: boolean
@@ -6034,6 +6044,7 @@ export namespace Prisma {
 
   export type GallerySelectScalar = {
     id?: boolean
+    imageId?: boolean
     name?: boolean
     path?: boolean
     fullPath?: boolean
@@ -6042,7 +6053,7 @@ export namespace Prisma {
     playerId?: boolean
   }
 
-  export type GalleryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "path" | "fullPath" | "publicUrl" | "isCharacterImg" | "playerId", ExtArgs["result"]["gallery"]>
+  export type GalleryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "imageId" | "name" | "path" | "fullPath" | "publicUrl" | "isCharacterImg" | "playerId", ExtArgs["result"]["gallery"]>
   export type GalleryInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     player?: boolean | Gallery$playerArgs<ExtArgs>
     tournament?: boolean | Gallery$tournamentArgs<ExtArgs>
@@ -6059,6 +6070,7 @@ export namespace Prisma {
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
+      imageId: string
       name: string
       path: string
       fullPath: string
@@ -6491,6 +6503,7 @@ export namespace Prisma {
    */
   interface GalleryFieldRefs {
     readonly id: FieldRef<"Gallery", 'String'>
+    readonly imageId: FieldRef<"Gallery", 'String'>
     readonly name: FieldRef<"Gallery", 'String'>
     readonly path: FieldRef<"Gallery", 'String'>
     readonly fullPath: FieldRef<"Gallery", 'String'>
@@ -17130,6 +17143,7 @@ export namespace Prisma {
 
   export const GalleryScalarFieldEnum: {
     id: 'id',
+    imageId: 'imageId',
     name: 'name',
     path: 'path',
     fullPath: 'fullPath',
@@ -17644,6 +17658,7 @@ export namespace Prisma {
     OR?: GalleryWhereInput[]
     NOT?: GalleryWhereInput | GalleryWhereInput[]
     id?: StringFilter<"Gallery"> | string
+    imageId?: StringFilter<"Gallery"> | string
     name?: StringFilter<"Gallery"> | string
     path?: StringFilter<"Gallery"> | string
     fullPath?: StringFilter<"Gallery"> | string
@@ -17656,6 +17671,7 @@ export namespace Prisma {
 
   export type GalleryOrderByWithRelationInput = {
     id?: SortOrder
+    imageId?: SortOrder
     name?: SortOrder
     path?: SortOrder
     fullPath?: SortOrder
@@ -17668,6 +17684,7 @@ export namespace Prisma {
 
   export type GalleryWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    imageId?: string
     playerId?: string
     AND?: GalleryWhereInput | GalleryWhereInput[]
     OR?: GalleryWhereInput[]
@@ -17679,10 +17696,11 @@ export namespace Prisma {
     isCharacterImg?: BoolFilter<"Gallery"> | boolean
     player?: XOR<PlayerNullableScalarRelationFilter, PlayerWhereInput> | null
     tournament?: TournamentListRelationFilter
-  }, "id" | "playerId">
+  }, "id" | "imageId" | "playerId">
 
   export type GalleryOrderByWithAggregationInput = {
     id?: SortOrder
+    imageId?: SortOrder
     name?: SortOrder
     path?: SortOrder
     fullPath?: SortOrder
@@ -17699,6 +17717,7 @@ export namespace Prisma {
     OR?: GalleryScalarWhereWithAggregatesInput[]
     NOT?: GalleryScalarWhereWithAggregatesInput | GalleryScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Gallery"> | string
+    imageId?: StringWithAggregatesFilter<"Gallery"> | string
     name?: StringWithAggregatesFilter<"Gallery"> | string
     path?: StringWithAggregatesFilter<"Gallery"> | string
     fullPath?: StringWithAggregatesFilter<"Gallery"> | string
@@ -18551,6 +18570,7 @@ export namespace Prisma {
 
   export type GalleryCreateInput = {
     id?: string
+    imageId: string
     name: string
     path: string
     fullPath: string
@@ -18563,6 +18583,7 @@ export namespace Prisma {
 
   export type GalleryUncheckedCreateInput = {
     id?: string
+    imageId: string
     name: string
     path: string
     fullPath: string
@@ -18575,6 +18596,7 @@ export namespace Prisma {
 
   export type GalleryUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
+    imageId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     path?: StringFieldUpdateOperationsInput | string
     fullPath?: StringFieldUpdateOperationsInput | string
@@ -18587,6 +18609,7 @@ export namespace Prisma {
 
   export type GalleryUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
+    imageId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     path?: StringFieldUpdateOperationsInput | string
     fullPath?: StringFieldUpdateOperationsInput | string
@@ -18599,6 +18622,7 @@ export namespace Prisma {
 
   export type GalleryCreateManyInput = {
     id?: string
+    imageId: string
     name: string
     path: string
     fullPath: string
@@ -18609,6 +18633,7 @@ export namespace Prisma {
 
   export type GalleryUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
+    imageId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     path?: StringFieldUpdateOperationsInput | string
     fullPath?: StringFieldUpdateOperationsInput | string
@@ -18619,6 +18644,7 @@ export namespace Prisma {
 
   export type GalleryUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
+    imageId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     path?: StringFieldUpdateOperationsInput | string
     fullPath?: StringFieldUpdateOperationsInput | string
@@ -19591,6 +19617,7 @@ export namespace Prisma {
 
   export type GalleryCountOrderByAggregateInput = {
     id?: SortOrder
+    imageId?: SortOrder
     name?: SortOrder
     path?: SortOrder
     fullPath?: SortOrder
@@ -19601,6 +19628,7 @@ export namespace Prisma {
 
   export type GalleryMaxOrderByAggregateInput = {
     id?: SortOrder
+    imageId?: SortOrder
     name?: SortOrder
     path?: SortOrder
     fullPath?: SortOrder
@@ -19611,6 +19639,7 @@ export namespace Prisma {
 
   export type GalleryMinOrderByAggregateInput = {
     id?: SortOrder
+    imageId?: SortOrder
     name?: SortOrder
     path?: SortOrder
     fullPath?: SortOrder
@@ -21617,6 +21646,7 @@ export namespace Prisma {
 
   export type GalleryCreateWithoutPlayerInput = {
     id?: string
+    imageId: string
     name: string
     path: string
     fullPath: string
@@ -21628,6 +21658,7 @@ export namespace Prisma {
 
   export type GalleryUncheckedCreateWithoutPlayerInput = {
     id?: string
+    imageId: string
     name: string
     path: string
     fullPath: string
@@ -21874,6 +21905,7 @@ export namespace Prisma {
 
   export type GalleryUpdateWithoutPlayerInput = {
     id?: StringFieldUpdateOperationsInput | string
+    imageId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     path?: StringFieldUpdateOperationsInput | string
     fullPath?: StringFieldUpdateOperationsInput | string
@@ -21885,6 +21917,7 @@ export namespace Prisma {
 
   export type GalleryUncheckedUpdateWithoutPlayerInput = {
     id?: StringFieldUpdateOperationsInput | string
+    imageId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     path?: StringFieldUpdateOperationsInput | string
     fullPath?: StringFieldUpdateOperationsInput | string
@@ -22339,6 +22372,7 @@ export namespace Prisma {
 
   export type GalleryCreateWithoutTournamentInput = {
     id?: string
+    imageId: string
     name: string
     path: string
     fullPath: string
@@ -22350,6 +22384,7 @@ export namespace Prisma {
 
   export type GalleryUncheckedCreateWithoutTournamentInput = {
     id?: string
+    imageId: string
     name: string
     path: string
     fullPath: string
@@ -22548,6 +22583,7 @@ export namespace Prisma {
 
   export type GalleryUpdateWithoutTournamentInput = {
     id?: StringFieldUpdateOperationsInput | string
+    imageId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     path?: StringFieldUpdateOperationsInput | string
     fullPath?: StringFieldUpdateOperationsInput | string
@@ -22559,6 +22595,7 @@ export namespace Prisma {
 
   export type GalleryUncheckedUpdateWithoutTournamentInput = {
     id?: StringFieldUpdateOperationsInput | string
+    imageId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     path?: StringFieldUpdateOperationsInput | string
     fullPath?: StringFieldUpdateOperationsInput | string

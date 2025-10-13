@@ -1,7 +1,8 @@
-// tsconfig.json
 {
   "compilerOptions": {
     "target": "esnext",
+    "module": "esnext", // Use ESM module system, NOT commonjs
+    "moduleResolution": "node",
     "lib": [
       "dom",
       "dom.iterable",
@@ -11,15 +12,12 @@
     "skipLibCheck": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    // "noEmit": true, // Comment out or remove temporarily
     "esModuleInterop": true,
-    "module": "commonjs", // Temporarily change to "commonjs" for the script
-    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "outDir": "./dist", // Add outDir for compiled files
+    "outDir": "./dist",
     "plugins": [
       {
         "name": "next"

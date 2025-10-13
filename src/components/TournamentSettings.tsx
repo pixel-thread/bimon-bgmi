@@ -947,14 +947,13 @@ const TournamentConfiguration = () => {
 
 const TournamentBackground = () => {
   const { tournamentId } = useTournamentStore();
+
   const { data } = useTournament({ id: tournamentId });
 
   const handleRemoveBackground = () => {};
 
   const image = data?.gallery;
-
   if (!tournamentId) return null;
-
   return (
     <Card>
       <CardHeader className="p-3 pb-0">
@@ -993,7 +992,30 @@ const TournamentBackground = () => {
 
 const GalleryImages = () => {
   const { data: backgroundGallery } = useGallery();
+  const { tournamentId } = useTournamentStore();
+  const { data } = useTournament({ id: tournamentId });
   const queryClient = useQueryClient();
+
+  const { isPending, mutate } = useMutation({
+    mutationFn: ({
+      tournamentId,
+      galleryId,
+    }: {
+      tournamentId: string;
+      galleryId: string;
+    }) =>
+      http.post("/admin/gallery/tournament-background", {
+        tournamentId,
+        galleryId,
+      }),
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({
+          queryKey: ["tournament", tournamentId],
+        });
+      }
+    },
+  });
 
   const { mutate: uploadGallery } = useMutation({
     mutationFn: (data: { image: File }) =>
@@ -1008,9 +1030,18 @@ const GalleryImages = () => {
     },
   });
 
-  const isUploadingBackground = false;
+  const { mutate: deleteFromGallery } = useMutation({
+    mutationFn: ({ id }: { id: string }) => http.delete(`/admin/gallery/${id}`),
+    onSuccess: (data) => {
+      if (data.success)
+        queryClient.invalidateQueries({ queryKey: ["gallery"] });
+    },
+  });
+  const isUploadingBackground = true;
 
-  const currentBackgroundImage = backgroundGallery ? backgroundGallery[0] : [];
+  const currentBackgroundImage = backgroundGallery?.find(
+    (val) => val.id === data?.gallery?.id,
+  );
 
   return (
     <>
@@ -1029,30 +1060,32 @@ const GalleryImages = () => {
               {backgroundGallery && backgroundGallery?.length > 0 && (
                 <div className="space-y-2">
                   <div className="grid grid-cols-3 gap-2 overflow-x-hidden">
-                    {backgroundGallery.map((imageUrl, index) => (
+                    {backgroundGallery.map((image, index) => (
                       <div key={index} className="relative group">
                         <img
-                          src={imageUrl.publicUrl}
+                          src={image.publicUrl}
+                          onClick={() => {
+                            if (tournamentId) {
+                              mutate({
+                                tournamentId,
+                                galleryId: image.id,
+                              });
+                            }
+                          }}
                           alt={`Background ${index + 1}`}
                           className={`w-full h-36 object-cover rounded cursor-pointer border-2 transition-all ${
-                            currentBackgroundImage === imageUrl
+                            currentBackgroundImage === image
                               ? "border-blue-500"
                               : "border-transparent hover:border-gray-300"
                           }`}
-                          // onClick={() => selectFromGallery(imageUrl)}
                         />
-                        {currentBackgroundImage === imageUrl && (
+                        {currentBackgroundImage === image && (
                           <div className="absolute top-0.5 right-0.5 bg-blue-500 text-white rounded-full p-0.5">
                             <Check className="h-2 w-2" />
                           </div>
                         )}
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm("Delete this background?")) {
-                              // deleteFromGallery(imageUrl, index);
-                            }
-                          }}
+                          onClick={() => deleteFromGallery({ id: image.id })}
                           className="absolute top-0.5 left-0.5 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                           aria-label="Delete background"
                         >

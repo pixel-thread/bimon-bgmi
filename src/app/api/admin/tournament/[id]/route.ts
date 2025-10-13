@@ -25,8 +25,8 @@ export async function PUT(
 
     const updatedTournament = await updateTournament({
       data: {
-        ...tournamentExist,
         id: tournamentExist.id,
+        startDate: tournamentExist.startDate,
         name: body.name,
         fee: body.fee,
       },

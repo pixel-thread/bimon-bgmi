@@ -91,13 +91,20 @@ enum SeasonStatus {
   INACTIVE
 }
 
+enum GalleryStatus {
+  ACTIVE
+  INACTIVE
+}
+
 model Gallery {
-  id             String  @id @default(uuid())
+  id             String        @id @default(uuid())
+  imageId        String        @unique
   name           String
   path           String
   fullPath       String
   publicUrl      String
-  isCharacterImg Boolean @default(false)
+  status         GalleryStatus @default(ACTIVE)
+  isCharacterImg Boolean       @default(false)
 
   playerId String? @unique
   player   Player?

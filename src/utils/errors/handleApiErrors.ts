@@ -44,14 +44,20 @@ export const handleApiErrors = (error: unknown) => {
       status: error.status,
     });
   }
+
   if (error instanceof Error) {
     logger.error({ type: "Error", message: error.message, error });
-    return ErrorResponse({ message: error.message, error });
+    return ErrorResponse({
+      message: error.message,
+      error,
+    });
   }
+
   logger.error({
     type: "UnknownError",
     message: "Internal Server Error",
     error,
   });
+
   return ErrorResponse({ message: "Internal Server Error", error });
 };

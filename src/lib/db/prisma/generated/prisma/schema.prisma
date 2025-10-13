@@ -93,6 +93,7 @@ enum SeasonStatus {
 
 model Gallery {
   id             String  @id @default(uuid())
+  imageId        String  @unique
   name           String
   path           String
   fullPath       String
