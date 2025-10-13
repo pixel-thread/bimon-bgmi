@@ -1,17 +1,13 @@
 "use client";
 import { AuthContext } from "@/src/lib/context/auth";
-import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
+import { UserT } from "@/src/types/context/auth";
 import http from "@/src/utils/http";
 import { useAuth } from "@clerk/clerk-react";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { useCookies } from "react-cookie";
 
-type Props = {
-  children: React.ReactNode;
-};
-
-type UserT = Prisma.UserGetPayload<{ include: { player: true } }> | null;
+type Props = { children: React.ReactNode };
 
 export const AuthProvider = ({ children }: Props) => {
   const { isSignedIn, getToken, signOut } = useAuth();

@@ -33,6 +33,9 @@ import {
   TeamMode,
 } from "./types";
 import { useTournamentStore } from "@/src/store/tournament";
+import { useQuery } from "@tanstack/react-query";
+import http from "@/src/utils/http";
+import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 
 export default function TeamCreationModal({
   showModal,
@@ -41,6 +44,7 @@ export default function TeamCreationModal({
   setTeamsToCreate,
 }: TeamCreationModalProps) {
   const { tournamentId: selectedTournament } = useTournamentStore();
+
   const [state, setState] = useState<TeamCreationState>({
     players: { ultraNoobs: [], noobs: [], pros: [], ultraPros: [] },
     teamMode: "Duo 2",
@@ -66,6 +70,7 @@ export default function TeamCreationModal({
   });
 
   const [syncingParticipants, setSyncingParticipants] = useState(false);
+
   const autoSyncTriggered = useRef(false);
 
   const { tournaments } = useTournaments();
@@ -1028,8 +1033,13 @@ export default function TeamCreationModal({
     return { currentPlayers, currentSelection, allSelected };
   };
 
-  const { currentPlayers, currentSelection, allSelected } = getCurrentTabData();
+  const { currentSelection, allSelected } = getCurrentTabData();
 
+  const { data: currentPlayers } = useQuery({
+    queryKey: ["player"],
+    queryFn: () => http.get<Prisma.PlayerGetPayload<{}>[]>("/player"),
+    select: (data) => data.data,
+  });
   return (
     <Dialog open={showModal} onOpenChange={setShowModal}>
       <DialogContent className="max-w-3xl w-full h-[95vh] sm:h-[90vh] p-0 flex flex-col bg-background overflow-hidden">

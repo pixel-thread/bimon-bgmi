@@ -2,7 +2,6 @@
 
 import { FiUsers } from "react-icons/fi";
 import { PlayersTab } from "@/src/components/PlayersTab";
-import AdminNavigation from "@/src/components/AdminNavigation";
 import { useAuth } from "@/src/hooks/useAuth";
 
 const AdminPlayersPage = () => {

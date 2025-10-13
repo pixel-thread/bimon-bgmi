@@ -34,10 +34,10 @@ import { useTournaments } from "@/src/hooks/useTournaments";
 
 import { BalanceHistoryDialog } from "./BalanceHistoryDialog";
 import { BalanceAdjustmentDialog } from "./BalanceAdjustmentDialog";
+import { CreatePlayerDialog } from "./CreatePlayerDialog";
 
 export function PlayersTab({
   readOnly = false,
-  hideCsvExport = false,
   showBalanceSummary = false,
 }: PlayersTabProps) {
   const [selectedSeason, setSelectedSeason] = useState<string>("all");
@@ -51,7 +51,8 @@ export function PlayersTab({
     banPlayer,
     unbanPlayer,
   } = usePlayerData(selectedSeason);
-  const { role } = useAuth();
+  const { user } = useAuth();
+  const role = user?.role;
   const { tournaments } = useTournaments();
 
   // States
@@ -86,7 +87,6 @@ export function PlayersTab({
     password: "",
   });
 
-  const [showPassword, setShowPassword] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [selectedPlayerForStats, setSelectedPlayerForStats] =
     useState<PlayerWithStats | null>(null);
@@ -254,7 +254,7 @@ export function PlayersTab({
 
   const handleBanPlayer = async (
     playerId: string,
-    banData: { reason: string; duration: number; bannedBy: string }
+    banData: { reason: string; duration: number; bannedBy: string },
   ) => {
     return await banPlayer(playerId, banData);
   };
@@ -263,13 +263,8 @@ export function PlayersTab({
     return await unbanPlayer(playerId);
   };
 
-  const generatePassword = () => {
-    const newPass = Math.random().toString(36).slice(-8);
-    setNewPlayerForm({ ...newPlayerForm, password: newPass });
-  };
-
   const handleOpenCreatePlayerDialog = () => {
-    if (role === "super_admin") {
+    if (role === "SUPER_ADMIN") {
       const defaultPassword = Math.random().toString(36).slice(-8);
       setNewPlayerForm({
         name: "",
@@ -292,7 +287,7 @@ export function PlayersTab({
       return;
     }
 
-    if (role === "super_admin" && !newPlayerForm.password.trim()) {
+    if (role === "SUPER_ADMIN" && !newPlayerForm.password.trim()) {
       toast.error("Password is required");
       return;
     }
@@ -300,7 +295,7 @@ export function PlayersTab({
     setIsSaving(true);
     try {
       const existingPlayer = players.find(
-        (p) => p.name.toLowerCase() === newPlayerForm.name.trim().toLowerCase()
+        (p) => p.name.toLowerCase() === newPlayerForm.name.trim().toLowerCase(),
       );
 
       if (existingPlayer) {
@@ -323,7 +318,7 @@ export function PlayersTab({
         balance: 0,
         // Persist the generated/entered password for initial login
         loginPassword:
-          role === "super_admin" && newPlayerForm.password
+          role === "SUPER_ADMIN" && newPlayerForm.password
             ? newPlayerForm.password.trim()
             : undefined,
       };
@@ -410,131 +405,11 @@ export function PlayersTab({
       )}
 
       {/* Create Player Dialog */}
-      <Dialog
+
+      <CreatePlayerDialog
         open={isCreatePlayerDialogOpen}
-        onOpenChange={setIsCreatePlayerDialogOpen}
-      >
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>
-              {role === "super_admin"
-                ? "Create New Player Account"
-                : "Create New Player"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4 sm:grid-cols-1">
-              <label htmlFor="name" className="text-right sm:text-left">
-                Name
-              </label>
-              <Input
-                id="name"
-                value={newPlayerForm.name}
-                onChange={(e) =>
-                  setNewPlayerForm({ ...newPlayerForm, name: e.target.value })
-                }
-                className="col-span-3 sm:col-span-1"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4 sm:grid-cols-1">
-              <label htmlFor="category" className="text-right sm:text-left">
-                Category
-              </label>
-              <Select
-                value={newPlayerForm.category}
-                onValueChange={(value: Player["category"]) =>
-                  setNewPlayerForm({ ...newPlayerForm, category: value })
-                }
-              >
-                <SelectTrigger className="col-span-3 sm:col-span-1">
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Ultra Noob">Ultra Noob</SelectItem>
-                  <SelectItem value="Noob">Noob</SelectItem>
-                  <SelectItem value="Pro">Pro</SelectItem>
-                  <SelectItem value="Ultra Pro">Ultra Pro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {role === "super_admin" && (
-              <>
-                <div className="grid grid-cols-4 items-center gap-4 sm:grid-cols-1">
-                  <label htmlFor="password" className="text-right sm:text-left">
-                    Password
-                  </label>
-                  <div className="col-span-3 sm:col-span-1 flex items-center">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={newPlayerForm.password}
-                      onChange={(e) =>
-                        setNewPlayerForm({
-                          ...newPlayerForm,
-                          password: e.target.value,
-                        })
-                      }
-                      className="flex-grow"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="ml-2"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          await navigator.clipboard.writeText(
-                            newPlayerForm.password || ""
-                          );
-                          toast.success("Password copied to clipboard");
-                        } catch (_) {
-                          toast.error("Failed to copy password");
-                        }
-                      }}
-                      className="ml-1"
-                      title="Copy password"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4 sm:grid-cols-1">
-                  <div className="col-span-4 sm:col-span-1 flex justify-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={generatePassword}
-                    >
-                      Generate Password
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-          <DialogFooter>
-            <Button
-              type="submit"
-              onClick={handleCreatePlayer}
-              disabled={isSaving}
-            >
-              {isSaving ? <LoaderFive text="Saving..." /> : "Add Player"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onVlaueChange={setIsCreatePlayerDialogOpen}
+      />
 
       <div className="space-y-6">
         <div className="space-y-2">
@@ -570,7 +445,7 @@ export function PlayersTab({
             />
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            {!readOnly && role === "super_admin" && (
+            {!readOnly && role === "SUPER_ADMIN" && (
               <Button
                 variant="outline"
                 className="h-12 px-8 text-base font-medium w-full sm:w-auto"
