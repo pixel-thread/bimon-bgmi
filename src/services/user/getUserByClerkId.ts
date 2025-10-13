@@ -5,5 +5,12 @@ type Props = {
 };
 
 export async function getUserByClerkId({ id }: Props) {
-  return prisma.user.findUnique({ where: { clerkId: id } });
+  return prisma.user.findUnique({
+    where: { clerkId: id },
+    include: {
+      player: {
+        include: { characterImage: true },
+      },
+    },
+  });
 }
