@@ -4,5 +4,8 @@ type Props = {
 };
 
 export async function getTournamentById({ id }: Props) {
-  return prisma.tournament.findUnique({ where: { id } });
+  return prisma.tournament.findUnique({
+    where: { id },
+    include: { gallery: true },
+  });
 }

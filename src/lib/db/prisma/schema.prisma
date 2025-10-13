@@ -56,27 +56,24 @@ model User {
 
   playerId     String?     @unique
   player       Player?
-  Tournament   Tournament? @relation(fields: [tournamentId], references: [id])
+  tournament   Tournament? @relation(fields: [tournamentId], references: [id])
   tournamentId String?
-  Wallet       Wallet?
+  wallet       Wallet?
 }
 
 model Player {
-  id                 String             @id @default(uuid())
-  avatarUrl          String
-  characterUrl       String
-  characterUrlBase64 Bytes?
-  isBanned           Boolean            @default(false)
-  category           PlayerCategory     @default(NOOB)
-  gameScore          GameScore[]
-  pollVote           PollVote?
-  userId             String             @unique
-  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  TournamentWinner   TournamentWinner[]
-  Wallet             Wallet?
-  PlayerStats        PlayerStats?
-  Team               Team?              @relation(fields: [teamId], references: [id])
-  teamId             String?
+  id               String             @id @default(uuid())
+  isBanned         Boolean            @default(false)
+  category         PlayerCategory     @default(NOOB)
+  gameScore        GameScore[]
+  pollVote         PollVote?
+  userId           String             @unique
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tournamentWinner TournamentWinner[]
+  Wallet           Wallet?
+  playerStats      PlayerStats?
+  team             Team?              @relation(fields: [teamId], references: [id])
+  teamId           String?
 
   characterImageId String?  @unique
   characterImage   Gallery? @relation(fields: [characterImageId], references: [id], onDelete: Cascade)
@@ -95,17 +92,17 @@ enum SeasonStatus {
 }
 
 model Gallery {
-  id        String @id @default(uuid())
-  name      String
-  path      String
-  fullPath  String
-  publicUrl String
+  id             String  @id @default(uuid())
+  name           String
+  path           String
+  fullPath       String
+  publicUrl      String
+  isCharacterImg Boolean @default(false)
 
   playerId String? @unique
   player   Player?
 
-  tournamentId String?
-  tournament   Tournament?
+  tournament Tournament[]
 }
 
 model Season {
@@ -126,23 +123,22 @@ model Season {
 }
 
 model Tournament {
-  id            String   @id @default(uuid())
-  name          String
-  startDate     DateTime
-  backgroundUrl String?
-  fee           Int?
-  team          Team[]
-  user          User[]
-  Season        Season?  @relation(fields: [seasonId], references: [id])
-  seasonId      String?
-  createdBy     String?
-  createdAt     DateTime @default(now())
+  id        String   @id @default(uuid())
+  name      String
+  startDate DateTime
+  fee       Int?
+  team      Team[]
+  user      User[]
+  season    Season?  @relation(fields: [seasonId], references: [id])
+  seasonId  String?
+  createdBy String?
+  createdAt DateTime @default(now())
 
-  TournamentWinner TournamentWinner[]
-  PollVote         PollVote[]
-  Match            Match[]
+  tournamentWinner TournamentWinner[]
+  pollVote         PollVote[]
+  match            Match[]
 
-  galleryId String?  @unique
+  galleryId String?
   gallery   Gallery? @relation(fields: [galleryId], references: [id], onDelete: Cascade)
 }
 

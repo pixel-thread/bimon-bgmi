@@ -139,9 +139,6 @@ exports.Prisma.UserScalarFieldEnum = {
 
 exports.Prisma.PlayerScalarFieldEnum = {
   id: 'id',
-  avatarUrl: 'avatarUrl',
-  characterUrl: 'characterUrl',
-  characterUrlBase64: 'characterUrlBase64',
   isBanned: 'isBanned',
   category: 'category',
   userId: 'userId',
@@ -161,8 +158,8 @@ exports.Prisma.GalleryScalarFieldEnum = {
   path: 'path',
   fullPath: 'fullPath',
   publicUrl: 'publicUrl',
-  playerId: 'playerId',
-  tournamentId: 'tournamentId'
+  isCharacterImg: 'isCharacterImg',
+  playerId: 'playerId'
 };
 
 exports.Prisma.SeasonScalarFieldEnum = {
@@ -180,7 +177,6 @@ exports.Prisma.TournamentScalarFieldEnum = {
   id: 'id',
   name: 'name',
   startDate: 'startDate',
-  backgroundUrl: 'backgroundUrl',
   fee: 'fee',
   seasonId: 'seasonId',
   createdBy: 'createdBy',

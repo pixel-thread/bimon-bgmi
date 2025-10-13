@@ -2,7 +2,7 @@ import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import http from "@/src/utils/http";
 import { useQuery } from "@tanstack/react-query";
 
-type TournamentT = Prisma.TournamentGetPayload<{}>;
+type TournamentT = Prisma.TournamentGetPayload<{ include: { gallery: true } }>;
 
 type Props = {
   id?: string;

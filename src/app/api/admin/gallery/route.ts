@@ -30,7 +30,15 @@ export async function POST(req: Request) {
       });
     }
 
-    const data = await uploadImage({ file, bucketName: "gallery" });
+    const images = await getGalleryImages();
+    if (images.length === 5) {
+      return ErrorResponse({
+        message: "Gallery is full",
+        status: 400,
+      });
+    }
+
+    const data = await uploadImage({ file });
 
     const gallery = await addGalleryImage({
       data: {

@@ -22,6 +22,7 @@ export async function PUT(
         status: 404,
       });
     }
+
     const updatedTournament = await updateTournament({
       data: {
         ...tournamentExist,
@@ -37,6 +38,7 @@ export async function PUT(
     return handleApiErrors(error);
   }
 }
+
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> },

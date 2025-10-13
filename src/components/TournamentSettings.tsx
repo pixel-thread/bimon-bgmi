@@ -87,12 +87,7 @@ export function TournamentSettings() {
   const [teamsToCreate, setTeamsToCreate] = useState<
     { teamName: string; players: { ign: string; kills: number }[] }[]
   >([]);
-  const [backgroundFiles, setBackgroundFiles] = useState<File[]>([]);
-  const [currentBackgroundImage, setCurrentBackgroundImage] =
-    useState<string>("");
-  const [isUploadingBackground, setIsUploadingBackground] = useState(false);
   const [backgroundGallery, setBackgroundGallery] = useState<string[]>([]);
-  const [showGallery, setShowGallery] = useState(false);
 
   // Fund Tracker States
   const [fundTransactions, setFundTransactions] = useState<any[]>([]);
@@ -124,10 +119,6 @@ export function TournamentSettings() {
   const itemsPerPage = 5;
 
   const { data: tournaments } = useTournaments({ seasonId: selectedSeason });
-
-  const selectedConfig =
-    tournaments?.find((t) => t.id === selectedTournament) || null;
-  // Auto-select the latest tournament (preferring those with teams)
 
   useEffect(() => {
     if (tournaments && tournaments?.length > 0 && !selectedTournament) {
@@ -186,7 +177,7 @@ export function TournamentSettings() {
     //     setCurrentBackgroundImage("");
     //   }
     // }
-  }, [selectedConfig, backgroundGallery]);
+  }, [backgroundGallery]);
 
   const loadBackgroundGallery = async () => {
     try {
@@ -493,26 +484,27 @@ export function TournamentSettings() {
       </Card>
 
       {/* Main content grid */}
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-1">
         {/* Left column */}
-        <div className="md:col-span-2 space-y-3">
-          {/* Configuration */}
-          <TournamentConfiguration />
-          {/* Background Images */}
-          <TournamentImage />
-          {/* Season Management */}
-          <Card>
-            <CardHeader className="p-3 pb-0">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                Season Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 pt-4">
-              <SeasonManagement />
-            </CardContent>
-          </Card>
-        </div>
+        {/* Configuration */}
+        <TournamentConfiguration />
 
+        <TournamentBackground />
+        {/* Background Images */}
+
+        <GalleryImages />
+
+        {/* Season Management */}
+        <Card>
+          <CardHeader className="p-3 pb-0">
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              Season Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-4">
+            <SeasonManagement />
+          </CardContent>
+        </Card>
         {/* Right column */}
         <div className="space-y-3">
           <Card>
@@ -953,15 +945,57 @@ const TournamentConfiguration = () => {
   );
 };
 
-const TournamentImage = () => {
-  const { tournamentId: selectedTournament } = useTournamentStore();
-  const [showGallery, setShowGallery] = useState<boolean>(true);
+const TournamentBackground = () => {
+  const { tournamentId } = useTournamentStore();
+  const { data } = useTournament({ id: tournamentId });
+
+  const handleRemoveBackground = () => {};
+
+  const image = data?.gallery;
+
+  if (!tournamentId) return null;
+
+  return (
+    <Card>
+      <CardHeader className="p-3 pb-0">
+        <div className="flex items-center gap-2">
+          <CardTitle className="font-medium text-muted-foreground">
+            Tournament Background
+          </CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {image?.publicUrl && (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">Current</p>
+            <div className="relative w-full max-w-full rounded-md overflow-hidden">
+              <img
+                src={image.publicUrl}
+                alt="Current background"
+                className="w-full h-20 object-cover border"
+              />
+              <Button
+                onClick={handleRemoveBackground}
+                variant="destructive"
+                size="icon"
+                className="absolute top-1 right-1 h-6 w-6"
+                aria-label="Remove background"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+const GalleryImages = () => {
   const { data: backgroundGallery } = useGallery();
   const queryClient = useQueryClient();
-  const { data } = useTournament({
-    id: selectedTournament,
-  });
-  const { mutate } = useMutation({
+
+  const { mutate: uploadGallery } = useMutation({
     mutationFn: (data: { image: File }) =>
       http.post("/admin/gallery", data, {
         headers: {
@@ -976,50 +1010,18 @@ const TournamentImage = () => {
 
   const isUploadingBackground = false;
 
-  const handleRemoveBackground = () => {};
-
-  const handleBackgroundUpload = () => {};
-
   const currentBackgroundImage = backgroundGallery ? backgroundGallery[0] : [];
 
   return (
     <>
-      <Card>
-        <CardHeader className="p-3 pb-0">
-          <div className="flex items-center gap-2">
-            <CardTitle className="font-medium text-muted-foreground">
-              Tournament Background
-            </CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {data?.backgroundUrl && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">Current</p>
-              <div className="relative w-full max-w-full rounded-md overflow-hidden">
-                <img
-                  src={data.backgroundUrl}
-                  alt="Current background"
-                  className="w-full h-20 object-cover border"
-                />
-                <Button
-                  onClick={handleRemoveBackground}
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-1 right-1 h-6 w-6"
-                  aria-label="Remove background"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      <Tabs defaultValue="gallery" className="w-[400px]">
+      <Tabs defaultValue="gallery" className="w-full">
         <TabsList>
-          <TabsTrigger value="gallery">Gallery</TabsTrigger>
-          <TabsTrigger value="upload">Upload</TabsTrigger>
+          <TabsTrigger className="bg-secondary" value="gallery">
+            Gallery
+          </TabsTrigger>
+          <TabsTrigger className="bg-secondary" value="upload">
+            Upload
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="gallery">
           <Card>
@@ -1032,7 +1034,7 @@ const TournamentImage = () => {
                         <img
                           src={imageUrl.publicUrl}
                           alt={`Background ${index + 1}`}
-                          className={`w-full h-12 object-cover rounded cursor-pointer border-2 transition-all ${
+                          className={`w-full h-36 object-cover rounded cursor-pointer border-2 transition-all ${
                             currentBackgroundImage === imageUrl
                               ? "border-blue-500"
                               : "border-transparent hover:border-gray-300"
@@ -1065,7 +1067,7 @@ const TournamentImage = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="upload">
+        <TabsContent value="upload" className="w-full">
           <Card>
             <CardHeader className="p-3 pb-0">
               <div className="flex items-center gap-2">
@@ -1075,14 +1077,14 @@ const TournamentImage = () => {
                 </CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="p-3 pt-4 space-y-3">
+            <CardContent className="p-3 pt-4 space-y-3 ">
               {/* Current Background */}
               {/* Upload */}
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">Upload</p>
                 <div className="border border-dashed rounded-md p-2">
                   <FileUpload
-                    onChange={(files) => mutate({ image: files[0] })}
+                    onChange={(files) => uploadGallery({ image: files[0] })}
                   />
                 </div>
                 {isUploadingBackground && (

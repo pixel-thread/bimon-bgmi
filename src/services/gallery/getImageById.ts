@@ -5,5 +5,5 @@ type Props = {
 };
 
 export async function getGalleryImageById({ id }: Props) {
-  return prisma.gallery.findUnique({ where: { id } });
+  return prisma.gallery.findUnique({ where: { id, isCharacterImg: false } });
 }

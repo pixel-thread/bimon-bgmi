@@ -11,9 +11,7 @@ export async function GET(
     await tokenMiddleware(req);
     const id = (await params).id;
     const tournament = await getTournamentById({ id });
-    return SuccessResponse({
-      data: tournament,
-    });
+    return SuccessResponse({ data: tournament });
   } catch (error) {
     return handleApiErrors(error);
   }
