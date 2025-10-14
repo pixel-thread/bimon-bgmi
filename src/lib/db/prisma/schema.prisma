@@ -65,6 +65,10 @@ model User {
 model Player {
   id               String             @id @default(uuid())
   isBanned         Boolean            @default(false)
+  balance          Int                @default(0)
+  banReason        String?            @default("")
+  bannedAt         DateTime?
+  banDuration      Int                @default(0)
   category         PlayerCategory     @default(NOOB)
   gameScore        GameScore[]
   pollVote         PollVote?

@@ -6,6 +6,6 @@ type Props = {
 export async function getPlayerById({ id }: Props) {
   return prisma.player.findUnique({
     where: { id },
-    include: { characterImage: true },
+    include: { characterImage: true, user: true, playerStats: true },
   });
 }

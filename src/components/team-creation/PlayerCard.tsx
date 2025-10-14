@@ -9,20 +9,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/src/components/ui/tooltip";
-import { Player, TournamentConfig } from "@/src/lib/types";
-import {
-  calculateRemainingBanDuration,
-  formatRemainingBanDuration,
-} from "@/src/utils/banUtils";
+import { PlayerT } from "@/src/types/player";
+import { TournamentT } from "@/src/types/tournament";
 
 interface PlayerCardProps {
-  player: Player;
+  player: PlayerT;
   isSelected: boolean;
   isDisabled: boolean;
   isSolo: boolean;
   excludedFromDeduction: boolean;
   activeTab: "ultraNoobs" | "noobs" | "pros" | "ultraPros" | "solo";
-  tournaments: TournamentConfig[];
+  tournaments: TournamentT[];
   onSelect: () => void;
   onToggleExclusion: () => void;
 }
@@ -34,7 +31,6 @@ export function PlayerCard({
   isSolo,
   excludedFromDeduction,
   activeTab,
-  tournaments,
   onSelect,
   onToggleExclusion,
 }: PlayerCardProps) {
@@ -84,7 +80,7 @@ export function PlayerCard({
         checked={isSelected}
         disabled={isDisabled}
         onCheckedChange={isDisabled ? undefined : onSelect}
-        aria-label={`Select ${player.name}`}
+        aria-label={`Select ${player.user.userName}`}
         className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5"
       />
 
@@ -95,7 +91,7 @@ export function PlayerCard({
               player.isBanned ? "text-red-700" : ""
             }`}
           >
-            {player.name}
+            {player.user.userName}
           </span>
 
           {player.isBanned && (
@@ -103,17 +99,17 @@ export function PlayerCard({
               variant="destructive"
               className="text-xs bg-red-600 hover:bg-red-700"
             >
-              {(() => {
-                const banInfo = calculateRemainingBanDuration(
-                  player,
-                  tournaments
-                );
-                return banInfo.isExpired
-                  ? "BAN EXPIRED"
-                  : `BANNED (${formatRemainingBanDuration(
-                      banInfo.remainingDuration || 0
-                    )})`;
-              })()}
+              {/* {(() => { */}
+              {/*   const banInfo = calculateRemainingBanDuration( */}
+              {/*     player, */}
+              {/*     tournaments, */}
+              {/*   ); */}
+              {/*   return banInfo.isExpired */}
+              {/*     ? "BAN EXPIRED" */}
+              {/*     : `BANNED (${formatRemainingBanDuration( */}
+              {/*         banInfo.remainingDuration || 0, */}
+              {/*       )})`; */}
+              {/* })()} */}
             </Badge>
           )}
 
@@ -121,32 +117,32 @@ export function PlayerCard({
             <Badge
               variant="outline"
               className={`text-xs px-1 sm:px-1.5 py-0.5 flex-shrink-0 ${
-                player.category === "Ultra Noob"
+                player.category === "ULTRA_NOOB"
                   ? "border-red-300 text-red-700"
-                  : player.category === "Noob"
-                  ? "border-yellow-300 text-yellow-700"
-                  : player.category === "Pro"
-                  ? "border-green-300 text-green-700"
-                  : "border-purple-300 text-purple-700"
+                  : player.category === "NOOB"
+                    ? "border-yellow-300 text-yellow-700"
+                    : player.category === "PRO"
+                      ? "border-green-300 text-green-700"
+                      : "border-purple-300 text-purple-700"
               }`}
             >
               <span className="hidden sm:inline">
-                {player.category === "Ultra Noob"
+                {player.category === "ULTRA_NOOB"
                   ? "🔴 UN"
-                  : player.category === "Noob"
-                  ? "🟡 N "
-                  : player.category === "Pro"
-                  ? "🟢 P"
-                  : "🟣 UP"}
+                  : player.category === "NOOB"
+                    ? "🟡 N "
+                    : player.category === "PRO"
+                      ? "🟢 P"
+                      : "🟣 UP"}
               </span>
               <span className="sm:hidden">
-                {player.category === "Ultra Noob"
+                {player.category === "ULTRA_NOOB"
                   ? "🔴"
-                  : player.category === "Noob"
-                  ? "🟡"
-                  : player.category === "Pro"
-                  ? "🟢"
-                  : "🟣"}
+                  : player.category === "NOOB"
+                    ? "🟡"
+                    : player.category === "PRO"
+                      ? "🟢"
+                      : "🟣"}
               </span>
             </Badge>
           )}
@@ -179,8 +175,8 @@ export function PlayerCard({
               ? player.balance > 0
                 ? "text-green-600"
                 : player.balance < 0
-                ? "text-red-600"
-                : "text-yellow-600"
+                  ? "text-red-600"
+                  : "text-yellow-600"
               : "text-yellow-600"
           }`}
         >

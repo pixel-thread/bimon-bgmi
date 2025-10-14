@@ -7,7 +7,7 @@ Accept: application/json
 Content-Type: application/json
 
 {
-  "email": "{{$uuid}}@gmail.com",
+  "email": "jyrwaboy@gmail.com",
   "password": "123Clashofclan@",
-  "userName": "{{$uuid}}"
+  "userName": "jyrwaboy"
 }

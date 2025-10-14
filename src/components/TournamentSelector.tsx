@@ -21,8 +21,11 @@ export default function TournamentSelector({
   className,
 }: TournamentSelectorProps) {
   const { setTournamentId, tournamentId } = useTournamentStore();
+
   const { seasonId } = useSeasonStore();
+
   const { data: allTournaments } = useTournaments({ seasonId });
+
   const onSelect = (value: string | null) => {
     setTournamentId(value || "");
   };

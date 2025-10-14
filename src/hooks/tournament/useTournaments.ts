@@ -13,6 +13,7 @@ export function useTournaments({ seasonId: id }: Props = {}) {
       queryKey: ["tournaments", id],
       queryFn: () => http.get<TournamentsT[]>(`/tournament/season/${id}`),
       select: (data) => data.data,
+      enabled: !!id,
     });
   }
   return useQuery({

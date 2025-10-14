@@ -13,9 +13,9 @@ import { Badge } from "@/src/components/ui/badge";
 import { History, TrendingUp, TrendingDown } from "lucide-react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/src/lib/firebase";
-import { Player } from "@/src/lib/types";
 import { toast } from "sonner";
 import { LoaderFive } from "@/src/components/ui/loader";
+import { PlayerT } from "@/src/types/player";
 
 interface BalanceHistory {
   id: string;
@@ -30,7 +30,7 @@ interface BalanceHistory {
 interface BalanceHistoryDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  player: Player | null;
+  player: PlayerT | null;
   selectedSeason: string;
 }
 
@@ -57,8 +57,9 @@ export function BalanceHistoryDialog({
         string,
         { title: string; seasonId?: string; timestamp: number }
       >(),
-    []
+    [],
   );
+
   const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   const getTournamentData = useCallback(async (): Promise<
@@ -107,7 +108,7 @@ export function BalanceHistoryDialog({
     (
       description: string,
       tournamentId: string | undefined,
-      tournamentsMap: Map<string, { title: string; seasonId?: string }>
+      tournamentsMap: Map<string, { title: string; seasonId?: string }>,
     ): string => {
       if (!tournamentId || !tournamentsMap.has(tournamentId)) {
         return description;
@@ -117,10 +118,10 @@ export function BalanceHistoryDialog({
 
       return description.replace(
         /\(tournament_[a-zA-Z0-9_]+\)/g,
-        `(${tournamentTitle})`
+        `(${tournamentTitle})`,
       );
     },
-    []
+    [],
   );
 
   const filterTransactionsBySeason = useCallback(
@@ -128,7 +129,7 @@ export function BalanceHistoryDialog({
       transactions: (BalanceHistory & { tournamentId?: string })[],
       season: string,
       seasonTournamentIds: Set<string>,
-      seasonData?: { startDate?: string; endDate?: string; isActive?: boolean }
+      seasonData?: { startDate?: string; endDate?: string; isActive?: boolean },
     ): (BalanceHistory & { tournamentId?: string })[] => {
       // Helper to safely convert Firestore Timestamp or string/date-like to JS Date
       const toJSDate = (value: any): Date | null => {
@@ -183,29 +184,29 @@ export function BalanceHistoryDialog({
           const tOnly = new Date(
             tDate.getFullYear(),
             tDate.getMonth(),
-            tDate.getDate()
+            tDate.getDate(),
           );
           const startOnly = new Date(
             start.getFullYear(),
             start.getMonth(),
-            start.getDate()
+            start.getDate(),
           );
           const endOnly = new Date(
             effectiveEnd.getFullYear(),
             effectiveEnd.getMonth(),
-            effectiveEnd.getDate()
+            effectiveEnd.getDate(),
           );
 
           return tOnly >= startOnly && tOnly <= endOnly;
         }
 
         console.log(
-          `No valid season startDate for manual transaction filtering. Season: ${season}, Transaction: ${transaction.description}`
+          `No valid season startDate for manual transaction filtering. Season: ${season}, Transaction: ${transaction.description}`,
         );
         return true;
       });
     },
-    []
+    [],
   );
 
   const fetchBalanceHistory = useCallback(
@@ -258,15 +259,15 @@ export function BalanceHistoryDialog({
               const description = processTransactionDescription(
                 data.reason || "No description",
                 data.tournamentId,
-                tournamentsMap
+                tournamentsMap,
               );
               const createdAtValue = data.createdAt;
               const createdAtIso =
                 createdAtValue && typeof createdAtValue?.toDate === "function"
                   ? createdAtValue.toDate().toISOString()
                   : typeof createdAtValue === "string"
-                  ? createdAtValue
-                  : new Date().toISOString();
+                    ? createdAtValue
+                    : new Date().toISOString();
               return {
                 id: doc.id,
                 playerId,
@@ -284,16 +285,16 @@ export function BalanceHistoryDialog({
           })
           .filter(
             (
-              transaction
+              transaction,
             ): transaction is BalanceHistory & { tournamentId?: string } =>
-              transaction !== null
+              transaction !== null,
           );
 
         const filteredTransactions = filterTransactionsBySeason(
           transactions,
           selectedSeason,
           seasonTournamentIds,
-          selectedSeasonData
+          selectedSeasonData,
         );
 
         const sortedTransactions = filteredTransactions.sort((a, b) => {
@@ -330,7 +331,7 @@ export function BalanceHistoryDialog({
       processTransactionDescription,
       filterTransactionsBySeason,
       historyPage,
-    ]
+    ],
   );
 
   const handleLoadMoreHistory = async () => {
@@ -351,7 +352,7 @@ export function BalanceHistoryDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <History className="w-5 h-5" />
-            Balance History - {player?.name}
+            Balance History - {player?.user.userName}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">

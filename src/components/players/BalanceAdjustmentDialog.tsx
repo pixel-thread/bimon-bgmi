@@ -15,13 +15,13 @@ import { RadioGroup, RadioGroupItem } from "@/src/components/ui/radio-group";
 import { Wallet } from "lucide-react";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/src/lib/firebase";
-import { Player } from "@/src/lib/types";
 import { toast } from "sonner";
+import { PlayerT } from "@/src/types/player";
 
 interface BalanceAdjustmentDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  player: Player | null;
+  player: PlayerT | null;
   onBalanceUpdate: () => void;
 }
 
@@ -73,7 +73,7 @@ export function BalanceAdjustmentDialog({
       await setDoc(
         doc(db, "players", player.id),
         { balance: newBalance },
-        { merge: true }
+        { merge: true },
       );
 
       const now = new Date().toISOString();
@@ -90,7 +90,7 @@ export function BalanceAdjustmentDialog({
       toast.success(
         `Balance ${
           balanceAdjustment.type === "credit" ? "credited" : "debited"
-        } successfully!`
+        } successfully!`,
       );
       setBalanceAdjustment({
         amount: "",
@@ -113,7 +113,7 @@ export function BalanceAdjustmentDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Wallet className="w-5 h-5" />
-            Adjust Balance - {player?.name}
+            Adjust Balance - {player?.user.userName}
           </DialogTitle>
         </DialogHeader>
 

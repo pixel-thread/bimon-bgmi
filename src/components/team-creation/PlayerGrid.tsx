@@ -1,23 +1,24 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Player, TournamentConfig } from "@/src/lib/types";
 import { PlayerCard } from "./PlayerCard";
+import { TournamentT } from "@/src/types/tournament";
+import { PlayerT } from "@/src/types/player";
+import { usePlayers } from "@/src/hooks/player/usePlayers";
 
 interface PlayerGridProps {
-  players: Player[];
+  players: PlayerT[];
   selectedPlayers: string[];
   selectedSoloPlayers: string[];
   excludedFromDeduction: Set<string>;
   activeTab: "ultraNoobs" | "noobs" | "pros" | "ultraPros" | "solo";
-  tournaments: TournamentConfig[];
+  tournaments: TournamentT[];
   searchQuery: string;
   onPlayerSelect: (playerId: string) => void;
   onToggleExclusion: (playerId: string) => void;
 }
 
 export function PlayerGrid({
-  players,
   selectedPlayers,
   selectedSoloPlayers,
   excludedFromDeduction,
@@ -27,7 +28,8 @@ export function PlayerGrid({
   onPlayerSelect,
   onToggleExclusion,
 }: PlayerGridProps) {
-  if (players.length === 0) {
+  const { data: players } = usePlayers();
+  if (players?.length === 0) {
     if (activeTab === "solo" && !searchQuery) {
       return (
         <motion.div
@@ -73,7 +75,7 @@ export function PlayerGrid({
   return (
     <AnimatePresence>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 max-h-[450px] sm:max-h-[400px] overflow-y-auto">
-        {players.map((player) => {
+        {players?.map((player) => {
           const isSelected = selectedPlayers.includes(player.id);
           const isSolo = selectedSoloPlayers.includes(player.id);
           const isDisabled = isSolo && activeTab !== "solo";

@@ -9,14 +9,10 @@ import {
 } from "@/src/components/ui/dialog";
 import { collection, getDocs, doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/src/lib/firebase";
-import { Player, TournamentConfig } from "@/src/lib/types";
-import { useTournaments } from "@/src/hooks/useTournaments";
+import { useTournaments } from "@/src/hooks/tournament/useTournaments";
 import { Loader2 } from "lucide-react";
 import { generateTeamsNew, Team } from "@/src/lib/teamGenerator";
-import {
-  tournamentParticipationService,
-  TournamentParticipant,
-} from "@/src/lib/tournamentParticipationService";
+import { tournamentParticipationService } from "@/src/lib/tournamentParticipationService";
 import { pollService } from "@/src/lib/pollService";
 import { TeamModeSelector } from "./TeamModeSelector";
 
@@ -33,9 +29,9 @@ import {
   TeamMode,
 } from "./types";
 import { useTournamentStore } from "@/src/store/tournament";
-import { useQuery } from "@tanstack/react-query";
-import http from "@/src/utils/http";
-import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
+import { PlayerT } from "@/src/types/player";
+import { usePlayers } from "@/src/hooks/player/usePlayers";
+import { TournamentT } from "@/src/types/tournament";
 
 export default function TeamCreationModal({
   showModal,
@@ -73,7 +69,7 @@ export default function TeamCreationModal({
 
   const autoSyncTriggered = useRef(false);
 
-  const { tournaments } = useTournaments();
+  const { data: tournaments } = useTournaments();
   const tabsRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -109,27 +105,27 @@ export default function TeamCreationModal({
       updateState({ loading: true });
       try {
         const playersSnapshot = await getDocs(collection(db, "players"));
-        const ultraNoobs: Player[] = [];
-        const noobs: Player[] = [];
-        const pros: Player[] = [];
-        const ultraPros: Player[] = [];
+        const ultraNoobs: PlayerT[] = [];
+        const noobs: PlayerT[] = [];
+        const pros: PlayerT[] = [];
+        const ultraPros: PlayerT[] = [];
 
         playersSnapshot.forEach((doc) => {
-          const playerData = { id: doc.id, ...doc.data() } as Player;
+          const playerData = { id: doc.id, ...doc.data() } as PlayerT;
           // Skip deleted or banned players
-          if (playerData.deleted || playerData.isBanned) return;
+          if (playerData.isBanned) return;
 
           switch (playerData.category) {
-            case "Ultra Noob":
+            case "ULTRA_NOOB":
               ultraNoobs.push(playerData);
               break;
-            case "Noob":
+            case "NOOB":
               noobs.push(playerData);
               break;
-            case "Pro":
+            case "PRO":
               pros.push(playerData);
               break;
-            case "Ultra Pro":
+            case "ULTRA_PRO":
               ultraPros.push(playerData);
               break;
           }
@@ -143,7 +139,7 @@ export default function TeamCreationModal({
           );
           updateState({
             tournamentTitle: tournamentDoc.exists()
-              ? (tournamentDoc.data() as TournamentConfig).title
+              ? (tournamentDoc.data() as TournamentT).name
               : null,
           });
 
@@ -208,16 +204,16 @@ export default function TeamCreationModal({
                 ].find((p) => p.id === participantPlayerId);
                 if (player) {
                   switch (player.category) {
-                    case "Ultra Noob":
+                    case "ULTRA_NOOB":
                       selectedUNs.push(player.id);
                       break;
-                    case "Noob":
+                    case "NOOB":
                       selectedNs.push(player.id);
                       break;
-                    case "Pro":
+                    case "PRO":
                       selectedPs.push(player.id);
                       break;
-                    case "Ultra Pro":
+                    case "ULTRA_PRO":
                       selectedUPs.push(player.id);
                       break;
                   }
@@ -365,11 +361,13 @@ export default function TeamCreationModal({
   }, [selectedTournament]);
 
   const sortedPlayers = useMemo(() => {
-    const sortByBalance = (players: Player[]) =>
+    const sortByBalance = (players: PlayerT[]) =>
       players.slice().sort((a, b) => {
         const balanceA = a.balance ?? 0;
         const balanceB = b.balance ?? 0;
-        return balanceB - balanceA || a.name.localeCompare(b.name);
+        return (
+          balanceB - balanceA || a.user.userName.localeCompare(b.user.userName)
+        );
       });
 
     return {
@@ -390,7 +388,7 @@ export default function TeamCreationModal({
     ];
 
     const soloTabPlayers = query
-      ? allPlayers.filter((p) => p.name.toLowerCase().includes(query))
+      ? allPlayers.filter((p) => p.user.userName.toLowerCase().includes(query))
       : [
           ...sortedPlayers.ultraNoobs.filter((p) =>
             selection.selectedSoloPlayers.includes(p.id),
@@ -408,16 +406,16 @@ export default function TeamCreationModal({
 
     return {
       ultraNoobs: sortedPlayers.ultraNoobs.filter((p) =>
-        p.name.toLowerCase().includes(query),
+        p.user.userName.toLowerCase().includes(query),
       ),
       noobs: sortedPlayers.noobs.filter((p) =>
-        p.name.toLowerCase().includes(query),
+        p.user.userName.toLowerCase().includes(query),
       ),
       pros: sortedPlayers.pros.filter((p) =>
-        p.name.toLowerCase().includes(query),
+        p.user.userName.toLowerCase().includes(query),
       ),
       ultraPros: sortedPlayers.ultraPros.filter((p) =>
-        p.name.toLowerCase().includes(query),
+        p.user.userName.toLowerCase().includes(query),
       ),
       solo: soloTabPlayers,
     };
@@ -444,7 +442,7 @@ export default function TeamCreationModal({
 
     const activeById = new Map(allActivePlayers.map((p) => [p.id, p]));
     const activeByNameLower = new Map(
-      allActivePlayers.map((p) => [p.name.toLowerCase(), p]),
+      allActivePlayers.map((p) => [p.user.userName.toLowerCase(), p]),
     );
 
     const inParticipants = state.tournamentParticipants.filter(
@@ -512,7 +510,7 @@ export default function TeamCreationModal({
     ];
     const activeById = new Map(allActivePlayers.map((p) => [p.id, p]));
     const activeByNameLower = new Map(
-      allActivePlayers.map((p) => [p.name.toLowerCase(), p]),
+      allActivePlayers.map((p) => [p.user.userName.toLowerCase(), p]),
     );
 
     const resolvePlayerId = (participant: any): string | null => {
@@ -664,7 +662,7 @@ export default function TeamCreationModal({
   const handleSelectAll = (
     category: "Ultra Noob" | "Noob" | "Pro" | "Ultra Pro" | "Solo",
   ) => {
-    const toggleSelection = (current: string[], all: Player[]) =>
+    const toggleSelection = (current: string[], all: PlayerT[]) =>
       current.length === all.length ? [] : all.map((p) => p.id);
 
     let selectedIds: string[] = [];
@@ -769,7 +767,7 @@ export default function TeamCreationModal({
     if (selectedIds.length > 0) {
       selectedIds.forEach((id) => newExcluded.add(id));
     } else {
-      let pool: Player[] = [];
+      let pool: PlayerT[] = [];
       switch (category) {
         case "Ultra Noob":
           pool = sortedPlayers.ultraNoobs;
@@ -949,8 +947,8 @@ export default function TeamCreationModal({
             const player = allPlayersArray.find((p) => p.id === playerId);
             if (player) {
               return {
-                teamName: player.name,
-                players: [{ ign: player.name, kills: 0 }],
+                teamName: player.user.userName,
+                players: [{ ign: player.user.userName, kills: 0 }],
               };
             }
             return null;
@@ -1035,11 +1033,10 @@ export default function TeamCreationModal({
 
   const { currentSelection, allSelected } = getCurrentTabData();
 
-  const { data: currentPlayers } = useQuery({
-    queryKey: ["player"],
-    queryFn: () => http.get<Prisma.PlayerGetPayload<{}>[]>("/player"),
-    select: (data) => data.data,
-  });
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerT[] | null>(null);
+
+  const { data: currentPlayers } = usePlayers();
+
   return (
     <Dialog open={showModal} onOpenChange={setShowModal}>
       <DialogContent className="max-w-3xl w-full h-[95vh] sm:h-[90vh] p-0 flex flex-col bg-background overflow-hidden">
@@ -1185,19 +1182,22 @@ export default function TeamCreationModal({
                   />
                   <SelectAllControl
                     isAllSelected={
-                      currentPlayers.length > 0 &&
-                      currentPlayers.every((p) =>
-                        new Set([
-                          ...state.savedPlayers,
-                          ...selection.selectedUltraNoobs,
-                          ...selection.selectedNoobs,
-                          ...selection.selectedPros,
-                          ...selection.selectedUltraPros,
-                          ...selection.selectedSoloPlayers,
-                          ...participantResolved.inIds,
-                          ...participantResolved.soloIds,
-                        ]).has(p.id),
-                      )
+                      false
+                      // currentPlayers
+                      //   ? currentPlayers?.length > 0 &&
+                      //     currentPlayers.every((p) =>
+                      //       new Set([
+                      //         ...state.savedPlayers,
+                      //         ...selection.selectedUltraNoobs,
+                      //         ...selection.selectedNoobs,
+                      //         ...selection.selectedPros,
+                      //         ...selection.selectedUltraPros,
+                      //         ...selection.selectedSoloPlayers,
+                      //         ...participantResolved.inIds,
+                      //         ...participantResolved.soloIds,
+                      //       ]).has(p.id),
+                      //     )
+                      //   : []
                     }
                     onSelectAll={() =>
                       handleSelectAll(
@@ -1212,11 +1212,11 @@ export default function TeamCreationModal({
                                 : "Solo",
                       )
                     }
-                    availableCount={currentPlayers.length}
+                    availableCount={currentPlayers?.length || 0}
                   />
                   <PlayerGrid
-                    players={currentPlayers}
-                    selectedPlayers={allSelected}
+                    players={currentPlayers || []}
+                    selectedPlayers={selectedPlayer || []}
                     selectedSoloPlayers={Array.from(
                       new Set([
                         ...selection.selectedSoloPlayers,
@@ -1225,7 +1225,7 @@ export default function TeamCreationModal({
                     )}
                     excludedFromDeduction={selection.excludedFromDeduction}
                     activeTab={state.activeTab}
-                    tournaments={tournaments}
+                    tournaments={tournaments || []}
                     searchQuery={state.searchQuery}
                     onPlayerSelect={(playerId) =>
                       handleRowSelect(

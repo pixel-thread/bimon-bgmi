@@ -41,6 +41,9 @@ export default function TournamentCreateModal({
   const { setTournamentId: setSelectedTournament } = useTournamentStore();
   const form = useForm({
     resolver: zodResolver(tournamentSchema),
+    defaultValues: {
+      name: "",
+    },
   });
 
   const { mutate, isPending } = useMutation({

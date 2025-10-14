@@ -1,6 +1,6 @@
-import { Player, TournamentConfig } from "@/src/lib/types";
 import { Team } from "@/src/lib/teamGenerator";
 import { TournamentParticipant } from "@/src/lib/tournamentParticipationService";
+import { PlayerT as Player } from "@/src/types/player";
 
 export const TEAM_MODES = [
   { value: "Solo 1", label: "Solo", description: "Individual players" },

@@ -20,7 +20,7 @@ interface PlayerFiltersProps {
   onTierChange: (tier: string) => void;
   sortBy: "name" | "kd" | "kills" | "matches" | "balance" | "banned";
   onSortByChange: (
-    sortBy: "name" | "kd" | "kills" | "matches" | "balance" | "banned"
+    sortBy: "name" | "kd" | "kills" | "matches" | "balance" | "banned",
   ) => void;
   sortOrder: "asc" | "desc";
   onSortOrderChange: (order: "asc" | "desc") => void;
@@ -29,8 +29,6 @@ interface PlayerFiltersProps {
 export function PlayerFilters({
   searchQuery,
   onSearchChange,
-  selectedSeason,
-  onSeasonChange,
   selectedTier,
   onTierChange,
   sortBy,
@@ -52,12 +50,7 @@ export function PlayerFilters({
             className="h-11 pl-10 pr-4"
           />
         </div>
-        <SeasonSelector
-          selectedSeason={selectedSeason}
-          onSeasonChange={onSeasonChange}
-          className="h-11 w-full sm:w-40"
-          showAllSeasons={true}
-        />
+        <SeasonSelector className="h-11 w-full sm:w-40" showAllSeasons={true} />
       </div>
 
       {/* Right side: Filter dropdowns */}

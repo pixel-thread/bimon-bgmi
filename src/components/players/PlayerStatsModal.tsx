@@ -9,26 +9,28 @@ import {
 } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
-import { Avatar } from "@/src/components/ui/avatar";
 import { History, Wallet, Edit3, Key, Ban, AlertTriangle } from "lucide-react";
-import { PlayerWithStats } from "./types";
-import { PasswordManager } from "./PasswordManager";
 import {
   calculateRemainingBanDuration,
   formatRemainingBanDuration,
 } from "@/src/utils/banUtils";
-import { TournamentConfig } from "@/src/lib/types";
+import { useAuth } from "@/src/hooks/useAuth";
+import { useTournaments } from "@/src/hooks/tournament/useTournaments";
+import { usePlayer } from "@/src/hooks/player/usePlayer";
+import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
+
+type PlayerT = Prisma.PlayerGetPayload<{
+  include: { user: true; playerStats: true };
+}>;
 
 interface PlayerStatsModalProps {
+  id: string;
   isOpen: boolean;
   onClose: () => void;
-  player: PlayerWithStats | null;
   readOnly?: boolean;
-  onViewBalanceHistory: (player: PlayerWithStats) => void;
-  onAdjustBalance: (player: PlayerWithStats) => void;
-  onEditPlayer: (player: PlayerWithStats) => void;
-  userRole: "super_admin" | "teams_admin" | "none";
-  tournaments?: TournamentConfig[];
+  onViewBalanceHistory: (player: PlayerT) => void;
+  onAdjustBalance: (player: PlayerT) => void;
+  onEditPlayer: (player: PlayerT) => void;
 }
 
 const CATEGORY_COLORS = {
@@ -44,32 +46,52 @@ const getCategoryColor = (category: string) =>
   CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] ||
   "bg-gray-200 text-gray-800 border-gray-300";
 
-const getInitials = (name: string) =>
-  name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+export function getRemainingBanDuration(
+  bannedAt?: Date,
+  banDuration?: number,
+): number {
+  if (!(bannedAt instanceof Date) || isNaN(bannedAt.getTime())) {
+    throw new Error("Invalid bannedAt date provided.");
+  }
+
+  if (typeof banDuration !== "number" || banDuration <= 0) {
+    throw new Error("Ban duration must be a positive number.");
+  }
+
+  const banEndTime = bannedAt.getTime() + banDuration;
+  const now = Date.now();
+  const remaining = banEndTime - now;
+
+  return Math.max(remaining, 0);
+}
 
 export function PlayerStatsModal({
   isOpen,
   onClose,
-  player,
   readOnly = false,
   onViewBalanceHistory,
   onAdjustBalance,
   onEditPlayer,
-  userRole,
-  tournaments = [],
+  id,
 }: PlayerStatsModalProps) {
-  const [isPasswordManagerOpen, setIsPasswordManagerOpen] =
-    React.useState(false);
+  const { data: player } = usePlayer({ id });
+  const { user } = useAuth();
+  const userRole = user?.role;
 
   if (!player) return null;
 
-  const isSuperAdmin = userRole === "super_admin";
-  const banInfo = calculateRemainingBanDuration(player, tournaments);
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
+
+  const banInfo = {
+    isBanned: player.isBanned,
+    banDuration: player.banDuration,
+    bannedAt: player.bannedAt,
+    remainingDuration: getRemainingBanDuration(
+      player.bannedAt || new Date(),
+      player.banDuration || 0,
+    ),
+    isExpired: true,
+  };
 
   return (
     <>
@@ -77,15 +99,10 @@ export function PlayerStatsModal({
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <Avatar
-                src={player.avatarBase64 || player.avatarUrl}
-                alt={player.name}
-                size="xl"
-              />
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    {player.name}
+                    {player?.user?.userName}
                   </h3>
                   {player.isBanned && (
                     <Badge
@@ -111,19 +128,19 @@ export function PlayerStatsModal({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <p className="text-2xl font-bold text-blue-600">
-                  {player.matchesPlayed}
+                  {player.playerStats?.matches}
                 </p>
                 <p className="text-sm text-muted-foreground">Matches</p>
               </div>
               <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                 <p className="text-2xl font-bold text-green-600">
-                  {player.totalKills}
+                  {player.playerStats?.kills}
                 </p>
                 <p className="text-sm text-muted-foreground">Kills</p>
               </div>
               <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                 <p className="text-2xl font-bold text-yellow-600">
-                  {player.overallKD}
+                  {player?.playerStats?.kd}
                 </p>
                 <p className="text-sm text-muted-foreground">K/D</p>
               </div>
@@ -197,7 +214,7 @@ export function PlayerStatsModal({
                       {banInfo.isExpired
                         ? "Ban has expired"
                         : `${formatRemainingBanDuration(
-                            banInfo.remainingDuration || 0
+                            banInfo.remainingDuration || 0,
                           )} remaining`}
                     </span>
                   </div>
@@ -211,7 +228,7 @@ export function PlayerStatsModal({
                 variant="outline"
                 onClick={() => {
                   onClose();
-                  onViewBalanceHistory(player);
+                  // onViewBalanceHistory(player);
                 }}
               >
                 <History className="w-4 h-4 mr-2" />
@@ -241,16 +258,6 @@ export function PlayerStatsModal({
                   </Button>
                 </>
               )}
-              <Button
-                variant="outline"
-                onClick={() => {
-                  onClose();
-                  setIsPasswordManagerOpen(true);
-                }}
-              >
-                <Key className="w-4 h-4 mr-2" />
-                Password
-              </Button>
             </div>
           </div>
 
@@ -261,13 +268,6 @@ export function PlayerStatsModal({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Password Manager Modal */}
-      <PasswordManager
-        isOpen={isPasswordManagerOpen}
-        onClose={() => setIsPasswordManagerOpen(false)}
-        player={player}
-      />
     </>
   );
 }

@@ -1,9 +1,17 @@
 import { prisma } from "@/src/lib/db/prisma";
+import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 
-export async function getAllPlayers() {
+type Props = {
+  where: Prisma.PlayerWhereInput;
+};
+export async function getAllPlayers(
+  { where }: Props = {
+    where: {},
+  },
+) {
   return await prisma.player.findMany({
-    where: { isBanned: false },
-    include: { user: true, playerStats: true },
+    where,
+    include: { user: true, playerStats: true, characterImage: true },
     orderBy: { playerStats: { createdAt: "desc" } },
   });
 }
