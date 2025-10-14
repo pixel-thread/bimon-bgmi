@@ -2,35 +2,42 @@
 
 import React, { useEffect, useRef } from "react";
 import { FaTrophy } from "react-icons/fa";
-import { PlayerWithStats } from "@/src/components/players/types";
+import { useQuery } from "@tanstack/react-query";
+import http from "@/src/utils/http";
+import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
+import { cn } from "@/src/lib/utils";
 
 export interface DynamicTopPlayersPodiumProps {
-  players: PlayerWithStats[];
   sortBy: "name" | "kd" | "kills" | "matches" | "balance" | "banned";
   selectedTier: string;
   selectedSeason: string;
   isLoading?: boolean;
   className?: string;
-  onPlayerClick?: (player: PlayerWithStats) => void;
+  onPlayerClick?: (player: PlayerT) => void;
 }
+
+type PlayerT = Prisma.PlayerGetPayload<{
+  include: { playerStats: true; characterImage: true; user: true };
+}>;
 
 export const DynamicTopPlayersPodium = React.memo(
   function DynamicTopPlayersPodium({
-    players,
     sortBy,
-    isLoading = false,
     className,
     onPlayerClick,
   }: DynamicTopPlayersPodiumProps) {
     // Ref for the scroll container
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    // Get top 3 players based on current sorting (memoized)
-    const topPlayers = React.useMemo(() => players?.slice(0, 3), [players]);
+    const { data: players, isFetching: isLoading } = useQuery({
+      queryKey: ["top-players"],
+      queryFn: () => http.get<PlayerT[]>("/players/top-player"),
+      select: (data) => data.data,
+    });
 
     // Auto-scroll to center the #1 player
     useEffect(() => {
-      if (scrollContainerRef.current && topPlayers?.length > 0) {
+      if (scrollContainerRef.current && players && players?.length > 0) {
         const container = scrollContainerRef.current;
 
         // Calculate the scroll position to center the #1 player (2nd card)
@@ -55,26 +62,26 @@ export const DynamicTopPlayersPodium = React.memo(
 
         return () => clearTimeout(timer);
       }
-    }, [topPlayers]);
+    }, [players]);
 
     // Generate rank display based on sort criteria (memoized)
     const getRankDisplay = React.useCallback(
-      (player: PlayerWithStats) => {
+      (player: PlayerT) => {
         switch (sortBy) {
-          case "balance":
-            return player.balance ? `₹${player.balance}` : "₹0";
+          // case "balance":
+          // return player.playerStats.balance ? `₹${player.balance}` : "₹0";
           case "kd":
-            return `${player.overallKD.toFixed(2)} K/D`;
+            return `${player.playerStats?.kd.toFixed(2)} K/D`;
           case "kills":
-            return `${player.totalKills} Kills`;
+            return `${player.playerStats?.kills} Kills`;
           case "matches":
-            return `${player.matchesPlayed} Matches`;
+            return `${player.playerStats?.matches} Matches`;
           case "name":
             return player.category;
-          case "banned":
-            return player.balance ? `₹${player.balance}` : "₹0";
+          // case "banned":
+          //   return player.balance ? `₹${player.balance}` : "₹0";
           default:
-            return `${player.overallKD.toFixed(2)} K/D`;
+            return `${player.playerStats?.kd.toFixed(2)} K/D`;
         }
       },
       [sortBy],
@@ -82,7 +89,7 @@ export const DynamicTopPlayersPodium = React.memo(
 
     // Player card component with 9:22 aspect ratio (memoized)
     const PlayerCard = React.memo(
-      ({ player, position }: { player: PlayerWithStats; position: number }) => {
+      ({ player, position }: { player: PlayerT; position: number }) => {
         const positionColors = {
           1: {
             gradient: "from-yellow-400/15 via-yellow-500/10 to-yellow-600/20",
@@ -120,7 +127,7 @@ export const DynamicTopPlayersPodium = React.memo(
         transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer
       `}
             style={{ aspectRatio: "9/22" }}
-            onClick={() => onPlayerClick?.(player)}
+            onClick={() => onPlayerClick && onPlayerClick(player)}
           >
             {/* Subtle background pattern for better theme support */}
             <div
@@ -128,7 +135,7 @@ export const DynamicTopPlayersPodium = React.memo(
             />
 
             {/* Character Background Image - Full body standing character (bigger and closer) */}
-            {player.characterAvatarBase64 && (
+            {player.characterImage?.publicUrl && (
               <div
                 className="absolute inset-0 opacity-95"
                 style={{
@@ -138,7 +145,7 @@ export const DynamicTopPlayersPodium = React.memo(
                     rgba(236, 72, 153, 0.1) 50%, 
                     rgba(245, 158, 11, 0.1) 75%, 
                     rgba(16, 185, 129, 0.1) 100%
-                  ), url(${player.characterAvatarBase64})`,
+                  ), url(${player.characterImage.publicUrl})`,
                   backgroundSize: "cover, auto 170%", // Gradient covers all, character 170% height
                   backgroundPosition: "center, center 15%", // Gradient centered, character higher and centered
                   backgroundRepeat: "no-repeat, no-repeat",
@@ -147,7 +154,7 @@ export const DynamicTopPlayersPodium = React.memo(
             )}
 
             {/* Fallback gradient when no character image */}
-            {!player.characterAvatarBase64 && (
+            {!player.characterImage?.publicUrl && (
               <div
                 className="absolute inset-0 opacity-80"
                 style={{
@@ -216,17 +223,17 @@ export const DynamicTopPlayersPodium = React.memo(
               <div className="flex justify-center mb-3">
                 <div className="relative">
                   <div className="w-12 h-12 rounded-full overflow-hidden border-3 border-white/80 shadow-lg ring-2 ring-black/10">
-                    {player.avatarBase64 ? (
+                    {player.characterImage?.publicUrl ? (
                       <img
-                        src={player.avatarBase64}
-                        alt={player.name}
+                        src={player.characterImage.publicUrl}
+                        alt={player.user.userName}
                         className="w-full h-full object-cover"
                         loading="lazy"
                         style={{ imageRendering: "auto" }}
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
-                        {player.name.charAt(0).toUpperCase()}
+                        {player.user.userName.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
@@ -242,17 +249,18 @@ export const DynamicTopPlayersPodium = React.memo(
                 <div className="mb-1 h-7">
                   <div
                     className="font-military text-lg leading-tight drop-shadow-lg text-shadow truncate"
-                    title={player.name}
+                    title={player.user.userName}
                   >
-                    {player.name}
+                    {player.user.userName}
                   </div>
                 </div>
                 <div className="opacity-90 font-medium drop-shadow text-shadow h-5">
                   <div
                     className="text-sm truncate"
-                    title={getRankDisplay(player)}
+                    // title={getRankDisplay(player)}
                   >
                     {getRankDisplay(player)}
+                    Rank Display
                   </div>
                 </div>
               </div>
@@ -278,7 +286,7 @@ export const DynamicTopPlayersPodium = React.memo(
       );
     }
 
-    if (topPlayers?.length === 0) {
+    if (players?.length === 0) {
       return (
         <div
           className={`bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-6 shadow-lg ${className}`}
@@ -294,47 +302,28 @@ export const DynamicTopPlayersPodium = React.memo(
       );
     }
 
-    const [first, second, third] = topPlayers || [];
-
     return (
       <div
         className={`bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-6 shadow-lg ${className}`}
       >
         {/* Desktop Layout - Podium style with 9:22 aspect ratio */}
         <div className="hidden md:block">
-          <div className="flex items-end justify-center gap-4 px-4 min-h-[200px]">
+          <div className="flex items-end  justify-center gap-4 px-4 min-h-[200px]">
             {/* 2nd Place - Left */}
-            <div className="w-32 flex-shrink-0">
-              {second ? (
-                <PlayerCard player={second} position={2} />
-              ) : (
-                <div className="w-full h-48 opacity-30 border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center">
-                  <span className="text-gray-400 text-sm">#2</span>
-                </div>
-              )}
-            </div>
-
-            {/* 1st Place - Center (Larger) */}
-            <div className="w-36 flex-shrink-0">
-              {first ? (
-                <PlayerCard player={first} position={1} />
-              ) : (
-                <div className="w-full h-56 opacity-30 border-2 border-dashed border-yellow-300 rounded-2xl flex items-center justify-center">
-                  <span className="text-yellow-400 text-sm">#1</span>
-                </div>
-              )}
-            </div>
-
-            {/* 3rd Place - Right */}
-            <div className="w-32 flex-shrink-0">
-              {third ? (
-                <PlayerCard player={third} position={3} />
-              ) : (
-                <div className="w-full h-44 opacity-30 border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center">
-                  <span className="text-gray-400 text-sm">#3</span>
-                </div>
-              )}
-            </div>
+            {players?.map((player, index) => (
+              <div key={player.id} className={cn("w-32 flex-shrink-0")}>
+                {player ? (
+                  <PlayerCard
+                    player={player}
+                    position={index === 0 ? 2 : index === 1 ? 1 : 3}
+                  />
+                ) : (
+                  <div className="w-full h-48 opacity-30 border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center">
+                    <span className="text-gray-400 text-sm">#2</span>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -353,38 +342,20 @@ export const DynamicTopPlayersPodium = React.memo(
                 paddingRight: "20vw", // Reduced from 25vw
               }}
             >
-              {/* 2nd Place - Left */}
-              <div className="w-32 flex-shrink-0 scroll-snap-center">
-                {second ? (
-                  <PlayerCard player={second} position={2} />
-                ) : (
-                  <div className="w-full h-44 opacity-30 border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center">
-                    <span className="text-gray-400 text-xs">#2</span>
-                  </div>
-                )}
-              </div>
-
-              {/* 1st Place - Center (Larger) */}
-              <div className="w-36 flex-shrink-0 scroll-snap-center">
-                {first ? (
-                  <PlayerCard player={first} position={1} />
-                ) : (
-                  <div className="w-full h-52 opacity-30 border-2 border-dashed border-yellow-300 rounded-2xl flex items-center justify-center">
-                    <span className="text-yellow-400 text-xs">#1</span>
-                  </div>
-                )}
-              </div>
-
-              {/* 3rd Place - Right */}
-              <div className="w-32 flex-shrink-0 scroll-snap-center">
-                {third ? (
-                  <PlayerCard player={third} position={3} />
-                ) : (
-                  <div className="w-full h-40 opacity-30 border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center">
-                    <span className="text-gray-400 text-xs">#3</span>
-                  </div>
-                )}
-              </div>
+              {players?.map((player, index) => (
+                <div className="w-32 flex-shrink-0 scroll-snap-center">
+                  {player ? (
+                    <PlayerCard
+                      player={player}
+                      position={index === 0 ? 2 : index === 1 ? 1 : 3}
+                    />
+                  ) : (
+                    <div className="w-full h-44 opacity-30 border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center">
+                      <span className="text-gray-400 text-xs">#2</span>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 
