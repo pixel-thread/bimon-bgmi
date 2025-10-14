@@ -73,7 +73,7 @@ import { useSeasonStore } from "../store/season";
 import { Ternary } from "./common/Ternary";
 import { useTournamentStore } from "../store/tournament";
 import { useTournament } from "../hooks/tournament/useTournament";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import http from "../utils/http";
 import { useGallery } from "../hooks/gallery/useGallery";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -488,7 +488,6 @@ export function TournamentSettings() {
         {/* Left column */}
         {/* Configuration */}
         <TournamentConfiguration />
-
         <TournamentBackground />
         {/* Background Images */}
 

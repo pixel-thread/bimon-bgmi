@@ -1,0 +1,37 @@
+### 
+
+@id = 625effa4-2c3a-42b4-9bdc-844771b35bd0
+
+
+### 
+
+# @name GEt team by tournamentId
+
+GET http://localhost:3000/api/tournament/{{id}}/team HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### 
+
+# @name Create tournament Team
+
+POST http://localhost:3000/api/admin/tournament/{{id}}/team HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "name": "Team 1"
+}
+
+
+### 
+
+# @name delete teams by tournament id
+
+DELETE http://localhost:3000/api/admin/tournament/{{id}}/team HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}

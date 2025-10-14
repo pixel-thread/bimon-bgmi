@@ -3,6 +3,7 @@ import { UnauthorizedError } from "../errors/unAuthError";
 import { verifyToken } from "@clerk/backend";
 import { getUserByClerkId } from "../../services/user/getUserByClerkId";
 import { clientClerk } from "@/src/lib/clerk/client";
+import { createUserIfNotExistInDB } from "@/src/services/user/createUser";
 
 export async function tokenMiddleware(req: NextRequest | Request) {
   const authHeader = req.headers.get("authorization");
@@ -24,6 +25,12 @@ export async function tokenMiddleware(req: NextRequest | Request) {
   let user = await getUserByClerkId({ id: claims.sub });
 
   if (!user) {
+    if (process.env.NODE_ENV === "development") {
+      await createUserIfNotExistInDB({
+        clerkId: claims.sub,
+        username: "dev",
+      });
+    }
     // If the user is not found, revoke this session at Clerk
     if (claims.sid) {
       await clientClerk.sessions.revokeSession(claims.sid);

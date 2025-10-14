@@ -26,6 +26,7 @@ import { formatDateDDMMYYYY } from "../utils/dateFormat";
 import { SeasonSelector } from "./SeasonSelector";
 import { LoaderFive } from "@/src/components/ui/loader";
 import { useAuth } from "@/src/hooks/useAuth";
+import { useTeams } from "../hooks/team/useTeams";
 
 interface TeamManagementProps {
   readOnly?: boolean;
@@ -59,7 +60,7 @@ export default function TeamManagement({
   const [isSaving, setIsSaving] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<string>("all");
   const [showNoTeamsMessage, setShowNoTeamsMessage] = useState(false);
-
+  const { data: sortedTeams } = useTeams();
   // Example usage:
   const todayFormatted = formatDateDDMMYYYY(new Date());
 
@@ -205,18 +206,18 @@ export default function TeamManagement({
     );
   }, [teams, searchTerm]);
 
-  const sortedTeams = useMemo(() => {
-    if (selectedMatch === "All") {
-      // Use the new tiebreaker system for official competitions
-      const sortedWithTiebreaker = sortTeamsWithTiebreaker(filteredTeams);
-      return sortedWithTiebreaker.map((team, idx) => ({
-        team,
-        position: idx + 1,
-      }));
-    } else {
-      return filteredTeams.map((team) => ({ team, position: undefined }));
-    }
-  }, [filteredTeams, selectedMatch]);
+  // const sortedTeams = useMemo(() => {
+  //   if (selectedMatch === "All") {
+  //     // Use the new tiebreaker system for official competitions
+  //     const sortedWithTiebreaker = sortTeamsWithTiebreaker(filteredTeams);
+  //     return sortedWithTiebreaker.map((team, idx) => ({
+  //       team,
+  //       position: idx + 1,
+  //     }));
+  //   } else {
+  //     return filteredTeams.map((team) => ({ team, position: undefined }));
+  //   }
+  // }, [filteredTeams, selectedMatch]);
 
   // Handle delayed no-teams message - placed after sortedTeams is defined
   useEffect(() => {
@@ -499,20 +500,13 @@ export default function TeamManagement({
                 {/* First row: Season and Tournament selectors */}
                 <div className="flex flex-wrap gap-2">
                   <SeasonSelector
-                    selectedSeason={selectedSeason}
-                    onSeasonChange={setSelectedSeason}
                     size="sm"
                     variant="blue"
                     placeholder="Season"
                     showAllSeasons={true}
                     className="w-28 sm:w-32 md:w-36 flex-1 min-w-0"
                   />
-                  <imports.TournamentSelector
-                    selected={selectedTournament}
-                    onSelect={handleTournamentSelect}
-                    tournaments={tournaments}
-                    className="w-40 sm:w-48 md:w-56 flex-1 min-w-0"
-                  />
+                  <imports.TournamentSelector className="w-40 sm:w-48 md:w-56 flex-1 min-w-0" />
                 </div>
                 {/* Second row: Match dropdown and buttons */}
                 <div className="flex flex-nowrap gap-1.5 items-center overflow-x-auto pb-1 -mx-1 px-1">
@@ -644,7 +638,7 @@ export default function TeamManagement({
                 </p>
               </div>
             </div>
-          ) : sortedTeams.length === 0 ? (
+          ) : sortedTeams?.length === 0 ? (
             <div className="text-center text-gray-500 py-4">
               <div className="w-12 h-12 mx-auto mb-4 opacity-50">
                 <svg
@@ -671,50 +665,55 @@ export default function TeamManagement({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
               <AnimatePresence>
-                {sortedTeams.map(({ team, position }) => (
-                  <motion.div
-                    key={team.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    transition={{ duration: 0.4 }}
-                  >
-                    <imports.TeamCard
-                      team={team}
-                      searchTerm={searchTerm}
-                      selectedMatch={selectedMatch}
-                      onClick={
-                        !readOnly && selectedMatch !== "All"
-                          ? () => {
-                              resetTempEdits();
-                              setEditingTeam(team);
-                              setEditingPlayer1Ign(team.players[0]?.ign || "");
-                              setEditingPlayer2Ign(team.players[1]?.ign || "");
-                            }
-                          : undefined
-                      }
-                      onDelete={
-                        !readOnly
-                          ? async () => {
-                              if (
-                                window.confirm(
-                                  `Are you sure you want to delete ${team.teamName}?`,
-                                )
-                              ) {
-                                await deleteTeams([team.id]);
+                {sortedTeams &&
+                  sortedTeams?.map((team, index) => (
+                    <motion.div
+                      key={team.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.4 }}
+                    >
+                      <imports.TeamCard
+                        team={team}
+                        searchTerm={searchTerm}
+                        selectedMatch={selectedMatch}
+                        onClick={
+                          !readOnly && selectedMatch !== "All"
+                            ? () => {
+                                resetTempEdits();
+                                setEditingTeam(team);
+                                setEditingPlayer1Ign(
+                                  team.players[0]?.ign || "",
+                                );
+                                setEditingPlayer2Ign(
+                                  team.players[1]?.ign || "",
+                                );
                               }
-                            }
-                          : undefined
-                      }
-                      tempEdits={tempEdits}
-                      onTempEditChange={
-                        !readOnly ? handleTempEditChange : undefined
-                      }
-                      position={position}
-                      readOnly={readOnly}
-                    />
-                  </motion.div>
-                ))}
+                            : undefined
+                        }
+                        onDelete={
+                          !readOnly
+                            ? async () => {
+                                if (
+                                  window.confirm(
+                                    `Are you sure you want to delete ${team.teamName}?`,
+                                  )
+                                ) {
+                                  await deleteTeams([team.id]);
+                                }
+                              }
+                            : undefined
+                        }
+                        tempEdits={tempEdits}
+                        onTempEditChange={
+                          !readOnly ? handleTempEditChange : undefined
+                        }
+                        position={position}
+                        readOnly={readOnly}
+                      />
+                    </motion.div>
+                  ))}
               </AnimatePresence>
             </div>
           )}

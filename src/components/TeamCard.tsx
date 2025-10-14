@@ -26,7 +26,7 @@ interface TeamCardProps {
   onTempEditChange?: (
     teamId: string,
     field: "placement" | "kills" | "teamName",
-    value: string
+    value: string,
   ) => void;
   position?: number;
   readOnly?: boolean;
@@ -49,6 +49,7 @@ export default function TeamCard({
     placementPoints: 0,
     playerKills: [],
   };
+
   const totalScore = score.kills + score.placementPoints;
   const displayName = tempEdits[team.id]?.teamName || team.teamName;
 
@@ -57,15 +58,15 @@ export default function TeamCard({
     score.placementPoints >= 6
       ? "bg-green-100 text-green-800"
       : score.placementPoints >= 3
-      ? "bg-yellow-100 text-yellow-800"
-      : "bg-gray-100 text-gray-800";
+        ? "bg-yellow-100 text-yellow-800"
+        : "bg-gray-100 text-gray-800";
 
   const killsColor =
     score.kills > 5
       ? "bg-red-100 text-red-800"
       : score.kills > 0
-      ? "bg-blue-100 text-blue-800"
-      : "bg-gray-100 text-gray-800";
+        ? "bg-blue-100 text-blue-800"
+        : "bg-gray-100 text-gray-800";
 
   return (
     <motion.div
@@ -138,7 +139,7 @@ export default function TeamCard({
               Total Points:{" "}
               {Object.values(matchScores).reduce(
                 (acc, s) => acc + (s.kills || 0) + (s.placementPoints || 0),
-                0
+                0,
               )}
             </div>
             <div
@@ -146,10 +147,10 @@ export default function TeamCard({
                 position === 1
                   ? "bg-yellow-300 text-yellow-900"
                   : position === 2
-                  ? "bg-gray-300 text-gray-900"
-                  : position === 3
-                  ? "bg-orange-300 text-orange-900"
-                  : "bg-accent text-accent-foreground"
+                    ? "bg-gray-300 text-gray-900"
+                    : position === 3
+                      ? "bg-orange-300 text-orange-900"
+                      : "bg-accent text-accent-foreground"
               }`}
             >
               Overall Position: {position !== undefined ? position : "-"}

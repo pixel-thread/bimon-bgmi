@@ -1033,8 +1033,6 @@ export default function TeamCreationModal({
 
   const { currentSelection, allSelected } = getCurrentTabData();
 
-  const [selectedPlayer, setSelectedPlayer] = useState<PlayerT[] | null>(null);
-
   const { data: currentPlayers } = usePlayers();
 
   return (
@@ -1216,7 +1214,7 @@ export default function TeamCreationModal({
                   />
                   <PlayerGrid
                     players={currentPlayers || []}
-                    selectedPlayers={selectedPlayer || []}
+                    selectedPlayers={allSelected}
                     selectedSoloPlayers={Array.from(
                       new Set([
                         ...selection.selectedSoloPlayers,
