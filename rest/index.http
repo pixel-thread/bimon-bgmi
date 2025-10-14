@@ -1,0 +1,55 @@
+### 
+
+@playerId = 64d7fce6-fe72-4814-9619-884b1a3c23c2
+@pollId = 44714b50-7b49-45f9-913c-9994a4218f73
+@tournamentId = 07e6d573-e325-4016-a904-2e5c7fb07eab
+
+
+### Create Poll
+
+POST http://localhost:3000/api/admin/poll HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "endDate": "{{$date}}",
+  "options": [
+    {
+      "name": "Option 1",
+      "vote": "IN"
+    },
+    {
+      "name": "Option 2",
+      "vote": "OUT"
+    },
+    {
+      "name": "Option 3",
+      "vote": "SOLO"
+    }
+  ],
+  "question": "Question 1",
+  "tournamentId": "{{tournamentId}}"
+}
+
+
+### get all polls
+
+GET http://localhost:3000/api/polls HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### vote polls
+
+POST http://localhost:3000/api/polls HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "playerId": "{{playerId}}",
+  "pollId": "{{pollId}}",
+  "vote": "IN"
+}

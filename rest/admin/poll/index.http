@@ -1,0 +1,34 @@
+### Create Poll
+
+POST http://localhost:3000/api/admin/poll HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "endDate": "{{$date}}",
+  "options": [
+    {
+      "name": "Option 1",
+      "vote": "IN"
+    },
+    {
+      "name": "Option 2",
+      "vote": "OUT"
+    },
+    {
+      "name": "Option 3",
+      "vote": "SOLO"
+    }
+  ],
+  "question": "Question 1",
+  "tournamentId": "b3b17fd3-7c28-46a8-9399-5f7cfa647a37"
+}
+
+
+### 
+
+GET http://localhost:3000/api/polls HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
