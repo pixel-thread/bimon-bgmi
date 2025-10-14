@@ -78,6 +78,7 @@ model Player {
 
   characterImageId String?  @unique
   characterImage   Gallery? @relation(fields: [characterImageId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
 }
 
 model GameScore {
@@ -134,7 +135,7 @@ model Season {
 model Tournament {
   id        String   @id @default(uuid())
   name      String
-  startDate DateTime
+  startDate DateTime @default(now())
   fee       Int?
   team      Team[]
   user      User[]

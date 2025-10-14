@@ -82,20 +82,6 @@ export default function TournamentCreateModal({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="startDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Start Date</FormLabel>
-                  <FormControl>
-                    {/* @ts-ignore */}
-                    <Input type="date" placeholder="name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <DialogFooter>
               <Button
                 variant="outline"
