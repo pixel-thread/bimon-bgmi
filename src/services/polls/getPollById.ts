@@ -1,8 +1,13 @@
 import { prisma } from "@/src/lib/db/prisma";
+import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 
 type Props = {
-  id: string;
+  where: Prisma.PollWhereUniqueInput;
+  include?: Prisma.PollInclude;
 };
-export async function getPollById({ id }: Props) {
-  return await prisma.poll.findUnique({ where: { id } });
+export async function getPollById({ where, include }: Props) {
+  return await prisma.poll.findUnique({
+    where,
+    include,
+  });
 }

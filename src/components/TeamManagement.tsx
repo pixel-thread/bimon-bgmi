@@ -27,6 +27,7 @@ import { SeasonSelector } from "./SeasonSelector";
 import { LoaderFive } from "@/src/components/ui/loader";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useTeams } from "../hooks/team/useTeams";
+import { useSeasonStore } from "../store/season";
 
 interface TeamManagementProps {
   readOnly?: boolean;
@@ -38,7 +39,7 @@ export default function TeamManagement({
   // Auth state for role-based UI
   const { user } = useAuth();
   const role = user?.role;
-
+  const { seasonId: selectedSeason } = useSeasonStore();
   // Basic states
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMatch, setSelectedMatch] = useState<string>("All");
@@ -58,102 +59,26 @@ export default function TeamManagement({
   const [totalPlayersPlayed, setTotalPlayersPlayed] = useState("");
   const [totalKillsError, setTotalKillsError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedSeason, setSelectedSeason] = useState<string>("all");
   const [showNoTeamsMessage, setShowNoTeamsMessage] = useState(false);
   const { data: sortedTeams } = useTeams();
-  // Example usage:
-  const todayFormatted = formatDateDDMMYYYY(new Date());
 
   // Use teams from Firestore
   const { teams, loading, deleteTeams } = imports.useTeams(selectedTournament);
   const { tournaments: allTournaments } = imports.useTournaments();
 
-  // Filter tournaments by selected season
-  const tournaments = useMemo(() => {
-    if (selectedSeason === "all") {
-      return allTournaments;
-    }
-    return allTournaments.filter(
-      (tournament) => tournament.seasonId === selectedSeason,
-    );
-  }, [allTournaments, selectedSeason]);
-
   // Reset selected tournament if it's not in the filtered list
-  useEffect(() => {
-    if (selectedTournament && tournaments.length > 0) {
-      const isSelectedTournamentInList = tournaments.some(
-        (t) => t.id === selectedTournament,
-      );
-      if (!isSelectedTournamentInList) {
-        // Select the first tournament from the filtered list
-        const sorted = [...tournaments].sort((a, b) =>
-          b.id.localeCompare(a.id),
-        );
-        setSelectedTournament(sorted[0]?.id || null);
-      }
-    }
-  }, [tournaments, selectedTournament]);
   const {
     tempEdits,
     setTempEdit,
     saveEdits,
-    matchOptions,
     sequentialMatch,
     setSequentialMatch,
     resetTempEdits,
     hasUnsavedChanges, // Updated function from useSequentialEditing
   } = imports.useSequentialEditing(teams, selectedMatch);
 
-  const selectedConfig =
-    tournaments.find((t) => t.id === selectedTournament) || null;
-
   // Local matchCount state defaulted to 0
   const [matchCount, setMatchCount] = useState(0);
-
-  // Once teams are loaded, find the highest match number in Firestore.
-  useEffect(() => {
-    if (!loading && teams.length > 0) {
-      let highest = 0;
-      for (const team of teams) {
-        const scores = team.matchScores || {};
-        for (const key of Object.keys(scores)) {
-          const num = parseInt(key, 10);
-          if (!isNaN(num) && num > highest) {
-            highest = num;
-          }
-        }
-      }
-      setMatchCount(highest);
-      if (parseInt(selectedMatch, 10) > highest) {
-        setSelectedMatch(highest > 0 ? highest.toString() : "");
-        setSequentialMatch(highest > 0 ? highest.toString() : "");
-      }
-    }
-  }, [loading, teams, selectedMatch, setSequentialMatch]);
-
-  useEffect(() => {
-    if (tournaments.length > 0 && !selectedTournament) {
-      // Use the new utility function to get the best tournament (preferring those with teams)
-      getBestTournamentForAutoSelect(tournaments)
-        .then((bestTournamentId) => {
-          if (bestTournamentId) {
-            setSelectedTournament(bestTournamentId);
-          }
-        })
-        .catch((error) => {
-          console.error("Error selecting best tournament:", error);
-          // Fallback to the old logic if there's an error
-          const sorted = [...tournaments].sort((a, b) =>
-            b.id.localeCompare(a.id),
-          );
-          setSelectedTournament(sorted[0].id);
-        });
-    }
-    // Set default match to 'All' if not already set
-    if (!selectedMatch) {
-      setSelectedMatch("All");
-    }
-  }, [tournaments, selectedTournament, selectedMatch]);
 
   // When adding a match, increment the local matchCount.
   const handleAddMatch = async () => {
@@ -186,39 +111,6 @@ export default function TeamManagement({
     setIsSaving(false);
   };
 
-  const handleTournamentSelect = useCallback((value: string | null) => {
-    setSelectedTournament((prev) => {
-      if (prev !== value) {
-        return value;
-      }
-      return prev;
-    });
-  }, []);
-
-  // Filtering and sorting
-  const filteredTeams = useMemo(() => {
-    return teams.filter(
-      (team) =>
-        team.teamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        team.players.some((player) =>
-          player.ign.toLowerCase().includes(searchTerm.toLowerCase()),
-        ),
-    );
-  }, [teams, searchTerm]);
-
-  // const sortedTeams = useMemo(() => {
-  //   if (selectedMatch === "All") {
-  //     // Use the new tiebreaker system for official competitions
-  //     const sortedWithTiebreaker = sortTeamsWithTiebreaker(filteredTeams);
-  //     return sortedWithTiebreaker.map((team, idx) => ({
-  //       team,
-  //       position: idx + 1,
-  //     }));
-  //   } else {
-  //     return filteredTeams.map((team) => ({ team, position: undefined }));
-  //   }
-  // }, [filteredTeams, selectedMatch]);
-
   // Handle delayed no-teams message - placed after sortedTeams is defined
   useEffect(() => {
     if (!loading && teams.length === 0) {
@@ -244,62 +136,6 @@ export default function TeamManagement({
   ) => {
     setTempEdit(teamId, field, value);
   };
-
-  // Migration function to update existing tournament entries with seasonId
-  // const migrateTournamentEntries = async () => {
-  //   try {
-  //     console.log("Starting migration of tournament entries...");
-  //     const entriesSnapshot = await imports.getDocs(
-  //       imports.collection(imports.db, "tournamentEntries")
-  //     );
-  //     const batch = imports.writeBatch(imports.db);
-  //     let updateCount = 0;
-
-  //     for (const entryDoc of entriesSnapshot.docs) {
-  //       const entry = entryDoc.data();
-
-  //       // Only update entries that don't have seasonId
-  //       if (!entry.seasonId && entry.tournamentId) {
-  //         const tournament = allTournaments.find(
-  //           (t) => t.id === entry.tournamentId
-  //         );
-  //         if (tournament && tournament.seasonId) {
-  //           const docRef = imports.doc(
-  //             imports.db,
-  //             "tournamentEntries",
-  //             entryDoc.id
-  //           );
-  //           batch.update(docRef, { seasonId: tournament.seasonId });
-  //           updateCount++;
-  //         }
-  //       }
-  //     }
-
-  //     if (updateCount > 0) {
-  //       await batch.commit();
-  //       console.log(
-  //         `Migration completed: Updated ${updateCount} tournament entries with seasonId`
-  //       );
-  //       imports.toast.success(
-  //         `Updated ${updateCount} tournament entries with season information`
-  //       );
-  //     } else {
-  //       console.log("No tournament entries needed migration");
-  //     }
-  //   } catch (error) {
-  //     console.error("Error during migration:", error);
-  //     imports.toast.error("Failed to migrate tournament entries");
-  //   }
-  // };
-
-  // // Run migration when tournaments are loaded (only once)
-  // const [migrationRun, setMigrationRun] = useState(false);
-  // useEffect(() => {
-  //   if (allTournaments.length > 0 && !migrationRun) {
-  //     migrateTournamentEntries();
-  //     setMigrationRun(true);
-  //   }
-  // }, [allTournaments, migrationRun]);
 
   const handleAddTeam = async (teamData: {
     teamName: string;
@@ -596,14 +432,6 @@ export default function TeamManagement({
                       <imports.Button
                         variant="outline"
                         size="sm"
-                        onClick={() =>
-                          handleExportCSV(
-                            sortedTeams.map(({ team }) => team),
-                            selectedMatch,
-                            selectedConfig?.title || "Tournament",
-                            tempEdits,
-                          )
-                        }
                         disabled={!selectedTournament || teams.length === 0}
                         className="flex items-center gap-1.5 hover:bg-gray-100 transition-colors flex-shrink-0 px-2 py-1 text-xs sm:text-sm"
                       >
@@ -948,7 +776,7 @@ export default function TeamManagement({
         totalPlayersPlayed={totalPlayersPlayed}
         setTotalPlayersPlayed={setTotalPlayersPlayed}
         totalKillsError={totalKillsError}
-        sortedTeams={sortedTeams.map(({ team }) => team)}
+        sortedTeams={sortedTeams?.map(({ team }) => team)}
         tempEdits={tempEdits}
         placementErrors={placementErrors}
         handleSetTempEdit={(teamId, field, value) =>

@@ -3,26 +3,44 @@
 import React from "react";
 import { Avatar } from "@/src/components/ui/avatar";
 import { PollOptionProps } from "./types";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import http from "@/src/utils/http";
+import { logger } from "@/src/utils/logger";
+import { toast } from "sonner";
+
+type DataT = { vote: "IN" | "OUT" | "SOLO" };
 
 export const PollOption: React.FC<PollOptionProps> = React.memo(
   ({
+    id,
     option,
+    value,
     isSelected,
     isDisabled,
-    showResults,
-    isLoading = false,
+    showResults = true,
     recentVoters = [],
     totalVoters = 0,
     totalVotes = 0,
-    onClick,
     showAvatars = true,
   }) => {
+    const { mutate, isPending: isLoading } = useMutation({
+      mutationFn: (data: DataT) => http.post(`/poll/${id}/vote`, data),
+      onSuccess: (data) => {
+        if (data.success) {
+          toast.success(data.message);
+          return data;
+        }
+        toast.error(data.message);
+        return data;
+      },
+    });
+
     const percentage = totalVotes > 0 ? (totalVoters / totalVotes) * 100 : 0;
 
     return (
       <div className="relative">
         <button
-          onClick={onClick}
+          onClick={() => mutate({ vote: value as "IN" | "OUT" | "SOLO" })}
           disabled={isDisabled || isLoading}
           className={`
             w-full text-left relative overflow-hidden group py-4 px-4 rounded-xl border-2 
@@ -151,7 +169,7 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
         </button>
       </div>
     );
-  }
+  },
 );
 
 PollOption.displayName = "PollOption";

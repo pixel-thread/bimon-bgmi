@@ -37,51 +37,66 @@ export async function createTeams({
     include: { playerStats: true },
   });
 
-  // Extend players with weighted score
-  // TODO: Add weighted score to PlayerT
+  // Compute weighted score
   const playersWithScore: PlayerWithStats[] = players.map((p) => ({
     ...p,
     weightedScore: computeWeightedScore(p as PlayerWithStats),
   }));
 
-  // Sort by score descending
+  // Sort by weightedScore DESC
   playersWithScore.sort((a, b) => b.weightedScore - a.weightedScore);
 
-  // Calculate team counts
+  // Handle leftover solo player
+  const remainder = playersWithScore.length % groupSize;
+  let soloPlayer: PlayerWithStats | null = null;
+
+  if (remainder === 1 && groupSize > 1) {
+    // Find highest KD player
+    playersWithScore.sort((a, b) => {
+      const aKD =
+        a.playerStats?.deaths && a.playerStats.deaths > 0
+          ? a.playerStats.kills / a.playerStats.deaths
+          : (a.playerStats?.kills ?? 0);
+      const bKD =
+        b.playerStats?.deaths && b.playerStats.deaths > 0
+          ? b.playerStats.kills / b.playerStats.deaths
+          : (b.playerStats?.kills ?? 0);
+      return bKD - aKD;
+    });
+
+    soloPlayer = playersWithScore.shift()!; // Remove top KD player
+  }
+
+  // Calculate number of balanced teams
   const teamCount = Math.floor(playersWithScore.length / groupSize);
-  const leftoverPlayers = playersWithScore.slice(teamCount * groupSize);
 
   if (teamCount === 0) throw new Error("Not enough players to form teams.");
 
-  // Distribute players fairly (balanced)
+  // Assign players to balanced teams
   let teams = assignPlayersToTeamsBalanced(
     playersWithScore,
     teamCount,
     groupSize,
   );
 
-  // Handle leftover players
-  if (leftoverPlayers.length > 0) {
-    leftoverPlayers.sort((a, b) => b.weightedScore - a.weightedScore);
-    leftoverPlayers.forEach((p) => {
-      const weakestTeam = teams.reduce((prev, curr) =>
-        curr.weightedScore < prev.weightedScore ? curr : prev,
-      );
-      weakestTeam.players.push(p);
-      weakestTeam.totalKills += p.playerStats?.kills ?? 0;
-      weakestTeam.totalDeaths += p.playerStats?.deaths ?? 0;
-      weakestTeam.totalWins += p.playerStats?.wins ?? 0;
-      weakestTeam.weightedScore += p.weightedScore;
+  // Add solo player as own team
+  if (soloPlayer) {
+    teams.push({
+      players: [soloPlayer],
+      totalKills: soloPlayer.playerStats?.kills ?? 0,
+      totalDeaths: soloPlayer.playerStats?.deaths ?? 0,
+      totalWins: soloPlayer.playerStats?.wins ?? 0,
+      weightedScore: soloPlayer.weightedScore,
     });
   }
 
-  // Analyze balance
+  // Analyze team balance
   analyzeTeamBalance(teams);
 
-  // Randomize order to avoid predictable numbering
+  // Shuffle order to randomize display
   teams = shuffle(teams);
 
-  // Persist teams
+  // Persist teams in DB
   const createdTeams = [];
   for (let i = 0; i < teams.length; i++) {
     const t = teams[i];
@@ -98,7 +113,6 @@ export async function createTeams({
       include: { players: { include: { playerStats: true } } },
     });
 
-    // Update player team references
     await prisma.player.updateMany({
       where: { id: { in: t.players.map((p) => p.id) } },
       data: { teamId: team.id },

@@ -1,5 +1,6 @@
 import { Poll, PollVote, PollOption } from "@/src/lib/types";
 import { TournamentParticipant } from "@/src/lib/tournamentParticipationService";
+import { PollT } from "@/src/types/poll";
 
 export interface VoteTabProps {
   readOnly?: boolean;
@@ -25,6 +26,8 @@ export interface TournamentParticipationOptionProps {
 }
 
 export interface PollOptionProps {
+  id: string;
+  value: "IN" | "OUT" | "SOLO";
   option: string;
   isSelected: boolean;
   isDisabled: boolean;
@@ -38,30 +41,23 @@ export interface PollOptionProps {
 }
 
 export interface WhatsAppPollCardProps {
-  poll: Poll;
+  poll: PollT;
   userVote?: PollVote;
-  onVote: (pollId: string, option: string) => void;
   isDisabled: boolean;
   voteCounts?: Record<string, number>;
   loadingOption?: string;
   allVotes?: PollVote[];
   onShowVoters?: (pollId: string, pollQuestion: string, option: string) => void;
   isSaving?: boolean;
-  // Unified component extras
   readOnly?: boolean;
   showViewAllVotes?: boolean;
   showAvatars?: boolean; // Add this prop to control avatar visibility
-  // Admin actions (optional)
   showAdminActions?: boolean;
-  onEditPoll?: (poll: Poll) => void;
-  onDeletePoll?: (poll: Poll) => void;
-  onTogglePollStatus?: (poll: Poll) => void;
-  // Loading state for viewing votes
   isLoadingVotes?: boolean;
 }
 
 export interface TournamentParticipationCardProps {
-  poll: Poll;
+  poll: PollT;
   userVote?: PollVote;
   onVote: (pollId: string, option: string) => void;
   isDisabled: boolean;

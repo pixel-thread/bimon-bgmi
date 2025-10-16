@@ -6,14 +6,16 @@ const options = z.object({
 });
 
 export const pollSchema = z.object({
+  id: z.uuid(),
   options: z.array(options),
-  endDate: z.coerce.date(),
+  endDate: z.coerce.date().optional(),
   question: z.string(),
   tournamentId: z.string(),
+  days: z.string(),
 });
 
 export const playerVoteSchema = z.object({
-  playerId: z.uuid(),
+  playerId: z.uuid().optional(),
   vote: z.enum(["IN", "OUT", "SOLO"]),
-  pollId: z.string(),
+  pollId: z.string().optional(),
 });

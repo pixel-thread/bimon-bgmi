@@ -5,6 +5,7 @@ import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
+import { NextRequest } from "next/server";
 
 export async function POST(
   req: Request,
@@ -12,6 +13,8 @@ export async function POST(
 ) {
   try {
     await superAdminMiddleware(req);
+    const team = req.nextUrl.searchParams.get("team");
+    const teamSize = parseInt(team);
     const id = (await params).id;
     const tournamentExist = await getTournamentById({ id });
     const isTeamCreated = await getTeamByTournamentId({ tournamentId: id });
@@ -30,7 +33,7 @@ export async function POST(
     }
 
     const teams = await createTeams({
-      groupSize: 2,
+      groupSize: teamSize as 1 | 2 | 3 | 4,
       tournamentId: id,
       seasonId: tournamentExist?.seasonId,
     });
@@ -38,7 +41,13 @@ export async function POST(
     return SuccessResponse({
       data: teams.map((team) => ({
         total: team.players.length,
-        team: team.players.map((player) => player.playerStats),
+        team: team.players.map((player) => {
+          return {
+            kd: player.playerStats?.kd,
+            win: player.playerStats?.wins,
+            name: player.id,
+          };
+        }),
       })),
     });
   } catch (error) {

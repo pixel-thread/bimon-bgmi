@@ -9,5 +9,6 @@ export async function getPolls({ include, where }: Props = {}) {
   return prisma.poll.findMany({
     where,
     include,
+    orderBy: { createdAt: "desc" },
   });
 }

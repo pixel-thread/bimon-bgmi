@@ -63,28 +63,33 @@ model User {
 }
 
 model Player {
-  id               String             @id @default(uuid())
-  isBanned         Boolean            @default(false)
-  balance          Int                @default(0)
-  banReason        String?            @default("")
-  bannedAt         DateTime?
-  banDuration      Int                @default(0)
-  category         PlayerCategory     @default(NOOB)
-  gameScore        GameScore[]
-  pollVote         Poll?              @relation(fields: [pollId], references: [id])
-  userId           String             @unique
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tournamentWinner TournamentWinner[]
-  Wallet           Wallet?
-  playerStats      PlayerStats?
-  team             Team?              @relation(fields: [teamId], references: [id])
-  teamId           String?
+  id                String             @id @default(uuid())
+  isBanned          Boolean            @default(false)
+  balance           Int                @default(0)
+  banReason         String?            @default("")
+  bannedAt          DateTime?
+  banDuration       Int                @default(0)
+  remainingDuration Int                @default(0)
+  isBanExpired      Boolean            @default(false)
+  category          PlayerCategory     @default(NOOB)
+  gameScore         GameScore[]
+  pollVote          Poll?              @relation(fields: [pollId], references: [id])
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tournamentWinner  TournamentWinner[]
+  Wallet            Wallet?
+  playerStats       PlayerStats?
+  team              Team?              @relation(fields: [teamId], references: [id])
+  teamId            String?
 
   characterImageId String?         @unique
   characterImage   Gallery?        @relation(fields: [characterImageId], references: [id], onDelete: Cascade)
   createdAt        DateTime        @default(now())
   pollId           String?
-  PlayerPollVote   PlayerPollVote?
+  PlayerPollVote   PlayerPollVote? @relation(fields: [playerPollVoteId], references: [id])
+  Season           Season?         @relation(fields: [seasonId], references: [id])
+  seasonId         String?
+  playerPollVoteId String?
 }
 
 model GameScore {
@@ -130,8 +135,10 @@ model Season {
   createdBy   String
   createdAt   DateTime     @default(now())
 
-  tournament Tournament[]
-  Team       Team[]
+  player      Player[]
+  playerStats PlayerStats[]
+  tournament  Tournament[]
+  Team        Team[]
 
   @@unique([id, status]) // only one active season
   @@index([id])
@@ -175,20 +182,22 @@ model PollOption {
 
 model PlayerPollVote {
   id        String   @id @default(uuid())
-  playerId  String   @unique
+  playerId  String
   vote      Vote
   pollId    String
-  player    Player   @relation(fields: [playerId], references: [id])
+  player    Player[]
   poll      Poll     @relation(fields: [pollId], references: [id])
   createdAt DateTime @default(now())
 
-  @@unique([playerId, pollId])
+  @@unique([playerId, pollId]) // so a player can only vote once
 }
 
 model Poll {
   id           String           @id @default(uuid())
   startDate    DateTime         @default(now())
-  endDate      DateTime
+  isActive     Boolean          @default(true)
+  days         String           @default("Monday")
+  endDate      DateTime?
   question     String
   tournamentId String
   tournament   Tournament       @relation(fields: [tournamentId], references: [id])
@@ -234,12 +243,17 @@ model PlayerStats {
   id        String   @id @default(uuid())
   playerId  String   @unique
   player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  matches   Int
-  wins      Int
+  matches   Int      @default(0)
+  wins      Int      @default(0)
+  win2nd    Int      @default(0)
   deaths    Int
   kills     Int
   kd        Float
+  seasonId  String?
+  season    Season?  @relation(fields: [seasonId], references: [id])
   createdAt DateTime @default(now())
+
+  @@unique([playerId, seasonId])
 }
 
 // Category enum
@@ -254,6 +268,7 @@ model Team {
   id           String      @id @default(uuid())
   name         String
   players      Player[]
+  position     Int         @default(0)
   createdAt    DateTime    @default(now())
   teamNumber   Int
   tournamentId String?

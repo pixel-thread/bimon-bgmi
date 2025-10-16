@@ -33,7 +33,7 @@ export const VotersDialog: React.FC<VotersDialogProps> = React.memo(
       Object.keys(groups).forEach((key) => {
         groups[key].sort(
           (a, b) =>
-            new Date(b.votedAt).getTime() - new Date(a.votedAt).getTime()
+            new Date(b.votedAt).getTime() - new Date(a.votedAt).getTime(),
         );
       });
 
@@ -194,7 +194,7 @@ export const VotersDialog: React.FC<VotersDialogProps> = React.memo(
         </DialogContent>
       </Dialog>
     );
-  }
+  },
 );
 
 VotersDialog.displayName = "VotersDialog";

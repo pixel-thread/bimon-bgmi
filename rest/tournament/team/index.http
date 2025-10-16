@@ -1,6 +1,6 @@
 ### 
 
-@id = 625effa4-2c3a-42b4-9bdc-844771b35bd0
+@id = 0fb816eb-e85a-47c5-a788-79e07a1f9d68
 
 
 ### 
@@ -17,7 +17,7 @@ Authorization: Bearer {{TOKEN}}
 
 # @name Create tournament Team
 
-POST http://localhost:3000/api/admin/tournament/{{id}}/team HTTP/1.1
+POST http://localhost:3000/api/admin/tournament/{{id}}/team?team=4 HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 Authorization: Bearer {{TOKEN}}

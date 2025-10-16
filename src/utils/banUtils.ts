@@ -1,4 +1,4 @@
-import { TournamentConfig } from "@/src/lib/types";
+import { TournamentT } from "../types/tournament";
 
 export interface BanInfo {
   isBanned: boolean;
@@ -16,7 +16,7 @@ export interface BanInfo {
  */
 export function calculateRemainingBanDuration(
   player: { isBanned?: boolean; banDuration?: number; bannedAt?: string },
-  tournaments: TournamentConfig[]
+  tournaments: TournamentT[],
 ): BanInfo {
   if (!player.isBanned || !player.banDuration || !player.bannedAt) {
     return {
@@ -26,15 +26,17 @@ export function calculateRemainingBanDuration(
   }
 
   const banDate = new Date(player.bannedAt);
-  const tournamentsSinceBan = tournaments.filter(
+
+  const tournamentsSinceBan = tournaments?.filter(
     (tournament) =>
-      tournament.createdAt && new Date(tournament.createdAt) > banDate
+      tournament.createdAt && new Date(tournament.createdAt) > banDate,
   );
 
   const remainingDuration = Math.max(
     0,
-    player.banDuration - tournamentsSinceBan.length
+    player.banDuration - tournamentsSinceBan?.length,
   );
+
   const isExpired = remainingDuration <= 0;
 
   return {

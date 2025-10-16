@@ -17,4 +17,5 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
 };
 
 export const VoteTab = React.memo(VoteTabComponent);
+
 VoteTab.displayName = "VoteTab";

@@ -7,7 +7,17 @@ Accept: application/json
 Content-Type: application/json
 
 {
-  "email": "jyrwaboy@gmail.com",
+  "email": "bimonlangnongsiej@gmail.com",
   "password": "123Clashofclan@",
-  "userName": "jyrwaboy"
+  "userName": "bimon"
 }
+
+
+### 
+
+# @name get user
+
+GET http://localhost:3000/api/auth HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}

@@ -35,6 +35,7 @@ export const AuthProvider = ({ children }: Props) => {
       }
     }
   }, [isSignedIn, getToken, cookies.token, mutate]);
+
   const onLogout = async () => {
     removeCookies("token");
     await signOut({
@@ -43,6 +44,7 @@ export const AuthProvider = ({ children }: Props) => {
     });
     setUser(null);
   };
+
   useEffect(() => {
     if (isSignedIn && user === null && isPending === false) {
       getUser();
@@ -52,7 +54,7 @@ export const AuthProvider = ({ children }: Props) => {
   return (
     <AuthContext.Provider
       value={{
-        user,
+        user: user,
         isAuthLoading: isPending,
         isSignedIn: isSignedIn || false,
         refreshAuth: () => mutate(),

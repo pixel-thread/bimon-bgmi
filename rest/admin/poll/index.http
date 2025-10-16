@@ -21,8 +21,8 @@ Authorization: Bearer {{TOKEN}}
       "vote": "SOLO"
     }
   ],
-  "question": "Question 1",
-  "tournamentId": "b3b17fd3-7c28-46a8-9399-5f7cfa647a37"
+  "question": "Question 2",
+  "tournamentId": "c8ac13c9-3529-44f4-a221-9476484c6c46"
 }
 
 

@@ -2,7 +2,6 @@
 
 import { FiBarChart } from "react-icons/fi";
 import PollManagement from "@/src/components/admin/PollManagement";
-import AdminNavigation from "@/src/components/AdminNavigation";
 
 const AdminPollsPage = () => {
   return (
