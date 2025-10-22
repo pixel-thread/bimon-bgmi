@@ -1,4 +1,4 @@
-import { createTeams } from "@/src/services/team/createTeams";
+import { createTeamsByPolls } from "@/src/services/team/createTeamsByPoll";
 import { deleteTeamByTournamentId } from "@/src/services/team/deleteTeamsByTournamentId";
 import { getTeamByTournamentId } from "@/src/services/team/getTeamByTournamentId";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
@@ -8,12 +8,12 @@ import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
 
 export async function POST(
-  req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await superAdminMiddleware(req);
-    const team = req.nextUrl.searchParams.get("team");
+    const team = req.nextUrl.searchParams.get("team") || `1`;
     const teamSize = parseInt(team);
     const id = (await params).id;
     const tournamentExist = await getTournamentById({ id });
@@ -32,10 +32,11 @@ export async function POST(
       });
     }
 
-    const teams = await createTeams({
+    const teams = await createTeamsByPolls({
       groupSize: teamSize as 1 | 2 | 3 | 4,
       tournamentId: id,
       seasonId: tournamentExist?.seasonId,
+      pollId: "",
     });
 
     return SuccessResponse({

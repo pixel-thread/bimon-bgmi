@@ -1,6 +1,7 @@
 import { Poll, PollVote, PollOption } from "@/src/lib/types";
 import { TournamentParticipant } from "@/src/lib/tournamentParticipationService";
-import { PollT } from "@/src/types/poll";
+import { PlayerPollVoteT, PollT } from "@/src/types/poll";
+import { PlayerT } from "@/src/types/player";
 
 export interface VoteTabProps {
   readOnly?: boolean;
@@ -10,10 +11,6 @@ export interface VotersDialogProps {
   isOpen: boolean;
   onClose: () => void;
   pollId: string;
-  pollQuestion: string;
-  option: string;
-  allVotes: PollVote[];
-  voteCounts: Record<string, number>;
 }
 
 export interface TournamentParticipationOptionProps {
@@ -33,7 +30,7 @@ export interface PollOptionProps {
   isDisabled: boolean;
   showResults: boolean;
   isLoading?: boolean;
-  recentVoters?: PollVote[];
+  recentVoters?: PlayerPollVoteT[];
   totalVoters?: number;
   totalVotes?: number;
   showAvatars?: boolean; // Add this prop to control avatar visibility

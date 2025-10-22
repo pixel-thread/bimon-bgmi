@@ -73,7 +73,7 @@ import { useSeasonStore } from "../store/season";
 import { Ternary } from "./common/Ternary";
 import { useTournamentStore } from "../store/tournament";
 import { useTournament } from "../hooks/tournament/useTournament";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "../utils/http";
 import { useGallery } from "../hooks/gallery/useGallery";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -87,7 +87,6 @@ export function TournamentSettings() {
   const [teamsToCreate, setTeamsToCreate] = useState<
     { teamName: string; players: { ign: string; kills: number }[] }[]
   >([]);
-  const [backgroundGallery, setBackgroundGallery] = useState<string[]>([]);
 
   // Fund Tracker States
   const [fundTransactions, setFundTransactions] = useState<any[]>([]);
@@ -160,160 +159,6 @@ export function TournamentSettings() {
       }
     }
   }, [tournaments, selectedTournament]);
-
-  // Load background gallery
-  useEffect(() => {
-    loadBackgroundGallery();
-  }, []);
-
-  // Load current background image
-  useEffect(() => {
-    // if (selectedConfig?.backgroundImage) {
-    //   setCurrentBackgroundImage(selectedConfig.backgroundImage);
-    // } else {
-    //   if (backgroundGallery.length > 0) {
-    //     setCurrentBackgroundImage(backgroundGallery[0]);
-    //   } else {
-    //     setCurrentBackgroundImage("");
-    //   }
-    // }
-  }, [backgroundGallery]);
-
-  const loadBackgroundGallery = async () => {
-    try {
-      const galleryDoc = await getDoc(doc(db, "settings", "backgroundGallery"));
-      if (galleryDoc.exists()) {
-        const data = galleryDoc.data();
-        const imageIds = data.imageIds || [];
-        const imagePromises = imageIds.map(async (imageId: string) => {
-          const imageData = await loadBackgroundFromDatabase(imageId);
-          return imageData;
-        });
-        const images = await Promise.all(imagePromises);
-        const validImages = images.filter((img) => img !== null) as string[];
-        setBackgroundGallery(validImages);
-      }
-    } catch (error) {
-      console.error("Error loading background gallery:", error);
-    }
-  };
-
-  const saveBackgroundGallery = async (
-    imageIds: string[],
-    images: string[],
-  ) => {
-    try {
-      await setDoc(doc(db, "settings", "backgroundGallery"), {
-        imageIds: imageIds,
-        updatedAt: new Date().toISOString(),
-      });
-      setBackgroundGallery(images);
-    } catch (error) {
-      console.error("Error saving background gallery:", error);
-      throw error;
-    }
-  };
-
-  const addToGallery = async (imageId: string, imageData: string) => {
-    try {
-      const galleryDoc = await getDoc(doc(db, "settings", "backgroundGallery"));
-      const currentImageIds = galleryDoc.exists()
-        ? galleryDoc.data().imageIds || []
-        : [];
-      const newImageIds = [
-        imageId,
-        ...currentImageIds.filter((id: string) => id !== imageId),
-      ].slice(0, 5);
-      const newImages = [
-        imageData,
-        ...backgroundGallery.filter((img) => img !== imageData),
-      ].slice(0, 5);
-      await saveBackgroundGallery(newImageIds, newImages);
-    } catch (error) {
-      console.error("Error adding to gallery:", error);
-      throw error;
-    }
-  };
-
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
-  };
-
-  const saveBackgroundToDatabase = async (
-    base64Image: string,
-    fileName: string,
-  ) => {
-    try {
-      const imageId = `bg_${Date.now()}_${Math.random()
-        .toString(36)
-        .substr(2, 9)}`;
-      await setDoc(doc(db, "backgroundImages", imageId), {
-        id: imageId,
-        fileName: fileName,
-        base64Data: base64Image,
-        uploadedAt: new Date().toISOString(),
-        fileSize: base64Image.length,
-        mimeType: base64Image.split(",")[0].split(":")[1].split(";")[0],
-      });
-      return imageId;
-    } catch (error) {
-      console.error("Error saving background to database:", error);
-      throw error;
-    }
-  };
-
-  const loadBackgroundFromDatabase = async (
-    imageId: string,
-  ): Promise<string | null> => {
-    try {
-      const imageDoc = await getDoc(doc(db, "backgroundImages", imageId));
-      if (imageDoc.exists()) {
-        const data = imageDoc.data();
-        return data.base64Data || null;
-      }
-      return null;
-    } catch (error) {
-      console.error("Error loading background from database:", error);
-      return null;
-    }
-  };
-
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      query(collection(db, "fundTransactions"), orderBy("createdAt", "desc")),
-      (snapshot) => {
-        const transactions = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setFundTransactions(transactions);
-        calculateTotalFunds(transactions);
-        setIsLoadingFunds(false);
-      },
-      (error) => {
-        console.error("Error fetching fund transactions:", error);
-        setIsLoadingFunds(false);
-      },
-    );
-    return () => unsubscribe();
-  }, []);
-
-  const calculateTotalFunds = (transactions: any[]) => {
-    const total = transactions.reduce((acc, transaction) => {
-      return acc + (parseFloat(transaction.amount) || 0);
-    }, 0);
-    setTotalFunds({
-      income: total,
-      expense: 0,
-      balance: total,
-      total,
-    });
-  };
 
   const handleAddFundTransaction = async () => {
     if (!fundForm.amount || !fundForm.description) {

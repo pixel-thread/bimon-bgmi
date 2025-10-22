@@ -25,6 +25,7 @@ import { useActiveSeason } from "@/src/hooks/season/useActiveSeason";
 import http from "@/src/utils/http";
 import { Input } from "../ui/input";
 import { useTournamentStore } from "@/src/store/tournament";
+import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
 
 interface TournamentCreateModalProps {
   showCreateModal: boolean;
@@ -39,6 +40,7 @@ export default function TournamentCreateModal({
 }: TournamentCreateModalProps) {
   const { isFetching: isLoading, data: activeSeason } = useActiveSeason();
   const { setTournamentId: setSelectedTournament } = useTournamentStore();
+
   const form = useForm({
     resolver: zodResolver(tournamentSchema),
     defaultValues: {
@@ -48,7 +50,10 @@ export default function TournamentCreateModal({
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data: TournamentT) =>
-      http.post<{ id: string }>("/admin/tournament", data),
+      http.post<{ id: string }>(
+        ADMIN_TOURNAMENT_ENDPOINTS.POST_CREATE_TOURNAMENT,
+        data,
+      ),
     onSuccess: (data) => {
       if (data.success) {
         toast.success(data.message);

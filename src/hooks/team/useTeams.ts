@@ -6,11 +6,13 @@ import { useQuery } from "@tanstack/react-query";
 type TeamT = Prisma.TeamGetPayload<{
   include: { players: { include: { user: true; playerStats: true } } };
 }>;
+
 export function useTeams() {
   const { tournamentId } = useTournamentStore();
+
   return useQuery({
-    queryFn: () => http.get<TeamT[]>(`/tournaments/${tournamentId}/teams`),
-    queryKey: ["team"],
+    queryFn: () => http.get<TeamT[]>(`/tournament/${tournamentId}/team`),
+    queryKey: ["team", tournamentId],
     select: (data) => data.data,
     enabled: !!tournamentId,
   });

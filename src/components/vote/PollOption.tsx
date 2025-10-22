@@ -1,14 +1,26 @@
 "use client";
 
 import React from "react";
-import { Avatar } from "@/src/components/ui/avatar";
-import { PollOptionProps } from "./types";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
-import { logger } from "@/src/utils/logger";
 import { toast } from "sonner";
+import { Progress } from "../ui/progress";
 
 type DataT = { vote: "IN" | "OUT" | "SOLO" };
+
+export interface PollOptionProps {
+  id: string;
+  value: "IN" | "OUT" | "SOLO";
+  option: string;
+  isSelected: boolean;
+  isDisabled: boolean;
+  showResults: boolean;
+  isLoading?: boolean;
+  totalVoters?: number;
+  totalVotes?: number;
+  showAvatars?: boolean; // Add this prop to control avatar visibility
+  onClick: () => void;
+}
 
 export const PollOption: React.FC<PollOptionProps> = React.memo(
   ({
@@ -18,15 +30,15 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
     isSelected,
     isDisabled,
     showResults = true,
-    recentVoters = [],
-    totalVoters = 0,
     totalVotes = 0,
-    showAvatars = true,
   }) => {
+    const queryClient = useQueryClient();
     const { mutate, isPending: isLoading } = useMutation({
       mutationFn: (data: DataT) => http.post(`/poll/${id}/vote`, data),
       onSuccess: (data) => {
         if (data.success) {
+          queryClient.invalidateQueries({ queryKey: ["polls"] });
+          queryClient.invalidateQueries({ queryKey: ["poll", id] });
           toast.success(data.message);
           return data;
         }
@@ -35,13 +47,11 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
       },
     });
 
-    const percentage = totalVotes > 0 ? (totalVoters / totalVotes) * 100 : 0;
-
     return (
       <div className="relative">
         <button
           onClick={() => mutate({ vote: value as "IN" | "OUT" | "SOLO" })}
-          disabled={isDisabled || isLoading}
+          disabled={isLoading}
           className={`
             w-full text-left relative overflow-hidden group py-4 px-4 rounded-xl border-2 
             transition-all duration-150 transform hover:scale-[1.01] active:scale-[0.99]
@@ -89,80 +99,13 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
                 <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin opacity-70"></div>
               )}
             </div>
-
-            {/* Right side - Enhanced avatars and vote count */}
-            {showResults && !isLoading && (
-              <div className="flex items-center space-x-3 flex-shrink-0">
-                {/* Avatars with animation */}
-                {showAvatars && recentVoters.length > 0 && (
-                  <div className="flex -space-x-1">
-                    {recentVoters.slice(0, 3).map((voter, index) => (
-                      <div
-                        key={voter.id}
-                        className="border-2 border-white dark:border-gray-800 shadow-sm animate-in zoom-in-50 duration-200"
-                        style={{ animationDelay: `${index * 50}ms` }}
-                        title={voter.playerName}
-                      >
-                        <Avatar
-                          src={
-                            (voter as any).avatarBase64 ||
-                            (voter as any).avatarUrl
-                          }
-                          alt={voter.playerName}
-                          size="sm"
-                        />
-                      </div>
-                    ))}
-                    {recentVoters.length > 3 && (
-                      <div className="w-6 h-6 rounded-full bg-gray-400 flex items-center justify-center text-xs font-semibold text-white border-2 border-white dark:border-gray-800 shadow-sm">
-                        +{recentVoters.length - 3}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Enhanced vote count */}
-                <div className="text-right">
-                  <div
-                    className={`
-                    text-lg font-bold transition-all duration-200
-                    ${
-                      isSelected
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-gray-600 dark:text-gray-400"
-                    }
-                  `}
-                  >
-                    {totalVoters}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-500">
-                    {totalVoters === 1 ? "vote" : "votes"}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Enhanced progress bar with smooth animation */}
           {showResults && (
             <div className="mt-3">
               <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className={`
-                    h-full rounded-full transition-all duration-700 ease-in-out
-                    ${
-                      isSelected
-                        ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm"
-                        : "bg-gradient-to-r from-gray-400 to-gray-500"
-                    }
-                  `}
-                  style={{
-                    width: `${percentage}%`,
-                    transform: `scaleX(${percentage > 0 ? 1 : 0})`,
-                    transformOrigin: "left",
-                    willChange: "width, transform",
-                  }}
-                />
+                <Progress value={totalVotes} />
               </div>
             </div>
           )}

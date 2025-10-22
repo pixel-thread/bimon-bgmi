@@ -2,6 +2,7 @@
 
 import { FiUsers } from "react-icons/fi";
 import TeamManagement from "@/src/components/TeamManagement";
+import { AdminTeamsManagement } from "@/src/components/admin/teams";
 
 const AdminTeamsPage = () => {
   return (
@@ -20,7 +21,7 @@ const AdminTeamsPage = () => {
         </header>
 
         <div className="space-y-6">
-          <TeamManagement readOnly={false} />
+          <AdminTeamsManagement />
         </div>
       </div>
     </div>

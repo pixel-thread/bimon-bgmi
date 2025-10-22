@@ -7,9 +7,9 @@ Accept: application/json
 Content-Type: application/json
 
 {
-  "email": "bimonlangnongsiej@gmail.com",
+  "email": "test@gmail.com",
   "password": "123Clashofclan@",
-  "userName": "bimon"
+  "userName": "noob2"
 }
 
 

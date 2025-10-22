@@ -13,15 +13,16 @@ import {
 } from "@/src/components/ui/dropdown-menu";
 import { ChevronDown, Plus, Users } from "lucide-react";
 import { VotersDialog } from "@/src/components/vote/VotersDialog";
-import { LoaderFive } from "../ui/loader";
+import { LoaderFive } from "../../ui/loader";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { useQuery } from "@tanstack/react-query";
 import http from "@/src/utils/http";
-import { DataTable } from "../data-table";
-import { CreatePollDialog } from "./poll/CreatePollDialog";
+import { DataTable } from "../../data-table";
+import { CreatePollDialog } from "./CreatePollDialog";
 import { usePollColumns } from "@/src/hooks/poll/usePollColumns";
 import { useSearchParams } from "next/navigation";
-import { UpdatePollDialog } from "./poll/UpdatePollDialog";
+import { UpdatePollDialog } from "./UpdatePollDialog";
+import { Ternary } from "../../common/Ternary";
 
 type PollT = Prisma.PollGetPayload<{ include: { options: true } }>;
 
@@ -30,11 +31,6 @@ const PollManagement: React.FC = () => {
   const search = useSearchParams();
   const updateId = search.get("update") || "";
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [voteCounts, setVoteCounts] = useState<
-    Record<string, Record<string, number>>
-  >({});
-
-  const [allVotes, setAllVotes] = useState<Record<string, PollVote[]>>({});
 
   const [adminPollFilter, setAdminPollFilter] = useState<
     "active" | "inactive" | "all"
@@ -52,25 +48,10 @@ const PollManagement: React.FC = () => {
     select: (data) => data.data,
   });
 
-  const [showVotersDialog, setShowVotersDialog] = useState<{
-    isOpen: boolean;
-    pollId: string;
-    pollQuestion: string;
-    option: string;
-  }>({
-    isOpen: false,
-    pollId: "",
-    pollQuestion: "",
-    option: "",
-  });
+  const [showVotersDialog, setShowVotersDialog] = useState<PollT | null>(null);
 
   const closeVotersDialog = () => {
-    setShowVotersDialog({
-      isOpen: false,
-      pollId: "",
-      pollQuestion: "",
-      option: "",
-    });
+    setShowVotersDialog(null);
   };
 
   if (loading) {
@@ -140,42 +121,40 @@ const PollManagement: React.FC = () => {
 
       {/* Polls List */}
       <div className="space-y-4">
-        {polls?.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 sm:p-8 text-center">
-            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="w-8 h-8 text-gray-400" />
+        <Ternary
+          condition={polls?.length === 0}
+          trueComponent={
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 sm:p-8 text-center">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                No polls found
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Create a new poll to get started with tournament voting
+              </p>
+              <Button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Your First Poll
+              </Button>
             </div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              No polls found
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Create a new poll to get started with tournament voting
-            </p>
-            <Button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Your First Poll
-            </Button>
-          </div>
-        ) : (
-          <>
-            <DataTable data={polls} columns={columns} />
-          </>
-        )}
+          }
+          falseComponent={<DataTable data={polls} columns={columns} />}
+        />
       </div>
 
       {/* Voters Dialog */}
-      <VotersDialog
-        isOpen={showVotersDialog.isOpen}
-        onClose={closeVotersDialog}
-        pollId={showVotersDialog.pollId}
-        pollQuestion={showVotersDialog.pollQuestion}
-        option={showVotersDialog.option}
-        allVotes={allVotes[showVotersDialog.pollId] || []}
-        voteCounts={voteCounts[showVotersDialog.pollId] || {}}
-      />
+      {showVotersDialog && (
+        <VotersDialog
+          isOpen={!!showVotersDialog}
+          onClose={closeVotersDialog}
+          poll={showVotersDialog as any}
+        />
+      )}
 
       <CreatePollDialog
         open={isCreateModalOpen}

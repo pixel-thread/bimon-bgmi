@@ -1,6 +1,10 @@
 ### 
 
 @id = 0fb816eb-e85a-47c5-a788-79e07a1f9d68
+@playerId = 58fc4445-18bf-4540-bc49-2791fa4a56bb
+@teamId = 864dca22-a3a7-485a-a0a0-850996d1e7ed
+
+# 501ef4ad-c788-4cfa-89b0-a47eb7a0bf54
 
 
 ### 
@@ -35,3 +39,31 @@ DELETE http://localhost:3000/api/admin/tournament/{{id}}/team HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 Authorization: Bearer {{TOKEN}}
+
+
+### 
+
+# @name Add Player to team
+
+POST http://localhost:3000/api/admin/team/{{teamId}}/add-player HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "playerId": "{{playerId}}"
+}
+
+
+### 
+
+# @name remove Player from team
+
+POST http://localhost:3000/api/admin/team/{{teamId}}/remove-player HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "playerId": "{{playerId}}"
+}

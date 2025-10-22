@@ -4,4 +4,6 @@ export type PlayerT = Prisma.PlayerGetPayload<{
   include: { user: true; playerStats: true; characterImage: true };
 }>;
 
-export type PlayerWithStats = PlayerT & { weightedScore: number };
+export type PlayerWithWeightT = Prisma.PlayerGetPayload<{
+  include: { user: true; playerStats: true; characterImage: true };
+}> & { weightedScore: number };

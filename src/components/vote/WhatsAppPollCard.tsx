@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useCallback } from "react";
-import { FiCheck, FiUsers, FiEdit, FiTrash2, FiPower } from "react-icons/fi";
+import React from "react";
+import { FiCheck, FiUsers } from "react-icons/fi";
 import { Badge } from "@/src/components/ui/badge";
 import { PollOption } from "./PollOption";
-import { WhatsAppPollCardProps } from "./types";
+import { useAuth } from "@/src/hooks/useAuth";
+import { usePlayerVote } from "@/src/hooks/poll/usePlayerVote";
+import { PollT } from "@/src/types/poll";
 
 const bannedStampStyles = {
   position: "absolute" as const,
@@ -32,45 +34,49 @@ const bannedStampStyles = {
   filter: "drop-shadow(2px 2px 1px rgba(0,0,0,0.1))",
 };
 
-export const WhatsAppPollCard: React.FC<WhatsAppPollCardProps> = React.memo(
+type WhatAppPollCardProps = {
+  poll: PollT;
+  readOnly: boolean;
+  showAvatars?: boolean; // Default to false for performance
+  onShowVoters: (poll: PollT) => void;
+};
+
+export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
   ({
     poll,
-    userVote,
-    isDisabled,
-    voteCounts = {},
-    loadingOption,
-    allVotes = [],
     onShowVoters,
     readOnly,
-    showViewAllVotes,
     showAvatars = false, // Default to false for performance
-    isLoadingVotes = false,
   }) => {
     // Banned stamp styles
+    const { user } = useAuth();
+    const isBanned = user?.player?.isBanned || false;
     const options = poll.options || [];
+    const pollId = poll.id;
+    const { data: playersVotes, isFetching: isLoadingVotes } = usePlayerVote({
+      pollId,
+    });
 
-    const totalVotes = voteCounts
-      ? Object.values(voteCounts).reduce((sum, count) => sum + count, 0)
-      : 0;
-    const showResults = !!userVote || totalVotes > 0;
+    const totalVotes = playersVotes?.length || 0;
 
-    const getVotersForOption = useCallback(
-      (option: string) => {
-        if (!allVotes || !Array.isArray(allVotes)) return [];
-        return allVotes
-          .filter((vote) => vote.vote === option)
-          .sort(
-            (a, b) =>
-              new Date(b.votedAt).getTime() - new Date(a.votedAt).getTime(),
-          );
-      },
-      [allVotes],
-    );
+    const playerId = user?.player?.id || "";
+    const allVoter = playersVotes || [];
+    const isUserVoted = playersVotes?.find((val) => val.playerId === playerId)
+      ? true
+      : false;
+
+    const showViewAllVotes = !!isUserVoted;
+
+    const userVotedOption = playersVotes?.find(
+      (vote) => vote.playerId === playerId,
+    )?.vote;
+
+    const showResults = !!isUserVoted || totalVotes > 0;
 
     return (
       <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden max-w-2xl mx-auto">
         {/* Banned Stamp Overlay */}
-        {isDisabled && (
+        {isBanned && (
           <div className="absolute inset-0 bg-black/5 dark:bg-white/5 z-10 pointer-events-none">
             <div style={bannedStampStyles}>Banned</div>
           </div>
@@ -85,17 +91,16 @@ export const WhatsAppPollCard: React.FC<WhatsAppPollCardProps> = React.memo(
               <div className="flex items-center gap-2 flex-wrap text-sm">
                 {/* Status/Voted badge */}
                 {/** If admin view, show Active/Inactive; else show Voted when applicable */}
-                {poll.isActive ? (
-                  <Badge
-                    className={`${
-                      poll.isActive
-                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200"
-                        : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-200"
-                    }`}
-                  >
-                    {poll.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                ) : userVote ? (
+                <Badge
+                  className={`${
+                    poll.isActive
+                      ? "bg-green-100 uppercase text-green-800 dark:bg-green-900/30 dark:text-green-200"
+                      : "bg-gray-100 text-gray-800 uppercase dark:bg-gray-900/30 dark:text-gray-200"
+                  }`}
+                >
+                  {poll.isActive ? "Active" : "Inactive"}
+                </Badge>
+                {isUserVoted ? (
                   <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
                     <FiCheck className="w-3 h-3 mr-1" />
                     Voted
@@ -127,24 +132,22 @@ export const WhatsAppPollCard: React.FC<WhatsAppPollCardProps> = React.memo(
         {/* Poll Options */}
         <div className="p-6 space-y-3">
           {options.map((option, index) => {
-            const optionText =
-              typeof option === "string" ? option : option?.name;
             const optionKey =
               typeof option === "string" ? option : `${option.name}-${index}`;
-            const votersForOption = getVotersForOption(optionText);
 
             return (
               <PollOption
                 id={poll.id}
                 value={option.vote}
                 key={optionKey}
-                option={optionText}
-                isSelected={userVote?.vote === optionText}
-                isDisabled={isDisabled || !!readOnly}
+                option={option.name}
+                isSelected={userVotedOption === option.vote}
+                isDisabled={!poll.isActive || !!readOnly}
                 showResults={showResults}
-                isLoading={loadingOption === optionText}
-                recentVoters={votersForOption.slice(0, 2)}
-                totalVoters={votersForOption.length}
+                // TODO: Add recent voters
+                totalVoters={
+                  allVoter.filter((value) => value.vote === option.vote).length
+                }
                 totalVotes={totalVotes}
                 showAvatars={showAvatars}
                 onClick={() => {}}
@@ -170,7 +173,7 @@ export const WhatsAppPollCard: React.FC<WhatsAppPollCardProps> = React.memo(
 
             {onShowVoters && (
               <button
-                onClick={() => onShowVoters(poll.id, poll.question, "")}
+                onClick={() => onShowVoters(poll)}
                 disabled={isLoadingVotes}
                 className={`w-full text-center font-medium py-2 px-4 rounded-lg transition-colors ${
                   isLoadingVotes

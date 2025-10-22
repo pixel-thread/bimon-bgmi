@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import "./globals.css";
 import { HtmlHead } from "@/src/components/common/html/head";
 import { Wrapper } from "../components/provider/wrapper";

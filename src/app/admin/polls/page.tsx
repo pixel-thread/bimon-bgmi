@@ -1,7 +1,7 @@
 "use client";
 
 import { FiBarChart } from "react-icons/fi";
-import PollManagement from "@/src/components/admin/PollManagement";
+import PollManagement from "@/src/components/admin/poll/PollManagement";
 
 const AdminPollsPage = () => {
   return (

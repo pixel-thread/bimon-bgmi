@@ -7,6 +7,8 @@ import http from "@/src/utils/http";
 import { toast } from "sonner";
 import { Switch } from "@/src/components/ui/switch";
 import Link from "next/link";
+import { ButtonGroup } from "@/src/components/ui/button-group";
+import { ADMIN_TEAM_ENDPOINTS } from "@/src/lib/endpoints/admin/team";
 
 const col: ColumnDef<PollT>[] = [
   {
@@ -49,15 +51,35 @@ const col: ColumnDef<PollT>[] = [
   },
   {
     header: "View Votes",
-    cell: ({ row }) => <Button variant={"outline"}>View</Button>,
   },
 ];
 
 export const usePollColumns = () => {
   const queryClient = useQueryClient();
+
   const { mutate: deletePoll, isPending: isDeleting } = useMutation({
     mutationFn: ({ id }: { id: string }) =>
       http.delete<{ id: string }>(`/admin/poll/${id}`),
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message);
+        queryClient.invalidateQueries({ queryKey: ["polls"] });
+        return data;
+      }
+      toast.success(data.message);
+      return data;
+    },
+  });
+
+  const { mutate: bulkTeam, isPending: isBulking } = useMutation({
+    mutationFn: ({ id, size }: { id: string; size: number }) =>
+      http.post<PollT>(
+        ADMIN_TEAM_ENDPOINTS.POST_CREATE_TEAM_BY_POLL.replace(
+          ":size",
+          size.toString(),
+        ),
+        { pollId: id },
+      ),
     onSuccess: (data) => {
       if (data.success) {
         toast.success(data.message);
@@ -83,6 +105,23 @@ export const usePollColumns = () => {
     },
   });
 
+  const { mutate: deleteTeams, isPending: isTeamsDeleting } = useMutation({
+    mutationFn: (data: { tournamentId: string }) =>
+      http.post<PollT>(
+        ADMIN_TEAM_ENDPOINTS.POST_DELETE_TEAMS_BY_TOURNAMENT_ID,
+        data,
+      ),
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message);
+        queryClient.invalidateQueries({ queryKey: ["polls"] });
+        return data;
+      }
+      toast.success(data.message);
+      return data;
+    },
+  });
+
   const columns: ColumnDef<PollT>[] = [
     {
       accessorKey: "isActive",
@@ -97,11 +136,42 @@ export const usePollColumns = () => {
     },
     ...col,
     {
+      header: "Bulk Team",
+      cell: ({ row }) => (
+        <ButtonGroup>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Button
+              disabled={isBulking}
+              onClick={() => bulkTeam({ id: row.original.id, size: i + 1 })}
+              variant={i === 1 ? "default" : "outline"}
+            >
+              {i + 1}
+            </Button>
+          ))}
+        </ButtonGroup>
+      ),
+    },
+    {
       header: "Remove",
       cell: ({ row }) => (
         <Button
           onClick={() => deletePoll({ id: row.original.id })}
           disabled={isDeleting}
+          variant={"destructive"}
+          size={"icon-sm"}
+        >
+          <TrashIcon />
+        </Button>
+      ),
+    },
+    {
+      header: "Remove Teams",
+      cell: ({ row }) => (
+        <Button
+          onClick={() =>
+            deleteTeams({ tournamentId: row.original.tournamentId })
+          }
+          disabled={isTeamsDeleting}
           variant={"destructive"}
           size={"icon-sm"}
         >

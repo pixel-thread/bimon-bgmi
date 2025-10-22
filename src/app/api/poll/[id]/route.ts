@@ -10,9 +10,17 @@ export async function GET(
   try {
     await tokenMiddleware(req);
     const id = (await params).id;
+
     const poll = await getPollById({
       where: { id },
-      include: { options: true, playersVotes: true },
+      include: {
+        options: true,
+        playersVotes: {
+          include: {
+            player: { include: { characterImage: true, user: true } },
+          },
+        },
+      },
     });
 
     if (!poll) {

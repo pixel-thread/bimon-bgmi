@@ -22,7 +22,6 @@ import {
   sortTeamsWithTiebreaker,
   getBestTournamentForAutoSelect,
 } from "@/src/lib/utils";
-import { formatDateDDMMYYYY } from "../utils/dateFormat";
 import { SeasonSelector } from "./SeasonSelector";
 import { LoaderFive } from "@/src/components/ui/loader";
 import { useAuth } from "@/src/hooks/useAuth";

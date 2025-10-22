@@ -1,7 +1,7 @@
-import { PlayerWithStats } from "../types/player";
+import { PlayerWithStatsT } from "../types/player";
 
 export type TeamStats = {
-  players: PlayerWithStats[];
+  players: PlayerWithStatsT[];
   totalKills: number;
   totalDeaths: number;
   totalWins: number;
@@ -13,7 +13,7 @@ export type TeamStats = {
  * Ensures stronger players are spread evenly.
  */
 export function assignPlayersToTeamsBalanced(
-  players: PlayerWithStats[],
+  players: PlayerWithStatsT[],
   teamCount: number,
   groupSize: number,
 ): TeamStats[] {
