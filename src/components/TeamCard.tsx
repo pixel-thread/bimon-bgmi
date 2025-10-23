@@ -8,9 +8,10 @@ import {
   TooltipTrigger,
 } from "@/src/components/ui/tooltip";
 import { motion } from "framer-motion";
+import { TeamT } from "../types/team";
 
 interface TeamCardProps {
-  team: CombinedTeamData;
+  team: TeamT;
   searchTerm: string;
   selectedMatch: string;
   onClick?: () => void;
@@ -43,7 +44,15 @@ export default function TeamCard({
   readOnly = false,
   onTempEditChange,
 }: TeamCardProps) {
-  const matchScores = team.matchScores || {};
+  // forEach returns undefined, so you should use reduce instead:
+  const totalKills = team.players.reduce(
+    (sum, player) => sum + (player.playerStats?.kills || 0),
+    0,
+  );
+
+  // Now totalKills holds the sum of all player kills.
+  const matchScores = totalKills;
+
   const score = matchScores[selectedMatch] || {
     kills: 0,
     placementPoints: 0,
@@ -51,7 +60,9 @@ export default function TeamCard({
   };
 
   const totalScore = score.kills + score.placementPoints;
-  const displayName = tempEdits[team.id]?.teamName || team.teamName;
+
+  const displayName =
+    team.players.map((player) => player.user.userName).join("_") || team.name;
 
   // Color-coded badges
   const placementColor =
@@ -93,7 +104,7 @@ export default function TeamCard({
                     size="sm"
                     onClick={onClick}
                     className="hover:bg-accent transition-colors min-w-[2.5rem] h-8 sm:h-9"
-                    aria-label={`Edit details for ${team.teamName}`}
+                    aria-label={`Edit details for ${team.name}`}
                   >
                     <FiEdit className="h-4 w-4" />
                   </Button>
@@ -109,7 +120,7 @@ export default function TeamCard({
                     size="sm"
                     onClick={onDelete}
                     className="text-destructive border-none hover:bg-destructive/10 hover:text-destructive transition-colors min-w-[2.5rem] h-8 sm:h-9"
-                    aria-label={`Delete ${team.teamName}`}
+                    aria-label={`Delete ${team.name}`}
                   >
                     <FiTrash2 className="h-4 w-4" />
                   </Button>
@@ -122,7 +133,7 @@ export default function TeamCard({
       </div>
 
       <div className="p-3 sm:p-4 space-y-2">
-        {team.duoPlayers ? (
+        {team.players.length === 2 ? (
           <p className="text-xs sm:text-sm text-muted-foreground truncate">
             <span className="font-medium text-foreground">Players:</span>{" "}
             {team.duoPlayers[0].name} (Noob), {team.duoPlayers[1].name} (Pro)

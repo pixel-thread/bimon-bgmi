@@ -1,32 +1,27 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState } from "react";
 import { FiEdit, FiAward, FiDownload, FiPlus } from "react-icons/fi";
 import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-  TooltipProvider,
 } from "@/src/components/ui/tooltip";
-import * as imports from "./teamManagementImports";
 import {
-  handleSetTempEdit,
-  handleExportCSV,
-  handleSequentialClose,
-  handleSequentialSave,
-} from "./teamManagementUtils";
+  ActionToolbar,
+  Button,
+  MatchDropdown,
+  TeamCard,
+  toast,
+  TournamentSelector,
+} from "./teamManagementImports";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  calculatePlacementPoints,
-  getPositionFromPoints,
-  sortTeamsWithTiebreaker,
-  getBestTournamentForAutoSelect,
-} from "@/src/lib/utils";
 import { SeasonSelector } from "./SeasonSelector";
 import { LoaderFive } from "@/src/components/ui/loader";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useTeams } from "../hooks/team/useTeams";
-import { useSeasonStore } from "../store/season";
+import { useTournament } from "../hooks/tournament/useTournament";
+import { useTournamentStore } from "../store/tournament";
 
 interface TeamManagementProps {
   readOnly?: boolean;
@@ -38,17 +33,10 @@ export default function TeamManagement({
   // Auth state for role-based UI
   const { user } = useAuth();
   const role = user?.role;
-  const { seasonId: selectedSeason } = useSeasonStore();
   // Basic states
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMatch, setSelectedMatch] = useState<string>("All");
-  const [selectedTournament, setSelectedTournament] = useState<string | null>(
-    null,
-  );
-  const [editingTeam, setEditingTeam] =
-    useState<imports.CombinedTeamData | null>(null);
-  const [editingPlayer1Ign, setEditingPlayer1Ign] = useState("");
-  const [editingPlayer2Ign, setEditingPlayer2Ign] = useState("");
+  const { tournamentId: selectedTournament } = useTournamentStore();
   const [showSequentialModal, setShowSequentialModal] = useState(false);
   const [showStandingsModal, setShowStandingsModal] = useState(false);
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
@@ -62,254 +50,23 @@ export default function TeamManagement({
   const { data: sortedTeams } = useTeams();
 
   // Use teams from Firestore
-  const { teams, loading, deleteTeams } = imports.useTeams(selectedTournament);
-  const { tournaments: allTournaments } = imports.useTournaments();
+  const { data: teams, isFetching: loading } = useTeams();
 
   // Reset selected tournament if it's not in the filtered list
-  const {
-    tempEdits,
-    setTempEdit,
-    saveEdits,
-    sequentialMatch,
-    setSequentialMatch,
-    resetTempEdits,
-    hasUnsavedChanges, // Updated function from useSequentialEditing
-  } = imports.useSequentialEditing(teams, selectedMatch);
 
   // Local matchCount state defaulted to 0
   const [matchCount, setMatchCount] = useState(0);
 
   // When adding a match, increment the local matchCount.
-  const handleAddMatch = async () => {
-    if (!selectedTournament) return;
-    setIsSaving(true);
-    const newMatchNumber = (matchCount + 1).toString();
-
-    const batch = imports.writeBatch(imports.db);
-    for (const team of teams) {
-      const updatedScores = { ...team.matchScores };
-      const editablePlayers = team.players.filter(
-        (p) => p.ign.trim() !== "",
-      ).length;
-      if (!updatedScores[newMatchNumber]) {
-        updatedScores[newMatchNumber] = {
-          kills: 0,
-          placementPoints: 0,
-          playerKills: Array(editablePlayers).fill(0),
-          playerKD: Array(editablePlayers).fill(0),
-        };
-      }
-      const docRef = imports.doc(imports.db, "tournamentEntries", team.id);
-      batch.update(docRef, { matchScores: updatedScores });
-    }
-    await batch.commit();
-
-    setMatchCount(matchCount + 1);
-    setSelectedMatch(newMatchNumber);
-    setSequentialMatch(newMatchNumber);
-    setIsSaving(false);
-  };
+  const handleAddMatch = async () => {};
 
   // Handle delayed no-teams message - placed after sortedTeams is defined
-  useEffect(() => {
-    if (!loading && teams.length === 0) {
-      // Show loader first for empty database
-      setShowNoTeamsMessage(false);
-      const timer = setTimeout(() => {
-        setShowNoTeamsMessage(true);
-      }, 10000); // 10 second delay - much longer to prefer loader
-
-      return () => clearTimeout(timer);
-    } else {
-      setShowNoTeamsMessage(false);
-    }
-  }, [loading, teams.length]);
-
-  // Removed: const hasUnsavedChanges = Object.keys(tempEdits).length > 0;
-  // Now using hasUnsavedChanges from useSequentialEditing
-
-  const handleTempEditChange = (
-    teamId: string,
-    field: "placement" | "kills" | "teamName",
-    value: string,
-  ) => {
-    setTempEdit(teamId, field, value);
-  };
-
-  const handleAddTeam = async (teamData: {
-    teamName: string;
-    players: string[];
-  }) => {
-    if (!selectedTournament) return;
-    setIsSaving(true);
-    try {
-      const matchScores: { [matchNumber: string]: imports.MatchScore } = {};
-      for (let i = 1; i <= matchCount; i++) {
-        matchScores[i.toString()] = {
-          kills: 0,
-          placementPoints: 0,
-          playerKills: Array(teamData.players.length).fill(0),
-          playerKD: Array(teamData.players.length).fill(0),
-        };
-      }
-
-      // Get the season ID from the selected tournament
-      const selectedTournamentData = allTournaments.find(
-        (t) => t.id === selectedTournament,
-      );
-      const seasonId = selectedTournamentData?.seasonId || undefined;
-
-      const newTeam: imports.CombinedTeamData = {
-        id: "",
-        phoneNumber: "",
-        teamName: teamData.teamName,
-        players: teamData.players.map((ign) => ({ ign, kills: 0 })),
-        tournamentId: selectedTournament,
-        teamMode: "Squad 4+1",
-        matchScores,
-        status: "approved",
-        approvedAt: new Date().toISOString(),
-        submittedAt: new Date().toISOString(),
-        seasonId: seasonId,
-      };
-
-      const docRef = await imports.addDoc(
-        imports.collection(imports.db, "tournamentEntries"),
-        newTeam,
-      );
-      setShowAddTeamModal(false);
-    } catch (error) {
-      console.error("Error adding team:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   // One-click data fix: backfill seasonId, ensure player docs, normalize matchScores
   const handleFixData = async () => {
     try {
-      if (!selectedTournament) {
-        imports.toast.error("Select a tournament first");
-        return;
-      }
-      setIsSaving(true);
-
-      // Load tournament for seasonId
-      const tDoc = await imports.getDoc(
-        imports.doc(imports.db, "tournaments", selectedTournament),
-      );
-      const seasonId = tDoc.exists() ? (tDoc.data() as any).seasonId : null;
-
-      // Load all players into maps (exclude soft-deleted)
-      const playersSnapshot = await imports.getDocs(
-        imports.collection(imports.db, "players"),
-      );
-      const playerByName = new Map<string, any>();
-      playersSnapshot.forEach((p) => {
-        const data = { id: p.id, ...(p.data() as any) };
-        if (!data.deleted) {
-          if (data.name) playerByName.set(String(data.name), data);
-        }
-      });
-
-      // Fetch entries for the selected tournament
-      const entriesSnapshot = await imports.getDocs(
-        imports.query(
-          imports.collection(imports.db, "tournamentEntries"),
-          imports.where("tournamentId", "==", selectedTournament),
-        ),
-      );
-
-      const batch = imports.writeBatch(imports.db);
-      let updated = 0;
-      const now = new Date().toISOString();
-
-      for (const entryDoc of entriesSnapshot.docs) {
-        const entry = entryDoc.data() as any;
-        const docRef = imports.doc(
-          imports.db,
-          "tournamentEntries",
-          entryDoc.id,
-        );
-
-        let changed = false;
-
-        // Ensure seasonId
-        if (!entry.seasonId && seasonId) {
-          batch.update(docRef, { seasonId });
-          changed = true;
-        }
-
-        // Ensure players exist as docs
-        const playersArr = Array.isArray(entry.players) ? entry.players : [];
-        for (const p of playersArr) {
-          const ign = (p?.ign || "").trim();
-          if (!ign) continue;
-          if (!playerByName.has(ign)) {
-            const newRef = imports.doc(
-              imports.collection(imports.db, "players"),
-            );
-            const newDoc = {
-              name: ign,
-              category: "Uncategorized",
-              phoneNumber: null,
-              balance: 0,
-              createdAt: now,
-            } as any;
-            batch.set(newRef, newDoc);
-            playerByName.set(ign, { id: newRef.id, ...newDoc });
-            changed = true;
-          }
-        }
-
-        // Normalize matchScores to have arrays per player
-        const scores = entry.matchScores || {};
-        const playerLen = playersArr.length;
-        let scoresChanged = false;
-        const updatedScores: any = { ...scores };
-        Object.keys(updatedScores).forEach((k) => {
-          const ms = updatedScores[k] || {};
-          const pk = Array.isArray(ms.playerKills) ? ms.playerKills : [];
-          const part = Array.isArray(ms.playerParticipation)
-            ? ms.playerParticipation
-            : [];
-          const normPK = pk
-            .slice(0, playerLen)
-            .concat(Array(Math.max(0, playerLen - pk.length)).fill(0));
-          const basePart = part.length > 0 ? part : Array(playerLen).fill(true);
-          const normPart = basePart
-            .slice(0, playerLen)
-            .concat(Array(Math.max(0, playerLen - basePart.length)).fill(true));
-          const needUpdate =
-            pk.length !== normPK.length || part.length !== normPart.length;
-          if (needUpdate || !Array.isArray(ms.playerKD)) {
-            ms.playerKills = normPK;
-            ms.playerParticipation = normPart;
-            ms.playerKD = normPK.map((kills: number, idx: number) =>
-              normPart[idx] ? parseFloat((kills / 1).toFixed(1)) : 0,
-            );
-            updatedScores[k] = ms;
-            scoresChanged = true;
-          }
-        });
-
-        if (scoresChanged) {
-          batch.update(docRef, { matchScores: updatedScores });
-          changed = true;
-        }
-
-        if (changed) updated++;
-      }
-
-      if (updated > 0) {
-        await batch.commit();
-        imports.toast.success(`Fixed ${updated} team entries`);
-      } else {
-        imports.toast.info("No fixes were needed");
-      }
     } catch (err) {
-      console.error("Data fix failed:", err);
-      imports.toast.error("Data fix failed");
+      toast.error("Data fix failed");
     } finally {
       setIsSaving(false);
     }
@@ -327,7 +84,7 @@ export default function TeamManagement({
     <>
       <div className="border-none shadow-lg bg-background text-foreground">
         <div className="p-6 bg-background text-foreground">
-          <imports.ActionToolbar
+          <ActionToolbar
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
             actions={
@@ -341,11 +98,11 @@ export default function TeamManagement({
                     showAllSeasons={true}
                     className="w-28 sm:w-32 md:w-36 flex-1 min-w-0"
                   />
-                  <imports.TournamentSelector className="w-40 sm:w-48 md:w-56 flex-1 min-w-0" />
+                  <TournamentSelector className="w-40 sm:w-48 md:w-56 flex-1 min-w-0" />
                 </div>
                 {/* Second row: Match dropdown and buttons */}
                 <div className="flex flex-nowrap gap-1.5 items-center overflow-x-auto pb-1 -mx-1 px-1">
-                  <imports.MatchDropdown
+                  <MatchDropdown
                     selected={selectedMatch}
                     options={[
                       "All",
@@ -354,9 +111,7 @@ export default function TeamManagement({
                       ),
                     ]}
                     onSelect={setSelectedMatch}
-                    onAddMatch={
-                      !readOnly && teams.length > 0 ? handleAddMatch : undefined
-                    }
+                    onAddMatch={handleAddMatch}
                     className="w-20 sm:w-24 md:w-28 flex-shrink-0"
                     disabled={isSaving || !selectedTournament}
                   />
@@ -364,11 +119,11 @@ export default function TeamManagement({
                     <>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <imports.Button
+                          <Button
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              setSequentialMatch(selectedMatch);
+                              // setSequentialMatch(selectedMatch);
                               setShowSequentialModal(true);
                             }}
                             disabled={
@@ -380,7 +135,7 @@ export default function TeamManagement({
                             <span className="hidden lg:inline">
                               Sequential Edit
                             </span>
-                          </imports.Button>
+                          </Button>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Sequential Edit</p>
@@ -388,7 +143,7 @@ export default function TeamManagement({
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <imports.Button
+                          <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setShowAddTeamModal(true)}
@@ -397,7 +152,7 @@ export default function TeamManagement({
                           >
                             <FiPlus className="h-4 w-4" />
                             <span className="hidden lg:inline">Add Team</span>
-                          </imports.Button>
+                          </Button>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Add New Team</p>
@@ -407,20 +162,20 @@ export default function TeamManagement({
                   )}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <imports.Button
+                      <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setShowStandingsModal(true)}
                         disabled={
                           !selectedTournament ||
-                          teams.length === 0 ||
+                          teams?.length === 0 ||
                           selectedMatch === ""
                         }
                         className="flex items-center gap-1.5 hover:bg-gray-100 transition-colors flex-shrink-0 px-2 py-1 text-xs sm:text-sm"
                       >
                         <FiAward className="h-4 w-4" />
                         <span className="hidden lg:inline">Standings</span>
-                      </imports.Button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>View Standings</p>
@@ -428,15 +183,15 @@ export default function TeamManagement({
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <imports.Button
+                      <Button
                         variant="outline"
                         size="sm"
-                        disabled={!selectedTournament || teams.length === 0}
+                        disabled={!selectedTournament || teams?.length === 0}
                         className="flex items-center gap-1.5 hover:bg-gray-100 transition-colors flex-shrink-0 px-2 py-1 text-xs sm:text-sm"
                       >
                         <FiDownload className="h-4 w-4" />
                         <span className="hidden lg:inline">Export CSV</span>
-                      </imports.Button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Export to CSV</p>
@@ -495,48 +250,49 @@ export default function TeamManagement({
                 {sortedTeams &&
                   sortedTeams?.map((team, index) => (
                     <motion.div
-                      key={team.id}
+                      key={team.id + index}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
                       transition={{ duration: 0.4 }}
                     >
-                      <imports.TeamCard
+                      <TeamCard
+                        onClick={() => {}}
                         team={team}
                         searchTerm={searchTerm}
                         selectedMatch={selectedMatch}
-                        onClick={
-                          !readOnly && selectedMatch !== "All"
-                            ? () => {
-                                resetTempEdits();
-                                setEditingTeam(team);
-                                setEditingPlayer1Ign(
-                                  team.players[0]?.ign || "",
-                                );
-                                setEditingPlayer2Ign(
-                                  team.players[1]?.ign || "",
-                                );
-                              }
-                            : undefined
-                        }
-                        onDelete={
-                          !readOnly
-                            ? async () => {
-                                if (
-                                  window.confirm(
-                                    `Are you sure you want to delete ${team.teamName}?`,
-                                  )
-                                ) {
-                                  await deleteTeams([team.id]);
-                                }
-                              }
-                            : undefined
-                        }
-                        tempEdits={tempEdits}
-                        onTempEditChange={
-                          !readOnly ? handleTempEditChange : undefined
-                        }
-                        position={position}
+                        // onClick={
+                        // !readOnly && selectedMatch !== "All"
+                        //   ? () => {
+                        //       resetTempEdits();
+                        //       setEditingTeam(team);
+                        //       setEditingPlayer1Ign(
+                        //         team.players[0]?.ign || "",
+                        //       );
+                        //       setEditingPlayer2Ign(
+                        //         team.players[1]?.ign || "",
+                        //       );
+                        //     }
+                        //   : undefined
+                        //}
+                        // onDelete={
+                        // !readOnly
+                        //   ? async () => {
+                        //       if (
+                        //         window.confirm(
+                        //           `Are you sure you want to delete ${team.teamName}?`,
+                        //         )
+                        //       ) {
+                        //         await deleteTeams([team.id]);
+                        //       }
+                        //     }
+                        //   : undefined
+                        //}
+                        // tempEdits={tempEdits}
+                        // onTempEditChange={
+                        //   !readOnly ? handleTempEditChange : undefined
+                        // }
+                        position={team.position}
                         readOnly={readOnly}
                       />
                     </motion.div>
@@ -547,276 +303,276 @@ export default function TeamManagement({
         </div>
       </div>
       {/* Edit Team Modal */}
-      {editingTeam && (
-        <imports.EditTeamModal
-          team={editingTeam}
-          playerKills={
-            editingTeam.matchScores?.[selectedMatch]?.playerKills?.map(
-              String,
-            ) ||
-            Array(
-              editingTeam.players.filter((p) => p.ign.trim() !== "").length,
-            ).fill("0")
-          }
-          setPlayerKills={(kills) => {
-            const updatedTeam = { ...editingTeam };
-            if (!updatedTeam.matchScores) updatedTeam.matchScores = {};
-            if (!updatedTeam.matchScores[selectedMatch])
-              updatedTeam.matchScores[selectedMatch] = {
-                kills: 0,
-                placementPoints: 0,
-                playerKills: [],
-                playerParticipation: [],
-                playerKD: [],
-              };
-            updatedTeam.matchScores[selectedMatch].playerKills = kills.map(
-              (k) => parseInt(k) || 0,
-            );
-            setEditingTeam(updatedTeam);
-          }}
-          playerParticipation={
-            editingTeam.matchScores?.[selectedMatch]?.playerParticipation ||
-            Array(
-              editingTeam.players.filter((p) => p.ign.trim() !== "").length,
-            ).fill(true)
-          }
-          setPlayerParticipation={(participation) => {
-            const updatedTeam = { ...editingTeam };
-            if (!updatedTeam.matchScores) updatedTeam.matchScores = {};
-            if (!updatedTeam.matchScores[selectedMatch])
-              updatedTeam.matchScores[selectedMatch] = {
-                kills: 0,
-                placementPoints: 0,
-                playerKills: [],
-                playerParticipation: [],
-                playerKD: [],
-              };
-            updatedTeam.matchScores[selectedMatch].playerParticipation =
-              participation;
-            setEditingTeam(updatedTeam);
-          }}
-          placementInput={
-            editingTeam.matchScores?.[selectedMatch]?.placementPoints
-              ? getPositionFromPoints(
-                  editingTeam.matchScores[selectedMatch].placementPoints,
-                ).toString()
-              : "0"
-          }
-          setPlacementInput={(val) => {
-            const updatedTeam = { ...editingTeam };
-            if (!updatedTeam.matchScores) updatedTeam.matchScores = {};
-            if (!updatedTeam.matchScores[selectedMatch])
-              updatedTeam.matchScores[selectedMatch] = {
-                kills: 0,
-                placementPoints: 0,
-                playerKills: [],
-                playerParticipation: [],
-                playerKD: [],
-              };
-            const position = parseInt(val) || 0;
-            updatedTeam.matchScores[selectedMatch].placementPoints =
-              calculatePlacementPoints(position);
-            setEditingTeam(updatedTeam);
-          }}
-          player1Ign={editingPlayer1Ign}
-          setPlayer1Ign={setEditingPlayer1Ign}
-          player2Ign={editingPlayer2Ign}
-          setPlayer2Ign={setEditingPlayer2Ign}
-          // Pass the original teamName for the modal title, it won't be directly editable here
-          teamName={editingTeam.teamName} // Used for modal title, not for direct edit in modal now
-          kills={
-            editingTeam.matchScores?.[selectedMatch]?.kills.toString() || "0"
-          }
-          setKills={(kills) => {
-            const updatedTeam = { ...editingTeam };
-            if (!updatedTeam.matchScores) updatedTeam.matchScores = {};
-            if (!updatedTeam.matchScores[selectedMatch])
-              updatedTeam.matchScores[selectedMatch] = {
-                kills: 0,
-                placementPoints: 0,
-                playerKills: [],
-                playerParticipation: [],
-                playerKD: [],
-              };
-            updatedTeam.matchScores[selectedMatch].kills = parseInt(kills) || 0;
-            setEditingTeam(updatedTeam);
-          }}
-          onClose={() => setEditingTeam(null)}
-          onSave={async () => {
-            if (editingTeam) {
-              const updatedScores = editingTeam.matchScores || {};
-              if (!updatedScores[selectedMatch])
-                updatedScores[selectedMatch] = {
-                  kills: 0,
-                  placementPoints: 0,
-                  playerKills: [],
-                  playerParticipation: [],
-                  playerKD: [],
-                };
-              updatedScores[selectedMatch].kills =
-                parseInt(updatedScores[selectedMatch].kills.toString()) || 0;
-              const totalPlayerKills = updatedScores[
-                selectedMatch
-              ].playerKills.reduce((sum, k) => sum + (k || 0), 0);
-              const editablePlayers = editingTeam.players.filter(
-                (p) => p.ign.trim() !== "",
-              ).length;
-              updatedScores[selectedMatch].playerKills = updatedScores[
-                selectedMatch
-              ].playerKills.slice(0, editablePlayers);
-              while (
-                updatedScores[selectedMatch].playerKills.length <
-                editablePlayers
-              ) {
-                updatedScores[selectedMatch].playerKills.push(0);
-              }
-              const docRef = imports.doc(
-                imports.db,
-                "tournamentEntries",
-                editingTeam.id,
-              );
+      {/* {editingTeam && ( */}
+      {/*   <imports.EditTeamModal */}
+      {/*     team={editingTeam} */}
+      {/*     playerKills={ */}
+      {/*       editingTeam.matchScores?.[selectedMatch]?.playerKills?.map( */}
+      {/*         String, */}
+      {/*       ) || */}
+      {/*       Array( */}
+      {/*         editingTeam.players.filter((p) => p.ign.trim() !== "").length, */}
+      {/*       ).fill("0") */}
+      {/*     } */}
+      {/*     setPlayerKills={(kills) => { */}
+      {/*       const updatedTeam = { ...editingTeam }; */}
+      {/*       if (!updatedTeam.matchScores) updatedTeam.matchScores = {}; */}
+      {/*       if (!updatedTeam.matchScores[selectedMatch]) */}
+      {/*         updatedTeam.matchScores[selectedMatch] = { */}
+      {/*           kills: 0, */}
+      {/*           placementPoints: 0, */}
+      {/*           playerKills: [], */}
+      {/*           playerParticipation: [], */}
+      {/*           playerKD: [], */}
+      {/*         }; */}
+      {/*       updatedTeam.matchScores[selectedMatch].playerKills = kills.map( */}
+      {/*         (k) => parseInt(k) || 0, */}
+      {/*       ); */}
+      {/*       setEditingTeam(updatedTeam); */}
+      {/*     }} */}
+      {/*     playerParticipation={ */}
+      {/*       editingTeam.matchScores?.[selectedMatch]?.playerParticipation || */}
+      {/*       Array( */}
+      {/*         editingTeam.players.filter((p) => p.ign.trim() !== "").length, */}
+      {/*       ).fill(true) */}
+      {/*     } */}
+      {/*     setPlayerParticipation={(participation) => { */}
+      {/*       const updatedTeam = { ...editingTeam }; */}
+      {/*       if (!updatedTeam.matchScores) updatedTeam.matchScores = {}; */}
+      {/*       if (!updatedTeam.matchScores[selectedMatch]) */}
+      {/*         updatedTeam.matchScores[selectedMatch] = { */}
+      {/*           kills: 0, */}
+      {/*           placementPoints: 0, */}
+      {/*           playerKills: [], */}
+      {/*           playerParticipation: [], */}
+      {/*           playerKD: [], */}
+      {/*         }; */}
+      {/*       updatedTeam.matchScores[selectedMatch].playerParticipation = */}
+      {/*         participation; */}
+      {/*       setEditingTeam(updatedTeam); */}
+      {/*     }} */}
+      {/*     placementInput={ */}
+      {/*       editingTeam.matchScores?.[selectedMatch]?.placementPoints */}
+      {/*         ? getPositionFromPoints( */}
+      {/*             editingTeam.matchScores[selectedMatch].placementPoints, */}
+      {/*           ).toString() */}
+      {/*         : "0" */}
+      {/*     } */}
+      {/*     setPlacementInput={(val) => { */}
+      {/*       const updatedTeam = { ...editingTeam }; */}
+      {/*       if (!updatedTeam.matchScores) updatedTeam.matchScores = {}; */}
+      {/*       if (!updatedTeam.matchScores[selectedMatch]) */}
+      {/*         updatedTeam.matchScores[selectedMatch] = { */}
+      {/*           kills: 0, */}
+      {/*           placementPoints: 0, */}
+      {/*           playerKills: [], */}
+      {/*           playerParticipation: [], */}
+      {/*           playerKD: [], */}
+      {/*         }; */}
+      {/*       const position = parseInt(val) || 0; */}
+      {/*       updatedTeam.matchScores[selectedMatch].placementPoints = */}
+      {/*         calculatePlacementPoints(position); */}
+      {/*       setEditingTeam(updatedTeam); */}
+      {/*     }} */}
+      {/*     player1Ign={editingPlayer1Ign} */}
+      {/*     setPlayer1Ign={setEditingPlayer1Ign} */}
+      {/*     player2Ign={editingPlayer2Ign} */}
+      {/*     setPlayer2Ign={setEditingPlayer2Ign} */}
+      {/*     // Pass the original teamName for the modal title, it won't be directly editable here */}
+      {/*     teamName={editingTeam.teamName} // Used for modal title, not for direct edit in modal now */}
+      {/*     kills={ */}
+      {/*       editingTeam.matchScores?.[selectedMatch]?.kills.toString() || "0" */}
+      {/*     } */}
+      {/*     setKills={(kills) => { */}
+      {/*       const updatedTeam = { ...editingTeam }; */}
+      {/*       if (!updatedTeam.matchScores) updatedTeam.matchScores = {}; */}
+      {/*       if (!updatedTeam.matchScores[selectedMatch]) */}
+      {/*         updatedTeam.matchScores[selectedMatch] = { */}
+      {/*           kills: 0, */}
+      {/*           placementPoints: 0, */}
+      {/*           playerKills: [], */}
+      {/*           playerParticipation: [], */}
+      {/*           playerKD: [], */}
+      {/*         }; */}
+      {/*       updatedTeam.matchScores[selectedMatch].kills = parseInt(kills) || 0; */}
+      {/*       setEditingTeam(updatedTeam); */}
+      {/*     }} */}
+      {/*     onClose={() => setEditingTeam(null)} */}
+      {/*     onSave={async () => { */}
+      {/*       if (editingTeam) { */}
+      {/*         const updatedScores = editingTeam.matchScores || {}; */}
+      {/*         if (!updatedScores[selectedMatch]) */}
+      {/*           updatedScores[selectedMatch] = { */}
+      {/*             kills: 0, */}
+      {/*             placementPoints: 0, */}
+      {/*             playerKills: [], */}
+      {/*             playerParticipation: [], */}
+      {/*             playerKD: [], */}
+      {/*           }; */}
+      {/*         updatedScores[selectedMatch].kills = */}
+      {/*           parseInt(updatedScores[selectedMatch].kills.toString()) || 0; */}
+      {/*         const totalPlayerKills = updatedScores[ */}
+      {/*           selectedMatch */}
+      {/*         ].playerKills.reduce((sum, k) => sum + (k || 0), 0); */}
+      {/*         const editablePlayers = editingTeam.players.filter( */}
+      {/*           (p) => p.ign.trim() !== "", */}
+      {/*         ).length; */}
+      {/*         updatedScores[selectedMatch].playerKills = updatedScores[ */}
+      {/*           selectedMatch */}
+      {/*         ].playerKills.slice(0, editablePlayers); */}
+      {/*         while ( */}
+      {/*           updatedScores[selectedMatch].playerKills.length < */}
+      {/*           editablePlayers */}
+      {/*         ) { */}
+      {/*           updatedScores[selectedMatch].playerKills.push(0); */}
+      {/*         } */}
+      {/*         const docRef = imports.doc( */}
+      {/*           imports.db, */}
+      {/*           "tournamentEntries", */}
+      {/*           editingTeam.id, */}
+      {/*         ); */}
 
-              // Construct the new team name from player IGNs
-              let newTeamName = editingPlayer1Ign.trim();
-              if (editingPlayer2Ign.trim()) {
-                newTeamName += `_${editingPlayer2Ign.trim()}`;
-              }
+      {/*         // Construct the new team name from player IGNs */}
+      {/*         let newTeamName = editingPlayer1Ign.trim(); */}
+      {/*         if (editingPlayer2Ign.trim()) { */}
+      {/*           newTeamName += `_${editingPlayer2Ign.trim()}`; */}
+      {/*         } */}
 
-              const updatedPlayersData = [...editingTeam.players];
-              if (updatedPlayersData[0]) {
-                updatedPlayersData[0] = {
-                  ...updatedPlayersData[0],
-                  ign: editingPlayer1Ign.trim(),
-                };
-              } else {
-                updatedPlayersData[0] = {
-                  ign: editingPlayer1Ign.trim(),
-                  kills: 0,
-                }; // Assuming new player starts with 0 kills
-              }
+      {/*         const updatedPlayersData = [...editingTeam.players]; */}
+      {/*         if (updatedPlayersData[0]) { */}
+      {/*           updatedPlayersData[0] = { */}
+      {/*             ...updatedPlayersData[0], */}
+      {/*             ign: editingPlayer1Ign.trim(), */}
+      {/*           }; */}
+      {/*         } else { */}
+      {/*           updatedPlayersData[0] = { */}
+      {/*             ign: editingPlayer1Ign.trim(), */}
+      {/*             kills: 0, */}
+      {/*           }; // Assuming new player starts with 0 kills */}
+      {/*         } */}
 
-              if (editingPlayer2Ign.trim()) {
-                if (updatedPlayersData[1]) {
-                  updatedPlayersData[1] = {
-                    ...updatedPlayersData[1],
-                    ign: editingPlayer2Ign.trim(),
-                  };
-                } else {
-                  updatedPlayersData[1] = {
-                    ign: editingPlayer2Ign.trim(),
-                    kills: 0,
-                  }; // Assuming new player starts with 0 kills
-                }
-              } else if (updatedPlayersData.length > 1) {
-                // If player 2 IGN is cleared, remove player 2 from the array
-                updatedPlayersData.splice(1, 1);
-              }
+      {/*         if (editingPlayer2Ign.trim()) { */}
+      {/*           if (updatedPlayersData[1]) { */}
+      {/*             updatedPlayersData[1] = { */}
+      {/*               ...updatedPlayersData[1], */}
+      {/*               ign: editingPlayer2Ign.trim(), */}
+      {/*             }; */}
+      {/*           } else { */}
+      {/*             updatedPlayersData[1] = { */}
+      {/*               ign: editingPlayer2Ign.trim(), */}
+      {/*               kills: 0, */}
+      {/*             }; // Assuming new player starts with 0 kills */}
+      {/*           } */}
+      {/*         } else if (updatedPlayersData.length > 1) { */}
+      {/*           // If player 2 IGN is cleared, remove player 2 from the array */}
+      {/*           updatedPlayersData.splice(1, 1); */}
+      {/*         } */}
 
-              // Ensure playerKills and playerParticipation in matchScores matches the new number of players
-              const finalPlayersCount = updatedPlayersData.filter(
-                (p) => p.ign.trim() !== "",
-              ).length;
-              const finalPlayerKills = (
-                updatedScores[selectedMatch]?.playerKills || []
-              ).slice(0, finalPlayersCount);
-              const finalPlayerParticipation = (
-                updatedScores[selectedMatch]?.playerParticipation || []
-              ).slice(0, finalPlayersCount);
+      {/*         // Ensure playerKills and playerParticipation in matchScores matches the new number of players */}
+      {/*         const finalPlayersCount = updatedPlayersData.filter( */}
+      {/*           (p) => p.ign.trim() !== "", */}
+      {/*         ).length; */}
+      {/*         const finalPlayerKills = ( */}
+      {/*           updatedScores[selectedMatch]?.playerKills || [] */}
+      {/*         ).slice(0, finalPlayersCount); */}
+      {/*         const finalPlayerParticipation = ( */}
+      {/*           updatedScores[selectedMatch]?.playerParticipation || [] */}
+      {/*         ).slice(0, finalPlayersCount); */}
 
-              while (finalPlayerKills.length < finalPlayersCount) {
-                finalPlayerKills.push(0);
-              }
-              while (finalPlayerParticipation.length < finalPlayersCount) {
-                finalPlayerParticipation.push(true); // Default to participated
-              }
+      {/*         while (finalPlayerKills.length < finalPlayersCount) { */}
+      {/*           finalPlayerKills.push(0); */}
+      {/*         } */}
+      {/*         while (finalPlayerParticipation.length < finalPlayersCount) { */}
+      {/*           finalPlayerParticipation.push(true); // Default to participated */}
+      {/*         } */}
 
-              if (updatedScores[selectedMatch]) {
-                updatedScores[selectedMatch].playerKills = finalPlayerKills;
-                updatedScores[selectedMatch].playerParticipation =
-                  finalPlayerParticipation;
-              }
+      {/*         if (updatedScores[selectedMatch]) { */}
+      {/*           updatedScores[selectedMatch].playerKills = finalPlayerKills; */}
+      {/*           updatedScores[selectedMatch].playerParticipation = */}
+      {/*             finalPlayerParticipation; */}
+      {/*         } */}
 
-              await imports.updateDoc(docRef, {
-                matchScores: updatedScores,
-                teamName: newTeamName, // Use the reconstructed team name
-                players: updatedPlayersData.filter((p) => p.ign.trim() !== ""), // Save updated players array
-              });
-              setEditingTeam(null);
-              resetTempEdits(); // Clear tempEdits after successful save
-            }
-          }}
-          allTeams={teams}
-        />
-      )}
+      {/*         await imports.updateDoc(docRef, { */}
+      {/*           matchScores: updatedScores, */}
+      {/*           teamName: newTeamName, // Use the reconstructed team name */}
+      {/*           players: updatedPlayersData.filter((p) => p.ign.trim() !== ""), // Save updated players array */}
+      {/*         }); */}
+      {/*         setEditingTeam(null); */}
+      {/*         resetTempEdits(); // Clear tempEdits after successful save */}
+      {/*       } */}
+      {/*     }} */}
+      {/*     allTeams={teams} */}
+      {/*   /> */}
+      {/* )} */}
 
       {/* Add Team Modal */}
-      {showAddTeamModal && (
-        <imports.AddTeamModal
-          onClose={() => setShowAddTeamModal(false)}
-          onSave={handleAddTeam}
-          isSaving={isSaving}
-        />
-      )}
+      {/* {showAddTeamModal && ( */}
+      {/*   <imports.AddTeamModal */}
+      {/*     onClose={() => setShowAddTeamModal(false)} */}
+      {/*     onSave={handleAddTeam} */}
+      {/*     isSaving={isSaving} */}
+      {/*   /> */}
+      {/* )} */}
 
       {/* Sequential Editing Modal */}
-      <imports.SequentialEditModal
-        showSequentialModal={showSequentialModal}
-        handleSequentialClose={() =>
-          handleSequentialClose(
-            hasUnsavedChanges(), // Uses the function from useSequentialEditing
-            resetTempEdits,
-            setPlacementErrors,
-            setTotalPlayersPlayed,
-            setTotalKillsError,
-            setShowSequentialModal,
-          )
-        }
-        sequentialMatch={sequentialMatch}
-        totalPlayersPlayed={totalPlayersPlayed}
-        setTotalPlayersPlayed={setTotalPlayersPlayed}
-        totalKillsError={totalKillsError}
-        sortedTeams={sortedTeams?.map(({ team }) => team)}
-        tempEdits={tempEdits}
-        placementErrors={placementErrors}
-        handleSetTempEdit={(teamId, field, value) =>
-          handleSetTempEdit(
-            teamId,
-            field,
-            value,
-            setTempEdit,
-            setPlacementErrors,
-            teams,
-            sequentialMatch,
-            tempEdits,
-          )
-        }
-        onSave={() =>
-          handleSequentialSave(
-            placementErrors,
-            totalPlayersPlayed,
-            teams,
-            tempEdits,
-            sequentialMatch,
-            saveEdits,
-            setShowSequentialModal,
-            setPlacementErrors,
-            setTotalPlayersPlayed,
-            setTotalKillsError,
-          )
-        }
-      />
+      {/* <imports.SequentialEditModal */}
+      {/*   showSequentialModal={showSequentialModal} */}
+      {/*   handleSequentialClose={() => */}
+      {/*     handleSequentialClose( */}
+      {/*       hasUnsavedChanges(), // Uses the function from useSequentialEditing */}
+      {/*       resetTempEdits, */}
+      {/*       setPlacementErrors, */}
+      {/*       setTotalPlayersPlayed, */}
+      {/*       setTotalKillsError, */}
+      {/*       setShowSequentialModal, */}
+      {/*     ) */}
+      {/*   } */}
+      {/*   sequentialMatch={sequentialMatch} */}
+      {/*   totalPlayersPlayed={totalPlayersPlayed} */}
+      {/*   setTotalPlayersPlayed={setTotalPlayersPlayed} */}
+      {/*   totalKillsError={totalKillsError} */}
+      {/*   sortedTeams={sortedTeams?.map(({ team }) => team)} */}
+      {/*   tempEdits={tempEdits} */}
+      {/*   placementErrors={placementErrors} */}
+      {/*   handleSetTempEdit={(teamId, field, value) => */}
+      {/*     handleSetTempEdit( */}
+      {/*       teamId, */}
+      {/*       field, */}
+      {/*       value, */}
+      {/*       setTempEdit, */}
+      {/*       setPlacementErrors, */}
+      {/*       teams, */}
+      {/*       sequentialMatch, */}
+      {/*       tempEdits, */}
+      {/*     ) */}
+      {/*   } */}
+      {/*   onSave={() => */}
+      {/*     handleSequentialSave( */}
+      {/*       placementErrors, */}
+      {/*       totalPlayersPlayed, */}
+      {/*       teams, */}
+      {/*       tempEdits, */}
+      {/*       sequentialMatch, */}
+      {/*       saveEdits, */}
+      {/*       setShowSequentialModal, */}
+      {/*       setPlacementErrors, */}
+      {/*       setTotalPlayersPlayed, */}
+      {/*       setTotalKillsError, */}
+      {/*     ) */}
+      {/*   } */}
+      {/* /> */}
 
       {/* Standings Modal */}
-      <imports.OverallStandingModal
-        visible={showStandingsModal}
-        onClose={() => setShowStandingsModal(false)}
-        teams={teams}
-        backgroundImage={selectedConfig?.backgroundImage || "/images/image.png"}
-        selectedMatch={selectedMatch} // Passing the actual selected match
-        tournamentTitle={selectedConfig?.title || "Tournament"}
-        maxMatchNumber={matchCount}
-        selectedSeason={selectedSeason}
-      />
+      {/* <imports.OverallStandingModal */}
+      {/*   visible={showStandingsModal} */}
+      {/*   onClose={() => setShowStandingsModal(false)} */}
+      {/*   teams={teams} */}
+      {/*   backgroundImage={selectedConfig?.backgroundImage || "/images/image.png"} */}
+      {/*   selectedMatch={selectedMatch} // Passing the actual selected match */}
+      {/*   tournamentTitle={selectedConfig?.title || "Tournament"} */}
+      {/*   maxMatchNumber={matchCount} */}
+      {/*   selectedSeason={selectedSeason} */}
+      {/* /> */}
     </>
   );
 }

@@ -15,6 +15,29 @@ datasource db {
  * ---------------------------
  */
 
+enum Category {
+  NOOB
+  PRO
+  ULTRA_NOOB
+  ULTRA_PRO
+}
+
+enum SeasonStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum GalleryStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum Vote {
+  IN
+  OUT
+  SOLO
+}
+
 enum Role {
   SUPER_ADMIN
   ADMIN
@@ -58,71 +81,7 @@ model User {
   player       Player?
   tournament   Tournament? @relation(fields: [tournamentId], references: [id])
   tournamentId String?
-  wallet       Wallet?
   createdBy    String?
-}
-
-model Player {
-  id                String             @id @default(uuid())
-  isBanned          Boolean            @default(false)
-  balance           Int                @default(0)
-  banReason         String?            @default("")
-  bannedAt          DateTime?
-  banDuration       Int                @default(0)
-  remainingDuration Int                @default(0)
-  isBanExpired      Boolean            @default(false)
-  category          PlayerCategory     @default(NOOB)
-  gameScore         GameScore[]
-  pollVote          Poll?              @relation(fields: [pollId], references: [id])
-  userId            String             @unique
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tournamentWinner  TournamentWinner[]
-  wallet            Wallet?
-  playerStats       PlayerStats?
-  team              Team?              @relation(fields: [teamId], references: [id])
-  teamId            String?
-
-  characterImageId String?          @unique
-  characterImage   Gallery?         @relation(fields: [characterImageId], references: [id], onDelete: Cascade)
-  createdAt        DateTime         @default(now())
-  pollId           String?
-  playerPollVote   PlayerPollVote[]
-  season           Season?          @relation(fields: [seasonId], references: [id])
-  seasonId         String?
-  playerPollVoteId String?
-}
-
-model GameScore {
-  highScore    Int
-  lastPlayedAt DateTime
-  playerId     String   @unique
-  player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-}
-
-enum SeasonStatus {
-  ACTIVE
-  INACTIVE
-}
-
-enum GalleryStatus {
-  ACTIVE
-  INACTIVE
-}
-
-model Gallery {
-  id             String        @id @default(uuid())
-  imageId        String        @unique
-  name           String
-  path           String
-  fullPath       String
-  publicUrl      String
-  status         GalleryStatus @default(ACTIVE)
-  isCharacterImg Boolean       @default(false)
-
-  playerId String? @unique
-  player   Player?
-
-  tournament Tournament[]
 }
 
 model Season {
@@ -159,16 +118,22 @@ model Tournament {
 
   tournamentWinner TournamentWinner[]
   pollVote         Poll[]
-  match            Match[]
+  matches          Match[]
 
   galleryId String?
   gallery   Gallery? @relation(fields: [galleryId], references: [id], onDelete: Cascade)
 }
 
-enum Vote {
-  IN
-  OUT
-  SOLO
+model Match {
+  id           String        @id @default(uuid())
+  name         String
+  tournamentId String
+  tournament   Tournament    @relation(fields: [tournamentId], references: [id])
+  teamStats    TeamStats[]
+  teams        Team[]
+  playerStats  PlayerStats[]
+  players      Player[]
+  createdAt    DateTime      @default(now())
 }
 
 model PollOption {
@@ -213,40 +178,41 @@ model Poll {
   @@unique([tournamentId])
 }
 
-model TournamentWinner {
-  id           String     @id @default(uuid())
-  playerId     String
-  player       Player     @relation(fields: [playerId], references: [id])
-  position     Int
-  tournamentId String
-  tournament   Tournament @relation(fields: [tournamentId], references: [id])
-  createdAt    DateTime   @default(now())
-}
+model Player {
+  id                String    @id @default(uuid())
+  isBanned          Boolean   @default(false)
+  balance           Int       @default(0)
+  banReason         String?   @default("")
+  bannedAt          DateTime?
+  banDuration       Int       @default(0)
+  remainingDuration Int       @default(0)
+  isBanExpired      Boolean   @default(false)
+  userId            String    @unique
+  teamId            String?
 
-model Match {
-  id           String     @id @default(uuid())
-  matchName    String
-  tournament   Tournament @relation(fields: [tournamentId], references: [id])
-  tournamentId String
+  characterImageId String?  @unique
+  createdAt        DateTime @default(now())
+  pollId           String?
+  season           Season?  @relation(fields: [seasonId], references: [id])
+  seasonId         String?
+  playerPollVoteId String?
 
-  createdAt DateTime @default(now())
-}
-
-model Wallet {
-  id        String   @id @default(uuid())
-  amount    Int
-  createdAt DateTime @default(now())
-  playerId  String?  @unique
-  player    Player?  @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pollVote         Poll?              @relation(fields: [pollId], references: [id])
+  team             Team?              @relation(fields: [teamId], references: [id])
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category         PlayerCategory     @default(NOOB)
+  gameScore        GameScore[]
+  characterImage   Gallery?           @relation(fields: [characterImageId], references: [id], onDelete: Cascade)
+  playerPollVote   PlayerPollVote[]
+  tournamentWinner TournamentWinner[]
+  playerStats      PlayerStats?
+  matchs           Match[]
 }
 
 model PlayerStats {
   id        String   @id @default(uuid())
   playerId  String   @unique
   player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  matches   Int      @default(0)
   wins      Int      @default(0)
   win2nd    Int      @default(0)
   deaths    Int
@@ -255,16 +221,9 @@ model PlayerStats {
   seasonId  String?
   season    Season?  @relation(fields: [seasonId], references: [id])
   createdAt DateTime @default(now())
+  matches   Match[]
 
   @@unique([playerId, seasonId])
-}
-
-// Category enum
-enum Category {
-  NOOB
-  PRO
-  ULTRA_NOOB
-  ULTRA_PRO
 }
 
 model Team {
@@ -278,4 +237,51 @@ model Team {
   tournament   Tournament? @relation(fields: [tournamentId], references: [id])
   seasonId     String?
   season       Season?     @relation(fields: [seasonId], references: [id])
+  matches      Match[]
+  teamStats    TeamStats[]
+}
+
+model TeamStats {
+  id       String @id @default(uuid())
+  matchId  String
+  match    Match  @relation(fields: [matchId], references: [id])
+  teamId   String
+  team     Team   @relation(fields: [teamId], references: [id])
+  kills    Int    @default(0)
+  deaths   Int    @default(0)
+  wins     Int    @default(0)
+  position Int    @default(0)
+}
+
+model Gallery {
+  id             String        @id @default(uuid())
+  imageId        String        @unique
+  name           String
+  path           String
+  fullPath       String
+  publicUrl      String
+  status         GalleryStatus @default(ACTIVE)
+  isCharacterImg Boolean       @default(false)
+
+  playerId String? @unique
+  player   Player?
+
+  tournament Tournament[]
+}
+
+model TournamentWinner {
+  id           String     @id @default(uuid())
+  playerId     String
+  player       Player     @relation(fields: [playerId], references: [id])
+  position     Int
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  createdAt    DateTime   @default(now())
+}
+
+model GameScore {
+  highScore    Int
+  lastPlayedAt DateTime
+  playerId     String   @unique
+  player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 }
