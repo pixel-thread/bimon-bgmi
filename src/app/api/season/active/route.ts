@@ -8,7 +8,7 @@ export async function GET(req: Request) {
     await superAdminMiddleware(req);
     const activeSeason = await getActiveSeason();
     if (!activeSeason) {
-      return ErrorResponse({ message: "No active season found" });
+      return ErrorResponse({ message: "No active season found", status: 404 });
     }
     return SuccessResponse({ data: activeSeason, message: "Success" });
   } catch (error) {

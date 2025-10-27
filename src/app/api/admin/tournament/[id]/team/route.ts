@@ -31,7 +31,12 @@ export async function POST(
         status: 404,
       });
     }
-
+    if (tournamentExist.seasonId === null) {
+      return ErrorResponse({
+        message: "season does not exist",
+        status: 404,
+      });
+    }
     const teams = await createTeamsByPolls({
       groupSize: teamSize as 1 | 2 | 3 | 4,
       tournamentId: id,

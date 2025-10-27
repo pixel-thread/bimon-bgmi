@@ -1,9 +1,9 @@
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { prisma } from "../src/lib/db/prisma/index";
+import { logger } from "@/src/utils/logger";
 
 const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
   {
-    id: "sing",
     isBanned: false,
     balance: 100,
     banReason: "",
@@ -13,7 +13,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
-        matches: 46,
         wins: 21,
         deaths: 46,
         kills: 117,
@@ -23,7 +22,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     },
   },
   {
-    id: "mining",
     isBanned: false,
     balance: 200,
     banReason: "",
@@ -33,7 +31,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
-        matches: 40,
         wins: 25,
         deaths: 40,
         kills: 74,
@@ -43,7 +40,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     },
   },
   {
-    id: "axe",
     isBanned: false,
     balance: 150,
     banReason: "",
@@ -53,7 +49,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
-        matches: 30,
         wins: 15,
         deaths: 30,
         kills: 56,
@@ -63,7 +58,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     },
   },
   {
-    id: "warrant",
     isBanned: false,
     balance: 120,
     banReason: "",
@@ -73,7 +67,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
-        matches: 24,
         wins: 12,
         deaths: 24,
         kills: 32,
@@ -83,7 +76,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     },
   },
   {
-    id: "ln-khasi",
     isBanned: false,
     balance: 300,
     banReason: "",
@@ -93,7 +85,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
-        matches: 18,
         wins: 9,
         deaths: 18,
         kills: 24,
@@ -103,7 +94,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     },
   },
   {
-    id: "ros",
     isBanned: false,
     balance: 85,
     banReason: "",
@@ -113,7 +103,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
-        matches: 36,
         wins: 18,
         deaths: 36,
         kills: 46,
@@ -123,7 +112,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     },
   },
   {
-    id: "lizo",
     isBanned: false,
     balance: 90,
     banReason: "",
@@ -133,7 +121,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
-        matches: 4,
         wins: 2,
         deaths: 4,
         kills: 4,
@@ -143,7 +130,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     },
   },
   {
-    id: "roney",
     isBanned: false,
     balance: 110,
     banReason: "",
@@ -153,7 +139,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
-        matches: 40,
         wins: 20,
         deaths: 40,
         kills: 33,
@@ -163,7 +148,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     },
   },
   {
-    id: "nangiai",
     isBanned: false,
     balance: 130,
     banReason: "",
@@ -173,7 +157,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
-        matches: 46,
         wins: 23,
         deaths: 46,
         kills: 25,
@@ -183,7 +166,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     },
   },
   {
-    id: "gojo",
     isBanned: false,
     balance: 140,
     banReason: "",
@@ -193,7 +175,6 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
-        matches: 36,
         wins: 18,
         deaths: 36,
         kills: 15,
@@ -205,14 +186,32 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
 ];
 
 const users = Array.from({ length: players.length }).map((_, i) => ({
-  email: `bob${i}@example.com`,
-  clerkId: `clerk-bob-${i}`,
+  email: `test${i}@example.com`,
+  clerkId: `clerk-test-${i}`,
   userName: Math.random().toString(36).slice(2),
   role: "PLAYER" as const,
 }));
 
 async function main() {
   console.log("Seeding data...");
+  const season = await prisma.season.create({
+    data: {
+      description: "This is the 2023 season",
+      createdBy: "SEED",
+      name: "2023 Season",
+      startDate: new Date(2023, 0, 1),
+    },
+  });
+
+  await prisma.tournament.create({
+    data: {
+      name: "2023 Tournament",
+      startDate: new Date(2023, 0, 1),
+      season: { connect: { id: season.id } },
+    },
+  });
+
+  console.log("Created season and tournament");
 
   for (let i = 0; i < users.length; i++) {
     const userData = users[i];
@@ -226,15 +225,9 @@ async function main() {
         role: userData.role,
         isEmailLinked: true,
         isVerified: true,
-        player: {
-          create: playerData,
-        },
+        player: { create: playerData },
       },
-      include: {
-        player: {
-          include: { playerStats: true },
-        },
-      },
+      include: { player: { include: { playerStats: true } } },
     });
 
     console.log("Created user with player and stats:", {

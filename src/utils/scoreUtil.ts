@@ -1,4 +1,4 @@
-import { PlayerT, PlayerWithStatsT } from "../types/player";
+import { PlayerT } from "../types/player";
 
 /**
  * Computes a weighted score for a player based on KD, kills, and wins.

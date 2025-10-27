@@ -25,12 +25,12 @@ export async function tokenMiddleware(req: NextRequest | Request) {
   let user = await getUserByClerkId({ id: claims.sub });
 
   if (!user) {
-    // if (process.env.NODE_ENV === "development") {
-    //   await createUserIfNotExistInDB({
-    //     clerkId: claims.sub,
-    //     username: "dev",
-    //   });
-    // }
+    if (process.env.NODE_ENV === "development") {
+      await createUserIfNotExistInDB({
+        clerkId: claims.sub,
+        username: "dev",
+      });
+    }
     // If the user is not found, revoke this session at Clerk
     if (claims.sid) {
       await clientClerk.sessions.revokeSession(claims.sid);

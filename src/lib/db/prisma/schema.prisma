@@ -98,6 +98,8 @@ model Season {
   playerStats PlayerStats[]
   tournament  Tournament[]
   teams       Team[]
+  matches     Match[]
+  teamStats   TeamStats[]
 
   @@unique([id, status]) // only one active season
   @@index([id])
@@ -117,6 +119,7 @@ model Tournament {
   createdAt DateTime @default(now())
 
   tournamentWinner TournamentWinner[]
+  teamStats        TeamStats[]
   pollVote         Poll[]
   matches          Match[]
 
@@ -126,9 +129,11 @@ model Tournament {
 
 model Match {
   id           String        @id @default(uuid())
-  name         String
+  name         Int           @default(autoincrement())
   tournamentId String
   tournament   Tournament    @relation(fields: [tournamentId], references: [id])
+  seasonId     String?
+  season       Season?       @relation(fields: [seasonId], references: [id])
   teamStats    TeamStats[]
   teams        Team[]
   playerStats  PlayerStats[]
@@ -207,50 +212,64 @@ model Player {
   tournamentWinner TournamentWinner[]
   playerStats      PlayerStats?
   matchs           Match[]
+  teamStats        TeamStats[]
 }
 
 model PlayerStats {
-  id        String   @id @default(uuid())
-  playerId  String   @unique
-  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  wins      Int      @default(0)
-  win2nd    Int      @default(0)
-  deaths    Int
-  kills     Int
-  kd        Float
-  seasonId  String?
-  season    Season?  @relation(fields: [seasonId], references: [id])
-  createdAt DateTime @default(now())
-  matches   Match[]
+  id          String     @id @default(uuid())
+  playerId    String     @unique
+  player      Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  wins        Int        @default(0)
+  win2nd      Int        @default(0)
+  deaths      Int
+  kills       Int
+  kd          Float?
+  seasonId    String?
+  season      Season?    @relation(fields: [seasonId], references: [id])
+  createdAt   DateTime   @default(now())
+  teamStatsId String?
+  teamStats   TeamStats? @relation(fields: [teamStatsId], references: [id])
+  teams       Team[]
+  matches     Match[]
 
   @@unique([playerId, seasonId])
 }
 
 model Team {
-  id           String      @id @default(uuid())
+  id           String        @id @default(uuid())
   name         String
   players      Player[]
-  position     Int         @default(0)
-  createdAt    DateTime    @default(now())
+  position     Int           @default(0)
+  createdAt    DateTime      @default(now())
   teamNumber   Int
   tournamentId String?
-  tournament   Tournament? @relation(fields: [tournamentId], references: [id])
+  tournament   Tournament?   @relation(fields: [tournamentId], references: [id])
   seasonId     String?
-  season       Season?     @relation(fields: [seasonId], references: [id])
+  season       Season?       @relation(fields: [seasonId], references: [id])
   matches      Match[]
   teamStats    TeamStats[]
+  playerStats  PlayerStats[]
 }
 
 model TeamStats {
-  id       String @id @default(uuid())
-  matchId  String
-  match    Match  @relation(fields: [matchId], references: [id])
-  teamId   String
-  team     Team   @relation(fields: [teamId], references: [id])
-  kills    Int    @default(0)
-  deaths   Int    @default(0)
-  wins     Int    @default(0)
-  position Int    @default(0)
+  id           String        @id @default(uuid())
+  matchId      String
+  match        Match         @relation(fields: [matchId], references: [id])
+  seasonId     String?
+  tournamentId String?
+  tournament   Tournament?   @relation(fields: [tournamentId], references: [id])
+  season       Season?       @relation(fields: [seasonId], references: [id])
+  teamId       String        @unique
+  team         Team          @relation(fields: [teamId], references: [id])
+  kills        Int           @default(0)
+  deaths       Int           @default(0)
+  wins         Int           @default(0)
+  position     Int           @default(0)
+  createdAt    DateTime      @default(now())
+  playersStats PlayerStats[]
+  players      Player[]
+
+  @@unique([teamId, matchId])
 }
 
 model Gallery {

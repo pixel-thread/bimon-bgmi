@@ -10,7 +10,7 @@ import { PlayerT, PlayerWithWeightT } from "@/src/types/player";
 type Props = {
   groupSize: 1 | 2 | 3 | 4;
   tournamentId: string;
-  seasonId: string | null;
+  seasonId: string;
   pollId: string;
 };
 
@@ -23,25 +23,37 @@ export async function createTeamsByPolls({
   if (![1, 2, 3, 4].includes(groupSize)) {
     throw new Error("Invalid group size");
   }
-
+  let players = [];
   // Fetch players who voted and are not banned
-  const players = await prisma.player.findMany({
-    where: {
-      isBanned: false,
-      playerPollVote: {
-        some: {
-          pollId: pollId,
-          vote: { not: "OUT" },
+  // Development does not need to vote
+  if (process.env.NODE_ENV !== "development") {
+    players = await prisma.player.findMany({
+      where: {
+        isBanned: false,
+        playerPollVote: {
+          some: {
+            pollId: pollId,
+            vote: { not: "OUT" },
+          },
         },
       },
-    },
-    include: {
-      playerStats: true,
-      playerPollVote: true,
-      user: true,
-      characterImage: true,
-    },
-  });
+      include: {
+        playerStats: true,
+        playerPollVote: true,
+        user: true,
+        characterImage: true,
+      },
+    });
+  } else {
+    players = await prisma.player.findMany({
+      include: {
+        playerStats: true,
+        playerPollVote: true,
+        user: true,
+        characterImage: true,
+      },
+    });
+  }
 
   if (players.length === 0) {
     throw new Error("No eligible players found for this poll.");
@@ -130,6 +142,12 @@ export async function createTeamsByPolls({
 
   // Persist teams and update players using a transaction for atomicity
   const createdTeams = await prisma.$transaction(async (tx) => {
+    const match = await tx.match.create({
+      data: {
+        tournamentId,
+        seasonId,
+      },
+    });
     const result = [];
     for (let i = 0; i < teams.length; i++) {
       const t = teams[i];
@@ -140,8 +158,18 @@ export async function createTeamsByPolls({
           players: { connect: t.players.map((p) => ({ id: p.id })) },
           tournamentId,
           seasonId,
+          matches: { connect: { id: match.id } },
         },
         include: { players: { include: { playerStats: true } } },
+      });
+
+      await tx.teamStats.create({
+        data: {
+          team: { connect: { id: team.id } },
+          match: { connect: { id: match.id } },
+          season: { connect: { id: seasonId } },
+          tournament: { connect: { id: tournamentId } },
+        },
       });
 
       await tx.player.updateMany({

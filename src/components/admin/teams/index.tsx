@@ -27,7 +27,7 @@ export const AdminTeamsManagement: React.FC = () => {
       condition={isFetching}
       trueComponent={
         <div className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 gap-4">
-          <LoaderFive text="Loading polls..." />
+          <LoaderFive text="Loading teams..." />
         </div>
       }
       falseComponent={

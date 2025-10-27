@@ -13,7 +13,6 @@ import { useGetSeasons } from "../hooks/season/useGetSeasons";
 import { useSeasonStore } from "../store/season";
 import { Ternary } from "./common/Ternary";
 import { SelectGroup } from "@radix-ui/react-select";
-import { useTournamentStore } from "../store/tournament";
 
 interface SeasonSelectorProps {
   className?: string;
@@ -32,7 +31,6 @@ export function SeasonSelector({
 }: SeasonSelectorProps) {
   const { setSeasonId: onSeasonChange, seasonId: selectedSeason } =
     useSeasonStore();
-  const { setTournamentId } = useTournamentStore();
   const { isFetching, data, isLoading } = useGetSeasons();
 
   // Size configurations
@@ -47,12 +45,6 @@ export function SeasonSelector({
     rounded-lg w-fit min-w-[100px] 
     ${className}
   `.trim();
-
-  useEffect(() => {
-    if (selectedSeason !== "all") {
-      setTournamentId("");
-    }
-  }, [selectedSeason]);
 
   return (
     <Select
