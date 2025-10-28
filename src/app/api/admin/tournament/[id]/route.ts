@@ -6,6 +6,19 @@ import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddlewar
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { tournamentSchema } from "@/src/utils/validation/tournament";
 
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    await superAdminMiddleware(req);
+    const id = (await params).id;
+    const tournament = await getTournamentById({ id });
+    return SuccessResponse({ data: tournament });
+  } catch (error) {
+    return handleApiErrors(error);
+  }
+}
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> },

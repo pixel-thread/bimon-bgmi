@@ -160,7 +160,7 @@ export async function createTeamsByPolls({
           seasonId,
           matches: { connect: { id: match.id } },
         },
-        include: { players: { include: { playerStats: true } } },
+        include: { players: true },
       });
 
       await tx.teamStats.create({
@@ -169,6 +169,13 @@ export async function createTeamsByPolls({
           match: { connect: { id: match.id } },
           season: { connect: { id: seasonId } },
           tournament: { connect: { id: tournamentId } },
+          teamPlayerStats: {
+            create: t.players.map((p) => ({
+              matchId: match.id,
+              teamId: team.id,
+              playerId: p.id,
+            })),
+          },
         },
       });
 

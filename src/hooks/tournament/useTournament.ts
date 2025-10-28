@@ -14,7 +14,8 @@ export function useTournament({ id }: Props = { id: "" }) {
   const { tournamentId } = useTournamentStore();
   return useQuery({
     queryKey: ["tournament", tournamentId],
-    queryFn: () => http.get<TournamentT>(`/tournament/season/${tournamentId}`),
+    queryFn: () =>
+      http.get<TournamentT[]>(`/tournament/season/${tournamentId}`),
     enabled: !!id,
     select: (data) => data.data,
   });

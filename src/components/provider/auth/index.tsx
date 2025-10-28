@@ -59,6 +59,7 @@ export const AuthProvider = ({ children }: Props) => {
         isSignedIn: isSignedIn || false,
         refreshAuth: () => mutate(),
         logout: () => onLogout(),
+        isSuperAdmin: user?.role === "SUPER_ADMIN",
       }}
     >
       {children}

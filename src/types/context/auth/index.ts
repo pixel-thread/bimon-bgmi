@@ -8,6 +8,7 @@ export interface AuthContextI {
   user: UserT;
   isAuthLoading: boolean;
   isSignedIn: boolean;
+  isSuperAdmin: boolean;
   logout: () => Promise<void>;
   refreshAuth: () => void;
 }

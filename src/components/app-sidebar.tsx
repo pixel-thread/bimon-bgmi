@@ -46,6 +46,11 @@ const data = {
       icon: LayoutDashboardIcon,
     },
     {
+      title: "Stats",
+      url: "/admin/stats",
+      icon: LayoutDashboardIcon,
+    },
+    {
       title: "Admins",
       url: "/admin/admins",
       icon: ListIcon,

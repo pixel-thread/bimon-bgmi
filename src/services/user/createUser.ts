@@ -1,6 +1,7 @@
 import { clientClerk } from "@/src/lib/clerk/client";
 import { prisma } from "@/src/lib/db/prisma";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
+import { getActiveSeason } from "../season/getActiveSeason";
 
 type Props = {
   data: Omit<Prisma.UserCreateInput, "clerkId"> & {
@@ -52,6 +53,8 @@ export async function createUser({ data }: Props) {
     emailAddress: [data.email],
   });
 
+  const activeSeason = await getActiveSeason();
+
   return await prisma.user.create({
     data: {
       userName: data.userName,
@@ -66,6 +69,7 @@ export async function createUser({ data }: Props) {
             create: {
               wins: 0,
               kills: 0,
+              seasonId: activeSeason?.id,
               kd: 0,
               deaths: 0,
             },
@@ -73,6 +77,5 @@ export async function createUser({ data }: Props) {
         },
       },
     },
-    include: { player: true },
   });
 }

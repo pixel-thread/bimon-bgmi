@@ -9,7 +9,8 @@ type TeamEndpointsT =
   | "POST_REMOVE_PLAYER_FROM_TEAM"
   | "POST_DELETE_TEAMS_BY_TOURNAMENT_ID"
   | "POST_ADD_TEAM_STATS"
-  | "PUT_UPDATE_TEAM_STATS";
+  | "PUT_UPDATE_TEAM_STATS"
+  | "GET_TEAM_STATS";
 
 export const ADMIN_TEAM_ENDPOINTS: EndpointT<TeamEndpointsT> = {
   POST_CREATE_TEAM_BY_POLL: "/admin/team/create-poll-teams?size=:size",
@@ -21,4 +22,5 @@ export const ADMIN_TEAM_ENDPOINTS: EndpointT<TeamEndpointsT> = {
   DELETE_TEAM_BY_ID: "/admin/team/:teamId",
   POST_ADD_TEAM_STATS: "/admin/team/:teamId/stats",
   PUT_UPDATE_TEAM_STATS: "/admin/team/:teamId/stats",
+  GET_TEAM_STATS: "/admin/team/:teamId/stats",
 };

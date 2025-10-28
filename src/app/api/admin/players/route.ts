@@ -6,7 +6,10 @@ import { SuccessResponse } from "@/src/utils/next-response";
 export async function GET(req: Request) {
   try {
     await tokenMiddleware(req);
-    const players = await getAllPlayers();
+    const players = await getAllPlayers({
+      where: {},
+      include: { user: true, playerStats: true },
+    });
     return SuccessResponse({
       data: players,
       message: "Players fetched successfully",

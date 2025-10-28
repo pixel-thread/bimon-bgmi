@@ -5,11 +5,12 @@
 POST http://localhost:3000/api/auth/signup HTTP/1.1
 Accept: application/json
 Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
 
 {
-  "email": "test@gmail.com",
+  "email": "tests1s@gmail.com",
   "password": "123Clashofclan@",
-  "userName": "noob2"
+  "userName": "testsuser"
 }
 
 

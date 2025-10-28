@@ -22,6 +22,15 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/src/components/ui/select";
 import { Input } from "@/src/components/ui/input";
 import {
   Table,
@@ -35,9 +44,14 @@ import {
 type DataTableProps<T> = {
   data: T[] | any;
   columns: ColumnDef<T>[] | any;
+  filter?: DataTableFilterOptions[];
 };
 
-export function DataTable<T>({ data, columns }: DataTableProps<T>) {
+export function DataTable<T>({
+  data,
+  columns,
+  filter = [],
+}: DataTableProps<T>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
@@ -45,6 +59,7 @@ export function DataTable<T>({ data, columns }: DataTableProps<T>) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+
   const table = useReactTable({
     data: data || [],
     columns,
@@ -65,41 +80,13 @@ export function DataTable<T>({ data, columns }: DataTableProps<T>) {
   });
   return (
     <div className="w-full">
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter emails..."
-          onChange={(event) =>
-            table.getColumn("email")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <DataTableHeader<T>
+        enableFilter={true}
+        filterColumnId="category"
+        filterType="select"
+        selectOptions={filter || []}
+        table={table}
+      />
       <div className="overflow-hidden rounded-md border">
         <Table>
           <TableHeader>
@@ -174,6 +161,94 @@ export function DataTable<T>({ data, columns }: DataTableProps<T>) {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+export type DataTableFilterOptions = {
+  id: string;
+  option: { label: string; value: string }[];
+};
+
+type DataTableHeaderProps = {
+  table: any;
+  filterColumnId?: string;
+  enableFilter?: boolean;
+  filterType?: "input" | "select";
+  selectOptions?: DataTableFilterOptions[];
+};
+
+function DataTableHeader<T>({
+  table,
+  filterColumnId = "email",
+  enableFilter = false,
+  filterType = "input",
+  selectOptions = [],
+}: DataTableHeaderProps) {
+  // Shared handler
+  const setFilterValue = (value: string, columnId: string) => {
+    if (value === "all") {
+      table.getColumn(columnId)?.setFilterValue("");
+    } else {
+      table.getColumn(columnId)?.setFilterValue(value);
+    }
+  };
+
+  return (
+    <div className="flex items-center py-4 space-x-4">
+      {enableFilter && filterType === "input" && (
+        <Input
+          placeholder={`Filter ${filterColumnId}...`}
+          onChange={(e) => setFilterValue(e.target.value, filterColumnId)}
+          className="max-w-sm"
+        />
+      )}
+
+      {selectOptions.length > 0 &&
+        selectOptions.map((sel) => (
+          <Select
+            key={sel.id}
+            onValueChange={(value) => setFilterValue(value, sel.id)}
+          >
+            <SelectTrigger className="min-w-[100px]">
+              <SelectValue placeholder={`Select ${sel.id}`} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>{sel.id.toUpperCase()}</SelectLabel>
+                <SelectItem value="all">All</SelectItem>
+                {sel.option.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        ))}
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="ml-auto">
+            Columns <ChevronDown />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {table
+            .getAllColumns()
+            .filter((column) => column.getCanHide())
+            .map((column) => (
+              <DropdownMenuCheckboxItem
+                key={column.id}
+                className="capitalize"
+                checked={column.getIsVisible()}
+                onCheckedChange={(value) => column.toggleVisibility(!!value)}
+              >
+                {column.id}
+              </DropdownMenuCheckboxItem>
+            ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

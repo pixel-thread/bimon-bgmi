@@ -51,6 +51,9 @@ const col: ColumnDef<PollT>[] = [
   },
   {
     header: "View Votes",
+    cell: ({ row }) => (
+      <Link href={`/admin/polls?view=${row.original.id}`}>View</Link>
+    ),
   },
 ];
 
@@ -149,19 +152,6 @@ export const usePollColumns = () => {
             </Button>
           ))}
         </ButtonGroup>
-      ),
-    },
-    {
-      header: "Remove",
-      cell: ({ row }) => (
-        <Button
-          onClick={() => deletePoll({ id: row.original.id })}
-          disabled={isDeleting}
-          variant={"destructive"}
-          size={"icon-sm"}
-        >
-          <TrashIcon />
-        </Button>
       ),
     },
     {

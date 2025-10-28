@@ -6,18 +6,33 @@ import { TeamT } from "@/src/types/team";
 import http from "@/src/utils/http";
 import { ADMIN_TEAM_ENDPOINTS } from "@/src/lib/endpoints/admin/team";
 import { toast } from "sonner";
-import { TrashIcon } from "lucide-react";
+import { MoreVertical, TrashIcon } from "lucide-react";
 import { useTournamentStore } from "@/src/store/tournament";
+import { useMatchStore } from "@/src/store/match/useMatchStore";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/src/components/ui/dropdown-menu";
 
 const col: ColumnDef<TeamT>[] = [
   {
     accessorKey: "name",
     header: "Team Name",
     cell: ({ row }) => (
-      <>
+      <Link href={`/admin/teams?teamStats=${row.original.id}`}>
         {row.original.players.map((player) => player.user.userName).join("_") ||
           row.original.name}
-      </>
+      </Link>
     ),
   },
   {
@@ -32,22 +47,52 @@ const col: ColumnDef<TeamT>[] = [
       </>
     ),
   },
-  {
-    header: "Action",
-    cell: ({ row }) => (
-      <Link
-        className={buttonVariants({ size: "sm", variant: "default" })}
-        href={`/admin/teams?update=${row.original.id}`}
-      >
-        Update
-      </Link>
-    ),
-  },
 ];
 
 export const useTeamsColumns = () => {
+  const { matchId } = useMatchStore();
+  const columns: ColumnDef<TeamT>[] = [
+    ...col,
+    {
+      header: "Kills",
+      cell: ({ row }) => (
+        <>
+          {matchId
+            ? row.original.teamStats
+                .filter((stat) => stat.matchId === matchId)
+                .reduce((acc, curr) => acc + curr.kills, 0)
+            : row.original.teamStats.reduce((acc, curr) => acc + curr.kills, 0)}
+        </>
+      ),
+    },
+    {
+      header: "Deaths",
+      cell: ({ row }) => (
+        <>
+          {matchId
+            ? row.original.teamStats
+                .filter((stat) => stat.matchId === matchId)
+                .reduce((acc, curr) => acc + curr.deaths, 0)
+            : row.original.teamStats.reduce(
+                (acc, curr) => acc + curr.deaths,
+                0,
+              )}
+        </>
+      ),
+    },
+    {
+      header: "Action",
+      cell: ({ row }) => <ActionDropdown id={row.original.id} />,
+    },
+  ];
+
+  return { columns };
+};
+
+const ActionDropdown = ({ id }: { id: string }) => {
   const { tournamentId } = useTournamentStore();
   const queryClient = useQueryClient();
+
   const { mutate: deleteTeam, isPending: isDeletingTeam } = useMutation({
     mutationFn: (id: string) =>
       http.delete(
@@ -63,23 +108,31 @@ export const useTeamsColumns = () => {
       return data;
     },
   });
-  const columns: ColumnDef<TeamT>[] = [
-    ...col,
 
-    {
-      header: "Delete",
-      cell: ({ row }) => (
-        <Button
-          disabled={isDeletingTeam}
-          size={"icon-sm"}
-          variant={"destructive"}
-          onClick={() => deleteTeam(row.original.id)}
-        >
-          <TrashIcon />
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size={"icon-sm"} variant="ghost">
+          <MoreVertical />
         </Button>
-      ),
-    },
-  ];
-
-  return { columns };
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56" align="start">
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuItem asChild>
+            <Link href={`/admin/teams?teamStats=${id}`}>Team Stats</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={`/admin/teams?update=${id}`}>Update Team</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={isDeletingTeam || !tournamentId || !id}
+            onClick={() => deleteTeam(id)}
+          >
+            Delete Team
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 };

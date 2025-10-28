@@ -7,6 +7,35 @@ import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddlewar
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
 
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    await superAdminMiddleware(req);
+
+    const id = (await params).id;
+
+    const tournament = await getTournamentById({ id });
+
+    if (!tournament) {
+      return ErrorResponse({ message: "Tournament not found" });
+    }
+
+    const teams = await getTeamByTournamentId({
+      tournamentId: id,
+      include: { teamStats: true, players: { include: { user: true } } },
+    });
+
+    return SuccessResponse({
+      data: teams,
+      message: "Teams fetched successfully",
+    });
+  } catch (error) {
+    return handleApiErrors(error);
+  }
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },

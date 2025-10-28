@@ -1,6 +1,5 @@
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { prisma } from "../src/lib/db/prisma/index";
-import { logger } from "@/src/utils/logger";
 
 const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
   {

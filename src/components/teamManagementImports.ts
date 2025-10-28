@@ -39,7 +39,6 @@ import { db } from "@/src/lib/firebase";
 // Custom Hooks
 import { useTeams } from "@/src/hooks/useTeams";
 import { useSequentialEditing } from "@/src/hooks/useSequentialEditing";
-import { useTournaments } from "@/src/hooks/useTournaments";
 
 // Types
 import { CombinedTeamData, MatchScore, Player } from "@/src/lib/types";
@@ -104,7 +103,6 @@ export {
   TournamentSettings,
   exportToCSV,
   calculatePlacementPoints,
-  useTournaments,
   Button,
   MatchDropdown,
   toast,
@@ -115,4 +113,3 @@ export {
   DialogDescription,
   DialogFooter,
 };
-

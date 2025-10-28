@@ -18,16 +18,25 @@ export async function updateTeamStats({
   data,
 }: Props) {
   // Aggregate team stats from all players
-  const teamKills = data.players.reduce((acc, player) => acc + player.kills, 0);
-  const teamDeaths = data.players.reduce(
-    (acc, player) => acc + player.deaths,
-    0,
-  );
+  const teamKills = data.players?.reduce((acc, player) => {
+    if (player.kills) return acc + player.kills;
+    return acc + 0;
+  }, 0);
+
+  const teamDeaths = data.players.reduce((acc, player) => {
+    if (player.deaths) return acc + player?.deaths;
+    return acc + 0;
+  }, 0);
 
   return await prisma.$transaction(async (tx) => {
     // Upsert TeamStats for this team in this match
     await tx.teamStats.upsert({
-      where: { teamId }, // If matchId + teamId unique, change to composite unique
+      where: {
+        teamId,
+        matchId,
+        tournamentId,
+        teamId_matchId: { teamId, matchId },
+      },
       create: {
         teamId,
         matchId,
@@ -37,6 +46,7 @@ export async function updateTeamStats({
       update: {
         kills: { increment: teamKills },
         deaths: { increment: teamDeaths },
+        position: data.position,
       },
     });
 
@@ -50,6 +60,23 @@ export async function updateTeamStats({
             deaths: { increment: player.deaths },
             wins: player.wins ?? undefined,
             win2nd: player.wind2nd ?? undefined,
+          },
+        }),
+      ),
+    );
+    await Promise.all(
+      data.players.map((player) =>
+        tx.teamPlayerStats.update({
+          where: {
+            playerId_teamId_matchId: {
+              playerId: player.playerId,
+              teamId,
+              matchId,
+            },
+          },
+          data: {
+            kills: { increment: player.kills },
+            deaths: { increment: player.deaths },
           },
         }),
       ),

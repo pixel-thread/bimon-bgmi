@@ -11,6 +11,8 @@ import { Button } from "../../ui/button";
 import { CreateTeamDialog } from "./create-team";
 import React from "react";
 import { useTournamentStore } from "@/src/store/tournament";
+import MatchSelector from "../../match/MatchSelector";
+import { TeamStatsSheet } from "./TeamStatsSheet";
 
 export const AdminTeamsManagement: React.FC = () => {
   const { tournamentId } = useTournamentStore();
@@ -19,9 +21,11 @@ export const AdminTeamsManagement: React.FC = () => {
   const search = useSearchParams();
   const router = useRouter();
   const updateId = search.get("update") || "";
+  const teamStatId = search.get("teamStats") || "";
   const { data: teams, isFetching } = useTeams();
 
   const onCloseUpdateDialog = () => router.back();
+
   return (
     <Ternary
       condition={isFetching}
@@ -43,6 +47,7 @@ export const AdminTeamsManagement: React.FC = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+              <MatchSelector />
               <Button
                 onClick={() => setOpen(true)}
                 disabled={isFetching || !tournamentId}
@@ -59,6 +64,7 @@ export const AdminTeamsManagement: React.FC = () => {
             onOpenChange={() => onCloseUpdateDialog()}
             open={!!updateId}
           />
+          <TeamStatsSheet open={teamStatId} />
         </div>
       }
     />

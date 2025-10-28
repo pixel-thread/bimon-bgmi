@@ -3,6 +3,7 @@
 @matchId = 43dfb5af-72e8-4e90-a04a-96662caa4e24
 @playerId = 64d7fce6-fe72-4814-9619-884b1a3c23c2
 @pollId = 243162cd-7550-4b33-8fce-03cef328c30b
+@seasonId = 27c60b71-a6d8-4607-8be6-a322675a6464
 @teamId = 4e2271d4-2036-4563-be98-ec6f620b00ca
 @tournamentId = 839bfb74-1b74-4eea-852b-54189003cf18
 
@@ -100,4 +101,39 @@ Authorization: Bearer {{TOKEN}}
       "playerId": "adbe604e-3825-4a5a-92e1-6015a3db3c45"
     }
   ]
+}
+
+
+### 
+
+# @name GET all match
+
+GET http://localhost:3000/api/admin/match HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### 
+
+# @name GET all tournament matches
+
+GET http://localhost:3000/api/admin/tournament/{{tournamentId}}/match HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### 
+
+# @name create match for tournament
+
+POST http://localhost:3000/api/admin/match HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "seasonId": "{{seasonId}}",
+  "tournamentId": "{{tournamentId}}"
 }

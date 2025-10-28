@@ -47,7 +47,7 @@ export async function DELETE(
       });
     }
 
-    const deletedTeam = deleteTeamById({ id });
+    const deletedTeam = await deleteTeamById({ id });
 
     return SuccessResponse({
       data: deletedTeam,

@@ -128,17 +128,18 @@ model Tournament {
 }
 
 model Match {
-  id           String        @id @default(uuid())
-  name         Int           @default(autoincrement())
-  tournamentId String
-  tournament   Tournament    @relation(fields: [tournamentId], references: [id])
-  seasonId     String?
-  season       Season?       @relation(fields: [seasonId], references: [id])
-  teamStats    TeamStats[]
-  teams        Team[]
-  playerStats  PlayerStats[]
-  players      Player[]
-  createdAt    DateTime      @default(now())
+  id              String            @id @default(uuid())
+  name            Int               @default(autoincrement())
+  tournamentId    String
+  tournament      Tournament        @relation(fields: [tournamentId], references: [id])
+  seasonId        String?
+  season          Season?           @relation(fields: [seasonId], references: [id])
+  teamStats       TeamStats[]
+  teams           Team[]
+  playerStats     PlayerStats[]
+  players         Player[]
+  createdAt       DateTime          @default(now())
+  teamPlayerStats TeamPlayerStats[]
 }
 
 model PollOption {
@@ -213,63 +214,87 @@ model Player {
   playerStats      PlayerStats?
   matchs           Match[]
   teamStats        TeamStats[]
+  teamPlayerStats  TeamPlayerStats[]
 }
 
 model PlayerStats {
-  id          String     @id @default(uuid())
-  playerId    String     @unique
-  player      Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  wins        Int        @default(0)
-  win2nd      Int        @default(0)
-  deaths      Int
-  kills       Int
-  kd          Float?
-  seasonId    String?
-  season      Season?    @relation(fields: [seasonId], references: [id])
-  createdAt   DateTime   @default(now())
-  teamStatsId String?
-  teamStats   TeamStats? @relation(fields: [teamStatsId], references: [id])
-  teams       Team[]
-  matches     Match[]
+  id              String            @id @default(uuid())
+  playerId        String            @unique
+  player          Player            @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  wins            Int               @default(0)
+  win2nd          Int               @default(0)
+  deaths          Int
+  kills           Int
+  kd              Float?
+  seasonId        String?
+  season          Season?           @relation(fields: [seasonId], references: [id])
+  createdAt       DateTime          @default(now())
+  teamStatsId     String?
+  teamStats       TeamStats?        @relation(fields: [teamStatsId], references: [id])
+  teams           Team[]
+  matches         Match[]
+  teamPlayerStats TeamPlayerStats[]
 
   @@unique([playerId, seasonId])
 }
 
 model Team {
-  id           String        @id @default(uuid())
-  name         String
-  players      Player[]
-  position     Int           @default(0)
-  createdAt    DateTime      @default(now())
-  teamNumber   Int
-  tournamentId String?
-  tournament   Tournament?   @relation(fields: [tournamentId], references: [id])
-  seasonId     String?
-  season       Season?       @relation(fields: [seasonId], references: [id])
-  matches      Match[]
-  teamStats    TeamStats[]
-  playerStats  PlayerStats[]
+  id              String            @id @default(uuid())
+  name            String
+  players         Player[]
+  position        Int               @default(0)
+  createdAt       DateTime          @default(now())
+  teamNumber      Int
+  tournamentId    String?
+  tournament      Tournament?       @relation(fields: [tournamentId], references: [id])
+  seasonId        String?
+  season          Season?           @relation(fields: [seasonId], references: [id])
+  matches         Match[]
+  teamStats       TeamStats[]
+  playerStats     PlayerStats[]
+  teamPlayerStats TeamPlayerStats[]
 }
 
 model TeamStats {
-  id           String        @id @default(uuid())
-  matchId      String
-  match        Match         @relation(fields: [matchId], references: [id])
-  seasonId     String?
-  tournamentId String?
-  tournament   Tournament?   @relation(fields: [tournamentId], references: [id])
-  season       Season?       @relation(fields: [seasonId], references: [id])
-  teamId       String        @unique
-  team         Team          @relation(fields: [teamId], references: [id])
-  kills        Int           @default(0)
-  deaths       Int           @default(0)
-  wins         Int           @default(0)
-  position     Int           @default(0)
-  createdAt    DateTime      @default(now())
-  playersStats PlayerStats[]
-  players      Player[]
+  id              String            @id @default(uuid())
+  matchId         String
+  match           Match             @relation(fields: [matchId], references: [id])
+  seasonId        String?
+  tournamentId    String?
+  tournament      Tournament?       @relation(fields: [tournamentId], references: [id])
+  season          Season?           @relation(fields: [seasonId], references: [id])
+  teamId          String
+  team            Team              @relation(fields: [teamId], references: [id])
+  kills           Int               @default(0)
+  deaths          Int               @default(0)
+  wins            Int               @default(0)
+  position        Int               @default(0)
+  createdAt       DateTime          @default(now())
+  playersStats    PlayerStats[]
+  players         Player[]
+  teamPlayerStats TeamPlayerStats[]
 
   @@unique([teamId, matchId])
+}
+
+model TeamPlayerStats {
+  id            String   @id @default(uuid())
+  playerId      String
+  teamId        String
+  matchId       String
+  kills         Int      @default(0)
+  deaths        Int      @default(0)
+  createdAt     DateTime @default(now())
+  playerStatsId String
+
+  player      Player      @relation(fields: [playerId], references: [id])
+  playerStats PlayerStats @relation(fields: [playerStatsId], references: [id])
+  team        Team        @relation(fields: [teamId], references: [id])
+  match       Match       @relation(fields: [matchId], references: [id])
+  teamStatsId String
+  teamStats   TeamStats   @relation(fields: [teamStatsId], references: [id])
+
+  @@unique([playerId, teamId, matchId])
 }
 
 model Gallery {

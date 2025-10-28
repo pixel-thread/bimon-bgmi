@@ -1,25 +1,19 @@
 "use client";
 import React, { useState, useMemo, useEffect } from "react";
-import { Player } from "@/src/lib/types";
-import { toast } from "sonner";
 import { LoaderFive } from "@/src/components/ui/loader";
 
 import { PlayerFilters } from "./PlayerFilters";
 import { DynamicTopPlayersPodium } from "../ui/dynamic-top-players-podium";
-import { PlayerDialog } from "./PlayerDialog";
-import { EditPlayerDialog } from "./EditPlayerDialog";
 import { PlayerStatsModal } from "./PlayerStatsModal";
 import { usePlayerData } from "./hooks/usePlayerData";
-import { PlayersTabProps, PlayerWithStats } from "./types";
+import { PlayersTabProps } from "./types";
 import { Button } from "../ui/button";
 import { useAuth } from "@/src/hooks/useAuth";
-import { useTournaments } from "@/src/hooks/useTournaments";
 
 import { BalanceHistoryDialog } from "./BalanceHistoryDialog";
 import { BalanceAdjustmentDialog } from "./BalanceAdjustmentDialog";
 import { CreatePlayerDialog } from "./CreatePlayerDialog";
 import { DataTable } from "../data-table";
-import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { ColumnDef } from "@tanstack/react-table";
 import { usePlayers } from "@/src/hooks/player/usePlayers";
 import { Card } from "../teamManagementImports";
@@ -41,7 +35,7 @@ const columns: ColumnDef<PlayerT>[] = [
       const death = row?.original?.playerStats?.deaths || 0;
       let kd = kill / death;
       // round kd to 1 decimal place
-      return kd.toFixed(1) || 0;
+      return kd ? kd.toFixed(2) : 0;
     },
   },
 ];
@@ -56,19 +50,16 @@ export function PlayersTab({
   const role = user?.role;
   const { data: players } = usePlayers();
   // States
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPlayerStatsOpen, setIsPlayerStatsOpen] = useState(false);
+
   const [isCreatePlayerDialogOpen, setIsCreatePlayerDialogOpen] =
     useState(false);
   const [isBalanceHistoryModalOpen, setIsBalanceHistoryModalOpen] =
     useState(false);
   const [isBalanceAdjustmentModalOpen, setIsBalanceAdjustmentModalOpen] =
     useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   // Player states
-  const [editingPlayer, setEditingPlayer] = useState<PlayerT | null>(null);
   const [selectedPlayerForStats, setSelectedPlayerForStats] =
     useState<PlayerT | null>(null);
   const [selectedPlayerForBalance, setSelectedPlayerForBalance] =
@@ -166,11 +157,6 @@ export function PlayersTab({
     }, 0);
   }, [players]);
 
-  const handleEditPlayer = (player: PlayerT) => {
-    setEditingPlayer(player);
-    setIsEditDialogOpen(true);
-  };
-
   const handleOpenCreatePlayerDialog = () => {
     setIsCreatePlayerDialogOpen(true);
   };
@@ -180,59 +166,17 @@ export function PlayersTab({
     setIsPlayerStatsOpen(true);
   };
 
-  const handleViewBalanceHistory = (player: PlayerT) => {
-    setSelectedPlayerForBalance(player);
-    setIsBalanceHistoryModalOpen(true);
-  };
-  const handleAdjustBalance = (player: PlayerT) => {
-    setSelectedPlayerForBalance(player);
-    setIsBalanceAdjustmentModalOpen(true);
-  };
-
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Player Stats Modal */}
-      <PlayerStatsModal
-        isOpen={isPlayerStatsOpen}
-        onClose={() => setIsPlayerStatsOpen(false)}
-        onViewBalanceHistory={handleViewBalanceHistory}
-        onAdjustBalance={handleAdjustBalance}
-        onEditPlayer={handleEditPlayer}
-        id={selectedPlayerForStats?.id || ""}
-      />
-
-      {/* Add Player Dialog */}
-      {/* {isAddDialogOpen && ( */}
-      {/*   <PlayerDialog */}
-      {/*     isOpen={isAddDialogOpen} */}
-      {/*     onClose={() => { */}
-      {/*       setIsAddDialogOpen(false); */}
-      {/*     }} */}
-      {/*     player={newPlayer} */}
-      {/*     onPlayerChange={setNewPlayer} */}
-      {/*     isSaving={isSaving} */}
-      {/*     title="Add New Player" */}
-      {/*     saveButtonText="Add Player" */}
-      {/*   /> */}
-      {/* )} */}
-
-      {/* Edit Player Dialog */}
-      {/* {isEditDialogOpen && editingPlayer && ( */}
-      {/*   <EditPlayerDialog */}
-      {/*     isOpen={isEditDialogOpen} */}
-      {/*     onClose={() => { */}
-      {/*       setIsEditDialogOpen(false); */}
-      {/*       setEditingPlayer(null); */}
-      {/*     }} */}
-      {/*     player={editingPlayer} */}
-      {/*     onSave={handleUpdatePlayer} */}
-      {/*     onDelete={handleDeletePlayer} */}
-      {/*     onBan={handleBanPlayer} */}
-      {/*     onUnban={handleUnbanPlayer} */}
-      {/*     isSaving={isSaving} */}
-      {/*     tournaments={tournaments} */}
-      {/*   /> */}
-      {/* )} */}
+      {/* <PlayerStatsModal */}
+      {/*   isOpen={isPlayerStatsOpen} */}
+      {/*   onClose={() => setIsPlayerStatsOpen(false)} */}
+      {/*   onViewBalanceHistory={handleViewBalanceHistory} */}
+      {/*   onAdjustBalance={handleAdjustBalance} */}
+      {/*   onEditPlayer={handleEditPlayer} */}
+      {/*   id={selectedPlayerForStats?.id || ""} */}
+      {/* /> */}
 
       {/* Create Player Dialog */}
       <CreatePlayerDialog

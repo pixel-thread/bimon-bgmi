@@ -3,9 +3,9 @@ import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 
 type Props = {
   where: Prisma.TeamStatsWhereUniqueInput;
-  include?: Prisma.TeamStatsInclude;
+  include: Prisma.TeamStatsInclude;
 };
 
-export async function getTeamStatsById({ where, include }: Props) {
+export async function getTeamStats({ where, include }: Props) {
   return await prisma.teamStats.findUnique({ where, include });
 }
