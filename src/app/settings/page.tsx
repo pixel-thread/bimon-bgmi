@@ -31,11 +31,7 @@ export default function page() {
               </div>
 
               <div className="flex justify-center">
-                <CharacterImageUpload
-                  currentImageBase64={user?.player?.characterUrl}
-                  // onRemove={() => }
-                  // disabled={}
-                />
+                <CharacterImageUpload />
               </div>
 
               <div>
