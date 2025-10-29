@@ -9,11 +9,9 @@ import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { useAuth } from "@/src/hooks/useAuth";
+import { PLAYER_ENDPOINTS } from "@/src/lib/endpoints/player";
 
 export interface CharacterImageUploadProps {
-  currentImageBase64?: string | null;
-  // onUpload: (file: File) => Promise<string>; // Returns the uploaded image as Base64
-  // onRemove?: () => Promise<void>;
   disabled?: boolean;
   className?: string;
 }
@@ -24,13 +22,13 @@ export function CharacterImageUpload({
 }: CharacterImageUploadProps) {
   const { user, refreshAuth } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const playerId = user?.player?.id;
+  const playerId = user?.player?.id || "";
   // Clear preview when currentImageBase64 updates (after successful upload)
 
   const { mutate, isPending: uploading } = useMutation({
     mutationFn: async (file: File | undefined) =>
       http.post(
-        `/player/${playerId}/character`,
+        PLAYER_ENDPOINTS.POST_UPLOAD_CHARACTER_IMAGE.replace(":id", playerId),
         { image: file },
         {
           headers: {
@@ -50,7 +48,8 @@ export function CharacterImageUpload({
   });
 
   const { mutate: remove, isPending: isDeleting } = useMutation({
-    mutationFn: async () => http.delete(`/player/${playerId}/character`),
+    mutationFn: async () =>
+      http.delete(PLAYER_ENDPOINTS.DELETE_UPLOAD_CHARACTER_IMAGE),
     onSuccess: async (data) => {
       if (data.success) {
         refreshAuth();
