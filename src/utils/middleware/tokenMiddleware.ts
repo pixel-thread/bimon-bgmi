@@ -26,9 +26,10 @@ export async function tokenMiddleware(req: NextRequest | Request) {
 
   if (!user) {
     if (process.env.NODE_ENV === "development") {
+      const clerkUser = await clientClerk.users.getUser(claims.sub);
       await createUserIfNotExistInDB({
         clerkId: claims.sub,
-        username: "dev",
+        username: clerkUser?.username || Math.random().toString(36).slice(2),
       });
     }
     // If the user is not found, revoke this session at Clerk
