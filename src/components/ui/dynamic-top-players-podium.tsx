@@ -71,13 +71,13 @@ export const DynamicTopPlayersPodium = React.memo(
           // case "balance":
           // return player.playerStats.balance ? `₹${player.balance}` : "₹0";
           case "kd":
-            return `${player.playerStats?.kd.toFixed(2)} K/D`;
+            return `${player?.playerStats?.kd.toFixed(2)} K/D`;
           case "kills":
-            return `${player.playerStats?.kills} Kills`;
+            return `${player?.playerStats?.kills} Kills`;
           case "matches":
-            return `${player.playerStats?.matches} Matches`;
+            return `${player?.playerStats?.matches} Matches`;
           case "name":
-            return player.category;
+            return player?.category;
           // case "banned":
           //   return player.balance ? `₹${player.balance}` : "₹0";
           default:

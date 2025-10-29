@@ -5,6 +5,7 @@ type PlayerEndpointsT =
   | "DELETE_UPLOAD_CHARACTER_IMAGE"
   | "GET_TOP_PLAYER"
   | "GET_PLAYER_BY_ID"
+  | "GET_PLAYER_STATS_BY_ID"
   | "GET_ALL_PLAYERS";
 
 export const PLAYER_ENDPOINTS: EndpointT<PlayerEndpointsT> = {
@@ -13,4 +14,5 @@ export const PLAYER_ENDPOINTS: EndpointT<PlayerEndpointsT> = {
   GET_TOP_PLAYER: "/players/top-player",
   GET_ALL_PLAYERS: "/players",
   GET_PLAYER_BY_ID: "/players/:id",
+  GET_PLAYER_STATS_BY_ID: "/players/:id/stats",
 };

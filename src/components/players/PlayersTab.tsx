@@ -18,9 +18,21 @@ import { ColumnDef } from "@tanstack/react-table";
 import { usePlayers } from "@/src/hooks/player/usePlayers";
 import { Card } from "../teamManagementImports";
 import { PlayerT } from "@/src/types/player";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 const columns: ColumnDef<PlayerT>[] = [
-  { header: "Username", accessorKey: "user.userName" },
+  {
+    header: "Username",
+    accessorKey: "user.userName",
+    cell: ({ row }) => {
+      return (
+        <Link href={`?player=${row.original.id}`}>
+          {row.original?.user?.userName}
+        </Link>
+      );
+    },
+  },
   { accessorKey: "category", header: "Category" },
   { accessorKey: "playerStats.wins", header: "Win" },
   { accessorKey: "playerStats.kills", header: "Kill" },
@@ -44,6 +56,9 @@ export function PlayersTab({
   readOnly = false,
   showBalanceSummary = false,
 }: PlayersTabProps) {
+  const search = useSearchParams();
+  const router = useRouter();
+  const playerId = search.get("player") || "";
   const [selectedSeason, setSelectedSeason] = useState<string>("all");
   const { isLoading } = usePlayerData(selectedSeason);
   const { user } = useAuth();
@@ -169,14 +184,11 @@ export function PlayersTab({
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Player Stats Modal */}
-      {/* <PlayerStatsModal */}
-      {/*   isOpen={isPlayerStatsOpen} */}
-      {/*   onClose={() => setIsPlayerStatsOpen(false)} */}
-      {/*   onViewBalanceHistory={handleViewBalanceHistory} */}
-      {/*   onAdjustBalance={handleAdjustBalance} */}
-      {/*   onEditPlayer={handleEditPlayer} */}
-      {/*   id={selectedPlayerForStats?.id || ""} */}
-      {/* /> */}
+      <PlayerStatsModal
+        isOpen={!!playerId}
+        onClose={() => router.back()}
+        id={playerId}
+      />
 
       {/* Create Player Dialog */}
       <CreatePlayerDialog

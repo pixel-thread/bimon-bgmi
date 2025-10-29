@@ -9,29 +9,9 @@ import {
 } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
-import { History, Wallet, Edit3, Key, Ban, AlertTriangle } from "lucide-react";
-import {
-  calculateRemainingBanDuration,
-  formatRemainingBanDuration,
-} from "@/src/utils/banUtils";
-import { useAuth } from "@/src/hooks/useAuth";
-import { useTournaments } from "@/src/hooks/tournament/useTournaments";
+import { History, Ban, AlertTriangle } from "lucide-react";
+import { formatRemainingBanDuration } from "@/src/utils/banUtils";
 import { usePlayer } from "@/src/hooks/player/usePlayer";
-import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
-
-type PlayerT = Prisma.PlayerGetPayload<{
-  include: { user: true; playerStats: true };
-}>;
-
-interface PlayerStatsModalProps {
-  id: string;
-  isOpen: boolean;
-  onClose: () => void;
-  readOnly?: boolean;
-  onViewBalanceHistory: (player: PlayerT) => void;
-  onAdjustBalance: (player: PlayerT) => void;
-  onEditPlayer: (player: PlayerT) => void;
-}
 
 const CATEGORY_COLORS = {
   "Ultra Noob":
@@ -46,50 +26,22 @@ const getCategoryColor = (category: string) =>
   CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] ||
   "bg-gray-200 text-gray-800 border-gray-300";
 
-export function getRemainingBanDuration(
-  bannedAt?: Date,
-  banDuration?: number,
-): number {
-  if (!(bannedAt instanceof Date) || isNaN(bannedAt.getTime())) {
-    throw new Error("Invalid bannedAt date provided.");
-  }
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  id: string;
+};
 
-  if (typeof banDuration !== "number" || banDuration <= 0) {
-    throw new Error("Ban duration must be a positive number.");
-  }
-
-  const banEndTime = bannedAt.getTime() + banDuration;
-  const now = Date.now();
-  const remaining = banEndTime - now;
-
-  return Math.max(remaining, 0);
-}
-
-export function PlayerStatsModal({
-  isOpen,
-  onClose,
-  readOnly = false,
-  onViewBalanceHistory,
-  onAdjustBalance,
-  onEditPlayer,
-  id,
-}: PlayerStatsModalProps) {
+export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
   const { data: player } = usePlayer({ id });
-  const { user } = useAuth();
-  const userRole = user?.role;
 
   if (!player) return null;
-
-  const isSuperAdmin = userRole === "SUPER_ADMIN";
 
   const banInfo = {
     isBanned: player.isBanned,
     banDuration: player.banDuration,
     bannedAt: player.bannedAt,
-    remainingDuration: getRemainingBanDuration(
-      player.bannedAt || new Date(),
-      player.banDuration || 0,
-    ),
+    remainingDuration: 0,
     isExpired: true,
   };
 
@@ -128,7 +80,7 @@ export function PlayerStatsModal({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <p className="text-2xl font-bold text-blue-600">
-                  {player.playerStats?.matches}
+                  {/* {player.playerStats?.matches || 0} */}0
                 </p>
                 <p className="text-sm text-muted-foreground">Matches</p>
               </div>
@@ -234,30 +186,6 @@ export function PlayerStatsModal({
                 <History className="w-4 h-4 mr-2" />
                 Balance History
               </Button>
-              {!readOnly && isSuperAdmin && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      onClose();
-                      onAdjustBalance(player);
-                    }}
-                  >
-                    <Wallet className="w-4 h-4 mr-2" />
-                    Adjust Balance
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      onClose();
-                      onEditPlayer(player);
-                    }}
-                  >
-                    <Edit3 className="w-4 h-4 mr-2" />
-                    Edit Player
-                  </Button>
-                </>
-              )}
             </div>
           </div>
 
