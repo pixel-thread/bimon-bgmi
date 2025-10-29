@@ -14,18 +14,23 @@ type Props = {
 type ClerkUser = {
   clerkId: string;
   username: string;
+  role?: string;
 };
 
 export async function createUserIfNotExistInDB({
   clerkId,
   username,
+  role,
 }: ClerkUser) {
   return await prisma.user.create({
     data: {
       userName: username,
       clerkId: clerkId,
       playerId: undefined,
-      role: process.env.NODE_ENV === "development" ? "SUPER_ADMIN" : "PLAYER",
+      role:
+        role || process.env.NODE_ENV === "development"
+          ? "SUPER_ADMIN"
+          : "PLAYER",
       player: {
         create: {
           isBanned: false,
