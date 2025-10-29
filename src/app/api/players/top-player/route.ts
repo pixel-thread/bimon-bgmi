@@ -7,7 +7,10 @@ export async function GET(req: Request) {
   try {
     await tokenMiddleware(req);
 
-    const players = await getAllPlayers({ where: { isBanned: false } });
+    const players = await getAllPlayers({
+      where: { isBanned: false },
+      include: { user: true, playerStats: true },
+    });
 
     if (!players || players.length === 0) {
       return ErrorResponse({
@@ -16,20 +19,48 @@ export async function GET(req: Request) {
       });
     }
 
-    const topPlayers = players
-      .filter(
-        (p) => p.playerStats?.kd !== undefined && p.playerStats?.kd !== null,
+    // Only include players with valid stats
+    const playersWithKD = players
+      .map((p) => {
+        const kd =
+          p.playerStats?.kd ??
+          (p.playerStats?.deaths && p.playerStats.deaths > 0
+            ? p.playerStats.kills / p.playerStats.deaths
+            : (p.playerStats?.kills ?? 0));
+        return {
+          ...p,
+          computedKD: kd,
+          kills: p.playerStats?.kills ?? 0,
+          wins: p.playerStats?.wins ?? 0,
+        };
+      })
+      .filter((p) => p.computedKD !== undefined && p.computedKD !== null);
+
+    // Improve tie-breaking: KD, kills, then wins
+    const sortedPlayers = playersWithKD
+      .sort(
+        (a, b) =>
+          b.computedKD - a.computedKD || b.kills - a.kills || b.wins - a.wins,
       )
-      .sort((a, b) => (b.playerStats!.kd ?? 0) - (a.playerStats!.kd ?? 0))
       .slice(0, 3);
 
-    // Swap first and second players if at least 2 exist
-    if (topPlayers.length >= 2) {
-      [topPlayers[0], topPlayers[1]] = [topPlayers[1], topPlayers[0]];
+    // Rearrange so the second highest is first and highest is second (middle)
+    if (sortedPlayers.length === 3) {
+      const [first, second, third] = sortedPlayers;
+      // new order: second, first, third
+      sortedPlayers[0] = second;
+      sortedPlayers[1] = first;
+      sortedPlayers[2] = third;
+    } else if (sortedPlayers.length === 2) {
+      // If only two players, swap them
+      [sortedPlayers[0], sortedPlayers[1]] = [
+        sortedPlayers[1],
+        sortedPlayers[0],
+      ];
     }
 
     return SuccessResponse({
-      data: topPlayers,
+      data: sortedPlayers,
       message: "Top players fetched successfully",
     });
   } catch (error) {
