@@ -10,7 +10,6 @@ export async function updateTournament({ data, include }: Props) {
     where: { id: data.id },
     data: {
       ...data,
-      startDate: new Date(data.startDate),
     },
     include,
   });

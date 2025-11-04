@@ -1,4 +1,4 @@
-import { MetaT } from "@/types/meta";
+import { MetaT } from "@/src/types/meta";
 import { HttpStatusCode } from "axios";
 import { NextResponse } from "next/server";
 

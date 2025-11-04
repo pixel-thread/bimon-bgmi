@@ -44,9 +44,6 @@ import TeamCard from "@/src/components/teams/TeamCard";
 
 import TournamentSelector from "@/src/components/tournaments/TournamentSelector";
 import OverallStandingModal from "@/src/components/teams/OverallStandingModal";
-import SequentialEditModal from "@/src/components/SequentialEditModal";
-import PlayerManagement from "@/src/components/PlayerManagement";
-// import CreateTournamentModal from "@/components/CreateTournamentModal";
 import { TournamentSettings } from "@/src/components/tournaments/TournamentSettings";
 
 // Utilities
@@ -82,8 +79,6 @@ export {
   TeamCard,
   TournamentSelector,
   OverallStandingModal,
-  SequentialEditModal,
-  PlayerManagement,
   TournamentSettings,
   Button,
   Dialog,

@@ -7,7 +7,7 @@ type Props = {
 
 export async function getPlayerStatsByPlayerId({ playerId, seasonId }: Props) {
   return await prisma.playerStats.findUnique({
-    where: { playerId_seasonId: { playerId, seasonId: seasonId || "" } },
+    where: { seasonId_playerId: { playerId, seasonId: seasonId || "" } },
     include: { matches: true },
   });
 }

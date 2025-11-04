@@ -23,6 +23,8 @@ import { TeamT } from "@/src/types/team";
 import { usePlayers } from "@/src/hooks/player/usePlayers";
 import React from "react";
 import { toast } from "sonner";
+import { useTournaments } from "@/src/hooks/tournament/useTournaments";
+import { useTournamentStore } from "@/src/store/tournament";
 
 type AddPlayerToTeamDialogProps = {
   open?: boolean;
@@ -51,6 +53,8 @@ export const AddPlayerToTeamDialog = ({
 
   const { data: players, isFetching: isFetchingPlayers } = usePlayers();
 
+  const { tournamentId } = useTournamentStore();
+
   const { mutate: addPlayer, isPending } = useMutation({
     mutationFn: (data: { playerId: string }) =>
       http.post<{ id: string }>(
@@ -62,7 +66,7 @@ export const AddPlayerToTeamDialog = ({
         toast.success(data.message);
         queryClient.invalidateQueries({ queryKey: ["team", teamId] });
         queryClient.invalidateQueries({
-          queryKey: ["team", team?.tournamentId],
+          queryKey: ["team", tournamentId],
         });
         return data;
       }
@@ -85,7 +89,7 @@ export const AddPlayerToTeamDialog = ({
         toast.success(data.message);
         queryClient.invalidateQueries({ queryKey: ["team", teamId] });
         queryClient.invalidateQueries({
-          queryKey: ["team", team?.tournamentId],
+          queryKey: ["team", tournamentId],
         });
         return data;
       }

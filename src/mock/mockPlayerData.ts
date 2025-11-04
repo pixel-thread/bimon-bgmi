@@ -1,5 +1,3 @@
-import { Player } from "@/src/lib/types";
-
 export interface MockPlayerWithStats {
   id: string;
   name: string;
@@ -296,8 +294,8 @@ export function convertMockPlayersToStats(players: MockPlayerWithStats[]) {
 }
 
 export function convertMockPlayersToPlayers(
-  players: MockPlayerWithStats[]
-): Player[] {
+  players: MockPlayerWithStats[],
+): any[] {
   return players.map((player) => ({
     id: player.id,
     name: player.name,

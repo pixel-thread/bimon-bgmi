@@ -63,8 +63,8 @@ export async function updateTeamStats({
             kills: player.kills ?? 0,
             deaths: player.deaths ?? 0,
           },
-        })
-      )
+        }),
+      ),
     );
     console.log("TeamPlayerStats updated");
     // Update PlayerStats
@@ -72,7 +72,7 @@ export async function updateTeamStats({
       data.players.map((player) =>
         tx.playerStats.update({
           where: {
-            playerId_seasonId: {
+            seasonId_playerId: {
               playerId: player.playerId,
               seasonId: seasonId || "",
             },
@@ -83,8 +83,8 @@ export async function updateTeamStats({
             wins: player.wins ?? 0,
             win2nd: player.wind2nd ?? 0,
           },
-        })
-      )
+        }),
+      ),
     );
 
     return { success: true };

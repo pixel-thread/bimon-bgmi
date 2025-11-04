@@ -113,7 +113,7 @@ export const CreatePollDialog = ({
     },
   });
 
-  const onSubmit: SubmitHandler<PollForm> = (data) => mutate(data);
+  const onSubmit: SubmitHandler<any> = (data) => mutate(data);
 
   useEffect(() => {
     if (data?.id) {

@@ -16,9 +16,7 @@ import {
   collection,
   getDocs,
 } from "firebase/firestore";
-import { db } from "@/src/lib/firebase";
 import { toast } from "sonner";
-import { Player } from "@/src/lib/types";
 import { FaEdit, FaCheck } from "react-icons/fa";
 import { useTournamentStore } from "../store/tournament";
 
@@ -151,134 +149,6 @@ export default function TeamConfirmationModal({
   const handleConfirm = async () => {
     if (!selectedTournament) return;
     setIsLoading(true);
-    try {
-      // Get tournament entry fee and title
-      const tournamentDoc = await getDoc(
-        doc(db, "tournaments", selectedTournament),
-      );
-      const tournamentData = tournamentDoc.exists()
-        ? tournamentDoc.data()
-        : null;
-      const entryFee = tournamentData?.entryFee
-        ? Number(tournamentData.entryFee)
-        : 20;
-      const tournamentTitle = tournamentData?.title || selectedTournament;
-      const seasonId = tournamentData?.seasonId || null;
-
-      // Fetch all players (for balance deduction), exclude soft-deleted
-      const playersSnapshot = await getDocs(collection(db, "players"));
-      const playerMapById = new Map<string, Player & { id: string }>();
-      const playerMapByName = new Map<string, Player & { id: string }>();
-      playersSnapshot.forEach((docSnap) => {
-        const data = { ...(docSnap.data() as Player), id: docSnap.id };
-        if (!(data as any).deleted) {
-          playerMapById.set(docSnap.id, data);
-          if (data.name) playerMapByName.set(data.name, data);
-        }
-      });
-
-      // Filter out teams where all IGNs are empty
-      const validTeams = teamsToCreate.filter((team) =>
-        team.players.some((player) => player.ign && player.ign.trim() !== ""),
-      );
-
-      const batch = writeBatch(db);
-      const now = new Date().toISOString();
-      for (const team of validTeams) {
-        const phoneNumber = `+91${Math.floor(
-          1000000000 + Math.random() * 9000000000,
-        )}`;
-        const docRef = doc(db, "tournamentEntries", phoneNumber);
-
-        // Ensure all referenced players exist in players collection
-        for (const playerObj of team.players) {
-          const ign = (playerObj.ign || "").trim();
-          if (!ign) continue;
-          let existing = playerMapByName.get(ign);
-          if (!existing) {
-            // Create a minimal player document so that players pages can reflect stats
-            const newPlayerRef = doc(collection(db, "players"));
-            const newPlayerDoc: Partial<Player> & { createdAt: string } = {
-              name: ign,
-              category: "Uncategorized" as any,
-              phoneNumber: null as any,
-              balance: 0 as any,
-              createdAt: now,
-            };
-            batch.set(newPlayerRef, newPlayerDoc as any);
-            const created: Player & { id: string } = {
-              ...(newPlayerDoc as Player),
-              id: newPlayerRef.id,
-            };
-            playerMapById.set(newPlayerRef.id, created);
-            playerMapByName.set(ign, created);
-          }
-        }
-
-        // Determine team mode based on actual team size
-        const teamSize = team.players.length;
-        let teamMode: string;
-        if (teamSize === 1) {
-          teamMode = "Solo 1";
-        } else if (teamSize === 2) {
-          teamMode = "Duo 2+1";
-        } else if (teamSize === 3) {
-          teamMode = "Trio 3+1";
-        } else if (teamSize === 4) {
-          teamMode = "Squad 4+1";
-        } else {
-          teamMode = `Team ${teamSize}`;
-        }
-
-        batch.set(docRef, {
-          phoneNumber,
-          teamName: team.teamName,
-          players: team.players,
-          matchScores: {},
-          submittedAt: now,
-          teamMode: teamMode,
-          tournamentId: selectedTournament,
-          ...(seasonId ? { seasonId } : {}),
-        });
-        // Deduct entry fee from each player in the team, unless excluded
-        for (const playerObj of team.players) {
-          const ign = (playerObj.ign || "").trim();
-          if (!ign) continue;
-          const player = playerMapByName.get(ign);
-          const excludedIds = team.excludedFromDeduction || [];
-          if (player && !excludedIds.includes(player.id)) {
-            const currentBalance =
-              typeof (player as any).balance === "number"
-                ? (player as any).balance
-                : 0;
-            const newBalance = currentBalance - entryFee;
-            batch.update(doc(db, "players", player.id), {
-              balance: newBalance,
-            });
-            // Log transaction
-            const txId = `${player.id}_${now}`;
-            batch.set(doc(db, `players/${player.id}/transactions`, txId), {
-              id: txId,
-              playerId: player.id,
-              amount: -entryFee,
-              type: "deduct",
-              reason: `Tournament Entry Fee (${tournamentTitle})`,
-              createdAt: now,
-              tournamentId: selectedTournament,
-            });
-          }
-        }
-      }
-      await batch.commit();
-      toast.success(`${validTeams.length} teams created and balances updated!`);
-      setShowConfirmModal(false);
-      setTeamsToCreate([]);
-    } catch (error) {
-      console.error("Error creating teams or updating balances:", error);
-      toast.error("Failed to create teams or update balances.");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (

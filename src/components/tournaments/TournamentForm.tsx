@@ -1,5 +1,4 @@
 import { Button } from "@/src/components/ui/button";
-import { TournamentConfig } from "@/src/lib/types";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { useTournamentStore } from "../../store/tournament";

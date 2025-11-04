@@ -1,7 +1,6 @@
 // DesktopTable.tsx
 "use client";
 
-import { CombinedTeamData } from "@/src/lib/types";
 import {
   Table,
   TableBody,
@@ -10,10 +9,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/components/ui/table";
+import { TeamT } from "../types/team";
 
 interface DesktopTableProps {
-  teams: CombinedTeamData[];
-  getScore: (team: CombinedTeamData) => {
+  teams: TeamT[];
+  getScore: (team: TeamT) => {
     kills: number;
     placementPoints: number;
     chickens: number;
@@ -60,7 +60,7 @@ export default function DesktopTable({ teams, getScore }: DesktopTableProps) {
                   {index + 1}
                 </TableCell>
                 <TableCell className="p-2 font-medium text-xs truncate">
-                  {team.teamName} {score.chickens > 0 && `🍗 ${score.chickens}`}
+                  {/* {team.teamName} {score.chickens > 0 && `🍗 ${score.chickens}`} */}
                 </TableCell>
                 <TableCell className="p-2 text-center text-gray-300 text-xs">
                   {score.matchesPlayed}

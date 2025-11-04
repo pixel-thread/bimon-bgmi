@@ -1,5 +1,3 @@
-import { Team } from "@/src/lib/teamGenerator";
-import { TournamentParticipant } from "@/src/lib/tournamentParticipationService";
 import { PlayerT as Player } from "@/src/types/player";
 
 export const TEAM_MODES = [
@@ -22,7 +20,7 @@ export interface TeamCreationModalProps {
   showModal: boolean;
   setShowModal: (show: boolean) => void;
   setShowConfirmModal: (show: boolean) => void;
-  setTeamsToCreate: (teams: Team[]) => void;
+  setTeamsToCreate: (teams: any[]) => void;
 }
 
 export interface PlayerSelectionState {
@@ -52,5 +50,5 @@ export interface TeamCreationState {
       matchesPlayed: number;
     };
   };
-  tournamentParticipants: TournamentParticipant[];
+  tournamentParticipants: any[];
 }

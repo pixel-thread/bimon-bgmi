@@ -119,17 +119,13 @@ export function ProfilePictureUpload({
         onDrop={handleDrop}
         onDragOver={handleDragOver}
       >
-        <Avatar
-          src={displayUrl}
-          size="xl"
-          className="w-24 h-24 border-4 border-white shadow-lg"
-        />
+        <Avatar className="w-24 h-24 border-4 border-white shadow-lg" />
 
         {/* Upload overlay */}
         <div
           className={cn(
             "absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer",
-            uploading && "opacity-100"
+            uploading && "opacity-100",
           )}
         >
           {uploading ? (

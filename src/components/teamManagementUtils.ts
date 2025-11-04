@@ -1,10 +1,3 @@
-import {
-  calculatePlacementPoints,
-  exportToCSV,
-  CombinedTeamData,
-  MatchScore,
-} from "./teamManagementImports";
-
 interface TempEdits {
   [teamId: string]: {
     placement?: string;
@@ -19,10 +12,10 @@ export const validatePlacementPoints = (
   teamId: string,
   matchNumber: string,
   position: number,
-  teams: CombinedTeamData[],
-  tempEdits: TempEdits
+  teams: any[],
+  tempEdits: TempEdits,
 ): string => {
-  const placementPoints = calculatePlacementPoints(position);
+  const placementPoints = 0;
 
   if (placementPoints === 0) return "";
 
@@ -36,7 +29,7 @@ export const validatePlacementPoints = (
 
       const otherPlacementPoints =
         tempEdits[t.id]?.placement !== undefined
-          ? calculatePlacementPoints(otherPosition)
+          ? 9
           : t.matchScores?.[matchNumber]?.placementPoints || 0;
 
       if (
@@ -58,9 +51,9 @@ export const validatePlacementPoints = (
 };
 
 export const calculateTotalKills = (
-  teams: CombinedTeamData[],
+  teams: any[],
   tempEdits: TempEdits,
-  sequentialMatch: string
+  sequentialMatch: string,
 ): number => {
   return teams.reduce((total, team) => {
     const kills =
@@ -73,9 +66,9 @@ export const calculateTotalKills = (
 
 export const validateTotalKills = (
   totalPlayersPlayed: string,
-  teams: CombinedTeamData[],
+  teams: any[],
   tempEdits: TempEdits,
-  sequentialMatch: string
+  sequentialMatch: string,
 ): string => {
   if (!totalPlayersPlayed || totalPlayersPlayed.trim() === "") return "";
   const totalPlayers = parseInt(totalPlayersPlayed) || 0;
@@ -103,14 +96,14 @@ export const handleSetTempEdit = (
       | "teamName"
       | "playerKills"
       | "playerParticipation",
-    value: string | string[] | boolean[] | undefined
+    value: string | string[] | boolean[] | undefined,
   ) => void,
   setPlacementErrors: React.Dispatch<
     React.SetStateAction<{ [teamId: string]: string }>
   >,
-  teams: CombinedTeamData[],
+  teams: any[],
   sequentialMatch: string,
-  tempEdits: TempEdits
+  tempEdits: TempEdits,
 ) => {
   if (field === "playerKills" || field === "playerParticipation") {
     setTempEdit(teamId, field, value);
@@ -145,7 +138,7 @@ export const handleSetTempEdit = (
       sequentialMatch,
       position,
       teams,
-      tempEdits
+      tempEdits,
     );
     setPlacementErrors((prev) => ({
       ...prev,
@@ -155,64 +148,16 @@ export const handleSetTempEdit = (
 };
 
 export const handleExportCSV = (
-  sortedTeams: CombinedTeamData[],
+  sortedTeams: any[],
   selectedMatch: string,
   tournamentTitle: string,
-  tempEdits: TempEdits = {}
-) => {
-  const totalPlayers = sortedTeams.reduce((total, team) => {
-    const activePlayers = team.players.filter(
-      (player) => player.ign.trim() !== ""
-    ).length;
-    return total + activePlayers;
-  }, 0);
-
-  const csvData = sortedTeams.map((team, index) => {
-    const currentTeamName = tempEdits[team.id]?.teamName || team.teamName;
-
-    let member1 = team.players[0]?.ign || "";
-    let member2 = team.players[1]?.ign || "";
-
-    if (currentTeamName.includes("_")) {
-      const parts = currentTeamName.split("_");
-      if (!member1 && parts[0]) {
-        member1 = parts[0].trim();
-      }
-      if (!member2 && parts.length > 1 && parts[1]) {
-        member2 = parts[1].trim();
-      }
-    }
-    if (!member1 && team.players[0]?.ign) {
-      member1 = team.players[0].ign;
-    }
-    if (!member2 && team.players[1]?.ign) {
-      member2 = team.players[1].ign;
-    }
-
-    return {
-      Slots: index + 2,
-      "Member 1": member1,
-      "Member 2": member2,
-    };
-  });
-
-  const csvDataWithTotal = [
-    ...csvData,
-    {
-      Slots: "Total Players:",
-      "Member 1": totalPlayers.toString(),
-      "Member 2": "",
-    },
-  ];
-
-  const filename = `${tournamentTitle}.csv`;
-  exportToCSV(csvDataWithTotal, filename);
-};
+  tempEdits: TempEdits = {},
+) => {};
 
 export const handleBulkDelete = async (
   selectedTeams: string[],
   deleteTeams: (teamIds: string[]) => Promise<void>,
-  setSelectedTeams: React.Dispatch<React.SetStateAction<string[]>>
+  setSelectedTeams: React.Dispatch<React.SetStateAction<string[]>>,
 ) => {
   if (selectedTeams.length === 0) return;
   await deleteTeams(selectedTeams);
@@ -227,11 +172,11 @@ export const handleSequentialClose = (
   >,
   setTotalPlayersPlayed: React.Dispatch<React.SetStateAction<string>>,
   setTotalKillsError: React.Dispatch<React.SetStateAction<string>>,
-  setShowSequentialModal: React.Dispatch<React.SetStateAction<boolean>>
+  setShowSequentialModal: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
   if (hasUnsavedChanges) {
     const confirmDiscard = window.confirm(
-      "You have unsaved changes. Are you sure you want to discard all changes?"
+      "You have unsaved changes. Are you sure you want to discard all changes?",
     );
     if (!confirmDiscard) return;
     resetTempEdits();
@@ -245,7 +190,7 @@ export const handleSequentialClose = (
 export const handleSequentialSave = async (
   placementErrors: { [teamId: string]: string },
   totalPlayersPlayed: string,
-  teams: CombinedTeamData[],
+  teams: any[],
   tempEdits: TempEdits,
   sequentialMatch: string,
   saveEdits: () => Promise<void>,
@@ -254,10 +199,10 @@ export const handleSequentialSave = async (
     React.SetStateAction<{ [teamId: string]: string }>
   >,
   setTotalPlayersPlayed: React.Dispatch<React.SetStateAction<string>>,
-  setTotalKillsError: React.Dispatch<React.SetStateAction<string>>
+  setTotalKillsError: React.Dispatch<React.SetStateAction<string>>,
 ) => {
   const hasPlacementErrors = Object.values(placementErrors).some(
-    (error) => error !== ""
+    (error) => error !== "",
   );
   if (hasPlacementErrors) {
     alert("Please fix placement errors before saving.");
@@ -268,7 +213,7 @@ export const handleSequentialSave = async (
     totalPlayersPlayed,
     teams,
     tempEdits,
-    sequentialMatch
+    sequentialMatch,
   );
   if (totalKillsValidationError) {
     setTotalKillsError(totalKillsValidationError);

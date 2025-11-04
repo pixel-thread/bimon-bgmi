@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/src/components/ui/button";
-import { Poll, PollVote } from "@/src/lib/types";
+// import { Poll, PollVote } from "@/src/lib/types";
 import {
   DropdownMenu,
   DropdownMenuContent,

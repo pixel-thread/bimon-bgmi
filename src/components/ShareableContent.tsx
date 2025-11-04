@@ -1,9 +1,6 @@
 import { useState } from "react";
 
-import type { CombinedTeamData, MatchScore } from "@/src/lib/types";
-import MobileTable from "./MobileTable";
 import TwoColumnTable from "./TwoColumnTable";
-import { isChickenDinner, sortTeamsWithTiebreaker } from "@/src/lib/utils";
 import { formatDateDDMMYYYY } from "@/src/utils/dateFormat";
 import { useMatchStore } from "../store/match/useMatchStore";
 import { useSeasonStore } from "../store/season";

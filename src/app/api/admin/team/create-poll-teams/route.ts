@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     const teams = await createTeamsByPolls({
       groupSize: teamSize as 1 | 2 | 3 | 4,
       tournamentId: poll.tournamentId,
-      seasonId: tournamentExist?.seasonId,
+      seasonId: tournamentExist?.seasonId || "",
       pollId: poll.id,
     });
 

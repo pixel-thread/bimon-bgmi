@@ -1,6 +1,4 @@
-import { Player } from "@/src/lib/types";
-
-export interface PlayerWithStats extends Player {
+export interface PlayerWithStats {
   matchesPlayed: number;
   totalKills: number;
   overallKD: number;

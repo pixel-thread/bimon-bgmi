@@ -16,6 +16,7 @@ export function assignPlayersToTeamsBalanced(
   players: PlayerWithStatsT[],
   teamCount: number,
   groupSize: number,
+  seasonId?: string,
 ): TeamStats[] {
   // Initialize empty teams
   const teams: TeamStats[] = Array.from({ length: teamCount }, () => ({
@@ -34,9 +35,13 @@ export function assignPlayersToTeamsBalanced(
     const team = teams[teamIdx];
 
     team.players.push(player);
-    team.totalKills += player.playerStats?.kills ?? 0;
-    team.totalDeaths += player.playerStats?.deaths ?? 0;
-    team.totalWins += player.playerStats?.wins ?? 0;
+    team.totalKills +=
+      player.playerStats.find((p) => p.seasonId === seasonId)?.kills ?? 0;
+    team.totalDeaths +=
+      player.playerStats.find((p) => p.seasonId === seasonId)?.deaths ?? 0;
+    team.totalWins +=
+      player.playerStats.find((p) => p.seasonId === seasonId)?.wins ?? 0;
+    // @ts-ignore
     team.weightedScore += player.weightedScore;
 
     // Move index in snake pattern

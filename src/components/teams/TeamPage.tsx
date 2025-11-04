@@ -133,7 +133,6 @@ export default function TeamsPage() {
       <OverallStandingModal
         visible={showStandingsModal}
         onClose={() => setShowStandingsModal(false)}
-        teams={teams || []}
         backgroundImage={"/images/image.png"}
         tournamentTitle={"Tournament"}
         maxMatchNumber={1}

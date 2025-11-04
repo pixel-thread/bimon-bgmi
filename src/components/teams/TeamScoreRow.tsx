@@ -1,7 +1,6 @@
 import { Input } from "@/src/components/ui/input";
 import { Button } from "@/src/components/ui/button";
 import { Checkbox } from "@/src/components/ui/checkbox";
-import { CombinedTeamData } from "@/src/lib/types";
 import {
   Tooltip,
   TooltipTrigger,
@@ -10,11 +9,10 @@ import {
 } from "@/src/components/ui/tooltip";
 import { FiAlertCircle } from "react-icons/fi";
 import { Target, UserCheck, UserX } from "lucide-react";
-import TeamScoreInputs from "./TeamScoreInputs";
 import React from "react";
 
 interface TeamScoreRowProps {
-  team: CombinedTeamData;
+  team: any;
   index: number;
   tempEdits: {
     [teamId: string]: {
@@ -29,7 +27,7 @@ interface TeamScoreRowProps {
   handleSetTempEdit: (
     teamId: string,
     field: "placement" | "kills" | "playerKills" | "playerParticipation",
-    value: string | string[] | boolean[]
+    value: string | string[] | boolean[],
   ) => void;
   searchTerm?: string;
   sequentialMatch: string;
@@ -41,7 +39,7 @@ function highlightText(text: string, search: string): React.ReactNode {
 
   const regex = new RegExp(
     `(${search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
-    "gi"
+    "gi",
   );
   const parts = text.split(regex);
   return parts.map((part, i) =>
@@ -61,7 +59,7 @@ function highlightText(text: string, search: string): React.ReactNode {
       </span>
     ) : (
       part
-    )
+    ),
   );
 }
 
@@ -73,7 +71,6 @@ const getPositionFromPoints = (points: number) => {
 
 export default function TeamScoreRow({
   team,
-  index,
   tempEdits,
   placementErrors,
   handleSetTempEdit,
@@ -105,17 +102,6 @@ export default function TeamScoreRow({
     ? teamEdits.kills.replace(/^0+/, "")
     : savedKills.replace(/^0+/, "");
 
-  const playerKills =
-    teamEdits?.playerKills ||
-    matchScore.playerKills?.map((k) => k.toString()) ||
-    [];
-  const playerParticipation =
-    teamEdits?.playerParticipation ||
-    (matchScore as any).playerParticipation ||
-    team.players.map(() => true);
-
-  const hasPlayerKDData = playerKills.some((k) => k !== "" && k !== "0");
-
   // Split team name by underscore to get individual player names
   const playerNames = team.teamName.split("_");
 
@@ -123,7 +109,7 @@ export default function TeamScoreRow({
     handleSetTempEdit(team.id, "playerKills", playerKills);
     const totalKills = playerKills.reduce(
       (sum, k) => sum + (parseInt(k) || 0),
-      0
+      0,
     );
     handleSetTempEdit(team.id, "kills", totalKills.toString());
   };
@@ -173,21 +159,7 @@ export default function TeamScoreRow({
 
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={hasPlayerKDData ? "default" : "outline"}
-                size="sm"
-                onClick={toggleExpanded}
-                className={`w-10 h-9 sm:w-12 sm:h-10 p-0 ${
-                  hasPlayerKDData ? "bg-green-600 hover:bg-green-700" : ""
-                }`}
-                aria-label={`${
-                  isExpanded ? "Hide" : "Show"
-                } player kills for ${displayName}`}
-              >
-                <Target className="h-3 w-3 sm:h-4 sm:w-4" />
-              </Button>
-            </TooltipTrigger>
+            <TooltipTrigger asChild></TooltipTrigger>
             <TooltipContent>
               <p>{isExpanded ? "Hide" : "Show"} individual player kills</p>
             </TooltipContent>
@@ -200,88 +172,7 @@ export default function TeamScoreRow({
           <div className="text-xs text-muted-foreground mb-2">
             Individual Player Performance:
           </div>
-          <div className="grid grid-cols-1 gap-2">
-            {team.players.map((player, playerIndex) => {
-              const participated =
-                playerParticipation[playerIndex] !== undefined
-                  ? playerParticipation[playerIndex]
-                  : true;
-              // Use the split player name as placeholder, fallback to player.ign if not enough names
-              const placeholderName = playerNames[playerIndex] || player.ign;
-              return (
-                <div key={player.ign} className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    <Checkbox
-                      checked={participated}
-                      onCheckedChange={(checked) => {
-                        const newParticipation = [...playerParticipation];
-                        while (newParticipation.length <= playerIndex) {
-                          newParticipation.push(true);
-                        }
-                        newParticipation[playerIndex] = checked === true;
-                        handleSetTempEdit(
-                          team.id,
-                          "playerParticipation",
-                          newParticipation
-                        );
-
-                        if (!checked) {
-                          const newPlayerKills = [...playerKills];
-                          while (newPlayerKills.length <= playerIndex) {
-                            newPlayerKills.push("");
-                          }
-                          newPlayerKills[playerIndex] = "0";
-                          handlePlayerKillsChange(newPlayerKills);
-                        }
-                      }}
-                      className="h-4 w-4"
-                    />
-                    {participated ? (
-                      <UserCheck className="h-3 w-3 text-green-600" />
-                    ) : (
-                      <UserX className="h-3 w-3 text-red-500" />
-                    )}
-                  </div>
-
-                  <span
-                    className={`text-xs font-medium truncate flex-1 ${
-                      !participated ? "text-muted-foreground line-through" : ""
-                    }`}
-                  >
-                    {player.ign}
-                  </span>
-
-                  <Input
-                    type="number"
-                    value={playerKills[playerIndex] || ""}
-                    onChange={(e) => {
-                      const newPlayerKills = [...playerKills];
-                      while (newPlayerKills.length <= playerIndex) {
-                        newPlayerKills.push("");
-                      }
-                      newPlayerKills[playerIndex] = e.target.value;
-                      handlePlayerKillsChange(newPlayerKills);
-                    }}
-                    min="0"
-                    max="99"
-                    disabled={!participated}
-                    className={`w-12 h-7 text-xs text-center ${
-                      !participated ? "opacity-50" : ""
-                    }`}
-                    placeholder={placeholderName} // Use split player name as placeholder
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    style={{ MozAppearance: "textfield" }}
-                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                    onKeyDown={(e) =>
-                      (e.key === "ArrowUp" || e.key === "ArrowDown") &&
-                      e.preventDefault()
-                    }
-                  />
-                </div>
-              );
-            })}
-          </div>
+          <div className="grid grid-cols-1 gap-2"></div>
         </div>
       )}
     </>

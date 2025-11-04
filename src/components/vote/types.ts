@@ -1,4 +1,3 @@
-import { TournamentParticipant } from "@/src/lib/tournamentParticipationService";
 import { PlayerPollVoteT, PollT } from "@/src/types/poll";
 
 export interface VoteTabProps {
@@ -37,28 +36,8 @@ export interface PollOptionProps {
 
 export interface WhatsAppPollCardProps {
   poll: PollT;
-  userVote?: PollVote;
-  isDisabled: boolean;
-  voteCounts?: Record<string, number>;
-  loadingOption?: string;
-  allVotes?: PollVote[];
-  onShowVoters?: (pollId: string, pollQuestion: string, option: string) => void;
-  isSaving?: boolean;
-  readOnly?: boolean;
-  showViewAllVotes?: boolean;
-  showAvatars?: boolean; // Add this prop to control avatar visibility
-  showAdminActions?: boolean;
-  isLoadingVotes?: boolean;
 }
 
 export interface TournamentParticipationCardProps {
   poll: PollT;
-  userVote?: PollVote;
-  onVote: (pollId: string, option: string) => void;
-  isDisabled: boolean;
-  loadingOption?: string;
-  participants?: TournamentParticipant[];
-  onShowVoters?: (pollId: string, pollQuestion: string, option: string) => void;
-  allVotes?: PollVote[];
-  voteCounts?: Record<string, number>;
 }

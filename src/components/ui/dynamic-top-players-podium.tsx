@@ -90,7 +90,7 @@ export const DynamicTopPlayersPodium = React.memo(
           case "kills":
             return `${player.kills ? player.kills : 0} Kills`;
           case "matches":
-            return `${player?.player.matchs.length} Matches`;
+            return `${player?.player?.matchs} Matches`;
           case "name":
             return player?.player.category;
           // case "banned":

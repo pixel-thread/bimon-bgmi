@@ -16,20 +16,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/src/components/ui/popover";
-import { Player } from "@/src/lib/types";
-import { playerAuthService } from "@/src/lib/playerAuthService";
-import { useTournaments } from "@/src/hooks/useTournaments";
 import {
   calculateRemainingBanDuration,
   formatRemainingBanDuration,
 } from "@/src/utils/banUtils";
-import { sanitizeDisplayName } from "@/src/lib/unicodeSanitizer";
 import { ChevronDown, Loader2, Search, X } from "lucide-react";
+import { useTournaments } from "@/src/hooks/tournament/useTournaments";
 
 export interface NameAutocompleteProps {
   value: string;
   onValueChange: (value: string) => void;
-  onPlayerSelect: (player: Player | null) => void;
+  onPlayerSelect: (player: any | null) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -47,19 +44,17 @@ export function NameAutocomplete({
 }: NameAutocompleteProps) {
   const [open, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
-  const [suggestions, setSuggestions] = React.useState<Player[]>([]);
-  const [selectedPlayer, setSelectedPlayer] = React.useState<Player | null>(
-    null
-  );
+  const [suggestions, setSuggestions] = React.useState<any[]>([]);
+  const [selectedPlayer, setSelectedPlayer] = React.useState<any | null>(null);
   const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
   const [fetchError, setFetchError] = React.useState<string | null>(null);
   const [suggestionCache, setSuggestionCache] = React.useState<
-    Record<string, Player[]>
+    Record<string, any[]>
   >({});
 
   const inputRef = React.useRef<HTMLInputElement>(null);
   const debounceTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-  const { tournaments } = useTournaments();
+  const { data: tournaments } = useTournaments();
 
   const fetchSuggestions = React.useCallback(
     async (query: string) => {
@@ -80,20 +75,8 @@ export function NameAutocomplete({
 
       setLoading(true);
       setFetchError(null);
-
-      try {
-        const players = await playerAuthService.getPlayerSuggestions(query);
-        setSuggestions(players);
-        setSuggestionCache((prev) => ({ ...prev, [query]: players }));
-      } catch (error) {
-        console.error("Error fetching player suggestions:", error);
-        setFetchError("Failed to load suggestions. Please try again.");
-        setSuggestions([]);
-      } finally {
-        setLoading(false);
-      }
     },
-    [suggestionCache]
+    [suggestionCache],
   );
 
   React.useEffect(() => {
@@ -126,14 +109,7 @@ export function NameAutocomplete({
     setHighlightedIndex(-1);
   };
 
-  const handlePlayerSelect = (player: Player) => {
-    setSelectedPlayer(player);
-    onValueChange(sanitizeDisplayName(player.name));
-    onPlayerSelect(player);
-    setOpen(false);
-    setHighlightedIndex(-1);
-    inputRef.current?.blur();
-  };
+  const handlePlayerSelect = (player: any) => {};
 
   const handleClear = () => {
     onValueChange("");
@@ -159,13 +135,13 @@ export function NameAutocomplete({
       case "ArrowDown":
         e.preventDefault();
         setHighlightedIndex((prev) =>
-          prev < suggestions.length - 1 ? prev + 1 : 0
+          prev < suggestions.length - 1 ? prev + 1 : 0,
         );
         break;
       case "ArrowUp":
         e.preventDefault();
         setHighlightedIndex((prev) =>
-          prev > 0 ? prev - 1 : suggestions.length - 1
+          prev > 0 ? prev - 1 : suggestions.length - 1,
         );
         break;
       case "Enter":
@@ -214,7 +190,7 @@ export function NameAutocomplete({
                 "focus:ring-2 focus:ring-offset-1 focus:ring-blue-400",
                 "dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400",
                 error && "dark:border-red-400 dark:focus:ring-red-400",
-                "dark:focus:ring-blue-400 dark:focus:ring-offset-gray-800"
+                "dark:focus:ring-blue-400 dark:focus:ring-offset-gray-800",
               )}
               autoComplete="off"
               role="combobox"
@@ -239,7 +215,7 @@ export function NameAutocomplete({
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 text-gray-400 transition-transform duration-200 dark:text-gray-300",
-                    open && "rotate-180"
+                    open && "rotate-180",
                   )}
                 />
               )}
@@ -312,7 +288,7 @@ export function NameAutocomplete({
                           : "text-gray-900 dark:text-gray-200",
                         player.isBanned
                           ? "hover:bg-red-100 dark:hover:bg-red-800"
-                          : "hover:bg-blue-50 dark:hover:bg-blue-900"
+                          : "hover:bg-blue-50 dark:hover:bg-blue-900",
                       )}
                       role="option"
                       aria-selected={index === highlightedIndex}
@@ -321,24 +297,12 @@ export function NameAutocomplete({
                         <div
                           className={cn(
                             "font-medium text-sm",
-                            player.isBanned && "text-red-700 dark:text-red-300"
+                            player.isBanned && "text-red-700 dark:text-red-300",
                           )}
                         >
                           <span className="truncate">{player.name}</span>
                           {player.isBanned && (
-                            <span className="ml-2 text-xs bg-red-100 text-red-800 px-1.5 py-0.5 rounded-full font-semibold">
-                              {(() => {
-                                const banInfo = calculateRemainingBanDuration(
-                                  player,
-                                  tournaments
-                                );
-                                return banInfo.isExpired
-                                  ? "BAN EXPIRED"
-                                  : `BANNED (${formatRemainingBanDuration(
-                                      banInfo.remainingDuration || 0
-                                    )})`;
-                              })()}
-                            </span>
+                            <span className="ml-2 text-xs bg-red-100 text-red-800 px-1.5 py-0.5 rounded-full font-semibold"></span>
                           )}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">

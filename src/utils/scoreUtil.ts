@@ -3,10 +3,11 @@ import { PlayerT } from "../types/player";
 /**
  * Computes a weighted score for a player based on KD, kills, and wins.
  */
-export function computeWeightedScore(p: PlayerT): number {
-  const kd = p.playerStats?.kd ?? 0;
-  const kills = p.playerStats?.kills ?? 0;
-  const wins = p.playerStats?.wins ?? 0;
+export function computeWeightedScore(p: PlayerT, seasonId?: string): number {
+  const id = seasonId || "";
+  const kd = p.playerStats.find((p) => p.seasonId === id)?.kd ?? 0;
+  const kills = p.playerStats.find((p) => p.seasonId === id)?.kills ?? 0;
+  const wins = p.playerStats.find((p) => p.seasonId === id)?.wins ?? 0;
 
   const weightKD = 0.6;
   const weightKills = 0.3;

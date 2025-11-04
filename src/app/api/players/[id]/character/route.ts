@@ -66,6 +66,7 @@ export async function DELETE(
     const playerId = (await params).id;
 
     const isPlayerExist = await getPlayerById({ id: playerId });
+
     logger.log("1");
     if (!isPlayerExist?.id) {
       return ErrorResponse({

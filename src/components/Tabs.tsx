@@ -2,7 +2,6 @@
 "use client";
 
 import {
-  FiUser,
   FiUsers,
   FiSmartphone,
   FiClock,
@@ -39,8 +38,8 @@ interface TabsProps {
 }
 
 const Tabs = ({ activeTab, setActiveTab }: TabsProps) => {
-  const { role, loading } = useAuth();
-
+  const { user, isAuthLoading: loading } = useAuth();
+  const role = user?.role;
   // Don't render tabs until role is determined to prevent flash
   if (loading || !role) {
     return (
@@ -68,12 +67,12 @@ const Tabs = ({ activeTab, setActiveTab }: TabsProps) => {
 
   // Filter tabs based on user role
   const visibleTabs = tabsConfig.filter((tab) => {
-    if (tab.superAdminOnly && role !== "super_admin") {
+    if (tab.superAdminOnly && role !== "SUPER_ADMIN") {
       return false;
     }
 
     // Teams_admin users have access to teams (edit) + players, rules, winners (read-only)
-    if (role === "teams_admin") {
+    if (role === "ADMIN") {
       const allowedForTeamsAdmin = ["teams", "players", "rules", "winners"];
       return allowedForTeamsAdmin.includes(tab.id);
     }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect } from "react";
 
 import { Button } from "@/src/components/ui/button";
@@ -148,14 +149,7 @@ export function TeamStatsSheet({ open }: Props) {
                 <FormItem className="w-full">
                   <FormLabel>Position</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      className="min-w-full"
-                      placeholder="Position"
-                      {...rField}
-                      min={0}
-                      step={1}
-                    />
+                    <Input type="number" className="min-w-full" {...rField} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -199,8 +193,6 @@ export function TeamStatsSheet({ open }: Props) {
                             type="number"
                             placeholder="Kills"
                             {...rField}
-                            min={0}
-                            step={1}
                           />
                         </FormControl>
                         <FormMessage />

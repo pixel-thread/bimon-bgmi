@@ -3,9 +3,6 @@ import { Button } from "@/src/components/ui/button";
 import { Card } from "@/src/components/ui/card";
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
-import { db } from "@/src/lib/firebase";
-import { Player, TournamentConfig } from "@/src/lib/types";
 import { toast } from "sonner";
 
 interface PlayerSelectorProps {
@@ -25,7 +22,7 @@ export default function PlayerSelector({
   selectedPros,
   setSelectedPros,
 }: PlayerSelectorProps) {
-  const [players, setPlayers] = useState<{ noobs: Player[]; pros: Player[] }>({
+  const [players, setPlayers] = useState<{ noobs: any[]; pros: any[] }>({
     noobs: [],
     pros: [],
   });
@@ -36,33 +33,6 @@ export default function PlayerSelector({
     const fetchData = async () => {
       try {
         setLoading(true);
-        const playersCollection = collection(db, "players");
-        const playersSnapshot = await getDocs(playersCollection);
-        const noobs: Player[] = [];
-        const pros: Player[] = [];
-
-        playersSnapshot.forEach((doc) => {
-          const playerData = { id: doc.id, ...doc.data() } as Player;
-          if (playerData.deleted) return;
-          if (playerData.category === "Noob") noobs.push(playerData);
-          else if (playerData.category === "Pro") pros.push(playerData);
-        });
-
-        setPlayers({ noobs, pros });
-
-        if (selectedTournament) {
-          const tournamentDoc = doc(db, "tournaments", selectedTournament);
-          const tournamentSnapshot = await getDoc(tournamentDoc);
-          if (tournamentSnapshot.exists()) {
-            const tournamentData =
-              tournamentSnapshot.data() as TournamentConfig;
-            setTournamentTitle(tournamentData.title);
-          } else {
-            setTournamentTitle(null);
-          }
-        } else {
-          setTournamentTitle(null);
-        }
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error("Failed to load data. Please try again later.");
@@ -79,13 +49,13 @@ export default function PlayerSelector({
       setSelectedNoobs(
         selectedNoobs.length === players.noobs.length
           ? []
-          : players.noobs.map((noob) => noob.id)
+          : players.noobs.map((noob) => noob.id),
       );
     } else {
       setSelectedPros(
         selectedPros.length === players.pros.length
           ? []
-          : players.pros.map((pro) => pro.id)
+          : players.pros.map((pro) => pro.id),
       );
     }
   };
@@ -97,12 +67,12 @@ export default function PlayerSelector({
     setter(
       selected.includes(playerId)
         ? selected.filter((id) => id !== playerId)
-        : [...selected, playerId]
+        : [...selected, playerId],
     );
   };
 
-  const groupPlayers = (playerList: Player[]) => {
-    const grouped: Player[][] = [];
+  const groupPlayers = (playerList: any[]) => {
+    const grouped: any[][] = [];
     for (let i = 0; i < playerList.length; i += 5) {
       grouped.push(playerList.slice(i, i + 5));
     }
@@ -154,8 +124,8 @@ export default function PlayerSelector({
                   ? "Deselect All"
                   : "Select All"
                 : selectedPros.length === players.pros.length
-                ? "Deselect All"
-                : "Select All"}
+                  ? "Deselect All"
+                  : "Select All"}
             </Button>
           </div>
           <div className="max-h-[300px] overflow-y-auto space-y-4">
@@ -169,7 +139,7 @@ export default function PlayerSelector({
                       onClick={() =>
                         handleRowSelect(
                           player.id,
-                          activeTab === "noobs" ? "Noob" : "Pro"
+                          activeTab === "noobs" ? "Noob" : "Pro",
                         )
                       }
                     >
@@ -182,7 +152,7 @@ export default function PlayerSelector({
                         onCheckedChange={() =>
                           handleRowSelect(
                             player.id,
-                            activeTab === "noobs" ? "Noob" : "Pro"
+                            activeTab === "noobs" ? "Noob" : "Pro",
                           )
                         }
                       />
@@ -193,7 +163,7 @@ export default function PlayerSelector({
                     <Card key={`empty-${i}`} className="flex-1 p-4 opacity-0" />
                   ))}
                 </div>
-              )
+              ),
             )}
           </div>
         </div>

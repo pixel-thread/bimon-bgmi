@@ -18,7 +18,7 @@ export function usePlayers({ page }: UsePlayersProps = { page: "1" }) {
       ? `/admin/players?page=${page}&season=${seasonId}`
       : `/players?page=${page}&season=${seasonId}`;
 
-  const [meta, setMeta] = useState<MetaT | null>(null);
+  const [meta, setMeta] = useState<MetaT | undefined>(undefined);
 
   const query = useQuery({
     queryFn: () => http.get<PlayerT[]>(url),
@@ -30,7 +30,7 @@ export function usePlayers({ page }: UsePlayersProps = { page: "1" }) {
 
   useEffect(() => {
     if (query.data) {
-      setMeta(query.data.meta);
+      setMeta(query.data?.meta);
     }
   }, [query?.data]);
 

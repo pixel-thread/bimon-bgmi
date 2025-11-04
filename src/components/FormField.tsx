@@ -29,7 +29,6 @@ export default function FormField({
         onChange={onChange}
         placeholder={placeholder}
         className="w-full"
-        paddingX="px-3"
       />
     </div>
   );
