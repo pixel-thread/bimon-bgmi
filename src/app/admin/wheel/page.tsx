@@ -2,11 +2,11 @@
 
 import { RotateCcw } from "lucide-react";
 import { RevealTab } from "@/src/components/RevealTab";
-import AdminNavigation from "@/src/components/AdminNavigation";
-import { useConditionalRender } from "@/src/hooks/useConditionalRender";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 const AdminWheelPage = () => {
-  const { shouldRender } = useConditionalRender();
+  const { isSuperAdmin } = useAuth();
+  const shouldRender = isSuperAdmin;
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
@@ -25,10 +25,8 @@ const AdminWheelPage = () => {
 
         <div className="space-y-6">
           <RevealTab
-            hideSelectors={!shouldRender({ requireFullAdmin: true })}
-            showSelectorsForSuperAdmin={shouldRender({
-              requireFullAdmin: true,
-            })}
+            hideSelectors={shouldRender}
+            showSelectorsForSuperAdmin={shouldRender}
           />
         </div>
       </div>

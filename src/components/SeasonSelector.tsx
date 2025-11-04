@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { shallow } from "zustand/shallow";
 import {
   Select,
   SelectContent,
@@ -13,6 +14,8 @@ import { useGetSeasons } from "../hooks/season/useGetSeasons";
 import { useSeasonStore } from "../store/season";
 import { Ternary } from "./common/Ternary";
 import { SelectGroup } from "@radix-ui/react-select";
+import { useTournamentStore } from "../store/tournament";
+import { useMatchStore } from "../store/match/useMatchStore";
 
 interface SeasonSelectorProps {
   className?: string;
@@ -27,10 +30,10 @@ export function SeasonSelector({
   placeholder = "Season",
   showAllSeasons = true,
   size = "md",
-  variant = "green",
 }: SeasonSelectorProps) {
-  const { setSeasonId: onSeasonChange, seasonId: selectedSeason } =
-    useSeasonStore();
+  const { setSeasonId, seasonId: selectedSeason } = useSeasonStore();
+  const { setTournamentId } = useTournamentStore();
+  const { setMatchId } = useMatchStore();
   const { isFetching, data, isLoading } = useGetSeasons();
 
   // Size configurations
@@ -45,12 +48,16 @@ export function SeasonSelector({
     rounded-lg w-fit min-w-[100px] 
     ${className}
   `.trim();
-
+  const onValueChange = (value: string) => {
+    setTournamentId("");
+    setMatchId("");
+    setSeasonId(value);
+  };
   return (
     <Select
       value={selectedSeason}
       disabled={isFetching || isLoading}
-      onValueChange={onSeasonChange}
+      onValueChange={onValueChange}
     >
       <SelectTrigger
         disabled={isFetching || isLoading}

@@ -1,5 +1,5 @@
 "use client";
-import { useAuth } from "@/src/hooks/useAuth";
+
 import { Header } from "./header";
 import Footer from "./Footer";
 import { TooltipProvider } from "../ui/tooltip";

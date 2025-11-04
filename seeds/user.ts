@@ -12,6 +12,7 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
+        seasonId: "",
         wins: 21,
         deaths: 46,
         kills: 117,
@@ -30,6 +31,7 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
+        seasonId: "",
         wins: 25,
         deaths: 40,
         kills: 74,
@@ -48,6 +50,7 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
+        seasonId: "",
         wins: 15,
         deaths: 30,
         kills: 56,
@@ -66,6 +69,7 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
+        seasonId: "",
         wins: 12,
         deaths: 24,
         kills: 32,
@@ -85,6 +89,7 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     playerStats: {
       create: {
         wins: 9,
+        seasonId: "",
         deaths: 18,
         kills: 24,
         kd: 1.33,
@@ -102,6 +107,7 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
+        seasonId: "",
         wins: 18,
         deaths: 36,
         kills: 46,
@@ -120,6 +126,7 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
+        seasonId: "",
         wins: 2,
         deaths: 4,
         kills: 4,
@@ -138,6 +145,7 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
+        seasonId: "",
         wins: 20,
         deaths: 40,
         kills: 33,
@@ -156,6 +164,7 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
+        seasonId: "",
         wins: 23,
         deaths: 46,
         kills: 25,
@@ -174,6 +183,7 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
     createdAt: new Date(),
     playerStats: {
       create: {
+        seasonId: "",
         wins: 18,
         deaths: 36,
         kills: 15,
@@ -193,46 +203,71 @@ const users = Array.from({ length: players.length }).map((_, i) => ({
 
 async function main() {
   console.log("Seeding data...");
+
+  console.log("Created season and tournament");
+
   const season = await prisma.season.create({
     data: {
-      description: "This is the 2023 season",
       createdBy: "SEED",
       name: "2023 Season",
       startDate: new Date(2023, 0, 1),
     },
   });
 
-  await prisma.tournament.create({
+  const tournament = await prisma.tournament.create({
     data: {
       name: "2023 Tournament",
       startDate: new Date(2023, 0, 1),
       season: { connect: { id: season.id } },
+      createdBy: "SEED",
+    },
+  });
+  await prisma.poll.create({
+    data: {
+      tournamentId: tournament.id,
+      question: "What is your favorite color?",
+      options: {
+        createMany: {
+          data: Array.from({ length: 3 }).map((_, i) => ({
+            name: `Option ${i}`,
+            vote: i % 2 === 0 ? "IN" : "OUT",
+          })),
+        },
+      },
     },
   });
 
-  console.log("Created season and tournament");
-
   for (let i = 0; i < users.length; i++) {
     const userData = users[i];
-    const playerData = players[i];
+    const user = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: userData.email,
+          clerkId: userData.clerkId,
+          userName: userData.userName,
+          role: userData.role,
+          isEmailLinked: false,
+          isVerified: false,
+          createdBy: "SEED",
+          player: {
+            create: {
+              seasons: { connect: { id: season.id } },
+              playerStats: {
+                create: { season: { connect: { id: season.id } } },
+              },
+            },
+          },
+        },
+        include: { player: { include: { playerStats: true } } },
+      });
 
-    const user = await prisma.user.create({
-      data: {
-        email: userData.email,
-        clerkId: userData.clerkId,
-        userName: userData.userName,
-        role: userData.role,
-        isEmailLinked: true,
-        isVerified: true,
-        player: { create: playerData },
-      },
-      include: { player: { include: { playerStats: true } } },
+      return user;
     });
 
     console.log("Created user with player and stats:", {
       userId: user.id,
       playerId: user.player?.id,
-      playerStatsId: user.player?.playerStats?.id,
+      playerStatsId: "",
     });
   }
 

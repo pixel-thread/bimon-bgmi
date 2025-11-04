@@ -1,7 +1,7 @@
 "use client";
 
 // import { RulesTab } from "@/src/components/rules";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { RulesTab } from "@/src/components/RulesTab";
 
 const TournamentRulesContent = () => {

@@ -20,20 +20,25 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { ADMIN_MATCH_ENDPOINTS } from "@/src/lib/endpoints/admin/match";
 import { toast } from "sonner";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import { useEffect } from "react";
 
 interface TournamentSelectorProps {
   className?: string;
-  isShowNewMatch?: boolean;
+  isAllMatch?: boolean;
 }
 
-export default function MatchSelector({ className }: TournamentSelectorProps) {
+export default function MatchSelector({
+  className,
+  isAllMatch = true,
+}: TournamentSelectorProps) {
   const { setMatchId, matchId } = useMatchStore();
-
+  const { isSuperAdmin } = useAuth();
   const { seasonId } = useSeasonStore();
 
   const { tournamentId } = useTournamentStore();
   const queryclient = useQueryClient();
-  const { data: matches } = useMatches();
+  const { data: matches, isFetching } = useMatches();
 
   const onSelect = (value: string | null) => {
     setMatchId(value || "");
@@ -59,11 +64,18 @@ export default function MatchSelector({ className }: TournamentSelectorProps) {
 
   const isMatchExist = matches?.length && matches?.length > 0 ? true : false;
 
+  if (isFetching) {
+    <Select value={matchId} onValueChange={(value) => onSelect(value || null)}>
+      <SelectTrigger
+        disabled={true}
+        className={className || "w-fit min-w-[200px]"}
+      >
+        <SelectValue placeholder="Loading" />
+      </SelectTrigger>
+    </Select>;
+  }
   return (
-    <Select
-      value={matchId || ""}
-      onValueChange={(value) => onSelect(value || null)}
-    >
+    <Select value={matchId} onValueChange={(value) => onSelect(value || null)}>
       <SelectTrigger
         disabled={!seasonId || !tournamentId}
         className={className || "w-fit min-w-[200px]"}
@@ -75,18 +87,21 @@ export default function MatchSelector({ className }: TournamentSelectorProps) {
           condition={isMatchExist}
           trueComponent={
             <>
+              {isAllMatch && <SelectItem value={"all"}>All Match</SelectItem>}
               {matches?.map((match, index) => (
                 <SelectItem key={match.id} value={match.id}>
                   Match {index + 1}
                 </SelectItem>
               ))}
-              <Button
-                onClick={() => onClickAddNewMatch()}
-                className="w-full text-start flex"
-                variant={"ghost"}
-              >
-                <PlusIcon />
-              </Button>
+              {isSuperAdmin && (
+                <Button
+                  onClick={() => onClickAddNewMatch()}
+                  className="w-full text-start flex"
+                  variant={"ghost"}
+                >
+                  <PlusIcon />
+                </Button>
+              )}
             </>
           }
           falseComponent={

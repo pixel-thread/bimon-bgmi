@@ -44,26 +44,11 @@ export async function updateTeamStats({
         seasonId,
       },
       update: {
-        kills: { increment: teamKills },
-        deaths: { increment: teamDeaths },
+        kills: teamKills,
+        deaths: teamDeaths,
         position: data.position,
       },
     });
-
-    // Update PlayerStats
-    await Promise.all(
-      data.players.map((player) =>
-        tx.playerStats.update({
-          where: { playerId: player.playerId },
-          data: {
-            kills: { increment: player.kills },
-            deaths: { increment: player.deaths },
-            wins: player.wins ?? undefined,
-            win2nd: player.wind2nd ?? undefined,
-          },
-        }),
-      ),
-    );
     await Promise.all(
       data.players.map((player) =>
         tx.teamPlayerStats.update({
@@ -75,12 +60,33 @@ export async function updateTeamStats({
             },
           },
           data: {
-            kills: { increment: player.kills },
-            deaths: { increment: player.deaths },
+            kills: player.kills ?? 0,
+            deaths: player.deaths ?? 0,
           },
-        }),
-      ),
+        })
+      )
     );
+    console.log("TeamPlayerStats updated");
+    // Update PlayerStats
+    await Promise.all(
+      data.players.map((player) =>
+        tx.playerStats.update({
+          where: {
+            playerId_seasonId: {
+              playerId: player.playerId,
+              seasonId: seasonId || "",
+            },
+          },
+          data: {
+            kills: player.kills ?? 0,
+            deaths: player.deaths ?? 0,
+            wins: player.wins ?? 0,
+            win2nd: player.wind2nd ?? 0,
+          },
+        })
+      )
+    );
+
     return { success: true };
   });
 }

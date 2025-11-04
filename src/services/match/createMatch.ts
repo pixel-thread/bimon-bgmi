@@ -1,7 +1,5 @@
 import { prisma } from "@/src/lib/db/prisma";
-import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { getTeamByTournamentId } from "../team/getTeamByTournamentId";
-import { PlayerT } from "@/src/types/player";
 
 type Props = {
   data: {
@@ -23,11 +21,15 @@ export async function createMatch({ data }: Props) {
     // Step 2: Fetch teams related to this tournament (or however you get teams)
     const teams = await getTeamByTournamentId({
       tournamentId: data.tournamentId,
-      include: { players: { include: { user: true } } },
     });
 
     for (const team of teams) {
       // Step 4: Create team stats
+      await tx.team.update({
+        where: { id: team.id },
+        data: { matches: { connect: { id: match.id } } },
+      });
+
       const teamStats = await tx.teamStats.create({
         data: {
           teamId: team.id,
@@ -39,15 +41,31 @@ export async function createMatch({ data }: Props) {
 
       // Step 5: Create team player stats
       if (team.players && team.players.length > 0) {
-        await tx.teamPlayerStats.createMany({
-          data: team.players.map((p: PlayerT) => ({
-            playerId: p.id,
-            matchId: match.id,
-            teamId: team.id,
-            tournamentId: data.tournamentId,
-            seasonId: data.seasonId,
-          })),
-        });
+        for (const player of team.players) {
+          await tx.teamPlayerStats.create({
+            data: {
+              teamId: team.id || "",
+              matchId: match.id || "",
+              seasonId: data.seasonId,
+              playerId: player.id || "",
+              teamStatsId: teamStats.id || "",
+            },
+          });
+          await tx.player.update({
+            where: { id: player.id },
+            data: { matches: { connect: { id: match.id } } },
+          });
+
+          await tx.matchPlayerPlayed.create({
+            data: {
+              matchId: match.id || "",
+              playerId: team.players[0].id || "",
+              tournamentId: data.tournamentId,
+              seasonId: data.seasonId,
+              teamId: team.id,
+            },
+          });
+        }
       }
     }
 

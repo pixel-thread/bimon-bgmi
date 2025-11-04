@@ -1,16 +1,16 @@
 import { prisma } from "@/src/lib/db/prisma";
-import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 
 type Props = {
   tournamentId: string;
-  include?: Prisma.TeamInclude;
 };
 
-export async function getTeamByTournamentId(
-  { tournamentId, include }: Props = { include: undefined, tournamentId: "" },
-): Promise<any> {
+export async function getTeamByTournamentId({ tournamentId }: Props) {
   return await prisma.team.findMany({
     where: { tournamentId },
-    include,
+    include: {
+      matches: true,
+      teamStats: { include: { match: true } },
+      players: { include: { user: true, playerStats: true } },
+    },
   });
 }

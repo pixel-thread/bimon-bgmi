@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   try {
     await superAdminMiddleware(req);
     const body = createTeamSchema.parse(await req.json());
-
+    const search = req.nextUrl.searchParams;
     const isTournamentExist = await getTournamentById({
       id: body.tournamentId,
     });

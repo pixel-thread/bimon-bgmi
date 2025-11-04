@@ -1,90 +1,60 @@
 import { ColumnDef } from "@tanstack/react-table";
-import { Button, buttonVariants } from "@/src/components/ui/button";
+import { Button } from "@/src/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { TeamT } from "@/src/types/team";
 import http from "@/src/utils/http";
 import { ADMIN_TEAM_ENDPOINTS } from "@/src/lib/endpoints/admin/team";
 import { toast } from "sonner";
-import { MoreVertical, TrashIcon } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import { useTournamentStore } from "@/src/store/tournament";
-import { useMatchStore } from "@/src/store/match/useMatchStore";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
+import React from "react";
 
 const col: ColumnDef<TeamT>[] = [
   {
     accessorKey: "name",
     header: "Team Name",
     cell: ({ row }) => (
-      <Link href={`/admin/teams?teamStats=${row.original.id}`}>
-        {row.original.players.map((player) => player.user.userName).join("_") ||
-          row.original.name}
-      </Link>
+      <Link href={`?teamStats=${row.original.id}`}>{row.original.name}</Link>
     ),
   },
   {
-    accessorKey: "players.length",
+    accessorKey: "size",
     header: "Team Size",
   },
   {
-    header: "Team Players",
-    cell: ({ row }) => (
-      <>
-        {row.original.players.map((player) => player.user.userName).join(", ")}
-      </>
-    ),
+    accessorKey: "slotNo",
+    header: "Slot No.",
+  },
+  {
+    accessorKey: "kills",
+    header: "Kills",
+  },
+  {
+    accessorKey: "deaths",
+    header: "deaths",
   },
 ];
 
 export const useTeamsColumns = () => {
-  const { matchId } = useMatchStore();
-  const columns: ColumnDef<TeamT>[] = [
-    ...col,
-    {
-      header: "Kills",
-      cell: ({ row }) => (
-        <>
-          {matchId
-            ? row.original.teamStats
-                .filter((stat) => stat.matchId === matchId)
-                .reduce((acc, curr) => acc + curr.kills, 0)
-            : row.original.teamStats.reduce((acc, curr) => acc + curr.kills, 0)}
-        </>
-      ),
-    },
-    {
-      header: "Deaths",
-      cell: ({ row }) => (
-        <>
-          {matchId
-            ? row.original.teamStats
-                .filter((stat) => stat.matchId === matchId)
-                .reduce((acc, curr) => acc + curr.deaths, 0)
-            : row.original.teamStats.reduce(
-                (acc, curr) => acc + curr.deaths,
-                0,
-              )}
-        </>
-      ),
-    },
-    {
-      header: "Action",
-      cell: ({ row }) => <ActionDropdown id={row.original.id} />,
-    },
-  ];
+  const columns: ColumnDef<TeamT>[] = React.useMemo(
+    () => [
+      ...col,
+      {
+        header: "Action",
+        cell: ({ row }) => <ActionDropdown id={row.original.id} />,
+      },
+    ],
+    [],
+  );
 
   return { columns };
 };

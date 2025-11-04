@@ -1,9 +1,9 @@
-import { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
-import { logger } from '../logger';
+import { logger } from "../logger";
 
-import axiosInstance from '../api';
-import { MetaT } from '@/types/meta';
+import axiosInstance from "../api";
+import { MetaT } from "@/src/types/meta";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -15,18 +15,20 @@ export interface ApiResponse<T> {
 }
 
 export const handleAxiosError = <T>(error: unknown): ApiResponse<T> => {
-  let errorMessage = 'Something went wrong. Please try again.';
-  let errorDetails: string | Record<string, unknown> = '';
+  let errorMessage = "Something went wrong. Please try again.";
+  let errorDetails: string | Record<string, unknown> = "";
 
   if (error instanceof AxiosError) {
     if (error.response) {
-      errorMessage = (error.response.data as { message?: string })?.message || errorMessage;
+      errorMessage =
+        (error.response.data as { message?: string })?.message || errorMessage;
       errorDetails =
-        (error.response.data as { error?: string | Record<string, unknown> })?.error ||
+        (error.response.data as { error?: string | Record<string, unknown> })
+          ?.error ||
         error.response.data ||
-        '';
+        "";
     } else if (error.request) {
-      errorMessage = 'No response from server. Please check your connection.';
+      errorMessage = "No response from server. Please check your connection.";
     } else {
       errorMessage = error.message;
     }
@@ -42,10 +44,12 @@ export const handleAxiosError = <T>(error: unknown): ApiResponse<T> => {
   };
 };
 
-const handleResponse = <T>(response: AxiosResponse<ApiResponse<T>>): ApiResponse<T> => {
+const handleResponse = <T>(
+  response: AxiosResponse<ApiResponse<T>>,
+): ApiResponse<T> => {
   return {
     success: response.data.success,
-    message: response.data.message || 'Request successful',
+    message: response.data.message || "Request successful",
     data: response.data.data ?? null,
     meta: response?.data?.meta,
     token: response.data.token,
@@ -53,9 +57,12 @@ const handleResponse = <T>(response: AxiosResponse<ApiResponse<T>>): ApiResponse
 };
 
 const http = {
-  get: async <T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> => {
+  get: async <T>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> => {
     try {
-      logger.log({ method: 'GET =>', path: url });
+      logger.log({ method: "GET =>", path: url });
       const response = await axiosInstance.get(url, config);
       return handleResponse<T>(response);
     } catch (error) {
@@ -69,7 +76,7 @@ const http = {
     config?: AxiosRequestConfig,
   ): Promise<ApiResponse<T>> => {
     try {
-      logger.log({ method: 'POST =>', path: url, data });
+      logger.log({ method: "POST =>", path: url, data });
       const response = await axiosInstance.post(url, data, config);
       return handleResponse<T>(response);
     } catch (error) {
@@ -83,7 +90,7 @@ const http = {
     config?: AxiosRequestConfig,
   ): Promise<ApiResponse<T>> => {
     try {
-      logger.log({ method: 'PUT =>', path: url });
+      logger.log({ method: "PUT =>", path: url });
       const response = await axiosInstance.put(url, data, config);
       return handleResponse<T>(response);
     } catch (error) {
@@ -91,9 +98,12 @@ const http = {
     }
   },
 
-  delete: async <T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> => {
+  delete: async <T>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> => {
     try {
-      logger.log({ method: 'DELETE =>', path: url });
+      logger.log({ method: "DELETE =>", path: url });
       const response = await axiosInstance.delete(url, config);
       return handleResponse<T>(response);
     } catch (error) {

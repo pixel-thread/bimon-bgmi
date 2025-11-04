@@ -6,6 +6,6 @@ type UseSeasonStore = {
 };
 
 export const useSeasonStore = create<UseSeasonStore>((set) => ({
-  seasonId: "",
+  seasonId: "all",
   setSeasonId: (id: string) => set({ seasonId: id }),
 }));

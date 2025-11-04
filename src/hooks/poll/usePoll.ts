@@ -1,7 +1,7 @@
 import { PollT } from "@/src/types/poll";
 import http from "@/src/utils/http";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "../useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 type UsePollProps = {
   id: string;

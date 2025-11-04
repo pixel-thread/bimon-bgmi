@@ -1,7 +1,7 @@
 "use client";
 
 import { RevealTab } from "@/src/components/RevealTab";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 const TournamentWheelContent = () => {
   const { user: playerUser } = useAuth();

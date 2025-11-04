@@ -2,7 +2,7 @@
 
 import { FiUsers } from "react-icons/fi";
 import { PlayersTab } from "@/src/components/PlayersTab";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 const AdminPlayersPage = () => {
   const { user } = useAuth();

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import MemoryCard from "./MemoryCard";
 import { MemoryGameLeaderboard } from "./MemoryGameLeaderboard";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { gameScoreService } from "@/src/lib/gameScoreService";
 import { BannerAd, InterstitialAd, RewardedAd } from "@/src/components/ads";
 import { useAdManager } from "@/src/lib/adService";

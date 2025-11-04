@@ -126,6 +126,16 @@ Authorization: Bearer {{TOKEN}}
 
 ### 
 
+# @name GET all players
+
+GET http://localhost:3000/api/admin/players HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### 
+
 # @name create match for tournament
 
 POST http://localhost:3000/api/admin/match HTTP/1.1

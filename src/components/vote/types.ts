@@ -1,7 +1,5 @@
-import { Poll, PollVote, PollOption } from "@/src/lib/types";
 import { TournamentParticipant } from "@/src/lib/tournamentParticipationService";
 import { PlayerPollVoteT, PollT } from "@/src/types/poll";
-import { PlayerT } from "@/src/types/player";
 
 export interface VoteTabProps {
   readOnly?: boolean;
@@ -14,7 +12,7 @@ export interface VotersDialogProps {
 }
 
 export interface TournamentParticipationOptionProps {
-  option: string | PollOption;
+  option: string;
   isSelected: boolean;
   isDisabled: boolean;
   isLoading?: boolean;

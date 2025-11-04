@@ -11,8 +11,6 @@ import {
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
 import { History, TrendingUp, TrendingDown } from "lucide-react";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/src/lib/firebase";
 import { toast } from "sonner";
 import { LoaderFive } from "@/src/components/ui/loader";
 import { PlayerT } from "@/src/types/player";
@@ -79,23 +77,8 @@ export function BalanceHistoryDialog({
     }
 
     try {
-      const snapshot = await getDocs(collection(db, "tournaments"));
       const result = new Map<string, { title: string; seasonId?: string }>();
       tournamentCache.clear();
-
-      snapshot.docs.forEach((doc) => {
-        const data = doc.data();
-        const tournamentInfo = {
-          title: data.title || "Unknown Tournament",
-          seasonId: data.seasonId,
-          timestamp: now,
-        };
-        tournamentCache.set(doc.id, tournamentInfo);
-        result.set(doc.id, {
-          title: tournamentInfo.title,
-          seasonId: tournamentInfo.seasonId,
-        });
-      });
 
       return result;
     } catch (error) {
@@ -216,113 +199,6 @@ export function BalanceHistoryDialog({
         setHistoryPage(1);
       } else {
         setIsLoadingMoreHistory(true);
-      }
-
-      try {
-        const [transactionsSnapshot, tournamentsMap, seasonsSnapshot] =
-          await Promise.all([
-            getDocs(collection(db, `players/${playerId}/transactions`)),
-            getTournamentData(),
-            selectedSeason !== "all"
-              ? getDocs(collection(db, "seasons"))
-              : Promise.resolve(null),
-          ]);
-
-        const selectedSeasonData = seasonsSnapshot?.docs
-          .find((doc) => doc.id === selectedSeason)
-          ?.data();
-
-        console.log("Season filtering debug:", {
-          selectedSeason,
-          seasonData: selectedSeasonData,
-          hasSeasonData: !!selectedSeasonData,
-          startDate: selectedSeasonData?.startDate,
-          endDate: selectedSeasonData?.endDate,
-          isActive: selectedSeasonData?.isActive,
-        });
-
-        const seasonTournamentIds = new Set<string>();
-        tournamentsMap.forEach((tournamentInfo, tournamentId) => {
-          const shouldInclude =
-            selectedSeason === "all" ||
-            tournamentInfo.seasonId === selectedSeason ||
-            (!tournamentInfo.seasonId && selectedSeason === "season_1");
-          if (shouldInclude) {
-            seasonTournamentIds.add(tournamentId);
-          }
-        });
-
-        const transactions = transactionsSnapshot.docs
-          .map((doc) => {
-            try {
-              const data = doc.data();
-              const description = processTransactionDescription(
-                data.reason || "No description",
-                data.tournamentId,
-                tournamentsMap,
-              );
-              const createdAtValue = data.createdAt;
-              const createdAtIso =
-                createdAtValue && typeof createdAtValue?.toDate === "function"
-                  ? createdAtValue.toDate().toISOString()
-                  : typeof createdAtValue === "string"
-                    ? createdAtValue
-                    : new Date().toISOString();
-              return {
-                id: doc.id,
-                playerId,
-                playerName: "",
-                amount: Math.abs(Number(data.amount) || 0),
-                type: data.type === "deduct" ? "debit" : "credit",
-                description,
-                timestamp: createdAtIso,
-                tournamentId: data.tournamentId,
-              } as BalanceHistory & { tournamentId?: string };
-            } catch (error) {
-              console.warn(`Failed to process transaction ${doc.id}:`, error);
-              return null;
-            }
-          })
-          .filter(
-            (
-              transaction,
-            ): transaction is BalanceHistory & { tournamentId?: string } =>
-              transaction !== null,
-          );
-
-        const filteredTransactions = filterTransactionsBySeason(
-          transactions,
-          selectedSeason,
-          seasonTournamentIds,
-          selectedSeasonData,
-        );
-
-        const sortedTransactions = filteredTransactions.sort((a, b) => {
-          const timeA = new Date(a.timestamp).getTime();
-          const timeB = new Date(b.timestamp).getTime();
-          return isNaN(timeB) ? -1 : isNaN(timeA) ? 1 : timeB - timeA;
-        });
-
-        setBalanceHistory(sortedTransactions);
-        const itemsPerPage = 10;
-        const currentPage = reset ? 1 : historyPage + 1;
-        const endIndex = currentPage * itemsPerPage;
-        setDisplayedHistory(sortedTransactions.slice(0, endIndex));
-        if (!reset) {
-          setHistoryPage(currentPage);
-        }
-      } catch (error) {
-        console.error("Error fetching balance history:", error);
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : "Failed to load balance history";
-        toast.error(errorMessage);
-        setBalanceHistory([]);
-        setDisplayedHistory([]);
-      } finally {
-        setIsLoadingBalanceHistory(false);
-        setIsLoadingMoreHistory(false);
       }
     },
     [

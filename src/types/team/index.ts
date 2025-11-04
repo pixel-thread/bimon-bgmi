@@ -1,13 +1,26 @@
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 
-export type TeamT = Prisma.TeamGetPayload<{
-  include: {
-    players: { include: { user: true } };
-    teamStats: true;
-  };
-}>;
+type PlayerT = {
+  id: string;
+  name: string;
+  category: number;
+};
+
+export type TeamT = {
+  id: string;
+  name: string;
+  position: number;
+  kills: number;
+  deaths: number;
+  size: number;
+  slotNo: number;
+  players: PlayerT[];
+  pts: number;
+  total: number;
+};
+
 export type TeamStatsT = Prisma.TeamStatsGetPayload<{
   include: {
-    playersStats: true;
+    team: { include: { players: { include: { user: true } } } };
   };
 }>;

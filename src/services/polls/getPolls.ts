@@ -9,7 +9,7 @@ type Props = {
   orderBy?: Prisma.PollOrderByWithRelationInput;
 };
 
-export async function getPolls({ include, where, page, orderBy }: Props = {}) {
+export async function getPolls({ include, where, orderBy }: Props = {}) {
   return prisma.poll.findMany({
     where,
     include,

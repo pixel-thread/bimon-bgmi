@@ -10,7 +10,7 @@ export async function GET(
   try {
     await tokenMiddleware(req);
     const id = (await params).id;
-    const player = await getPlayerById({ id });
+    const player = await getPlayerById({ id, include: { user: true } });
     return SuccessResponse({ data: player });
   } catch (error) {
     handleApiErrors(error);

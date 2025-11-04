@@ -12,6 +12,7 @@ import { Badge } from "@/src/components/ui/badge";
 import { History, Ban, AlertTriangle } from "lucide-react";
 import { formatRemainingBanDuration } from "@/src/utils/banUtils";
 import { usePlayer } from "@/src/hooks/player/usePlayer";
+import { usePlayerStats } from "@/src/hooks/player/usePlayerStats";
 
 const CATEGORY_COLORS = {
   "Ultra Noob":
@@ -34,6 +35,7 @@ type Props = {
 
 export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
   const { data: player } = usePlayer({ id });
+  const { data: stats } = usePlayerStats({ id });
 
   if (!player) return null;
 
@@ -80,19 +82,19 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <p className="text-2xl font-bold text-blue-600">
-                  {/* {player.playerStats?.matches || 0} */}0
+                  {stats?.matches.length || 0}
                 </p>
                 <p className="text-sm text-muted-foreground">Matches</p>
               </div>
               <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                 <p className="text-2xl font-bold text-green-600">
-                  {player.playerStats?.kills}
+                  {stats?.kills}
                 </p>
                 <p className="text-sm text-muted-foreground">Kills</p>
               </div>
               <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                 <p className="text-2xl font-bold text-yellow-600">
-                  {player?.playerStats?.kd}
+                  {stats?.kd}
                 </p>
                 <p className="text-sm text-muted-foreground">K/D</p>
               </div>

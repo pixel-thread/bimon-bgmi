@@ -60,20 +60,6 @@ const col: ColumnDef<PollT>[] = [
 export const usePollColumns = () => {
   const queryClient = useQueryClient();
 
-  const { mutate: deletePoll, isPending: isDeleting } = useMutation({
-    mutationFn: ({ id }: { id: string }) =>
-      http.delete<{ id: string }>(`/admin/poll/${id}`),
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success(data.message);
-        queryClient.invalidateQueries({ queryKey: ["polls"] });
-        return data;
-      }
-      toast.success(data.message);
-      return data;
-    },
-  });
-
   const { mutate: bulkTeam, isPending: isBulking } = useMutation({
     mutationFn: ({ id, size }: { id: string; size: number }) =>
       http.post<PollT>(

@@ -12,7 +12,7 @@ import {
   FiBarChart,
 } from "react-icons/fi";
 import { Gift } from "lucide-react";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 interface TabsProps {
   activeTab:

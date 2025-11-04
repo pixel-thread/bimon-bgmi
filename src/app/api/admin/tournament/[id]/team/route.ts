@@ -2,19 +2,24 @@ import { createTeamsByPolls } from "@/src/services/team/createTeamsByPoll";
 import { deleteTeamByTournamentId } from "@/src/services/team/deleteTeamsByTournamentId";
 import { getTeamByTournamentId } from "@/src/services/team/getTeamByTournamentId";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
+import {
+  calculatePlayerPoints,
+  getKdRank,
+} from "@/src/utils/calculatePlayersPoints";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
 
 export async function GET(
-  req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await superAdminMiddleware(req);
 
     const id = (await params).id;
+    const matchId = req.nextUrl.searchParams.get("match") || "";
 
     const tournament = await getTournamentById({ id });
 
@@ -24,11 +29,49 @@ export async function GET(
 
     const teams = await getTeamByTournamentId({
       tournamentId: id,
-      include: { teamStats: true, players: { include: { user: true } } },
+    });
+
+    const seasonId = tournament.seasonId;
+    const data = teams?.map((team) => {
+      const teamStats = team.teamStats.find((val) => val.matchId === matchId);
+
+      const teamPlayers = team.players.map((player) => {
+        const playerStats = player.playerStats.find(
+          (val) => val.seasonId === seasonId,
+        );
+        const category = getKdRank(
+          playerStats?.kills || 0,
+          playerStats?.deaths || 0,
+        );
+        return {
+          id: player.id,
+          name: player.user.userName,
+          category: category,
+        };
+      });
+      const kills = teamStats?.kills || 0;
+      const pts = calculatePlayerPoints(team.position, kills);
+      const total = kills + pts;
+      const teamName = team.players
+        .map((player) => player.user.userName)
+        .join("_");
+      return {
+        id: team.id,
+        name: teamName,
+        matches: team.matches,
+        size: team.players.length,
+        slotNo: team.teamNumber + 1,
+        kills: teamStats?.kills || 0,
+        deaths: teamStats?.deaths || 0,
+        position: team.position,
+        pts: pts,
+        total: total,
+        players: teamPlayers,
+      };
     });
 
     return SuccessResponse({
-      data: teams,
+      data: data,
       message: "Teams fetched successfully",
     });
   } catch (error) {
@@ -60,12 +103,14 @@ export async function POST(
         status: 404,
       });
     }
+
     if (tournamentExist.seasonId === null) {
       return ErrorResponse({
         message: "season does not exist",
         status: 404,
       });
     }
+
     const teams = await createTeamsByPolls({
       groupSize: teamSize as 1 | 2 | 3 | 4,
       tournamentId: id,
@@ -74,16 +119,8 @@ export async function POST(
     });
 
     return SuccessResponse({
-      data: teams.map((team) => ({
-        total: team.players.length,
-        team: team.players.map((player) => {
-          return {
-            kd: player.playerStats?.kd,
-            win: player.playerStats?.wins,
-            name: player.id,
-          };
-        }),
-      })),
+      data: teams,
+      message: "Teams created successfully",
     });
   } catch (error) {
     return handleApiErrors(error);

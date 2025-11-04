@@ -6,6 +6,17 @@ import { useQuery } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { cn } from "@/src/lib/utils";
+import { PLAYER_ENDPOINTS } from "@/src/lib/endpoints/player";
+import { useSeasonStore } from "@/src/store/season";
+
+type PlayerStatsT = Prisma.PlayerStatsGetPayload<{
+  include: {
+    player: {
+      include: { user: true; characterImage: true; matchs: true };
+      matchs: true;
+    };
+  };
+}>;
 
 export interface DynamicTopPlayersPodiumProps {
   sortBy: "name" | "kd" | "kills" | "matches" | "balance" | "banned";
@@ -28,16 +39,20 @@ export const DynamicTopPlayersPodium = React.memo(
   }: DynamicTopPlayersPodiumProps) {
     // Ref for the scroll container
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const { seasonId } = useSeasonStore();
 
-    const { data: players, isFetching: isLoading } = useQuery({
+    const { data: stats, isFetching: isLoading } = useQuery({
       queryKey: ["top-players"],
-      queryFn: () => http.get<PlayerT[]>("/players/top-player"),
+      queryFn: () =>
+        http.get<PlayerStatsT[]>(
+          PLAYER_ENDPOINTS.GET_TOP_PLAYER.replace(":season", seasonId),
+        ),
       select: (data) => data.data,
     });
 
     // Auto-scroll to center the #1 player
     useEffect(() => {
-      if (scrollContainerRef.current && players && players?.length > 0) {
+      if (scrollContainerRef.current && stats && stats?.length > 0) {
         const container = scrollContainerRef.current;
 
         // Calculate the scroll position to center the #1 player (2nd card)
@@ -62,26 +77,26 @@ export const DynamicTopPlayersPodium = React.memo(
 
         return () => clearTimeout(timer);
       }
-    }, [players]);
+    }, [stats]);
 
     // Generate rank display based on sort criteria (memoized)
     const getRankDisplay = React.useCallback(
-      (player: PlayerT) => {
+      (player: PlayerStatsT) => {
         switch (sortBy) {
           // case "balance":
           // return player.playerStats.balance ? `₹${player.balance}` : "₹0";
           case "kd":
-            return `${player?.playerStats?.kd.toFixed(2)} K/D`;
+            return `${player?.kd ? player.kd.toFixed(2) : 0} K/D`;
           case "kills":
-            return `${player?.playerStats?.kills} Kills`;
+            return `${player.kills ? player.kills : 0} Kills`;
           case "matches":
-            return `${player?.playerStats?.matches} Matches`;
+            return `${player?.player.matchs.length} Matches`;
           case "name":
-            return player?.category;
+            return player?.player.category;
           // case "banned":
           //   return player.balance ? `₹${player.balance}` : "₹0";
           default:
-            return `${player.playerStats?.kd.toFixed(2)} K/D`;
+            return `${player?.kd ? player.kd.toFixed(2) : 0} K/D`;
         }
       },
       [sortBy],
@@ -89,7 +104,14 @@ export const DynamicTopPlayersPodium = React.memo(
 
     // Player card component with 9:22 aspect ratio (memoized)
     const PlayerCard = React.memo(
-      ({ player, position }: { player: PlayerT; position: number }) => {
+      ({
+        player: playerStats,
+        position,
+      }: {
+        player: PlayerStatsT;
+        position: number;
+      }) => {
+        const player = playerStats?.player;
         const positionColors = {
           1: {
             gradient: "from-yellow-400/15 via-yellow-500/10 to-yellow-600/20",
@@ -127,7 +149,7 @@ export const DynamicTopPlayersPodium = React.memo(
         transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer
       `}
             style={{ aspectRatio: "9/22" }}
-            onClick={() => onPlayerClick && onPlayerClick(player)}
+            // onClick={() => onPlayerClick && onPlayerClick(player)}
           >
             {/* Subtle background pattern for better theme support */}
             <div
@@ -255,11 +277,8 @@ export const DynamicTopPlayersPodium = React.memo(
                   </div>
                 </div>
                 <div className="opacity-90 font-medium drop-shadow text-shadow h-5">
-                  <div
-                    className="text-sm truncate"
-                    // title={getRankDisplay(player)}
-                  >
-                    {getRankDisplay(player)}
+                  <div className="text-sm truncate">
+                    {getRankDisplay(playerStats)}
                     Rank Display
                   </div>
                 </div>
@@ -286,7 +305,7 @@ export const DynamicTopPlayersPodium = React.memo(
       );
     }
 
-    if (players?.length === 0) {
+    if (stats?.length === 0) {
       return (
         <div
           className={`bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 p-6 shadow-lg ${className}`}
@@ -310,7 +329,7 @@ export const DynamicTopPlayersPodium = React.memo(
         <div className="hidden md:block">
           <div className="flex items-end  justify-center gap-4 px-4 min-h-[200px]">
             {/* 2nd Place - Left */}
-            {players?.map((player, index) => (
+            {stats?.map((player, index) => (
               <div key={player.id} className={cn("w-32 flex-shrink-0")}>
                 {player ? (
                   <PlayerCard
@@ -342,11 +361,14 @@ export const DynamicTopPlayersPodium = React.memo(
                 paddingRight: "20vw", // Reduced from 25vw
               }}
             >
-              {players?.map((player, index) => (
-                <div className="w-32 flex-shrink-0 scroll-snap-center">
-                  {player ? (
+              {stats?.map((stat, index) => (
+                <div
+                  key={index}
+                  className="w-32 flex-shrink-0 scroll-snap-center"
+                >
+                  {stat ? (
                     <PlayerCard
-                      player={player}
+                      player={stat}
                       position={index === 0 ? 2 : index === 1 ? 1 : 3}
                     />
                   ) : (

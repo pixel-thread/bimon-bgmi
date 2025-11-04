@@ -13,7 +13,7 @@ import {
 import { Input } from "@/src/components/ui/input";
 import { Eye, EyeOff, Copy } from "lucide-react";
 import { Button } from "../ui/button";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { SubmitHandler, useForm } from "react-hook-form";
 import {
   Form,
@@ -151,7 +151,7 @@ export const CreatePlayerDialog = ({
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(
-                        form.getValues("password") || "",
+                        form.getValues("password") || ""
                       );
                       toast.success("Password copied to clipboard");
                     } catch (_) {

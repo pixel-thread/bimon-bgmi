@@ -8,7 +8,7 @@ import {
   DialogFooter,
 } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
-import TeamScoreRow from "@/src/components/TeamScoreRow";
+import TeamScoreRow from "@/src/components/teams/TeamScoreRow";
 import { CombinedTeamData } from "@/src/lib/types";
 import { FiArrowUp, FiArrowDown, FiAlertCircle } from "react-icons/fi";
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { FiMenu, FiX, FiLogIn, FiSun, FiMoon } from "react-icons/fi";
 import { UserAvatar, UserButton } from "@clerk/nextjs";
 import { useTheme } from "next-themes";

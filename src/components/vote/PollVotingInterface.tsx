@@ -4,7 +4,6 @@ import React, { useState, useCallback } from "react";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
-import { useAuth } from "@/src/hooks/useAuth";
 import { useTournaments } from "@/src/hooks/tournament/useTournaments";
 import {
   calculateRemainingBanDuration,
@@ -18,6 +17,7 @@ import { usePolls } from "@/src/hooks/poll/usePolls";
 import { useActiveSeason } from "@/src/hooks/season/useActiveSeason";
 import { PollT } from "@/src/types/poll";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 export interface PollVotingInterfaceProps {
   readOnly?: boolean;
@@ -154,10 +154,7 @@ export default PollVotingInterface;
 
 const BanBanner = () => {
   const { user: auth } = useAuth();
-  const { data: activeSeason } = useActiveSeason();
-  const { data: tournaments } = useTournaments({
-    seasonId: activeSeason?.id,
-  });
+  const { data: tournaments } = useTournaments();
   const user = auth?.player;
 
   return (

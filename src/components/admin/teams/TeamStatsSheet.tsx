@@ -31,6 +31,7 @@ import {
   teamStatsSchema,
 } from "@/src/utils/validation/team/team-stats";
 import { toast } from "sonner";
+import MatchSelector from "../../match/MatchSelector";
 
 type Props = {
   open: string;
@@ -54,7 +55,7 @@ export function TeamStatsSheet({ open }: Props) {
   });
 
   const { data: stats, isFetching } = useQuery({
-    queryKey: ["teamStats", open],
+    queryKey: ["teamStats", open, matchId],
     queryFn: () =>
       http.post<TeamStatsForm & { kills: number; deaths: number; kd: number }>(
         ADMIN_TEAM_ENDPOINTS.GET_TEAM_STATS.replace(":teamId", open),
@@ -98,7 +99,10 @@ export function TeamStatsSheet({ open }: Props) {
   const onSubmit: SubmitHandler<TeamStatsForm> = (data) => mutate(data);
 
   return (
-    <Sheet open={!!open && !!matchId} onOpenChange={onValueChange}>
+    <Sheet
+      open={!!open && !isFetching && !!matchId}
+      onOpenChange={onValueChange}
+    >
       <SheetContent side="right" className="min-w-xl overflow-y-scroll">
         <Form {...form}>
           <form
@@ -136,6 +140,7 @@ export function TeamStatsSheet({ open }: Props) {
                 </h1>
               </div>
             </div>
+            <MatchSelector isAllMatch={false} />
             <FormField
               control={form.control}
               name={`position`}

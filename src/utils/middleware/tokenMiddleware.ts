@@ -22,15 +22,16 @@ export async function tokenMiddleware(req: NextRequest | Request) {
   }
 
   // Try to find user in your backend
-  let user = await getUserByClerkId({ id: claims.sub });
+  const user = await getUserByClerkId({ id: claims.sub });
 
   if (!user) {
     if (process.env.NODE_ENV === "development") {
       const clerkUser = await clientClerk.users.getUser(claims.sub);
-      await createUserIfNotExistInDB({
+      const user = await createUserIfNotExistInDB({
         clerkId: claims.sub,
         username: clerkUser?.username || Math.random().toString(36).slice(2),
       });
+      return user;
     }
     // If the user is not found, revoke this session at Clerk
     if (claims.sid) {

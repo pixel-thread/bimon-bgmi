@@ -1,9 +1,6 @@
 "use client";
 
-import { FiAward } from "react-icons/fi";
-import { WinnersTab } from "@/src/components/WinnersTab";
-import { useAuth } from "@/src/hooks/useAuth";
-import { TournamentLayoutContent } from "@/src/components/TournamentLayoutContent";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 const TournamentWinnersContent = () => {
   const { user: playerUser } = useAuth();
@@ -13,7 +10,8 @@ const TournamentWinnersContent = () => {
   const isWinnersClaimAdmin =
     (role === "ADMIN" || role === "SUPER_ADMIN") && !playerUser; // Only if they don't have a linked player (not logged in as player)
 
-  return <WinnersTab readOnly={!isWinnersClaimAdmin} />;
+  return <div>winnder tab</div>;
+  // <WinnersTab readOnly={!isWinnersClaimAdmin} />;
 };
 
 export default TournamentWinnersContent;

@@ -3,7 +3,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth as useCAuth } from "@clerk/nextjs";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { routeRoles } from "@/src/lib/route/role";
 import { LoaderFour } from "../ui/loader";
 
@@ -60,7 +60,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
       if (isAuthenticated) {
         // Check if the user has at least one of the required roles for the current route
         const hasRequiredRole = currentRoute.role.some((role) =>
-          userRoles.includes(role),
+          userRoles.includes(role)
         );
 
         // If the user does not have the required role(s)

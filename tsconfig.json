@@ -36,7 +36,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "rest/tournament/team/index.http",
-    "rest/index.http"
+    "rest/index.http",
+    "src/components/teams/TeamPage.x"
   ],
   "exclude": [
     "node_modules",

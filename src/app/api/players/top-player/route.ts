@@ -1,66 +1,84 @@
-import { getAllPlayers } from "@/src/services/player/getAllPlayers";
+import { prisma } from "@/src/lib/db/prisma";
+import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
+import { NextRequest } from "next/server";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     await tokenMiddleware(req);
 
-    const players = await getAllPlayers({
-      where: { isBanned: false },
-      include: { user: true, playerStats: true },
+    const search = req.nextUrl.searchParams;
+    const seasonId = search.get("season");
+
+    // Build where filter for prisma query
+    let where: Prisma.PlayerStatsWhereInput = {};
+    if (seasonId && seasonId !== "all") {
+      where = { seasonId };
+    }
+
+    // Fetch playerStats with related player info
+    const playerStats = await prisma.playerStats.findMany({
+      where,
+      include: {
+        player: {
+          include: {
+            user: true,
+            matches: true, // corrected 'matchs' to 'matches'
+            characterImage: true,
+          },
+        },
+      },
     });
 
-    if (!players || players.length === 0) {
+    if (!playerStats || playerStats.length === 0) {
       return ErrorResponse({
         message: "No players found",
         status: 404,
       });
     }
 
-    // Only include players with valid stats
-    const playersWithKD = players
-      .map((p) => {
-        const kd =
-          p.playerStats?.kd ??
-          (p.playerStats?.deaths && p.playerStats.deaths > 0
-            ? p.playerStats.kills / p.playerStats.deaths
-            : (p.playerStats?.kills ?? 0));
-        return {
-          ...p,
-          computedKD: kd,
-          kills: p.playerStats?.kills ?? 0,
-          wins: p.playerStats?.wins ?? 0,
-        };
-      })
-      .filter((p) => p.computedKD !== undefined && p.computedKD !== null);
+    // Deduplicate by player id (not playerStats id)
+    const seenPlayerIds = new Set<string>();
+    const uniquePlayerStats = playerStats.filter((ps) => {
+      if (ps.playerId && seenPlayerIds.has(ps.playerId)) return false;
+      if (ps.playerId) seenPlayerIds.add(ps.playerId);
+      return true;
+    });
 
-    // Improve tie-breaking: KD, kills, then wins
-    const sortedPlayers = playersWithKD
+    // Compute KD and provide fallbacks for kills and wins
+    const playersWithStats = uniquePlayerStats.map((ps) => {
+      const kd =
+        ps.deaths && ps.deaths > 0 ? ps.kills / ps.deaths : (ps.kills ?? 0);
+      return {
+        ...ps,
+        computedKD: kd,
+        kills: ps.kills ?? 0,
+        wins: ps.wins ?? 0,
+      };
+    });
+
+    // Sort by KD desc, kills desc, wins desc for tie-breaking
+    const topPlayers = playersWithStats
       .sort(
         (a, b) =>
           b.computedKD - a.computedKD || b.kills - a.kills || b.wins - a.wins,
       )
       .slice(0, 3);
 
-    // Rearrange so the second highest is first and highest is second (middle)
-    if (sortedPlayers.length === 3) {
-      const [first, second, third] = sortedPlayers;
-      // new order: second, first, third
-      sortedPlayers[0] = second;
-      sortedPlayers[1] = first;
-      sortedPlayers[2] = third;
-    } else if (sortedPlayers.length === 2) {
-      // If only two players, swap them
-      [sortedPlayers[0], sortedPlayers[1]] = [
-        sortedPlayers[1],
-        sortedPlayers[0],
-      ];
+    // Reorder so second highest is first, highest is second, third unchanged
+    if (topPlayers.length === 3) {
+      const [first, second, third] = topPlayers;
+      topPlayers[0] = second;
+      topPlayers[1] = first;
+      topPlayers[2] = third;
+    } else if (topPlayers.length === 2) {
+      [topPlayers[0], topPlayers[1]] = [topPlayers[1], topPlayers[0]];
     }
 
     return SuccessResponse({
-      data: sortedPlayers,
+      data: topPlayers,
       message: "Top players fetched successfully",
     });
   } catch (error) {

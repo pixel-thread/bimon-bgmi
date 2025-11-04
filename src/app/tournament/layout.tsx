@@ -1,5 +1,5 @@
 "use client";
-import { TournamentLayoutContent } from "@/src/components/TournamentLayoutContent";
+import { TournamentLayoutContent } from "@/src/components/tournaments/TournamentLayoutContent";
 import { Gift } from "lucide-react";
 
 import { usePathname } from "next/navigation";

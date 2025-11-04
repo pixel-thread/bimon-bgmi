@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/src/components/ui/dialog";
-import TournamentSelector from "@/src/components/TournamentSelector";
+import TournamentSelector from "@/src/components/tournaments/TournamentSelector";
 import { TrashIcon } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";

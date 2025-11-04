@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { gameScoreService } from "@/src/lib/gameScoreService";
 import LeaderboardModal from "./LeaderboardModal";
 import InterstitialAd from "@/src/components/ads/InterstitialAd";

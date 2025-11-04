@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { FiLogIn, FiSun, FiMoon } from "react-icons/fi";
 import { UserButton } from "@clerk/nextjs";
 import { useTheme } from "next-themes";

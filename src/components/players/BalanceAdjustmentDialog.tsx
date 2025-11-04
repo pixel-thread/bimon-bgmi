@@ -13,8 +13,6 @@ import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/src/components/ui/radio-group";
 import { Wallet } from "lucide-react";
-import { doc, setDoc } from "firebase/firestore";
-import { db } from "@/src/lib/firebase";
 import { toast } from "sonner";
 import { PlayerT } from "@/src/types/player";
 
@@ -70,22 +68,8 @@ export function BalanceAdjustmentDialog({
         balanceAdjustment.type === "credit" ? amountValue : -amountValue;
       const newBalance = currentBalance + adjustmentAmount;
 
-      await setDoc(
-        doc(db, "players", player.id),
-        { balance: newBalance },
-        { merge: true },
-      );
-
       const now = new Date().toISOString();
       const txId = `${player.id}_${Date.now()}`;
-      await setDoc(doc(db, `players/${player.id}/transactions`, txId), {
-        id: txId,
-        playerId: player.id,
-        amount: adjustmentAmount,
-        type: balanceAdjustment.type === "credit" ? "add" : "deduct",
-        reason: balanceAdjustment.reason,
-        createdAt: now,
-      });
 
       toast.success(
         `Balance ${

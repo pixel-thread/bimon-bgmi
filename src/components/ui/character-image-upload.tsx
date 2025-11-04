@@ -8,7 +8,7 @@ import { cn } from "@/src/lib/utils";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
 import http from "@/src/utils/http";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { PLAYER_ENDPOINTS } from "@/src/lib/endpoints/player";
 
 export interface CharacterImageUploadProps {
@@ -34,7 +34,7 @@ export function CharacterImageUpload({
           headers: {
             "Content-Type": "multipart/form-data",
           },
-        },
+        }
       ),
     onSuccess: async (data) => {
       if (data.success) {
@@ -82,7 +82,7 @@ export function CharacterImageUpload({
         <div
           className={cn(
             "absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer",
-            uploading && "opacity-100",
+            uploading && "opacity-100"
           )}
         >
           {uploading ? (

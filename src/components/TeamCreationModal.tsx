@@ -1,2 +1,2 @@
 // Re-export the refactored TeamCreationModal
-export { default } from "./team-creation/TeamCreationModal";
+export { default } from "./teams/team-creation/TeamCreationModal";

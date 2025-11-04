@@ -1,7 +1,7 @@
 // app/page.tsx
 "use client";
 
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import Link from "next/link";
 import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import { Ternary } from "../components/common/Ternary";

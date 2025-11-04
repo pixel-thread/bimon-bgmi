@@ -1,12 +1,7 @@
 "use client";
 
-import TeamManagement from "@/src/components/TeamManagement";
-import { useAuth } from "@/src/hooks/useAuth";
+import TeamsPage from "@/src/components/teams/TeamPage";
 
-const TournamentPageContent = () => {
-  const { user: playerUser } = useAuth();
-
-  return <TeamManagement readOnly={playerUser?.role === "PLAYER" || true} />;
-};
-
-export default TournamentPageContent;
+export default function page() {
+  return <TeamsPage />;
+}

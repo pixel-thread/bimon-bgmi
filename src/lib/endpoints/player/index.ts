@@ -11,8 +11,8 @@ type PlayerEndpointsT =
 export const PLAYER_ENDPOINTS: EndpointT<PlayerEndpointsT> = {
   POST_UPLOAD_CHARACTER_IMAGE: "/players/:id/character",
   DELETE_UPLOAD_CHARACTER_IMAGE: "/players/:id/character",
-  GET_TOP_PLAYER: "/players/top-player",
+  GET_TOP_PLAYER: "/players/top-player?season=:season",
   GET_ALL_PLAYERS: "/players",
   GET_PLAYER_BY_ID: "/players/:id",
-  GET_PLAYER_STATS_BY_ID: "/players/:id/stats",
+  GET_PLAYER_STATS_BY_ID: "/players/:id/stats?season=:season",
 };

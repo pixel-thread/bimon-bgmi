@@ -6,7 +6,8 @@ import { useTheme } from "next-themes";
 import { Ternary } from "./common/Ternary";
 import { MoonIcon, SunIcon } from "lucide-react";
 import { SeasonSelector } from "./SeasonSelector";
-import TournamentSelector from "./TournamentSelector";
+import TournamentSelector from "./tournaments/TournamentSelector";
+import MatchSelector from "./match/MatchSelector";
 
 export function SiteHeader() {
   const { theme, setTheme } = useTheme();
@@ -28,9 +29,10 @@ export function SiteHeader() {
           />
           <h1 className="text-base font-medium">Documents</h1>
         </div>
-        <div className="flex items-center w-full space-x-3">
+        <div className="flex items-center gap-2">
           <SeasonSelector />
           <TournamentSelector />
+          <MatchSelector />
         </div>
         <div className="flex w-full justify-end items-center">
           <div>

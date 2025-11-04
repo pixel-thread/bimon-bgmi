@@ -34,34 +34,24 @@ import {
   getDoc,
   where,
 } from "firebase/firestore";
-import { db } from "@/src/lib/firebase";
 
 // Custom Hooks
-import { useTeams } from "@/src/hooks/useTeams";
-import { useSequentialEditing } from "@/src/hooks/useSequentialEditing";
-
 // Types
-import { CombinedTeamData, MatchScore, Player } from "@/src/lib/types";
 
 // Custom Components
 import ActionToolbar from "@/src/components/ActionToolbar";
-import TeamCard from "@/src/components/TeamCard";
-import EditTeamModal from "@/src/components/EditTeamModal";
-import AddTeamModal from "@/src/components/AddTeamModal"; // Added
-import TournamentSelector from "@/src/components/TournamentSelector";
-import OverallStandingModal from "@/src/components/OverallStandingModal";
+import TeamCard from "@/src/components/teams/TeamCard";
+
+import TournamentSelector from "@/src/components/tournaments/TournamentSelector";
+import OverallStandingModal from "@/src/components/teams/OverallStandingModal";
 import SequentialEditModal from "@/src/components/SequentialEditModal";
 import PlayerManagement from "@/src/components/PlayerManagement";
 // import CreateTournamentModal from "@/components/CreateTournamentModal";
-import { TournamentSettings } from "@/src/components/TournamentSettings";
-import { MatchDropdown } from "@/src/components/MatchDropdown";
+import { TournamentSettings } from "@/src/components/tournaments/TournamentSettings";
 
 // Utilities
-import { exportToCSV, calculatePlacementPoints } from "@/src/lib/utils";
-import { toast } from "sonner";
 
 // Re-export types using 'export type'
-export type { CombinedTeamData, MatchScore, Player };
 
 // Re-export values
 export {
@@ -88,24 +78,14 @@ export {
   getDocs,
   getDoc,
   where,
-  db,
-  useTeams,
-  useSequentialEditing,
   ActionToolbar,
   TeamCard,
-  EditTeamModal,
-  AddTeamModal, // Added
   TournamentSelector,
   OverallStandingModal,
   SequentialEditModal,
   PlayerManagement,
-  // CreateTournamentModal,
   TournamentSettings,
-  exportToCSV,
-  calculatePlacementPoints,
   Button,
-  MatchDropdown,
-  toast,
   Dialog,
   DialogContent,
   DialogHeader,

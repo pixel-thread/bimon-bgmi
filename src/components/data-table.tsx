@@ -40,17 +40,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/components/ui/table";
+import { MetaT } from "../types/meta";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type DataTableProps<T> = {
   data: T[] | any;
   columns: ColumnDef<T>[] | any;
   filter?: DataTableFilterOptions[];
+  meta?: MetaT | null;
 };
 
 export function DataTable<T>({
   data,
   columns,
   filter = [],
+  meta,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -137,33 +141,61 @@ export function DataTable<T>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="text-muted-foreground flex-1 text-sm">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination table={table} meta={meta} />
     </div>
   );
 }
+type DataTablePaginationProps = {
+  meta?: MetaT | null;
+  table: any;
+};
+
+const DataTablePagination = ({ meta, table }: DataTablePaginationProps) => {
+  const router = useRouter();
+  const search = useSearchParams();
+  const page = search.get("page") || "1";
+
+  const onNextPageChange = () => {
+    const nextPage = Number(page) + 1;
+    if (meta?.hasNextPage) {
+      router.push(`?page=${nextPage}`);
+    }
+  };
+
+  const onPrevPageChange = () => {
+    const prevPage = Number(page) - 1;
+    if (meta?.hasPreviousPage) {
+      router.push(`?page=${prevPage}`);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-end space-x-2 py-4">
+      <div className="text-muted-foreground flex-1 text-sm">
+        {table.getFilteredSelectedRowModel().rows.length} of{" "}
+        {table.getFilteredRowModel().rows.length} row(s) selected.
+      </div>
+      <div className="space-x-2">
+        <Button
+          disabled={!meta?.hasPreviousPage}
+          variant="outline"
+          size="sm"
+          onClick={() => onPrevPageChange()}
+        >
+          Previous
+        </Button>
+        <Button
+          disabled={!meta?.hasNextPage}
+          variant="outline"
+          size="sm"
+          onClick={() => onNextPageChange()}
+        >
+          Next
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 export type DataTableFilterOptions = {
   id: string;

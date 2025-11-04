@@ -8,14 +8,15 @@ import {
   CardTitle,
 } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
-import TournamentSelector from "./TournamentSelector";
+import TournamentSelector from "./tournaments/TournamentSelector";
 import { SeasonSelector } from "./SeasonSelector";
 import WinnerReveal from "./WinnerReveal";
-import { useTeams } from "./teamManagementImports";
+
 import { getBestTournamentForAutoSelect } from "@/src/lib/utils";
 import { LoaderFive } from "@/src/components/ui/loader";
 import { Trophy, Settings, Calendar, Users } from "lucide-react";
 import { useTournament } from "../hooks/tournament/useTournament";
+import { useTeams } from "../hooks/team/useTeams";
 
 interface RevealTabProps {
   readOnly?: boolean;
@@ -29,12 +30,12 @@ export function RevealTab({
   showSelectorsForSuperAdmin = false,
 }: RevealTabProps) {
   const [selectedTournament, setSelectedTournament] = useState<string | null>(
-    null,
+    null
   );
   const [selectedSeason, setSelectedSeason] = useState<string>("all");
   const [isInitializing, setIsInitializing] = useState(true);
 
-  const { teams, loading } = useTeams(selectedTournament);
+  const { data: teams, isFetching: loading } = useTeams();
   const { data: allTournaments } = useTournament();
 
   // Auto-select the latest tournament (preferring those with teams)
@@ -53,7 +54,7 @@ export function RevealTab({
           const sortedTournaments = [...allTournaments].sort(
             (a, b) =>
               new Date(b.createdAt || 0).getTime() -
-              new Date(a.createdAt || 0).getTime(),
+              new Date(a.createdAt || 0).getTime()
           );
           setSelectedTournament(sortedTournaments[0].id);
         });
@@ -66,7 +67,7 @@ export function RevealTab({
 
   // Get selected tournament config
   const selectedConfig = allTournaments.find(
-    (t) => t.id === selectedTournament,
+    (t) => t.id === selectedTournament
   );
 
   // Show loader during initial loading or when loading teams

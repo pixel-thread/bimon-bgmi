@@ -5,7 +5,7 @@ import {
   analyzeTeamBalance,
 } from "@/src/utils/teamBalancer";
 import { computeWeightedScore } from "@/src/utils/scoreUtil";
-import { PlayerT, PlayerWithWeightT } from "@/src/types/player";
+import { PlayerWithWeightT } from "@/src/types/player";
 
 type Props = {
   groupSize: 1 | 2 | 3 | 4;
@@ -23,16 +23,17 @@ export async function createTeamsByPolls({
   if (![1, 2, 3, 4].includes(groupSize)) {
     throw new Error("Invalid group size");
   }
+
   let players = [];
-  // Fetch players who voted and are not banned
-  // Development does not need to vote
+
+  // Fetch eligible players who voted in the poll and are not banned
   if (process.env.NODE_ENV !== "development") {
     players = await prisma.player.findMany({
       where: {
         isBanned: false,
         playerPollVote: {
           some: {
-            pollId: pollId,
+            pollId,
             vote: { not: "OUT" },
           },
         },
@@ -41,16 +42,15 @@ export async function createTeamsByPolls({
         playerStats: true,
         playerPollVote: true,
         user: true,
-        characterImage: true,
       },
     });
   } else {
+    // In development, fetch all players
     players = await prisma.player.findMany({
       include: {
         playerStats: true,
         playerPollVote: true,
         user: true,
-        characterImage: true,
       },
     });
   }
@@ -59,57 +59,52 @@ export async function createTeamsByPolls({
     throw new Error("No eligible players found for this poll.");
   }
 
-  // Separate players by vote
+  // Filter players who voted SOLO
   const playersWhoVotedSolo = players.filter((p) =>
     p.playerPollVote.some((vote) => vote.vote === "SOLO"),
   );
 
-  // Compute weighted score for all players
+  // Compute weighted scores
   const playersWithScore: PlayerWithWeightT[] = players.map((p) => ({
     ...p,
-    playerStats: p.playerStats,
-    user: p.user,
-    characterImage: p.characterImage,
     weightedScore: computeWeightedScore(p),
   }));
 
-  // Calculate remainder for team formation
   const remainder = playersWithScore.length % groupSize;
 
-  // Prepare arrays for team formation
   let soloPlayer: PlayerWithWeightT | null = null;
   let playersForTeams: PlayerWithWeightT[] = [];
 
   if (remainder === 1 && groupSize > 1 && playersWhoVotedSolo.length > 0) {
-    // Pick solo player from playersWhoVotedSolo sorted by KD ratio descending
-
+    // Sort solo voters by KD descending
     const soloWithScores = playersWithScore.filter((p) =>
       playersWhoVotedSolo.some((solo) => solo.id === p.id),
     );
 
     soloWithScores.sort((a, b) => {
-      const getKD = (player: PlayerT) => {
-        if (player.playerStats?.deaths && player.playerStats.deaths > 0) {
-          return player.playerStats.kills / player.playerStats.deaths;
+      const getKD = (player: typeof a) => {
+        const stats = player.playerStats.find((p) => p.seasonId === seasonId);
+        if (stats?.deaths && stats?.deaths > 0) {
+          return stats?.kills / stats?.deaths;
         }
-        return player.playerStats?.kills ?? 0;
+        return (
+          player.playerStats.find((p) => p.seasonId === seasonId)?.kills ?? 0
+        );
       };
       return getKD(b) - getKD(a);
     });
 
     soloPlayer = soloWithScores[0];
 
-    // Set playersForTeams as all excluding the chosen solo
+    // Exclude the solo player from team groupings
     playersForTeams = playersWithScore.filter((p) => p.id !== soloPlayer!.id);
   } else {
-    // No special solo player needed, all players are assigned to teams
     playersForTeams = playersWithScore;
   }
 
-  // Sort playersForTeams by weighted score descending
+  // Sort by weighted score descending
   playersForTeams.sort((a, b) => b.weightedScore - a.weightedScore);
 
-  // Calculate number of teams
   const teamCount = Math.floor(playersForTeams.length / groupSize);
   if (teamCount === 0) throw new Error("Not enough players to form teams.");
 
@@ -120,72 +115,98 @@ export async function createTeamsByPolls({
     groupSize,
   );
 
-  // Add solo player as single team if exists
+  // Include solo player team if present
   if (soloPlayer) {
+    const soloStats = soloPlayer.playerStats.find(
+      (p) => p.seasonId === seasonId,
+    );
     teams.push({
       players: [soloPlayer],
-      totalKills: soloPlayer.playerStats?.kills ?? 0,
-      totalDeaths: soloPlayer.playerStats?.deaths ?? 0,
-      totalWins: soloPlayer.playerStats?.wins ?? 0,
+      totalKills: soloStats?.kills ?? 0,
+      totalDeaths: soloStats?.deaths ?? 0,
+      totalWins: soloStats?.wins ?? 0,
       weightedScore: soloPlayer.weightedScore,
     });
   }
 
-  // Analyze balance
+  // Analyze team balance
   analyzeTeamBalance(teams);
 
-  // Shuffle teams to randomize order
+  // Shuffle final teams order
   teams = shuffle(teams);
 
-  //  INFO: Remove when teams are persisted not needed
-  // return teams;
-
-  // Persist teams and update players using a transaction for atomicity
+  // Persist all in a transaction atomically
   const createdTeams = await prisma.$transaction(async (tx) => {
+    // Create a new Match for tournament and season
     const match = await tx.match.create({
       data: {
         tournamentId,
         seasonId,
       },
     });
+
     const result = [];
+
     for (let i = 0; i < teams.length; i++) {
       const t = teams[i];
+
+      // Create Team
       const team = await tx.team.create({
         data: {
           name: `Team ${i + 1}`,
           teamNumber: i + 1,
-          players: { connect: t.players.map((p) => ({ id: p.id })) },
           tournamentId,
           seasonId,
-          matches: { connect: { id: match.id } },
+          players: {
+            connect: t.players.map((p) => ({ id: p.id })),
+          },
+          matches: {
+            connect: { id: match.id },
+          },
         },
         include: { players: true },
       });
 
-      await tx.teamStats.create({
+      const teamStat = await tx.teamStats.create({
         data: {
-          team: { connect: { id: team.id } },
-          match: { connect: { id: match.id } },
-          season: { connect: { id: seasonId } },
-          tournament: { connect: { id: tournamentId } },
-          teamPlayerStats: {
-            create: t.players.map((p) => ({
-              matchId: match.id,
-              teamId: team.id,
-              playerId: p.id,
-            })),
-          },
+          teamId: team.id,
+          matchId: match.id,
+          seasonId,
+          tournamentId,
         },
       });
 
-      await tx.player.updateMany({
-        where: { id: { in: t.players.map((p) => p.id) } },
-        data: { teamId: team.id },
-      });
+      for (const player of t.players) {
+        await tx.player.update({
+          where: { id: player.id },
+          data: {
+            teamStats: { connect: { id: teamStat.id || "" } },
+          },
+        });
 
+        await tx.teamPlayerStats.create({
+          data: {
+            teamId: team.id || "",
+            matchId: match.id || "",
+            seasonId: seasonId,
+            playerId: player.id || "",
+            teamStatsId: teamStat.id || "",
+          },
+        });
+      }
+
+      await tx.matchPlayerPlayed.create({
+        data: {
+          matchId: match.id || "",
+          playerId: team.players[0].id || "",
+          tournamentId: tournamentId,
+          seasonId: seasonId,
+          teamId: team.id,
+        },
+      });
       result.push(team);
     }
+
     return result;
   });
 

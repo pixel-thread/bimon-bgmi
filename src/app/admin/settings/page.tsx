@@ -1,7 +1,7 @@
 "use client";
 
 import { FiSettings } from "react-icons/fi";
-import { TournamentSettings } from "@/src/components/TournamentSettings";
+import { TournamentSettings } from "@/src/components/tournaments/TournamentSettings";
 
 const AdminSettingsPage = () => {
   return (

@@ -22,6 +22,7 @@ export async function createUserIfNotExistInDB({
   username,
   role,
 }: ClerkUser) {
+  const activeSeason = await getActiveSeason();
   return await prisma.user.create({
     data: {
       userName: username,
@@ -36,12 +37,10 @@ export async function createUserIfNotExistInDB({
           isBanned: false,
           category: "NOOB",
           characterImage: undefined,
+          seasons: { connect: { id: activeSeason?.id || "" } },
           playerStats: {
             create: {
-              wins: 0,
-              kills: 0,
-              kd: 0,
-              deaths: 0,
+              season: { connect: { id: activeSeason?.id || "" } },
             },
           },
         },
@@ -60,27 +59,32 @@ export async function createUser({ data }: Props) {
 
   const activeSeason = await getActiveSeason();
 
-  return await prisma.user.create({
-    data: {
-      userName: data.userName,
-      clerkId: userC.id,
-      createdBy: data.createdBy,
-      player: {
-        create: {
-          isBanned: false,
-          category: "NOOB",
-          characterImage: undefined,
-          playerStats: {
-            create: {
-              wins: 0,
-              kills: 0,
-              seasonId: activeSeason?.id,
-              kd: 0,
-              deaths: 0,
+  return await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        userName: data.userName,
+        clerkId: userC.id,
+        createdBy: data.createdBy,
+        player: {
+          create: {
+            isBanned: false,
+            category: "NOOB",
+            characterImage: undefined,
+            seasons: {
+              connect: { id: activeSeason?.id || "" },
             },
           },
         },
       },
-    },
+      include: { player: true },
+    });
+
+    tx.playerStats.create({
+      data: {
+        season: { connect: { id: activeSeason?.id || "" } },
+        player: { connect: { id: user?.player?.id || "" } },
+      },
+    });
+    return user;
   });
 }

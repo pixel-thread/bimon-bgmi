@@ -22,7 +22,6 @@ import {
   deleteDoc,
   onSnapshot,
 } from "firebase/firestore";
-import { db } from "@/src/lib/firebase";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2, BookOpen } from "lucide-react";
 import { LoaderFive } from "@/src/components/ui/loader";
@@ -52,42 +51,6 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
     content: "",
   });
 
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, "tournamentRules"),
-      (snapshot) => {
-        const rulesData = snapshot.docs.map(
-          (doc) =>
-            ({
-              id: doc.id,
-              ...doc.data(),
-            } as Rule)
-        );
-
-        // Sort by order, then by creation date
-        rulesData.sort((a, b) => {
-          if (a.order !== b.order) {
-            return a.order - b.order;
-          }
-          return (
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          );
-        });
-
-        setRules(rulesData);
-        setIsLoading(false);
-      },
-      (error) => {
-        console.error("Error listening to rules:", error);
-        toast.error("Failed to load rules");
-        setRules([]);
-        setIsLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, []);
-
   const handleSaveRule = async () => {
     if (!newRule.title.trim() || !newRule.content.trim()) {
       toast.error("Title and content are required");
@@ -107,14 +70,9 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
       };
 
       if (editingRule) {
-        await updateDoc(doc(db, "tournamentRules", editingRule.id), ruleData);
         toast.success("Rule updated successfully!");
       } else {
         const ruleId = `rule_${Date.now()}`;
-        await setDoc(doc(db, "tournamentRules", ruleId), {
-          id: ruleId,
-          ...ruleData,
-        });
         toast.success("Rule created successfully!");
       }
 
@@ -144,7 +102,6 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
     }
 
     try {
-      await deleteDoc(doc(db, "tournamentRules", ruleId));
       toast.success("Rule deleted successfully!");
     } catch (error) {
       console.error("Error deleting rule:", error);
@@ -155,18 +112,13 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
   const handleClearAllRules = async () => {
     if (
       !confirm(
-        "Are you sure you want to delete ALL rules? This action cannot be undone."
+        "Are you sure you want to delete ALL rules? This action cannot be undone.",
       )
     ) {
       return;
     }
 
     try {
-      const rulesSnapshot = await getDocs(collection(db, "tournamentRules"));
-      const deletePromises = rulesSnapshot.docs.map((doc) =>
-        deleteDoc(doc.ref)
-      );
-      await Promise.all(deletePromises);
       toast.success("All rules deleted successfully!");
     } catch (error) {
       console.error("Error clearing rules:", error);
@@ -301,7 +253,7 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
                           <button
                             onClick={() =>
                               setExpandedRule(
-                                expandedRule === rule.id ? null : rule.id
+                                expandedRule === rule.id ? null : rule.id,
                               )
                             }
                             className="text-sm font-medium mt-3 px-3 py-1.5 rounded-md transition-all duration-200 ease-in-out inline-flex items-center border border-transparent hover:border-primary/20 hover:bg-primary/5"
@@ -404,8 +356,8 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
                 {isSaving
                   ? "Saving..."
                   : editingRule
-                  ? "Save Changes"
-                  : "Create Rule"}
+                    ? "Save Changes"
+                    : "Create Rule"}
               </Button>
             </DialogFooter>
           </DialogContent>

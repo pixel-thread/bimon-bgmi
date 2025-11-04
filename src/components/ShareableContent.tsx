@@ -1,137 +1,41 @@
-import { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/src/lib/firebase";
+import { useState } from "react";
+
 import type { CombinedTeamData, MatchScore } from "@/src/lib/types";
 import MobileTable from "./MobileTable";
 import TwoColumnTable from "./TwoColumnTable";
 import { isChickenDinner, sortTeamsWithTiebreaker } from "@/src/lib/utils";
 import { formatDateDDMMYYYY } from "@/src/utils/dateFormat";
+import { useMatchStore } from "../store/match/useMatchStore";
+import { useSeasonStore } from "../store/season";
+import { useGetSeasons } from "../hooks/season/useGetSeasons";
+import { useMatches } from "../hooks/match/useMatches";
+
+import { TeamT } from "../types/team";
 
 interface ShareableContentProps {
-  teams: CombinedTeamData[];
-  selectedMatch: string;
+  teams: TeamT[];
   backgroundImage: string;
   tournamentTitle: string;
   maxMatchNumber: number; // This now represents our local matchCount
-  selectedSeason?: string;
 }
 
 export function ShareableContent({
   teams,
-  selectedMatch,
   backgroundImage,
   tournamentTitle,
-  maxMatchNumber,
-  selectedSeason,
 }: ShareableContentProps) {
-  const [seasonName, setSeasonName] = useState<string>("");
-
-  useEffect(() => {
-    const fetchSeasonName = async () => {
-      if (!selectedSeason || selectedSeason === "all") {
-        setSeasonName("");
-        return;
-      }
-
-      try {
-        const seasonsSnapshot = await getDocs(collection(db, "seasons"));
-        const seasons = seasonsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as any[];
-        const season = seasons.find((s: any) => s.id === selectedSeason);
-        setSeasonName(season?.name || "");
-      } catch (error) {
-        console.error("Error fetching season name:", error);
-        setSeasonName("");
-      }
-    };
-
-    fetchSeasonName();
-  }, [selectedSeason]);
-  const getScore = (
-    team: CombinedTeamData,
-  ): {
-    kills: number;
-    placementPoints: number;
-    chickens: number;
-    matchesPlayed: number;
-  } => {
-    let totalKills = 0;
-    let totalPlacementPoints = 0;
-    let totalChickens = 0;
-    let matchesPlayed = 0;
-
-    // Ensure matchScores exists
-    const matchScores = team.matchScores || {};
-
-    if (selectedMatch === "All") {
-      // Only count matches from 1 to maxMatchNumber (our controlled match count)
-      for (let i = 1; i <= maxMatchNumber; i++) {
-        const matchKey = i.toString();
-        if (matchScores[matchKey]) {
-          const score: MatchScore = matchScores[matchKey];
-          totalKills += score.kills;
-          totalPlacementPoints += score.placementPoints;
-          totalChickens += isChickenDinner(score.placementPoints);
-          matchesPlayed += 1;
-        }
-      }
-    } else {
-      // If a specific match is selected, accumulate scores up to that match.
-      const selectedMatchNum = parseInt(selectedMatch, 10);
-      for (let i = 1; i <= selectedMatchNum; i++) {
-        const matchKey = i.toString();
-        if (matchScores[matchKey]) {
-          const score: MatchScore = matchScores[matchKey];
-          totalKills += score.kills;
-          totalPlacementPoints += score.placementPoints;
-          totalChickens += isChickenDinner(score.placementPoints);
-          matchesPlayed += 1;
-        }
-      }
-    }
-
-    return {
-      kills: totalKills,
-      placementPoints: totalPlacementPoints,
-      chickens: totalChickens,
-      matchesPlayed,
-    };
-  };
-
-  // Filter teams to only include matches up to the selected match for calculation
-  const teamsWithFilteredScores = teams.map((team) => {
-    const filteredMatchScores: { [key: string]: any } = {};
-    if (selectedMatch === "All") {
-      // Only include matches from 1 to maxMatchNumber
-      for (let i = 1; i <= maxMatchNumber; i++) {
-        const matchKey = i.toString();
-        if (team.matchScores?.[matchKey]) {
-          filteredMatchScores[matchKey] = team.matchScores[matchKey];
-        }
-      }
-    } else {
-      // Include matches from 1 to selectedMatch
-      const selectedMatchNum = parseInt(selectedMatch, 10);
-      for (let i = 1; i <= selectedMatchNum; i++) {
-        const matchKey = i.toString();
-        if (team.matchScores?.[matchKey]) {
-          filteredMatchScores[matchKey] = team.matchScores[matchKey];
-        }
-      }
-    }
-    return {
-      ...team,
-      matchScores: filteredMatchScores,
-    };
-  });
-
-  // Use the tiebreaker system for consistent sorting
-  const sortedTeams = sortTeamsWithTiebreaker(teamsWithFilteredScores);
+  const { matchId: selectedMatch } = useMatchStore();
+  const { seasonId: selectedSeason } = useSeasonStore();
+  const { data: seasons } = useGetSeasons();
+  const { data: matches } = useMatches();
+  const selectedSeasonName =
+    seasons?.find((s: any) => s.id === selectedSeason)?.name || "";
+  const selectedMatchName =
+    matches?.find((m: any) => m.id === selectedMatch)?.name || "";
 
   // Example usage:
   const todayFormatted = formatDateDDMMYYYY(new Date());
+
   return (
     <div
       id="shareable-content"
@@ -144,29 +48,23 @@ export function ShareableContent({
           <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-orange-500 font-montserrat tracking-wide">
             {tournamentTitle}
           </h1>
-          {seasonName && (
+          {selectedSeasonName && (
             <p className="text-sm sm:text-base text-blue-400 font-semibold mt-1">
-              {seasonName}
+              {selectedSeasonName}
             </p>
           )}
           <p className="text-sm sm:text-md text-gray-300 mt-1">
             {selectedMatch === "All"
               ? "(Overall Rankings)"
-              : `Match ${selectedMatch} Results`}
+              : `Match ${selectedMatchName} Results`}
           </p>
         </div>
-
         {/* Desktop Table */}
-        <div className="hidden sm:block">
-          <TwoColumnTable teams={sortedTeams} getScore={getScore} />
+        <div className="">
+          <TwoColumnTable teams={teams} />
         </div>
-        {/* Mobile Table */}
-        <div className="block sm:hidden">
-          <MobileTable teams={sortedTeams} getScore={getScore} />
-        </div>
-
         <div className="text-center mt-4 text-gray-400 text-xs">
-          Designed by Bimon | Generated on {todayFormatted}
+          Designed by Pixel-Thread | Generated on {todayFormatted}
         </div>
       </div>
     </div>

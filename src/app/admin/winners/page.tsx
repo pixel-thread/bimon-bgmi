@@ -2,7 +2,7 @@
 
 import { FiAward } from "react-icons/fi";
 import { WinnersTab } from "@/src/components/WinnersTab";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 const AdminWinnersPage = () => {
   const { user } = useAuth();

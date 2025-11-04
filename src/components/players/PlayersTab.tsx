@@ -8,7 +8,7 @@ import { PlayerStatsModal } from "./PlayerStatsModal";
 import { usePlayerData } from "./hooks/usePlayerData";
 import { PlayersTabProps } from "./types";
 import { Button } from "../ui/button";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 import { BalanceHistoryDialog } from "./BalanceHistoryDialog";
 import { BalanceAdjustmentDialog } from "./BalanceAdjustmentDialog";
@@ -19,37 +19,13 @@ import { usePlayers } from "@/src/hooks/player/usePlayers";
 import { Card } from "../teamManagementImports";
 import { PlayerT } from "@/src/types/player";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useSeasonStore } from "@/src/store/season";
 
 const columns: ColumnDef<PlayerT>[] = [
-  {
-    header: "Username",
-    accessorKey: "user.userName",
-    cell: ({ row }) => {
-      return (
-        <Link href={`?player=${row.original.id}`}>
-          {row.original?.user?.userName}
-        </Link>
-      );
-    },
-  },
+  { header: "Username", accessorKey: "userName" },
   { accessorKey: "category", header: "Category" },
-  { accessorKey: "playerStats.wins", header: "Win" },
-  { accessorKey: "playerStats.kills", header: "Kill" },
-  { accessorKey: "playerStats.deaths", header: "Death" },
-  { accessorKey: "playerStats.matches", header: "Matches" },
-  { accessorKey: "isBanned", header: "Is Banned" },
-  {
-    accessorKey: "playerStats.kd",
-    header: "K/D",
-    cell: ({ row }) => {
-      const kill = row?.original?.playerStats?.kills || 0;
-      const death = row?.original?.playerStats?.deaths || 0;
-      let kd = kill / death;
-      // round kd to 1 decimal place
-      return kd ? kd.toFixed(2) : 0;
-    },
-  },
+  { accessorKey: "matches", header: "Matches" },
+  { accessorKey: "kd", header: "K/D" },
 ];
 
 export function PlayersTab({
@@ -59,14 +35,13 @@ export function PlayersTab({
   const search = useSearchParams();
   const router = useRouter();
   const playerId = search.get("player") || "";
-  const [selectedSeason, setSelectedSeason] = useState<string>("all");
-  const { isLoading } = usePlayerData(selectedSeason);
+  const page = search.get("page") || "1";
+  const { seasonId, setSeasonId } = useSeasonStore();
+  const { isLoading } = usePlayerData(seasonId);
   const { user } = useAuth();
   const role = user?.role;
-  const { data: players } = usePlayers();
+  const { data: players, meta } = usePlayers({ page });
   // States
-  const [isPlayerStatsOpen, setIsPlayerStatsOpen] = useState(false);
-
   const [isCreatePlayerDialogOpen, setIsCreatePlayerDialogOpen] =
     useState(false);
   const [isBalanceHistoryModalOpen, setIsBalanceHistoryModalOpen] =
@@ -87,15 +62,6 @@ export function PlayersTab({
     "name" | "kd" | "kills" | "matches" | "balance" | "banned"
   >("kd");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-
-  // Auto-select sort order based on sort type
-  useEffect(() => {
-    if (sortBy === "banned") {
-      setSortOrder("asc"); // Low to High for banned players
-    } else {
-      setSortOrder("desc"); // High to Low for all other sort types
-    }
-  }, [sortBy]);
 
   // Computed values
   // const filteredAndSortedPlayers = useMemo(() => {
@@ -159,18 +125,20 @@ export function PlayersTab({
 
   // Players for table (excluding top 3, with pagination)
 
-  const totalBalance = useMemo(() => {
-    return players?.reduce((sum, player) => sum + (player.balance || 0), 0);
-  }, [players]);
+  const totalBalance = 0;
+  // useMemo(() => {
+  //   return players?.reduce((sum, player) => sum + (player.balance || 0), 0);
+  // }, [players]);
 
-  const totalNegativeBalance = useMemo(() => {
-    return players?.reduce((sum, player) => {
-      if ((player.balance || 0) < 0) {
-        return sum + (player.balance || 0);
-      }
-      return sum;
-    }, 0);
-  }, [players]);
+  const totalNegativeBalance = 0;
+  // useMemo(() => {
+  //   return players?.reduce((sum, player) => {
+  //     if ((player.balance || 0) < 0) {
+  //       return sum + (player.balance || 0);
+  //     }
+  //     return sum;
+  //   }, 0);
+  // }, [players]);
 
   const handleOpenCreatePlayerDialog = () => {
     setIsCreatePlayerDialogOpen(true);
@@ -178,7 +146,6 @@ export function PlayersTab({
 
   const handleViewPlayerStats = (player: PlayerT) => {
     setSelectedPlayerForStats(player);
-    setIsPlayerStatsOpen(true);
   };
 
   return (
@@ -221,8 +188,8 @@ export function PlayersTab({
             <PlayerFilters
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
-              selectedSeason={selectedSeason}
-              onSeasonChange={setSelectedSeason}
+              selectedSeason={seasonId}
+              onSeasonChange={setSeasonId}
               selectedTier={selectedTier}
               onTierChange={setSelectedTier}
               sortBy={sortBy}
@@ -232,7 +199,7 @@ export function PlayersTab({
             />
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            {!readOnly && role === "SUPER_ADMIN" && (
+            {role === "SUPER_ADMIN" && (
               <Button
                 variant="outline"
                 className="h-12 px-8 text-base font-medium w-full sm:w-auto"
@@ -254,14 +221,18 @@ export function PlayersTab({
             <DynamicTopPlayersPodium
               sortBy={sortBy}
               selectedTier={selectedTier}
-              selectedSeason={selectedSeason}
+              selectedSeason={seasonId}
               isLoading={isLoading}
               className="mb-6"
               onPlayerClick={handleViewPlayerStats}
             />
 
             <Card className="p-3 overflow-x-auto">
-              <DataTable<PlayerT[]> data={players ?? []} columns={columns} />
+              <DataTable<PlayerT[]>
+                meta={meta}
+                data={players ?? []}
+                columns={columns}
+              />
             </Card>
           </>
         )}
@@ -272,7 +243,7 @@ export function PlayersTab({
         isOpen={isBalanceHistoryModalOpen}
         onOpenChange={setIsBalanceHistoryModalOpen}
         player={selectedPlayerForBalance}
-        selectedSeason={selectedSeason}
+        selectedSeason={seasonId}
       />
 
       {/* Balance Adjustment Modal */}
