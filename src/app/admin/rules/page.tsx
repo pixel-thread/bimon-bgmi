@@ -2,7 +2,6 @@
 
 import { FiFileText } from "react-icons/fi";
 import { RulesTab } from "@/src/components/RulesTab";
-import AdminNavigation from "@/src/components/AdminNavigation";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 const AdminRulesPage = () => {

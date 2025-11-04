@@ -141,9 +141,9 @@ export async function PUT(
         status: 400,
       });
     }
+
     const teamStats = await getTeamStats({
       where: { teamId: teamId, matchId: body.matchId },
-      include: { playersStats: true },
     });
 
     return SuccessResponse({ data: teamStats, message: "Team stats updated" });

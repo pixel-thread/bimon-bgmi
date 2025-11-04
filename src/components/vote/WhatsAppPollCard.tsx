@@ -4,9 +4,9 @@ import React from "react";
 import { FiCheck, FiUsers } from "react-icons/fi";
 import { Badge } from "@/src/components/ui/badge";
 import { PollOption } from "./PollOption";
-import { useAuth } from "@/src/hooks/useAuth";
 import { usePlayerVote } from "@/src/hooks/poll/usePlayerVote";
 import { PollT } from "@/src/types/poll";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 const bannedStampStyles = {
   position: "absolute" as const,

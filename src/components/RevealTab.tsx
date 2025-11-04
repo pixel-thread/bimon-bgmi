@@ -10,13 +10,12 @@ import {
 import { Badge } from "@/src/components/ui/badge";
 import TournamentSelector from "./tournaments/TournamentSelector";
 import { SeasonSelector } from "./SeasonSelector";
-import WinnerReveal from "./WinnerReveal";
 
-import { getBestTournamentForAutoSelect } from "@/src/lib/utils";
 import { LoaderFive } from "@/src/components/ui/loader";
 import { Trophy, Settings, Calendar, Users } from "lucide-react";
 import { useTournament } from "../hooks/tournament/useTournament";
 import { useTeams } from "../hooks/team/useTeams";
+import { useTournaments } from "../hooks/tournament/useTournaments";
 
 interface RevealTabProps {
   readOnly?: boolean;
@@ -30,44 +29,19 @@ export function RevealTab({
   showSelectorsForSuperAdmin = false,
 }: RevealTabProps) {
   const [selectedTournament, setSelectedTournament] = useState<string | null>(
-    null
+    null,
   );
   const [selectedSeason, setSelectedSeason] = useState<string>("all");
   const [isInitializing, setIsInitializing] = useState(true);
 
   const { data: teams, isFetching: loading } = useTeams();
-  const { data: allTournaments } = useTournament();
+  const { data: allTournaments } = useTournaments();
 
   // Auto-select the latest tournament (preferring those with teams)
-  useEffect(() => {
-    if (allTournaments.length > 0 && !selectedTournament) {
-      // Use the new utility function to get the best tournament (preferring those with teams)
-      getBestTournamentForAutoSelect(allTournaments)
-        .then((bestTournamentId) => {
-          if (bestTournamentId) {
-            setSelectedTournament(bestTournamentId);
-          }
-        })
-        .catch((error) => {
-          console.error("Error selecting best tournament:", error);
-          // Fallback to the old logic if there's an error
-          const sortedTournaments = [...allTournaments].sort(
-            (a, b) =>
-              new Date(b.createdAt || 0).getTime() -
-              new Date(a.createdAt || 0).getTime()
-          );
-          setSelectedTournament(sortedTournaments[0].id);
-        });
-    }
-    // Set initializing to false once we've processed tournaments
-    if (allTournaments.length >= 0) {
-      setIsInitializing(false);
-    }
-  }, [allTournaments, selectedTournament]);
 
   // Get selected tournament config
-  const selectedConfig = allTournaments.find(
-    (t) => t.id === selectedTournament
+  const selectedConfig = allTournaments?.find(
+    (t) => t.id === selectedTournament,
   );
 
   // Show loader during initial loading or when loading teams
@@ -90,7 +64,7 @@ export function RevealTab({
   }
 
   // Show loader if no tournaments exist (should be rare since there's always a tournament)
-  if (allTournaments.length === 0) {
+  if (allTournaments?.length === 0) {
     return (
       <div className="min-h-[400px] bg-background flex items-center justify-center">
         <LoaderFive text="Loading..." />
@@ -138,16 +112,11 @@ export function RevealTab({
                     Tournament Selection
                   </div>
                 )}
-                <TournamentSelector
-                  selected={selectedTournament}
-                  onSelect={setSelectedTournament}
-                  tournaments={allTournaments}
-                  className="w-full"
-                />
+                <TournamentSelector />
                 {showSelectorsForSuperAdmin && selectedConfig && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Users className="w-3 h-3" />
-                    {teams.length} teams registered
+                    {teams?.length} teams registered
                   </div>
                 )}
               </div>
@@ -158,12 +127,7 @@ export function RevealTab({
                     Season Filter
                   </div>
                 )}
-                <SeasonSelector
-                  selectedSeason={selectedSeason}
-                  onSeasonChange={setSelectedSeason}
-                  className="w-full"
-                  size="md"
-                />
+                <SeasonSelector />
                 {showSelectorsForSuperAdmin && (
                   <div className="text-xs text-muted-foreground">
                     {selectedSeason === "all"
@@ -186,13 +150,13 @@ export function RevealTab({
                 <div className="flex flex-wrap items-center gap-4 text-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="font-medium">{selectedConfig.title}</span>
+                    {/* <span className="font-medium">{selectedConfig.title}</span> */}
                   </div>
                   <Badge variant="outline" className="text-xs">
-                    {teams.length} Teams
+                    {teams?.length} Teams
                   </Badge>
                   <Badge variant="outline" className="text-xs">
-                    {teams.reduce((acc, team) => acc + team.players.length, 0)}{" "}
+                    {teams?.reduce((acc, team) => acc + team.players.length, 0)}{" "}
                     Players
                   </Badge>
                 </div>
@@ -203,15 +167,15 @@ export function RevealTab({
       )}
 
       {/* Winner Reveal */}
-      {selectedTournament && selectedConfig && (
-        <WinnerReveal
-          teams={teams}
-          tournamentId={selectedTournament}
-          tournamentTitle={selectedConfig.title}
-          seasonId={selectedSeason !== "all" ? selectedSeason : undefined}
-          isAdmin={!readOnly}
-        />
-      )}
+      {/* {selectedTournament && selectedConfig && ( */}
+      {/*   <WinnerRevea */}
+      {/*     teams={teams} */}
+      {/*     tournamentId={selectedTournament} */}
+      {/*     tournamentTitle={selectedConfig.title} */}
+      {/*     seasonId={selectedSeason !== "all" ? selectedSeason : undefined} */}
+      {/*     isAdmin={!readOnly} */}
+      {/*   /> */}
+      {/* )} */}
     </div>
   );
 }
