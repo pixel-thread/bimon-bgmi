@@ -25,19 +25,19 @@ export async function tokenMiddleware(req: NextRequest | Request) {
   const user = await getUserByClerkId({ id: claims.sub });
 
   if (!user) {
-    // if (process.env.NODE_ENV === "development") {
-    const clerkUser = await clientClerk.users.getUser(claims.sub);
-    const user = await createUserIfNotExistInDB({
-      clerkId: claims.sub,
-      username: clerkUser?.username || Math.random().toString(36).slice(2),
-    });
-    return user;
-    // }
+    if (process.env.NODE_ENV === "development") {
+      const clerkUser = await clientClerk.users.getUser(claims.sub);
+      const user = await createUserIfNotExistInDB({
+        clerkId: claims.sub,
+        username: clerkUser?.username || Math.random().toString(36).slice(2),
+      });
+      return user;
+    }
     // If the user is not found, revoke this session at Clerk
-    // if (claims.sid) {
-    //   await clientClerk.sessions.revokeSession(claims.sid);
-    // }
-    // throw new UnauthorizedError("Unauthorized");
+    if (claims.sid) {
+      await clientClerk.sessions.revokeSession(claims.sid);
+    }
+    throw new UnauthorizedError("Unauthorized");
   }
 
   return user;

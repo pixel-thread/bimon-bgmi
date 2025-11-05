@@ -8,9 +8,9 @@ Content-Type: application/json
 Authorization: Bearer {{TOKEN}}
 
 {
-  "email": "harrison@gmail.com",
+  "email": "jyrwaboys@gmail.com",
   "password": "123Clashofclan@",
-  "userName": "harrison"
+  "userName": "jyrwaboys"
 }
 
 
