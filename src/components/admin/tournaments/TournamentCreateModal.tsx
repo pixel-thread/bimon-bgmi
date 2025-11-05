@@ -26,6 +26,8 @@ import http from "@/src/utils/http";
 import { Input } from "../../ui/input";
 import { useTournamentStore } from "@/src/store/tournament";
 import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
+import { useSeasonStore } from "@/src/store/season";
+import { Ternary } from "../../common/Ternary";
 
 interface TournamentCreateModalProps {
   showCreateModal: boolean;
@@ -39,6 +41,7 @@ export default function TournamentCreateModal({
   setShowCreateModal,
 }: TournamentCreateModalProps) {
   const { isFetching: isLoading, data: activeSeason } = useActiveSeason();
+  const { seasonId } = useSeasonStore();
   const { setTournamentId: setSelectedTournament } = useTournamentStore();
 
   const form = useForm({
@@ -52,14 +55,18 @@ export default function TournamentCreateModal({
     mutationFn: (data: TournamentT) =>
       http.post<{ id: string }>(
         ADMIN_TOURNAMENT_ENDPOINTS.POST_CREATE_TOURNAMENT,
-        data
+        data,
       ),
     onSuccess: (data) => {
       if (data.success) {
         toast.success(data.message);
         setShowCreateModal(false);
-        setSelectedTournament(data?.data?.id as string);
+        if (data && data?.data?.id) {
+          setSelectedTournament(data?.data?.id);
+        }
+        return data;
       }
+      toast.success(data.message);
     },
   });
 
@@ -70,40 +77,44 @@ export default function TournamentCreateModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Create New Tournament</DialogTitle>
-          <DialogDescription>
-            This tournament will be linked to{" "}
-            <strong>{activeSeason?.name || "Season 1"}</strong>
-          </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tournament Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowCreateModal(false)}
-                disabled={isLoading}
-              >
-                Cancel
-              </Button>
-              <Button disabled={isLoading || isPending}>
-                {isLoading ? "Creating..." : "Create"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        <Ternary
+          condition={!activeSeason?.id}
+          trueComponent={<div>Please create or select a season first</div>}
+          falseComponent={
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)}>
+                <div className="py-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tournament Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowCreateModal(false)}
+                    disabled={isLoading || !seasonId}
+                  >
+                    Cancel
+                  </Button>
+                  <Button disabled={isLoading || isPending}>
+                    {isLoading ? "Creating..." : "Create"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          }
+        />
       </DialogContent>
     </Dialog>
   );
