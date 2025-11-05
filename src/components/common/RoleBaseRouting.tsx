@@ -2,12 +2,10 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { useAuth as useCAuth } from "@clerk/nextjs";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { routeRoles } from "@/src/lib/route/role";
 import { LoaderFour } from "../ui/loader";
 import { useCookies } from "react-cookie";
-import { logger } from "@/src/utils/logger";
 
 type PropsT = {
   children: React.ReactNode;
@@ -21,8 +19,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   const router = useRouter();
   const pathName = usePathname();
   const [isLoading, setIsLoading] = useState(false);
-  const { user, isAuthLoading } = useAuth();
-  const { isSignedIn } = useCAuth();
+  const { user, isAuthLoading, isSignedIn } = useAuth();
   const role = user?.role || "PLAYER";
   const userRoles = useMemo(() => role, [role]); // Get the user's roles
   const [cookies] = useCookies(["token"]);
@@ -93,11 +90,5 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
       </div>
     );
   }
-  logger.log({
-    pathName,
-    role,
-    isAuthenticated,
-    isAuthLoading,
-  });
   return <>{children}</>;
 };
