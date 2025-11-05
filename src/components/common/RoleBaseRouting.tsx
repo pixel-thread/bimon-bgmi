@@ -6,12 +6,13 @@ import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { routeRoles } from "@/src/lib/route/role";
 import { LoaderFour } from "../ui/loader";
 import { useCookies } from "react-cookie";
+import { AUTH_TOKEN_KEY } from "@/src/lib/constant/jwt-key";
 
 type PropsT = {
   children: React.ReactNode;
 };
 
-const pageAccessOnlyIfUnAuthenticated: string[] = ["/auth", "/signup"];
+const pageAccessOnlyIfUnAuthenticated: string[] = ["/auth", "/auth/sign-up"];
 
 export const RoleBaseRoute = ({ children }: PropsT) => {
   const searchParams = useSearchParams();
@@ -22,8 +23,8 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   const { user, isAuthLoading, isSignedIn } = useAuth();
   const role = user?.role || "PLAYER";
   const userRoles = useMemo(() => role, [role]); // Get the user's roles
-  const [cookies] = useCookies(["token"]);
-  const isAuthenticated = isSignedIn && !!cookies.token;
+  const [cookies] = useCookies([AUTH_TOKEN_KEY]);
+  const isAuthenticated = isSignedIn && !!cookies.AUTH_TOKEN_KEY;
 
   // Show loader during route changes or delays
   useEffect(() => {
