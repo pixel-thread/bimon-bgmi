@@ -2,6 +2,7 @@ import { clientClerk } from "@/src/lib/clerk/client";
 import { prisma } from "@/src/lib/db/prisma";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { getActiveSeason } from "../season/getActiveSeason";
+import { createSeason } from "../season/createSeason";
 
 type Props = {
   data: Omit<Prisma.UserCreateInput, "clerkId"> & {
@@ -22,7 +23,6 @@ export async function createUserIfNotExistInDB({
   username,
   role,
 }: ClerkUser) {
-  const activeSeason = await getActiveSeason();
   return await prisma.user.create({
     data: {
       userName: username,
@@ -37,12 +37,6 @@ export async function createUserIfNotExistInDB({
           isBanned: false,
           category: "NOOB",
           characterImage: undefined,
-          seasons: { connect: { id: activeSeason?.id || "" } },
-          playerStats: {
-            create: {
-              season: { connect: { id: activeSeason?.id || "" } },
-            },
-          },
         },
       },
     },
@@ -51,7 +45,7 @@ export async function createUserIfNotExistInDB({
 }
 
 export async function createUser({ data }: Props) {
-  const userC = await clientClerk.users.createUser({
+  const clerkUser = await clientClerk.users.createUser({
     password: data.password,
     username: data.userName,
     emailAddress: [data.email],
@@ -63,23 +57,16 @@ export async function createUser({ data }: Props) {
     const user = await tx.user.create({
       data: {
         userName: data.userName,
-        clerkId: userC.id,
+        clerkId: clerkUser.id,
         createdBy: data.createdBy,
         player: {
-          create: {
-            isBanned: false,
-            category: "NOOB",
-            characterImage: undefined,
-            seasons: {
-              connect: { id: activeSeason?.id || "" },
-            },
-          },
+          create: { seasons: { connect: { id: activeSeason?.id || "" } } },
         },
       },
       include: { player: true },
     });
 
-    tx.playerStats.create({
+    await tx.playerStats.create({
       data: {
         season: { connect: { id: activeSeason?.id || "" } },
         player: { connect: { id: user?.player?.id || "" } },
