@@ -1,3 +1,4 @@
+import { AUTH_TOKEN_KEY } from "@/src/lib/constant/jwt-key";
 import axios from "axios";
 import { Cookies } from "react-cookie";
 
@@ -10,7 +11,7 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = cookies.get("token");
+    const token = cookies.get(AUTH_TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -18,8 +19,8 @@ axiosInstance.interceptors.request.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      cookies.remove("token");
-      window.location.href = "/";
+      cookies.remove(AUTH_TOKEN_KEY);
+      window.location.reload();
     }
     return Promise.reject(error);
   },
