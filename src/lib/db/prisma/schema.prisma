@@ -289,8 +289,8 @@ model PlayerStats {
   deaths    Int      @default(0)
   kills     Int      @default(0)
   kd        Float?   @default(0)
-  seasonId  String
-  season    Season   @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  seasonId  String?
+  season    Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
