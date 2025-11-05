@@ -44,7 +44,7 @@ export default function TournamentForm() {
 
   const { mutate: updateTournament, isPending } = useMutation({
     mutationFn: (data: FormValueT) =>
-      http.put("/admin/tournament/" + tournamentId, data),
+      http.put(`/admin/tournament/${tournamentId}`, data),
     onSuccess: (data) => {
       if (data.success) {
         toast.success("Tournament updated successfully!");

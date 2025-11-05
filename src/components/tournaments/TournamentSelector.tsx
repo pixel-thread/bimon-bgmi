@@ -41,7 +41,7 @@ export default function TournamentSelector({
       onValueChange={(value) => onSelect(value || null)}
     >
       <SelectTrigger
-        disabled={!seasonId}
+        disabled={!seasonId || !isTournamentExist}
         className={className || "w-fit min-w-[200px]"}
       >
         <SelectValue placeholder="Select Tournament" />

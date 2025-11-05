@@ -12,7 +12,6 @@ import { Button } from "@/src/components/ui/button";
 import TournamentToolbar from "./TournamentToolbar";
 import TournamentForm from "./TournamentForm";
 import TournamentCreateModal from "@/src/components/admin/tournaments/TournamentCreateModal";
-import TeamCreationModal from "../TeamCreationModal";
 import { SeasonManagement } from "../admin/season/SeasonManagement";
 import { toast } from "sonner";
 import {
@@ -26,19 +25,6 @@ import {
   Calendar,
   Edit,
 } from "lucide-react";
-import {
-  collection,
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
-  deleteField,
-  addDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  deleteDoc,
-} from "firebase/firestore";
 import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
 import { Badge } from "@/src/components/ui/badge";
@@ -67,7 +53,6 @@ import {
 } from "@/src/components/ui/pagination";
 
 import { useTournaments } from "../../hooks/tournament/useTournaments";
-import { useSeasonStore } from "../../store/season";
 import { Ternary } from "../common/Ternary";
 import { useTournamentStore } from "../../store/tournament";
 import { useTournament } from "../../hooks/tournament/useTournament";
@@ -79,12 +64,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 export function TournamentSettings() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTeamCreationModal, setShowTeamCreationModal] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const { tournamentId: selectedTournament } = useTournamentStore();
-  const { seasonId: selectedSeason } = useSeasonStore();
-  const [teamsToCreate, setTeamsToCreate] = useState<
-    { teamName: string; players: { ign: string; kills: number }[] }[]
-  >([]);
 
   // Fund Tracker States
   const [fundTransactions, setFundTransactions] = useState<any[]>([]);
@@ -561,21 +540,6 @@ export function TournamentSettings() {
           </Card>
         </div>
       </div>
-
-      {/* Modals */}
-      <TeamCreationModal
-        showModal={showTeamCreationModal}
-        setShowModal={setShowTeamCreationModal}
-        setShowConfirmModal={setShowConfirmModal}
-        setTeamsToCreate={setTeamsToCreate}
-      />
-
-      {/* <TeamConfirmationModal */}
-      {/*   showConfirmModal={showConfirmModal} */}
-      {/*   setShowConfirmModal={setShowConfirmModal} */}
-      {/*   teamsToCreate={teamsToCreate} */}
-      {/*   setTeamsToCreate={setTeamsToCreate} */}
-      {/* /> */}
 
       <TournamentCreateModal
         showCreateModal={showCreateModal}
