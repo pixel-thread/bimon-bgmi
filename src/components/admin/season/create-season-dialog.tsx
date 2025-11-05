@@ -21,6 +21,7 @@ import {
 import { seasonSchema, SeasonSchemaType } from "@/src/utils/validation/seasons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
+import { toast } from "sonner";
 type Props = {
   open: boolean;
   onOpenChange: React.Dispatch<React.SetStateAction<boolean>>;
@@ -41,10 +42,12 @@ export const CreateSeasonDialog = ({ open, onOpenChange }: Props) => {
     mutationFn: (data: SeasonSchemaType) => http.post("/admin/season", data),
     onSuccess: (data) => {
       if (data.success) {
+        toast.success(data.message);
         queryClient.invalidateQueries({ queryKey: ["seasons"] });
         onOpenChange(false);
         return data;
       }
+      toast.error(data.message);
       return data;
     },
   });
