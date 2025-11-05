@@ -48,11 +48,13 @@ export function SeasonSelector({
     rounded-lg w-fit min-w-[100px] 
     ${className}
   `.trim();
+
   const onValueChange = (value: string) => {
     setTournamentId("");
     setMatchId("");
     setSeasonId(value);
   };
+
   return (
     <Select
       value={selectedSeason}
