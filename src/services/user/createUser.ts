@@ -2,7 +2,6 @@ import { clientClerk } from "@/src/lib/clerk/client";
 import { prisma } from "@/src/lib/db/prisma";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { getActiveSeason } from "../season/getActiveSeason";
-import { createSeason } from "../season/createSeason";
 
 type Props = {
   data: Omit<Prisma.UserCreateInput, "clerkId"> & {
@@ -59,6 +58,7 @@ export async function createUser({ data }: Props) {
         userName: data.userName,
         clerkId: clerkUser.id,
         createdBy: data.createdBy,
+        email: data.email,
         player: {
           create: { seasons: { connect: { id: activeSeason?.id || "" } } },
         },
