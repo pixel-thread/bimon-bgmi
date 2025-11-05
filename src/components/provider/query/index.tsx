@@ -4,6 +4,7 @@ import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
+
 type Props = {
   children: React.ReactNode;
 };
@@ -11,13 +12,7 @@ type Props = {
 const client = new QueryClient({
   mutationCache: new MutationCache(),
   queryCache: new QueryCache(),
-  defaultOptions: {
-    queries: {
-      refetchOnMount: true,
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-    },
-  },
+  defaultOptions: {},
 });
 
 export const TQueryProvider = ({ children }: Props) => {

@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminUserPage } from "@/src/components/admin/users";
 import { FiUserCheck } from "react-icons/fi";
 // import AdminManagement from "@/src/components/AdminManagement";
 
@@ -19,7 +20,9 @@ const AdminManagementPage = () => {
           </div>
         </header>
 
-        <div className="space-y-6">{/* <AdminManagement /> */}</div>
+        <div className="space-y-6">
+          <AdminUserPage />
+        </div>
       </div>
     </div>
   );
