@@ -13,9 +13,11 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <>
-      <Header />
-      <TooltipProvider>{children}</TooltipProvider>
-      <Footer />
+      <TooltipProvider>
+        <Header />
+        <div className="pt-16">{children}</div>
+        <Footer />
+      </TooltipProvider>
     </>
   );
 };
