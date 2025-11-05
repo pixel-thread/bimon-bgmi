@@ -38,18 +38,26 @@ export const AuthProvider = ({ children }: Props) => {
 
   const onLogout = async () => {
     removeCookies("token");
+    setUser(null);
     await signOut({
       redirectUrl: "/",
       sessionId: "",
     });
-    setUser(null);
   };
 
+  // get user when signed in
   useEffect(() => {
     if (isSignedIn && user === null && isPending === false) {
       getUser();
     }
   }, [isSignedIn, user]);
+
+  // remove token when user is logout from clerk if token still exist
+  useEffect(() => {
+    if (!isSignedIn && !!cookies?.token) {
+      removeCookies("token");
+    }
+  }, [isSignedIn]);
 
   return (
     <AuthContext.Provider

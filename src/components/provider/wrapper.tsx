@@ -16,6 +16,12 @@ export const Wrapper = ({ children }: Props) => {
   return (
     <ClerkProvider
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      signInUrl="/auth"
+      signUpUrl="/signup"
+      signInForceRedirectUrl={"/"}
+      signUpForceRedirectUrl={"/"}
+      signInFallbackRedirectUrl={"/"}
+      afterSignOutUrl="/"
     >
       <ClerkLoaded>
         <CookiesProvider

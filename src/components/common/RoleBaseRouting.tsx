@@ -6,6 +6,8 @@ import { useAuth as useCAuth } from "@clerk/nextjs";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { routeRoles } from "@/src/lib/route/role";
 import { LoaderFour } from "../ui/loader";
+import { useCookies } from "react-cookie";
+import { logger } from "@/src/utils/logger";
 
 type PropsT = {
   children: React.ReactNode;
@@ -21,21 +23,23 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   const [isLoading, setIsLoading] = useState(false);
   const { user, isAuthLoading } = useAuth();
   const { isSignedIn } = useCAuth();
-  const userRoles = useMemo(() => user?.role || "PLAYER", [user]); // Get the user's roles
-  const isAuthenticated = isSignedIn;
+  const role = user?.role || "PLAYER";
+  const userRoles = useMemo(() => role, [role]); // Get the user's roles
+  const [cookies] = useCookies(["token"]);
+  const isAuthenticated = isSignedIn && !!cookies.token;
 
   // Show loader during route changes or delays
   useEffect(() => {
     if (isAuthLoading) return;
     setIsLoading(false);
-    const timer = setTimeout(() => setIsLoading(false), 1000); // delay in ms
+    const timer = setTimeout(() => setIsLoading(false), 3000); // delay in ms
     return () => clearTimeout(timer); // Cleanup the timer
   }, [isAuthLoading, pathName]);
 
   // Handle authentication and role-based redirects
   useEffect(() => {
     // Wait until authentication loading is complete to proceed
-    if (isAuthLoading || user === null) return;
+    if (isAuthLoading) return;
 
     // Step 1: Identify the current route from the `routeRoles` configuration
     const currentRoute = routeRoles.find((route) => {
@@ -60,7 +64,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
       if (isAuthenticated) {
         // Check if the user has at least one of the required roles for the current route
         const hasRequiredRole = currentRoute.role.some((role) =>
-          userRoles.includes(role)
+          userRoles.includes(role),
         );
 
         // If the user does not have the required role(s)
@@ -89,6 +93,11 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
       </div>
     );
   }
-
+  logger.log({
+    pathName,
+    role,
+    isAuthenticated,
+    isAuthLoading,
+  });
   return <>{children}</>;
 };

@@ -7,4 +7,16 @@ export const routeRoles: RoleRoute[] = [
     needAuth: true,
     redirect: "/forbidden",
   },
+  {
+    url: "/tournament/*",
+    role: ["PLAYER", "ADMIN", "SUPER_ADMIN"],
+    needAuth: true,
+    redirect: "/auth",
+  },
+  {
+    url: "/settings/*",
+    role: ["PLAYER", "ADMIN", "SUPER_ADMIN"],
+    needAuth: true,
+    redirect: "/auth",
+  },
 ];
