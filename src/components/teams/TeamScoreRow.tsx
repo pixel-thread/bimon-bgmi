@@ -1,6 +1,4 @@
 import { Input } from "@/src/components/ui/input";
-import { Button } from "@/src/components/ui/button";
-import { Checkbox } from "@/src/components/ui/checkbox";
 import {
   Tooltip,
   TooltipTrigger,
@@ -8,7 +6,6 @@ import {
   TooltipProvider,
 } from "@/src/components/ui/tooltip";
 import { FiAlertCircle } from "react-icons/fi";
-import { Target, UserCheck, UserX } from "lucide-react";
 import React from "react";
 
 interface TeamScoreRowProps {
