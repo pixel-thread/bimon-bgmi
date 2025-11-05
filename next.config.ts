@@ -5,11 +5,6 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   reactStrictMode: true,
-  swcMinify: true,
-  allowedDevOrigins: [
-    "http://localhost:3000", // your Next.js app origin
-    "https://uat-bimon-bgmi.vercel.app", // your API origin
-  ],
   async headers() {
     return [
       {
