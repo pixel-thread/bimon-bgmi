@@ -1,25 +1,12 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
-export function middleware(request: NextRequest) {
-  const response = NextResponse.next();
+export default clerkMiddleware();
 
-  // Allow localhost origins and your API origin during dev
-  response.headers.set("Access-Control-Allow-Origin", "http://localhost:3000");
-  response.headers.set(
-    "Access-Control-Allow-Methods",
-    "GET,POST,PUT,DELETE,OPTIONS",
-  );
-  response.headers.set(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization",
-  );
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-
-  return response;
-}
-
-// Apply middleware only to API routes or specific paths if necessary
 export const config = {
-  matcher: "/api/:path*",
+  matcher: [
+    // Skip Next.js internals and all static files, unless found in search params
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // Always run for API routes
+    "/(api|trpc)(.*)",
+  ],
 };
