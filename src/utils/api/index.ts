@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { Cookies } from "react-cookie";
 
 const cookies = new Cookies();
@@ -17,11 +17,9 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error) => {
-    if (error instanceof AxiosError) {
-      if (error.response?.status === 401) {
-        cookies.remove("token");
-        window.location.href = "/";
-      }
+    if (error.response?.status === 401) {
+      cookies.remove("token");
+      window.location.href = "/";
     }
     return Promise.reject(error);
   },
