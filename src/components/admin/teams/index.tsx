@@ -11,11 +11,7 @@ import { CreateTeamDialog } from "./create-team";
 import React from "react";
 import { useTournamentStore } from "@/src/store/tournament";
 import { TeamStatsSheet } from "./TeamStatsSheet";
-import { useQuery } from "@tanstack/react-query";
-import { TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/tournament";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
-import http from "@/src/utils/http";
-import { TeamT } from "@/src/types/team";
 import { useTeams } from "@/src/hooks/team/useTeams";
 
 export const AdminTeamsManagement: React.FC = () => {
@@ -28,29 +24,32 @@ export const AdminTeamsManagement: React.FC = () => {
   const updateId = search.get("update") || "";
   const teamStatId = search.get("teamStats") || "";
 
-  const urlBase = TOURNAMENT_ENDPOINTS.GET_TEAM_BY_TOURNAMENT_ID;
-  const url = urlBase.replace(":id", tournamentId).replace(":matchId", matchId);
-
   const { data: teams, isFetching } = useTeams();
-
-  console.log("Render AdminTeamsManagement", {
-    tournamentId,
-    matchId,
-    updateId,
-    teamStatId,
-    isFetching,
-  });
 
   const onCloseUpdateDialog = () => router.back();
 
-  console.log("Fetching teams URL:", url);
   return (
     <Ternary
-      condition={isFetching || !tournamentId || !matchId}
+      condition={!tournamentId || !matchId}
       trueComponent={
-        <div className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 gap-4">
-          <LoaderFive text="Loading teams..." />
-        </div>
+        <Ternary
+          condition={isFetching}
+          trueComponent={
+            <div className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 gap-4">
+              <LoaderFive text="Loading teams..." />
+            </div>
+          }
+          falseComponent={
+            <div className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 gap-4">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                Teams Management
+              </h1>
+              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
+                Create and manage tournament teams
+              </p>
+            </div>
+          }
+        />
       }
       falseComponent={
         <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 space-y-6 py-4 sm:py-6">

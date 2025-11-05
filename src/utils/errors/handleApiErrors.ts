@@ -4,6 +4,7 @@ import { UnauthorizedError } from "./unAuthError";
 import { EmailError } from "./EmailError";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { ErrorResponse } from "../next-response";
+import { ClerkClient } from "@clerk/backend";
 
 export const handleApiErrors = (error: unknown) => {
   if (error instanceof Prisma.PrismaClientInitializationError) {
@@ -38,10 +39,20 @@ export const handleApiErrors = (error: unknown) => {
       status: error.status,
     });
   }
+
   if (error instanceof UnauthorizedError) {
     return ErrorResponse({
       message: error.message || "Unauthorized",
       status: error.status,
+    });
+  }
+
+  // @ts-ignore
+  if (error?.reason === "token-expired") {
+    logger.error({ type: "Error", message: "Token Expire", error });
+    return ErrorResponse({
+      message: "Unauthorized",
+      status: 401,
     });
   }
 

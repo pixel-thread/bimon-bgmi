@@ -40,15 +40,14 @@ export default function TeamsPage() {
             actions={
               <div className="flex flex-col gap-2 w-full">
                 {/* First row: Season and Tournament selectors */}
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                   <SeasonSelector
                     size="sm"
                     variant="blue"
                     placeholder="Season"
                     showAllSeasons={true}
-                    className="w-28 sm:w-32 md:w-36 flex-1 min-w-0"
                   />
-                  <TournamentSelector className="w-40 sm:w-48 md:w-56 flex-1 min-w-0" />
+                  <TournamentSelector />
                   <MatchSelector isAllMatch={false} />
                   <Button
                     variant="outline"

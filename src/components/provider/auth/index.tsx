@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }: Props) => {
     if (isSignedIn || isPending === false) {
       const token = await getToken({ template: "jwt" });
       if (token) {
-        setCookies("token", token);
+        setCookies("token", token, { path: "/" });
         if (cookies.token) {
           mutate();
         }
