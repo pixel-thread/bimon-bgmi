@@ -17,6 +17,10 @@ const columns: ColumnDef<any>[] = [
     header: "Role",
     accessorKey: "role",
   },
+  {
+    header: "Created By",
+    accessorKey: "createdBy",
+  },
 ];
 export const AdminUserPage = () => {
   const { data } = useQuery({

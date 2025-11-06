@@ -211,7 +211,7 @@ type DataTableHeaderProps = {
   selectOptions?: DataTableFilterOptions[];
 };
 
-function DataTableHeader<T>({
+function DataTableHeader({
   table,
   filterColumnId = "email",
   enableFilter = false,
@@ -249,7 +249,6 @@ function DataTableHeader<T>({
             <SelectContent>
               <SelectGroup>
                 <SelectLabel>{sel.id.toUpperCase()}</SelectLabel>
-                <SelectItem value="all">All</SelectItem>
                 {sel.option.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -259,29 +258,6 @@ function DataTableHeader<T>({
             </SelectContent>
           </Select>
         ))}
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="ml-auto">
-            Columns <ChevronDown />
-          </Button>
-        </DropdownMenuTrigger>
-        {/* <DropdownMenuContent align="end"> */}
-        {/*   {table */}
-        {/*     .getAllColumns() */}
-        {/*     .filter((column) => column.getCanHide()) */}
-        {/*     .map((column) => ( */}
-        {/*       <DropdownMenuCheckboxItem */}
-        {/*         key={column.id} */}
-        {/*         className="capitalize" */}
-        {/*         checked={column.getIsVisible()} */}
-        {/*         onCheckedChange={(value) => column.toggleVisibility(!!value)} */}
-        {/*       > */}
-        {/*         {column.id} */}
-        {/*       </DropdownMenuCheckboxItem> */}
-        {/*     ))} */}
-        {/* </DropdownMenuContent> */}
-      </DropdownMenu>
     </div>
   );
 }

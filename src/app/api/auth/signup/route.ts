@@ -7,7 +7,7 @@ import { registerSchema } from "@/src/utils/validation/auth/register";
 
 export async function POST(req: Request) {
   try {
-    // const superUser = await superAdminMiddleware(req);
+    const superUser = await superAdminMiddleware(req);
     const body = registerSchema.parse(await req.json());
     const existingUser = await getUserByUserName({ userName: body.userName });
     if (existingUser) {
@@ -20,12 +20,12 @@ export async function POST(req: Request) {
     const user = await createUser({
       data: {
         ...body,
-        createdBy: "SEED",
+        createdBy: superUser?.id,
       },
     });
     return SuccessResponse({
       data: user,
-      message: "User created",
+      message: "User created successfully",
     });
   } catch (error) {
     return handleApiErrors(error);
