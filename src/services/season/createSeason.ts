@@ -9,12 +9,11 @@ type Props = {
 
 export async function createSeason({ data }: Props) {
   return await prisma.$transaction(async (tx) => {
-    // Fetch players inside the transaction for consistency
-    const [players] = await getAllPlayers({
-      where: {},
-    });
+    const players = await tx.player.findMany();
 
-    const activeSeason = await getActiveSeason();
+    const activeSeason = await tx.season.findFirst({
+      where: { status: "ACTIVE" },
+    });
 
     if (activeSeason) {
       await tx.season.update({
@@ -42,6 +41,7 @@ export async function createSeason({ data }: Props) {
         });
       }
     }
+
     return season;
   });
 }
