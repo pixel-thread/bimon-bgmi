@@ -195,10 +195,10 @@ const players: Omit<Prisma.PlayerCreateInput, "user">[] = [
 ];
 
 const users = Array.from({ length: players.length }).map((_, i) => ({
-  email: `test${i}@example.com`,
   clerkId: `clerk-test-${i}`,
   userName: Math.random().toString(36).slice(2),
   role: "PLAYER" as const,
+  player: players[i],
 }));
 
 async function main() {
@@ -222,6 +222,7 @@ async function main() {
       createdBy: "SEED",
     },
   });
+
   await prisma.poll.create({
     data: {
       tournamentId: tournament.id,
@@ -242,7 +243,6 @@ async function main() {
     const user = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
-          email: userData.email,
           clerkId: userData.clerkId,
           userName: userData.userName,
           role: userData.role,
@@ -253,14 +253,18 @@ async function main() {
             create: {
               seasons: { connect: { id: season.id } },
               playerStats: {
-                create: { season: { connect: { id: season.id } } },
+                create: {
+                  season: {
+                    connect: { id: season.id },
+                  },
+                  ...userData.player.playerStats,
+                },
               },
             },
           },
         },
         include: { player: { include: { playerStats: true } } },
       });
-
       return user;
     });
 
