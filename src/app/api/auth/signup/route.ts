@@ -1,3 +1,4 @@
+import { getActiveSeason } from "@/src/services/season/getActiveSeason";
 import { createUser } from "@/src/services/user/createUser";
 import { getUserByUserName } from "@/src/services/user/getUserByUserName";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
@@ -17,12 +18,24 @@ export async function POST(req: Request) {
         status: 400,
       });
     }
+
+    const isActiveSeason = await getActiveSeason();
+
+    if (!isActiveSeason) {
+      return ErrorResponse({
+        data: isActiveSeason,
+        message: "No active season found",
+        status: 400,
+      });
+    }
+
     const user = await createUser({
       data: {
         ...body,
         createdBy: superUser?.id,
       },
     });
+
     return SuccessResponse({
       data: user,
       message: "User created successfully",
