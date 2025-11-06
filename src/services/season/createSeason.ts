@@ -8,13 +8,13 @@ type Props = {
 };
 
 export async function createSeason({ data }: Props) {
-  const activeSeason = await getActiveSeason();
-
   return await prisma.$transaction(async (tx) => {
     // Fetch players inside the transaction for consistency
     const [players] = await getAllPlayers({
       where: {},
     });
+
+    const activeSeason = await getActiveSeason();
 
     if (activeSeason) {
       await tx.season.update({
@@ -32,15 +32,16 @@ export async function createSeason({ data }: Props) {
       },
     });
 
-    for (const player of players) {
-      await tx.playerStats.create({
-        data: {
-          playerId: player.id,
-          seasonId: season.id,
-        },
-      });
+    if (players.length > 0) {
+      for (const player of players) {
+        await tx.playerStats.create({
+          data: {
+            playerId: player.id,
+            seasonId: season.id,
+          },
+        });
+      }
     }
-
     return season;
   });
 }
