@@ -85,7 +85,7 @@ export function DataTable<T>({
   });
   return (
     <div className="w-full">
-      <DataTableHeader<T>
+      <DataTableHeader
         enableFilter={true}
         filterColumnId="category"
         filterType="select"
