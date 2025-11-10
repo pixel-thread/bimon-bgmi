@@ -6,7 +6,7 @@ import { getActiveSeason } from "../season/getActiveSeason";
 type Props = {
   data: Omit<Prisma.UserCreateInput, "clerkId"> & {
     password: string;
-    email?: string;
+    email: string;
     createdBy: string;
   };
 };
@@ -47,6 +47,7 @@ export async function createUser({ data }: Props) {
   const clerkUser = await clientClerk.users.createUser({
     password: data.password,
     username: data.userName,
+    emailAddress: [data.email],
   });
 
   const activeSeason = await getActiveSeason();

@@ -204,6 +204,7 @@ export async function createTeamsByPolls({
           teamId: team.id,
         },
       });
+
       result.push(team);
     }
 

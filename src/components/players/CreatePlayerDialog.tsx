@@ -28,6 +28,7 @@ import http from "@/src/utils/http";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema } from "@/src/utils/validation/auth/register";
 import z from "zod";
+import { v4 as uuidv4 } from "uuid";
 
 const generatePassword = () => {
   return Math.random().toString(36).slice(-8);
@@ -35,13 +36,14 @@ const generatePassword = () => {
 
 type PlayerT = z.infer<typeof registerSchema>;
 
+type CreatePlayerDialogProps = {
+  open: boolean;
+  onVlaueChange: (value: boolean) => void;
+};
 export const CreatePlayerDialog = ({
   open,
   onVlaueChange,
-}: {
-  open: boolean;
-  onVlaueChange: (value: boolean) => void;
-}) => {
+}: CreatePlayerDialogProps) => {
   const { user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const onTogglePassword = () => setShowPassword(!showPassword);
@@ -51,7 +53,8 @@ export const CreatePlayerDialog = ({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       userName: "",
-      password: generatePassword() || "123Abc!@#",
+      password: generatePassword(),
+      email: `${uuidv4()}@pixelthread.com`,
     },
   });
 
@@ -73,8 +76,13 @@ export const CreatePlayerDialog = ({
 
   const onSubmit: SubmitHandler<PlayerT> = (data) => mutate(data);
 
+  const onClose = () => {
+    form.reset();
+    onVlaueChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onVlaueChange}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
@@ -151,7 +159,7 @@ export const CreatePlayerDialog = ({
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(
-                        form.getValues("password") || ""
+                        form.getValues("password") || "",
                       );
                       toast.success("Password copied to clipboard");
                     } catch (_) {

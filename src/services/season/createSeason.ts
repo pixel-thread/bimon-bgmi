@@ -1,7 +1,5 @@
 import { prisma } from "@/src/lib/db/prisma";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
-import { getActiveSeason } from "./getActiveSeason";
-import { getAllPlayers } from "../player/getAllPlayers";
 
 type Props = {
   data: Prisma.SeasonCreateInput;
