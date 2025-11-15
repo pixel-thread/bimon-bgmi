@@ -67,6 +67,10 @@ export const AddPlayerToTeamDialog = ({
         toast.success(data.message);
         queryClient.invalidateQueries({ queryKey: ["team", teamId] });
         queryClient.invalidateQueries({
+          queryKey: ["team", tournamentId, matchId],
+        });
+
+        queryClient.invalidateQueries({
           queryKey: ["team", tournamentId],
         });
         return data;

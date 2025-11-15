@@ -63,7 +63,10 @@ export const CreateTeamDialog = ({
     onSuccess: (data) => {
       if (data.success) {
         toast.success(data.message);
-        queryClient.invalidateQueries({ queryKey: ["team", tournamentId] });
+        queryClient.invalidateQueries({
+          queryKey: ["team", tournamentId, matchId],
+        });
+
         router.push(`?update=${data?.data?.id}`);
         onOpenChange();
         return data;

@@ -34,7 +34,7 @@ const column: ColumnDef<TeamT>[] = [
   },
   {
     header: "PTS",
-    accessorKey: "pts",
+    accessorKey: "position",
   },
   {
     accessorKey: "total",
