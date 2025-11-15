@@ -73,7 +73,7 @@ export const AdminTeamsManagement: React.FC = () => {
               </Button>
             </div>
           </div>
-          <DataTable data={teams} columns={columns} />
+          {matchId && teams && <DataTable data={teams} columns={columns} />}
           <CreateTeamDialog onOpenChange={() => setOpen(!open)} open={open} />
           <AddPlayerToTeamDialog
             teamId={updateId}

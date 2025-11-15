@@ -172,7 +172,7 @@ export async function createTeamsByPolls({
             },
           });
 
-          tx.teamPlayerStats.create({
+          await tx.teamPlayerStats.create({
             data: {
               teamId: team.id || "",
               matchId: match.id || "",
@@ -183,7 +183,7 @@ export async function createTeamsByPolls({
           });
         }
 
-        tx.matchPlayerPlayed.create({
+        await tx.matchPlayerPlayed.create({
           data: {
             matchId: match.id || "",
             playerId: team.players[0].id || "",
