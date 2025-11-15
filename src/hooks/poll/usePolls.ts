@@ -13,7 +13,7 @@ export function usePolls({ page }: Props = { page: "1" }) {
   const url = isAdmin ? `/admin/poll?page=${page}` : `/poll?page=${page}`;
 
   return useQuery({
-    queryKey: ["polls", page],
+    queryKey: ["polls"],
     queryFn: () => http.get<PollT[]>(url),
     select: (data) => data.data,
     placeholderData: keepPreviousData,

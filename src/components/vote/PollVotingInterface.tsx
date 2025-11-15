@@ -33,13 +33,11 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
   title = "Tournament Polls",
   description = "Vote on active tournament polls",
 }) => {
-  const [page, setPage] = useState<string>("page");
-  const router = useRouter();
   const { user: user } = useAuth();
 
   const isPlayer = user?.role === "PLAYER";
 
-  const { data: polls, isFetching: loading } = usePolls({ page });
+  const { data: polls, isFetching: loading } = usePolls({});
 
   const [showVotersDialog, setShowVotersDialog] = useState<PollT | null>(null);
 
@@ -124,16 +122,6 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
             readOnly={true}
           />
         ))}
-      </div>
-      <div className="flex items-center justify-center">
-        <Button
-          onClick={() => {
-            const nextPage = parseInt(page) + 1;
-            setPage(nextPage.toString());
-          }}
-        >
-          Load More
-        </Button>
       </div>
       {/* Voters Dialog */}
       <VotersDialog
