@@ -24,36 +24,13 @@ export async function createTeamsByPolls({
     throw new Error("Invalid group size");
   }
 
-  let players = [];
-
-  // Fetch eligible players who voted in the poll and are not banned
-  if (process.env.NODE_ENV !== "development") {
-    players = await prisma.player.findMany({
-      where: {
-        isBanned: false,
-        playerPollVote: {
-          some: {
-            pollId,
-            vote: { not: "OUT" },
-          },
-        },
-      },
-      include: {
-        playerStats: true,
-        playerPollVote: true,
-        user: true,
-      },
-    });
-  } else {
-    // In development, fetch all players
-    players = await prisma.player.findMany({
-      include: {
-        playerStats: true,
-        playerPollVote: true,
-        user: true,
-      },
-    });
-  }
+  const players = await prisma.player.findMany({
+    include: {
+      playerStats: true,
+      playerPollVote: true,
+      user: true,
+    },
+  });
 
   if (players.length === 0) {
     throw new Error("No eligible players found for this poll.");
