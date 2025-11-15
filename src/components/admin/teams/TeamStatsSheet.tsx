@@ -43,7 +43,7 @@ import {
   SelectTrigger,
 } from "../../ui/select";
 import { Ternary } from "../../common/Ternary";
-import { LoaderOne } from "../../ui/loader";
+import { LoaderFive, LoaderOne } from "../../ui/loader";
 
 type Props = {
   teamId: string;
@@ -126,7 +126,7 @@ export function TeamStatsSheet({ teamId, open }: Props) {
               </SheetDescription>
             </SheetHeader>
             <Ternary
-              condition={!!teamId || !isTeamsFetching || isFetching}
+              condition={!isFetching}
               trueComponent={
                 <>
                   <div className="gap-2 w-full grid grid-cols-1 md:grid-cols-3">
@@ -199,7 +199,7 @@ export function TeamStatsSheet({ teamId, open }: Props) {
 
                   {fields.map((field, index) => (
                     <div className="my-5 p-2 w-full" key={field.id}>
-                      <div className="grid p-2 grid-cols-1 w-full md:grid-cols-2 gap-4">
+                      <div className="grid p-2 grid-cols-1 w-full gap-4">
                         <div className="col-span-full">
                           <FormField
                             control={form.control}
@@ -241,26 +241,6 @@ export function TeamStatsSheet({ teamId, open }: Props) {
                             </FormItem>
                           )}
                         />
-
-                        <FormField
-                          control={form.control}
-                          name={`players.${index}.deaths`}
-                          render={({ field: rField }) => (
-                            <FormItem>
-                              <FormLabel>Deaths</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  placeholder="Deaths"
-                                  {...rField}
-                                  min={0}
-                                  step={1}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
                       </div>
                     </div>
                   ))}
@@ -281,9 +261,9 @@ export function TeamStatsSheet({ teamId, open }: Props) {
                   </SheetFooter>
                 </>
               }
-              falseComponents={
-                <div>
-                  <LoaderOne text="Loading team stats..." />
+              falseComponent={
+                <div className="py-20">
+                  <LoaderFive text="Loading team stats..." />
                 </div>
               }
             />
