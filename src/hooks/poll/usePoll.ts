@@ -8,7 +8,7 @@ type UsePollProps = {
 };
 export function usePoll({ id }: UsePollProps = { id: "" }) {
   const { user } = useAuth();
-  const isAdmin = user?.role !== "PLAYER" || false;
+  const isAdmin = user?.role === "SUPER_ADMIN" || false;
   const url = isAdmin ? `/admin/poll/${id}` : `/poll/${id}`;
   return useQuery({
     queryKey: ["poll", id],
