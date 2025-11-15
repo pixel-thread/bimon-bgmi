@@ -1,5 +1,6 @@
 "use client";
 
+import { CSVLink } from "react-csv";
 import { LoaderFive } from "../../ui/loader";
 import { DataTable } from "../../data-table";
 import { useTeamsColumns } from "@/src/hooks/team/useTeamsColumns";
@@ -8,15 +9,23 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AddPlayerToTeamDialog } from "./add-player-to-team-dialog";
 import { Button } from "../../ui/button";
 import { CreateTeamDialog } from "./create-team";
-import React, { useEffect } from "react";
+import React from "react";
 import { useTournamentStore } from "@/src/store/tournament";
 import { TeamStatsSheet } from "./TeamStatsSheet";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { useTeams } from "@/src/hooks/team/useTeams";
+import { useTournament } from "@/src/hooks/tournament/useTournament";
+
+const headers = [
+  { label: "Total Players", key: "size" },
+  { label: "Team Name", key: "name" },
+  { label: "Slot No", key: "slotNo" },
+];
 
 export const AdminTeamsManagement: React.FC = () => {
   const { tournamentId } = useTournamentStore();
   const { matchId } = useMatchStore();
+  const { data: tournament } = useTournament({ id: tournamentId });
   const { columns } = useTeamsColumns();
   const [open, setOpen] = React.useState(false);
   const search = useSearchParams();
@@ -27,8 +36,6 @@ export const AdminTeamsManagement: React.FC = () => {
   const { data: teams, isFetching } = useTeams();
 
   const onCloseUpdateDialog = () => router.back();
-
-  const onValueChange = () => router.back();
 
   return (
     <Ternary
@@ -66,6 +73,18 @@ export const AdminTeamsManagement: React.FC = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+              <CSVLink
+                filename={`${tournament?.name}.csv`}
+                data={teams || []}
+                headers={headers}
+              >
+                <Button
+                  disabled={isFetching || !tournamentId}
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
+                >
+                  Export
+                </Button>
+              </CSVLink>
               <Button
                 onClick={() => setOpen(true)}
                 disabled={isFetching || !tournamentId}
@@ -82,11 +101,7 @@ export const AdminTeamsManagement: React.FC = () => {
             onOpenChange={() => onCloseUpdateDialog()}
             open={!!updateId}
           />
-          <TeamStatsSheet
-            open={!!teamStatId}
-            teamId={teamStatId}
-            onValueChange={onValueChange}
-          />
+          <TeamStatsSheet open={!!teamStatId} teamId={teamStatId} />
         </div>
       }
     />

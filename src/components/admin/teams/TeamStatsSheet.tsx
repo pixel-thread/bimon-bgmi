@@ -47,10 +47,9 @@ import { Ternary } from "../../common/Ternary";
 type Props = {
   teamId: string;
   open: boolean;
-  onOpenChange: () => void;
 };
 
-export function TeamStatsSheet({ teamId, open, onOpenChange }: Props) {
+export function TeamStatsSheet({ teamId, open }: Props) {
   const router = useRouter();
   const { matchId } = useMatchStore();
 
