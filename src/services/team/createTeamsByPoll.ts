@@ -123,80 +123,86 @@ export async function createTeamsByPolls({
   teams = shuffle(teams);
 
   // Persist all in a transaction atomically
-  const createdTeams = await prisma.$transaction(async (tx) => {
-    // Create a new Match for tournament and season
-    const match = await tx.match.create({
-      data: {
-        tournamentId,
-        seasonId,
-      },
-    });
-
-    const result = [];
-
-    for (let i = 0; i < teams.length; i++) {
-      const t = teams[i];
-
-      // Create Team
-      const team = await tx.team.create({
+  const createdTeams = await prisma.$transaction(
+    async (tx) => {
+      // Create a new Match for tournament and season
+      const match = await tx.match.create({
         data: {
-          name: `Team ${i + 1}`,
-          teamNumber: i + 1,
           tournamentId,
           seasonId,
-          players: {
-            connect: t.players.map((p) => ({ id: p.id })),
-          },
-          matches: {
-            connect: { id: match.id },
-          },
-        },
-        include: { players: true },
-      });
-
-      const teamStat = await tx.teamStats.create({
-        data: {
-          teamId: team.id,
-          matchId: match.id,
-          seasonId,
-          tournamentId,
         },
       });
 
-      for (const player of t.players) {
-        await tx.player.update({
-          where: { id: player.id },
+      const result = [];
+
+      for (let i = 0; i < teams.length; i++) {
+        const t = teams[i];
+
+        // Create Team
+        const team = await tx.team.create({
           data: {
-            teamStats: { connect: { id: teamStat.id || "" } },
+            name: `Team ${i + 1}`,
+            teamNumber: i + 1,
+            tournamentId,
+            seasonId,
+            players: {
+              connect: t.players.map((p) => ({ id: p.id })),
+            },
+            matches: {
+              connect: { id: match.id },
+            },
+          },
+          include: { players: true },
+        });
+
+        const teamStat = await tx.teamStats.create({
+          data: {
+            teamId: team.id,
+            matchId: match.id,
+            seasonId,
+            tournamentId,
           },
         });
 
-        await tx.teamPlayerStats.create({
+        for (const player of t.players) {
+          await tx.player.update({
+            where: { id: player.id },
+            data: {
+              teamStats: { connect: { id: teamStat.id || "" } },
+            },
+          });
+
+          tx.teamPlayerStats.create({
+            data: {
+              teamId: team.id || "",
+              matchId: match.id || "",
+              seasonId: seasonId,
+              playerId: player.id || "",
+              teamStatsId: teamStat.id || "",
+            },
+          });
+        }
+
+        tx.matchPlayerPlayed.create({
           data: {
-            teamId: team.id || "",
             matchId: match.id || "",
+            playerId: team.players[0].id || "",
+            tournamentId: tournamentId,
             seasonId: seasonId,
-            playerId: player.id || "",
-            teamStatsId: teamStat.id || "",
+            teamId: team.id,
           },
         });
+
+        result.push(team);
       }
 
-      await tx.matchPlayerPlayed.create({
-        data: {
-          matchId: match.id || "",
-          playerId: team.players[0].id || "",
-          tournamentId: tournamentId,
-          seasonId: seasonId,
-          teamId: team.id,
-        },
-      });
-
-      result.push(team);
-    }
-
-    return result;
-  });
+      return result;
+    },
+    {
+      maxWait: 10000, // Max wait to connect to Prisma (10 seconds)
+      timeout: 30000, // Transaction timeout (30 seconds)
+    },
+  );
 
   return createdTeams;
 }
