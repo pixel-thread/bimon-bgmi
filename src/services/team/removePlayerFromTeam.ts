@@ -6,8 +6,13 @@ type Props = {
 };
 
 export async function removePlayerFromTeam({ teamId, playerId }: Props) {
-  return await prisma.team.update({
-    where: { id: teamId },
-    data: { players: { disconnect: { id: playerId } } },
+  return await prisma.$transaction(async (tx) => {
+    await tx.teamPlayerStats.deleteMany({
+      where: { playerId, teamId },
+    });
+    return await tx.team.update({
+      where: { id: teamId },
+      data: { players: { disconnect: { id: playerId } } },
+    });
   });
 }

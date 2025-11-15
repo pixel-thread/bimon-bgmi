@@ -125,7 +125,7 @@ export const AddPlayerToTeamDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[400px] w-full">
         <DialogHeader>
-          <DialogTitle>Add Players to Team</DialogTitle>
+          <DialogTitle>Update Players to Team</DialogTitle>
           <DialogDescription>
             Existing players are preloaded. Use the plus icon to add new ones.
           </DialogDescription>
