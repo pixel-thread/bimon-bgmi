@@ -50,7 +50,7 @@ export async function GET(
         };
       });
       const kills = teamStats?.kills || 0;
-      const pts = calculatePlayerPoints(team.position, kills);
+      const pts = calculatePlayerPoints(teamStats?.position || 0, kills);
       const total = kills + pts;
       const teamName = team.players
         .map((player) => player.user.userName)

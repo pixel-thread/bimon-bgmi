@@ -35,6 +35,10 @@ const col: ColumnDef<TeamT>[] = [
     header: "Slot No.",
   },
   {
+    accessorKey: "pts",
+    header: "PTS",
+  },
+  {
     accessorKey: "kills",
     header: "Kills",
   },
