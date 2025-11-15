@@ -1,5 +1,6 @@
 import { getPlayerById } from "@/src/services/player/getPlayerById";
 import { addPlayerVote } from "@/src/services/polls/addPlayerVote";
+import { deletePlayerVote } from "@/src/services/polls/deletePlayerVote";
 import { getPlayerVoteByPollId } from "@/src/services/polls/getPlayerVoteByPollId";
 import { getPollById } from "@/src/services/polls/getPollById";
 import { getPollVoter } from "@/src/services/polls/getPollVoter";
@@ -82,10 +83,7 @@ export async function POST(
     });
 
     if (isPlayerVoted) {
-      return ErrorResponse({
-        message: "Player already voted",
-        status: 400,
-      });
+      await deletePlayerVote({ playerId, pollId });
     }
 
     const vote = await addPlayerVote({

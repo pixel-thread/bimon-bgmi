@@ -64,7 +64,6 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     const totalVotes = playersVotes?.length || 0;
 
     const playerId = user?.player?.id || "";
-    const allVoter = playersVotes || [];
     const isUserVoted = playersVotes?.find((val) => val.playerId === playerId)
       ? true
       : false;
@@ -117,16 +116,6 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
               </h3>
               <div className="flex items-center gap-2 flex-wrap text-sm">
                 {/* Status/Voted badge */}
-                {/** If admin view, show Active/Inactive; else show Voted when applicable */}
-                <Badge
-                  className={`${
-                    poll.isActive
-                      ? "bg-green-100 uppercase text-green-800 dark:bg-green-900/30 dark:text-green-200"
-                      : "bg-gray-100 text-gray-800 uppercase dark:bg-gray-900/30 dark:text-gray-200"
-                  }`}
-                >
-                  {poll.isActive ? "Active" : "Inactive"}
-                </Badge>
                 {isUserVoted ? (
                   <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
                     <FiCheck className="w-3 h-3 mr-1" />

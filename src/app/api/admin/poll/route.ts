@@ -58,6 +58,7 @@ export async function POST(req: Request) {
         tournament: { connect: { id: body.tournamentId } },
         options: { createMany: { data: body.options } },
         endDate: body.endDate,
+        days: body.days,
       },
     });
 

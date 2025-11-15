@@ -15,7 +15,12 @@ import TournamentSelector from "@/src/components/tournaments/TournamentSelector"
 import { TrashIcon } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
-import { SubmitHandler, useFieldArray, useForm } from "react-hook-form";
+import {
+  SubmitHandler,
+  useFieldArray,
+  useForm,
+  useWatch,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { pollSchema } from "@/src/utils/validation/poll";
 import {
@@ -80,12 +85,6 @@ export const UpdatePollDialog = ({ open, id }: UpdatePollDialogProps) => {
 
   const form = useForm({
     resolver: zodResolver(pollSchema),
-    defaultValues: {
-      question: tournament?.name,
-      tournamentId: tournamentId,
-      options: data?.options,
-      days: data?.days,
-    },
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -140,11 +139,19 @@ export const UpdatePollDialog = ({ open, id }: UpdatePollDialogProps) => {
         question: data?.question,
         tournamentId: data?.tournamentId,
         options: data?.options,
-        days: data?.days.toString(),
+        days: data?.days,
       });
     }
-  }, [data]);
-  logger.log(form.formState.errors);
+  }, [data?.id, form]);
+  const watchDays = useWatch({
+    control: form.control,
+    name: "days",
+  });
+  useEffect(() => {
+    if (watchDays === "" && data?.days !== "") {
+      form.setValue("days", data?.days || "Monday");
+    }
+  }, [watchDays, data?.days, form]);
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="w-full max-w-[95vw] sm:max-w-lg md:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
@@ -187,9 +194,10 @@ export const UpdatePollDialog = ({ open, id }: UpdatePollDialogProps) => {
                       <FormControl>
                         <Select
                           value={field.value}
+                          defaultValue={field.value}
                           onValueChange={field.onChange}
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger value={field.value} className="w-full">
                             <SelectValue
                               {...field}
                               placeholder="Select a day"
@@ -307,7 +315,7 @@ export const UpdatePollDialog = ({ open, id }: UpdatePollDialogProps) => {
                   disabled={form.formState.isSubmitting || isPending}
                   className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
                 >
-                  Create Poll
+                  Update Poll
                 </Button>
               </DialogFooter>
             </form>
