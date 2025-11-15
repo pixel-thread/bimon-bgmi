@@ -17,7 +17,6 @@ export async function POST(
     await superAdminMiddleware(req);
 
     const teamId = (await params).id;
-
     const isTeamExist = await getTeamById({ where: { id: teamId } });
 
     if (!isTeamExist) {

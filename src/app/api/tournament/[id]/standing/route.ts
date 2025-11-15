@@ -1,3 +1,4 @@
+import { prisma } from "@/src/lib/db/prisma";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { getTeamsStats } from "@/src/services/team/getTeamsStats";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
@@ -34,38 +35,93 @@ export async function GET(
       return ErrorResponse({ message: "Tournament not found" });
     }
 
-    const teamsStats = await getTeamsStats({
+    const teamsStats = await prisma.teamStats.findMany({
       where,
-      orderBy: { kills: "desc" }, // sort by position
+      include: {
+        team: {
+          include: { matches: true, players: { include: { user: true } } },
+        },
+      },
     });
 
-    const data = teamsStats.map((team) => {
-      const kills = team.kills;
-      const pts = calculatePlayerPoints(team.position, 0);
-      const total = kills + pts;
-      logger.log({
-        name: "standing",
-        kills: team?.kills,
-        pts,
-        total,
+    // if (where.matchId ) {
+    //   logger.log({
+    //     position: teamsStats.map((team) => team.position),
+    //   });
+    //   const data = teamsStats.map((team) => {
+    //     const kills = team.kills;
+    //     const pts = calculatePlayerPoints(team.position, 0);
+    //     const total = kills + pts;
+    //     return {
+    //       name: team.team.name,
+    //       matches: team.team.matches.length,
+    //       position: team.position,
+    //       kills: kills,
+    //       deaths: team.deaths,
+    //       pts: pts,
+    //       total: total,
+    //       players: team.team.players.map((player) => ({
+    //         id: player.id,
+    //         name: player.user.userName,
+    //       })),
+    //     };
+    //   });
+    //   return SuccessResponse({
+    //     data,
+    //     message: "Out Standing fetched successfully",
+    //   });
+    // }
+
+    const groupTeamsStats = await prisma.teamStats.groupBy({
+      where,
+      by: ["teamId"],
+      _sum: {
+        kills: true,
+      },
+      _avg: {
+        position: true,
+      },
+    });
+
+    const data1 = groupTeamsStats.map((team) => {
+      const position =
+        teamsStats.find((teamStats) => teamStats.teamId === team.teamId)
+          ?.position || 0;
+      const groupStats = teamsStats.map((stat) => {
+        const kills = stat.kills || 0;
+        const pts = calculatePlayerPoints(stat.position, 0); // Calculate points based on position
+        const total = kills + pts;
+        return {
+          ...stat, // Keep all original fields
+          pts, // Add calculated points
+          total, // Add total score
+        };
       });
+
+      const pts = groupStats
+        .filter((val) => val.teamId === team.teamId)
+        .reduce((acc, stat) => acc + stat.pts, 0);
+      const kills = team?._sum?.kills || 0;
+      const total = kills + pts;
+      const teamStats = teamsStats.find(
+        (teamStats) => teamStats.teamId === team.teamId,
+      );
       return {
-        name: team.team.name,
-        matches: team.team.matches.length,
-        position: team.position,
-        kills: kills,
-        deaths: team.deaths,
-        pts: pts,
+        name: teamStats?.team?.name || "",
+        teamId: team.teamId,
+        kills: team._sum.kills,
+        position: position,
         total: total,
-        players: team.team.players.map((player) => ({
+        matches: teamStats?.team?.matches.length,
+        pts: pts,
+        players: teamStats?.team?.players.map((player) => ({
           id: player.id,
           name: player.user.userName,
         })),
       };
     });
-
     return SuccessResponse({
-      data: data,
+      data: data1,
       message: "Out Standing fetched successfully",
     });
   } catch (error) {

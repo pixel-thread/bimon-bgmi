@@ -1,5 +1,6 @@
 import { prisma } from "@/src/lib/db/prisma";
 import { getTeamByTournamentId } from "../team/getTeamByTournamentId";
+import { logger } from "@/src/utils/logger";
 
 type Props = {
   data: {
