@@ -1,10 +1,8 @@
 import { createMatch } from "@/src/services/match/createMatch";
 import { getAllMatches } from "@/src/services/match/getAllMatches";
 import { getActiveSeason } from "@/src/services/season/getActiveSeason";
-import { getTeamByTournamentId } from "@/src/services/team/getTeamByTournamentId";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { logger } from "@/src/utils/logger";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { matchSchema } from "@/src/utils/validation/match";
