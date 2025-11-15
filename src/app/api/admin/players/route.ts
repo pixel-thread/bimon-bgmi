@@ -70,6 +70,7 @@ export async function GET(req: NextRequest) {
         ),
       };
     });
+
     return SuccessResponse({
       data: data,
       message: "Players fetched successfully",

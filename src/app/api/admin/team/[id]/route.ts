@@ -15,7 +15,6 @@ export async function GET(
 
     const team = await getTeamById({
       where: { id },
-      include: { players: true, matches: true },
     });
 
     if (!team) {

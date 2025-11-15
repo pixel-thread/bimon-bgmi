@@ -7,5 +7,10 @@ type Props = {
 };
 
 export async function getTeamById({ include, where }: Props) {
-  return await prisma.team.findUnique({ where, include });
+  return await prisma.team.findUnique({
+    where,
+    include: include
+      ? include
+      : { players: { include: { user: true } }, matches: true },
+  });
 }

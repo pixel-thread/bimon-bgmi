@@ -23,7 +23,6 @@ import { TeamT } from "@/src/types/team";
 import { usePlayers } from "@/src/hooks/player/usePlayers";
 import React from "react";
 import { toast } from "sonner";
-import { useTournaments } from "@/src/hooks/tournament/useTournaments";
 import { useTournamentStore } from "@/src/store/tournament";
 
 type AddPlayerToTeamDialogProps = {
@@ -155,7 +154,7 @@ export const AddPlayerToTeamDialog = ({
                 <SelectContent>
                   {players?.map((player) => (
                     <SelectItem key={player.id} value={player.id}>
-                      {player.user.userName}
+                      {player.userName}
                     </SelectItem>
                   ))}
                 </SelectContent>

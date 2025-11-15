@@ -1,13 +1,21 @@
 import http from "@/src/utils/http";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
-import { PlayerT } from "@/src/types/player";
 import { MetaT } from "@/src/types/meta";
 import { useEffect, useState } from "react";
 import { useSeasonStore } from "@/src/store/season";
 
 type UsePlayersProps = {
   page?: string | number;
+};
+
+type PlayerT = {
+  id: string;
+  isBanned: boolean;
+  userName: string;
+  category: string;
+  matches: number;
+  kd: number;
 };
 
 export function usePlayers({ page }: UsePlayersProps = { page: "1" }) {
