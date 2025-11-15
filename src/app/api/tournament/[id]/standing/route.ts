@@ -41,7 +41,7 @@ export async function GET(
 
     const data = teamsStats.map((team) => {
       const kills = team.kills;
-      const pts = calculatePlayerPoints(team.position, kills);
+      const pts = calculatePlayerPoints(team.position, 0);
       const total = kills + pts;
       logger.log({
         name: "standing",
