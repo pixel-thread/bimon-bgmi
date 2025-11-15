@@ -1,5 +1,4 @@
 import { getPlayerById } from "@/src/services/player/getPlayerById";
-import { addPlayerToTeam } from "@/src/services/team/addPlayerToTeam";
 import { getTeamById } from "@/src/services/team/getTeamById";
 import { removePlayerFromTeam } from "@/src/services/team/removePlayerFromTeam";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
