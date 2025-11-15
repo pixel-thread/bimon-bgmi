@@ -11,7 +11,7 @@ export function usePoll({ id }: UsePollProps = { id: "" }) {
   const isAdmin = user?.role === "SUPER_ADMIN" || false;
   const url = isAdmin ? `/admin/poll/${id}` : `/poll/${id}`;
   return useQuery({
-    queryKey: ["poll", id],
+    queryKey: ["poll", id, user?.role],
     queryFn: () => http.get<PollT>(url),
     enabled: !!id,
     select: (data) => data.data,

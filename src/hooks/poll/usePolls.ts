@@ -9,7 +9,7 @@ type Props = {
 export function usePolls({ page }: Props = { page: "1" }) {
   const { user } = useAuth();
   const isAdmin =
-    (user?.role !== "SUPER_ADMIN" && user?.role !== "ADMIN") || false;
+    user?.role === "SUPER_ADMIN" ? true : user?.role === "ADMIN" ? true : false;
   const url = isAdmin ? `/admin/poll?page=${page}` : `/poll?page=${page}`;
 
   return useQuery({

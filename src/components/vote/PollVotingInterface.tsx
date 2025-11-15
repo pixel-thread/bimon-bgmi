@@ -40,11 +40,7 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
 
   const isPlayer = user?.role === "PLAYER";
 
-  const {
-    data: polls,
-    isFetching: loading,
-    isPlaceholderData,
-  } = usePolls({ page });
+  const { data: polls, isFetching: loading } = usePolls({ page });
 
   const [showVotersDialog, setShowVotersDialog] = useState<PollT | null>(null);
 
