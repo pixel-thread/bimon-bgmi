@@ -37,12 +37,12 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
       mutationFn: (data: DataT) => http.post(`/poll/${id}/vote`, data),
       onSuccess: (data) => {
         if (data.success) {
-          queryClient.invalidateQueries({ queryKey: ["polls"] });
-          queryClient.invalidateQueries({ queryKey: ["poll", id] });
           toast.success(data.message);
           return data;
         }
         queryClient.invalidateQueries({ queryKey: ["polls"] });
+        queryClient.invalidateQueries({ queryKey: ["poll", id] });
+        queryClient.invalidateQueries({ queryKey: ["player-vote", id] });
         toast.error(data.message);
         return data;
       },
