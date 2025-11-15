@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/src/components/ui/button";
+import { useTournamentStore } from "@/src/store/tournament";
 import { FiPlus } from "react-icons/fi";
 
 interface TournamentToolbarProps {
@@ -11,8 +12,9 @@ interface TournamentToolbarProps {
 export default function TournamentToolbar({
   setShowCreateModal,
 }: TournamentToolbarProps) {
+  const { tournamentId } = useTournamentStore();
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-row gap-2">
       <div className="flex flex-wrap gap-2">
         <Button
           variant="ghost"
@@ -24,6 +26,17 @@ export default function TournamentToolbar({
           New Tournament
         </Button>
       </div>
+      {tournamentId && (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            onClick={() => setShowCreateModal(true)}
+            className="h-8 text-xs gap-1 bg-muted/50 hover:bg-muted"
+          >
+            Declare Winner
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

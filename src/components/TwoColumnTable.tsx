@@ -13,7 +13,7 @@ interface TwoColumnTableProps {
 const column: ColumnDef<TeamT>[] = [
   {
     header: "#",
-    cell: ({ row }) => row.index,
+    cell: ({ row }) => row.index + 1,
   },
   {
     header: "Team",

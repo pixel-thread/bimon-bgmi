@@ -4,7 +4,6 @@ import { createTeamByTournamentId } from "@/src/services/team/createTeamByTourna
 import { getTeamByTournamentId as getTeamsByTournamentId } from "@/src/services/team/getTeamByTournamentId";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { logger } from "@/src/utils/logger";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { createTeamSchema } from "@/src/utils/validation/team/create-team-schema";

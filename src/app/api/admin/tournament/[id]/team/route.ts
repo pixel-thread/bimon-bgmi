@@ -127,9 +127,9 @@ export async function GET(
         };
       });
     }
-
+    const sortedData = data.sort((a, b) => b.total - a.total);
     return SuccessResponse({
-      data: data,
+      data: sortedData,
       message: "Teams fetched successfully",
     });
   } catch (error) {

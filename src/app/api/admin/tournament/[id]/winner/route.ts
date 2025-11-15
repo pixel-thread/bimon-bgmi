@@ -7,25 +7,15 @@ import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
 
-export async function GET(
+export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const id = (await params).id;
     await tokenMiddleware(req);
-    const search = req.nextUrl.searchParams;
-    const matchId = search.get("match") || "all";
     let where: Prisma.TeamStatsWhereInput;
-
-    if (matchId === "all") {
-      where = { tournamentId: id };
-    } else {
-      where = {
-        tournamentId: id,
-        matchId: matchId,
-      };
-    }
+    where = { tournamentId: id };
 
     const tournament = await getTournamentById({ id: id });
 
@@ -53,7 +43,7 @@ export async function GET(
       },
     });
 
-    const data1 = groupTeamsStats.map((team) => {
+    const mappedData = groupTeamsStats.map((team) => {
       const position =
         teamsStats.find((teamStats) => teamStats.teamId === team.teamId)
           ?.position || 0;
@@ -90,10 +80,13 @@ export async function GET(
         })),
       };
     });
-    const sortedData = data1.sort((a, b) => b.total - a.total);
+
+    const sortedData = mappedData.sort((a, b) => b.total - a.total).slice(0, 2);
+
     return SuccessResponse({
       data: sortedData,
-      message: "Out Standing fetched successfully",
+      status: 200,
+      message: "Tournament winner fetched successfully",
     });
   } catch (error) {
     return handleApiErrors(error);

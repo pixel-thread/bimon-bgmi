@@ -61,6 +61,12 @@ export async function POST(
       });
     }
 
+    if (!isPollExist.isActive) {
+      return ErrorResponse({
+        message: "Num lah Vote ka poll la kut leh kham kloi next haw",
+        status: 404,
+      });
+    }
     const isPlayerExist = await getPlayerById({ id: playerId });
 
     if (!isPlayerExist) {

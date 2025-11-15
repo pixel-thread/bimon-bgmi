@@ -5,7 +5,7 @@
 @pollId = 243162cd-7550-4b33-8fce-03cef328c30b
 @seasonId = 27c60b71-a6d8-4607-8be6-a322675a6464
 @teamId = 4e2271d4-2036-4563-be98-ec6f620b00ca
-@tournamentId = 839bfb74-1b74-4eea-852b-54189003cf18
+@tournamentId = d23e1c85-39f4-47c2-a20e-e2c910b87188
 
 
 ### Create Poll
@@ -154,6 +154,16 @@ Authorization: Bearer {{TOKEN}}
 # @name delete all user
 
 DELETE http://localhost:3000/api/admin/auth/delete-all-user HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### 
+
+# @name declare tournament winner
+
+POST http://localhost:3000/api/admin/tournament/{{tournamentId}}/winner HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 Authorization: Bearer {{TOKEN}}

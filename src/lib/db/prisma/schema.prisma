@@ -393,12 +393,15 @@ model Gallery {
 
 model TournamentWinner {
   id           String     @id @default(uuid())
-  playerId     String
-  player       Player     @relation(fields: [playerId], references: [id])
+  amount       Int
   position     Int
+  teamId       String
+  team         Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
   tournamentId String
   tournament   Tournament @relation(fields: [tournamentId], references: [id])
   createdAt    DateTime   @default(now())
+
+  @@unique([tournamentId, teamId])
 }
 
 model GameScore {
