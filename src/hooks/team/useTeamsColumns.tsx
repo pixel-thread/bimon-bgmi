@@ -38,10 +38,6 @@ const col: ColumnDef<TeamT>[] = [
     accessorKey: "kills",
     header: "Kills",
   },
-  {
-    accessorKey: "deaths",
-    header: "deaths",
-  },
 ];
 
 export const useTeamsColumns = () => {

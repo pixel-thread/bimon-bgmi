@@ -12,7 +12,11 @@ type PropsT = {
   children: React.ReactNode;
 };
 
-const pageAccessOnlyIfUnAuthenticated: string[] = ["/auth", "/auth/sign-up"];
+const pageAccessOnlyIfUnAuthenticated: string[] = [
+  "/auth",
+  "/auth/sign-up",
+  "/forbidden",
+];
 
 export const RoleBaseRoute = ({ children }: PropsT) => {
   const searchParams = useSearchParams();
@@ -28,16 +32,16 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
 
   // Show loader during route changes or delays
   useEffect(() => {
+    setIsLoading(true);
     if (isAuthLoading) return;
-    setIsLoading(false);
-    const timer = setTimeout(() => setIsLoading(false), 3000); // delay in ms
+    const timer = setTimeout(() => setIsLoading(false), 1000); // delay in ms
     return () => clearTimeout(timer); // Cleanup the timer
   }, [isAuthLoading, pathName]);
 
   // Handle authentication and role-based redirects
   useEffect(() => {
     // Wait until authentication loading is complete to proceed
-    if (isAuthLoading) return;
+    if (isAuthLoading || isLoading) return;
     // Do not redirect if user is still fetching
     if (isAuthenticated && user === null && isAuthLoading) return;
     // Step 1: Identify the current route from the `routeRoles` configuration
@@ -69,7 +73,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
         // If the user does not have the required role(s)
         if (!hasRequiredRole) {
           // Redirect the user to a fallback page specified in the route's configuration or to the homepage
-          router.replace(currentRoute.redirect || "/");
+          router.replace(`/forbidden`);
           return; // Exit the logic as redirection is in progress
         }
       }
