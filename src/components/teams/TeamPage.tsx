@@ -45,7 +45,7 @@ export default function TeamsPage() {
                     size="sm"
                     variant="blue"
                     placeholder="Season"
-                    showAllSeasons={true}
+                    showAllSeasons={false}
                   />
                   <TournamentSelector />
                   <MatchSelector isAllMatch={true} />
