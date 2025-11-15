@@ -33,7 +33,7 @@ const column: ColumnDef<TeamT>[] = [
     header: "Kills",
   },
   {
-    header: "PTS",
+    header: "Placement Points",
     accessorKey: "position",
   },
   {
