@@ -44,34 +44,6 @@ export async function GET(
       },
     });
 
-    // if (where.matchId ) {
-    //   logger.log({
-    //     position: teamsStats.map((team) => team.position),
-    //   });
-    //   const data = teamsStats.map((team) => {
-    //     const kills = team.kills;
-    //     const pts = calculatePlayerPoints(team.position, 0);
-    //     const total = kills + pts;
-    //     return {
-    //       name: team.team.name,
-    //       matches: team.team.matches.length,
-    //       position: team.position,
-    //       kills: kills,
-    //       deaths: team.deaths,
-    //       pts: pts,
-    //       total: total,
-    //       players: team.team.players.map((player) => ({
-    //         id: player.id,
-    //         name: player.user.userName,
-    //       })),
-    //     };
-    //   });
-    //   return SuccessResponse({
-    //     data,
-    //     message: "Out Standing fetched successfully",
-    //   });
-    // }
-
     const groupTeamsStats = await prisma.teamStats.groupBy({
       where,
       by: ["teamId"],

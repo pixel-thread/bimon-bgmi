@@ -54,7 +54,7 @@ export default function TeamCard({ team }: TeamCardProps) {
             <div className="px-2 py-1 rounded-full text-xs font-medium bg-accent text-accent-foreground">
               Total Points:{" "}
               {Object.values(matchScores).reduce(
-                (acc, s) => acc + (s.kills || 0) + (s.placementPoints || 0),
+                (acc, s) => acc + (s.kills || 0) + (s.total || 0),
                 0,
               )}
             </div>
@@ -75,7 +75,7 @@ export default function TeamCard({ team }: TeamCardProps) {
         ) : (
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
             <div className={`px-2 py-1 rounded-full text-xs font-medium`}>
-              placement: {team.pts}
+              Placement Points: {team.pts}
             </div>
             <div className={`px-2 py-1 rounded-full text-xs font-medium`}>
               Kills: {team.kills}
