@@ -131,6 +131,7 @@ export const usePollColumns = () => {
           {Array.from({ length: 4 }).map((_, i) => (
             <Button
               disabled={isBulking}
+              key={i}
               onClick={() => bulkTeam({ id: row.original.id, size: i + 1 })}
               variant={i === 1 ? "default" : "outline"}
             >

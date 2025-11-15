@@ -14,6 +14,6 @@ Content-Type: application/json
 Authorization: Bearer {{TOKEN}}
 
 {
-  "name": "Test 3",
+  "name": "Test",
   "startDate": "{{$date}}"
 }

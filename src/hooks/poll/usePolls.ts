@@ -8,7 +8,8 @@ type Props = {
 };
 export function usePolls({ page }: Props = { page: "1" }) {
   const { user } = useAuth();
-  const isAdmin = user?.role !== "PLAYER" || false;
+  const isAdmin =
+    (user?.role !== "SUPER_ADMIN" && user?.role !== "ADMIN") || false;
   const url = isAdmin ? `/admin/poll?page=${page}` : `/poll?page=${page}`;
 
   return useQuery({
