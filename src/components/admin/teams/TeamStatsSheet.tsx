@@ -43,6 +43,7 @@ import {
   SelectTrigger,
 } from "../../ui/select";
 import { Ternary } from "../../common/Ternary";
+import { LoaderOne } from "../../ui/loader";
 
 type Props = {
   teamId: string;
@@ -107,7 +108,9 @@ export function TeamStatsSheet({ teamId, open }: Props) {
   }, [stats, form]);
 
   const onSubmit: SubmitHandler<TeamStatsForm> = (data) => mutate(data);
+
   const onVlaueChagne = () => router.back();
+
   return (
     <Sheet open={open} onOpenChange={onVlaueChagne}>
       <SheetContent side="right" className="min-w-xl overflow-y-scroll">
@@ -278,7 +281,11 @@ export function TeamStatsSheet({ teamId, open }: Props) {
                   </SheetFooter>
                 </>
               }
-              falseComponents={null}
+              falseComponents={
+                <div>
+                  <LoaderOne text="Loading team stats..." />
+                </div>
+              }
             />
           </form>
         </Form>

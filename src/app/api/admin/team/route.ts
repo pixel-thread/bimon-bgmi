@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
         name: Math.random().toString(36).substring(7),
         teamNumber: teams.length + 1,
         tournament: { connect: { id: body.tournamentId } },
+        matches: { connect: { id: body.matchId } },
         season: { connect: { id: isTournamentExist?.seasonId || "" } },
       },
     });
@@ -40,6 +41,7 @@ export async function POST(req: NextRequest) {
       for (const player of body.players) {
         await addPlayerToTeam({
           teamId: team.id,
+          matchId: body.matchId,
           playerId: player.playerId,
         });
       }

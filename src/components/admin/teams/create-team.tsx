@@ -24,6 +24,7 @@ import React from "react";
 import { toast } from "sonner";
 import { useTournamentStore } from "@/src/store/tournament";
 import { useRouter } from "next/navigation";
+import { useMatchStore } from "@/src/store/match/useMatchStore";
 
 type AddPlayerToTeamDialogProps = {
   open?: boolean;
@@ -36,6 +37,7 @@ export const CreateTeamDialog = ({
 }: AddPlayerToTeamDialogProps) => {
   const { tournamentId } = useTournamentStore();
   const router = useRouter();
+  const { matchId } = useMatchStore();
   const queryClient = useQueryClient();
 
   const [playersList, setPlayersList] = React.useState<string[]>([]);
@@ -44,12 +46,14 @@ export const CreateTeamDialog = ({
 
   const payload = {
     tournamentId: tournamentId,
+    matchId: matchId,
     players: playersList.map((player) => {
       return {
         playerId: player,
       };
     }),
   };
+
   const { mutate: addPlayer, isPending } = useMutation({
     mutationFn: () =>
       http.post<{ id: string }>(

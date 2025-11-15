@@ -24,6 +24,7 @@ import { usePlayers } from "@/src/hooks/player/usePlayers";
 import React from "react";
 import { toast } from "sonner";
 import { useTournamentStore } from "@/src/store/tournament";
+import { useMatchStore } from "@/src/store/match/useMatchStore";
 
 type AddPlayerToTeamDialogProps = {
   open?: boolean;
@@ -37,7 +38,7 @@ export const AddPlayerToTeamDialog = ({
   teamId,
 }: AddPlayerToTeamDialogProps) => {
   const queryClient = useQueryClient();
-
+  const { matchId } = useMatchStore();
   const [playersList, setPlayersList] = React.useState<string[]>([]);
 
   const { data: team } = useQuery({
@@ -55,7 +56,7 @@ export const AddPlayerToTeamDialog = ({
   const { tournamentId } = useTournamentStore();
 
   const { mutate: addPlayer, isPending } = useMutation({
-    mutationFn: (data: { playerId: string }) =>
+    mutationFn: (data: { playerId: string; matchId: string }) =>
       http.post<{ id: string }>(
         ADMIN_TEAM_ENDPOINTS.POST_ADD_PLAYER_TO_TEAM.replace(":teamId", teamId),
         data,
@@ -108,7 +109,7 @@ export const AddPlayerToTeamDialog = ({
     const newList = [...playersList];
     newList[index] = value;
     setPlayersList(newList);
-    addPlayer({ playerId: value });
+    addPlayer({ playerId: value, matchId: matchId });
   };
 
   const handleAddField = () => {

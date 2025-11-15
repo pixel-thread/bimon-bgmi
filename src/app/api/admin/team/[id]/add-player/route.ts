@@ -44,6 +44,7 @@ export async function POST(
 
     const updatedTeam = await addPlayerToTeam({
       playerId: body.playerId,
+      matchId: body.matchId,
       teamId,
     });
 

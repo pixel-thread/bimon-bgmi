@@ -145,12 +145,8 @@ export async function createTeamsByPolls({
             teamNumber: i + 1,
             tournamentId,
             seasonId,
-            players: {
-              connect: t.players.map((p) => ({ id: p.id })),
-            },
-            matches: {
-              connect: { id: match.id },
-            },
+            players: { connect: t.players.map((p) => ({ id: p.id })) },
+            matches: { connect: { id: match.id } },
           },
           include: { players: true },
         });

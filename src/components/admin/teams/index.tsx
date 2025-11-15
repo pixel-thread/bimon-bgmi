@@ -15,6 +15,8 @@ import { TeamStatsSheet } from "./TeamStatsSheet";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { useTeams } from "@/src/hooks/team/useTeams";
 import { useTournament } from "@/src/hooks/tournament/useTournament";
+import { Loader } from "lucide-react";
+import { IconReload } from "@tabler/icons-react";
 
 const headers = [
   { label: "Total Players", key: "size" },
@@ -33,7 +35,7 @@ export const AdminTeamsManagement: React.FC = () => {
   const updateId = search.get("update") || "";
   const teamStatId = search.get("teamStats") || "";
 
-  const { data: teams, isFetching } = useTeams();
+  const { data: teams, isFetching, refetch } = useTeams();
 
   const onCloseUpdateDialog = () => router.back();
 
@@ -73,6 +75,13 @@ export const AdminTeamsManagement: React.FC = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+              <Button
+                disabled={isFetching}
+                variant={"outline"}
+                onClick={() => refetch()}
+              >
+                <IconReload />
+              </Button>
               <CSVLink
                 filename={`${tournament?.name}.csv`}
                 data={teams || []}
