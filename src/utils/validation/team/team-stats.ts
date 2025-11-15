@@ -2,8 +2,6 @@ import z from "zod";
 
 const playerStatsSchema = z.object({
   playerId: z.uuid("Player ID is not valid"),
-  wins: z.number().optional(),
-  wind2nd: z.number().optional(),
   deaths: z.coerce.number().optional(),
   kills: z.coerce.number().optional(),
   name: z.string().optional(),

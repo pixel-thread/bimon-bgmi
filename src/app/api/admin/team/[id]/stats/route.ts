@@ -75,7 +75,6 @@ export async function POST(
           id: stats.id,
           kills: stats.kills,
           deaths: stats.deaths,
-          wins: stats.wins,
           kd: stats.kills / stats.deaths || 0,
           position: stats.position,
           players: statsPlayer,

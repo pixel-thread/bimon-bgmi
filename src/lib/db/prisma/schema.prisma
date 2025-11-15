@@ -131,19 +131,20 @@ model Season {
 }
 
 model Tournament {
-  id          String    @id @default(uuid())
-  name        String
-  description String?
-  startDate   DateTime  @default(now())
-  endDate     DateTime?
-  fee         Int?
-  team        Team[]
-  season      Season?   @relation(fields: [seasonId], references: [id], onDelete: SetNull)
-  seasonId    String?
-  createdBy   String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  status      Status    @default(ACTIVE)
+  id               String    @id @default(uuid())
+  name             String
+  description      String?
+  startDate        DateTime  @default(now())
+  endDate          DateTime?
+  fee              Int?
+  team             Team[]
+  season           Season?   @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  seasonId         String?
+  createdBy        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  status           Status    @default(ACTIVE)
+  isWinnerDeclared Boolean   @default(false)
 
   tournamentWinner TournamentWinner[]
   teamStats        TeamStats[]
@@ -284,8 +285,6 @@ model PlayerStats {
   id        String   @id @default(uuid())
   playerId  String
   player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  wins      Int      @default(0)
-  win2nd    Int      @default(0)
   deaths    Int      @default(0)
   kills     Int      @default(0)
   kd        Float?   @default(0)
