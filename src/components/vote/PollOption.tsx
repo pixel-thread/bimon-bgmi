@@ -42,6 +42,7 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
           toast.success(data.message);
           return data;
         }
+        queryClient.invalidateQueries({ queryKey: ["polls"] });
         toast.error(data.message);
         return data;
       },
