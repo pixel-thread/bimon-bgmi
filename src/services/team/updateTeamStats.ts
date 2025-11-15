@@ -23,11 +23,6 @@ export async function updateTeamStats({
     return acc + 0;
   }, 0);
 
-  const teamDeaths = data.players.reduce((acc, player) => {
-    if (player.deaths) return acc + player?.deaths;
-    return acc + 0;
-  }, 0);
-
   return await prisma.$transaction(async (tx) => {
     // Upsert TeamStats for this team in this match
     await tx.teamStats.upsert({
@@ -45,7 +40,7 @@ export async function updateTeamStats({
       },
       update: {
         kills: teamKills,
-        deaths: teamDeaths,
+        deaths: 1, // Team should has 1 dead for a single match
         position: data.position,
       },
     });
@@ -79,9 +74,7 @@ export async function updateTeamStats({
           },
           data: {
             kills: player.kills ?? 0,
-            deaths: player.deaths ?? 0,
-            wins: player.wins ?? 0,
-            win2nd: player.wind2nd ?? 0,
+            deaths: 1, // player should be dead  1  for a single match in a team
           },
         }),
       ),

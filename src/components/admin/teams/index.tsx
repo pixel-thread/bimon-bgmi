@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AddPlayerToTeamDialog } from "./add-player-to-team-dialog";
 import { Button } from "../../ui/button";
 import { CreateTeamDialog } from "./create-team";
-import React from "react";
+import React, { useEffect } from "react";
 import { useTournamentStore } from "@/src/store/tournament";
 import { TeamStatsSheet } from "./TeamStatsSheet";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
@@ -27,6 +27,8 @@ export const AdminTeamsManagement: React.FC = () => {
   const { data: teams, isFetching } = useTeams();
 
   const onCloseUpdateDialog = () => router.back();
+
+  const onValueChange = () => router.back();
 
   return (
     <Ternary
@@ -80,7 +82,11 @@ export const AdminTeamsManagement: React.FC = () => {
             onOpenChange={() => onCloseUpdateDialog()}
             open={!!updateId}
           />
-          <TeamStatsSheet open={teamStatId} />
+          <TeamStatsSheet
+            open={!!teamStatId}
+            teamId={teamStatId}
+            onValueChange={onValueChange}
+          />
         </div>
       }
     />
