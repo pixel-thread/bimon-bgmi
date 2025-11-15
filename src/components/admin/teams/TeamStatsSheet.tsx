@@ -219,46 +219,6 @@ export function TeamStatsSheet({ open }: Props) {
                       </FormItem>
                     )}
                   />
-
-                  <FormField
-                    control={form.control}
-                    name={`players.${index}.wins`}
-                    render={({ field: rField }) => (
-                      <FormItem>
-                        <FormLabel>Wins</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="Wins"
-                            {...rField}
-                            min={0}
-                            step={1}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name={`players.${index}.wind2nd`}
-                    render={({ field: rField }) => (
-                      <FormItem>
-                        <FormLabel>Win 2nd</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="Win 2nd"
-                            {...rField}
-                            min={0}
-                            step={1}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
               </div>
             ))}
