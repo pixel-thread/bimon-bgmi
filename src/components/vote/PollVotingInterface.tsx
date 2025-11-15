@@ -14,7 +14,6 @@ import { VotersDialog } from "./VotersDialog";
 import { WhatsAppPollCard } from "./WhatsAppPollCard";
 import { LoaderFive } from "@/src/components/ui/loader";
 import { usePolls } from "@/src/hooks/poll/usePolls";
-import { useActiveSeason } from "@/src/hooks/season/useActiveSeason";
 import { PollT } from "@/src/types/poll";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";

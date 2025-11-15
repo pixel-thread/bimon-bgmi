@@ -36,11 +36,15 @@ const col: ColumnDef<TeamT>[] = [
   },
   {
     accessorKey: "pts",
-    header: "PTS",
+    header: "Placement Points",
   },
   {
     accessorKey: "kills",
     header: "Kills",
+  },
+  {
+    accessorKey: "total",
+    header: "Total",
   },
 ];
 

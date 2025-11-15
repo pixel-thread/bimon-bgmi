@@ -16,6 +16,7 @@ import { Ternary } from "./common/Ternary";
 import { SelectGroup } from "@radix-ui/react-select";
 import { useTournamentStore } from "../store/tournament";
 import { useMatchStore } from "../store/match/useMatchStore";
+import { useActiveSeason } from "../hooks/season/useActiveSeason";
 
 interface SeasonSelectorProps {
   className?: string;
@@ -28,10 +29,10 @@ interface SeasonSelectorProps {
 export function SeasonSelector({
   className = "",
   placeholder = "Season",
-  showAllSeasons = true,
   size = "md",
 }: SeasonSelectorProps) {
   const { setSeasonId, seasonId: selectedSeason } = useSeasonStore();
+  const { data: activeSeason } = useActiveSeason();
   const { setTournamentId } = useTournamentStore();
   const { setMatchId } = useMatchStore();
   const { isFetching, data, isLoading } = useGetSeasons();
@@ -55,9 +56,18 @@ export function SeasonSelector({
     setSeasonId(value);
   };
 
+  useEffect(() => {
+    if (selectedSeason === "") {
+      setSeasonId(activeSeason?.id || "");
+    }
+  }, [selectedSeason]);
+
   return (
     <Select
-      value={selectedSeason}
+      value={selectedSeason === "" ? activeSeason?.id : selectedSeason || ""}
+      defaultValue={
+        selectedSeason === "" ? activeSeason?.id : selectedSeason || ""
+      }
       disabled={isFetching || isLoading}
       onValueChange={onValueChange}
     >
@@ -72,9 +82,6 @@ export function SeasonSelector({
           condition={data?.length && data?.length > 0 ? true : false}
           trueComponent={
             <>
-              {showAllSeasons && (
-                <SelectItem value="all">All Seasons</SelectItem>
-              )}
               {data?.map((season) => (
                 <SelectItem key={season.id} value={season.id}>
                   {season.name}

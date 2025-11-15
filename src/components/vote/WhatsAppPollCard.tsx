@@ -7,6 +7,7 @@ import { PollOption } from "./PollOption";
 import { usePlayerVote } from "@/src/hooks/poll/usePlayerVote";
 import { PollT } from "@/src/types/poll";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 
 const bannedStampStyles = {
   position: "absolute" as const,
@@ -34,6 +35,8 @@ const bannedStampStyles = {
   filter: "drop-shadow(2px 2px 1px rgba(0,0,0,0.1))",
 };
 
+type VoteT = Prisma.PlayerPollVoteCreateInput["vote"];
+
 type WhatAppPollCardProps = {
   poll: PollT;
   readOnly: boolean;
@@ -55,6 +58,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     const pollId = poll.id;
     const { data: playersVotes, isFetching: isLoadingVotes } = usePlayerVote({
       pollId,
+      enabled: true,
     });
 
     const totalVotes = playersVotes?.length || 0;
@@ -72,6 +76,29 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     )?.vote;
 
     const showResults = !!isUserVoted || totalVotes > 0;
+
+    const filterPollVote = (vote: VoteT) => {
+      return playersVotes?.filter((val) => val.vote === vote) || [];
+    };
+
+    // Collect all unique votes
+    const allUniqueVotes = [...new Set(playersVotes?.map((v) => v.vote))];
+
+    // Count votes for each option
+    const voteCounts = allUniqueVotes.map((vote) => ({
+      vote,
+      count: filterPollVote(vote).length,
+    }));
+
+    // Find the highest vote count for normalization
+    const maxVoteCount = Math.max(...voteCounts.map((vc) => vc.count), 1); // Use 1 to avoid division by zero
+
+    // Calculate percentages
+    const votePercentages = voteCounts.map((vc) => ({
+      vote: vc.vote,
+      count: vc.count,
+      percentage: Math.round((vc.count / maxVoteCount) * 100),
+    }));
 
     return (
       <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden max-w-2xl mx-auto">
@@ -146,9 +173,12 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                 showResults={showResults}
                 // TODO: Add recent voters
                 totalVoters={
-                  allVoter.filter((value) => value.vote === option.vote).length
+                  votePercentages.find((val) => val.vote === option.vote)?.count
                 }
-                totalVotes={totalVotes}
+                totalVotes={
+                  votePercentages.find((val) => val.vote === option.vote)
+                    ?.percentage
+                }
                 showAvatars={showAvatars}
                 onClick={() => {}}
               />

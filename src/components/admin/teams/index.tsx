@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CSVLink } from "react-csv";
 import { LoaderFive } from "../../ui/loader";
 import { DataTable } from "../../data-table";
@@ -15,8 +16,8 @@ import { TeamStatsSheet } from "./TeamStatsSheet";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { useTeams } from "@/src/hooks/team/useTeams";
 import { useTournament } from "@/src/hooks/tournament/useTournament";
-import { Loader } from "lucide-react";
 import { IconReload } from "@tabler/icons-react";
+import { OverallStandingModal } from "../../teamManagementImports";
 
 const headers = [
   { label: "Total Players", key: "size" },
@@ -25,6 +26,7 @@ const headers = [
 ];
 
 export const AdminTeamsManagement: React.FC = () => {
+  const [showStandingsModal, setShowStandingsModal] = useState(false);
   const { tournamentId } = useTournamentStore();
   const { matchId } = useMatchStore();
   const { data: tournament } = useTournament({ id: tournamentId });
@@ -40,79 +42,96 @@ export const AdminTeamsManagement: React.FC = () => {
   const onCloseUpdateDialog = () => router.back();
 
   return (
-    <Ternary
-      condition={!tournamentId || !matchId}
-      trueComponent={
-        <Ternary
-          condition={isFetching}
-          trueComponent={
-            <div className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 gap-4">
-              <LoaderFive text="Loading teams..." />
-            </div>
-          }
-          falseComponent={
-            <div className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 gap-4">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                Teams Management
-              </h1>
-              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
-                Create and manage tournament teams
-              </p>
-            </div>
-          }
-        />
-      }
-      falseComponent={
-        <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 space-y-6 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                Teams Management
-              </h1>
-              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
-                Create and manage tournament teams
-              </p>
-            </div>
+    <>
+      <Ternary
+        condition={!tournamentId || !matchId}
+        trueComponent={
+          <Ternary
+            condition={isFetching}
+            trueComponent={
+              <div className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 gap-4">
+                <LoaderFive text="Loading teams..." />
+              </div>
+            }
+            falseComponent={
+              <div className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 gap-4">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                  Teams Management
+                </h1>
+                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
+                  Create and manage tournament teams
+                </p>
+              </div>
+            }
+          />
+        }
+        falseComponent={
+          <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 space-y-6 py-4 sm:py-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                  Teams Management
+                </h1>
+                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
+                  Create and manage tournament teams
+                </p>
+              </div>
 
-            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-              <Button
-                disabled={isFetching}
-                variant={"outline"}
-                onClick={() => refetch()}
-              >
-                <IconReload />
-              </Button>
-              <CSVLink
-                filename={`${tournament?.name}.csv`}
-                data={teams || []}
-                headers={headers}
-              >
+              <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
                 <Button
+                  disabled={isFetching}
+                  variant={"ghost"}
+                  onClick={() => setShowStandingsModal(true)}
+                >
+                  Out Standing
+                </Button>
+                <Button
+                  disabled={isFetching}
+                  variant={"outline"}
+                  onClick={() => refetch()}
+                >
+                  <IconReload />
+                </Button>
+                <CSVLink
+                  filename={`${tournament?.name}.csv`}
+                  data={teams || []}
+                  headers={headers}
+                >
+                  <Button
+                    disabled={isFetching || !tournamentId}
+                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
+                  >
+                    Export
+                  </Button>
+                </CSVLink>
+                <Button
+                  onClick={() => setOpen(true)}
                   disabled={isFetching || !tournamentId}
                   className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
                 >
-                  Export
+                  Create Team
                 </Button>
-              </CSVLink>
-              <Button
-                onClick={() => setOpen(true)}
-                disabled={isFetching || !tournamentId}
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
-              >
-                Create Team
-              </Button>
+              </div>
             </div>
+            {matchId && teams && <DataTable data={teams} columns={columns} />}
+            <CreateTeamDialog onOpenChange={() => setOpen(!open)} open={open} />
+            <AddPlayerToTeamDialog
+              teamId={updateId}
+              onOpenChange={() => onCloseUpdateDialog()}
+              open={!!updateId}
+            />
+            <TeamStatsSheet open={!!teamStatId} teamId={teamStatId} />
           </div>
-          {matchId && teams && <DataTable data={teams} columns={columns} />}
-          <CreateTeamDialog onOpenChange={() => setOpen(!open)} open={open} />
-          <AddPlayerToTeamDialog
-            teamId={updateId}
-            onOpenChange={() => onCloseUpdateDialog()}
-            open={!!updateId}
-          />
-          <TeamStatsSheet open={!!teamStatId} teamId={teamStatId} />
-        </div>
-      }
-    />
+        }
+      />
+
+      <OverallStandingModal
+        visible={showStandingsModal}
+        onClose={() => setShowStandingsModal(false)}
+        backgroundImage={"/images/image.png"}
+        tournamentTitle={"Tournament"}
+        maxMatchNumber={1}
+      />
+    </>
   );
 };

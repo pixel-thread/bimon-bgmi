@@ -23,8 +23,6 @@ export default function TeamsPage() {
   const { matchId: selectedMatch } = useMatchStore();
   const { tournamentId: selectedTournament } = useTournamentStore();
 
-  const [showStandingsModal, setShowStandingsModal] = useState(false);
-
   const { data: sortedTeams } = useTeams();
 
   // Use teams from Firestore
@@ -49,20 +47,6 @@ export default function TeamsPage() {
                   />
                   <TournamentSelector />
                   <MatchSelector isAllMatch={true} />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowStandingsModal(true)}
-                    disabled={
-                      !selectedTournament ||
-                      teams?.length === 0 ||
-                      selectedMatch === ""
-                    }
-                    className="flex items-center gap-1.5 hover:bg-gray-100 transition-colors flex-shrink-0 px-2 py-1 text-xs sm:text-sm"
-                  >
-                    <FiAward className="h-4 w-4" />
-                    <span className="hidden lg:inline">Standings</span>
-                  </Button>
                 </div>
               </div>
             }
@@ -126,16 +110,6 @@ export default function TeamsPage() {
           )}
         </div>
       </div>
-      {/* Edit Team Modal */}
-
-      {/* Standings Modal */}
-      <OverallStandingModal
-        visible={showStandingsModal}
-        onClose={() => setShowStandingsModal(false)}
-        backgroundImage={"/images/image.png"}
-        tournamentTitle={"Tournament"}
-        maxMatchNumber={1}
-      />
     </>
   );
 }

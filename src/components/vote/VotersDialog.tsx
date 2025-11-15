@@ -57,6 +57,25 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
       return pollVoters?.filter((val) => val.vote === vote) || [];
     };
 
+    // Collect all unique votes
+    const allUniqueVotes = [...new Set(pollVoters?.map((v) => v.vote))];
+
+    // Count votes for each option
+    const voteCounts = allUniqueVotes.map((vote) => ({
+      vote,
+      count: filterPollVote(vote).length,
+    }));
+
+    // Find the highest vote count for normalization
+    const maxVoteCount = Math.max(...voteCounts.map((vc) => vc.count), 1); // Use 1 to avoid division by zero
+
+    // Calculate percentages
+    const votePercentages = voteCounts.map((vc) => ({
+      vote: vc.vote,
+      count: vc.count,
+      percentage: Math.round((vc.count / maxVoteCount) * 100),
+    }));
+
     return (
       <Dialog open={isOpen} onOpenChange={onCloseOnClick}>
         <DialogContent className="sm:max-w-lg mx-2 sm:mx-0">
@@ -94,7 +113,11 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                         </div>
                         <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full mb-3">
                           <Progress
-                            value={filterPollVote(option.vote)?.length || 0}
+                            value={
+                              votePercentages.find(
+                                (val) => val.vote === option.vote,
+                              )?.percentage
+                            }
                           />
                         </div>
                         <div className="flex justify-end">
