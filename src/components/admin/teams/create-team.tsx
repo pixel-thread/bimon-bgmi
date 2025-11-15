@@ -121,7 +121,7 @@ export const CreateTeamDialog = ({
                 <SelectContent>
                   {players?.map((player) => (
                     <SelectItem key={player.id} value={player.id}>
-                      {player.user.userName}
+                      {player.userName}
                     </SelectItem>
                   ))}
                 </SelectContent>
