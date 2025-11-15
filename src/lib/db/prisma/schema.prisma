@@ -92,17 +92,6 @@ model Transaction {
   id String @id @default(uuid())
 }
 
-model UC {
-  id        String   @id @default(uuid())
-  balance   Int
-  playerId  String   @unique
-  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 model Season {
   id          String       @id @default(uuid())
   name        String
@@ -260,20 +249,19 @@ model Player {
   seasons          Season[] @relation("PlayerSeason")
   playerPollVoteId String?
 
-  ucId             String?
-  uc               UC?
-  pollVote         Poll?              @relation(fields: [pollId], references: [id], onDelete: SetNull)
-  team             Team?              @relation(fields: [teamId], references: [id], onDelete: SetNull)
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category         PlayerCategory     @default(NOOB)
-  gameScore        GameScore[]
-  characterImage   Gallery?           @relation(fields: [characterImageId], references: [id], onDelete: SetNull)
-  playerPollVote   PlayerPollVote[]
-  tournamentWinner TournamentWinner[]
-  playerStats      PlayerStats[]
-  matches          Match[]
-  teamStats        TeamStats[]
-  teamPlayerStats  TeamPlayerStats[]
+  ucId            String?
+  uc              UC?
+  pollVote        Poll?             @relation(fields: [pollId], references: [id], onDelete: SetNull)
+  team            Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category        PlayerCategory    @default(NOOB)
+  gameScore       GameScore[]
+  characterImage  Gallery?          @relation(fields: [characterImageId], references: [id], onDelete: SetNull)
+  playerPollVote  PlayerPollVote[]
+  playerStats     PlayerStats[]
+  matches         Match[]
+  teamStats       TeamStats[]
+  teamPlayerStats TeamPlayerStats[]
 
   @@index([userId])
   @@index([teamId])
@@ -317,6 +305,7 @@ model Team {
   playerStats       PlayerStats[]
   teamPlayerStats   TeamPlayerStats[]
   matchPlayerPlayed MatchPlayerPlayed[]
+  tournamentWinner  TournamentWinner[]
 
   @@index([tournamentId])
   @@index([seasonId])
@@ -393,15 +382,27 @@ model Gallery {
 
 model TournamentWinner {
   id           String     @id @default(uuid())
-  amount       Int
+  amount       Int        @default(0)
   position     Int
-  teamId       String
+  teamId       String     @unique
   team         Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
   tournamentId String
   tournament   Tournament @relation(fields: [tournamentId], references: [id])
   createdAt    DateTime   @default(now())
 
   @@unique([tournamentId, teamId])
+  @@unique([teamId, tournamentId])
+}
+
+model UC {
+  id        String   @id @default(uuid())
+  balance   Int      @default(0)
+  playerId  String   @unique
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model GameScore {

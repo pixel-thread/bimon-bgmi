@@ -1,6 +1,7 @@
 import { prisma } from "@/src/lib/db/prisma";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
+import { addTournamentWinner } from "@/src/services/winner/addTournamentWinner";
 import { calculatePlayerPoints } from "@/src/utils/calculatePlayersPoints";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
@@ -21,6 +22,10 @@ export async function POST(
 
     if (!tournament) {
       return ErrorResponse({ message: "Tournament not found" });
+    }
+
+    if (tournament.isWinnerDeclared) {
+      return ErrorResponse({ message: "Tournament Winner already declared" });
     }
 
     const teamsStats = await prisma.teamStats.findMany({
@@ -82,11 +87,26 @@ export async function POST(
     });
 
     const sortedData = mappedData.sort((a, b) => b.total - a.total).slice(0, 2);
+    const firstPrice = 340;
+    const secondPrice = 140;
+
+    let winnerTeam = [];
+    for (let i = 0; i < sortedData.length; i++) {
+      const winTeam = await addTournamentWinner({
+        data: {
+          amount: i === 0 ? firstPrice : secondPrice,
+          position: i + 1,
+          team: { connect: { id: sortedData[i].teamId } },
+          tournament: { connect: { id: id } },
+        },
+      });
+
+      winnerTeam.push(winTeam);
+    }
 
     return SuccessResponse({
-      data: sortedData,
-      status: 200,
-      message: "Tournament winner fetched successfully",
+      message: "Tournament winner added",
+      data: winnerTeam,
     });
   } catch (error) {
     return handleApiErrors(error);

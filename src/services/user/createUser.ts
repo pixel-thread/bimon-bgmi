@@ -66,6 +66,13 @@ export async function createUser({ data }: Props) {
       include: { player: true },
     });
 
+    await tx.uC.create({
+      data: {
+        user: { connect: { id: user.id } },
+        player: { connect: { id: user?.player?.id || "" } },
+      },
+    });
+
     await tx.playerStats.create({
       data: {
         season: { connect: { id: activeSeason?.id || "" } },
