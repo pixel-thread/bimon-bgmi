@@ -17,12 +17,22 @@ export const season1: SeedUserT[] = [
       isBanned: false,
       name: "Ain99",
     },
-    stats: {
-      playerId: "noob_Ain_1742817898680",
-      kills: 0,
-      deaths: 3,
-      kdRatio: 0,
-    },
+    stats: [
+      {
+        season: 1,
+        playerId: "noob_Ain_1742817898680",
+        kills: 0,
+        deaths: 3,
+        kdRatio: 0,
+      },
+      {
+        season: 2,
+        playerId: "noob_Ain_1742817898680",
+        kills: 0,
+        deaths: 0,
+        kdRatio: 0,
+      },
+    ],
     balance: 0,
     matchesPlayed: 3,
   },
@@ -378,7 +388,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "noob_bin_1745422100626",
-    playerName: "bin",
+    playerName: "bin00",
     userName: null,
     email: null,
     clerkId: null,
@@ -478,7 +488,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "noob_dmx_1742802593402",
-    playerName: "dmx",
+    playerName: "dmx00",
     userName: null,
     email: null,
     clerkId: null,
@@ -1753,7 +1763,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "pro_exer_1742802694389",
-    playerName: "AXE",
+    playerName: "AXE00",
     userName: null,
     email: null,
     clerkId: null,
@@ -1953,7 +1963,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "pro_mait_1742802752312",
-    playerName: "mok",
+    playerName: "mok00",
     userName: null,
     email: null,
     clerkId: null,
@@ -2353,7 +2363,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "ultra_pro_mal_1744777741482",
-    playerName: "Mal",
+    playerName: "Mal00",
     userName: null,
     email: null,
     clerkId: null,

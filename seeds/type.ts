@@ -19,7 +19,7 @@ export type SeedUserT = {
     kills: number;
     deaths: number;
     kdRatio: number;
-  };
+  }[];
   balance: number;
   matchesPlayed: number;
 };
