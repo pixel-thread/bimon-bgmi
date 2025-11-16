@@ -61,11 +61,14 @@ export async function GET(req: NextRequest) {
         const playerKd =
           playerStats.reduce((acc, curr) => acc + curr.kills, 0) /
             playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
+        const matches = player?.matchPlayerPlayed.filter(
+          (value) => value.seasonId === seasonId,
+        ).length;
         return {
           id: player.id,
           isBanned: player.isBanned,
           userName: player?.user?.userName,
-          matches: player?.matchPlayerPlayed.length,
+          matches: matches,
           kd: playerKd.toFixed(2) || 0,
           category: getKdRank(
             playerStats.reduce((acc, curr) => acc + curr.kills, 0),
