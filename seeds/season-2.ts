@@ -17,12 +17,7 @@ export const season2: SeedUserT[] = [
       isBanned: false,
       name: "Ain",
     },
-    stats: {
-      playerId: "noob_Ain_1742817898680",
-      kills: 0,
-      deaths: 0,
-      kdRatio: 0,
-    },
+    stats: {},
     balance: 0,
     matchesPlayed: 0,
   },
@@ -2402,4 +2397,3 @@ export const season2: SeedUserT[] = [
     matchesPlayed: 0,
   },
 ];
-

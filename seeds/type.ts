@@ -15,11 +15,12 @@ export type SeedUserT = {
     name: string;
   };
   stats: {
+    season: number;
     playerId: string;
     kills: number;
     deaths: number;
     kdRatio: number;
-  };
+  }[];
   balance: number;
   matchesPlayed: number;
 };
