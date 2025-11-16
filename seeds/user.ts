@@ -1,111 +1,89 @@
-import { prisma } from "../src/lib/db/prisma/index"; // update path accordingly
+import { prisma } from "@/src/lib/db/prisma";
+import { season1 } from "./season-1";
+import { season2 } from "./season-2";
+import { season3 } from "./season-3";
+import { SeedUserT } from "./type";
+import { clientClerk } from "@/src/lib/clerk/client";
+import { v4 as uuidv4 } from "uuid";
 
-// Mock data arrays
-const users = [
-  {
-    seedId:1,
-    userName: "Harrison",
-    email: "jyrwaboys@gmail.com",
-    clerkId: "mock-clerk-id-1",
-    role: "PLAYER",
-    isEmailLinked: true,
-    isVerified: true,
-  },
-  {
-    userName: "Alice",
-    email: "alice@example.com",
-    clerkId: "mock-clerk-id-2",
-    role: "ADMIN",
-    isEmailLinked: true,
-    isVerified: true,
-  },
-];
+// Function to seed data for a given season
+async function seedSeason(data: SeedUserT[], seasonName: string) {
+  let season = await prisma.season.findFirst({
+    where: { status: "ACTIVE" },
+  });
 
-const players = [
-  {
-    seedId:1,
-    userId: "", // will fill after user creation
-    category: "NOOB",
-    isBanned: false,
-  },
-  {
-    userId: "", // will fill after user creation
-    category: "PRO",
-    isBanned: false,
-  },
-];
-
-const playerStats = [
-  {
-    seedId:1,
-    kills: 5,
-    deaths: 3,
-  },
-  {
-    kills: 10,
-    deaths: 5,
-  },
-];
-
-async function main() {
-  console.log("Seeding data...");
-
-  // Ensure active season exists or create one
-  let season = await prisma.season.findFirst({ where: { status: "ACTIVE" } });
-  if (!season) {
-    season = await prisma.season.create({
+  if (season) {
+    await prisma.season.update({
+      where: { id: season.id },
       data: {
-        createdBy: "SEED",
-        name: "2023 Season",
-        startDate: new Date(2023, 0, 1),
-        endDate: new Date(2023, 11, 31),
-        status: "ACTIVE",
+        status: "INACTIVE",
       },
     });
   }
 
-  // Create users and keep track of created IDs to link players
-  const createdUsers = [];
-  for (const userData of users) {
-    const existingUser = await prisma.user.findUnique({
-      where: { userName: userData.userName },
+  season = await prisma.season.create({
+    data: {
+      name: seasonName,
+      startDate: new Date(),
+      description: "Season 1",
+      createdBy: "SEED",
+    },
+  });
+  for (const userData of data) {
+    // Create or update user
+    const demoEmail = `${uuidv4()}@pixelthread.com`;
+    const email = userData.email || demoEmail;
+    const clerkUser = await clientClerk.users.createUser({
+      password: "123Clashofclan@",
+      username: userData.playerName,
+      emailAddress: [email],
     });
 
-    if (!existingUser) {
-      const user = await prisma.user.create({ data: userData });
-      console.log(`Created user: ${user.userName}`);
-      createdUsers.push(user);
-    } else {
-      console.log(`User exists: ${existingUser.userName}`);
-      createdUsers.push(existingUser);
-    }
-  }
-
-  // Create players linked to users
-  const createdPlayers = [];
-  for (let i = 0; i < players.length; i++) {
-    // Link each player to user in createdUsers array (make sure lengths match)
-    const playerData = players[i];
-    playerData.userId = createdUsers[i]?.id || "";
-
-    if (!playerData.userId) {
-      console.warn("Skipping player creation due to missing userId");
-      continue;
-    }
-
-    // Check if player exists by userId
-    const existingPlayer = await prisma.player.findUnique({
-      where: { userId: playerData.userId },
+    const user = await prisma.user.upsert({
+      where: { id: userData.id },
+      update: {},
+      create: {
+        id: userData.id,
+        email: demoEmail || undefined,
+        clerkId: clerkUser?.id || "",
+        isEmailLinked: userData.isEmailLinked || false,
+        isVerified: userData.isVerified || false,
+        userName: userData.userName || userData.playerName,
+        role: "PLAYER",
+        balance: userData.balance || 0,
+      },
     });
 
-    if (!existingPlayer) {
-      const player = await prisma.player.create({ data: playerData });
-      console.log(`Created player for userId: ${player.userId}`);
-      createdPlayers.push(player);
-    } else {
-      console.log(`Player exists for userId: ${existingPlayer.userId}`);
-      createdPlayers.push(existingPlayer);
-    }
-  }
+    // Create or update player
+    const player = await prisma.player.create({
+      data: {
+        isBanned: false,
+        seasons: { connect: { id: season.id } },
+        user: { connect: { id: user.id } },
+      },
+    });
 
-  // Create player stats linked to players
+    // Create or update player stats
+    await prisma.playerStats.create({
+      data: {
+        kills: userData.stats.kills || 0,
+        deaths: userData.stats.deaths || 0,
+        season: { connect: { id: season.id } },
+        player: { connect: { id: player.id } },
+      },
+    });
+  }
+}
+
+async function main() {
+  await seedSeason(season1, "season-1");
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
