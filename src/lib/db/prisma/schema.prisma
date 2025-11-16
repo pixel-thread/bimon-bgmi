@@ -229,15 +229,22 @@ model MatchPlayerPlayed {
   updatedAt    DateTime   @updatedAt
 }
 
+model PlayerBanned {
+  id          String    @id @default(uuid())
+  banReason   String?   @default("")
+  bannedAt    DateTime?
+  banDuration Int       @default(0)
+  playerId    String    @unique
+  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([playerId, id])
+}
+
 model Player {
   id                String              @id @default(uuid())
   isBanned          Boolean             @default(false)
-  balance           Int                 @default(0)
-  banReason         String?             @default("")
-  bannedAt          DateTime?
-  banDuration       Int                 @default(0)
-  remainingDuration Int                 @default(0)
-  isBanExpired      Boolean             @default(false)
   userId            String              @unique
   teamId            String?
   matchPlayerPlayed MatchPlayerPlayed[]
@@ -262,6 +269,9 @@ model Player {
   matches         Match[]
   teamStats       TeamStats[]
   teamPlayerStats TeamPlayerStats[]
+  playerBannedId  String?
+
+  playerBanned PlayerBanned?
 
   @@index([userId])
   @@index([teamId])

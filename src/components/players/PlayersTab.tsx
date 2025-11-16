@@ -14,40 +14,23 @@ import { BalanceHistoryDialog } from "./BalanceHistoryDialog";
 import { BalanceAdjustmentDialog } from "./BalanceAdjustmentDialog";
 import { CreatePlayerDialog } from "./CreatePlayerDialog";
 import { DataTable } from "../data-table";
-import { ColumnDef } from "@tanstack/react-table";
 import { usePlayers } from "@/src/hooks/player/usePlayers";
 import { Card } from "../teamManagementImports";
 import { PlayerT } from "@/src/types/player";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSeasonStore } from "@/src/store/season";
-import Link from "next/link";
-
-const columns: ColumnDef<PlayerT>[] = [
-  {
-    header: "Username",
-    accessorKey: "userName",
-    cell: ({ row }) => (
-      <Link href={`?player=${row.original.id}`}>{row.original.userName}</Link>
-    ),
-  },
-  { accessorKey: "category", header: "Category" },
-  { accessorKey: "matches", header: "Matches" },
-  { accessorKey: "kd", header: "K/D" },
-  {
-    header: "UC",
-    cell: (info) => <Link href={`?uc=${info.row.original.id}`}>Edit UC</Link>,
-  },
-];
+import { usePlayersColumn } from "@/src/hooks/player/usePlayersColumn";
 
 export function PlayersTab({
   readOnly = false,
   showBalanceSummary = false,
 }: PlayersTabProps) {
   const search = useSearchParams();
+  const page = search.get("page") || "1";
+  const { columns } = usePlayersColumn({ page });
   const router = useRouter();
   const ucId = search.get("uc") || "";
   const playerId = search.get("player") || "";
-  const page = search.get("page") || "1";
   const { seasonId, setSeasonId } = useSeasonStore();
   const { isLoading } = usePlayerData(seasonId);
   const { user } = useAuth();

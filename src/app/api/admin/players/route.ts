@@ -40,12 +40,11 @@ export async function GET(req: NextRequest) {
       req.nextUrl.searchParams.get("season") || "all";
 
     let where: Prisma.PlayerWhereInput = {
-      isBanned: false,
       playerStats: { some: { seasonId } },
     };
 
     if (seasonId === "all") {
-      where = { isBanned: false };
+      where = {};
     }
 
     const [players, total] = await getAllPlayers({
@@ -60,7 +59,6 @@ export async function GET(req: NextRequest) {
       return {
         id: player.id,
         isBanned: player.isBanned,
-        // category: player.category,
         userName: player?.user?.userName,
         matches: player?.matchPlayerPlayed.length,
         kd: playerKd.toFixed(2) || 0,

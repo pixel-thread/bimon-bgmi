@@ -8,7 +8,7 @@ import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
-    await tokenMiddleware(req);
+    const user = await tokenMiddleware(req);
     const query = req.nextUrl.searchParams;
     const page = query.get("page") || "1";
     let seasonId = query.get("season");
@@ -26,7 +26,6 @@ export async function GET(req: NextRequest) {
       page,
       where,
     });
-
     const data = players.map((player) => {
       return {
         id: player.id,
