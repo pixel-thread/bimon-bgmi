@@ -34,11 +34,14 @@ function getKdRank(kills: number, deaths: number): string {
 export async function GET(req: NextRequest) {
   try {
     await tokenMiddleware(req);
-    const query = req.nextUrl.searchParams;
-    const page = query.get("page") || "1";
-    let seasonId = query.get("season");
+
+    const page = req.nextUrl.searchParams.get("page") || "1";
+
+    let seasonId: string | undefined =
+      req.nextUrl.searchParams.get("season") || "all";
+
     let where: Prisma.PlayerWhereInput = {
-      seasons: { some: { id: seasonId || "" } },
+      playerStats: { some: { seasonId } },
     };
 
     if (seasonId === "all") {
@@ -46,11 +49,9 @@ export async function GET(req: NextRequest) {
     }
 
     const [players, total] = await getAllPlayers({
-      include: { playerStats: { include: { matches: true } }, user: true },
       page,
       where,
     });
-
     const data = players.map((player) => {
       const playerKd =
         player.playerStats.reduce((acc, curr) => acc + curr.kills, 0) /
@@ -68,6 +69,7 @@ export async function GET(req: NextRequest) {
         ),
       };
     });
+
     return SuccessResponse({
       data: data,
       message: "Players fetched successfully",
