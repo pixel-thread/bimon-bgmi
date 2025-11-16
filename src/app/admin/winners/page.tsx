@@ -1,14 +1,9 @@
 "use client";
 
 import { FiAward } from "react-icons/fi";
-import { WinnersTab } from "@/src/components/WinnersTab";
-import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import { AdminWinnerPage } from "@/src/components/admin/winner";
 
-const AdminWinnersPage = () => {
-  const { user } = useAuth();
-  const role = user?.role;
-  const isTeamsAdmin = role === "ADMIN";
-
+export default function page() {
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -25,11 +20,9 @@ const AdminWinnersPage = () => {
         </header>
 
         <div className="space-y-6">
-          <WinnersTab readOnly={isTeamsAdmin} />
+          <AdminWinnerPage />
         </div>
       </div>
     </div>
   );
-};
-
-export default AdminWinnersPage;
+}

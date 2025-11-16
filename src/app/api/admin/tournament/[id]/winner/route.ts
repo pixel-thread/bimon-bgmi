@@ -2,11 +2,55 @@ import { prisma } from "@/src/lib/db/prisma";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { addTournamentWinner } from "@/src/services/winner/addTournamentWinner";
+import { getUniqedTournamentWinners } from "@/src/services/winner/getTournamentWinner";
 import { calculatePlayerPoints } from "@/src/utils/calculatePlayersPoints";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
+import { logger } from "@/src/utils/logger";
+import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    await superAdminMiddleware(req);
+    const tournamentId = (await params).id;
+    const isTournamentExist = await getTournamentById({ id: tournamentId });
+
+    if (!isTournamentExist) {
+      return ErrorResponse({ message: "Tournament not found" });
+    }
+
+    if (!isTournamentExist.isWinnerDeclared) {
+      return ErrorResponse({ message: "Tournament Winner not declared" });
+    }
+
+    const tournamentWinners = await getUniqedTournamentWinners({
+      where: { tournamentId },
+    });
+
+    const data = tournamentWinners.map((winner) => {
+      return {
+        id: winner.id,
+        amount: winner.amount,
+        position: winner.position,
+        teamName: winner.team.players
+          .map((player) => player.user.userName)
+          .join(", "),
+        teamId: winner.team.id,
+      };
+    });
+    return SuccessResponse({
+      message: "Tournament Winners",
+      data: data,
+    });
+  } catch (error) {
+    return handleApiErrors(error);
+  }
+}
 
 export async function POST(
   req: NextRequest,

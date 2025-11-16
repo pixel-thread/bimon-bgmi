@@ -55,12 +55,14 @@ interface WinnersTabProps {
 
 export function WinnersTab({ readOnly = false }: WinnersTabProps) {
   const { tournamentId } = useTournamentStore();
-  const { data: winner } = useTournamentWinner({ tournamentId });
+  const { data: winner, isFetching: isLoading } = useTournamentWinner({
+    tournamentId,
+  });
   return (
     <div className="p-4 max-w-7xl mx-auto">
       <Card className="rounded-xl shadow border border-gray-200 dark:border-white/20 bg-background dark:bg-black text-foreground">
         <CardContent className="p-4">
-      {/*     {/* Header */}
+          {/* Header */}
           <div className="pt-6 flex flex-col gap-2 mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -68,327 +70,253 @@ export function WinnersTab({ readOnly = false }: WinnersTabProps) {
                   Tournament Winners
                 </h2>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-accent text-accent-foreground">
-                   {parseInt(statsPeriod)} 
-                 </span> 
-      {/*         </div> */}
-      {/*         <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2"> */}
-      {/*           <SeasonSelector */}
-      {/*             selectedSeason={selectedSeason} */}
-      {/*             onSeasonChange={setSelectedSeason} */}
-      {/*             size="sm" */}
-      {/*             variant="purple" */}
-      {/*             placeholder="Season" */}
-      {/*             showAllSeasons={true} */}
-      {/*             className="w-full sm:w-auto" */}
-      {/*           /> */}
-      {/*           {!readOnly && ( */}
-      {/*             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2"> */}
-      {/*               <label className="flex items-center gap-2 text-sm"> */}
-      {/*                 <input */}
-      {/*                   type="checkbox" */}
-      {/*                   checked={useCustomPeriod} */}
-      {/*                   onChange={(e) => { */}
-      {/*                     setUseCustomPeriod(e.target.checked); */}
-      {/*                     if (!e.target.checked) { */}
-      {/*                       setCustomPeriod(""); */}
-      {/*                     } */}
-      {/*                   }} */}
-      {/*                   className="rounded" */}
-      {/*                 /> */}
-      {/*                 Custom Period */}
-      {/*               </label> */}
-      {/*               {useCustomPeriod && ( */}
-      {/*                 <Input */}
-      {/*                   type="number" */}
-      {/*                   placeholder="# tournaments" */}
-      {/*                   value={customPeriod} */}
-      {/*                   onChange={(e) => { */}
-      {/*                     const value = e.target.value; */}
-      {/*                     setCustomPeriod(value); */}
-      {/*                     if (value && parseInt(value) > 0) { */}
-      {/*                       setStatsPeriod(value); */}
-      {/*                     } */}
-      {/*                   }} */}
-      {/*                   className="h-9 w-full sm:w-32" */}
-      {/*                   min="1" */}
-      {/*                 /> */}
-      {/*               )} */}
-      {/*             </div> */}
-      {/*           )} */}
-      {/*           {!useCustomPeriod && ( */}
-      {/*             <Select */}
-      {/*               value={statsPeriod} */}
-      {/*               onValueChange={(value) => { */}
-      {/*                 setStatsPeriod(value); */}
-      {/*               }} */}
-      {/*             > */}
-      {/*               <SelectTrigger className="h-9 w-full sm:w-[180px]"> */}
-      {/*                 <SelectValue placeholder="Last tournaments" /> */}
-      {/*               </SelectTrigger> */}
-      {/*               <SelectContent> */}
-      {/*                 <SelectItem value="1">Last 1 tournament</SelectItem> */}
-      {/*                 <SelectItem value="2">Last 2 tournaments</SelectItem> */}
-      {/*                 <SelectItem value="3">Last 3 tournaments</SelectItem> */}
-      {/*                 <SelectItem value="4">Last 4 tournaments</SelectItem> */}
-      {/*                 <SelectItem value="5">Last 5 tournaments</SelectItem> */}
-      {/*                 <SelectItem value="6">Last 6 tournaments</SelectItem> */}
-      {/*               </SelectContent> */}
-      {/*             </Select> */}
-      {/*           )} */}
-      {/*           {!readOnly && ( */}
-      {/*             <Button */}
-      {/*               onClick={() => setIsDialogOpen(true)} */}
-      {/*               className="h-9 w-full sm:w-auto" */}
-      {/*             > */}
-      {/*               <Plus className="h-4 w-4 mr-2" /> */}
-      {/*               Add Result */}
-      {/*             </Button> */}
-      {/*           )} */}
-      {/*         </div> */}
-      {/*       </div> */}
-      {/*     </div> */}
+                  {/* {parseInt(statsPeriod)} */}
+                </span>
+              </div>
+            </div>
+          </div>
 
-      {/*     {/* Win Statistics  */}
-      {/*     <div className="mb-8"> */}
-      {/*       <h3 className="text-lg font-semibold mb-3 flex items-center gap-2"> */}
-      {/*         <Trophy className="h-5 w-5 text-yellow-500" /> */}
-      {/*         Win Statistics */}
-      {/*         <span className="text-sm font-normal text-muted-foreground"> */}
-      {/*           (Last {statsPeriod} tournaments) */}
-      {/*         </span> */}
-      {/*       </h3> */}
-      {/*       <div className="overflow-x-auto h-[200px] sm:h-[250px] md:h-[300px] border border-gray-200 dark:border-gray-800 rounded-lg"> */}
-      {/*         <table className="w-full text-sm"> */}
-      {/*           <thead className="bg-accent text-accent-foreground sticky top-0 z-10"> */}
-      {/*             <tr> */}
-      {/*               <th className="p-3 text-left">Player</th> */}
-      {/*               <th className="p-3 text-left">Times Placed</th> */}
-      {/*             </tr> */}
-      {/*           </thead> */}
-      {/*           <tbody> */}
-      {/*             {isLoading ? ( */}
-      {/*               <tr> */}
-      {/*                 <td */}
-      {/*                   colSpan={2} */}
-      {/*                   className="p-4 text-center text-muted-foreground" */}
-      {/*                 > */}
-      {/*                   Loading... */}
-      {/*                 </td> */}
-      {/*               </tr> */}
-      {/*             ) : Object.keys(playerStats).length === 0 ? ( */}
-      {/*               <tr> */}
-      {/*                 <td */}
-      {/*                   colSpan={2} */}
-      {/*                   className="p-4 text-center text-muted-foreground" */}
-      {/*                 > */}
-      {/*                   No statistics available */}
-      {/*                 </td> */}
-      {/*               </tr> */}
-      {/*             ) : ( */}
-      {/*               Object.entries(playerStats) */}
-      {/*                 .sort(([, countA], [, countB]) => countB - countA) */}
-      {/*                 .map(([playerId, count]) => ( */}
-      {/*                   <tr */}
-      {/*                     key={playerId} */}
-      {/*                     className="border-t border-gray-200 dark:border-gray-800 hover:bg-muted/30" */}
-      {/*                   > */}
-      {/*                     <td className="p-3 font-medium"> */}
-      {/*                       {getPlayerName(playerId)} */}
-      {/*                     </td> */}
-      {/*                     <td className="p-3">{count}</td> */}
-      {/*                   </tr> */}
-      {/*                 )) */}
-      {/*             )} */}
-      {/*           </tbody> */}
-      {/*         </table> */}
-      {/*       </div> */}
-      {/*     </div> */}
+          {/* Win Statistics */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-yellow-500" />
+              Win Statistics
+              <span className="text-sm font-normal text-muted-foreground">
+                {/* (Last {statsPeriod} tournaments) */}
+              </span>
+            </h3>
+            <div className="overflow-x-auto h-[200px] sm:h-[250px] md:h-[300px] border border-gray-200 dark:border-gray-800 rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="bg-accent text-accent-foreground sticky top-0 z-10">
+                  <tr>
+                    <th className="p-3 text-left">Player</th>
+                    <th className="p-3 text-left">Times Placed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <tr>
+                      <td
+                        colSpan={2}
+                        className="p-4 text-center text-muted-foreground"
+                      >
+                        Loading...
+                      </td>
+                    </tr>
+                  ) : Object.keys(playerStats).length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={2}
+                        className="p-4 text-center text-muted-foreground"
+                      >
+                        No statistics available
+                      </td>
+                    </tr>
+                  ) : (
+                    Object.entries(playerStats)
+                      .sort(([, countA], [, countB]) => countB - countA)
+                      .map(([playerId, count]) => (
+                        <tr
+                          key={playerId}
+                          className="border-t border-gray-200 dark:border-gray-800 hover:bg-muted/30"
+                        >
+                          <td className="p-3 font-medium">
+                            {getPlayerName(playerId)}
+                          </td>
+                          <td className="p-3">{count}</td>
+                        </tr>
+                      ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-      {/*     {/* Tournament Results */}
-      {/*     <div> */}
-      {/*       <h3 className="text-lg font-semibold mb-3">Tournament Results</h3> */}
-      {/*       <div */}
-      {/*         ref={resultsContainerRef} */}
-      {/*         className="overflow-x-auto h-[250px] sm:h-[300px] md:h-[400px] border border-gray-200 dark:border-gray-800 rounded-lg" */}
-      {/*       > */}
-      {/*         <table className="w-full text-sm"> */}
-      {/*           <thead className="bg-accent text-accent-foreground sticky top-0 z-10"> */}
-      {/*             <tr> */}
-      {/*               <th className="p-3 text-left">Tournament</th> */}
-      {/*               <th className="p-3 text-left">1st Place</th> */}
-      {/*               <th className="p-3 text-left">2nd Place</th> */}
-      {/*               <th className="p-3 text-center">Actions</th> */}
-      {/*             </tr> */}
-      {/*           </thead> */}
-      {/*           <tbody> */}
-      {/*             {isLoading ? ( */}
-      {/*               <tr> */}
-      {/*                 <td */}
-      {/*                   colSpan={4} */}
-      {/*                   className="p-4 text-center text-muted-foreground" */}
-      {/*                 > */}
-      {/*                   Loading... */}
-      {/*                 </td> */}
-      {/*               </tr> */}
-      {/*             ) : tournamentResults.length === 0 ? ( */}
-      {/*               <tr> */}
-      {/*                 <td */}
-      {/*                   colSpan={4} */}
-      {/*                   className="p-4 text-center text-muted-foreground" */}
-      {/*                 > */}
-      {/*                   No results recorded */}
-      {/*                 </td> */}
-      {/*               </tr> */}
-      {/*             ) : ( */}
-      {/*               displayedResults.map((result) => ( */}
-      {/*                 <tr */}
-      {/*                   key={result.id} */}
-      {/*                   className="border-t border-gray-200 dark:border-gray-800 hover:bg-muted/30" */}
-      {/*                 > */}
-      {/*                   <td className="p-3 font-medium"> */}
-      {/*                     {result.tournamentTitle} */}
-      {/*                   </td> */}
-      {/*                   <td className="p-3"> */}
-      {/*                     {result.firstPlace */}
-      {/*                       .map((id) => getPlayerName(id)) */}
-      {/*                       .join(", ")} */}
-      {/*                   </td> */}
-      {/*                   <td className="p-3"> */}
-      {/*                     {result.secondPlace */}
-      {/*                       .map((id) => getPlayerName(id)) */}
-      {/*                       .join(", ")} */}
-      {/*                   </td> */}
-      {/*                   <td className="p-3 text-center"> */}
-      {/*                     {!readOnly && ( */}
-      {/*                       <Button */}
-      {/*                         variant="ghost" */}
-      {/*                         size="sm" */}
-      {/*                         onClick={() => handleDeleteResult(result.id)} */}
-      {/*                         className="text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30" */}
-      {/*                       > */}
-      {/*                         <Trash2 className="h-4 w-4" /> */}
-      {/*                       </Button> */}
-      {/*                     )} */}
-      {/*                   </td> */}
-      {/*                 </tr> */}
-      {/*               )) */}
-      {/*             )} */}
-      {/*             {isLoadingMore && ( */}
-      {/*               <tr> */}
-      {/*                 <td */}
-      {/*                   colSpan={4} */}
-      {/*                   className="p-4 text-center text-muted-foreground" */}
-      {/*                 > */}
-      {/*                   Loading more... */}
-      {/*                 </td> */}
-      {/*               </tr> */}
-      {/*             )} */}
-      {/*           </tbody> */}
-      {/*         </table> */}
-      {/*       </div> */}
-      {/*     </div> */}
-      {/*   </CardContent> */}
-      {/* </Card> */}
+          {/* Tournament Results */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Tournament Results</h3>
+            <div
+              ref={resultsContainerRef}
+              className="overflow-x-auto h-[250px] sm:h-[300px] md:h-[400px] border border-gray-200 dark:border-gray-800 rounded-lg"
+            >
+              <table className="w-full text-sm">
+                <thead className="bg-accent text-accent-foreground sticky top-0 z-10">
+                  <tr>
+                    <th className="p-3 text-left">Tournament</th>
+                    <th className="p-3 text-left">1st Place</th>
+                    <th className="p-3 text-left">2nd Place</th>
+                    <th className="p-3 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="p-4 text-center text-muted-foreground"
+                      >
+                        Loading...
+                      </td>
+                    </tr>
+                  ) : tournamentResults.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="p-4 text-center text-muted-foreground"
+                      >
+                        No results recorded
+                      </td>
+                    </tr>
+                  ) : (
+                    displayedResults.map((result) => (
+                      <tr
+                        key={result.id}
+                        className="border-t border-gray-200 dark:border-gray-800 hover:bg-muted/30"
+                      >
+                        <td className="p-3 font-medium">
+                          {result.tournamentTitle}
+                        </td>
+                        <td className="p-3">
+                          {result.firstPlace
+                            .map((id) => getPlayerName(id))
+                            .join(", ")}
+                        </td>
+                        <td className="p-3">
+                          {result.secondPlace
+                            .map((id) => getPlayerName(id))
+                            .join(", ")}
+                        </td>
+                        <td className="p-3 text-center">
+                          {!readOnly && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteResult(result.id)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                  {isLoadingMore && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="p-4 text-center text-muted-foreground"
+                      >
+                        Loading more...
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Add Result Dialog */}
-      <Dialog open={false}>
-        {/* <DialogContent className="sm:max-w-md"> */}
-        {/*   <DialogHeader> */}
-        {/*     <DialogTitle>Add Tournament Result</DialogTitle> */}
-        {/*   </DialogHeader> */}
-        {/*   <div className="space-y-4 py-4"> */}
-        {/*     <div className="space-y-2"> */}
-        {/*       <label className="text-sm font-medium"> */}
-        {/*         Tournament <span className="text-red-500">*</span> */}
-        {/*       </label> */}
-        {/*       <Select */}
-        {/*         value={newResult.tournamentId} */}
-        {/*         onValueChange={(value) => */}
-        {/*           setNewResult({ ...newResult, tournamentId: value }) */}
-        {/*         } */}
-        {/*         required */}
-        {/*         defaultValue={ */}
-        {/*           tournaments.length > 0 */}
-        {/*             ? [...tournaments].sort((a, b) => { */}
-        {/*                 // Sort by createdAt if available, otherwise by startDate */}
-        {/*                 if (a.createdAt && b.createdAt) { */}
-        {/*                   return ( */}
-        {/*                     new Date(b.createdAt).getTime() - */}
-        {/*                     new Date(a.createdAt).getTime() */}
-        {/*                   ); */}
-        {/*                 } */}
-        {/*                 return ( */}
-        {/*                   new Date(b.startDate).getTime() - */}
-        {/*                   new Date(a.startDate).getTime() */}
-        {/*                 ); */}
-        {/*               })[0]?.id */}
-        {/*             : "" */}
-        {/*         } */}
-        {/*       > */}
-        {/*         <SelectTrigger> */}
-        {/*           <SelectValue placeholder="Select tournament" /> */}
-        {/*         </SelectTrigger> */}
-        {/*         <SelectContent> */}
-        {/*           {tournaments */}
-        {/*             .sort((a, b) => { */}
-        {/*               // Sort by createdAt if available, otherwise by startDate */}
-        {/*               if (a.createdAt && b.createdAt) { */}
-        {/*                 return ( */}
-        {/*                   new Date(b.createdAt).getTime() - */}
-        {/*                   new Date(a.createdAt).getTime() */}
-        {/*                 ); */}
-        {/*               } */}
-        {/*               return ( */}
-        {/*                 new Date(b.startDate).getTime() - */}
-        {/*                 new Date(a.startDate).getTime() */}
-        {/*               ); */}
-        {/*             }) */}
-        {/*             .map((tournament) => ( */}
-        {/*               <SelectItem key={tournament.id} value={tournament.id}> */}
-        {/*                 {tournament.title} */}
-        {/*               </SelectItem> */}
-        {/*             ))} */}
-        {/*         </SelectContent> */}
-        {/*       </Select> */}
-        {/*     </div> */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Tournament Result</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Tournament <span className="text-red-500">*</span>
+              </label>
+              <Select
+                value={newResult.tournamentId}
+                onValueChange={(value) =>
+                  setNewResult({ ...newResult, tournamentId: value })
+                }
+                required
+                defaultValue={
+                  tournaments.length > 0
+                    ? [...tournaments].sort((a, b) => {
+                        // Sort by createdAt if available, otherwise by startDate
+                        if (a.createdAt && b.createdAt) {
+                          return (
+                            new Date(b.createdAt).getTime() -
+                            new Date(a.createdAt).getTime()
+                          );
+                        }
+                        return (
+                          new Date(b.startDate).getTime() -
+                          new Date(a.startDate).getTime()
+                        );
+                      })[0]?.id
+                    : ""
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select tournament" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tournaments
+                    .sort((a, b) => {
+                      // Sort by createdAt if available, otherwise by startDate
+                      if (a.createdAt && b.createdAt) {
+                        return (
+                          new Date(b.createdAt).getTime() -
+                          new Date(a.createdAt).getTime()
+                        );
+                      }
+                      return (
+                        new Date(b.startDate).getTime() -
+                        new Date(a.startDate).getTime()
+                      );
+                    })
+                    .map((tournament) => (
+                      <SelectItem key={tournament.id} value={tournament.id}>
+                        {tournament.title}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/*     <div className="space-y-2"> */}
-        {/*       <label className="text-sm font-medium">1st Place</label> */}
-        {/*       <div className="space-y-2"> */}
-        {/*         <div className="relative"> */}
-        {/*           <Input */}
-        {/*             type="text" */}
-        {/*             placeholder="Search player" */}
-        {/*             value={playerSearch.firstPlace} */}
-        {/*             onChange={(e) => { */}
-        {/*               setPlayerSearch({ */}
-        {/*                 ...playerSearch, */}
-        {/*                 firstPlace: e.target.value, */}
-        {/*               }); */}
-        {/*               setActiveInput("firstPlace"); */}
-        {/*             }} */}
-        {/*             onFocus={() => setActiveInput("firstPlace")} */}
-        {/*             className="pr-10" */}
-        {/*           /> */}
-        {/*           <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" /> */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">1st Place</label>
+              <div className="space-y-2">
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Search player"
+                    value={playerSearch.firstPlace}
+                    onChange={(e) => {
+                      setPlayerSearch({
+                        ...playerSearch,
+                        firstPlace: e.target.value,
+                      });
+                      setActiveInput("firstPlace");
+                    }}
+                    onFocus={() => setActiveInput("firstPlace")}
+                    className="pr-10"
+                  />
+                  <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
 
-        {/*           {filteredPlayers.length > 0 && */}
-        {/*             activeInput === "firstPlace" && */}
-        {/*             playerSearch.firstPlace && ( */}
-        {/*               <div className="absolute z-10 w-full mt-1 bg-background border border-input rounded-md shadow-md max-h-60 overflow-auto"> */}
-        {/*                 {filteredPlayers.map((player) => ( */}
-        {/*                   <div */}
-        {/*                     key={player.id} */}
-        {/*                     className="p-2 hover:bg-accent cursor-pointer" */}
-        {/*                     onClick={() => { */}
-        {/*                       // If first slot is empty, fill it */}
-        {/*                       if (!newResult.firstPlace[0]) { */}
-                                 setNewResult({ 
-                                   ...newResult, 
-                                   firstPlace: [player.id], 
-                               }); 
-                               } 
-        {/*                       // If second slot doesn't exist yet, add player to second slot */}
+                  {filteredPlayers.length > 0 &&
+                    activeInput === "firstPlace" &&
+                    playerSearch.firstPlace && (
+                      <div className="absolute z-10 w-full mt-1 bg-background border border-input rounded-md shadow-md max-h-60 overflow-auto">
+                        {filteredPlayers.map((player) => (
+                          <div
+                            key={player.id}
+                            className="p-2 hover:bg-accent cursor-pointer"
+                            onClick={() => {
+                              // If first slot is empty, fill it
+                              if (!newResult.firstPlace[0]) {
+                                setNewResult({
+                                  ...newResult,
+                                  firstPlace: [player.id],
+                                });
+                              }
+                              // If second slot doesn't exist yet, add player to second slot
                               else if (newResult.firstPlace.length === 1) {
                                 setNewResult({
                                   ...newResult,
@@ -606,7 +534,7 @@ export function WinnersTab({ readOnly = false }: WinnersTabProps) {
               </div>
             </div>
 
-        {/*     {/* Warning message removed as requested */}
+            {/* Warning message removed as requested */}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
