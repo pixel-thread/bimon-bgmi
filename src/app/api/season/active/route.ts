@@ -1,11 +1,11 @@
 import { getActiveSeason } from "@/src/services/season/getActiveSeason";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 
 export async function GET(req: Request) {
   try {
-    await superAdminMiddleware(req);
+    await tokenMiddleware(req);
     const activeSeason = await getActiveSeason();
     if (!activeSeason) {
       return ErrorResponse({ message: "No active season found", status: 404 });
