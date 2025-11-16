@@ -285,7 +285,6 @@ model PlayerStats {
   player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
   deaths    Int      @default(1)
   kills     Int      @default(0)
-  kd        Float?   @default(0)
   seasonId  String?
   season    Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
