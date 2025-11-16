@@ -1,5 +1,5 @@
 import http from "@/src/utils/http";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { MetaT } from "@/src/types/meta";
 import { useEffect, useState } from "react";
@@ -32,8 +32,8 @@ export function usePlayers({ page }: UsePlayersProps = { page: "1" }) {
     queryFn: () => http.get<PlayerT[]>(url),
     queryKey: ["player", page, seasonId],
     select: (data) => data,
-    refetchOnWindowFocus: false,
     enabled: !!seasonId,
+    placeholderData: keepPreviousData,
   });
 
   useEffect(() => {

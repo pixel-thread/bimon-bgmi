@@ -24,18 +24,12 @@ export interface DynamicTopPlayersPodiumProps {
   selectedSeason: string;
   isLoading?: boolean;
   className?: string;
-  onPlayerClick?: (player: PlayerT) => void;
 }
-
-type PlayerT = Prisma.PlayerGetPayload<{
-  include: { playerStats: true; characterImage: true; user: true };
-}>;
 
 export const DynamicTopPlayersPodium = React.memo(
   function DynamicTopPlayersPodium({
     sortBy,
     className,
-    onPlayerClick,
   }: DynamicTopPlayersPodiumProps) {
     // Ref for the scroll container
     const scrollContainerRef = useRef<HTMLDivElement>(null);
