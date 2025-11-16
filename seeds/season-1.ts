@@ -32,7 +32,6 @@ export const season1: SeedUserT[] = [
         deaths: 0,
         kdRatio: 0,
       },
-<<<<<<< HEAD
       {
         season: 3,
         playerId: "noob_Ain_1742817898680",
@@ -40,8 +39,6 @@ export const season1: SeedUserT[] = [
         deaths: 0,
         kdRatio: 0, 
       },
-=======
->>>>>>> 7bbcbfd58dbcfbf32a99f3b2d24f3b02a2c64600
     ],
     balance: 0,
     matchesPlayed: 3,
