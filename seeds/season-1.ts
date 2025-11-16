@@ -3,7 +3,7 @@ import { SeedUserT } from "./type";
 export const season1: SeedUserT[] = [
   {
     id: "noob_Ain_1742817898680",
-    playerName: "AinAin",
+    playerName: "Ain99",
     userName: null,
     email: null,
     clerkId: null,
@@ -15,7 +15,7 @@ export const season1: SeedUserT[] = [
       userId: "noob_Ain_1742817898680",
       category: "NOOB",
       isBanned: false,
-      name: "Ain",
+      name: "Ain99",
     },
     stats: {
       playerId: "noob_Ain_1742817898680",
@@ -78,7 +78,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "noob_Eshel_1742802482928",
-    playerName: "Ks Tmoh",
+    playerName: "Ks_Tmoh",
     userName: null,
     email: null,
     clerkId: null,
@@ -90,7 +90,7 @@ export const season1: SeedUserT[] = [
       userId: "noob_Eshel_1742802482928",
       category: "NOOB",
       isBanned: false,
-      name: "Ks Tmoh",
+      name: "Ks_Tmoh",
     },
     stats: {
       playerId: "noob_Eshel_1742802482928",
@@ -378,7 +378,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "noob_bin_1745422100626",
-    playerName: "binBin",
+    playerName: "bin",
     userName: null,
     email: null,
     clerkId: null,
@@ -478,7 +478,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "noob_dmx_1742802593402",
-    playerName: "dmxDMX",
+    playerName: "dmx",
     userName: null,
     email: null,
     clerkId: null,
@@ -503,7 +503,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "noob_feddy_1742800609270",
-    playerName: "Ks nongkhlaw",
+    playerName: "Ks_Nongkhlaw",
     userName: null,
     email: null,
     clerkId: null,
@@ -515,7 +515,7 @@ export const season1: SeedUserT[] = [
       userId: "noob_feddy_1742800609270",
       category: "NOOB",
       isBanned: false,
-      name: "Ks nongkhlaw",
+      name: "Ks_Nongkhlaw",
     },
     stats: {
       playerId: "noob_feddy_1742800609270",
@@ -528,7 +528,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "noob_franky_syiem_1758537289745",
-    playerName: "Franky syiem",
+    playerName: "Franky_syiem",
     userName: null,
     email: null,
     clerkId: null,
@@ -603,7 +603,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "noob_him_1743427521607",
-    playerName: "Bad snipe",
+    playerName: "Bad_snipe",
     userName: null,
     email: null,
     clerkId: null,
@@ -628,7 +628,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "noob_ioh_1742802642083",
-    playerName: "iohIOH",
+    playerName: "ioh00",
     userName: null,
     email: null,
     clerkId: null,
@@ -653,7 +653,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "noob_jam_1742802197966",
-    playerName: "ks unknown",
+    playerName: "Ks_Unknown",
     userName: null,
     email: null,
     clerkId: null,
@@ -665,7 +665,7 @@ export const season1: SeedUserT[] = [
       userId: "noob_jam_1742802197966",
       category: "NOOB",
       isBanned: false,
-      name: "ks unknown",
+      name: "Ks_Unknown",
     },
     stats: {
       playerId: "noob_jam_1742802197966",
@@ -1178,7 +1178,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "noob_shaining_1742802155914",
-    playerName: "ks ronaldo",
+    playerName: "Ks_Ronaldo",
     userName: null,
     email: null,
     clerkId: null,
@@ -1190,7 +1190,7 @@ export const season1: SeedUserT[] = [
       userId: "noob_shaining_1742802155914",
       category: "NOOB",
       isBanned: false,
-      name: "ks ronaldo",
+      name: "Ks_Ronaldo",
     },
     stats: {
       playerId: "noob_shaining_1742802155914",
@@ -1328,7 +1328,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "noob_wan_1742802585108",
-    playerName: "Ks swan",
+    playerName: "Ks_Swan",
     userName: null,
     email: null,
     clerkId: null,
@@ -1340,7 +1340,7 @@ export const season1: SeedUserT[] = [
       userId: "noob_wan_1742802585108",
       category: "NOOB",
       isBanned: false,
-      name: "Ks swan",
+      name: "Ks_Swan",
     },
     stats: {
       playerId: "noob_wan_1742802585108",
@@ -1528,7 +1528,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "pro_Bahlit__1742817509696",
-    playerName: "Ks Scarface",
+    playerName: "Ks_Scarface",
     userName: null,
     email: null,
     clerkId: null,
@@ -1540,7 +1540,7 @@ export const season1: SeedUserT[] = [
       userId: "pro_Bahlit__1742817509696",
       category: "NOOB",
       isBanned: false,
-      name: "Ks Scarface",
+      name: "Ks_Scarface",
     },
     stats: {
       playerId: "pro_Bahlit__1742817509696",
@@ -1753,7 +1753,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "pro_exer_1742802694389",
-    playerName: "AXEAXE",
+    playerName: "AXE",
     userName: null,
     email: null,
     clerkId: null,
@@ -1878,7 +1878,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "pro_just_1742802811530",
-    playerName: "ks juster",
+    playerName: "Ks_Juster",
     userName: null,
     email: null,
     clerkId: null,
@@ -1890,7 +1890,7 @@ export const season1: SeedUserT[] = [
       userId: "pro_just_1742802811530",
       category: "PRO",
       isBanned: false,
-      name: "ks juster",
+      name: "Ks_Juster",
     },
     stats: {
       playerId: "pro_just_1742802811530",
@@ -1978,7 +1978,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "pro_man_1742802803983",
-    playerName: "Ks Nobody",
+    playerName: "Ks_Nobody",
     userName: null,
     email: null,
     clerkId: null,
@@ -1990,7 +1990,7 @@ export const season1: SeedUserT[] = [
       userId: "pro_man_1742802803983",
       category: "NOOB",
       isBanned: false,
-      name: "Ks Nobody",
+      name: "Ks_Nobody",
     },
     stats: {
       playerId: "pro_man_1742802803983",
@@ -2078,7 +2078,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "pro_mining_1742802786149",
-    playerName: "乙ïMINING",
+    playerName: "Mining",
     userName: null,
     email: null,
     clerkId: null,
@@ -2090,7 +2090,7 @@ export const season1: SeedUserT[] = [
       userId: "pro_mining_1742802786149",
       category: "PRO",
       isBanned: false,
-      name: "乙ïMINING",
+      name: "Mining",
     },
     stats: {
       playerId: "pro_mining_1742802786149",
@@ -2103,7 +2103,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "pro_mj_1742802885061",
-    playerName: "mjMJ",
+    playerName: "MJ99",
     userName: null,
     email: null,
     clerkId: null,
@@ -2115,7 +2115,7 @@ export const season1: SeedUserT[] = [
       userId: "pro_mj_1742802885061",
       category: "NOOB",
       isBanned: false,
-      name: "mj",
+      name: "MJ99",
     },
     stats: {
       playerId: "pro_mj_1742802885061",
@@ -2128,7 +2128,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "pro_ross_1742802921232",
-    playerName: "KŚツROSS",
+    playerName: "KS_Ross",
     userName: null,
     email: null,
     clerkId: null,
@@ -2140,7 +2140,7 @@ export const season1: SeedUserT[] = [
       userId: "pro_ross_1742802921232",
       category: "PRO",
       isBanned: false,
-      name: "KŚツROSS",
+      name: "KS_Ross",
     },
     stats: {
       playerId: "pro_ross_1742802921232",
@@ -2278,7 +2278,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "ultra_noob_wan웃302_1758948105369",
-    playerName: "wan웃302",
+    playerName: "Wan302",
     userName: null,
     email: null,
     clerkId: null,
@@ -2290,7 +2290,7 @@ export const season1: SeedUserT[] = [
       userId: "ultra_noob_wan웃302_1758948105369",
       category: "NOOB",
       isBanned: false,
-      name: "wan웃302",
+      name: "Wan302",
     },
     stats: {
       playerId: "ultra_noob_wan웃302_1758948105369",
@@ -2303,7 +2303,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "ultra_noob_ßbmôît_1756478484285",
-    playerName: "ßBMôît",
+    playerName: "BMoit",
     userName: null,
     email: null,
     clerkId: null,
@@ -2315,7 +2315,7 @@ export const season1: SeedUserT[] = [
       userId: "ultra_noob_ßbmôît_1756478484285",
       category: "NOOB",
       isBanned: false,
-      name: "ßBMôît",
+      name: "BMoit",
     },
     stats: {
       playerId: "ultra_noob_ßbmôît_1756478484285",
@@ -2328,7 +2328,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "ultra_pro_gonnie_1755668945865",
-    playerName: "乙Yo・Gonie",
+    playerName: "Yo_Gonie",
     userName: null,
     email: null,
     clerkId: null,
@@ -2340,7 +2340,7 @@ export const season1: SeedUserT[] = [
       userId: "ultra_pro_gonnie_1755668945865",
       category: "NOOB",
       isBanned: false,
-      name: "乙Yo・Gonie",
+      name: "Yo_Gonie",
     },
     stats: {
       playerId: "ultra_pro_gonnie_1755668945865",
@@ -2353,7 +2353,7 @@ export const season1: SeedUserT[] = [
   },
   {
     id: "ultra_pro_mal_1744777741482",
-    playerName: "MalMAL",
+    playerName: "Mal",
     userName: null,
     email: null,
     clerkId: null,

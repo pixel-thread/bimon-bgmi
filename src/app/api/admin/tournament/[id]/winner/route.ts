@@ -18,6 +18,7 @@ export async function GET(
   try {
     await superAdminMiddleware(req);
     const tournamentId = (await params).id;
+
     const isTournamentExist = await getTournamentById({ id: tournamentId });
 
     if (!isTournamentExist) {
