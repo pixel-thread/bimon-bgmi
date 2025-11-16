@@ -46,6 +46,14 @@ export const season1: SeedUserT[] = [
         season: 1,
         matchesPlayed: 3,
       },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
     ],
   },
   {
@@ -88,7 +96,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -10,
-    matchesPlayed: 25,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 25,
+      },
+      {
+        season: 2,
+        matchesPlayed: 28,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_Dibi_1742802188693",
@@ -130,7 +151,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 20,
-    matchesPlayed: 25,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 25,
+      },
+      {
+        season: 2,
+        matchesPlayed: 28,
+      },
+      {
+        season: 3,
+        matchesPlayed: 100,
+      },
+    ],
   },
   {
     id: "noob_Eshel_1742802482928",
@@ -172,7 +206,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -80,
-    matchesPlayed: 17,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 17,
+      },
+      {
+        season: 2,
+        matchesPlayed: 16,
+      },
+      {
+        season: 3,
+        matchesPlayed: 36,
+      },
+    ],
   },
   {
     id: "noob_Jones_1742988644495",
@@ -214,7 +261,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 28,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 28,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_Kyrshan_1742811325165",
@@ -256,7 +316,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 5,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 5,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_Michael__1742811338245",
@@ -298,7 +371,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 20,
-    matchesPlayed: 51,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 51,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 24,
+      },
+    ],
   },
   {
     id: "noob_Tein_1742802564352",
@@ -340,7 +426,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 60,
-    matchesPlayed: 20,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 20,
+      },
+      {
+        season: 2,
+        matchesPlayed: 32,
+      },
+      {
+        season: 3,
+        matchesPlayed: 72,
+      },
+    ],
   },
   {
     id: "noob_alvin_longnonglait_1761914058169",
@@ -382,7 +481,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -20,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 16,
+      },
+    ],
   },
   {
     id: "noob_awgxmafiasyiem_1751606900351",
@@ -424,7 +536,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -90,
-    matchesPlayed: 12,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 12,
+      },
+      {
+        season: 2,
+        matchesPlayed: 24,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_babu_1743169491963",
@@ -466,7 +591,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 77,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 77,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_bahdengnongrab_1742972954366",
@@ -508,7 +646,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 17,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 17,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_bahnah_1742800378969",
@@ -550,7 +701,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 27,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 27,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_been_1742802588182",
@@ -592,7 +756,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 15,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 15,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_benjo_1742802371857",
@@ -634,7 +811,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -10,
-    matchesPlayed: 24,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 24,
+      },
+      {
+        season: 2,
+        matchesPlayed: 20,
+      },
+      {
+        season: 3,
+        matchesPlayed: 40,
+      },
+    ],
   },
   {
     id: "noob_bin_1745422100626",
@@ -676,7 +866,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 30,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 30,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_bold_1742995006025",
@@ -718,7 +921,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -10,
-    matchesPlayed: 82,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 82,
+      },
+      {
+        season: 2,
+        matchesPlayed: 28,
+      },
+      {
+        season: 3,
+        matchesPlayed: 56,
+      },
+    ],
   },
   {
     id: "noob_breezy19xx_1754899695862",
@@ -760,7 +976,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 110,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 8,
+      },
+      {
+        season: 3,
+        matchesPlayed: 100,
+      },
+    ],
   },
   {
     id: "noob_d_lyngdoh_1744181371249",
@@ -802,7 +1031,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -50,
-    matchesPlayed: 72,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 72,
+      },
+      {
+        season: 2,
+        matchesPlayed: 32,
+      },
+      {
+        season: 3,
+        matchesPlayed: 100,
+      },
+    ],
   },
   {
     id: "noob_dmx_1742802593402",
@@ -844,7 +1086,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 5,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 5,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_feddy_1742800609270",
@@ -886,7 +1141,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 100,
-    matchesPlayed: 113,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 113,
+      },
+      {
+        season: 2,
+        matchesPlayed: 44,
+      },
+      {
+        season: 3,
+        matchesPlayed: 48,
+      },
+    ],
   },
   {
     id: "noob_franky_syiem_1758537289745",
@@ -928,7 +1196,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 20,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 16,
+      },
+    ],
   },
   {
     id: "noob_hawktuah_1754910225801",
@@ -970,7 +1251,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -40,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 4,
+      },
+      {
+        season: 3,
+        matchesPlayed: 32,
+      },
+    ],
   },
   {
     id: "noob_hep_wallam_1750137429205",
@@ -1012,7 +1306,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 4,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 4,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 4,
+      },
+    ],
   },
   {
     id: "noob_him_1743427521607",
@@ -1054,7 +1361,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -60,
-    matchesPlayed: 111,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 111,
+      },
+      {
+        season: 2,
+        matchesPlayed: 32,
+      },
+      {
+        season: 3,
+        matchesPlayed: 100,
+      },
+    ],
   },
   {
     id: "noob_ioh_1742802642083",
@@ -1096,7 +1416,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -80,
-    matchesPlayed: 62,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 62,
+      },
+      {
+        season: 2,
+        matchesPlayed: 8,
+      },
+      {
+        season: 3,
+        matchesPlayed: 52,
+      },
+    ],
   },
   {
     id: "noob_jam_1742802197966",
@@ -1138,7 +1471,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -150,
-    matchesPlayed: 146,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 146,
+      },
+      {
+        season: 2,
+        matchesPlayed: 36,
+      },
+      {
+        season: 3,
+        matchesPlayed: 100,
+      },
+    ],
   },
   {
     id: "noob_jamesbon_1742802173236",
@@ -1180,7 +1526,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 465,
-    matchesPlayed: 109,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 109,
+      },
+      {
+        season: 2,
+        matchesPlayed: 16,
+      },
+      {
+        season: 3,
+        matchesPlayed: 48,
+      },
+    ],
   },
   {
     id: "noob_jdxjames_1758793589883",
@@ -1222,7 +1581,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -30,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 68,
+      },
+    ],
   },
   {
     id: "noob_john_1758286364354",
@@ -1264,7 +1636,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -30,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 48,
+      },
+    ],
   },
   {
     id: "noob_kalbinson_1748316181082",
@@ -1306,7 +1691,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 10,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 10,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_kalding_1746183197663",
@@ -1348,7 +1746,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 70,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 70,
+      },
+      {
+        season: 2,
+        matchesPlayed: 28,
+      },
+      {
+        season: 3,
+        matchesPlayed: 28,
+      },
+    ],
   },
   {
     id: "noob_kennedy_1744181377965",
@@ -1390,7 +1801,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -20,
-    matchesPlayed: 9,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 9,
+      },
+      {
+        season: 2,
+        matchesPlayed: 8,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_khasi_29_1755517541537",
@@ -1432,7 +1856,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 20,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_ks_lemon_1742804038693",
@@ -1474,7 +1911,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 10,
-    matchesPlayed: 10,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 10,
+      },
+      {
+        season: 2,
+        matchesPlayed: 12,
+      },
+      {
+        season: 3,
+        matchesPlayed: 16,
+      },
+    ],
   },
   {
     id: "noob_kunal_1742802499696",
@@ -1516,7 +1966,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 25,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 25,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_kupar_1761714883606",
@@ -1558,7 +2021,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 16,
+      },
+    ],
   },
   {
     id: "noob_kyrmen_1748368684284",
@@ -1600,7 +2076,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 60,
-    matchesPlayed: 21,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 21,
+      },
+      {
+        season: 2,
+        matchesPlayed: 36,
+      },
+      {
+        season: 3,
+        matchesPlayed: 84,
+      },
+    ],
   },
   {
     id: "noob_lapulga_1744130215265",
@@ -1642,7 +2131,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 77,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 77,
+      },
+      {
+        season: 2,
+        matchesPlayed: 20,
+      },
+      {
+        season: 3,
+        matchesPlayed: 4,
+      },
+    ],
   },
   {
     id: "noob_lit_lit_1742802600627",
@@ -1684,7 +2186,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -40,
-    matchesPlayed: 103,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 103,
+      },
+      {
+        season: 2,
+        matchesPlayed: 16,
+      },
+      {
+        season: 3,
+        matchesPlayed: 56,
+      },
+    ],
   },
   {
     id: "noob_lizo_1759937585708",
@@ -1726,7 +2241,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -20,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 4,
+      },
+    ],
   },
   {
     id: "noob_mak_1750257338559",
@@ -1768,7 +2296,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -50,
-    matchesPlayed: 21,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 21,
+      },
+      {
+        season: 2,
+        matchesPlayed: 32,
+      },
+      {
+        season: 3,
+        matchesPlayed: 32,
+      },
+    ],
   },
   {
     id: "noob_mrkhasi416_1755154815615",
@@ -1810,7 +2351,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 4,
+      },
+      {
+        season: 3,
+        matchesPlayed: 8,
+      },
+    ],
   },
   {
     id: "noob_nobody_1759999570624",
@@ -1852,7 +2406,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 40,
+      },
+    ],
   },
   {
     id: "noob_nomercy_1758552969123",
@@ -1894,7 +2461,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -30,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 76,
+      },
+    ],
   },
   {
     id: "noob_ocean_1758697283421",
@@ -1936,7 +2516,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 80,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 72,
+      },
+    ],
   },
   {
     id: "noob_real_x_snar_1763110474757",
@@ -1978,7 +2571,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 90,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 4,
+      },
+    ],
   },
   {
     id: "noob_shaining_1742802155914",
@@ -2020,7 +2626,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -120,
-    matchesPlayed: 124,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 124,
+      },
+      {
+        season: 2,
+        matchesPlayed: 32,
+      },
+      {
+        season: 3,
+        matchesPlayed: 100,
+      },
+    ],
   },
   {
     id: "noob_soi_1748063241428",
@@ -2062,7 +2681,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 20,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 20,
+      },
+      {
+        season: 3,
+        matchesPlayed: 28,
+      },
+    ],
   },
   {
     id: "noob_space_cat_1759198969883",
@@ -2104,7 +2736,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_stevinson_1748368697131",
@@ -2146,7 +2791,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 20,
-    matchesPlayed: 20,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 20,
+      },
+      {
+        season: 2,
+        matchesPlayed: 32,
+      },
+      {
+        season: 3,
+        matchesPlayed: 76,
+      },
+    ],
   },
   {
     id: "noob_synshar_1744037748807",
@@ -2188,7 +2846,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_tyn_marwein_1744101695277",
@@ -2230,7 +2901,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_wan_1742802585108",
@@ -2272,7 +2956,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 70,
-    matchesPlayed: 116,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 116,
+      },
+      {
+        season: 2,
+        matchesPlayed: 32,
+      },
+      {
+        season: 3,
+        matchesPlayed: 32,
+      },
+    ],
   },
   {
     id: "noob_wanda_1756477341994",
@@ -2314,7 +3011,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -20,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 4,
+      },
+      {
+        season: 3,
+        matchesPlayed: 12,
+      },
+    ],
   },
   {
     id: "noob_warrant_1756134150874",
@@ -2356,7 +3066,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 120,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 4,
+      },
+      {
+        season: 3,
+        matchesPlayed: 48,
+      },
+    ],
   },
   {
     id: "noob_xxunknownxx_1751286321743",
@@ -2398,7 +3121,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 10,
-    matchesPlayed: 12,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 12,
+      },
+      {
+        season: 2,
+        matchesPlayed: 32,
+      },
+      {
+        season: 3,
+        matchesPlayed: 84,
+      },
+    ],
   },
   {
     id: "noob_youtube_wanrap__1751115042161",
@@ -2440,7 +3176,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 290,
-    matchesPlayed: 16,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 16,
+      },
+      {
+        season: 2,
+        matchesPlayed: 16,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_zaldi_1751015229419",
@@ -2482,7 +3231,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 4,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 4,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "noob_メバン_パlイア_1761565855003",
@@ -2524,7 +3286,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -40,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 12,
+      },
+    ],
   },
   {
     id: "noob_乇v乇ｒｏｎｅy_1758285484904",
@@ -2566,7 +3341,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -40,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 48,
+      },
+    ],
   },
   {
     id: "pro_Bahlit__1742817509696",
@@ -2608,7 +3396,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 8,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 8,
+      },
+      {
+        season: 2,
+        matchesPlayed: 12,
+      },
+      {
+        season: 3,
+        matchesPlayed: 52,
+      },
+    ],
   },
   {
     id: "pro_Ln_khasi_1742803817681",
@@ -2650,7 +3451,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 220,
-    matchesPlayed: 43,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 43,
+      },
+      {
+        season: 2,
+        matchesPlayed: 16,
+      },
+      {
+        season: 3,
+        matchesPlayed: 48,
+      },
+    ],
   },
   {
     id: "pro_Nongsiejbah_1742971881518",
@@ -2692,7 +3506,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 55,
-    matchesPlayed: 23,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 23,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "pro_Nongsiejbhh_1742971927134",
@@ -2734,7 +3561,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 180,
-    matchesPlayed: 117,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 117,
+      },
+      {
+        season: 2,
+        matchesPlayed: 36,
+      },
+      {
+        season: 3,
+        matchesPlayed: 76,
+      },
+    ],
   },
   {
     id: "pro_aljess_1742802772257",
@@ -2776,7 +3616,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 120,
-    matchesPlayed: 130,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 130,
+      },
+      {
+        season: 2,
+        matchesPlayed: 32,
+      },
+      {
+        season: 3,
+        matchesPlayed: 64,
+      },
+    ],
   },
   {
     id: "pro_badboy_1742971934135",
@@ -2818,7 +3671,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -20,
-    matchesPlayed: 54,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 54,
+      },
+      {
+        season: 2,
+        matchesPlayed: 24,
+      },
+      {
+        season: 3,
+        matchesPlayed: 32,
+      },
+    ],
   },
   {
     id: "pro_bam_ja_dabor_1743606146211",
@@ -2860,7 +3726,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 8,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 8,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "pro_dame_1742800367352",
@@ -2902,7 +3781,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 149,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 149,
+      },
+      {
+        season: 2,
+        matchesPlayed: 32,
+      },
+      {
+        season: 3,
+        matchesPlayed: 100,
+      },
+    ],
   },
   {
     id: "pro_eshon_1756473215171",
@@ -2944,7 +3836,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 40,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 4,
+      },
+      {
+        season: 3,
+        matchesPlayed: 52,
+      },
+    ],
   },
   {
     id: "pro_exer_1742802694389",
@@ -2986,7 +3891,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 20,
-    matchesPlayed: 49,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 49,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 68,
+      },
+    ],
   },
   {
     id: "pro_fer_1742802747559",
@@ -3028,7 +3946,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 20,
-    matchesPlayed: 42,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 42,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "pro_fly_1742802731597",
@@ -3070,7 +4001,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 10,
-    matchesPlayed: 105,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 105,
+      },
+      {
+        season: 2,
+        matchesPlayed: 8,
+      },
+      {
+        season: 3,
+        matchesPlayed: 28,
+      },
+    ],
   },
   {
     id: "pro_hameAk_1742802891766",
@@ -3112,7 +4056,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -20,
-    matchesPlayed: 40,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 40,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 52,
+      },
+    ],
   },
   {
     id: "pro_hnlc_1755145283509",
@@ -3154,7 +4111,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 50,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 4,
+      },
+      {
+        season: 3,
+        matchesPlayed: 56,
+      },
+    ],
   },
   {
     id: "pro_just_1742802811530",
@@ -3196,7 +4166,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 127,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 127,
+      },
+      {
+        season: 2,
+        matchesPlayed: 8,
+      },
+      {
+        season: 3,
+        matchesPlayed: 64,
+      },
+    ],
   },
   {
     id: "pro_lang_1743427540073",
@@ -3238,7 +4221,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 310,
-    matchesPlayed: 16,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 16,
+      },
+      {
+        season: 2,
+        matchesPlayed: 12,
+      },
+      {
+        season: 3,
+        matchesPlayed: 44,
+      },
+    ],
   },
   {
     id: "pro_lit_meban_1744782856826",
@@ -3280,7 +4276,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "pro_mait_1742802752312",
@@ -3322,7 +4331,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 125,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 125,
+      },
+      {
+        season: 2,
+        matchesPlayed: 24,
+      },
+      {
+        season: 3,
+        matchesPlayed: 100,
+      },
+    ],
   },
   {
     id: "pro_man_1742802803983",
@@ -3364,7 +4386,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 20,
-    matchesPlayed: 140,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 140,
+      },
+      {
+        season: 2,
+        matchesPlayed: 36,
+      },
+      {
+        season: 3,
+        matchesPlayed: 72,
+      },
+    ],
   },
   {
     id: "pro_many_1742802735737",
@@ -3406,7 +4441,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 45,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 45,
+      },
+      {
+        season: 2,
+        matchesPlayed: 4,
+      },
+      {
+        season: 3,
+        matchesPlayed: 52,
+      },
+    ],
   },
   {
     id: "pro_mebanker_1742802802059",
@@ -3448,7 +4496,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -10,
-    matchesPlayed: 135,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 135,
+      },
+      {
+        season: 2,
+        matchesPlayed: 28,
+      },
+      {
+        season: 3,
+        matchesPlayed: 8,
+      },
+    ],
   },
   {
     id: "pro_milky_1742802818433",
@@ -3490,7 +4551,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 70,
-    matchesPlayed: 127,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 127,
+      },
+      {
+        season: 2,
+        matchesPlayed: 4,
+      },
+      {
+        season: 3,
+        matchesPlayed: 52,
+      },
+    ],
   },
   {
     id: "pro_mining_1742802786149",
@@ -3532,7 +4606,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 150,
-    matchesPlayed: 144,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 144,
+      },
+      {
+        season: 2,
+        matchesPlayed: 40,
+      },
+      {
+        season: 3,
+        matchesPlayed: 84,
+      },
+    ],
   },
   {
     id: "pro_mj_1742802885061",
@@ -3574,7 +4661,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: -20,
-    matchesPlayed: 127,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 127,
+      },
+      {
+        season: 2,
+        matchesPlayed: 28,
+      },
+      {
+        season: 3,
+        matchesPlayed: 64,
+      },
+    ],
   },
   {
     id: "pro_ross_1742802921232",
@@ -3616,7 +4716,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 250,
-    matchesPlayed: 122,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 122,
+      },
+      {
+        season: 2,
+        matchesPlayed: 28,
+      },
+      {
+        season: 3,
+        matchesPlayed: 84,
+      },
+    ],
   },
   {
     id: "pro_siat_ksew_1742802763038",
@@ -3658,7 +4771,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 45,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 45,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "pro_sing_1744006236020",
@@ -3700,7 +4826,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 185,
-    matchesPlayed: 100,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 100,
+      },
+      {
+        season: 2,
+        matchesPlayed: 24,
+      },
+      {
+        season: 3,
+        matchesPlayed: 100,
+      },
+    ],
   },
   {
     id: "ultra_noob_iongmeirit_1761139704835",
@@ -3742,7 +4881,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 4,
+      },
+    ],
   },
   {
     id: "ultra_noob_loverson_1758553818929",
@@ -3784,7 +4936,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 50,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 68,
+      },
+    ],
   },
   {
     id: "ultra_noob_sboi_1749206050420",
@@ -3826,7 +4991,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 20,
-    matchesPlayed: 16,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 16,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "ultra_noob_wan웃302_1758948105369",
@@ -3868,7 +5046,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "ultra_noob_ßbmôît_1756478484285",
@@ -3910,7 +5101,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 4,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "ultra_pro_gonnie_1755668945865",
@@ -3952,7 +5156,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 48,
+      },
+    ],
   },
   {
     id: "ultra_pro_mal_1744777741482",
@@ -3994,7 +5211,20 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 0,
+      },
+    ],
   },
   {
     id: "ultra_pro_ps_rexz_1758286138540",
@@ -4036,6 +5266,19 @@ export const season1: SeedUserT[] = [
       },
     ],
     balance: 0,
-    matchesPlayed: 0,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 0,
+      },
+      {
+        season: 2,
+        matchesPlayed: 0,
+      },
+      {
+        season: 3,
+        matchesPlayed: 4,
+      },
+    ],
   },
 ];
