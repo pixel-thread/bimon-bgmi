@@ -3,6 +3,7 @@ import { prisma } from "../src/lib/db/prisma/index"; // update path accordingly
 // Mock data arrays
 const users = [
   {
+    seedId:1,
     userName: "Harrison",
     email: "jyrwaboys@gmail.com",
     clerkId: "mock-clerk-id-1",
@@ -22,6 +23,7 @@ const users = [
 
 const players = [
   {
+    seedId:1,
     userId: "", // will fill after user creation
     category: "NOOB",
     isBanned: false,
@@ -35,6 +37,7 @@ const players = [
 
 const playerStats = [
   {
+    seedId:1,
     kills: 5,
     deaths: 3,
   },
