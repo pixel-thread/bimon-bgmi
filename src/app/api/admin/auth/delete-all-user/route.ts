@@ -5,12 +5,20 @@ import { SuccessResponse } from "@/src/utils/next-response";
 
 export async function DELETE(req: Request) {
   try {
-    await superAdminMiddleware(req);
-    const users = await clientClerk.users.getUserList();
-    for (const user of users.data) {
-      await clientClerk.users.deleteUser(user.id);
+    if (process.env.NODE_ENV !== "development") {
+      await superAdminMiddleware(req);
     }
+
+    let users;
+    do {
+      users = await clientClerk.users.getUserList();
+      for (const user of users.data) {
+        await clientClerk.users.deleteUser(user.id);
+      }
+    } while (users.data.length > 0);
+
     const deletedUsers = await clientClerk.users.getUserList();
+
     return SuccessResponse({
       data: deletedUsers,
       message: "All users deleted successfully",

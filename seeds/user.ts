@@ -16,43 +16,36 @@ import { v4 as uuidv4 } from "uuid";
 function sanitizeClerkUsername(playerName: string): string {
   // Replace spaces with underscores
   let sanitized = playerName.replace(/\s+/g, "_");
-  
+
   // Remove all special characters except underscores and hyphens
   // Keep only alphanumeric, underscores, and hyphens
   sanitized = sanitized.replace(/[^a-zA-Z0-9_-]/g, "");
-  
+
   // Convert to lowercase for consistency
   sanitized = sanitized.toLowerCase();
-  
+
   // Collapse multiple consecutive underscores or hyphens into single underscore
   sanitized = sanitized.replace(/[_-]+/g, "_");
-  
+
   // Trim any leading/trailing underscores or hyphens
   sanitized = sanitized.replace(/^[_-]+|[_-]+$/g, "");
-  
+
   // If empty after sanitization (e.g., only special characters), use a fallback
   if (sanitized.length === 0) {
     sanitized = "player";
   }
-  
+
   // Ensure minimum length of 3 characters (Clerk requirement)
   // If too short after sanitization, pad with numbers
   if (sanitized.length < 3) {
     sanitized = sanitized.padEnd(3, "0");
   }
-  
-  // Add random numbers to 3-character names to make them unique and longer
-  if (sanitized.length === 3) {
-    // Generate a random 2-digit number (01-99)
-    const randomNum = Math.floor(Math.random() * 99) + 1;
-    sanitized = sanitized + String(randomNum).padStart(2, "0");
-  }
-  
+
   // Ensure maximum length of 20 characters (Clerk limit)
   if (sanitized.length > 20) {
     sanitized = sanitized.substring(0, 20);
   }
-  
+
   return sanitized;
 }
 
@@ -77,8 +70,10 @@ async function seedSeason(data: SeedUserT[], seasonName: string) {
       startDate: new Date(),
       description: "Season 1",
       createdBy: "SEED",
+      status: "INACTIVE",
     },
   });
+
   for (const userData of data) {
     // Create or update user
     const demoEmail = `${uuidv4()}@pixelthread.com`;
@@ -87,7 +82,7 @@ async function seedSeason(data: SeedUserT[], seasonName: string) {
     const sanitizedUsername = sanitizeClerkUsername(userData.playerName);
     const clerkUser = await clientClerk.users.createUser({
       password: "123Clashofclan@",
-      username: sanitizedUsername,
+      username: sanitizedUsername.toLowerCase(),
       emailAddress: [email],
     });
 
@@ -103,16 +98,14 @@ async function seedSeason(data: SeedUserT[], seasonName: string) {
         userName: userData.userName || userData.playerName,
         role: "PLAYER",
         balance: userData.balance || 0,
+        player: {
+          create: {
+            isBanned: false,
+            seasons: { connect: { id: season.id } },
+          },
+        },
       },
-    });
-
-    // Create or update player
-    const player = await prisma.player.create({
-      data: {
-        isBanned: false,
-        seasons: { connect: { id: season.id } },
-        user: { connect: { id: user.id } },
-      },
+      include: { player: true },
     });
 
     // Create or update player stats
@@ -121,7 +114,7 @@ async function seedSeason(data: SeedUserT[], seasonName: string) {
         kills: userData.stats.kills || 0,
         deaths: userData.stats.deaths || 0,
         season: { connect: { id: season.id } },
-        player: { connect: { id: player.id } },
+        player: { connect: { id: user?.player?.id } },
       },
     });
   }
