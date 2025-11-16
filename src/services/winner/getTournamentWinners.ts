@@ -8,6 +8,13 @@ type Props = {
 export async function getTournamentWinners({ where }: Props) {
   return prisma.tournamentWinner.findMany({
     where,
-    include: { team: { include: { players: { include: { user: true } } } } },
+    include: {
+      tournament: true,
+      team: {
+        include: {
+          players: { include: { user: true } },
+        },
+      },
+    },
   });
 }

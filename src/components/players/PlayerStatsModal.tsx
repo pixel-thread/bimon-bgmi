@@ -13,6 +13,7 @@ import { History, Ban, AlertTriangle } from "lucide-react";
 import { formatRemainingBanDuration } from "@/src/utils/banUtils";
 import { usePlayer } from "@/src/hooks/player/usePlayer";
 import { usePlayerStats } from "@/src/hooks/player/usePlayerStats";
+import { useRouter } from "next/navigation";
 
 const CATEGORY_COLORS = {
   "Ultra Noob":
@@ -36,7 +37,7 @@ type Props = {
 export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
   const { data: player } = usePlayer({ id });
   const { data: stats } = usePlayerStats({ id });
-
+  const router = useRouter();
   if (!player) return null;
 
   const banInfo = {
@@ -107,8 +108,8 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                   }`}
                 >
                   ₹
-                  {typeof player.balance === "number"
-                    ? player.balance.toFixed(2)
+                  {typeof player.uc?.balance === "number"
+                    ? player.uc?.balance.toFixed(2)
                     : "0.00"}
                 </p>
                 <p className="text-sm text-muted-foreground">Balance</p>
@@ -178,6 +179,17 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
 
             {/* Quick Actions */}
             <div className="flex gap-3 justify-center flex-wrap">
+              <div className="flex gap-3 justify-center flex-wrap">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    router.replace(`?uc=${player.id}`);
+                  }}
+                >
+                  <History className="w-4 h-4 mr-2" />
+                  Balance Adjustment
+                </Button>
+              </div>
               <Button
                 variant="outline"
                 onClick={() => {

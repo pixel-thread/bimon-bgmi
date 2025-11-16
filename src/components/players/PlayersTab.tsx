@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState } from "react";
 import { LoaderFive } from "@/src/components/ui/loader";
 
 import { PlayerFilters } from "./PlayerFilters";
@@ -20,12 +20,23 @@ import { Card } from "../teamManagementImports";
 import { PlayerT } from "@/src/types/player";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSeasonStore } from "@/src/store/season";
+import Link from "next/link";
 
 const columns: ColumnDef<PlayerT>[] = [
-  { header: "Username", accessorKey: "userName" },
+  {
+    header: "Username",
+    accessorKey: "userName",
+    cell: ({ row }) => (
+      <Link href={`?player=${row.original.id}`}>{row.original.userName}</Link>
+    ),
+  },
   { accessorKey: "category", header: "Category" },
   { accessorKey: "matches", header: "Matches" },
   { accessorKey: "kd", header: "K/D" },
+  {
+    header: "UC",
+    cell: (info) => <Link href={`?uc=${info.row.original.id}`}>Edit UC</Link>,
+  },
 ];
 
 export function PlayersTab({
@@ -34,6 +45,7 @@ export function PlayersTab({
 }: PlayersTabProps) {
   const search = useSearchParams();
   const router = useRouter();
+  const ucId = search.get("uc") || "";
   const playerId = search.get("player") || "";
   const page = search.get("page") || "1";
   const { seasonId, setSeasonId } = useSeasonStore();
@@ -247,12 +259,7 @@ export function PlayersTab({
       />
 
       {/* Balance Adjustment Modal */}
-      <BalanceAdjustmentDialog
-        isOpen={isBalanceAdjustmentModalOpen}
-        onOpenChange={setIsBalanceAdjustmentModalOpen}
-        player={selectedPlayerForBalance}
-        onBalanceUpdate={() => {}}
-      />
+      <BalanceAdjustmentDialog isOpen={!!ucId} playerId={ucId} />
     </div>
   );
 }

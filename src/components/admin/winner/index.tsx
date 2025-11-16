@@ -1,35 +1,42 @@
 import { DataTable } from "../../data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { useTournamentWinner } from "@/src/hooks/winner/useTournamentWinner";
-import { useTournamentStore } from "@/src/store/tournament";
-import { Button } from "../../ui/stateful-button";
 import { Card } from "../../teamManagementImports";
+import { useSeasonStore } from "@/src/store/season";
 
 const columns: ColumnDef<any>[] = [
   {
-    header: "Team Name",
-    accessorKey: "teamName",
+    accessorKey: "tournamentName",
+    header: "Tournament",
   },
   {
-    header: "Place",
-    accessorKey: "position",
+    header: "1st Place",
+    accessorKey: "place1.teamName",
   },
   {
-    header: "Prize Amount",
-    accessorKey: "amount",
+    header: "1st Prize",
+    accessorKey: "place1.amount",
+  },
+  {
+    header: "2nd Place",
+    accessorKey: "place2.teamName",
+  },
+
+  {
+    header: "2nd Prize",
+    accessorKey: "place2.amount",
   },
 ];
 
 export const AdminWinnerPage = () => {
-  const { tournamentId } = useTournamentStore();
-  const { data, isFetching, refetch } = useTournamentWinner({ tournamentId });
+  const { seasonId } = useSeasonStore();
+  const { data, isFetching } = useTournamentWinner({ seasonId });
   return (
     <div>
-      {tournamentId && isFetching ? (
+      {seasonId && isFetching ? (
         <div>Loading...</div>
       ) : (
         <>
-          <Button onClick={() => refetch()}>Refresh</Button>
           <Card className="p-4">
             <DataTable data={data} columns={columns} />
           </Card>

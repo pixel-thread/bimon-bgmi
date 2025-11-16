@@ -13,7 +13,7 @@ export function usePlayerStats({ id }: UsePlayerT) {
   const url = PLAYER_ENDPOINTS.GET_PLAYER_STATS_BY_ID.replace(
     ":id",
     id,
-  ).replace(":seasonId", seasonId);
+  ).replace(":season", seasonId);
 
   return useQuery({
     queryFn: () => http.get<PlayerStatsT>(url),

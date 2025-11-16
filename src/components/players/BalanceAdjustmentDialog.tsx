@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,86 +13,80 @@ import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/src/components/ui/radio-group";
 import { Wallet } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { usePlayer } from "@/src/hooks/player/usePlayer";
+import z from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import http from "@/src/utils/http";
 import { toast } from "sonner";
-import { PlayerT } from "@/src/types/player";
 
 interface BalanceAdjustmentDialogProps {
   isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  player: PlayerT | null;
-  onBalanceUpdate: () => void;
+  playerId: string;
 }
+
+const ucSchema = z.object({
+  type: z.enum(["credit", "debit"]),
+  amount: z.number(),
+});
 
 export function BalanceAdjustmentDialog({
   isOpen,
-  onOpenChange,
-  player,
-  onBalanceUpdate,
+  playerId,
 }: BalanceAdjustmentDialogProps) {
+  const router = useRouter();
+  const form = useForm({
+    resolver: zodResolver(ucSchema),
+  });
+
   const [balanceAdjustment, setBalanceAdjustment] = useState({
     amount: "",
-    reason: "Manual balance increase",
     type: "credit" as "credit" | "debit",
   });
+
+  const { data: player } = usePlayer({ id: playerId });
+
+  const { mutate } = useMutation({
+    mutationFn: () =>
+      http.post(`/admin/players/${playerId}/uc`, { ...balanceAdjustment }),
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message);
+        form.reset();
+        return data;
+      }
+      toast.success(data.message);
+      return data;
+    },
+  });
+
   const [isAdjustingBalance, setIsAdjustingBalance] = useState(false);
 
   const handleTransactionTypeChange = (newType: "credit" | "debit") => {
-    const defaultReason =
-      newType === "credit"
-        ? "Manual balance increase"
-        : "Manual balance decrease";
     setBalanceAdjustment((prev) => ({
       ...prev,
       type: newType,
-      reason:
-        prev.reason === "Manual balance increase" ||
-        prev.reason === "Manual balance decrease" ||
-        prev.reason === ""
-          ? defaultReason
-          : prev.reason,
     }));
   };
+  const onClose = () => router.back();
 
-  const handleConfirmBalanceAdjustment = async () => {
-    const amountValue = parseFloat(balanceAdjustment.amount) || 0;
-    if (!player || amountValue <= 0 || !balanceAdjustment.reason.trim()) {
-      toast.error("Please fill in all fields with valid values");
-      return;
-    }
+  const handleConfirmBalanceAdjustment = async () => mutate();
 
-    setIsAdjustingBalance(true);
-    try {
-      const currentBalance =
-        typeof player.balance === "number" ? player.balance : 0;
-      const adjustmentAmount =
-        balanceAdjustment.type === "credit" ? amountValue : -amountValue;
-      const newBalance = currentBalance + adjustmentAmount;
-
-      const now = new Date().toISOString();
-      const txId = `${player.id}_${Date.now()}`;
-
-      toast.success(
-        `Balance ${
-          balanceAdjustment.type === "credit" ? "credited" : "debited"
-        } successfully!`,
-      );
+  useEffect(() => {
+    if (player?.uc) {
       setBalanceAdjustment({
-        amount: "",
-        reason: "Manual balance increase",
+        amount: player?.uc?.balance.toString() || "0",
         type: "credit",
       });
-      onBalanceUpdate();
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Error adjusting balance:", error);
-      toast.error("Failed to adjust balance");
-    } finally {
-      setIsAdjustingBalance(false);
     }
-  };
+  }, [player?.uc]);
+
+  const uc = player?.uc;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[95vw] sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
@@ -106,8 +100,8 @@ export function BalanceAdjustmentDialog({
             <label className="text-sm font-medium">Current Balance</label>
             <div className="text-lg font-bold text-muted-foreground">
               ₹
-              {typeof player?.balance === "number"
-                ? player.balance.toFixed(2)
+              {typeof uc?.balance === "number"
+                ? uc?.balance.toFixed(2)
                 : "0.00"}
             </div>
           </div>
@@ -189,22 +183,6 @@ export function BalanceAdjustmentDialog({
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium">Reason</label>
-            <Input
-              value={balanceAdjustment.reason}
-              onChange={(e) =>
-                setBalanceAdjustment((prev) => ({
-                  ...prev,
-                  reason: e.target.value,
-                }))
-              }
-              placeholder="Enter reason for adjustment"
-              className="border border-input"
-              disabled={isAdjustingBalance}
-            />
-          </div>
-
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
             <p className="text-sm text-yellow-800">
               <strong>Preview:</strong>{" "}
@@ -213,7 +191,7 @@ export function BalanceAdjustmentDialog({
               <br />
               <strong>New Balance:</strong> ₹
               {(
-                (typeof player?.balance === "number" ? player.balance : 0) +
+                (typeof uc?.balance === "number" ? uc?.balance : 0) +
                 (balanceAdjustment.type === "credit"
                   ? parseFloat(balanceAdjustment.amount) || 0
                   : -(parseFloat(balanceAdjustment.amount) || 0))
@@ -225,7 +203,7 @@ export function BalanceAdjustmentDialog({
         <DialogFooter className="pt-4 flex-col-reverse sm:flex-row gap-2 sm:gap-0">
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={onClose}
             disabled={isAdjustingBalance}
             className="w-full sm:w-auto border border-input"
           >
@@ -235,7 +213,6 @@ export function BalanceAdjustmentDialog({
             onClick={handleConfirmBalanceAdjustment}
             disabled={
               (parseFloat(balanceAdjustment.amount) || 0) <= 0 ||
-              !balanceAdjustment.reason.trim() ||
               isAdjustingBalance
             }
             className="w-full sm:w-auto border border-input"

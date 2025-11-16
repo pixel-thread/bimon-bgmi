@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
@@ -18,36 +18,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/src/components/ui/dialog";
-import {
-  collection,
-  getDocs,
-  getDoc,
-  doc,
-  setDoc,
-  addDoc,
-  deleteDoc,
-  query,
-  orderBy,
-  limit,
-  where,
-} from "firebase/firestore";
-import { toast } from "sonner";
-import { Trophy, Search, Plus, AlertCircle, Trash2 } from "lucide-react";
-import { SeasonSelector } from "./SeasonSelector";
-import { LoaderFive } from "@/src/components/ui/loader";
-import { PlayerT } from "../types/player";
-import { TournamentT } from "../types/tournament";
+import { Trophy, Search, Plus, Trash2 } from "lucide-react";
 import { useTournamentWinner } from "../hooks/winner/useTournamentWinner";
 import { useTournamentStore } from "../store/tournament";
-
-interface TournamentResult {
-  id: string;
-  tournamentId: string;
-  tournamentTitle: string;
-  date: string;
-  firstPlace: string[]; // Array of two player IDs
-  secondPlace: string[]; // Array of two player IDs
-}
 
 interface WinnersTabProps {
   readOnly?: boolean;
@@ -56,7 +29,7 @@ interface WinnersTabProps {
 export function WinnersTab({ readOnly = false }: WinnersTabProps) {
   const { tournamentId } = useTournamentStore();
   const { data: winner, isFetching: isLoading } = useTournamentWinner({
-    tournamentId,
+    seasonId: tournamentId,
   });
   return (
     <div className="p-4 max-w-7xl mx-auto">

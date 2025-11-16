@@ -1,21 +1,18 @@
-import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
+import { WINNER_ENDPOINTS } from "@/src/lib/endpoints/winner";
 import http from "@/src/utils/http";
 import { useQuery } from "@tanstack/react-query";
 
 type Props = {
-  tournamentId: string;
+  seasonId: string;
 };
-export function useTournamentWinner({ tournamentId }: Props) {
+export function useTournamentWinner({ seasonId: seasonId }: Props) {
   return useQuery({
-    queryKey: ["tournament-winner", tournamentId],
+    queryKey: ["tournament-winner", seasonId],
     select: (data) => data.data,
-    enabled: !!tournamentId,
+    enabled: !!seasonId,
     queryFn: () =>
-      http.get(
-        ADMIN_TOURNAMENT_ENDPOINTS.GET_TOURNAMENT_WINNER.replace(
-          ":id",
-          tournamentId,
-        ),
-      ),
+      http.post(WINNER_ENDPOINTS.POST_GET_TOURNAMENT_WINNER_BY_SEASON, {
+        seasonId: seasonId,
+      }),
   });
 }
