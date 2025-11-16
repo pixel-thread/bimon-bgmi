@@ -1,6 +1,5 @@
 "use client";
 import { TournamentLayoutContent } from "@/src/components/tournaments/TournamentLayoutContent";
-import { Gift } from "lucide-react";
 
 import { usePathname } from "next/navigation";
 import { FiAward, FiBarChart } from "react-icons/fi";
@@ -17,12 +16,6 @@ const getLayoutDetails = (path: string) => {
         title: "Vote",
         description: "Cast your vote for tournament polls.",
         icon: FiBarChart,
-      };
-    case "/tournament/wheel":
-      return {
-        title: "Claim",
-        description: "Claim your prize if you're a winner!",
-        icon: Gift,
       };
     case "/tournament/winners":
       return {

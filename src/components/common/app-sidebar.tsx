@@ -77,11 +77,6 @@ const data = {
       icon: UsersIcon,
     },
     {
-      title: "Wheel",
-      url: "/admin/wheel",
-      icon: UsersIcon,
-    },
-    {
       title: "Winners",
       url: "/admin/winners",
       icon: UsersIcon,
