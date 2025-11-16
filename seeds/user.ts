@@ -41,6 +41,13 @@ function sanitizeClerkUsername(playerName: string): string {
     sanitized = sanitized.padEnd(3, "0");
   }
   
+  // Add random numbers to 3-character names to make them unique and longer
+  if (sanitized.length === 3) {
+    // Generate a random 2-digit number (01-99)
+    const randomNum = Math.floor(Math.random() * 99) + 1;
+    sanitized = sanitized + String(randomNum).padStart(2, "0");
+  }
+  
   // Ensure maximum length of 20 characters (Clerk limit)
   if (sanitized.length > 20) {
     sanitized = sanitized.substring(0, 20);

@@ -3,7 +3,7 @@ import { SeedUserT } from "./type";
 export const season2: SeedUserT[] = [
   {
     id: "noob_Ain_1742817898680",
-    playerName: "Ain",
+    playerName: "ain01",
     userName: null,
     email: null,
     clerkId: null,
@@ -378,7 +378,7 @@ export const season2: SeedUserT[] = [
   },
   {
     id: "noob_bin_1745422100626",
-    playerName: "bin",
+    playerName: "bin01",
     userName: null,
     email: null,
     clerkId: null,
@@ -478,7 +478,7 @@ export const season2: SeedUserT[] = [
   },
   {
     id: "noob_dmx_1742802593402",
-    playerName: "dmx",
+    playerName: "dmx01",
     userName: null,
     email: null,
     clerkId: null,
@@ -628,7 +628,7 @@ export const season2: SeedUserT[] = [
   },
   {
     id: "noob_ioh_1742802642083",
-    playerName: "ioh",
+    playerName: "ioh01",
     userName: null,
     email: null,
     clerkId: null,
@@ -1753,7 +1753,7 @@ export const season2: SeedUserT[] = [
   },
   {
     id: "pro_exer_1742802694389",
-    playerName: "AXE",
+    playerName: "axe01",
     userName: null,
     email: null,
     clerkId: null,
@@ -1953,7 +1953,7 @@ export const season2: SeedUserT[] = [
   },
   {
     id: "pro_mait_1742802752312",
-    playerName: "mok",
+    playerName: "mok01",
     userName: null,
     email: null,
     clerkId: null,
@@ -2103,7 +2103,7 @@ export const season2: SeedUserT[] = [
   },
   {
     id: "pro_mj_1742802885061",
-    playerName: "mj",
+    playerName: "mj01",
     userName: null,
     email: null,
     clerkId: null,
@@ -2353,7 +2353,7 @@ export const season2: SeedUserT[] = [
   },
   {
     id: "ultra_pro_mal_1744777741482",
-    playerName: "Mal",
+    playerName: "mal01",
     userName: null,
     email: null,
     clerkId: null,
