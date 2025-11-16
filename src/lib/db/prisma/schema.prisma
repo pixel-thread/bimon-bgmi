@@ -283,7 +283,7 @@ model PlayerStats {
   id        String   @id @default(uuid())
   playerId  String
   player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  deaths    Int      @default(1)
+  deaths    Int      @default(0)
   kills     Int      @default(0)
   seasonId  String?
   season    Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
@@ -332,7 +332,7 @@ model TeamStats {
   teamId          String
   team            Team              @relation(fields: [teamId], references: [id], onDelete: Cascade)
   kills           Int               @default(0)
-  deaths          Int               @default(1)
+  deaths          Int               @default(0)
   wins            Int               @default(0)
   position        Int               @default(0)
   createdAt       DateTime          @default(now())
@@ -354,7 +354,7 @@ model TeamPlayerStats {
   teamId    String
   matchId   String
   kills     Int      @default(0)
-  deaths    Int      @default(1)
+  deaths    Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
