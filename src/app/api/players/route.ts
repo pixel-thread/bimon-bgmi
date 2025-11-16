@@ -38,7 +38,6 @@ export async function GET(req: NextRequest) {
     const page = query.get("page") || "1";
     let seasonId = query.get("season");
     let where: Prisma.PlayerWhereInput = {
-      isBanned: false,
       seasons: { some: { id: seasonId || "" } },
     };
 
