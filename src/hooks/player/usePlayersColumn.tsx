@@ -56,7 +56,7 @@ export function usePlayersColumn({ page = 1 }: Props) {
         toast.success(data.message);
         return data.data;
       }
-      toast.success(data.message);
+      toast.error(data.message);
     },
   });
 
