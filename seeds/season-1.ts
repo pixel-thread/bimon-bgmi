@@ -37,11 +37,16 @@ export const season1: SeedUserT[] = [
         playerId: "noob_Ain_1742817898680",
         kills: 0,
         deaths: 0,
-        kdRatio: 0, 
+        kdRatio: 0,
       },
     ],
     balance: 0,
-    matchesPlayed: 3,
+    matchesPlayed: [
+      {
+        season: 1,
+        matchesPlayed: 3,
+      },
+    ],
   },
   {
     id: "noob_Anthony_1742803463081",
@@ -4032,5 +4037,5 @@ export const season1: SeedUserT[] = [
     ],
     balance: 0,
     matchesPlayed: 0,
-  }
+  },
 ];

@@ -152,6 +152,7 @@ async function seedSeason(data: SeedUserT[], seasonName: string) {
         player: { connect: { id: user?.player?.id } },
       },
     });
+
     console.log("Created stats 3:");
   }
 }

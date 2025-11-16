@@ -22,5 +22,8 @@ export type SeedUserT = {
     kdRatio: number;
   }[];
   balance: number;
-  matchesPlayed: number;
+  matchesPlayed: {
+    season: number;
+    matchesPlayed: number;
+  }[];
 };

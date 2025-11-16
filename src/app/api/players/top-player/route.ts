@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
         ...ps,
         computedKD: kd,
         kills: ps.kills ?? 0,
-        wins: ps.wins ?? 0,
+        wins: 0,
       };
     });
 
