@@ -1,12 +1,14 @@
 import { Label } from "@/src/components/ui/label";
+import { Button } from "@/src/components/ui/button";
 import { Switch } from "@/src/components/ui/switch";
 import { ADMIN_PLAYER_ENDPOINTS } from "@/src/lib/endpoints/admin/player";
 import { useSeasonStore } from "@/src/store/season";
 import http from "@/src/utils/http";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ColumnDef } from "@tanstack/react-table";
+import { CellContext, ColumnDef } from "@tanstack/react-table";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useRouter, Link } from "next/navigation";
 
 type PlayerT = {
   id: string;
@@ -17,22 +19,52 @@ type PlayerT = {
   category: string;
 };
 
+const DefaultColBTN = ({
+  children,
+}: {
+  children: React.ReactNode;
+  row: CellContext<PlayerT, unknown>;
+}) => {
+  const router = useRouter();
+  return <Button variant={"outline"}>{children}</Button>;
+};
+
 const defaultColumn: ColumnDef<PlayerT>[] = [
   {
     accessorKey: "userName",
     header: "Name",
+    cell: (info) => (
+      <Link href={`?player=${info.row.original.id}`}>
+        {info.getValue() || ""}
+      </Link>
+    ),
   },
   {
     accessorKey: "category",
     header: "Category",
+    cell: (info) => (
+      <Link href={`?player=${info.row.original.id}`}>
+        {info.getValue() || ""}
+      </Link>
+    ),
   },
   {
     accessorKey: "kd",
     header: "K/D",
+    cell: (info) => (
+      <Link href={`?player=${info.row.original.id}`}>
+        {info.getValue() || ""}
+      </Link>
+    ),
   },
   {
     accessorKey: "matches",
     header: "Matches",
+    cell: (info) => (
+      <Link href={`?player=${info.row.original.id}`}>
+        {info.getValue() || ""}
+      </Link>
+    ),
   },
 ];
 
