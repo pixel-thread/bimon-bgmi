@@ -78,7 +78,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_Eshel_1742802482928",
-    playerName: "Ks Tmoh",
+    playerName: "ks_tmoh",
     userName: null,
     email: null,
     clerkId: null,
@@ -203,7 +203,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_alvin_longnonglait_1761914058169",
-    playerName: "Alvin longnonglait",
+    playerName: "alvin_longnonglait",
     userName: null,
     email: null,
     clerkId: null,
@@ -228,7 +228,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_awgxmafiasyiem_1751606900351",
-    playerName: "Arche syiem",
+    playerName: "arche_syiem",
     userName: null,
     email: null,
     clerkId: null,
@@ -503,7 +503,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_feddy_1742800609270",
-    playerName: "Ks nongkhlaw",
+    playerName: "ks_nongkhlaw",
     userName: null,
     email: null,
     clerkId: null,
@@ -528,7 +528,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_franky_syiem_1758537289745",
-    playerName: "Franky syiem",
+    playerName: "franky_syiem",
     userName: null,
     email: null,
     clerkId: null,
@@ -603,7 +603,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_him_1743427521607",
-    playerName: "Bad snipe",
+    playerName: "bad_snipe",
     userName: null,
     email: null,
     clerkId: null,
@@ -653,7 +653,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_jam_1742802197966",
-    playerName: "ks unknown",
+    playerName: "ks_unknown",
     userName: null,
     email: null,
     clerkId: null,
@@ -828,7 +828,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_khasi_29_1755517541537",
-    playerName: "Khasi 29",
+    playerName: "khasi_29",
     userName: null,
     email: null,
     clerkId: null,
@@ -853,7 +853,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_ks_lemon_1742804038693",
-    playerName: "Tmx pukhlein",
+    playerName: "tmx_pukhlein",
     userName: null,
     email: null,
     clerkId: null,
@@ -928,7 +928,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_kyrmen_1748368684284",
-    playerName: "Awg syiem",
+    playerName: "awg_syiem",
     userName: null,
     email: null,
     clerkId: null,
@@ -978,7 +978,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_lit_lit_1742802600627",
-    playerName: "lit lit",
+    playerName: "lit_lit",
     userName: null,
     email: null,
     clerkId: null,
@@ -1153,7 +1153,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_real_x_snar_1763110474757",
-    playerName: "Real X Snar",
+    playerName: "real_x_snar",
     userName: null,
     email: null,
     clerkId: null,
@@ -1178,7 +1178,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_shaining_1742802155914",
-    playerName: "ks ronaldo",
+    playerName: "ks_ronaldo",
     userName: null,
     email: null,
     clerkId: null,
@@ -1203,7 +1203,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_soi_1748063241428",
-    playerName: "Dark night",
+    playerName: "dark_night",
     userName: null,
     email: null,
     clerkId: null,
@@ -1228,7 +1228,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_space_cat_1759198969883",
-    playerName: "Space cat",
+    playerName: "space_cat",
     userName: null,
     email: null,
     clerkId: null,
@@ -1253,7 +1253,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_stevinson_1748368697131",
-    playerName: "Awg Chaos",
+    playerName: "awg_chaos",
     userName: null,
     email: null,
     clerkId: null,
@@ -1303,7 +1303,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_tyn_marwein_1744101695277",
-    playerName: "Tyn marwein",
+    playerName: "tyn_marwein",
     userName: null,
     email: null,
     clerkId: null,
@@ -1328,7 +1328,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_wan_1742802585108",
-    playerName: "Ks swan",
+    playerName: "ks_swan",
     userName: null,
     email: null,
     clerkId: null,
@@ -1428,7 +1428,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_youtube_wanrap__1751115042161",
-    playerName: "YouTube wanrap ",
+    playerName: "youtube_wanrap",
     userName: null,
     email: null,
     clerkId: null,
@@ -1478,7 +1478,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_メバン_パlイア_1761565855003",
-    playerName: "メバン パlイア",
+    playerName: "meban_paliar",
     userName: null,
     email: null,
     clerkId: null,
@@ -1503,7 +1503,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "noob_乇v乇ｒｏｎｅy_1758285484904",
-    playerName: "EvE Roney",
+    playerName: "eve_roney",
     userName: null,
     email: null,
     clerkId: null,
@@ -1528,7 +1528,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "pro_Bahlit__1742817509696",
-    playerName: "Ks Scarface",
+    playerName: "ks_scarface",
     userName: null,
     email: null,
     clerkId: null,
@@ -1553,7 +1553,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "pro_Ln_khasi_1742803817681",
-    playerName: "Ln khasi",
+    playerName: "ln_khasi",
     userName: null,
     email: null,
     clerkId: null,
@@ -1678,7 +1678,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "pro_bam_ja_dabor_1743606146211",
-    playerName: "Bam ja dabor",
+    playerName: "bam_ja_dabor",
     userName: null,
     email: null,
     clerkId: null,
@@ -1703,7 +1703,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "pro_dame_1742800367352",
-    playerName: "Gun N rose",
+    playerName: "gun_n_rose",
     userName: null,
     email: null,
     clerkId: null,
@@ -1778,7 +1778,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "pro_fer_1742802747559",
-    playerName: "Kick ass",
+    playerName: "kick_ass",
     userName: null,
     email: null,
     clerkId: null,
@@ -1803,7 +1803,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "pro_fly_1742802731597",
-    playerName: "FLY THUNDER",
+    playerName: "fly_thunder",
     userName: null,
     email: null,
     clerkId: null,
@@ -1878,7 +1878,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "pro_just_1742802811530",
-    playerName: "ks juster",
+    playerName: "ks_juster",
     userName: null,
     email: null,
     clerkId: null,
@@ -1903,7 +1903,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "pro_lang_1743427540073",
-    playerName: "VP Austin",
+    playerName: "vp_austin",
     userName: null,
     email: null,
     clerkId: null,
@@ -1928,7 +1928,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "pro_lit_meban_1744782856826",
-    playerName: "Lit Meban",
+    playerName: "lit_meban",
     userName: null,
     email: null,
     clerkId: null,
@@ -1953,7 +1953,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "pro_mait_1742802752312",
-    playerName: "威 MOK 挨",
+    playerName: "mok",
     userName: null,
     email: null,
     clerkId: null,
@@ -1978,7 +1978,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "pro_man_1742802803983",
-    playerName: "Ks Nobody",
+    playerName: "ks_nobody",
     userName: null,
     email: null,
     clerkId: null,
@@ -2078,7 +2078,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "pro_mining_1742802786149",
-    playerName: "乙ïMINING",
+    playerName: "mining",
     userName: null,
     email: null,
     clerkId: null,
@@ -2128,7 +2128,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "pro_ross_1742802921232",
-    playerName: "KŚツROSS",
+    playerName: "ksross",
     userName: null,
     email: null,
     clerkId: null,
@@ -2153,7 +2153,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "pro_siat_ksew_1742802763038",
-    playerName: "siat ksew",
+    playerName: "siat_ksew",
     userName: null,
     email: null,
     clerkId: null,
@@ -2278,7 +2278,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "ultra_noob_wan웃302_1758948105369",
-    playerName: "wan웃302",
+    playerName: "wan302",
     userName: null,
     email: null,
     clerkId: null,
@@ -2303,7 +2303,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "ultra_noob_ßbmôît_1756478484285",
-    playerName: "ßBMôît",
+    playerName: "bmoit",
     userName: null,
     email: null,
     clerkId: null,
@@ -2328,7 +2328,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "ultra_pro_gonnie_1755668945865",
-    playerName: "乙Yo・Gonie",
+    playerName: "yo_gonie",
     userName: null,
     email: null,
     clerkId: null,
@@ -2378,7 +2378,7 @@ export const season3: SeedUserT[] = [
   },
   {
     id: "ultra_pro_ps_rexz_1758286138540",
-    playerName: "Ps Rexz",
+    playerName: "ps_rexz",
     userName: null,
     email: null,
     clerkId: null,
