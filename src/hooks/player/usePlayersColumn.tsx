@@ -61,10 +61,8 @@ const defaultColumn: ColumnDef<PlayerT>[] = [
   {
     accessorKey: "matches",
     header: "Matches",
-    cell: (info) => (
-      <Link href={`?player=${info.row.original.id}`}>
-        {(info.getValue() as string) || ""}
-      </Link>
+    cell: ({ row }) => (
+      <Link href={`?player=${row.original.id}`}>{row.original.matches}</Link>
     ),
   },
 ];
