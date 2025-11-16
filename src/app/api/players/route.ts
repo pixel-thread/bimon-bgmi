@@ -61,9 +61,10 @@ export async function GET(req: NextRequest) {
         const playerKd =
           playerStats.reduce((acc, curr) => acc + curr.kills, 0) /
             playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
-        const matches = player?.matchPlayerPlayed.filter(
-          (value) => value.seasonId === seasonId,
-        ).length;
+        const matches =
+          player?.matchPlayerPlayed.filter(
+            (value) => value.seasonId === seasonId,
+          ).length || 0;
         return {
           id: player.id,
           isBanned: player.isBanned,

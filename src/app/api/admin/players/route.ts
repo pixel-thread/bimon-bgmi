@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
           id: player.id,
           isBanned: player.isBanned,
           userName: player?.user?.userName,
-          matches: player?.matchPlayerPlayed.length,
+          matches: player?.matchPlayerPlayed.length || 0,
           kd: playerKd.toFixed(2) || 0,
           category: getKdRank(
             playerStats.reduce((acc, curr) => acc + curr.kills, 0),
