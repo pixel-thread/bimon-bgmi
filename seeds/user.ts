@@ -1,7 +1,5 @@
 import { prisma } from "@/src/lib/db/prisma";
 import { season1 } from "./season-1";
-import { season2 } from "./season-2";
-import { season3 } from "./season-3";
 import { SeedUserT } from "./type";
 import { clientClerk } from "@/src/lib/clerk/client";
 import { v4 as uuidv4 } from "uuid";
@@ -51,26 +49,33 @@ function sanitizeClerkUsername(playerName: string): string {
 
 // Function to seed data for a given season
 async function seedSeason(data: SeedUserT[], seasonName: string) {
-  let season = await prisma.season.findFirst({
-    where: { status: "ACTIVE" },
-  });
-
-  if (season) {
-    await prisma.season.update({
-      where: { id: season.id },
-      data: {
-        status: "INACTIVE",
-      },
-    });
-  }
-
-  season = await prisma.season.create({
+  const season = await prisma.season.create({
     data: {
-      name: seasonName,
-      startDate: new Date(),
-      description: "Season 1",
+      name: "Season 1",
+      startDate: new Date("2023-08-01"),
+      endDate: new Date("2023-08-31"),
       createdBy: "SEED",
       status: "INACTIVE",
+    },
+  });
+
+  const season2 = await prisma.season.create({
+    data: {
+      name: "Season 2",
+      startDate: new Date("2023-08-01"),
+      endDate: new Date("2023-08-31"),
+      createdBy: "SEED",
+      status: "INACTIVE",
+    },
+  });
+
+  const season3 = await prisma.season.create({
+    data: {
+      name: "Season 3",
+      startDate: new Date("2023-08-01"),
+      endDate: new Date("2023-08-31"),
+      status: "ACTIVE",
+      createdBy: "SEED",
     },
   });
 
@@ -90,14 +95,13 @@ async function seedSeason(data: SeedUserT[], seasonName: string) {
       where: { id: userData.id },
       update: {},
       create: {
-        id: userData.id,
         email: demoEmail || undefined,
         clerkId: clerkUser?.id || "",
         isEmailLinked: userData.isEmailLinked || false,
         isVerified: userData.isVerified || false,
         userName: userData.userName || userData.playerName,
         role: "PLAYER",
-        balance: userData.balance || 0,
+        createdBy: "SEED",
         player: {
           create: {
             isBanned: false,
@@ -108,15 +112,47 @@ async function seedSeason(data: SeedUserT[], seasonName: string) {
       include: { player: true },
     });
 
+    console.log("Created user", user.id);
+
+    await prisma.uC.create({
+      data: {
+        balance: userData.balance,
+        player: { connect: { id: user?.player?.id } },
+        user: { connect: { id: user?.id } },
+      },
+    });
+
+    console.log("Created UC", user.id);
     // Create or update player stats
     await prisma.playerStats.create({
       data: {
-        kills: userData.stats.kills || 0,
-        deaths: userData.stats.deaths || 0,
+        kills: userData.stats.find((val) => val.season === 1)?.kills || 0,
+        deaths: userData.stats.find((val) => val.season === 1)?.deaths || 0,
         season: { connect: { id: season.id } },
         player: { connect: { id: user?.player?.id } },
       },
     });
+
+    console.log("Created stats 1:");
+    await prisma.playerStats.create({
+      data: {
+        kills: userData.stats.find((val) => val.season === 2)?.kills || 0,
+        deaths: userData.stats.find((val) => val.season === 2)?.deaths || 0,
+        season: { connect: { id: season2.id } },
+        player: { connect: { id: user?.player?.id } },
+      },
+    });
+
+    console.log("Created stats 2:");
+    await prisma.playerStats.create({
+      data: {
+        kills: userData.stats.find((val) => val.season === 3)?.kills || 0,
+        deaths: userData.stats.find((val) => val.season === 3)?.deaths || 0,
+        season: { connect: { id: season3.id } },
+        player: { connect: { id: user?.player?.id } },
+      },
+    });
+    console.log("Created stats 3:");
   }
 }
 
