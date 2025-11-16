@@ -8,7 +8,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CellContext, ColumnDef } from "@tanstack/react-table";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useRouter, Link } from "next/navigation";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type PlayerT = {
   id: string;
@@ -35,7 +36,7 @@ const defaultColumn: ColumnDef<PlayerT>[] = [
     header: "Name",
     cell: (info) => (
       <Link href={`?player=${info.row.original.id}`}>
-        {info.getValue() || ""}
+        {(info.getValue() as string) || ""}
       </Link>
     ),
   },
@@ -44,7 +45,7 @@ const defaultColumn: ColumnDef<PlayerT>[] = [
     header: "Category",
     cell: (info) => (
       <Link href={`?player=${info.row.original.id}`}>
-        {info.getValue() || ""}
+        {(info.getValue() as string) || ""}
       </Link>
     ),
   },
@@ -53,7 +54,7 @@ const defaultColumn: ColumnDef<PlayerT>[] = [
     header: "K/D",
     cell: (info) => (
       <Link href={`?player=${info.row.original.id}`}>
-        {info.getValue() || ""}
+        {(info.getValue() as string) || ""}
       </Link>
     ),
   },
@@ -62,7 +63,7 @@ const defaultColumn: ColumnDef<PlayerT>[] = [
     header: "Matches",
     cell: (info) => (
       <Link href={`?player=${info.row.original.id}`}>
-        {info.getValue() || ""}
+        {(info.getValue() as string) || ""}
       </Link>
     ),
   },
