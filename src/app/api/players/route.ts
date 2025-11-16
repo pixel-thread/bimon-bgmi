@@ -52,24 +52,45 @@ export async function GET(req: NextRequest) {
       page,
       where,
     });
-    const data = players.map((player) => {
-      const playerKd =
-        player.playerStats.reduce((acc, curr) => acc + curr.kills, 0) /
-          player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
-
-      return {
-        id: player.id,
-        isBanned: player.isBanned,
-        userName: player?.user?.userName,
-        matches: player?.matchPlayerPlayed.length,
-        kd: playerKd.toFixed(2) || 0,
-        category: getKdRank(
-          player.playerStats.reduce((acc, curr) => acc + curr.kills, 0),
-          player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0),
-        ),
-      };
-    });
-
+    let data;
+    if (seasonId !== "all") {
+      data = players.map((player) => {
+        const playerKd =
+          player.playerStats.reduce((acc, curr) => acc + curr.kills, 0) /
+            player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
+        const playerStats = player.playerStats.filter(
+          (value) => value.seasonId === seasonId,
+        );
+        return {
+          id: player.id,
+          isBanned: player.isBanned,
+          userName: player?.user?.userName,
+          matches: player?.matchPlayerPlayed.length,
+          kd: playerKd.toFixed(2) || 0,
+          category: getKdRank(
+            playerStats.reduce((acc, curr) => acc + curr.kills, 0),
+            playerStats.reduce((acc, curr) => acc + curr.deaths, 0),
+          ),
+        };
+      });
+    } else {
+      data = players.map((player) => {
+        const playerKd =
+          player.playerStats.reduce((acc, curr) => acc + curr.kills, 0) /
+            player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
+        return {
+          id: player.id,
+          isBanned: player.isBanned,
+          userName: player?.user?.userName,
+          matches: player?.matchPlayerPlayed.length,
+          kd: playerKd.toFixed(2) || 0,
+          category: getKdRank(
+            player.playerStats.reduce((acc, curr) => acc + curr.kills, 0),
+            player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0),
+          ),
+        };
+      });
+    }
     return SuccessResponse({
       data: data,
       message: "Players fetched successfully",
