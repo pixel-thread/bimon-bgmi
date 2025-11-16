@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     };
 
     if (seasonId === "all") {
-      where = { isBanned: false };
+      where = {};
     }
 
     const [players, total] = await getAllPlayers({
