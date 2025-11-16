@@ -76,7 +76,6 @@ export function usePlayersColumn({ page = 1 }: Props) {
                 toggleBanned();
               }}
             />
-            <Label htmlFor="airplane-mode">Banned</Label>
           </div>
         );
       },
