@@ -58,12 +58,12 @@ export async function GET(req: NextRequest) {
 
     if (seasonId !== "all") {
       data = players.map((player) => {
-        const playerKd =
-          player.playerStats.reduce((acc, curr) => acc + curr.kills, 0) /
-            player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
         const playerStats = player.playerStats.filter(
           (value) => value.seasonId === seasonId,
         );
+        const playerKd =
+          playerStats.reduce((acc, curr) => acc + curr.kills, 0) /
+            playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
         return {
           id: player.id,
           isBanned: player.isBanned,
