@@ -25,11 +25,7 @@ const AdminPlayersPage = () => {
         </header>
 
         <div className="space-y-6">
-          <PlayersTab
-            readOnly={isTeamsAdmin}
-            hideCsvExport={isTeamsAdmin}
-            showBalanceSummary={true}
-          />
+          <PlayersTab />
         </div>
       </div>
     </div>
