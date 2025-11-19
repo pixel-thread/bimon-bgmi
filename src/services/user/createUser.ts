@@ -52,39 +52,44 @@ export async function createUser({ data }: Props) {
 
   const activeSeason = await getActiveSeason();
 
-  return await prisma.$transaction(
-    async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          userName: data.userName,
-          clerkId: clerkUser.id,
-          createdBy: data.createdBy,
-          email: data.email,
-          player: {
-            create: { seasons: { connect: { id: activeSeason?.id || "" } } },
+  try {
+    return await prisma.$transaction(
+      async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            userName: data.userName,
+            clerkId: clerkUser.id,
+            createdBy: data.createdBy,
+            email: data.email,
+            player: {
+              create: { seasons: { connect: { id: activeSeason?.id || "" } } },
+            },
           },
-        },
-        include: { player: true },
-      });
+          include: { player: true },
+        });
 
-      await tx.uC.create({
-        data: {
-          user: { connect: { id: user.id } },
-          player: { connect: { id: user?.player?.id || "" } },
-        },
-      });
+        await tx.uC.create({
+          data: {
+            user: { connect: { id: user.id } },
+            player: { connect: { id: user?.player?.id || "" } },
+          },
+        });
 
-      await tx.playerStats.create({
-        data: {
-          season: { connect: { id: activeSeason?.id || "" } },
-          player: { connect: { id: user?.player?.id || "" } },
-        },
-      });
-      return user;
-    },
-    {
-      maxWait: 10000, // Max wait to connect to Prisma (10 seconds)
-      timeout: 30000, // Transaction timeout (30 seconds)
-    },
-  );
+        await tx.playerStats.create({
+          data: {
+            season: { connect: { id: activeSeason?.id || "" } },
+            player: { connect: { id: user?.player?.id || "" } },
+          },
+        });
+        return user;
+      },
+      {
+        maxWait: 10000, // Max wait to connect to Prisma (10 seconds)
+        timeout: 30000, // Transaction timeout (30 seconds)
+      },
+    );
+  } catch (error) {
+    await clientClerk.users.deleteUser(clerkUser.id);
+    throw error;
+  }
 }
