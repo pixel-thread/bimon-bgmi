@@ -1,15 +1,14 @@
-import { Label } from "@/src/components/ui/label";
 import { Button } from "@/src/components/ui/button";
 import { Switch } from "@/src/components/ui/switch";
 import { ADMIN_PLAYER_ENDPOINTS } from "@/src/lib/endpoints/admin/player";
 import { useSeasonStore } from "@/src/store/season";
 import http from "@/src/utils/http";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CellContext, ColumnDef } from "@tanstack/react-table";
+import { ColumnDef } from "@tanstack/react-table";
 import { useState } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useAuth } from "../context/auth/useAuth";
 
 type PlayerT = {
   id: string;
@@ -18,16 +17,6 @@ type PlayerT = {
   kd: number;
   matches: number;
   category: string;
-};
-
-const DefaultColBTN = ({
-  children,
-}: {
-  children: React.ReactNode;
-  row: CellContext<PlayerT, unknown>;
-}) => {
-  const router = useRouter();
-  return <Button variant={"outline"}>{children}</Button>;
 };
 
 const defaultColumn: ColumnDef<PlayerT>[] = [
@@ -74,6 +63,7 @@ type Props = {
 export function usePlayersColumn({ page = 1 }: Props) {
   const [playerId, setPlayerId] = useState("");
   const { seasonId } = useSeasonStore();
+  const { user, isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
   const { mutate: toggleBanned, isPending } = useMutation({
     mutationFn: () =>
@@ -133,16 +123,22 @@ export function usePlayersColumn({ page = 1 }: Props) {
       cell: ({ row }) => {
         return (
           <div className="flex items-center space-x-2">
-            <Button
-              variant={"outline"}
-              onClick={() => {
-                setPlayerId(row.original.id);
-                deletePlayer();
-              }}
-              disabled={row.original.id === playerId ? isDeletePending : false}
-            >
-              Delete
-            </Button>
+            {isSuperAdmin ? (
+              <Button
+                variant={"outline"}
+                onClick={() => {
+                  setPlayerId(row.original.id);
+                  deletePlayer();
+                }}
+                disabled={
+                  row.original.id === playerId ? isDeletePending : false
+                }
+              >
+                Delete
+              </Button>
+            ) : (
+              "N/A"
+            )}
           </div>
         );
       },
