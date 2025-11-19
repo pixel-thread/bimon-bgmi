@@ -1,0 +1,45 @@
+import { prisma } from "@/src/lib/db/prisma";
+import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
+
+type Props = {
+  data: Prisma.SeasonCreateInput;
+};
+
+export async function createSeason({ data }: Props) {
+  return await prisma.$transaction(async (tx) => {
+    const players = await tx.player.findMany();
+
+    const activeSeason = await tx.season.findFirst({
+      where: { status: "ACTIVE" },
+    });
+
+    if (activeSeason) {
+      await tx.season.update({
+        where: { id: activeSeason.id },
+        data: { status: "INACTIVE" },
+      });
+    }
+
+    const season = await tx.season.create({
+      data: {
+        startDate: new Date(data.startDate),
+        description: data.description,
+        name: data.name,
+        createdBy: data.createdBy,
+      },
+    });
+
+    if (players.length > 0) {
+      for (const player of players) {
+        await tx.playerStats.create({
+          data: {
+            playerId: player.id,
+            seasonId: season.id,
+          },
+        });
+      }
+    }
+
+    return season;
+  });
+}

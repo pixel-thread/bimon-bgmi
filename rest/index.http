@@ -1,0 +1,169 @@
+### 
+
+@matchId = 43dfb5af-72e8-4e90-a04a-96662caa4e24
+@playerId = 64d7fce6-fe72-4814-9619-884b1a3c23c2
+@pollId = 243162cd-7550-4b33-8fce-03cef328c30b
+@seasonId = 27c60b71-a6d8-4607-8be6-a322675a6464
+@teamId = 4e2271d4-2036-4563-be98-ec6f620b00ca
+@tournamentId = d23e1c85-39f4-47c2-a20e-e2c910b87188
+
+
+### Create Poll
+
+POST http://localhost:3000/api/admin/poll HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### get all polls
+
+GET http://localhost:3000/api/poll HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### vote polls
+
+POST http://localhost:3000/api/poll/{{pollId}}/vote HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "endDate": "{{$date}}",
+  "options": [
+    {
+      "name": "Option 1",
+      "vote": "IN"
+    },
+    {
+      "name": "Option 2",
+      "vote": "OUT"
+    },
+    {
+      "name": "Option 3",
+      "vote": "SOLO"
+    }
+  ],
+  "question": "Question 1",
+  "tournamentId": "{{tournamentId}}"
+}
+{
+  "vote": "IN"
+}
+
+
+### 
+
+
+### 
+
+# @name get Teams by tournament id
+
+GET http://localhost:3000/api/tournament/{{tournamentId}}/team HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### 
+
+# @name get team by
+
+GET http://localhost:3000/api/admin/team/{{teamId}} HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### 
+
+# @name update team stats
+
+PUT http://localhost:3000/api/admin/team/{{teamId}}/stats HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "matchId": "{{matchId}}",
+  "players": [
+    {
+      "deaths": 1,
+      "kills": 1,
+      "playerId": "719be458-8ed8-4487-bf62-f2306f94b7a5"
+    },
+    {
+      "deaths": 1,
+      "kills": 1,
+      "playerId": "adbe604e-3825-4a5a-92e1-6015a3db3c45"
+    }
+  ]
+}
+
+
+### 
+
+# @name GET all match
+
+GET http://localhost:3000/api/admin/match HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### 
+
+# @name GET all tournament matches
+
+GET http://localhost:3000/api/admin/tournament/{{tournamentId}}/match HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### 
+
+# @name GET all players
+
+GET http://localhost:3000/api/admin/players HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### 
+
+# @name create match for tournament
+
+POST http://localhost:3000/api/admin/match HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "seasonId": "{{seasonId}}",
+  "tournamentId": "{{tournamentId}}"
+}
+
+
+### 
+
+# @name delete all user
+
+DELETE http://localhost:3000/api/admin/auth/delete-all-user HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### 
+
+# @name declare tournament winner
+
+POST http://localhost:3000/api/admin/tournament/{{tournamentId}}/winner HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}

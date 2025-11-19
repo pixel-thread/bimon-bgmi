@@ -1,0 +1,13 @@
+### 
+
+# @name Link image to tournament
+
+POST http://localhost:3000/api/admin/gallery/tournament-background HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "galleryId": "0c9d5763-d976-4214-a072-e01aa409fb5b",
+  "tournamentId": "f134461a-e1c9-46e0-991e-b7fc099e3ad6"
+}

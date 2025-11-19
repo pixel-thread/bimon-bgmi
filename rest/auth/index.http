@@ -1,0 +1,24 @@
+### 
+
+# @name scratchpad
+
+POST http://localhost:3000/api/auth/signup HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "email": "jyrwaboys3@gmail.com",
+  "password": "123Clashofclan@",
+  "userName": "jyrwaboys3"
+}
+
+
+### 
+
+# @name get user
+
+GET http://localhost:3000/api/auth HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}

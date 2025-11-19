@@ -1,0 +1,422 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/**
+ * --------------------------
+ * ENUMS
+ * ---------------------------
+ */
+
+enum Category {
+  NOOB
+  PRO
+  ULTRA_NOOB
+  ULTRA_PRO
+}
+
+enum SeasonStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum GalleryStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum Vote {
+  IN
+  OUT
+  SOLO
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  PLAYER
+}
+
+enum PlayerCategory {
+  ULTRA_NOOB
+  NOOB
+  PRO
+  ULTRA_PRO
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  DELETED
+}
+
+/**
+ * --------------------------
+ * MODELS
+ * ---------------------------
+ */
+
+model User {
+  id                   String   @id @default(uuid())
+  email                String?  @unique
+  clerkId              String   @unique
+  isEmailLinked        Boolean  @default(false)
+  userName             String   @unique
+  usernameLastChangeAt DateTime @default(now())
+  role                 Role     @default(PLAYER)
+  balance              Int      @default(0)
+  isInternal           Boolean  @default(false)
+  isVerified           Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  playerId  String? @unique
+  ucId      String?
+  uc        UC?
+  player    Player?
+  createdBy String?
+}
+
+model Notification {
+  id String @id @default(uuid())
+}
+
+model Transaction {
+  id String @id @default(uuid())
+}
+
+model Season {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime     @default(now())
+  status      SeasonStatus @default(ACTIVE)
+  createdBy   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  player            Player[]            @relation("PlayerSeason")
+  playerStats       PlayerStats[]
+  tournament        Tournament[]
+  teams             Team[]
+  matches           Match[]
+  teamStats         TeamStats[]
+  teamPlayerStats   TeamPlayerStats[]
+  matchPlayerPlayed MatchPlayerPlayed[]
+
+  @@unique([id, status]) // only one active season
+  @@index([id])
+  @@index([name])
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+model Tournament {
+  id               String    @id @default(uuid())
+  name             String
+  description      String?
+  startDate        DateTime  @default(now())
+  endDate          DateTime?
+  fee              Int?
+  team             Team[]
+  season           Season?   @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  seasonId         String?
+  createdBy        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  status           Status    @default(ACTIVE)
+  isWinnerDeclared Boolean   @default(false)
+
+  tournamentWinner TournamentWinner[]
+  teamStats        TeamStats[]
+  pollVote         Poll[]
+  matches          Match[]
+
+  galleryId         String?
+  gallery           Gallery?            @relation(fields: [galleryId], references: [id], onDelete: SetNull)
+  matchPlayerPlayed MatchPlayerPlayed[]
+
+  @@index([seasonId])
+  @@index([name])
+  @@index([status])
+  @@index([startDate])
+}
+
+model Match {
+  id                String              @id @default(uuid())
+  name              Int                 @default(autoincrement())
+  tournamentId      String
+  tournament        Tournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  seasonId          String?
+  season            Season?             @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  teamStats         TeamStats[]
+  teams             Team[]
+  playerStats       PlayerStats[]
+  players           Player[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  teamPlayerStats   TeamPlayerStats[]
+  matchPlayerPlayed MatchPlayerPlayed[]
+
+  @@index([tournamentId])
+  @@index([seasonId])
+}
+
+model PollOption {
+  id         String   @id @default(uuid())
+  name       String
+  vote       Vote
+  pollVoteId String
+  pollVote   Poll     @relation(fields: [pollVoteId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model PlayerPollVote {
+  id        String   @id @default(uuid())
+  playerId  String
+  vote      Vote
+  createdAt DateTime @default(now())
+  //  Relations
+  pollId    String
+  player    Player   @relation(fields: [playerId], references: [id])
+  poll      Poll     @relation(fields: [pollId], references: [id])
+
+  @@unique([playerId, pollId]) // so a player can only vote once
+}
+
+model Poll {
+  id           String    @id @default(uuid())
+  startDate    DateTime  @default(now())
+  isActive     Boolean   @default(true)
+  days         String    @default("Monday")
+  endDate      DateTime?
+  question     String
+  tournamentId String
+  createdAt    DateTime  @default(now())
+
+  // Relations
+  tournament   Tournament       @relation(fields: [tournamentId], references: [id])
+  options      PollOption[]
+  playersVotes PlayerPollVote[]
+  players      Player[]
+
+  @@unique([tournamentId, id])
+  @@unique([tournamentId])
+}
+
+model MatchPlayerPlayed {
+  id String @id @default(uuid())
+
+  matchId      String
+  match        Match      @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  playerId     String
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  seasonId     String?
+  season       Season?    @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  teamId       String
+  team         Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player       Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model PlayerBanned {
+  id          String    @id @default(uuid())
+  banReason   String?   @default("")
+  bannedAt    DateTime?
+  banDuration Int       @default(0)
+  playerId    String    @unique
+  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([playerId, id])
+}
+
+model Player {
+  id                String              @id @default(uuid())
+  isBanned          Boolean             @default(false)
+  userId            String              @unique
+  teamId            String?
+  matchPlayerPlayed MatchPlayerPlayed[]
+
+  characterImageId String?  @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  pollId           String?
+  seasons          Season[] @relation("PlayerSeason")
+  playerPollVoteId String?
+
+  ucId            String?
+  uc              UC?
+  pollVote        Poll?             @relation(fields: [pollId], references: [id], onDelete: SetNull)
+  team            Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category        PlayerCategory    @default(NOOB)
+  gameScore       GameScore[]
+  characterImage  Gallery?          @relation(fields: [characterImageId], references: [id], onDelete: SetNull)
+  playerPollVote  PlayerPollVote[]
+  playerStats     PlayerStats[]
+  matches         Match[]
+  teamStats       TeamStats[]
+  teamPlayerStats TeamPlayerStats[]
+  playerBannedId  String?
+
+  playerBanned PlayerBanned?
+
+  @@index([userId])
+  @@index([teamId])
+  @@index([pollId])
+  @@index([category])
+}
+
+model PlayerStats {
+  id        String   @id @default(uuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  deaths    Int      @default(0)
+  kills     Int      @default(0)
+  seasonId  String?
+  season    Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teamStats TeamStats[]
+  teams     Team[]
+  matches   Match[]
+
+  @@unique([seasonId, playerId])
+  @@index([seasonId])
+}
+
+model Team {
+  id                String              @id @default(uuid())
+  name              String
+  players           Player[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  teamNumber        Int
+  tournamentId      String?
+  tournament        Tournament?         @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  seasonId          String?
+  season            Season?             @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  matches           Match[]
+  teamStats         TeamStats[]
+  playerStats       PlayerStats[]
+  teamPlayerStats   TeamPlayerStats[]
+  matchPlayerPlayed MatchPlayerPlayed[]
+  tournamentWinner  TournamentWinner[]
+
+  @@index([tournamentId])
+  @@index([seasonId])
+  @@index([name])
+}
+
+model TeamStats {
+  id              String            @id @default(uuid())
+  matchId         String
+  match           Match             @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  seasonId        String?
+  tournamentId    String?
+  tournament      Tournament?       @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  season          Season?           @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  teamId          String
+  team            Team              @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  kills           Int               @default(0)
+  deaths          Int               @default(0)
+  wins            Int               @default(0)
+  position        Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  playersStats    PlayerStats[]
+  players         Player[]
+  teamPlayerStats TeamPlayerStats[]
+
+  @@unique([teamId, matchId])
+  @@index([matchId])
+  @@index([seasonId])
+  @@index([tournamentId])
+  @@index([teamId])
+}
+
+model TeamPlayerStats {
+  id        String   @id @default(uuid())
+  playerId  String
+  teamId    String
+  matchId   String
+  kills     Int      @default(0)
+  deaths    Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  seasonId    String
+  seasons     Season    @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  team        Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  match       Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  teamStatsId String
+  teamStats   TeamStats @relation(fields: [teamStatsId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, teamId, matchId])
+  @@index([playerId])
+  @@index([teamId])
+  @@index([matchId])
+  @@index([teamStatsId])
+}
+
+model Gallery {
+  id             String        @id @default(uuid())
+  imageId        String        @unique
+  name           String
+  path           String
+  fullPath       String
+  publicUrl      String
+  status         GalleryStatus @default(ACTIVE)
+  isCharacterImg Boolean       @default(false)
+
+  playerId String? @unique
+  player   Player?
+
+  tournament Tournament[]
+}
+
+model TournamentWinner {
+  id           String     @id @default(uuid())
+  amount       Int        @default(0)
+  position     Int
+  teamId       String     @unique
+  team         Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  createdAt    DateTime   @default(now())
+
+  @@unique([tournamentId, teamId])
+  @@unique([teamId, tournamentId])
+}
+
+model UC {
+  id        String   @id @default(uuid())
+  balance   Int      @default(0)
+  playerId  String   @unique
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GameScore {
+  highScore    Int
+  lastPlayedAt DateTime
+  playerId     String   @unique
+  player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+}
