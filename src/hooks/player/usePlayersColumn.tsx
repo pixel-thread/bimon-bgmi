@@ -91,6 +91,21 @@ export function usePlayersColumn({ page = 1 }: Props) {
     },
   });
 
+  const { mutate: deletePlayer, isPending: isDeletePending } = useMutation({
+    mutationFn: () =>
+      http.delete(
+        ADMIN_PLAYER_ENDPOINTS.DELETE_PLAYER_BY_ID.replace(":id", playerId),
+      ),
+    onSuccess: (data) => {
+      if (data.success) {
+        setPlayerId("");
+        queryClient.invalidateQueries({ queryKey: ["player", page, seasonId] });
+        toast.success(data.message);
+        return data.data;
+      }
+      toast.error(data.message);
+    },
+  });
   const columns: ColumnDef<PlayerT>[] = [
     {
       accessorKey: "isBanned",
@@ -112,6 +127,26 @@ export function usePlayersColumn({ page = 1 }: Props) {
       },
     },
     ...defaultColumn,
+    {
+      accessorKey: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        return (
+          <div className="flex items-center space-x-2">
+            <Button
+              variant={"outline"}
+              onClick={() => {
+                setPlayerId(row.original.id);
+                deletePlayer();
+              }}
+              disabled={row.original.id === playerId ? isDeletePending : false}
+            >
+              Delete
+            </Button>
+          </div>
+        );
+      },
+    },
   ];
 
   return { columns };

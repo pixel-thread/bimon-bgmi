@@ -1,7 +1,8 @@
+import { deletePlayer } from "@/src/services/player/deletePlayer";
 import { getPlayerById } from "@/src/services/player/getPlayerById";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
-import { SuccessResponse } from "@/src/utils/next-response";
+import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 
 export async function GET(
   req: Request,
