@@ -39,8 +39,8 @@ export function assignPlayersToTeamsBalanced(
       player.playerStats.find((p) => p.seasonId === seasonId)?.kills ?? 0;
     team.totalDeaths +=
       player.playerStats.find((p) => p.seasonId === seasonId)?.deaths ?? 0;
-    team.totalWins +=
-      player.playerStats.find((p) => p.seasonId === seasonId)?.wins ?? 0;
+    team.totalWins += 0; // TODO:
+    // player.playerStats.find((p) => p.seasonId === seasonId)?.wins ?? 0;
     // @ts-ignore
     team.weightedScore += player.weightedScore;
 

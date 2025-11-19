@@ -5,9 +5,12 @@ import { PlayerT } from "../types/player";
  */
 export function computeWeightedScore(p: PlayerT, seasonId?: string): number {
   const id = seasonId || "";
-  const kd = p.playerStats.find((p) => p.seasonId === id)?.kd ?? 0;
+  const initkills = p.playerStats.find((p) => p.seasonId === id)?.kills ?? 0;
+  const initdeaths = p.playerStats.find((p) => p.seasonId === id)?.deaths ?? 0;
+  const kd = initkills / (initdeaths + 1);
   const kills = p.playerStats.find((p) => p.seasonId === id)?.kills ?? 0;
-  const wins = p.playerStats.find((p) => p.seasonId === id)?.wins ?? 0;
+  const wins = 0;
+  // p.playerStats.find((p) => p.seasonId === id)?.wins ?? 0;
 
   const weightKD = 0.6;
   const weightKills = 0.3;

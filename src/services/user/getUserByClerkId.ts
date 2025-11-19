@@ -9,7 +9,7 @@ export async function getUserByClerkId({ id }: Props) {
     where: { clerkId: id },
     include: {
       player: {
-        include: { characterImage: true },
+        include: { characterImage: true, playerBanned: true },
       },
     },
   });

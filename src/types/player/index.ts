@@ -1,7 +1,7 @@
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 
 export type PlayerT = Prisma.PlayerGetPayload<{
-  include: { user: true; playerStats: true };
+  include: { user: true; playerStats: true; playerBanned: true };
 }>;
 export type PlayerWithStatsT = Prisma.PlayerGetPayload<{
   include: { user: true; playerStats: true };

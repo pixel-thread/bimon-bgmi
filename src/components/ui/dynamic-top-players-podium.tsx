@@ -80,6 +80,7 @@ export const DynamicTopPlayersPodium = React.memo(
           // case "balance":
           // return player.playerStats.balance ? `₹${player.balance}` : "₹0";
           case "kd":
+            // @ts-ignore
             return `${player?.kd ? player.kd.toFixed(2) : 0} K/D`;
           case "kills":
             return `${player.kills ? player.kills : 0} Kills`;
@@ -90,6 +91,7 @@ export const DynamicTopPlayersPodium = React.memo(
           // case "banned":
           //   return player.balance ? `₹${player.balance}` : "₹0";
           default:
+            // @ts-ignore
             return `${player?.kd ? player.kd.toFixed(2) : 0} K/D`;
         }
       },

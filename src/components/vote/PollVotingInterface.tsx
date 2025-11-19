@@ -139,7 +139,7 @@ const BanBanner = () => {
   const { user: auth } = useAuth();
   const { data: tournaments } = useTournaments();
   const user = auth?.player;
-
+  const banned = user?.playerBanned;
   return (
     <Card className="border-red-300 bg-red-50/80 shadow-sm shadow-red-200/50">
       <CardContent className="p-4">
@@ -150,10 +150,10 @@ const BanBanner = () => {
               You are currently banned from voting
             </h3>
             <p className="text-sm text-red-700 mb-2">
-              <strong>Reason:</strong> {user?.banReason}
+              <strong>Reason:</strong> {banned?.banReason}
             </p>
             <p className="text-sm text-red-700 mb-2">
-              <strong>Duration:</strong> {user?.banDuration} tournaments
+              <strong>Duration:</strong> {banned?.banDuration} tournaments
             </p>
             <p className="text-sm text-red-700 mb-2">
               <strong>Remaining:</strong>{" "}
@@ -161,8 +161,8 @@ const BanBanner = () => {
                 const banInfo = calculateRemainingBanDuration(
                   {
                     isBanned: user?.isBanned,
-                    banDuration: user?.banDuration,
-                    bannedAt: user?.bannedAt?.toString(),
+                    banDuration: banned?.banDuration,
+                    bannedAt: banned?.bannedAt?.toString(),
                   },
                   tournaments || [],
                 );
@@ -178,10 +178,10 @@ const BanBanner = () => {
                 );
               })()}
             </p>
-            {user?.bannedAt && (
+            {banned?.bannedAt && (
               <p className="text-sm text-red-700">
                 <strong>Banned on:</strong>{" "}
-                {new Date(user?.bannedAt).toLocaleDateString()}
+                {new Date(banned?.bannedAt).toLocaleDateString()}
               </p>
             )}
             <p className="text-xs text-red-600 mt-2 italic">

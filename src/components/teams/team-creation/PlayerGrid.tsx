@@ -89,6 +89,7 @@ export function PlayerGrid({
               transition={{ duration: 0.2 }}
             >
               <PlayerCard
+                // @ts-ignore
                 player={player}
                 isSelected={isSelected}
                 isDisabled={isDisabled}

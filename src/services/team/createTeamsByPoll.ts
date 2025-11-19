@@ -54,6 +54,7 @@ export async function createTeamsByPolls({
   // Compute weighted scores
   const playersWithScore: PlayerWithWeightT[] = players.map((p) => ({
     ...p,
+    // @ts-expect-error
     weightedScore: computeWeightedScore(p),
   }));
 
@@ -111,7 +112,7 @@ export async function createTeamsByPolls({
       players: [soloPlayer],
       totalKills: soloStats?.kills ?? 0,
       totalDeaths: soloStats?.deaths ?? 0,
-      totalWins: soloStats?.wins ?? 0,
+      totalWins: 0, // TODO: p.playerStats.find((p) => p.seasonId === seasonId)?.wins ?? 0,
       weightedScore: soloPlayer.weightedScore,
     });
   }

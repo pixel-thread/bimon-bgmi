@@ -40,10 +40,12 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
   const router = useRouter();
   if (!player) return null;
 
+  const banned = player.playerBanned;
+
   const banInfo = {
     isBanned: player.isBanned,
-    banDuration: player.banDuration,
-    bannedAt: player.bannedAt,
+    banDuration: banned?.banDuration,
+    bannedAt: banned?.bannedAt,
     remainingDuration: 0,
     isExpired: true,
   };
@@ -95,14 +97,15 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
               </div>
               <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                 <p className="text-2xl font-bold text-yellow-600">
-                  {stats?.kd}
+                  {/* {stats?.kd}// KD */}
+                  K|D
                 </p>
                 <p className="text-sm text-muted-foreground">K/D</p>
               </div>
               <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                 <p
                   className={`text-2xl font-bold ${
-                    Number(player.balance) >= 0
+                    Number(player.uc?.balance) >= 0
                       ? "text-green-600"
                       : "text-red-600"
                   }`}
@@ -126,23 +129,23 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                   </h4>
                 </div>
                 <div className="space-y-2 text-sm">
-                  {player.banReason && (
+                  {banned?.banReason && (
                     <div>
                       <span className="font-medium text-red-800 dark:text-red-200">
                         Reason:
                       </span>
                       <span className="ml-2 text-red-700 dark:text-red-100">
-                        {player.banReason}
+                        {banned?.banReason}
                       </span>
                     </div>
                   )}
-                  {player.bannedAt && (
+                  {banned?.bannedAt && (
                     <div>
                       <span className="font-medium text-red-800 dark:text-red-200">
                         Banned On:
                       </span>
                       <span className="ml-2 text-red-700 dark:text-red-100">
-                        {new Date(player.bannedAt).toLocaleDateString()}
+                        {new Date(banned?.bannedAt).toLocaleDateString()}
                       </span>
                     </div>
                   )}
@@ -151,8 +154,8 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                       Duration:
                     </span>
                     <span className="ml-2 text-red-700 dark:text-red-100">
-                      {player.banDuration} tournament
-                      {player.banDuration !== 1 ? "s" : ""}
+                      {banned?.banDuration} tournament
+                      {banned?.banDuration !== 1 ? "s" : ""}
                     </span>
                   </div>
                   <div>

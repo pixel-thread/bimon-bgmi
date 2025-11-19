@@ -4,7 +4,7 @@ import http from "@/src/utils/http";
 import { useQuery } from "@tanstack/react-query";
 
 type PlayerT = Prisma.PlayerGetPayload<{
-  include: { user: true; playerStats: true; uc: true };
+  include: { user: true; playerStats: true; uc: true; playerBanned: true };
 }>;
 
 type UsePlayerT = {
