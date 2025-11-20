@@ -33,6 +33,7 @@ export async function POST(req: Request) {
       data: {
         ...body,
         createdBy: superUser?.id,
+        role: superUser.role === "SUPER_ADMIN" ? "PLAYER" : "USER",
       },
     });
 
