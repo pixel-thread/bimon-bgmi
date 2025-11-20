@@ -69,7 +69,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
         // If the user does not have the required role(s)
         if (!hasRequiredRole) {
           // Redirect the user to a fallback page specified in the route's configuration or to the homepage
-          router.replace(`/forbidden?redirect=${encodeURIComponent}`);
+          router.replace(`/forbidden?redirect=${encodeURIComponent(pathName)}`);
           return; // Exit the logic as redirection is in progress
         }
       }
