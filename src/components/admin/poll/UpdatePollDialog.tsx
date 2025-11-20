@@ -66,7 +66,7 @@ const pollDays = [
   "Thursday-Friday",
   "Friday",
   "Friday-Saturday",
-  "Sat",
+  "Saturday",
 ];
 
 const VoteOptions = ["IN", "OUT", "SOLO"];
