@@ -68,7 +68,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
       ? true
       : false;
 
-    const showViewAllVotes = !!isUserVoted;
+    const showViewAllVotes = true;
 
     const userVotedOption = playersVotes?.find(
       (vote) => vote.playerId === playerId,
