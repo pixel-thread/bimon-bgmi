@@ -42,6 +42,7 @@ enum Role {
   SUPER_ADMIN
   ADMIN
   PLAYER
+  USER
 }
 
 enum PlayerCategory {
@@ -70,7 +71,7 @@ model User {
   isEmailLinked        Boolean  @default(false)
   userName             String   @unique
   usernameLastChangeAt DateTime @default(now())
-  role                 Role     @default(PLAYER)
+  role                 Role     @default(USER)
   balance              Int      @default(0)
   isInternal           Boolean  @default(false)
   isVerified           Boolean  @default(false)
