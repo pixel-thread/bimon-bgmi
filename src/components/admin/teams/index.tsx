@@ -13,7 +13,6 @@ import { CreateTeamDialog } from "./create-team";
 import React from "react";
 import { useTournamentStore } from "@/src/store/tournament";
 import { TeamStatsSheet } from "./TeamStatsSheet";
-import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { useTeams } from "@/src/hooks/team/useTeams";
 import { useTournament } from "@/src/hooks/tournament/useTournament";
 import { IconReload } from "@tabler/icons-react";
@@ -28,7 +27,6 @@ const headers = [
 export const AdminTeamsManagement: React.FC = () => {
   const [showStandingsModal, setShowStandingsModal] = useState(false);
   const { tournamentId } = useTournamentStore();
-  const { matchId } = useMatchStore();
   const { data: tournament } = useTournament({ id: tournamentId });
   const { columns } = useTeamsColumns();
   const [open, setOpen] = React.useState(false);
@@ -44,7 +42,7 @@ export const AdminTeamsManagement: React.FC = () => {
   return (
     <>
       <Ternary
-        condition={!tournamentId || !matchId}
+        condition={!tournamentId}
         trueComponent={
           <Ternary
             condition={isFetching}
@@ -113,7 +111,9 @@ export const AdminTeamsManagement: React.FC = () => {
                 </Button>
               </div>
             </div>
-            {matchId && teams && <DataTable data={teams} columns={columns} />}
+            {teams && teams?.length > 0 && (
+              <DataTable data={teams || []} columns={columns} />
+            )}
             <CreateTeamDialog onOpenChange={() => setOpen(!open)} open={open} />
             <AddPlayerToTeamDialog
               teamId={updateId}
