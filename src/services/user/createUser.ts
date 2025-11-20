@@ -58,6 +58,7 @@ export async function createUser({ data }: Props) {
         const user = await tx.user.create({
           data: {
             userName: data.userName,
+            role: data.role,
             clerkId: clerkUser.id,
             createdBy: data.createdBy,
             email: data.email,
