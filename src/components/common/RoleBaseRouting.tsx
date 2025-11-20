@@ -12,11 +12,7 @@ type PropsT = {
   children: React.ReactNode;
 };
 
-const pageAccessOnlyIfUnAuthenticated: string[] = [
-  "/auth",
-  "/auth/sign-up",
-  "/forbidden",
-];
+const pageAccessOnlyIfUnAuthenticated: string[] = ["/auth", "/auth/sign-up"];
 
 export const RoleBaseRoute = ({ children }: PropsT) => {
   const searchParams = useSearchParams();
@@ -25,7 +21,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   const pathName = usePathname();
   const [isLoading, setIsLoading] = useState(false);
   const { user, isAuthLoading, isSignedIn } = useAuth();
-  const role = user?.role || "PLAYER";
+  const role = user?.role || "USER";
   const userRoles = useMemo(() => role, [role]); // Get the user's roles
   const [cookies] = useCookies([AUTH_TOKEN_KEY]);
   const isAuthenticated = isSignedIn && !!cookies.AUTH_TOKEN_KEY;
@@ -66,14 +62,14 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
       // Step 3: Handle role-based access control
       if (isAuthenticated) {
         // Check if the user has at least one of the required roles for the current route
-        const hasRequiredRole = currentRoute.role.some((role) =>
-          userRoles.includes(role),
+        const hasRequiredRole = currentRoute.role.some(
+          (role) => role === userRoles,
         );
 
         // If the user does not have the required role(s)
         if (!hasRequiredRole) {
           // Redirect the user to a fallback page specified in the route's configuration or to the homepage
-          router.replace(`/forbidden`);
+          router.replace(`/forbidden?redirect=${encodeURIComponent}`);
           return; // Exit the logic as redirection is in progress
         }
       }

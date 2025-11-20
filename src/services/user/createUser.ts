@@ -27,8 +27,6 @@ export async function createUserIfNotExistInDB({
       userName: username,
       clerkId: clerkId,
       playerId: undefined,
-      role:
-        role || process.env.NODE_ENV === "development" ? "SUPER_ADMIN" : "USER",
       player: {
         create: {
           isBanned: false,
