@@ -52,7 +52,9 @@ export async function GET(req: NextRequest) {
       page,
       where,
     });
+
     let data;
+
     if (seasonId !== "all") {
       data = players.map((player) => {
         const playerStats = player.playerStats.filter(
@@ -95,6 +97,7 @@ export async function GET(req: NextRequest) {
         };
       });
     }
+
     return SuccessResponse({
       data: data,
       message: "Players fetched successfully",

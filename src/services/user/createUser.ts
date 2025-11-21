@@ -20,7 +20,6 @@ type ClerkUser = {
 export async function createUserIfNotExistInDB({
   clerkId,
   username,
-  role,
 }: ClerkUser) {
   return await prisma.user.create({
     data: {

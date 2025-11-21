@@ -3,7 +3,10 @@ import { UnauthorizedError } from "../errors/unAuthError";
 import { verifyToken } from "@clerk/backend";
 import { getUserByClerkId } from "../../services/user/getUserByClerkId";
 import { clientClerk } from "@/src/lib/clerk/client";
-import { createUserIfNotExistInDB } from "@/src/services/user/createUser";
+import {
+  createUser,
+  createUserIfNotExistInDB,
+} from "@/src/services/user/createUser";
 
 export async function tokenMiddleware(req: NextRequest | Request) {
   const authHeader = req.headers.get("authorization");
@@ -30,9 +33,13 @@ export async function tokenMiddleware(req: NextRequest | Request) {
   const user = await getUserByClerkId({ id: claims.sub });
 
   if (!user) {
-    const newUser = await createUserIfNotExistInDB({
-      clerkId: claims.sub,
-      username: clerkUser?.username || Math.random().toString(36).slice(2),
+    const newUser = await createUser({
+      data: {
+        password: "123Abc_@",
+        userName: clerkUser.username || "",
+        email: clerkUser.primaryEmailAddress?.emailAddress || "",
+        createdBy: "Self",
+      },
     });
 
     if (!newUser) {
