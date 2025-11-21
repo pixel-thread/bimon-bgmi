@@ -2,10 +2,9 @@
 import { Button, buttonVariants } from "@/src/components/ui/button";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { cn } from "@/src/lib/utils";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
 
 export default function page() {
   const { user } = useAuth();

@@ -30,7 +30,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   useEffect(() => {
     setIsLoading(true);
     if (isAuthLoading) return;
-    const timer = setTimeout(() => setIsLoading(false), 1000); // delay in ms
+    const timer = setTimeout(() => setIsLoading(false), 100); // delay in ms
     return () => clearTimeout(timer); // Cleanup the timer
   }, [isAuthLoading, pathName]);
 
@@ -74,7 +74,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
         }
       }
     }
-  }, [pathName, isAuthenticated, userRoles, router, isAuthLoading]);
+  }, [isAuthenticated, userRoles]);
 
   // Prevent authenticated users from accessing unauthenticated-only pages
   useEffect(() => {
@@ -85,7 +85,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   }, [isAuthenticated, pathName, redirectTo, router, isAuthLoading, isLoading]);
 
   // Display preloader if authentication or loading is in progress
-  if (isAuthLoading || isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen absolute z-50 top-0 left-0 right-0 bottom-0 flex items-center justify-center">
         <LoaderFour text="PUBGMI TOURNAMENT" />

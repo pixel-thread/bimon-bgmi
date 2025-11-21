@@ -1,8 +1,8 @@
-export type Role = "SUPER_ADMIN" | "ADMIN" | "PLAYER";
+import { $Enums } from "../lib/db/prisma/generated/prisma";
 
 export type RoleRoute = {
   url: string;
-  role: Role[];
+  role: $Enums.Role[];
   redirect?: string;
   needAuth?: boolean;
 };
