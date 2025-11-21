@@ -28,7 +28,7 @@ export const Wrapper = ({ children }: Props) => {
               <RoleBaseRoute>
                 <ThemeProvider attribute="class" defaultTheme="light">
                   <Layout>{children}</Layout>
-                  <InstallPrompt />
+                  {/* <InstallPrompt /> */}
                   <Toaster richColors position="top-right" />
                 </ThemeProvider>
               </RoleBaseRoute>

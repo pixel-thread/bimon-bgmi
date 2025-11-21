@@ -6,6 +6,9 @@
 
 @plugin "tailwindcss-animate";
 
+div {
+  border: 1px solid red;
+}
 @custom-variant dark (&:is(.dark *));
 
 /* Normal view styles */
@@ -142,19 +145,44 @@ link[rel="mask-icon"] {
 @layer base {
   body {
     @apply bg-background text-foreground;
-    font-family: "Rajdhani", system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu,
-      Cantarell, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji",
-      "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+    font-family:
+      "Rajdhani",
+      system-ui,
+      -apple-system,
+      Segoe UI,
+      Roboto,
+      Noto Sans,
+      Ubuntu,
+      Cantarell,
+      Helvetica Neue,
+      Arial,
+      "Apple Color Emoji",
+      "Segoe UI Emoji",
+      "Segoe UI Symbol",
+      "Noto Color Emoji",
+      sans-serif;
   }
 
   .font-gaming {
-    font-family: "Rajdhani", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    font-family:
+      "Rajdhani",
+      system-ui,
+      -apple-system,
+      Segoe UI,
+      Roboto,
+      sans-serif;
     font-weight: 600;
     letter-spacing: 0.025em;
   }
 
   .font-military {
-    font-family: "Rajdhani", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    font-family:
+      "Rajdhani",
+      system-ui,
+      -apple-system,
+      Segoe UI,
+      Roboto,
+      sans-serif;
     font-weight: 700;
     letter-spacing: 0.05em;
   }
@@ -168,12 +196,14 @@ link[rel="mask-icon"] {
   }
 
   .retro-shadow {
-    text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.8),
-                 4px 4px 0px rgba(0, 0, 0, 0.3);
+    text-shadow:
+      2px 2px 0px rgba(0, 0, 0, 0.8),
+      4px 4px 0px rgba(0, 0, 0, 0.3);
   }
 
   .pixel-border {
-    border-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="0" y="0" width="100" height="100" fill="none" stroke="%23000" stroke-width="2" stroke-dasharray="4,4"/></svg>') 2;
+    border-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="0" y="0" width="100" height="100" fill="none" stroke="%23000" stroke-width="2" stroke-dasharray="4,4"/></svg>')
+      2;
   }
 
   /* Removed marquee animations - keeping text styling only */

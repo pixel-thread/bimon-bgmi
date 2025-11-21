@@ -65,7 +65,7 @@ export default function RootLayout({
       <body className="bg-background text-foreground">
         <Wrapper>
           {children}
-          {process.env.NODE_ENV === "development" && <GridGuide />}
+          {/* {process.env.NODE_ENV === "development" && <GridGuide />} */}
         </Wrapper>
       </body>
     </html>

@@ -32,6 +32,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/src/components/ui/sidebar";
+import { SeasonSelector } from "../SeasonSelector";
+import { TournamentSelector } from "../teamManagementImports";
+import MatchSelector from "../match/MatchSelector";
 
 const data = {
   user: {
@@ -185,6 +188,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        <div className="flex flex-col gap-y-2 px-4">
+          <SeasonSelector className="w-full" />
+          <TournamentSelector className="w-full" />
+          <MatchSelector className="w-full" />
+        </div>
         <NavMain items={data.navMain} />
         <NavDocuments items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />

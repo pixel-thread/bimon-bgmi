@@ -5,9 +5,6 @@ import { SidebarTrigger } from "@/src/components/ui/sidebar";
 import { useTheme } from "next-themes";
 import { Ternary } from "./common/Ternary";
 import { MoonIcon, SunIcon } from "lucide-react";
-import { SeasonSelector } from "./SeasonSelector";
-import TournamentSelector from "./tournaments/TournamentSelector";
-import MatchSelector from "./match/MatchSelector";
 
 export function SiteHeader() {
   const { theme, setTheme } = useTheme();
@@ -27,11 +24,6 @@ export function SiteHeader() {
             orientation="vertical"
             className="mx-2 data-[orientation=vertical]:h-4"
           />
-        </div>
-        <div className="flex items-center gap-2">
-          <SeasonSelector />
-          <TournamentSelector />
-          <MatchSelector />
         </div>
         <div className="flex w-full justify-end items-center">
           <div>

@@ -113,7 +113,10 @@ export function TeamStatsSheet({ teamId, open }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={onVlaueChagne}>
-      <SheetContent side="right" className="min-w-xl overflow-y-scroll">
+      <SheetContent
+        side="right"
+        className="w-full max-w-2xl overflow-y-scroll p-2"
+      >
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
