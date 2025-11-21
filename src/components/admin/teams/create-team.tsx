@@ -64,7 +64,7 @@ export const CreateTeamDialog = ({
 
   const { mutate: createTeam, isPending } = useMutation({
     mutationFn: () =>
-      http.post(
+      http.post<{ id: string }>(
         ADMIN_TEAM_ENDPOINTS.POST_CREATE_TEAM_BY_TOURNAMENT_ID,
         payload,
       ),
