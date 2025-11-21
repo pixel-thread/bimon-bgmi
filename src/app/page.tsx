@@ -10,7 +10,8 @@ import { Button } from "../components/ui/button";
 export default function HomePage() {
   const { user, isSignedIn: isAuthorized } = useAuth();
   const username = user?.userName;
-
+  const isSuperAdmin = user?.role === "SUPER_ADMIN";
+  const isAdmin = user?.role === "ADMIN";
   return (
     <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <div className="container h-full mx-auto px-4 py-16">
@@ -120,9 +121,7 @@ export default function HomePage() {
                   <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-6">
                     <div className="space-y-3">
                       <Ternary
-                        condition={
-                          user?.role === "SUPER_ADMIN" || user?.role === "ADMIN"
-                        }
+                        condition={isSuperAdmin}
                         trueComponent={
                           <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-6">
                             <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">
@@ -138,10 +137,7 @@ export default function HomePage() {
                         }
                         falseComponent={
                           <Ternary
-                            condition={
-                              user?.role === "ADMIN" ||
-                              user?.role === "SUPER_ADMIN"
-                            }
+                            condition={isAdmin}
                             trueComponent={
                               <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-6">
                                 <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">

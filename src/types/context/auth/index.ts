@@ -7,7 +7,7 @@ export type UserT = Prisma.UserGetPayload<{
 }> | null;
 
 export interface AuthContextI {
-  user: UserT;
+  user: UserT | null | undefined;
   isAuthLoading: boolean;
   isSignedIn: boolean;
   isSuperAdmin: boolean;
