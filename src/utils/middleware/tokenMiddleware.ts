@@ -52,7 +52,7 @@ export async function tokenMiddleware(req: NextRequest | Request) {
   const reqMethod = req.method;
 
   if (user.role === "USER" && reqMethod !== "GET") {
-    throw new Error("Mut leh ye nm n access phoi");
+    throw new Error("Long ki ba jai jai se: Permission Denied");
   }
 
   return user;
