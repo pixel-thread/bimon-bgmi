@@ -22,7 +22,7 @@ export function usePlayers({ page }: UsePlayersProps = { page: "1" }) {
   const { user } = useAuth();
   const { seasonId } = useSeasonStore();
   const url =
-    user?.role === "SUPER_ADMIN"
+    user?.role === "SUPER_ADMIN" || user?.role === "ADMIN"
       ? `/admin/players?page=${page}&season=${seasonId}`
       : `/players?page=${page}&season=${seasonId}`;
 

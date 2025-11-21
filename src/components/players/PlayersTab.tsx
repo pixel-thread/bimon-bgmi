@@ -27,10 +27,9 @@ export function PlayersTab() {
   const ucId = search.get("uc") || "";
   const playerId = search.get("player") || "";
   const { seasonId, setSeasonId } = useSeasonStore();
-  const { isLoading } = usePlayerData(seasonId);
   const { user } = useAuth();
   const role = user?.role;
-  const { data: players, meta } = usePlayers({ page });
+  const { data: players, meta, isFetching: isLoading } = usePlayers({ page });
   // States
   const [isCreatePlayerDialogOpen, setIsCreatePlayerDialogOpen] =
     useState(false);
