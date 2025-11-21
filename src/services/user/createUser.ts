@@ -12,32 +12,61 @@ type Props = {
 };
 
 type ClerkUser = {
-  clerkId: string;
-  username: string;
-  role?: string;
+  data: Omit<Prisma.UserCreateInput, "clerkId"> & {
+    password: string;
+    email: string;
+    createdBy: string;
+    role?: string;
+    clerkId: string;
+  };
 };
 
-export async function createUserIfNotExistInDB({
-  clerkId,
-  username,
-}: ClerkUser) {
-  return await prisma.user.create({
-    data: {
-      userName: username,
-      clerkId: clerkId,
-      playerId: undefined,
-      player: {
-        create: {
-          isBanned: false,
-          category: "NOOB",
-          characterImage: undefined,
-        },
+// Only Create user in our db if it doesn't exist
+export async function createUserIfNotExistInDB({ data }: ClerkUser) {
+  const activeSeason = await getActiveSeason();
+
+  try {
+    return await prisma.$transaction(
+      async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            userName: data.userName,
+            clerkId: data.clerkId,
+            createdBy: data.createdBy,
+            email: data.email,
+            player: {
+              create: { seasons: { connect: { id: activeSeason?.id || "" } } },
+            },
+          },
+          include: { player: true },
+        });
+
+        await tx.uC.create({
+          data: {
+            user: { connect: { id: user.id } },
+            player: { connect: { id: user?.player?.id || "" } },
+          },
+        });
+
+        await tx.playerStats.create({
+          data: {
+            season: { connect: { id: activeSeason?.id || "" } },
+            player: { connect: { id: user?.player?.id || "" } },
+          },
+        });
+        return user;
       },
-    },
-    include: { player: true },
-  });
+      {
+        maxWait: 10000, // Max wait to connect to Prisma (10 seconds)
+        timeout: 30000, // Transaction timeout (30 seconds)
+      },
+    );
+  } catch (error) {
+    throw error;
+  }
 }
 
+// Full user creations
 export async function createUser({ data }: Props) {
   const clerkUser = await clientClerk.users.createUser({
     password: data.password,

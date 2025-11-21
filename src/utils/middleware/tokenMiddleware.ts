@@ -33,12 +33,13 @@ export async function tokenMiddleware(req: NextRequest | Request) {
   const user = await getUserByClerkId({ id: claims.sub });
 
   if (!user) {
-    const newUser = await createUser({
+    const newUser = await createUserIfNotExistInDB({
       data: {
         password: "123Abc_@",
-        userName: clerkUser.username || "",
         email: clerkUser.primaryEmailAddress?.emailAddress || "",
-        createdBy: "Self",
+        userName: clerkUser.username || "",
+        createdBy: clerkUser.id,
+        clerkId: clerkUser.id,
       },
     });
 
