@@ -1,6 +1,15 @@
 "use client";
 
 import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/src/components/ui/command";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -25,7 +34,6 @@ import { toast } from "sonner";
 import { useTournamentStore } from "@/src/store/tournament";
 import { useRouter } from "next/navigation";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
-import { ScrollArea } from "../../ui/scroll-area";
 
 type AddPlayerToTeamDialogProps = {
   open?: boolean;
@@ -37,118 +45,162 @@ export const CreateTeamDialog = ({
   onOpenChange,
 }: AddPlayerToTeamDialogProps) => {
   const { tournamentId } = useTournamentStore();
-  const router = useRouter();
   const { matchId } = useMatchStore();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const [playersList, setPlayersList] = React.useState<string[]>([]);
+  const [searchDialogOpen, setSearchDialogOpen] = React.useState(false);
 
-  const { data: players, isFetching: isFetchingPlayers } = usePlayers();
+  const { data: players, isFetching: isFetchingPlayers } = usePlayers({
+    page: "all",
+  });
 
   const payload = {
-    tournamentId: tournamentId,
-    matchId: matchId,
-    players: playersList.map((player) => {
-      return {
-        playerId: player,
-      };
-    }),
+    tournamentId,
+    matchId,
+    players: playersList.map((id) => ({ playerId: id })),
   };
 
-  const { mutate: addPlayer, isPending } = useMutation({
+  const { mutate: createTeam, isPending } = useMutation({
     mutationFn: () =>
-      http.post<{ id: string }>(
+      http.post(
         ADMIN_TEAM_ENDPOINTS.POST_CREATE_TEAM_BY_TOURNAMENT_ID,
         payload,
       ),
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success(data.message);
+    onSuccess: (res) => {
+      if (res.success) {
+        toast.success(res.message);
         queryClient.invalidateQueries({
           queryKey: ["team", tournamentId, matchId],
         });
-
-        router.push(`?update=${data?.data?.id}`);
+        router.push(`?update=${res?.data?.id}`);
         onOpenChange();
-        return data;
-      }
-      toast.error(data.message);
-      return data;
+      } else toast.error(res.message);
     },
   });
 
-  // Pre-fill fields with existing players once the team data loads
+  /** Insert selected player from dialog */
+  const handleInsertPlayer = (playerId: string) => {
+    if (!playersList.includes(playerId)) {
+      setPlayersList((prev) => [...prev, playerId]);
+    }
+    setSearchDialogOpen(false);
+  };
+
+  /** Change player in select field */
   const handlePlayerChange = (index: number, value: string) => {
-    const newList = [...playersList];
-    newList[index] = value;
-    setPlayersList(newList);
-    addPlayer();
+    const updated = [...playersList];
+    updated[index] = value;
+    setPlayersList(updated);
   };
 
-  const handleRemovePlayer = (playerId: string) => {
-    const newList = playersList.filter((id) => id !== playerId);
-    setPlayersList(newList);
-  };
-
-  const handleAddField = () => {
-    setPlayersList((prev) => [...prev, ""]);
+  const handleRemovePlayer = (id: string) => {
+    setPlayersList((list) => list.filter((playerId) => playerId !== id));
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[400px] w-full">
+      <DialogContent className="max-w-[420px] w-full">
         <DialogHeader>
           <DialogTitle>Create Team</DialogTitle>
-          <DialogDescription>
-            Existing players are preloaded. Use the plus icon to add new ones.
-          </DialogDescription>
+          <DialogDescription>Add players to form a new team.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col space-y-3">
+        {/* Search Player Dialog */}
+        <SearchPlayer
+          open={searchDialogOpen}
+          onOpenChange={setSearchDialogOpen}
+          onSelectPlayer={handleInsertPlayer}
+        />
+
+        <div className="flex flex-col space-y-4 mt-3">
           {playersList.map((playerId, index) => (
-            <div key={index}>
-              <p className="text-sm font-medium mb-1">Player {index + 1}</p>
-              <Select
-                onValueChange={(value) => handlePlayerChange(index, value)}
-                value={playerId}
-                disabled={isFetchingPlayers || isPending}
-              >
-                <div className="flex items-center space-x-2">
-                  <SelectTrigger className="w-[280px]">
+            <div key={index} className="space-y-1">
+              <p className="text-sm font-medium">Player {index + 1}</p>
+
+              <div className="flex items-center gap-2">
+                <Select
+                  value={playerId}
+                  onValueChange={(value) => handlePlayerChange(index, value)}
+                  disabled={isFetchingPlayers || isPending}
+                >
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select player" />
                   </SelectTrigger>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size={"icon-lg"}
-                    onClick={() => handleRemovePlayer(playerId)}
-                  >
-                    <XIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-                <SelectContent className="max-h-80 overflow-y-auto">
-                  <ScrollArea>
-                    {players?.map((player) => (
-                      <SelectItem key={player.id} value={player.id}>
-                        {player.userName}
+                  <SelectContent>
+                    {players?.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.userName}
                       </SelectItem>
                     ))}
-                  </ScrollArea>
-                </SelectContent>
-              </Select>
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  onClick={() => handleRemovePlayer(playerId)}
+                >
+                  <XIcon className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           ))}
 
           <Button
             type="button"
-            onClick={handleAddField}
             variant="outline"
-            className="w-fit"
+            onClick={() => setSearchDialogOpen(true)}
+            disabled={isPending}
+            className="self-start"
           >
-            <PlusIcon className="mr-2 h-4 w-4" /> Add Player Field
+            <PlusIcon className="mr-2 w-4 h-4" /> Add Player
+          </Button>
+
+          <Button
+            onClick={() => createTeam()}
+            disabled={playersList.length === 0 || isPending}
+            className="w-full"
+          >
+            {isPending ? "Creating..." : "Create Team"}
           </Button>
         </div>
       </DialogContent>
     </Dialog>
+  );
+};
+
+export const SearchPlayer = ({
+  open,
+  onOpenChange,
+  onSelectPlayer,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSelectPlayer: (playerId: string) => void;
+}) => {
+  const { data: players } = usePlayers({ page: "all" });
+  return (
+    <CommandDialog open={open} onOpenChange={onOpenChange}>
+      <Command className="rounded-lg border shadow-md md:min-w-[450px]">
+        <CommandInput placeholder="Search player..." />
+        <CommandList>
+          <CommandEmpty>No players found.</CommandEmpty>
+
+          <CommandGroup>
+            {players?.map((player) => (
+              <CommandItem
+                key={player.id}
+                value={player.id}
+                onSelect={() => onSelectPlayer(player.id)}
+              >
+                {player.userName}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    </CommandDialog>
   );
 };

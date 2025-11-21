@@ -9,19 +9,36 @@ type Props = {
 };
 export async function getAllPlayers({ where, page = "1" }: Props) {
   const { take, skip } = getPagination({ page });
-  return await prisma.$transaction([
-    prisma.player.findMany({
-      where,
-      include: {
-        playerStats: { include: { matches: true } },
-        user: true,
-        matches: true,
-        matchPlayerPlayed: true,
-      },
-      take,
-      skip,
-    }),
 
-    prisma.player.count({ where }),
-  ]);
+  if (page === "all") {
+    return await prisma.$transaction([
+      prisma.player.findMany({
+        where,
+        include: {
+          playerStats: { include: { matches: true } },
+          user: true,
+          matches: true,
+          matchPlayerPlayed: true,
+        },
+      }),
+
+      prisma.player.count({ where }),
+    ]);
+  } else {
+    return await prisma.$transaction([
+      prisma.player.findMany({
+        where,
+        include: {
+          playerStats: { include: { matches: true } },
+          user: true,
+          matches: true,
+          matchPlayerPlayed: true,
+        },
+        take,
+        skip,
+      }),
+
+      prisma.player.count({ where }),
+    ]);
+  }
 }

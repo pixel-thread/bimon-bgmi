@@ -2,7 +2,6 @@ import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { getAllPlayers } from "@/src/services/player/getAllPlayers";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
-import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { SuccessResponse } from "@/src/utils/next-response";
 import { getMeta } from "@/src/utils/pagination/getMeta";
 import { NextRequest } from "next/server";
