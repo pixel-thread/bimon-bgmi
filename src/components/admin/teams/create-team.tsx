@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { useTournamentStore } from "@/src/store/tournament";
 import { useRouter } from "next/navigation";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
+import { ScrollArea } from "../../ui/scroll-area";
 
 type AddPlayerToTeamDialogProps = {
   open?: boolean;
@@ -125,12 +126,14 @@ export const CreateTeamDialog = ({
                     <XIcon className="h-4 w-4" />
                   </Button>
                 </div>
-                <SelectContent>
-                  {players?.map((player) => (
-                    <SelectItem key={player.id} value={player.id}>
-                      {player.userName}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-80 overflow-y-auto">
+                  <ScrollArea>
+                    {players?.map((player) => (
+                      <SelectItem key={player.id} value={player.id}>
+                        {player.userName}
+                      </SelectItem>
+                    ))}
+                  </ScrollArea>
                 </SelectContent>
               </Select>
             </div>
