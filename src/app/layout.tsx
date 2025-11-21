@@ -1,6 +1,7 @@
 import "./globals.css";
 import { HtmlHead } from "@/src/components/common/html/head";
 import { Wrapper } from "../components/provider/wrapper";
+import { GridGuide } from "../components/common/GridGuide";
 
 export const metadata = {
   title: "PUBGMI Tournament Management System",
@@ -62,7 +63,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <HtmlHead />
       <body className="bg-background text-foreground">
-        <Wrapper>{children}</Wrapper>
+        <Wrapper>
+          {children}
+          {process.env.NODE_ENV === "development" && <GridGuide />}
+        </Wrapper>
       </body>
     </html>
   );

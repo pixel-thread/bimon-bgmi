@@ -3,6 +3,7 @@ import { AUTH_TOKEN_KEY } from "@/src/lib/constant/jwt-key";
 import { AuthContext } from "@/src/lib/context/auth";
 import { UserT } from "@/src/types/context/auth";
 import http from "@/src/utils/http";
+import { logger } from "@/src/utils/logger";
 import { useAuth } from "@clerk/clerk-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
@@ -50,8 +51,8 @@ export const AuthProvider = ({ children }: Props) => {
 
   // get user when signed in
   useEffect(() => {
-    if (isSignedIn && user === null && isFetching === false) {
-      getUser();
+    getUser();
+    if (isSignedIn && user === null) {
     }
   }, [isSignedIn, user]);
 

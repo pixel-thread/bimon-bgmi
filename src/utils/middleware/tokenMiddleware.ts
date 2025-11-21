@@ -3,17 +3,15 @@ import { UnauthorizedError } from "../errors/unAuthError";
 import { verifyToken } from "@clerk/backend";
 import { getUserByClerkId } from "../../services/user/getUserByClerkId";
 import { clientClerk } from "@/src/lib/clerk/client";
-import {
-  createUser,
-  createUserIfNotExistInDB,
-} from "@/src/services/user/createUser";
+import { createUserIfNotExistInDB } from "@/src/services/user/createUser";
+import { updateUser } from "@/src/services/user/updateUser";
 
 export async function tokenMiddleware(req: NextRequest | Request) {
   const authHeader = req.headers.get("authorization");
   const token = authHeader?.split(" ")[1];
 
   if (!token) {
-    throw new UnauthorizedError("Unauthorized");
+    throw new UnauthorizedError("Token khlm sent");
   }
   // Parse the Clerk session JWT and get claims
   const claims = await verifyToken(token, {
@@ -30,7 +28,7 @@ export async function tokenMiddleware(req: NextRequest | Request) {
     throw new UnauthorizedError("Unauthorized");
   }
   // Try to find user in your backend
-  const user = await getUserByClerkId({ id: claims.sub });
+  let user = await getUserByClerkId({ id: claims.sub });
 
   if (!user) {
     const newUser = await createUserIfNotExistInDB({
@@ -55,5 +53,19 @@ export async function tokenMiddleware(req: NextRequest | Request) {
     throw new Error("Long ki ba jai jai se: Permission Denied");
   }
 
+  if (clerkUser.username !== user.userName) {
+    user = await updateUser({
+      where: { id: user.id },
+      data: {
+        userName:
+          clerkUser.username ||
+          clerkUser.firstName ||
+          clerkUser.primaryEmailAddress?.emailAddress.split("@")[0] ||
+          "",
+        usernameLastChangeAt: new Date(),
+        email: clerkUser.primaryEmailAddress?.emailAddress || "",
+      },
+    });
+  }
   return user;
 }

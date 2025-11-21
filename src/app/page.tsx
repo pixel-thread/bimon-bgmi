@@ -113,7 +113,6 @@ export default function HomePage() {
                   <p className="text-slate-600 dark:text-slate-400">
                     {user?.email}
                   </p>
-                  <div className="mt-2"></div>
                 </div>
 
                 <div className="grid gap-6">
@@ -121,7 +120,9 @@ export default function HomePage() {
                   <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-6">
                     <div className="space-y-3">
                       <Ternary
-                        condition={user?.role === "SUPER_ADMIN"}
+                        condition={
+                          user?.role === "SUPER_ADMIN" || user?.role === "ADMIN"
+                        }
                         trueComponent={
                           <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-6">
                             <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">

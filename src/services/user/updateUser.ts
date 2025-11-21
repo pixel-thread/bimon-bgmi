@@ -6,5 +6,13 @@ type Props = {
   data: Prisma.UserUpdateInput;
 };
 export async function updateUser({ where, data }: Props) {
-  return await prisma.user.update({ where, data });
+  return await prisma.user.update({
+    where,
+    data,
+    include: {
+      player: {
+        include: { characterImage: true, playerBanned: true },
+      },
+    },
+  });
 }

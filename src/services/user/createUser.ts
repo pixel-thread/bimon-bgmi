@@ -23,11 +23,20 @@ type ClerkUser = {
 
 // Only Create user in our db if it doesn't exist
 export async function createUserIfNotExistInDB({ data }: ClerkUser) {
-  const activeSeason = await getActiveSeason();
-
+  let activeSeason = await getActiveSeason();
   try {
     return await prisma.$transaction(
       async (tx) => {
+        if (!activeSeason) {
+          activeSeason = await prisma.season.create({
+            data: {
+              startDate: new Date(),
+              description: "DEFAULT",
+              name: "DEFAULT",
+              createdBy: "DEFAULT",
+            },
+          });
+        }
         const user = await tx.user.create({
           data: {
             userName: data.userName,
