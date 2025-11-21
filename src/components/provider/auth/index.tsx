@@ -4,7 +4,7 @@ import { AuthContext } from "@/src/lib/context/auth";
 import { UserT } from "@/src/types/context/auth";
 import http from "@/src/utils/http";
 import { useAuth } from "@clerk/clerk-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { useCookies } from "react-cookie";
 import { toast } from "sonner";
@@ -17,20 +17,14 @@ export const AuthProvider = ({ children }: Props) => {
   const [cookies, setCookies, removeCookies] = useCookies([AUTH_TOKEN_KEY]);
 
   // Get user mutation
-  const { mutate, isPending } = useMutation({
-    mutationFn: () => http.get<UserT>("/auth"),
-    onSuccess: (data) => {
-      if (data.success) {
-        setUser(data.data);
-        return data.data;
-      }
-      toast.error(data.message);
-      return data;
-    },
+  const { refetch, isFetching } = useQuery({
+    queryFn: () => http.get<UserT>("/auth"),
+    queryKey: ["user"],
+    select: (data) => data.data,
   });
 
   const getUser = useCallback(async () => {
-    if (isSignedIn || isPending === false) {
+    if (isSignedIn || isFetching === false) {
       const token = await getToken({ template: "jwt" });
       if (token) {
         setCookies(AUTH_TOKEN_KEY, token, {
@@ -39,11 +33,11 @@ export const AuthProvider = ({ children }: Props) => {
           secure: true,
         });
         if (cookies.AUTH_TOKEN_KEY) {
-          mutate();
+          refetch();
         }
       }
     }
-  }, [isSignedIn, getToken, cookies.AUTH_TOKEN_KEY, mutate]);
+  }, [isSignedIn, getToken, cookies.AUTH_TOKEN_KEY, refetch]);
   // logout
   const onLogout = async () => {
     removeCookies(AUTH_TOKEN_KEY);
@@ -56,7 +50,7 @@ export const AuthProvider = ({ children }: Props) => {
 
   // get user when signed in
   useEffect(() => {
-    if (isSignedIn && user === null && isPending === false) {
+    if (isSignedIn && user === null && isFetching === false) {
       getUser();
     }
   }, [isSignedIn, user]);
@@ -72,9 +66,9 @@ export const AuthProvider = ({ children }: Props) => {
     <AuthContext.Provider
       value={{
         user: user,
-        isAuthLoading: isPending,
+        isAuthLoading: isFetching,
         isSignedIn: isSignedIn || false,
-        refreshAuth: () => mutate(),
+        refreshAuth: () => refetch(),
         logout: () => onLogout(),
         isSuperAdmin: user?.role === "SUPER_ADMIN",
       }}

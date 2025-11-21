@@ -6,21 +6,10 @@ import Link from "next/link";
 import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import { Ternary } from "../components/common/Ternary";
 import { Button } from "../components/ui/button";
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 
 export default function HomePage() {
-  const queryClient = useQueryClient();
   const { user, isSignedIn: isAuthorized } = useAuth();
   const username = user?.userName;
-  const [isInitialized, setIsInitialized] = useState(true);
-
-  useEffect(() => {
-    if (isInitialized && isAuthorized) {
-      queryClient.invalidateQueries({ queryKey: ["user"] });
-      setIsInitialized(false);
-    }
-  }, [isInitialized]);
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
