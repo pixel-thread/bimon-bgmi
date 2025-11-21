@@ -49,5 +49,11 @@ export async function tokenMiddleware(req: NextRequest | Request) {
     return newUser;
   }
 
+  const reqMethod = req.method;
+
+  if (user.role === "USER" && reqMethod !== "GET") {
+    throw new Error("Mut leh ye nm n access phoi");
+  }
+
   return user;
 }
