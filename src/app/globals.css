@@ -6,9 +6,6 @@
 
 @plugin "tailwindcss-animate";
 
-div {
-  border: 1px solid red;
-}
 @custom-variant dark (&:is(.dark *));
 
 /* Normal view styles */

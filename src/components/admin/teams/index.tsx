@@ -85,15 +85,16 @@ export const AdminTeamsManagement: React.FC = () => {
                 </Button>
                 <Button
                   disabled={isFetching}
-                  variant={"outline"}
                   onClick={() => refetch()}
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
                 >
-                  <IconReload />
+                  <IconReload /> Refresh
                 </Button>
                 <CSVLink
                   filename={`${tournament?.name}.csv`}
                   data={teams || []}
                   headers={headers}
+                  className="w-full rounded-2xl sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
                 >
                   <Button
                     disabled={isFetching || !tournamentId}
