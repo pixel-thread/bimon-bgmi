@@ -13,7 +13,8 @@ type TournamentEndpointsT =
 export const ADMIN_TOURNAMENT_ENDPOINTS: EndpointT<TournamentEndpointsT> = {
   POST_CREATE_TOURNAMENT: "/admin/tournament",
   GET_TOURNAMENT_MATCHES: "/admin/tournament/:id/match",
-  GET_TEAM_BY_TOURNAMENT_ID: "/admin/tournament/:id/team?match=:matchId",
+  GET_TEAM_BY_TOURNAMENT_ID:
+    "/admin/tournament/:id/team?match=:matchId&page=:page",
   GET_TOURNAMNTS_BY_SEASON_ID: "/admin/tournament/season/:id",
   GET_ALL_TOURNAMENTS: "/admin/tournament",
   GET_TEAMS_STATS: "/admin/tournament/:id/teams-stats?match=:matchId",

@@ -10,6 +10,7 @@ import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { logger } from "@/src/utils/logger";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
+import { getMeta } from "@/src/utils/pagination/getMeta";
 import { NextRequest } from "next/server";
 
 export async function GET(
@@ -20,7 +21,9 @@ export async function GET(
     await superAdminMiddleware(req);
 
     const id = (await params).id;
+
     const matchId = req.nextUrl.searchParams.get("match") || "";
+    const page = req.nextUrl.searchParams.get("page") || "1";
 
     const tournament = await getTournamentById({ id });
 
@@ -28,12 +31,15 @@ export async function GET(
       return ErrorResponse({ message: "Tournament not found" });
     }
 
-    const teams = await getTeamByTournamentId({
+    const [teams, total] = await getTeamByTournamentId({
       tournamentId: id,
+      page,
     });
 
     const seasonId = tournament.seasonId;
+
     let data;
+
     if (matchId !== "all") {
       data = teams?.map((team) => {
         const teamStats = team.teamStats.find((val) => val.matchId === matchId);
@@ -128,9 +134,11 @@ export async function GET(
       });
     }
     const sortedData = data.sort((a, b) => b.total - a.total);
+
     return SuccessResponse({
       data: sortedData,
       message: "Teams fetched successfully",
+      meta: getMeta({ currentPage: page, total }),
     });
   } catch (error) {
     return handleApiErrors(error);
@@ -196,7 +204,9 @@ export async function DELETE(
 
     const tournamentExist = await getTournamentById({ id });
 
-    const isTeamCreated = await getTeamByTournamentId({ tournamentId: id });
+    const [isTeamCreated, _] = await getTeamByTournamentId({
+      tournamentId: id,
+    });
 
     if (isTeamCreated.length === 0) {
       return ErrorResponse({
@@ -217,6 +227,7 @@ export async function DELETE(
     return SuccessResponse({
       data: deletedTeams,
       message: "Teams deleted successfully",
+      status: 200,
     });
   } catch (error) {
     return handleApiErrors(error);

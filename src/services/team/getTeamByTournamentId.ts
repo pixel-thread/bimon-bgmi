@@ -1,16 +1,28 @@
 import { prisma } from "@/src/lib/db/prisma";
+import { getPagination } from "@/src/utils/pagination";
 
 type Props = {
   tournamentId: string;
+  page?: string;
 };
 
-export async function getTeamByTournamentId({ tournamentId }: Props) {
-  return await prisma.team.findMany({
-    where: { tournamentId },
-    include: {
-      matches: true,
-      teamStats: { include: { match: true } },
-      players: { include: { user: true, playerStats: true } },
-    },
-  });
+export async function getTeamByTournamentId({
+  tournamentId,
+  page = "1",
+}: Props) {
+  const { take, skip } = getPagination({ page });
+  return await prisma.$transaction([
+    prisma.team.findMany({
+      where: { tournamentId },
+      include: {
+        matches: true,
+        teamStats: { include: { match: true } },
+        players: { include: { user: true, playerStats: true } },
+      },
+      skip,
+      take,
+    }),
+
+    prisma.team.count({ where: { tournamentId } }),
+  ]);
 }

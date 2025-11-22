@@ -34,8 +34,9 @@ export const AdminTeamsManagement: React.FC = () => {
   const router = useRouter();
   const updateId = search.get("update") || "";
   const teamStatId = search.get("teamStats") || "";
+  const page = search.get("page") || "1";
 
-  const { data: teams, isFetching, refetch } = useTeams();
+  const { data: teams, isFetching, refetch, meta } = useTeams({ page });
 
   const onCloseUpdateDialog = () => router.back();
 
@@ -112,8 +113,8 @@ export const AdminTeamsManagement: React.FC = () => {
                 </Button>
               </div>
             </div>
-            {teams && teams?.length > 0 && (
-              <DataTable data={teams || []} columns={columns} />
+            {teams && teams?.length > 0 && !isFetching && (
+              <DataTable data={teams || []} columns={columns} meta={meta} />
             )}
             <CreateTeamDialog onOpenChange={() => setOpen(!open)} open={open} />
             <AddPlayerToTeamDialog
