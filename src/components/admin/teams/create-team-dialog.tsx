@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/src/components/ui/select";
 import { PlusIcon, XIcon } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { ADMIN_TEAM_ENDPOINTS } from "@/src/lib/endpoints/admin/team";
 import { usePlayers } from "@/src/hooks/player/usePlayers";
@@ -34,6 +34,10 @@ import { toast } from "sonner";
 import { useTournamentStore } from "@/src/store/tournament";
 import { useRouter } from "next/navigation";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
+import { PlayerT } from "@/src/types/player";
+import { Ternary } from "../../common/Ternary";
+import { LoaderFive } from "../../ui/loader";
+import { Input } from "../../ui/input";
 
 type AddPlayerToTeamDialogProps = {
   open?: boolean;
@@ -180,24 +184,51 @@ export const SearchPlayer = ({
   onOpenChange: (v: boolean) => void;
   onSelectPlayer: (playerId: string) => void;
 }) => {
-  const { data: players } = usePlayers({ page: "all" });
-  return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <Command className="rounded-lg border shadow-md md:min-w-[450px]">
-        <CommandInput placeholder="Search player..." />
-        <CommandList>
-          <CommandEmpty>No players found.</CommandEmpty>
+  const [value, setValue] = React.useState("");
 
+  const { data: players, isFetching } = useQuery({
+    queryKey: ["search-player", value],
+    queryFn: () => http.post<PlayerT[]>(`/players/search`, { query: value }),
+    select: (data) => data.data,
+  });
+
+  const onClose = () => {
+    setValue("");
+    onOpenChange(false);
+  };
+
+  return (
+    <CommandDialog open={open} onOpenChange={onClose}>
+      <Command className="rounded-lg border shadow-md md:min-w-[450px]">
+        <Input
+          value={value}
+          placeholder="Search player..."
+          onChange={(e) => setValue(e.target.value)}
+        />
+        <CommandList>
           <CommandGroup>
-            {players?.map((player) => (
-              <CommandItem
-                key={player.id}
-                value={player.id}
-                onSelect={() => onSelectPlayer(player.id)}
-              >
-                {player.userName}
-              </CommandItem>
-            ))}
+            <Ternary
+              condition={isFetching}
+              trueComponent={
+                <CommandItem disabled>
+                  <LoaderFive text="Searching" />
+                </CommandItem>
+              }
+              falseComponent={
+                <>
+                  <CommandEmpty>No players found.</CommandEmpty>
+                  {players?.map((player) => (
+                    <CommandItem
+                      key={player.id}
+                      value={player.id}
+                      onSelect={() => onSelectPlayer(player.id)}
+                    >
+                      {player.user.userName}
+                    </CommandItem>
+                  ))}
+                </>
+              }
+            />
           </CommandGroup>
         </CommandList>
       </Command>

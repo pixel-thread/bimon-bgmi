@@ -9,7 +9,7 @@ import { Ternary } from "../../common/Ternary";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AddPlayerToTeamDialog } from "./add-player-to-team-dialog";
 import { Button } from "../../ui/button";
-import { CreateTeamDialog } from "./create-team";
+import { CreateTeamDialog } from "./create-team-dialog";
 import React from "react";
 import { useTournamentStore } from "@/src/store/tournament";
 import { TeamStatsSheet } from "./TeamStatsSheet";
