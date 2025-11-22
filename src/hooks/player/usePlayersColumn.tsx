@@ -19,6 +19,52 @@ type PlayerT = {
   category: string;
 };
 
+const defaultClientColumn: ColumnDef<PlayerT>[] = [
+  {
+    accessorKey: "isBanned",
+    header: "Chah Banned",
+    cell: ({ row }) => (row.original.isBanned ? "Hae" : "Huh"),
+  },
+  {
+    accessorKey: "userName",
+    header: "Name",
+    cell: (info) => (
+      <Link href={`?player=${info.row.original.id}`}>
+        {(info.getValue() as string) || ""}
+      </Link>
+    ),
+  },
+  {
+    accessorKey: "category",
+    header: "Category",
+    cell: (info) => (
+      <Link href={`?player=${info.row.original.id}`}>
+        {(info.getValue() as string) || ""}
+      </Link>
+    ),
+  },
+  {
+    accessorKey: "uc",
+    header: "UC",
+  },
+  {
+    accessorKey: "kd",
+    header: "K/D",
+    cell: (info) => (
+      <Link href={`?player=${info.row.original.id}`}>
+        {(info.getValue() as string) || ""}
+      </Link>
+    ),
+  },
+  {
+    accessorKey: "matches",
+    header: "Matches",
+    cell: ({ row }) => (
+      <Link href={`?player=${row.original.id}`}>{row.original.matches}</Link>
+    ),
+  },
+];
+
 const defaultColumn: ColumnDef<PlayerT>[] = [
   {
     accessorKey: "userName",
@@ -37,6 +83,10 @@ const defaultColumn: ColumnDef<PlayerT>[] = [
         {(info.getValue() as string) || ""}
       </Link>
     ),
+  },
+  {
+    accessorKey: "uc",
+    header: "UC",
   },
   {
     accessorKey: "kd",
@@ -145,5 +195,9 @@ export function usePlayersColumn({ page = 1 }: Props) {
     },
   ];
 
-  return { columns };
+  if (isSuperAdmin) {
+    return { columns };
+  }
+
+  return { columns: defaultClientColumn };
 }

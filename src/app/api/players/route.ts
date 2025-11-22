@@ -71,6 +71,7 @@ export async function GET(req: NextRequest) {
           id: player.id,
           isBanned: player.isBanned,
           userName: player?.user?.userName,
+          uc: player.uc?.balance || 0,
           matches: matches,
           kd: playerKd.toFixed(2) || 0,
           category: getKdRank(
@@ -87,6 +88,7 @@ export async function GET(req: NextRequest) {
         return {
           id: player.id,
           isBanned: player.isBanned,
+          uc: player.uc?.balance || 0,
           userName: player?.user?.userName,
           matches: player?.matchPlayerPlayed.length,
           kd: playerKd.toFixed(2) || 0,

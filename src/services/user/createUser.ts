@@ -37,6 +37,7 @@ export async function createUserIfNotExistInDB({ data }: ClerkUser) {
             },
           });
         }
+
         const user = await tx.user.create({
           data: {
             userName: data.userName,

@@ -19,6 +19,7 @@ export async function getAllPlayers({ where, page = "1" }: Props) {
           user: true,
           matches: true,
           matchPlayerPlayed: true,
+          uc: true,
         },
       }),
 
@@ -33,6 +34,7 @@ export async function getAllPlayers({ where, page = "1" }: Props) {
           user: true,
           matches: true,
           matchPlayerPlayed: true,
+          uc: true,
         },
         take,
         skip,
