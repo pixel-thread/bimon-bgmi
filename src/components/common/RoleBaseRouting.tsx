@@ -55,7 +55,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
       // If the route requires authentication and the user is not authenticated
       if (currentRoute.needAuth && !isAuthenticated) {
         // Redirect the user to the signin page and include the current path as a `redirect` query parameter
-        router.replace(`/auth?redirect=${encodeURIComponent(pathName)}`);
+        router.push(`/auth?redirect=${encodeURIComponent(pathName)}`);
         return; // Exit the logic as redirection is in progress
       }
 
@@ -74,11 +74,10 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
         }
       }
     }
-  }, [isAuthenticated, userRoles]);
+  }, [isAuthenticated, userRoles, pathName]);
 
   // Prevent authenticated users from accessing unauthenticated-only pages
   useEffect(() => {
-    if (isAuthLoading || isLoading) return;
     if (isAuthenticated && pageAccessOnlyIfUnAuthenticated.includes(pathName)) {
       router.push(redirectTo || "/");
     }
