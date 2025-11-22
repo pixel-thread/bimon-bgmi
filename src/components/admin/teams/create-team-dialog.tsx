@@ -1,15 +1,6 @@
 "use client";
 
 import {
-  Command,
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/src/components/ui/command";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -34,10 +25,7 @@ import { toast } from "sonner";
 import { useTournamentStore } from "@/src/store/tournament";
 import { useRouter } from "next/navigation";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
-import { PlayerT } from "@/src/types/player";
-import { Ternary } from "../../common/Ternary";
-import { LoaderFive } from "../../ui/loader";
-import { Input } from "../../ui/input";
+import { SearchPlayerDialog } from "../player/SearchPlayerDialog";
 
 type AddPlayerToTeamDialogProps = {
   open?: boolean;
@@ -105,14 +93,14 @@ export const CreateTeamDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[420px] w-full">
+      <DialogContent className="max-w-[420px]! w-full">
         <DialogHeader>
           <DialogTitle>Create Team</DialogTitle>
           <DialogDescription>Add players to form a new team.</DialogDescription>
         </DialogHeader>
 
         {/* Search Player Dialog */}
-        <SearchPlayer
+        <SearchPlayerDialog
           open={searchDialogOpen}
           onOpenChange={setSearchDialogOpen}
           onSelectPlayer={handleInsertPlayer}
@@ -152,86 +140,29 @@ export const CreateTeamDialog = ({
             </div>
           ))}
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setSearchDialogOpen(true)}
-            disabled={isPending}
-            className="self-start"
-          >
-            <PlusIcon className="mr-2 w-4 h-4" /> Add Player
-          </Button>
+          <div className="flex gap-2 ">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSearchDialogOpen(true)}
+              disabled={isPending}
+              className="self-start w-auto"
+            >
+              <PlusIcon className="mr-2 w-4 h-4" /> Add Player
+            </Button>
 
-          <Button
-            onClick={() => createTeam()}
-            disabled={playersList.length === 0 || isPending}
-            className="w-full"
-          >
-            {isPending ? "Creating..." : "Create Team"}
-          </Button>
+            <div className="w-full">
+              <Button
+                onClick={() => createTeam()}
+                disabled={playersList.length === 0 || isPending}
+                className="w-full"
+              >
+                {isPending ? "Creating..." : "Create Team"}
+              </Button>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
-  );
-};
-
-export const SearchPlayer = ({
-  open,
-  onOpenChange,
-  onSelectPlayer,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  onSelectPlayer: (playerId: string) => void;
-}) => {
-  const [value, setValue] = React.useState("");
-
-  const { data: players, isFetching } = useQuery({
-    queryKey: ["search-player", value],
-    queryFn: () => http.post<PlayerT[]>(`/players/search`, { query: value }),
-    select: (data) => data.data,
-  });
-
-  const onClose = () => {
-    setValue("");
-    onOpenChange(false);
-  };
-
-  return (
-    <CommandDialog open={open} onOpenChange={onClose}>
-      <Command className="rounded-lg border shadow-md md:min-w-[450px]">
-        <Input
-          value={value}
-          placeholder="Search player..."
-          onChange={(e) => setValue(e.target.value)}
-        />
-        <CommandList>
-          <CommandGroup>
-            <Ternary
-              condition={isFetching}
-              trueComponent={
-                <CommandItem disabled>
-                  <LoaderFive text="Searching" />
-                </CommandItem>
-              }
-              falseComponent={
-                <>
-                  <CommandEmpty>No players found.</CommandEmpty>
-                  {players?.map((player) => (
-                    <CommandItem
-                      key={player.id}
-                      value={player.id}
-                      onSelect={() => onSelectPlayer(player.id)}
-                    >
-                      {player.user.userName}
-                    </CommandItem>
-                  ))}
-                </>
-              }
-            />
-          </CommandGroup>
-        </CommandList>
-      </Command>
-    </CommandDialog>
   );
 };

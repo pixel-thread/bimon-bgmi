@@ -91,19 +91,20 @@ export const AdminTeamsManagement: React.FC = () => {
                 >
                   <IconReload /> Refresh
                 </Button>
-                <CSVLink
-                  filename={`${tournament?.name}.csv`}
-                  data={teams || []}
-                  headers={headers}
-                  className="w-full rounded-2xl sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
+
+                <Button
+                  disabled={isFetching || !tournamentId}
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
+                  asChild
                 >
-                  <Button
-                    disabled={isFetching || !tournamentId}
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
+                  <CSVLink
+                    filename={`${tournament?.name}.csv`}
+                    data={teams || []}
+                    headers={headers}
                   >
                     Export
-                  </Button>
-                </CSVLink>
+                  </CSVLink>
+                </Button>
                 <Button
                   onClick={() => setOpen(true)}
                   disabled={isFetching || !tournamentId}

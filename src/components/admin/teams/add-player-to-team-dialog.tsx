@@ -27,6 +27,7 @@ import { useTournamentStore } from "@/src/store/tournament";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { LoaderFive } from "../../ui/loader";
 import { Ternary } from "../../common/Ternary";
+import { SearchPlayerDialog } from "../player/SearchPlayerDialog";
 
 type AddPlayerToTeamDialogProps = {
   open?: boolean;
@@ -40,6 +41,7 @@ export const AddPlayerToTeamDialog = ({
   teamId,
 }: AddPlayerToTeamDialogProps) => {
   const queryClient = useQueryClient();
+  const [searchDialogOpen, setSearchDialogOpen] = React.useState(false);
   const { matchId } = useMatchStore();
   const [playersList, setPlayersList] = React.useState<string[]>([]);
   const { data: team, isFetching } = useQuery({
@@ -110,81 +112,94 @@ export const AddPlayerToTeamDialog = ({
     }
   }, [team]);
 
-  const handlePlayerChange = (index: number, value: string) => {
-    const newList = [...playersList];
-    newList[index] = value;
-    setPlayersList(newList);
-    addPlayer({ playerId: value, matchId: matchId });
-  };
-
-  const handleAddField = () => {
-    setPlayersList((prev) => [...prev, ""]);
+  /** Insert selected player from dialog */
+  const handleInsertPlayer = (playerId: string) => {
+    if (!playersList.includes(playerId)) {
+      addPlayer({ playerId: playerId, matchId: matchId });
+    }
+    setSearchDialogOpen(false);
   };
 
   const handleRemovePlayer = (playerId: string) => {
     removePlayer({ playerId, matchId });
   };
-
+  const handleReplacePlayer = (playerId: string, removeId: string) => {
+    removePlayer({ playerId: removeId, matchId });
+    addPlayer({ playerId: playerId, matchId: matchId });
+  };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[400px] w-full">
+      <DialogContent className="max-w-[420px]! w-full">
         <DialogHeader>
-          <DialogTitle>Update Players to Team</DialogTitle>
+          <DialogTitle>Update Team</DialogTitle>
           <DialogDescription>
             Existing players are preloaded. Use the plus icon to add new ones.
           </DialogDescription>
         </DialogHeader>
 
+        {/* Search Player Dialog */}
+        <SearchPlayerDialog
+          open={searchDialogOpen}
+          onOpenChange={setSearchDialogOpen}
+          onSelectPlayer={handleInsertPlayer}
+        />
+
         <Ternary
           condition={isFetchingPlayers || isFetching}
           trueComponent={
-            <div className="py-10">
+            <div className="py-10 flex items-center justify-center">
               <LoaderFive text="Loading..." />
             </div>
           }
           falseComponent={
-            <div className="flex flex-col space-y-3">
+            <div className="flex flex-col space-y-4 mt-3">
               {playersList.map((playerId, index) => (
-                <div key={index}>
-                  <p className="text-sm font-medium mb-1">Player {index + 1}</p>
-                  <Select
-                    onValueChange={(value) => handlePlayerChange(index, value)}
-                    value={playerId}
-                    disabled={isFetchingPlayers || isPending}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <SelectTrigger className="w-[280px]">
+                <div key={index} className="space-y-1">
+                  <p className="text-sm font-medium">Player {index + 1}</p>
+
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={playerId}
+                      onValueChange={(value) =>
+                        handleReplacePlayer(value, playerId)
+                      }
+                      disabled={isFetchingPlayers || isPending}
+                    >
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select player" />
                       </SelectTrigger>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size={"icon-lg"}
-                        disabled={isRemoving}
-                        onClick={() => handleRemovePlayer(playerId)}
-                      >
-                        <XIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <SelectContent>
-                      {players?.map((player) => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.userName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                      <SelectContent>
+                        {players?.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.userName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      disabled={isRemoving}
+                      onClick={() => handleRemovePlayer(playerId)}
+                    >
+                      <XIcon className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
 
-              <Button
-                type="button"
-                onClick={handleAddField}
-                variant="outline"
-                className="w-fit"
-              >
-                <PlusIcon className="mr-2 h-4 w-4" /> Add Player Field
-              </Button>
+              <div className="flex gap-2 ">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setSearchDialogOpen(true)}
+                  disabled={isPending}
+                  className="self-start w-full"
+                >
+                  <PlusIcon className="mr-2 w-4 h-4" /> Add Player
+                </Button>
+              </div>
             </div>
           }
         />
