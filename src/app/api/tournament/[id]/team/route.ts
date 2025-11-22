@@ -7,6 +7,7 @@ import {
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
+import { getMeta } from "@/src/utils/pagination/getMeta";
 import { NextRequest } from "next/server";
 
 export async function GET(
@@ -18,6 +19,7 @@ export async function GET(
 
     const searchQuery = req.nextUrl.searchParams;
     const matchId = searchQuery.get("match") || "";
+    const page = searchQuery.get("page") || "1";
     const id = (await params).id;
 
     const tournament = await getTournamentById({ id: id });
@@ -26,7 +28,10 @@ export async function GET(
       return ErrorResponse({ message: "Tournament not found" });
     }
     const seasonId = tournament.seasonId;
-    const teams = await getTeamByTournamentId({ tournamentId: id });
+    const [teams, total] = await getTeamByTournamentId({
+      tournamentId: id,
+      page,
+    });
     // mapping data
     let data;
     if (matchId !== "all") {
@@ -122,9 +127,11 @@ export async function GET(
         };
       });
     }
+
     return SuccessResponse({
       data: data,
       message: "Teams fetched successfully",
+      meta: getMeta({ currentPage: page, total }),
     });
   } catch (error) {
     return handleApiErrors(error);

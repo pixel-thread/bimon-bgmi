@@ -7,7 +7,6 @@ import {
   getKdRank,
 } from "@/src/utils/calculatePlayersPoints";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { logger } from "@/src/utils/logger";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { getMeta } from "@/src/utils/pagination/getMeta";

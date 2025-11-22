@@ -21,7 +21,7 @@ export async function createMatch({ data }: Props) {
       });
 
       // Step 2: Fetch teams related to this tournament (or however you get teams)
-      const teams = await getTeamByTournamentId({
+      const [teams, _] = await getTeamByTournamentId({
         tournamentId: data.tournamentId,
       });
 

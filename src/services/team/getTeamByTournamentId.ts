@@ -11,18 +11,33 @@ export async function getTeamByTournamentId({
   page = "1",
 }: Props) {
   const { take, skip } = getPagination({ page });
-  return await prisma.$transaction([
-    prisma.team.findMany({
-      where: { tournamentId },
-      include: {
-        matches: true,
-        teamStats: { include: { match: true } },
-        players: { include: { user: true, playerStats: true } },
-      },
-      skip,
-      take,
-    }),
+  if (page === "all") {
+    return await prisma.$transaction([
+      prisma.team.findMany({
+        where: { tournamentId },
+        include: {
+          matches: true,
+          teamStats: { include: { match: true } },
+          players: { include: { user: true, playerStats: true } },
+        },
+      }),
 
-    prisma.team.count({ where: { tournamentId } }),
-  ]);
+      prisma.team.count({ where: { tournamentId } }),
+    ]);
+  } else {
+    return await prisma.$transaction([
+      prisma.team.findMany({
+        where: { tournamentId },
+        include: {
+          matches: true,
+          teamStats: { include: { match: true } },
+          players: { include: { user: true, playerStats: true } },
+        },
+        skip,
+        take,
+      }),
+
+      prisma.team.count({ where: { tournamentId } }),
+    ]);
+  }
 }
