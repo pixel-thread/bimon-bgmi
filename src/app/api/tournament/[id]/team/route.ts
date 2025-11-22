@@ -19,7 +19,6 @@ export async function GET(
 
     const searchQuery = req.nextUrl.searchParams;
     const matchId = searchQuery.get("match") || "";
-    const page = searchQuery.get("page") || "1";
     const id = (await params).id;
 
     const tournament = await getTournamentById({ id: id });
@@ -30,8 +29,9 @@ export async function GET(
     const seasonId = tournament.seasonId;
     const [teams, total] = await getTeamByTournamentId({
       tournamentId: id,
-      page,
+      page: "all",
     });
+
     // mapping data
     let data;
     if (matchId !== "all") {
@@ -131,7 +131,6 @@ export async function GET(
     return SuccessResponse({
       data: data,
       message: "Teams fetched successfully",
-      meta: getMeta({ currentPage: page, total }),
     });
   } catch (error) {
     return handleApiErrors(error);
