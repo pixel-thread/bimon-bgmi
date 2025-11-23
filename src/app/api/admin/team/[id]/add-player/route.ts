@@ -33,11 +33,11 @@ export async function POST(
       });
     }
 
-    const isPlayerAlreadyOnTeam = isPlayerExist?.teamId?.includes(teamId);
+    const isPlayerAlreadyOnTeam = isPlayerExist?.teamId;
 
     if (isPlayerAlreadyOnTeam) {
       return ErrorResponse({
-        message: "Player already on this team",
+        message: "Player already on a a team please remove player first",
         status: 400,
       });
     }
