@@ -1,4 +1,5 @@
 import { prisma } from "@/src/lib/db/prisma";
+import { logger } from "@/src/utils/logger";
 import { teamStatsSchema } from "@/src/utils/validation/team/team-stats";
 import z from "zod";
 
@@ -17,12 +18,6 @@ export async function updateTeamStats({
   seasonId,
   data,
 }: Props) {
-  // Aggregate team stats from all players
-  const teamKills = data.players?.reduce((acc, player) => {
-    if (player.kills) return acc + player.kills;
-    return acc + 0;
-  }, 0);
-
   return await prisma.$transaction(async (tx) => {
     // Upsert TeamStats for this team in this match
     await tx.teamStats.upsert({
@@ -38,11 +33,7 @@ export async function updateTeamStats({
         tournamentId,
         seasonId,
       },
-      update: {
-        kills: teamKills,
-        deaths: 1, // Team should has 1 dead for a single match
-        position: data.position,
-      },
+      update: { position: data.position },
     });
     await Promise.all(
       data.players.map((player) =>
@@ -61,7 +52,7 @@ export async function updateTeamStats({
         }),
       ),
     );
-    console.log("TeamPlayerStats updated");
+    logger.log("TeamPlayerStats updated");
     // Update PlayerStats
     await Promise.all(
       data.players.map((player) =>
