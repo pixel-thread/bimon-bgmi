@@ -34,28 +34,26 @@ export async function GET(
       return ErrorResponse({ message: "Tournament not found" });
     }
 
-    const teamsStats = await getTeamsStats({
-      where,
-      orderBy: { kills: "desc" }, // sort by position
-    });
+    const teamsStats = await getTeamsStats({ where });
 
     const data = teamsStats.map((team) => {
-      const kills = team.kills;
-      const pts = calculatePlayerPoints(team.position, kills);
+      const kills = team.teamPlayerStats.reduce(
+        (total, teamPlayer) => total + teamPlayer.kills,
+        0,
+      );
+      const position = team.position;
+      const pts = calculatePlayerPoints(position, kills);
       const total = kills + pts;
-      logger.log({
-        name: "standing",
-        kills: team?.kills,
-        pts,
-        total,
-      });
 
       return {
         name: team.team.name,
         matches: team.team.matches.length,
         position: team.position,
         kills: kills,
-        deaths: team.deaths,
+        deaths: team.teamPlayerStats.reduce(
+          (total, teamPlayer) => total + teamPlayer.deaths,
+          0,
+        ),
         pts: pts,
         total: total,
         players: team.team.players.map((player) => ({

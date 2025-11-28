@@ -36,20 +36,18 @@ export async function GET(
     const teamsStats = await prisma.teamStats.findMany({
       where,
       include: {
+        teamPlayerStats: true,
         team: {
           include: { matches: true, players: { include: { user: true } } },
         },
       },
     });
 
-    const groupTeamsStats = await prisma.teamStats.groupBy({
-      where,
+    const groupTeamsStats = await prisma.teamPlayerStats.groupBy({
+      where: { teamId: { in: teamsStats.map((team) => team.teamId) } },
       by: ["teamId"],
       _sum: {
         kills: true,
-      },
-      _avg: {
-        position: true,
       },
     });
 
@@ -58,7 +56,11 @@ export async function GET(
         teamsStats.find((teamStats) => teamStats.teamId === team.teamId)
           ?.position || 0;
       const groupStats = teamsStats.map((stat) => {
-        const kills = stat.kills || 0;
+        const kills =
+          stat.teamPlayerStats.reduce(
+            (acc, playerStat) => acc + playerStat.kills,
+            0,
+          ) || 0;
         const pts = calculatePlayerPoints(stat.position, 0); // Calculate points based on position
         const total = kills + pts;
         return {

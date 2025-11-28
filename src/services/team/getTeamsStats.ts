@@ -10,6 +10,7 @@ export async function getTeamsStats({ where, orderBy }: Props) {
   return await prisma.teamStats.findMany({
     where,
     include: {
+      teamPlayerStats: true,
       team: {
         include: { matches: true, players: { include: { user: true } } },
       },
