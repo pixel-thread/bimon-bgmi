@@ -1,4 +1,4 @@
-import { getMatchById } from "@/src/services/match/getMatchById";
+import { getUniqueMatch } from "@/src/services/match/getMatchById";
 import { addPlayerToTeam } from "@/src/services/team/addPlayerToTeam";
 import { createTeamByTournamentId } from "@/src/services/team/createTeamByTournamentId";
 import { getTeamByTournamentId as getTeamsByTournamentId } from "@/src/services/team/getTeamByTournamentId";
@@ -7,6 +7,7 @@ import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { createTeamSchema } from "@/src/utils/validation/team/create-team-schema";
+import { teamsStatsSchema } from "@/src/utils/validation/team/team-stats";
 import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
       tournamentId: body.tournamentId,
     });
 
-    const isMatchExist = await getMatchById({ where: { id: body.matchId } });
+    const isMatchExist = await getUniqueMatch({ where: { id: body.matchId } });
 
     if (!isMatchExist) {
       return ErrorResponse({

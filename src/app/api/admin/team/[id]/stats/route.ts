@@ -1,4 +1,4 @@
-import { getMatchById } from "@/src/services/match/getMatchById";
+import { getUniqueMatch } from "@/src/services/match/getMatchById";
 import { getPlayerById } from "@/src/services/player/getPlayerById";
 import { getTeamById } from "@/src/services/team/getTeamById";
 import { getTeamStats } from "@/src/services/team/getTeamStatsById";
@@ -8,6 +8,7 @@ import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddlewar
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { teamStatsSchema } from "@/src/utils/validation/team/team-stats";
 import { NextRequest } from "next/server";
+import z from "zod";
 
 export async function POST(
   req: NextRequest,
@@ -27,10 +28,13 @@ export async function POST(
     }
 
     const body = teamStatsSchema
+      .extend({
+        matchId: z.uuid("Match ID is not valid"),
+      })
       .pick({ matchId: true })
       .parse(await req.json());
 
-    const isMatchExist = await getMatchById({ where: { id: body.matchId } });
+    const isMatchExist = await getUniqueMatch({ where: { id: body.matchId } });
 
     if (!isMatchExist) {
       return ErrorResponse({
@@ -59,29 +63,8 @@ export async function POST(
       });
     }
 
-    const statsPlayer = stats.teamPlayerStats.map((player) => {
-      return {
-        playerId: player.playerId,
-        name: player.player.user.userName,
-        kills: player.kills,
-        deaths: player.deaths,
-        kd: player.kills / player.deaths || 0,
-      };
-    });
-
-    const data = stats
-      ? {
-          id: stats.id,
-          kills: stats.kills,
-          deaths: stats.deaths,
-          kd: stats.kills / stats.deaths || 0,
-          position: stats.position,
-          players: statsPlayer,
-        }
-      : null;
-
     return SuccessResponse({
-      data: data,
+      data: stats,
       message: "Team stats updated successfully",
     });
   } catch (error) {
@@ -103,9 +86,11 @@ export async function PUT(
         status: 404,
       });
     }
-    const body = teamStatsSchema.parse(await req.json());
+    const body = teamStatsSchema
+      .extend({ matchId: z.uuid("Match ID is not valid") })
+      .parse(await req.json());
 
-    const isMatchExist = await getMatchById({ where: { id: body.matchId } });
+    const isMatchExist = await getUniqueMatch({ where: { id: body.matchId } });
 
     if (!isMatchExist) {
       return ErrorResponse({

@@ -29,7 +29,7 @@ import {
 } from "@/src/components/ui/form";
 import {
   TeamStatsForm,
-  teamStatsSchema,
+  playerTeamStatsSchema,
 } from "@/src/utils/validation/team/team-stats";
 import { toast } from "sonner";
 import MatchSelector from "../../match/MatchSelector";
@@ -55,7 +55,7 @@ export function TeamStatsSheet({ teamId, open }: Props) {
   const { matchId } = useMatchStore();
 
   const form = useForm({
-    resolver: zodResolver(teamStatsSchema),
+    resolver: zodResolver(playerTeamStatsSchema),
     defaultValues: {
       matchId: matchId || "",
       players: [],
