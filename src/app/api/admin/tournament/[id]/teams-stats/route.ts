@@ -37,16 +37,27 @@ export async function GET(
       orderBy: { position: "asc" }, // sort by position
     });
 
-    const data = teams?.map((team) => ({
-      name: team.team.players.map((player) => player.user.userName).join("_"),
-      position: team.position,
-      kills: team.kills,
-      deaths: team.deaths,
-      players: team.team.players.map((player) => ({
-        id: player.id,
-        name: player.user.userName,
-      })),
-    }));
+    const data = teams?.map((team) => {
+      const teamPlayerStats = team.teamPlayerStats.filter(
+        (val) => val.matchId === matchId,
+      );
+      return {
+        name: team.team.players.map((player) => player.user.userName).join("_"),
+        position: team.position,
+        kills: teamPlayerStats.reduce(
+          (total, playerStats) => total + playerStats.kills,
+          0,
+        ),
+        deaths: teamPlayerStats.reduce(
+          (total, playerStats) => total + playerStats.deaths,
+          0,
+        ),
+        players: team.team.players.map((player) => ({
+          id: player.id,
+          name: player.user.userName,
+        })),
+      };
+    });
 
     return SuccessResponse({
       data: data,

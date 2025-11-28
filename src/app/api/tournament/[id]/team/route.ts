@@ -7,7 +7,6 @@ import {
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
-import { getMeta } from "@/src/utils/pagination/getMeta";
 import { NextRequest } from "next/server";
 
 export async function GET(
@@ -37,7 +36,9 @@ export async function GET(
     if (matchId !== "all") {
       data = teams?.map((team) => {
         const teamStats = team.teamStats.find((val) => val.matchId === matchId);
-
+        const teamPlayerStats = team.teamPlayerStats.find(
+          (val) => val.seasonId === seasonId || val.matchId === matchId,
+        );
         const teamPlayers = team.players.map((player) => {
           const playerStats = player.playerStats.find(
             (val) => val.seasonId === seasonId,
@@ -52,7 +53,8 @@ export async function GET(
             category: category,
           };
         });
-        const kills = teamStats?.kills || 0;
+
+        const kills = teamPlayerStats?.kills || 0;
         const teamPosition = teamStats?.position || 0;
         const pts = calculatePlayerPoints(teamPosition, 0);
         const total = kills + pts;
@@ -65,8 +67,8 @@ export async function GET(
           matches: team.matches,
           size: team.players.length,
           slotNo: team.teamNumber + 1,
-          kills: teamStats?.kills || 0,
-          deaths: teamStats?.deaths || 0,
+          kills: teamPlayerStats?.kills || 0,
+          deaths: teamPlayerStats?.deaths || 0,
           position: teamPosition,
           pts: pts,
           total: total,
@@ -93,9 +95,12 @@ export async function GET(
         const teamStats = team.teamStats.filter(
           (val) => val.seasonId === seasonId && val.teamId === team.id,
         );
+        const teamPlayerStats = team.teamPlayerStats.find(
+          (val) => val.seasonId === seasonId && val.teamId === team.id,
+        );
 
         const groupStats = teamStats.map((stat) => {
-          const kills = stat.kills || 0;
+          const kills = teamPlayerStats?.kills || 0;
           const pts = calculatePlayerPoints(stat.position, 0); // Calculate points based on position
           const total = kills + pts;
           return {

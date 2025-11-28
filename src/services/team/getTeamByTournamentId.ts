@@ -16,6 +16,7 @@ export async function getTeamByTournamentId({
       prisma.team.findMany({
         where: { tournamentId },
         include: {
+          teamPlayerStats: true,
           matches: true,
           teamStats: { include: { match: true } },
           players: { include: { user: true, playerStats: true } },
@@ -31,6 +32,7 @@ export async function getTeamByTournamentId({
         include: {
           matches: true,
           teamStats: { include: { match: true } },
+          teamPlayerStats: true,
           players: { include: { user: true, playerStats: true } },
         },
         skip,

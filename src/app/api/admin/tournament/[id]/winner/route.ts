@@ -5,7 +5,6 @@ import { addTournamentWinner } from "@/src/services/winner/addTournamentWinner";
 import { getUniqedTournamentWinners } from "@/src/services/winner/getTournamentWinner";
 import { calculatePlayerPoints } from "@/src/utils/calculatePlayersPoints";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { logger } from "@/src/utils/logger";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
@@ -76,20 +75,20 @@ export async function POST(
     const teamsStats = await prisma.teamStats.findMany({
       where,
       include: {
+        teamPlayerStats: true,
         team: {
           include: { matches: true, players: { include: { user: true } } },
         },
       },
     });
 
-    const groupTeamsStats = await prisma.teamStats.groupBy({
-      where,
+    const groupTeamsStats = await prisma.teamPlayerStats.groupBy({
+      where: {
+        teamStats: { tournamentId: id },
+      },
       by: ["teamId"],
       _sum: {
         kills: true,
-      },
-      _avg: {
-        position: true,
       },
     });
 
@@ -97,8 +96,10 @@ export async function POST(
       const position =
         teamsStats.find((teamStats) => teamStats.teamId === team.teamId)
           ?.position || 0;
+
       const groupStats = teamsStats.map((stat) => {
-        const kills = stat.kills || 0;
+        const kills =
+          stat.teamPlayerStats.reduce((acc, val) => acc + val.kills, 0) || 0;
         const pts = calculatePlayerPoints(stat.position, 0); // Calculate points based on position
         const total = kills + pts;
         return {
