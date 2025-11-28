@@ -1,4 +1,5 @@
 import { getUniqueMatch } from "@/src/services/match/getMatchById";
+import { getPlayerById } from "@/src/services/player/getPlayerById";
 import { addPlayerToTeam } from "@/src/services/team/addPlayerToTeam";
 import { createTeamByTournamentId } from "@/src/services/team/createTeamByTournamentId";
 import { getTeamByTournamentId as getTeamsByTournamentId } from "@/src/services/team/getTeamByTournamentId";
@@ -7,7 +8,6 @@ import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { createTeamSchema } from "@/src/utils/validation/team/create-team-schema";
-import { teamsStatsSchema } from "@/src/utils/validation/team/team-stats";
 import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -18,12 +18,32 @@ export async function POST(req: NextRequest) {
     const isTournamentExist = await getTournamentById({
       id: body.tournamentId,
     });
+
     if (!isTournamentExist) {
       return ErrorResponse({
         message: "Tournament not found",
         status: 404,
       });
     }
+    for (const player of body.players) {
+      const isPlayerExist = await getPlayerById({ id: player.playerId });
+
+      if (!isPlayerExist) {
+        return ErrorResponse({
+          message: "Player not found",
+          status: 404,
+        });
+      }
+
+      if (isPlayerExist.teamId) {
+        return ErrorResponse({
+          message:
+            "Player is already on a team: " + isPlayerExist.user.userName,
+          status: 400,
+        });
+      }
+    }
+
     const teams = await getTeamsByTournamentId({
       tournamentId: body.tournamentId,
     });
@@ -36,6 +56,7 @@ export async function POST(req: NextRequest) {
         status: 404,
       });
     }
+
     const team = await createTeamByTournamentId({
       data: {
         name: Math.random().toString(36).substring(7),

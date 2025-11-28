@@ -1,6 +1,7 @@
 import { getPlayerById } from "@/src/services/player/getPlayerById";
 import { addPlayerToTeam } from "@/src/services/team/addPlayerToTeam";
 import { getTeamById } from "@/src/services/team/getTeamById";
+import { getTeamStats } from "@/src/services/team/getTeamStatsById";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
