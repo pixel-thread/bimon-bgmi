@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
 import React from "react";
+import { useMatchStore } from "@/src/store/match/useMatchStore";
 
 const col: ColumnDef<TeamT>[] = [
   {
@@ -48,13 +49,17 @@ const col: ColumnDef<TeamT>[] = [
   },
 ];
 
-export const useTeamsColumns = () => {
+type Props = {
+  page?: string;
+};
+
+export const useTeamsColumns = ({ page }: Props = { page: "1" }) => {
   const columns: ColumnDef<TeamT>[] = React.useMemo(
     () => [
       ...col,
       {
         header: "Action",
-        cell: ({ row }) => <ActionDropdown id={row.original.id} />,
+        cell: ({ row }) => <ActionDropdown page={page} id={row.original.id} />,
       },
     ],
     [],
@@ -63,8 +68,9 @@ export const useTeamsColumns = () => {
   return { columns };
 };
 
-const ActionDropdown = ({ id }: { id: string }) => {
+const ActionDropdown = ({ id, page }: { id: string; page?: string }) => {
   const { tournamentId } = useTournamentStore();
+  const { matchId } = useMatchStore();
   const queryClient = useQueryClient();
 
   const { mutate: deleteTeam, isPending: isDeletingTeam } = useMutation({
@@ -75,7 +81,9 @@ const ActionDropdown = ({ id }: { id: string }) => {
     onSuccess: (data) => {
       if (data.success) {
         toast.success(data.message);
-        queryClient.invalidateQueries({ queryKey: ["team", tournamentId] });
+        queryClient.invalidateQueries({
+          queryKey: ["team", tournamentId, matchId, page],
+        });
         return data;
       }
       toast.error(data.message);

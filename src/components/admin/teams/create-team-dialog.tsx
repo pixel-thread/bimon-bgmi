@@ -16,14 +16,13 @@ import {
   SelectValue,
 } from "@/src/components/ui/select";
 import { PlusIcon, XIcon } from "lucide-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { ADMIN_TEAM_ENDPOINTS } from "@/src/lib/endpoints/admin/team";
 import { usePlayers } from "@/src/hooks/player/usePlayers";
-import React from "react";
+import React, { useEffect } from "react";
 import { toast } from "sonner";
 import { useTournamentStore } from "@/src/store/tournament";
-import { useRouter } from "next/navigation";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { SearchPlayerDialog } from "../player/SearchPlayerDialog";
 
@@ -38,8 +37,6 @@ export const CreateTeamDialog = ({
 }: AddPlayerToTeamDialogProps) => {
   const { tournamentId } = useTournamentStore();
   const { matchId } = useMatchStore();
-  const router = useRouter();
-  const queryClient = useQueryClient();
 
   const [playersList, setPlayersList] = React.useState<string[]>([]);
   const [searchDialogOpen, setSearchDialogOpen] = React.useState(false);
@@ -63,11 +60,7 @@ export const CreateTeamDialog = ({
     onSuccess: (res) => {
       if (res.success) {
         toast.success(res.message);
-        queryClient.invalidateQueries({
-          queryKey: ["team", tournamentId, matchId],
-        });
-        router.push(`?update=${res?.data?.id}`);
-        onOpenChange();
+        onClose();
       } else toast.error(res.message);
     },
   });
@@ -91,8 +84,14 @@ export const CreateTeamDialog = ({
     setPlayersList((list) => list.filter((playerId) => playerId !== id));
   };
 
+  const onClose = () => {
+    setSearchDialogOpen(false);
+    setPlayersList([]);
+    onOpenChange();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-[420px]! w-full">
         <DialogHeader>
           <DialogTitle>Create Team</DialogTitle>

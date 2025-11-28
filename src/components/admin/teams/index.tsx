@@ -17,6 +17,8 @@ import { useTeams } from "@/src/hooks/team/useTeams";
 import { useTournament } from "@/src/hooks/tournament/useTournament";
 import { IconReload } from "@tabler/icons-react";
 import { OverallStandingModal } from "../../teamManagementImports";
+import { useQueryClient } from "@tanstack/react-query";
+import { useMatchStore } from "@/src/store/match/useMatchStore";
 
 const headers = [
   { label: "Total Players", key: "size" },
@@ -25,20 +27,35 @@ const headers = [
 ];
 
 export const AdminTeamsManagement: React.FC = () => {
+  const search = useSearchParams();
+  const page = search.get("page") || "1";
   const [showStandingsModal, setShowStandingsModal] = useState(false);
   const { tournamentId } = useTournamentStore();
   const { data: tournament } = useTournament({ id: tournamentId });
-  const { columns } = useTeamsColumns();
+  const { columns } = useTeamsColumns({ page });
   const [open, setOpen] = React.useState(false);
-  const search = useSearchParams();
   const router = useRouter();
   const updateId = search.get("update") || "";
   const teamStatId = search.get("teamStats") || "";
-  const page = search.get("page") || "1";
-
+  const queryClient = useQueryClient();
+  const { matchId } = useMatchStore();
   const { data: teams, isFetching, refetch, meta } = useTeams({ page });
 
-  const onCloseUpdateDialog = () => router.back();
+  const onValidateTeams = () => {
+    queryClient.invalidateQueries({
+      queryKey: ["teams", tournamentId, matchId, page],
+    });
+  };
+
+  const onCloseUpdateDialog = () => {
+    router.back();
+    onValidateTeams();
+  };
+
+  const onCloseCreateTeam = () => {
+    onValidateTeams();
+    setOpen(false);
+  };
 
   return (
     <>
@@ -117,7 +134,7 @@ export const AdminTeamsManagement: React.FC = () => {
             {teams && teams?.length > 0 && !isFetching && (
               <DataTable data={teams || []} columns={columns} meta={meta} />
             )}
-            <CreateTeamDialog onOpenChange={() => setOpen(!open)} open={open} />
+            <CreateTeamDialog onOpenChange={onCloseCreateTeam} open={open} />
             <AddPlayerToTeamDialog
               teamId={updateId}
               onOpenChange={() => onCloseUpdateDialog()}

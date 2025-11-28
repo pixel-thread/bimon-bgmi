@@ -1,6 +1,6 @@
 import z from "zod";
 
-const playerTeamStatsSchema = z.object({
+export const playerTeamStatsSchema = z.object({
   playerId: z.uuid("Player ID is not valid"),
   deaths: z.coerce.number().optional(),
   kills: z.coerce.number().optional(),
