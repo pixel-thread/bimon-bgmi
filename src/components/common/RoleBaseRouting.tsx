@@ -19,25 +19,16 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   const redirectTo = searchParams.get("redirect");
   const router = useRouter();
   const pathName = usePathname();
-  const [isLoading, setIsLoading] = useState(false);
   const { user, isAuthLoading, isSignedIn } = useAuth();
   const role = user?.role || "USER";
   const userRoles = useMemo(() => role, [role]); // Get the user's roles
   const [cookies] = useCookies([AUTH_TOKEN_KEY]);
   const isAuthenticated = isSignedIn && !!cookies.AUTH_TOKEN_KEY;
 
-  // Show loader during route changes or delays
-  useEffect(() => {
-    setIsLoading(true);
-    if (isAuthLoading) return;
-    const timer = setTimeout(() => setIsLoading(false), 100); // delay in ms
-    return () => clearTimeout(timer); // Cleanup the timer
-  }, [isAuthLoading, pathName]);
-
   // Handle authentication and role-based redirects
   useEffect(() => {
     // Wait until authentication loading is complete to proceed
-    if (isAuthLoading || isLoading) return;
+    if (isAuthLoading) return;
     // Do not redirect if user is still fetching
     if (isAuthenticated && user === null && isAuthLoading) return;
     // Step 1: Identify the current route from the `routeRoles` configuration
@@ -74,17 +65,17 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
         }
       }
     }
-  }, [isAuthenticated, userRoles, pathName]);
+  }, [isAuthenticated, userRoles, pathName, isAuthLoading]);
 
   // Prevent authenticated users from accessing unauthenticated-only pages
   useEffect(() => {
     if (isAuthenticated && pageAccessOnlyIfUnAuthenticated.includes(pathName)) {
       router.push(redirectTo || "/");
     }
-  }, [isAuthenticated, pathName, redirectTo, router, isAuthLoading, isLoading]);
+  }, [isAuthenticated, pathName, redirectTo, router, isAuthLoading]);
 
   // Display preloader if authentication or loading is in progress
-  if (isLoading) {
+  if (isAuthLoading) {
     return (
       <div className="min-h-screen absolute z-50 top-0 left-0 right-0 bottom-0 flex items-center justify-center">
         <LoaderFour text="PUBGMI TOURNAMENT" />
