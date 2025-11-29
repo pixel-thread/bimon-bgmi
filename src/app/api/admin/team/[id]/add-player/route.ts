@@ -1,7 +1,7 @@
 import { getPlayerById } from "@/src/services/player/getPlayerById";
 import { addPlayerToTeam } from "@/src/services/team/addPlayerToTeam";
 import { getTeamById } from "@/src/services/team/getTeamById";
-import { getTeamStats } from "@/src/services/team/getTeamStatsById";
+import { getTeamByTournamentId } from "@/src/services/team/getTeamByTournamentId";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
@@ -34,13 +34,22 @@ export async function POST(
       });
     }
 
-    const isPlayerAlreadyOnTeam = isPlayerExist?.teamId;
+    const [teams, _] = await getTeamByTournamentId({
+      tournamentId: isTeamExist?.tournamentId || "",
+      page: "all",
+    });
 
-    if (isPlayerAlreadyOnTeam) {
-      return ErrorResponse({
-        message: "Player already on a a team please remove player first",
-        status: 400,
-      });
+    if (teams) {
+      const isPlayerAlreadyOnTeam = teams.find((team) =>
+        team.players.find((player) => player.id === body.playerId),
+      );
+
+      if (isPlayerAlreadyOnTeam) {
+        return ErrorResponse({
+          message: "Player already on a a team please remove player first",
+          status: 400,
+        });
+      }
     }
 
     const updatedTeam = await addPlayerToTeam({

@@ -8,7 +8,7 @@ type Props = {
 
 export async function getTeamByTournamentId({
   tournamentId,
-  page = "1",
+  page = "all",
 }: Props) {
   const { take, skip } = getPagination({ page });
   if (page === "all") {
