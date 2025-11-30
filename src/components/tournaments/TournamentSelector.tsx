@@ -14,17 +14,25 @@ import { useSeasonStore } from "../../store/season";
 import { Ternary } from "../common/Ternary";
 import { SelectGroup } from "@radix-ui/react-select";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
+import { useState } from "react";
+import TournamentCreateModal from "../admin/tournaments/TournamentCreateModal";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import { Button } from "../ui/button";
+import { FiPlus } from "react-icons/fi";
 
 interface TournamentSelectorProps {
   className?: string;
 }
+
 export default function TournamentSelector({
   className,
 }: TournamentSelectorProps) {
+  const { isSuperAdmin } = useAuth();
   const { setTournamentId, tournamentId } = useTournamentStore();
   const { setMatchId } = useMatchStore();
   const { seasonId } = useSeasonStore();
-
+  const [createTournamentModal, setCreateTournamentModal] =
+    useState<boolean>(false);
   const { data: allTournaments } = useTournaments();
 
   const onSelect = (value: string | null) => {
@@ -36,35 +44,49 @@ export default function TournamentSelector({
     allTournaments?.length && allTournaments?.length > 0 ? true : false;
 
   return (
-    <Select
-      value={tournamentId || ""}
-      onValueChange={(value) => onSelect(value || null)}
-    >
-      <SelectTrigger
-        disabled={!seasonId || !isTournamentExist}
-        className={className || "w-fit min-w-[200px]"}
+    <>
+      <Select
+        value={tournamentId || ""}
+        onValueChange={(value) => onSelect(value || null)}
       >
-        <SelectValue placeholder="Select Tournament" />
-      </SelectTrigger>
-      <SelectContent className="max-h-[200px] overflow-y-auto">
-        <Ternary
-          condition={isTournamentExist}
-          trueComponent={
-            <>
-              {allTournaments?.map((tournament) => (
-                <SelectItem key={tournament.id} value={tournament.id}>
-                  {tournament.name}
-                </SelectItem>
-              ))}
-            </>
-          }
-          falseComponent={
+        <SelectTrigger
+          disabled={!seasonId}
+          className={className || "w-fit min-w-[200px]"}
+        >
+          <SelectValue placeholder="Select Tournament" />
+        </SelectTrigger>
+        <SelectContent className="max-h-[200px] overflow-y-auto">
+          <Ternary
+            condition={isTournamentExist}
+            trueComponent={
+              <>
+                {allTournaments?.map((tournament) => (
+                  <SelectItem key={tournament.id} value={tournament.id}>
+                    {tournament.name}
+                  </SelectItem>
+                ))}
+              </>
+            }
+            falseComponent={
+              <SelectGroup>
+                <SelectLabel>No Tournaments</SelectLabel>
+              </SelectGroup>
+            }
+          />
+          {isSuperAdmin && (
             <SelectGroup>
-              <SelectLabel>No Tournaments</SelectLabel>
+              <Button className="w-full" variant={"secondary"}>
+                <FiPlus size={20} />
+              </Button>
             </SelectGroup>
-          }
-        />
-      </SelectContent>
-    </Select>
+          )}
+        </SelectContent>
+      </Select>
+
+      <TournamentCreateModal
+        showCreateModal={createTournamentModal}
+        setShowCreateModal={setCreateTournamentModal}
+      />
+    </>
   );
 }
