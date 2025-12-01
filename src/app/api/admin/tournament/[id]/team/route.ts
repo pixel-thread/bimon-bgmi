@@ -39,108 +39,73 @@ export async function GET(
 
     let data;
 
-    if (matchId !== "all") {
-      data = teams?.map((team) => {
-        const teamStats = team.teamStats.find((val) => val.matchId === matchId);
-        const teamPlayerStats = team.teamPlayerStats.find(
-          (val) => val.matchId === matchId,
+    const isAllFilter = matchId === "all";
+
+    data = teams?.map((team) => {
+      const teamStats = isAllFilter
+        ? team.teamStats
+        : team.teamStats.filter((val) => val.matchId === matchId);
+
+      const rawTeamPlayerStats = team.teamPlayerStats;
+      const teamPlayerStats = isAllFilter
+        ? []
+        : team.teamPlayerStats.filter((val) => val.matchId === matchId);
+
+      const position = isAllFilter
+        ? teamStats?.reduce((a, b) => a + b.position, 0)
+        : teamStats.find((val) => val.matchId === matchId)?.position;
+
+      const teamPlayers = team.players.map((player) => {
+        const playerStats = player.playerStats.find(
+          (val) => val.seasonId === seasonId,
         );
-        const position = teamStats?.position || 0;
 
-        const teamPlayers = team.players.map((player) => {
-          const playerStats = player.playerStats.find(
-            (val) => val.seasonId === seasonId,
-          );
-          const category = getKdRank(
-            playerStats?.kills || 0,
-            playerStats?.deaths || 0,
-          );
-          return {
-            id: player.id,
-            name: player.user.userName,
-            category: category,
-          };
-        });
+        const category = getKdRank(
+          playerStats?.kills || 0,
+          playerStats?.deaths || 0,
+        );
 
-        const kills = teamPlayerStats?.kills || 0;
-        const teamPosition = position || 0;
-        const pts = calculatePlayerPoints(teamPosition, 0);
-        const total = kills + pts;
-        const teamName = team.players
-          .map((player) => player.user.userName)
-          .join("_");
         return {
-          id: team.id,
-          name: teamName,
-          matches: team.matches,
-          size: team.players.length,
-          slotNo: team.teamNumber + 1,
-          kills: teamPlayerStats?.kills || 0,
-          deaths: teamPlayerStats?.deaths || 0,
-          position: teamPosition,
-          pts: pts,
-          total: total,
-          players: teamPlayers,
+          id: player.id,
+          name: player.user.userName,
+          category: category,
         };
       });
-    } else {
-      data = teams?.map((team) => {
-        const teamPlayers = team.players.map((player) => {
-          const playerStats = player.playerStats.find(
-            (val) => val.seasonId === seasonId,
-          );
-          const category = getKdRank(
-            playerStats?.kills || 0,
-            playerStats?.deaths || 0,
-          );
-          return {
-            id: player.id,
-            name: player.user.userName,
-            category: category,
-          };
-        });
 
-        const teamPlayerStats = team.teamPlayerStats.filter(
-          (val) => val.seasonId === seasonId && val.teamId === team.id,
-        );
+      const kills = isAllFilter
+        ? rawTeamPlayerStats.reduce((a, b) => a + b.kills, 0)
+        : teamPlayerStats.reduce((a, b) => a + b.kills, 0);
 
-        const teamStats = team.teamStats.filter(
-          (val) => val.seasonId === seasonId && val.teamId === team.id,
-        );
-        const position = teamStats.reduce((acc, val) => acc + val.position, 0);
-        const groupStats = teamPlayerStats.map((stat) => {
-          const kills = stat.kills || 0;
-          const pts = calculatePlayerPoints(position, 0); // Calculate points based on position
-          const total = kills + pts;
-          return {
-            ...stat, // Keep all original fields
-            kills,
-            pts, // Add calculated points
-            total, // Add total score
-          };
-        });
+      const deaths = isAllFilter
+        ? rawTeamPlayerStats.reduce((a, b) => a + b.deaths, 0)
+        : teamPlayerStats.reduce((a, b) => a + b.deaths, 0);
 
-        const kills = groupStats.reduce((acc, val) => acc + val.kills, 0);
-        const pts = groupStats.reduce((acc, val) => acc + val.pts, 0);
-        const total = pts + kills;
-        const teamName = team.players
-          .map((player) => player.user.userName)
-          .join("_");
-        return {
-          id: team.id,
-          name: teamName,
-          matches: team.matches,
-          size: team.players.length,
-          slotNo: team.teamNumber + 1,
-          kills: kills,
-          deaths: 0,
-          position: 0,
-          pts: pts,
-          total: total,
-          players: teamPlayers,
-        };
-      });
-    }
+      const teamPosition = position || 0;
+
+      const pts = calculatePlayerPoints(teamPosition, 0);
+
+      const total = kills + pts;
+
+      const teamName = team.players
+        .map((player) => player.user.userName)
+        .join("_");
+
+      return {
+        id: team.id,
+        name: teamName,
+        matches: team.matches,
+        size: team.players.length,
+        slotNo: team.teamNumber + 1,
+        kills: kills || 0,
+        deaths: deaths || 0,
+        position: teamPosition,
+        pts: pts,
+        total: total,
+        players: teamPlayers,
+        teamPlayerStats: teamPlayerStats,
+      };
+    });
+
     const sortedData = data.sort((a, b) => b.total - a.total);
 
     return SuccessResponse({
