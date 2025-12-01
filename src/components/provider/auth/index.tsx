@@ -51,8 +51,8 @@ export const AuthProvider = ({ children }: Props) => {
 
   // get user when signed in
   useEffect(() => {
-    getUser();
     if (isSignedIn && user === null) {
+      getUser();
     }
   }, [isSignedIn, user]);
 
