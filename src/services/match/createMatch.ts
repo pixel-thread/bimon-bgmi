@@ -74,8 +74,8 @@ export async function createMatch({ data }: Props) {
       return match;
     },
     {
-      maxWait: 10000, // Max wait to connect to Prisma (10 seconds)
-      timeout: 30000, // Transaction timeout (30 seconds)
+      maxWait: 20000, // Max wait to connect to Prisma (10 seconds)
+      timeout: 50000, // Transaction timeout (30 seconds)
     },
   );
 }
