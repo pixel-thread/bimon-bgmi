@@ -62,10 +62,10 @@ export function SeasonSelector({
   };
 
   useEffect(() => {
-    if (selectedSeason === "") {
-      setSeasonId(activeSeason?.id || "");
+    if (selectedSeason === "" && activeSeason) {
+      setSeasonId(activeSeason?.id);
     }
-  }, [selectedSeason]);
+  }, [selectedSeason, activeSeason]);
 
   return (
     <>

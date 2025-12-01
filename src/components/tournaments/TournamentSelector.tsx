@@ -14,7 +14,7 @@ import { useSeasonStore } from "../../store/season";
 import { Ternary } from "../common/Ternary";
 import { SelectGroup } from "@radix-ui/react-select";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import TournamentCreateModal from "../admin/tournaments/TournamentCreateModal";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { Button } from "../ui/button";
@@ -41,11 +41,11 @@ export default function TournamentSelector({
 
   const isTournamentExist =
     allTournaments?.length && allTournaments?.length > 0 ? true : false;
+
   return (
     <>
       <Select
         value={tournamentId || ""}
-        onOpenChange={() => refetch()}
         onValueChange={(value) => onSelect(value || null)}
       >
         <SelectTrigger className={className || "w-fit min-w-[200px]"}>
@@ -71,24 +71,13 @@ export default function TournamentSelector({
           />
           {isSuperAdmin && (
             <SelectGroup>
-              <div className="flex">
-                <Button
-                  className="w-full"
-                  onClick={() =>
-                    setCreateTournamentModal(!createTournamentModal)
-                  }
-                  variant={"ghost"}
-                >
-                  <FiPlus size={20} />
-                </Button>
-                <Button
-                  onClick={() => refetch()}
-                  size={"icon-sm"}
-                  variant={"ghost"}
-                >
-                  <FiPlus size={20} />
-                </Button>
-              </div>
+              <Button
+                className="w-full"
+                onClick={() => setCreateTournamentModal(!createTournamentModal)}
+                variant={"ghost"}
+              >
+                <FiPlus size={20} />
+              </Button>
             </SelectGroup>
           )}
         </SelectContent>
