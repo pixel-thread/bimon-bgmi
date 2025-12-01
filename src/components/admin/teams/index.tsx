@@ -28,7 +28,7 @@ const headers = [
 
 export const AdminTeamsManagement: React.FC = () => {
   const search = useSearchParams();
-  const page = search.get("page") || "1";
+  const page = "all";
   const [showStandingsModal, setShowStandingsModal] = useState(false);
   const { tournamentId } = useTournamentStore();
   const { data: tournament } = useTournament({ id: tournamentId });

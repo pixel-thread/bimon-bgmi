@@ -202,7 +202,7 @@ const UpdateTeamPlayerStats = ({
   return (
     <Form {...form}>
       <div className="flex flex-col gap-2 md:flex-row">
-        <div className="flex gap-2 items-center max-w-[250px] justify-between flex-row">
+        <div className="flex gap-2 items-center max-w-full justify-between flex-row">
           {teamPlayerStats?.map((playerStats) => (
             <FormField
               key={playerStats.playerId}

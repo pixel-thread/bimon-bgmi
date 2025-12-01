@@ -26,7 +26,8 @@ export async function GET(
       return ErrorResponse({ message: "Tournament not found" });
     }
     const seasonId = tournament.seasonId;
-    const [teams, total] = await getTeamByTournamentId({
+
+    const [teams, _] = await getTeamByTournamentId({
       tournamentId: id,
       page: "all",
     });

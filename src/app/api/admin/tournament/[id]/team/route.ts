@@ -22,6 +22,7 @@ export async function GET(
     const id = (await params).id;
 
     const matchId = req.nextUrl.searchParams.get("match") || "";
+
     const page = req.nextUrl.searchParams.get("page") || "1";
 
     const tournament = await getTournamentById({ id });
@@ -39,19 +40,19 @@ export async function GET(
 
     let data;
 
-    const isAllFilter = matchId === "all";
+    const isAllMatchFilter = matchId === "all";
 
     data = teams?.map((team) => {
-      const teamStats = isAllFilter
+      const teamStats = isAllMatchFilter
         ? team.teamStats
         : team.teamStats.filter((val) => val.matchId === matchId);
 
       const rawTeamPlayerStats = team.teamPlayerStats;
-      const teamPlayerStats = isAllFilter
+      const teamPlayerStats = isAllMatchFilter
         ? []
         : team.teamPlayerStats.filter((val) => val.matchId === matchId);
 
-      const position = isAllFilter
+      const position = isAllMatchFilter
         ? teamStats?.reduce((a, b) => a + b.position, 0)
         : teamStats.find((val) => val.matchId === matchId)?.position;
 
@@ -72,11 +73,11 @@ export async function GET(
         };
       });
 
-      const kills = isAllFilter
+      const kills = isAllMatchFilter
         ? rawTeamPlayerStats.reduce((a, b) => a + b.kills, 0)
         : teamPlayerStats.reduce((a, b) => a + b.kills, 0);
 
-      const deaths = isAllFilter
+      const deaths = isAllMatchFilter
         ? rawTeamPlayerStats.reduce((a, b) => a + b.deaths, 0)
         : teamPlayerStats.reduce((a, b) => a + b.deaths, 0);
 

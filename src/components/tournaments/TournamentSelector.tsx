@@ -30,7 +30,6 @@ export default function TournamentSelector({
   const { isSuperAdmin } = useAuth();
   const { setTournamentId, tournamentId } = useTournamentStore();
   const { setMatchId } = useMatchStore();
-  const { seasonId } = useSeasonStore();
   const [createTournamentModal, setCreateTournamentModal] =
     useState<boolean>(false);
   const { data: allTournaments, refetch } = useTournaments();
@@ -42,17 +41,14 @@ export default function TournamentSelector({
 
   const isTournamentExist =
     allTournaments?.length && allTournaments?.length > 0 ? true : false;
-
   return (
     <>
       <Select
         value={tournamentId || ""}
+        onOpenChange={() => refetch()}
         onValueChange={(value) => onSelect(value || null)}
       >
-        <SelectTrigger
-          onClick={() => refetch()}
-          className={className || "w-fit min-w-[200px]"}
-        >
+        <SelectTrigger className={className || "w-fit min-w-[200px]"}>
           <SelectValue placeholder="Select Tournament" />
         </SelectTrigger>
         <SelectContent className="max-h-[200px] overflow-y-auto">
@@ -75,13 +71,24 @@ export default function TournamentSelector({
           />
           {isSuperAdmin && (
             <SelectGroup>
-              <Button
-                className="w-full"
-                onClick={() => setCreateTournamentModal(!createTournamentModal)}
-                variant={"ghost"}
-              >
-                <FiPlus size={20} />
-              </Button>
+              <div className="flex">
+                <Button
+                  className="w-full"
+                  onClick={() =>
+                    setCreateTournamentModal(!createTournamentModal)
+                  }
+                  variant={"ghost"}
+                >
+                  <FiPlus size={20} />
+                </Button>
+                <Button
+                  onClick={() => refetch()}
+                  size={"icon-sm"}
+                  variant={"ghost"}
+                >
+                  <FiPlus size={20} />
+                </Button>
+              </div>
             </SelectGroup>
           )}
         </SelectContent>
