@@ -75,12 +75,5 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   }, [isAuthenticated, pathName, redirectTo, router, isAuthLoading]);
 
   // Display preloader if authentication or loading is in progress
-  if (isAuthLoading) {
-    return (
-      <div className="min-h-screen absolute z-50 top-0 left-0 right-0 bottom-0 flex items-center justify-center">
-        <LoaderFour text="PUBGMI TOURNAMENT" />
-      </div>
-    );
-  }
   return <>{children}</>;
 };
