@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { shallow } from "zustand/shallow";
+import React, { useEffect, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -17,6 +16,10 @@ import { SelectGroup } from "@radix-ui/react-select";
 import { useTournamentStore } from "../store/tournament";
 import { useMatchStore } from "../store/match/useMatchStore";
 import { useActiveSeason } from "../hooks/season/useActiveSeason";
+import { useAuth } from "../hooks/context/auth/useAuth";
+import { CreateSeasonDialog } from "./admin/season/create-season-dialog";
+import { FiPlus } from "react-icons/fi";
+import { Button } from "./ui/button";
 
 interface SeasonSelectorProps {
   className?: string;
@@ -32,10 +35,12 @@ export function SeasonSelector({
   size = "md",
 }: SeasonSelectorProps) {
   const { setSeasonId, seasonId: selectedSeason } = useSeasonStore();
+  const { isSuperAdmin } = useAuth();
   const { data: activeSeason } = useActiveSeason();
   const { setTournamentId } = useTournamentStore();
   const { setMatchId } = useMatchStore();
   const { isFetching, data, isLoading } = useGetSeasons();
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
   // Size configurations
   const sizeClasses = {
@@ -63,39 +68,51 @@ export function SeasonSelector({
   }, [selectedSeason]);
 
   return (
-    <Select
-      value={selectedSeason === "" ? activeSeason?.id : selectedSeason || ""}
-      defaultValue={
-        selectedSeason === "" ? activeSeason?.id : selectedSeason || ""
-      }
-      disabled={isFetching || isLoading}
-      onValueChange={onValueChange}
-    >
-      <SelectTrigger
+    <>
+      <Select
+        value={selectedSeason === "" ? activeSeason?.id : selectedSeason || ""}
+        defaultValue={
+          selectedSeason === "" ? activeSeason?.id : selectedSeason || ""
+        }
         disabled={isFetching || isLoading}
-        className={triggerClasses}
+        onValueChange={onValueChange}
       >
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        <Ternary
-          condition={data?.length && data?.length > 0 ? true : false}
-          trueComponent={
-            <>
-              {data?.map((season) => (
-                <SelectItem key={season.id} value={season.id}>
-                  {season.name}
-                </SelectItem>
-              ))}
-            </>
-          }
-          falseComponent={
+        <SelectTrigger
+          disabled={isFetching || isLoading}
+          className={triggerClasses}
+        >
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <Ternary
+            condition={data?.length && data?.length > 0 ? true : false}
+            trueComponent={
+              <>
+                {data?.map((season) => (
+                  <SelectItem key={season.id} value={season.id}>
+                    {season.name}
+                  </SelectItem>
+                ))}
+              </>
+            }
+            falseComponent={
+              <SelectGroup>
+                <SelectLabel>No Seasons</SelectLabel>
+              </SelectGroup>
+            }
+          />
+          {isSuperAdmin && (
             <SelectGroup>
-              <SelectLabel>No Seasons</SelectLabel>
+              <SelectLabel>Manage Seasons</SelectLabel>
+              <Button className="w-full" onClick={() => setIsDialogOpen(true)}>
+                <FiPlus className="mr-2" />
+                Create Season
+              </Button>
             </SelectGroup>
-          }
-        />
-      </SelectContent>
-    </Select>
+          )}
+        </SelectContent>
+      </Select>
+      <CreateSeasonDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
+    </>
   );
 }

@@ -33,14 +33,14 @@ export async function addPlayerToTeam({ teamId, playerId, matchId }: Props) {
         });
       }
 
-      tx.player.update({
+      await tx.player.update({
         where: { id: playerId },
         data: {
           teamStats: { connect: { id: teamStat.id || "" } },
         },
       });
 
-      tx.teamPlayerStats.create({
+      await tx.teamPlayerStats.create({
         data: {
           teamId: teamId || "",
           matchId: matchId || "",
@@ -50,7 +50,7 @@ export async function addPlayerToTeam({ teamId, playerId, matchId }: Props) {
         },
       });
 
-      tx.matchPlayerPlayed.create({
+      await tx.matchPlayerPlayed.create({
         data: {
           matchId: matchId || "",
           playerId: playerId || "",

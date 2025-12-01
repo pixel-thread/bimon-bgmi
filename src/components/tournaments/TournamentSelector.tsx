@@ -33,7 +33,7 @@ export default function TournamentSelector({
   const { seasonId } = useSeasonStore();
   const [createTournamentModal, setCreateTournamentModal] =
     useState<boolean>(false);
-  const { data: allTournaments } = useTournaments();
+  const { data: allTournaments, refetch } = useTournaments();
 
   const onSelect = (value: string | null) => {
     setMatchId("");
@@ -50,7 +50,7 @@ export default function TournamentSelector({
         onValueChange={(value) => onSelect(value || null)}
       >
         <SelectTrigger
-          disabled={!seasonId}
+          onClick={() => refetch()}
           className={className || "w-fit min-w-[200px]"}
         >
           <SelectValue placeholder="Select Tournament" />
@@ -75,7 +75,11 @@ export default function TournamentSelector({
           />
           {isSuperAdmin && (
             <SelectGroup>
-              <Button className="w-full" variant={"secondary"}>
+              <Button
+                className="w-full"
+                onClick={() => setCreateTournamentModal(!createTournamentModal)}
+                variant={"ghost"}
+              >
                 <FiPlus size={20} />
               </Button>
             </SelectGroup>

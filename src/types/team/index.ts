@@ -1,4 +1,4 @@
-import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
+import { Prisma, TeamPlayerStats } from "@/src/lib/db/prisma/generated/prisma";
 
 type PlayerT = {
   id: string;
@@ -17,6 +17,7 @@ export type TeamT = {
   players: PlayerT[];
   pts: number;
   total: number;
+  teamPlayerStats: TeamPlayerStats[];
 };
 
 export type TeamStatsT = Prisma.TeamStatsGetPayload<{
