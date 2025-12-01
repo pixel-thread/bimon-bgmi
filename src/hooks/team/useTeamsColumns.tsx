@@ -192,6 +192,7 @@ const UpdateTeamPlayerStats = ({
         {
           playerId: data.playerId,
           kills: data.kills,
+          deaths: 1,
         },
       ],
     };
@@ -207,7 +208,8 @@ const UpdateTeamPlayerStats = ({
               key={playerStats.playerId}
               name={playerStats.playerId}
               render={({ field: rField }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full flex justify-between items-center h-full space-x-2">
+                  <FormLabel>Kill:</FormLabel>
                   <FormControl>
                     <Input
                       defaultValue={playerStats.kills}

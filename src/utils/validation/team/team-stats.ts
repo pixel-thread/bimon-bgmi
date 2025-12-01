@@ -2,7 +2,7 @@ import z from "zod";
 
 export const playerTeamStatsSchema = z.object({
   playerId: z.uuid("Player ID is not valid"),
-  deaths: z.coerce.number().optional(),
+  deaths: z.coerce.number().optional().default(1),
   kills: z.coerce.number().optional(),
   name: z.string().optional(),
 });
