@@ -32,7 +32,7 @@ export default function TournamentSelector({
   const { setMatchId } = useMatchStore();
   const [createTournamentModal, setCreateTournamentModal] =
     useState<boolean>(false);
-  const { data: allTournaments, refetch } = useTournaments();
+  const { data: allTournaments } = useTournaments();
 
   const onSelect = (value: string | null) => {
     setMatchId("");
