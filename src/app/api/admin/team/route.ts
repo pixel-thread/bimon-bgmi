@@ -34,14 +34,6 @@ export async function POST(req: NextRequest) {
           status: 404,
         });
       }
-
-      if (isPlayerExist.teamId) {
-        return ErrorResponse({
-          message:
-            "Player is already on a team: " + isPlayerExist.user.userName,
-          status: 400,
-        });
-      }
     }
 
     const teams = await getTeamsByTournamentId({

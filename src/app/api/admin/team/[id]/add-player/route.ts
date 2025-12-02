@@ -13,6 +13,7 @@ export async function POST(
 ) {
   try {
     await superAdminMiddleware(req);
+
     const teamId = (await params).id;
 
     const isTeamExist = await getTeamById({ where: { id: teamId } });

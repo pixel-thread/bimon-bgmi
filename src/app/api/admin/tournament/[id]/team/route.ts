@@ -96,7 +96,7 @@ export async function GET(
         name: teamName,
         matches: team.matches,
         size: team.players.length,
-        slotNo: team.teamNumber + 1,
+        slotNo: teams.indexOf(team) + 2,
         kills: kills || 0,
         deaths: deaths || 0,
         position: teamPosition,
@@ -107,10 +107,8 @@ export async function GET(
       };
     });
 
-    const sortedData = data.sort((a, b) => b.total - a.total);
-
     return SuccessResponse({
-      data: sortedData,
+      data: data,
       message: "Teams fetched successfully",
       meta: getMeta({ currentPage: page, total }),
     });
