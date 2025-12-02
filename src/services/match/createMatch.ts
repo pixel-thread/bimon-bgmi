@@ -155,7 +155,7 @@ export async function createMatch({ data }: Props) {
           }
         }
       },
-      { maxWait: 20_000, timeout: 60_000 },
+      { maxWait: 20000, timeout: 60000 },
     );
 
     await Promise.all(teamPromises);
