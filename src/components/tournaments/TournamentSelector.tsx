@@ -19,6 +19,7 @@ import TournamentCreateModal from "../admin/tournaments/TournamentCreateModal";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { Button } from "../ui/button";
 import { FiPlus } from "react-icons/fi";
+import { cn } from "@/src/lib/utils";
 
 interface TournamentSelectorProps {
   className?: string;
@@ -48,10 +49,7 @@ export default function TournamentSelector({
         value={tournamentId}
         onValueChange={(value) => onSelect(value || null)}
       >
-        <SelectTrigger
-          disabled={true}
-          className={className || "w-fit min-w-[200px]"}
-        >
+        <SelectTrigger disabled={true} className={cn(className, "w-fit")}>
           <SelectValue placeholder="Loading" />
         </SelectTrigger>
       </Select>
@@ -63,8 +61,8 @@ export default function TournamentSelector({
         value={tournamentId || ""}
         onValueChange={(value) => onSelect(value || null)}
       >
-        <SelectTrigger className={className || "w-fit min-w-[200px]"}>
-          <SelectValue placeholder="Select Tournament" />
+        <SelectTrigger className={cn(className, "w-fit")}>
+          <SelectValue placeholder="Tournament" />
         </SelectTrigger>
         <SelectContent className="max-h-[200px] overflow-y-auto">
           <Ternary

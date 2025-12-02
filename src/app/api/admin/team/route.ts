@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const teams = await getTeamsByTournamentId({
+    const [teams, _] = await getTeamsByTournamentId({
       tournamentId: body.tournamentId,
     });
 
@@ -47,6 +47,23 @@ export async function POST(req: NextRequest) {
         message: "Match not found",
         status: 404,
       });
+    }
+
+    for (const player of body.players) {
+      const isPlayerAlreadyOnAnyTeam = teams.some((team) => {
+        const teamPlayerStatsExist = team.teamPlayerStats.some(
+          (teamPlayerStats) => {
+            return teamPlayerStats.playerId === player.playerId;
+          },
+        );
+        return !!teamPlayerStatsExist;
+      });
+      if (isPlayerAlreadyOnAnyTeam) {
+        return ErrorResponse({
+          message: "Player already on a a team please remove player first",
+          status: 400,
+        });
+      }
     }
 
     const team = await createTeamByTournamentId({

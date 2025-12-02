@@ -2,14 +2,26 @@ import z from "zod";
 
 export const playerTeamStatsSchema = z.object({
   playerId: z.uuid("Player ID is not valid"),
-  deaths: z.coerce.number().optional().default(1),
-  kills: z.coerce.number().optional(),
-  name: z.string().optional(),
+  deaths: z
+    .number({
+      message: "Deaths must be a number",
+    })
+    .optional()
+    .default(1),
+  kills: z
+    .number({
+      message: "Kills must be a number",
+    })
+    .optional(),
 });
 
 export const teamStatsSchema = z.object({
   players: z.array(playerTeamStatsSchema, "Players are not valid"),
-  position: z.coerce.number().optional(),
+  position: z
+    .number({
+      message: "Position must be a number",
+    })
+    .optional(),
   teamId: z.uuid("Team ID is not valid"),
 });
 

@@ -10,6 +10,11 @@ export async function removePlayerFromTeam({ teamId, playerId }: Props) {
     await tx.teamPlayerStats.deleteMany({
       where: { playerId, teamId },
     });
+
+    await tx.matchPlayerPlayed.deleteMany({
+      where: { playerId: playerId, teamId: teamId },
+    });
+
     return await tx.team.update({
       where: { id: teamId },
       data: { players: { disconnect: { id: playerId } } },

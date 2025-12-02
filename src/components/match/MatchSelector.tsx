@@ -21,6 +21,7 @@ import http from "@/src/utils/http";
 import { ADMIN_MATCH_ENDPOINTS } from "@/src/lib/endpoints/admin/match";
 import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import { cn } from "@/src/lib/utils";
 
 interface TournamentSelectorProps {
   className?: string;
@@ -68,10 +69,7 @@ export default function MatchSelector({
         value={matchId}
         onValueChange={(value) => onSelect(value || null)}
       >
-        <SelectTrigger
-          disabled={true}
-          className={className || "w-fit min-w-[200px]"}
-        >
+        <SelectTrigger disabled={true} className={className}>
           <SelectValue placeholder="Loading" />
         </SelectTrigger>
       </Select>
@@ -82,7 +80,7 @@ export default function MatchSelector({
     <Select value={matchId} onValueChange={(value) => onSelect(value || null)}>
       <SelectTrigger
         disabled={!seasonId || !tournamentId}
-        className={className || "w-fit min-w-[200px]"}
+        className={cn(className, "w-fit")}
       >
         <SelectValue placeholder="Select Match" />
       </SelectTrigger>

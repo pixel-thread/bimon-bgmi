@@ -16,7 +16,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
-import React, { useState } from "react";
+import React from "react";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { Input } from "@/src/components/ui/input";
 import { TeamPlayerStats } from "@/src/lib/db/prisma/generated/prisma";
@@ -27,33 +27,10 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/src/components/ui/form";
 import { debounce } from "@/src/utils/debounce";
-
-const col: ColumnDef<TeamT>[] = [
-  {
-    accessorKey: "size",
-    header: "Team Size",
-  },
-  {
-    accessorKey: "slotNo",
-    header: "Slot No.",
-  },
-  {
-    accessorKey: "pts",
-    header: "Placement Points",
-  },
-  {
-    accessorKey: "kills",
-    header: "Kills",
-  },
-  {
-    accessorKey: "total",
-    header: "Total",
-  },
-];
+import { Ternary } from "@/src/components/common/Ternary";
 
 type Props = {
   page?: string;
@@ -72,6 +49,14 @@ export const useTeamsColumns = ({ page }: Props = { page: "1" }) => {
         ),
       },
       {
+        header: "Kill",
+        cell: ({ row }) => (
+          <UpdateTeamPlayerStats
+            teamPlayerStats={row.original.teamPlayerStats}
+          />
+        ),
+      },
+      {
         header: "Position",
         cell: ({ row }) => (
           <UpdateTeamStatsPosition
@@ -80,15 +65,6 @@ export const useTeamsColumns = ({ page }: Props = { page: "1" }) => {
           />
         ),
       },
-      {
-        header: "Stats",
-        cell: ({ row }) => (
-          <UpdateTeamPlayerStats
-            teamPlayerStats={row.original.teamPlayerStats}
-          />
-        ),
-      },
-      ...col,
       {
         header: "Action",
         cell: ({ row }) => <ActionDropdown page={page} id={row.original.id} />,
@@ -201,33 +177,39 @@ const UpdateTeamPlayerStats = ({
     <Form {...form}>
       <div className="flex flex-col gap-2 md:flex-row">
         <div className="flex gap-2 items-center max-w-full justify-between flex-row">
-          {teamPlayerStats?.map((playerStats) => (
-            <FormField
-              key={playerStats.playerId}
-              name={playerStats.playerId}
-              render={({ field: rField }) => (
-                <FormItem className="w-full flex justify-between items-center h-full space-x-2">
-                  <FormLabel>Kill:</FormLabel>
-                  <FormControl>
-                    <Input
-                      defaultValue={playerStats.kills}
-                      disabled={isPending}
-                      onChange={(e) => {
-                        rField.onChange(e);
-                        onSubmit({
-                          playerId: playerStats.playerId,
-                          kills: Number(e.target.value),
-                        });
-                      }}
-                      type="number"
-                      className="min-w-[100px]"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ))}
+          <Ternary
+            condition={teamPlayerStats && teamPlayerStats.length > 0}
+            trueComponent={
+              <>
+                {teamPlayerStats?.map((playerStats) => (
+                  <FormField
+                    key={playerStats.playerId}
+                    name={playerStats.playerId}
+                    render={({ field: rField }) => (
+                      <FormItem className="w-full flex justify-between items-center h-full space-x-2">
+                        <FormControl>
+                          <Input
+                            defaultValue={playerStats.kills}
+                            disabled={isPending}
+                            onChange={(e) => {
+                              rField.onChange(e);
+                              onSubmit({
+                                playerId: playerStats.playerId,
+                                kills: Number(e.target.value),
+                              });
+                            }}
+                            className="max-w-[50px] min-w-[50px] w-full"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ))}
+              </>
+            }
+            falseComponent={<h1>N/A</h1>}
+          />
         </div>
       </div>
     </Form>
@@ -287,7 +269,7 @@ const UpdateTeamStatsPosition = ({
               <FormItem className="w-full">
                 <FormControl>
                   <Input
-                    disabled={isPending}
+                    disabled={isPending || matchId === "all"}
                     defaultValue={position}
                     onChange={(e) => {
                       rField.onChange(e);
@@ -295,8 +277,7 @@ const UpdateTeamStatsPosition = ({
                         position: Number(e.target.value),
                       });
                     }}
-                    type="number"
-                    className="min-w-[100px]"
+                    className="max-w-[50px] min-w-[50px] w-full"
                   />
                 </FormControl>
                 <FormMessage />

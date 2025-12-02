@@ -123,8 +123,8 @@ export const AddPlayerToTeamDialog = ({
   const handleRemovePlayer = (playerId: string) => {
     removePlayer({ playerId, matchId });
   };
-  const handleReplacePlayer = (playerId: string, removeId: string) => {
-    removePlayer({ playerId: removeId, matchId });
+
+  const handleReplacePlayer = (playerId: string) => {
     addPlayer({ playerId: playerId, matchId: matchId });
   };
   return (
@@ -160,9 +160,7 @@ export const AddPlayerToTeamDialog = ({
                   <div className="flex items-center gap-2">
                     <Select
                       value={playerId}
-                      onValueChange={(value) =>
-                        handleReplacePlayer(value, playerId)
-                      }
+                      onValueChange={(value) => handleReplacePlayer(value)}
                       disabled={isFetchingPlayers || isPending}
                     >
                       <SelectTrigger className="w-full">

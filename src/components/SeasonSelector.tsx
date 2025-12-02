@@ -20,6 +20,7 @@ import { useAuth } from "../hooks/context/auth/useAuth";
 import { CreateSeasonDialog } from "./admin/season/create-season-dialog";
 import { FiPlus } from "react-icons/fi";
 import { Button } from "./ui/button";
+import { cn } from "../lib/utils";
 
 interface SeasonSelectorProps {
   className?: string;
@@ -41,19 +42,6 @@ export function SeasonSelector({
   const { setMatchId } = useMatchStore();
   const { isFetching, data, isLoading } = useGetSeasons();
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-
-  // Size configurations
-  const sizeClasses = {
-    sm: "h-8 text-sm px-2",
-    md: "h-10 px-3",
-    lg: "h-11 px-3",
-  };
-
-  const triggerClasses = `
-    ${sizeClasses[size]} 
-    rounded-lg w-fit min-w-[100px] 
-    ${className}
-  `.trim();
 
   const onValueChange = (value: string) => {
     setTournamentId("");
@@ -79,7 +67,7 @@ export function SeasonSelector({
       >
         <SelectTrigger
           disabled={isFetching || isLoading}
-          className={triggerClasses}
+          className={cn(className)}
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>

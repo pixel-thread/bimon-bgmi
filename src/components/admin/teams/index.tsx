@@ -15,10 +15,16 @@ import { useTournamentStore } from "@/src/store/tournament";
 import { TeamStatsSheet } from "./TeamStatsSheet";
 import { useTeams } from "@/src/hooks/team/useTeams";
 import { useTournament } from "@/src/hooks/tournament/useTournament";
-import { IconReload } from "@tabler/icons-react";
-import { OverallStandingModal } from "../../teamManagementImports";
+import { IconFileExport, IconPlus, IconReload } from "@tabler/icons-react";
+import {
+  OverallStandingModal,
+  TournamentSelector,
+} from "../../teamManagementImports";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
+import { SeasonSelector } from "../../SeasonSelector";
+import MatchSelector from "../../match/MatchSelector";
+import { MedalIcon } from "lucide-react";
 
 const headers = [
   { label: "Total Players", key: "size" },
@@ -59,78 +65,62 @@ export const AdminTeamsManagement: React.FC = () => {
 
   return (
     <>
+      <div className="flex flex-col sm:flex-row gap-2 gap-y-5 items-start sm:items-center">
+        <div className="w-full flex flex-col md:flex-row justify-end items-center gap-x-2 gap-y-5">
+          <div className="flex flex-wrap md:flex-nowrap gap-2 justify-center md:justify-end w-full md:w-auto">
+            <SeasonSelector className="w-full max-w-[110px]" />
+            <TournamentSelector className="w-full max-w-[110px]" />
+            <MatchSelector className="w-[100px] max-w-[110px]" />
+          </div>
+          <div className="flex items-center justify-center md:justify-end md:w-auto w-full gap-2">
+            <Button
+              disabled={isFetching}
+              onClick={() => setShowStandingsModal(true)}
+            >
+              <MedalIcon />
+            </Button>
+            <Button
+              disabled={isFetching}
+              onClick={() => refetch()}
+              className="w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
+            >
+              <IconReload />
+            </Button>
+
+            <Button
+              disabled={isFetching || !tournamentId}
+              className="w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
+              asChild
+            >
+              <CSVLink
+                filename={`${tournament?.name}.csv`}
+                aria-disabled={isFetching}
+                data={teams || []}
+                className="w-auto"
+                headers={headers}
+              >
+                <IconFileExport />
+              </CSVLink>
+            </Button>
+            <Button
+              onClick={() => setOpen(true)}
+              disabled={isFetching || !tournamentId}
+              className="w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
+            >
+              <IconPlus />
+            </Button>
+          </div>
+        </div>
+      </div>
       <Ternary
-        condition={!tournamentId}
+        condition={isFetching}
         trueComponent={
-          <Ternary
-            condition={isFetching}
-            trueComponent={
-              <div className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 gap-4">
-                <LoaderFive text="Loading teams..." />
-              </div>
-            }
-            falseComponent={
-              <div className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 gap-4">
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                  Teams Management
-                </h1>
-                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
-                  Create and manage tournament teams
-                </p>
-              </div>
-            }
-          />
+          <div className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 gap-4">
+            <LoaderFive text="Loading teams..." />
+          </div>
         }
         falseComponent={
           <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 space-y-6 py-4 sm:py-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                  Teams Management
-                </h1>
-                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
-                  Create and manage tournament teams
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                <Button
-                  disabled={isFetching}
-                  onClick={() => setShowStandingsModal(true)}
-                >
-                  Out Standing
-                </Button>
-                <Button
-                  disabled={isFetching}
-                  onClick={() => refetch()}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
-                >
-                  <IconReload /> Refresh
-                </Button>
-
-                <Button
-                  disabled={isFetching || !tournamentId}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
-                  asChild
-                >
-                  <CSVLink
-                    filename={`${tournament?.name}.csv`}
-                    aria-disabled={isFetching}
-                    data={teams || []}
-                    headers={headers}
-                  >
-                    Export
-                  </CSVLink>
-                </Button>
-                <Button
-                  onClick={() => setOpen(true)}
-                  disabled={isFetching || !tournamentId}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
-                >
-                  Create Team
-                </Button>
-              </div>
-            </div>
             {teams && teams?.length > 0 && (
               <DataTable data={teams || []} columns={columns} meta={meta} />
             )}
