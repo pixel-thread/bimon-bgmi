@@ -122,34 +122,37 @@ export async function createMatch({ data }: Props) {
         });
 
         if (team.players && team.players.length > 0) {
-          // Prepare player promises to run concurrently
-          const playerPromises = team.players.map(async (player) => {
-            await tx.teamPlayerStats.create({
-              data: {
-                teamId: team.id || "",
-                matchId: match.id || "",
-                seasonId: data.seasonId,
-                playerId: player.id || "",
-                teamStatsId: teamStats.id || "",
-              },
-            });
+          // Batch create all teamPlayerStats, matchPlayerPlayed, and player connections
+          const playerIds = team.players.map((p) => p.id);
+
+          // Bulk create teamPlayerStats
+          await tx.teamPlayerStats.createMany({
+            data: playerIds.map((playerId) => ({
+              teamId: team.id!,
+              matchId: match.id!,
+              seasonId: data.seasonId,
+              playerId,
+              teamStatsId: teamStats.id!,
+            })),
+          });
+
+          // Bulk create matchPlayerPlayed
+          await tx.matchPlayerPlayed.createMany({
+            data: playerIds.map((playerId) => ({
+              matchId: match.id!,
+              playerId,
+              tournamentId: data.tournamentId,
+              seasonId: data.seasonId,
+              teamId: team.id!,
+            })),
+          });
+
+          for (const player of team.players) {
             await tx.player.update({
               where: { id: player.id },
               data: { matches: { connect: { id: match.id } } },
             });
-
-            await tx.matchPlayerPlayed.create({
-              data: {
-                matchId: match.id || "",
-                playerId: player.id || "", // Fixed to use correct player id
-                tournamentId: data.tournamentId,
-                seasonId: data.seasonId,
-                teamId: team.id,
-              },
-            });
-          });
-
-          await Promise.all(playerPromises);
+          }
         }
       },
       { maxWait: 20_000, timeout: 60_000 },
