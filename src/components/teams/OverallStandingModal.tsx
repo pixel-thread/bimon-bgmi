@@ -11,6 +11,7 @@ import TeamStats from "./TeamStats";
 import { useQuery } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { useTournamentStore } from "@/src/store/tournament";
+import { LoaderFive } from "../ui/loader";
 
 interface OverallStandingModalProps {
   visible: boolean;
@@ -40,7 +41,6 @@ export default function OverallStandingModal({
   });
 
   // Render the modal if visible and selectedMatch is not empty.
-  if (!visible || isFetching) return null;
 
   const shareImage = async () => {
     const shareButton = document.querySelector(
@@ -147,6 +147,8 @@ export default function OverallStandingModal({
     onClose();
   };
 
+  if (!visible) return null;
+
   return (
     <>
       <style jsx>{`
@@ -196,6 +198,7 @@ export default function OverallStandingModal({
           backgroundImage={backgroundImage}
           tournamentTitle={tournamentTitle}
           maxMatchNumber={maxMatchNumber}
+          isLoading={isFetching}
         />
       </div>
     </>

@@ -8,18 +8,21 @@ import { useGetSeasons } from "../hooks/season/useGetSeasons";
 import { useMatches } from "../hooks/match/useMatches";
 
 import { TeamT } from "../types/team";
+import { LoaderFive } from "./ui/loader";
 
 interface ShareableContentProps {
   teams: TeamT[];
   backgroundImage: string;
   tournamentTitle: string;
   maxMatchNumber: number; // This now represents our local matchCount
+  isLoading?: boolean;
 }
 
 export function ShareableContent({
   teams,
   backgroundImage,
   tournamentTitle,
+  isLoading,
 }: ShareableContentProps) {
   const { matchId: selectedMatch } = useMatchStore();
   const { seasonId: selectedSeason } = useSeasonStore();
@@ -32,6 +35,28 @@ export function ShareableContent({
 
   // Example usage:
   const todayFormatted = formatDateDDMMYYYY(new Date());
+
+  if (isLoading) {
+    return (
+      <div
+        id="shareable-content"
+        className="relative w-full min-h-screen flex items-center justify-center bg-cover bg-center bg-background text-foreground"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+      >
+        <div className="absolute inset-0 bg-black/70" />
+        <div className="modal-container relative z-10 w-full max-w-[98%] sm:max-w-none mx-auto p-4 sm:p-6">
+          <div className="text-center mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-orange-500 font-montserrat tracking-wide">
+              {tournamentTitle}
+            </h1>
+          </div>
+          <div className="flex text-white justify-center">
+            <LoaderFive text="Loading..." />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
