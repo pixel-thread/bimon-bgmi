@@ -105,58 +105,55 @@ export async function createMatch({ data }: Props) {
     });
 
     // For each team, prepare promises instead of waiting within the for-loop
-    const teamPromises = teams.map(
-      async (team) => {
-        await tx.team.update({
-          where: { id: team.id },
-          data: { matches: { connect: { id: match.id } } },
-        });
+    const teamPromises = teams.map(async (team) => {
+      await tx.team.update({
+        where: { id: team.id },
+        data: { matches: { connect: { id: match.id } } },
+      });
 
-        const teamStats = await tx.teamStats.create({
-          data: {
-            teamId: team.id,
-            matchId: match.id,
+      const teamStats = await tx.teamStats.create({
+        data: {
+          teamId: team.id,
+          matchId: match.id,
+          seasonId: data.seasonId,
+          tournamentId: data.tournamentId,
+        },
+      });
+
+      if (team.players && team.players.length > 0) {
+        // Batch create all teamPlayerStats, matchPlayerPlayed, and player connections
+        const playerIds = team.players.map((p) => p.id);
+
+        // Bulk create teamPlayerStats
+        await tx.teamPlayerStats.createMany({
+          data: playerIds.map((playerId) => ({
+            teamId: team.id!,
+            matchId: match.id!,
             seasonId: data.seasonId,
-            tournamentId: data.tournamentId,
-          },
+            playerId,
+            teamStatsId: teamStats.id!,
+          })),
         });
 
-        if (team.players && team.players.length > 0) {
-          // Batch create all teamPlayerStats, matchPlayerPlayed, and player connections
-          const playerIds = team.players.map((p) => p.id);
+        // Bulk create matchPlayerPlayed
+        await tx.matchPlayerPlayed.createMany({
+          data: playerIds.map((playerId) => ({
+            matchId: match.id!,
+            playerId,
+            tournamentId: data.tournamentId,
+            seasonId: data.seasonId,
+            teamId: team.id!,
+          })),
+        });
 
-          // Bulk create teamPlayerStats
-          await tx.teamPlayerStats.createMany({
-            data: playerIds.map((playerId) => ({
-              teamId: team.id!,
-              matchId: match.id!,
-              seasonId: data.seasonId,
-              playerId,
-              teamStatsId: teamStats.id!,
-            })),
+        for (const player of team.players) {
+          await tx.player.update({
+            where: { id: player.id },
+            data: { matches: { connect: { id: match.id } } },
           });
-
-          // Bulk create matchPlayerPlayed
-          await tx.matchPlayerPlayed.createMany({
-            data: playerIds.map((playerId) => ({
-              matchId: match.id!,
-              playerId,
-              tournamentId: data.tournamentId,
-              seasonId: data.seasonId,
-              teamId: team.id!,
-            })),
-          });
-
-          for (const player of team.players) {
-            await tx.player.update({
-              where: { id: player.id },
-              data: { matches: { connect: { id: match.id } } },
-            });
-          }
         }
-      },
-      { maxWait: 20000, timeout: 60000 },
-    );
+      }
+    });
 
     await Promise.all(teamPromises);
 
