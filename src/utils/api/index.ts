@@ -6,7 +6,7 @@ const cookies = new Cookies();
 
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
-  timeout: 70000, // 20 seconds
+  timeout: 600000, // 10 minutes
 });
 
 axiosInstance.interceptors.request.use(
