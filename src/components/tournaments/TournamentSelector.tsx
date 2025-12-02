@@ -89,9 +89,8 @@ export default function TournamentSelector({
               <Button
                 className="w-full"
                 onClick={() => setCreateTournamentModal(!createTournamentModal)}
-                variant={"ghost"}
               >
-                <FiPlus size={20} />
+                <FiPlus size={20} /> Create Tournament
               </Button>
             </SelectGroup>
           )}

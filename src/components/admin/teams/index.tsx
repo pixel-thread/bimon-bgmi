@@ -96,7 +96,6 @@ export const AdminTeamsManagement: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
                 <Button
                   disabled={isFetching}
-                  variant={"ghost"}
                   onClick={() => setShowStandingsModal(true)}
                 >
                   Out Standing
@@ -116,6 +115,7 @@ export const AdminTeamsManagement: React.FC = () => {
                 >
                   <CSVLink
                     filename={`${tournament?.name}.csv`}
+                    aria-disabled={isFetching}
                     data={teams || []}
                     headers={headers}
                   >
@@ -131,7 +131,7 @@ export const AdminTeamsManagement: React.FC = () => {
                 </Button>
               </div>
             </div>
-            {teams && teams?.length > 0 && !isFetching && (
+            {teams && teams?.length > 0 && (
               <DataTable data={teams || []} columns={columns} meta={meta} />
             )}
             <CreateTeamDialog onOpenChange={onCloseCreateTeam} open={open} />

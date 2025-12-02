@@ -101,9 +101,8 @@ export default function MatchSelector({
                 <Button
                   onClick={() => onClickAddNewMatch()}
                   className="w-full text-start flex"
-                  variant={"ghost"}
                 >
-                  <PlusIcon />
+                  <PlusIcon /> Create Match
                 </Button>
               )}
             </>
@@ -114,9 +113,8 @@ export default function MatchSelector({
               <Button
                 onClick={() => onClickAddNewMatch()}
                 className="w-full text-start flex"
-                variant={"ghost"}
               >
-                <PlusIcon />
+                <PlusIcon /> Create Match
               </Button>
             </SelectGroup>
           }
