@@ -7,7 +7,7 @@ type Props = {
   data: Prisma.UCCreateInput;
 };
 
-export async function updatePlayerUc({ where, update, data }: Props) {
+export async function updatePlayerUc({ where, update }: Props) {
   return await prisma.$transaction(async (tx) => {
     const isPlayerExist = await tx.player.findUnique({
       where: { id: where.playerId },

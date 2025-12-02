@@ -101,7 +101,7 @@ export async function createMatch({ data }: Props) {
         },
       });
 
-      const [teams, _] = await getTeamByTournamentId({
+      const [teams] = await getTeamByTournamentId({
         tournamentId: data.tournamentId,
       });
 

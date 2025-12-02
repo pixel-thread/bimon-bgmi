@@ -4,7 +4,6 @@ import { UnauthorizedError } from "./unAuthError";
 import { EmailError } from "./EmailError";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { ErrorResponse } from "../next-response";
-import { ClerkAPIError, ClerkAPIResponseError } from "@clerk/types";
 
 export const handleApiErrors = (error: unknown) => {
   if (error instanceof Prisma.PrismaClientInitializationError) {
@@ -46,15 +45,7 @@ export const handleApiErrors = (error: unknown) => {
       status: error.status,
     });
   }
-  // @ts-ignore
-  if (error.errors) {
-    return ErrorResponse({
-      // @ts-ignore
-      message: error.errors[0].message,
-      // @ts-ignore
-      status: error.satatus || 400,
-    });
-  }
+
   if (error instanceof Error) {
     return ErrorResponse({
       message: error.message,
