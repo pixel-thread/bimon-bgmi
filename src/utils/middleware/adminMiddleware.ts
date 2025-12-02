@@ -4,8 +4,13 @@ import { tokenMiddleware } from "./tokenMiddleware";
 export async function adminMiddleware(req: Request) {
   const user = await tokenMiddleware(req);
 
-  if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
-    throw new UnauthorizedError("Permission Denied");
+  switch (user.role) {
+    case "ADMIN":
+      break;
+    case "SUPER_ADMIN":
+      break;
+    default:
+      throw new UnauthorizedError("Permission Denied");
   }
 
   return user;

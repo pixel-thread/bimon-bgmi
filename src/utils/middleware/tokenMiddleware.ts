@@ -11,7 +11,7 @@ export async function tokenMiddleware(req: NextRequest | Request) {
   const token = authHeader?.split(" ")[1];
 
   if (!token) {
-    throw new UnauthorizedError("Token khlm sent");
+    throw new UnauthorizedError("Token khlem sent");
   }
   // Parse the Clerk session JWT and get claims
   const claims = await verifyToken(token, {
