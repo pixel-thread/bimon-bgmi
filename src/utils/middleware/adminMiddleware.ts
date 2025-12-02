@@ -1,8 +1,9 @@
 import { UnauthorizedError } from "../errors/unAuthError";
 import { getUserById } from "@/src/services/user/getUserById";
 import { verifyToken } from "@clerk/backend";
+import { NextRequest } from "next/server";
 
-export async function adminMiddleware(req: Request) {
+export async function adminMiddleware(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   const token = authHeader?.split(" ")[1];
 
