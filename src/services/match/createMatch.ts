@@ -92,74 +92,68 @@ type Props = {
 };
 
 export async function createMatch({ data }: Props) {
-  return prisma.$transaction(
-    async (tx) => {
-      const match = await tx.match.create({
+  return prisma.$transaction(async (tx) => {
+    const match = await tx.match.create({
+      data: {
+        tournamentId: data.tournamentId,
+        seasonId: data.seasonId,
+      },
+    });
+
+    const [teams] = await getTeamByTournamentId({
+      tournamentId: data.tournamentId,
+    });
+
+    // For each team, prepare promises instead of waiting within the for-loop
+    const teamPromises = teams.map(async (team) => {
+      await tx.team.update({
+        where: { id: team.id },
+        data: { matches: { connect: { id: match.id } } },
+      });
+
+      const teamStats = await tx.teamStats.create({
         data: {
-          tournamentId: data.tournamentId,
+          teamId: team.id,
+          matchId: match.id,
           seasonId: data.seasonId,
+          tournamentId: data.tournamentId,
         },
       });
 
-      const [teams] = await getTeamByTournamentId({
-        tournamentId: data.tournamentId,
-      });
-
-      // For each team, prepare promises instead of waiting within the for-loop
-      const teamPromises = teams.map(async (team) => {
-        await tx.team.update({
-          where: { id: team.id },
-          data: { matches: { connect: { id: match.id } } },
-        });
-
-        const teamStats = await tx.teamStats.create({
-          data: {
-            teamId: team.id,
-            matchId: match.id,
-            seasonId: data.seasonId,
-            tournamentId: data.tournamentId,
-          },
-        });
-
-        if (team.players && team.players.length > 0) {
-          // Prepare player promises to run concurrently
-          const playerPromises = team.players.map(async (player) => {
-            await tx.teamPlayerStats.create({
-              data: {
-                teamId: team.id || "",
-                matchId: match.id || "",
-                seasonId: data.seasonId,
-                playerId: player.id || "",
-                teamStatsId: teamStats.id || "",
-              },
-            });
-            await tx.player.update({
-              where: { id: player.id },
-              data: { matches: { connect: { id: match.id } } },
-            });
-
-            await tx.matchPlayerPlayed.create({
-              data: {
-                matchId: match.id || "",
-                playerId: player.id || "", // Fixed to use correct player id
-                tournamentId: data.tournamentId,
-                seasonId: data.seasonId,
-                teamId: team.id,
-              },
-            });
+      if (team.players && team.players.length > 0) {
+        // Prepare player promises to run concurrently
+        const playerPromises = team.players.map(async (player) => {
+          await tx.teamPlayerStats.create({
+            data: {
+              teamId: team.id || "",
+              matchId: match.id || "",
+              seasonId: data.seasonId,
+              playerId: player.id || "",
+              teamStatsId: teamStats.id || "",
+            },
+          });
+          await tx.player.update({
+            where: { id: player.id },
+            data: { matches: { connect: { id: match.id } } },
           });
 
-          await Promise.all(playerPromises);
-        }
-      });
+          await tx.matchPlayerPlayed.create({
+            data: {
+              matchId: match.id || "",
+              playerId: player.id || "", // Fixed to use correct player id
+              tournamentId: data.tournamentId,
+              seasonId: data.seasonId,
+              teamId: team.id,
+            },
+          });
+        });
 
-      await Promise.all(teamPromises);
+        await Promise.all(playerPromises);
+      }
+    });
 
-      return match;
-    },
-    {
-      maxWait: 20000,
-      timeout: 60000,
-    },
-  );
+    await Promise.all(teamPromises);
+
+    return match;
+  });
 }
