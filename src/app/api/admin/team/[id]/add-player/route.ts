@@ -3,7 +3,7 @@ import { addPlayerToTeam } from "@/src/services/team/addPlayerToTeam";
 import { getTeamById } from "@/src/services/team/getTeamById";
 import { getTeamByTournamentId } from "@/src/services/team/getTeamByTournamentId";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { addPlayerSchema } from "@/src/utils/validation/team/add-player";
 
@@ -12,7 +12,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
 
     const teamId = (await params).id;
 

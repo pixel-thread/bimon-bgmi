@@ -30,6 +30,7 @@ const PollManagement: React.FC = () => {
   const { columns } = usePollColumns();
   const search = useSearchParams();
   const updateId = search.get("update") || "";
+  const viewId = search.get("view") || "";
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const [adminPollFilter, setAdminPollFilter] = useState<
@@ -47,12 +48,6 @@ const PollManagement: React.FC = () => {
     queryFn: async () => http.get<PollT[]>("/admin/poll"),
     select: (data) => data.data,
   });
-
-  const [showVotersDialog, setShowVotersDialog] = useState<PollT | null>(null);
-
-  const closeVotersDialog = () => {
-    setShowVotersDialog(null);
-  };
 
   if (loading) {
     return (
@@ -148,13 +143,7 @@ const PollManagement: React.FC = () => {
       </div>
 
       {/* Voters Dialog */}
-      {showVotersDialog && (
-        <VotersDialog
-          isOpen={!!showVotersDialog}
-          onClose={closeVotersDialog}
-          poll={showVotersDialog as any}
-        />
-      )}
+      {viewId && <VotersDialog isOpen={!!viewId} id={viewId} />}
 
       <CreatePollDialog
         open={isCreateModalOpen}

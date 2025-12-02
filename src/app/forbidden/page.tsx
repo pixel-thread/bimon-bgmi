@@ -39,10 +39,10 @@ export default function page() {
               Try Again
             </Button>
             <Link
-              href="/contact"
+              href="/"
               className={cn(buttonVariants({ variant: "outline" }))}
             >
-              Contact support <span aria-hidden="true">&rarr;</span>
+              Back Home
             </Link>
           </div>
         </div>

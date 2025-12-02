@@ -1,7 +1,7 @@
 import { deleteTeamById } from "@/src/services/team/deleteTeamById";
 import { getTeamById } from "@/src/services/team/getTeamById";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
 
     const id = (await params).id;
 
@@ -35,7 +35,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
     const id = (await params).id;
     const isTeamExist = await getTeamById({ where: { id } });
 

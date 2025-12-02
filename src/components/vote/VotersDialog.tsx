@@ -20,25 +20,28 @@ import { Ternary } from "../common/Ternary";
 import { Progress } from "../ui/progress";
 import { usePlayerVote } from "@/src/hooks/poll/usePlayerVote";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
+import { usePoll } from "@/src/hooks/poll/usePoll";
+import { useRouter } from "next/navigation";
 
 type PollT = Prisma.PollGetPayload<{ include: { options: true } }>;
 
 type VotersDialogsProps = {
   isOpen: boolean;
-  onClose: () => void;
-  poll: PollT;
+  id: string;
 };
 
 // get the enum from prisma
 type VoteT = Prisma.PlayerPollVoteCreateInput["vote"];
 
 export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
-  ({ isOpen, onClose, poll: poll }) => {
+  ({ isOpen, id }) => {
     const [selectedGroup, setSelectedGroup] = useState<VoteT | null>(null);
 
-    const pollId = poll.id;
+    const router = useRouter();
 
-    const { data: pollVoters } = usePlayerVote({ pollId, enabled: isOpen });
+    const { data: poll } = usePoll({ id });
+
+    const { data: pollVoters } = usePlayerVote({ pollId: id });
 
     const pollQuestion = poll?.question;
 
@@ -47,11 +50,6 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
     const displayLimit = 0;
 
     const totalVotes = allVotes?.length || 0;
-
-    const onCloseOnClick = () => {
-      setSelectedGroup(null);
-      onClose();
-    };
 
     const filterPollVote = (vote: VoteT) => {
       return pollVoters?.filter((val) => val.vote === vote) || [];
@@ -77,7 +75,7 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
     }));
 
     return (
-      <Dialog open={isOpen} onOpenChange={onCloseOnClick}>
+      <Dialog open={isOpen} onOpenChange={() => router.back()}>
         <DialogContent className="sm:max-w-lg mx-2 sm:mx-0">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
@@ -215,7 +213,7 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
           </div>
 
           <DialogFooter>
-            <Button onClick={onClose}>Close</Button>
+            <Button onClick={() => router.back()}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

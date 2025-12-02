@@ -2,6 +2,12 @@ import { RoleRoute } from "@/src/types/routeRole";
 
 export const routeRoles: RoleRoute[] = [
   {
+    url: "/admin/admins",
+    role: ["SUPER_ADMIN"],
+    needAuth: true,
+    redirect: "/forbidden",
+  },
+  {
     url: "/admin/*",
     role: ["SUPER_ADMIN", "ADMIN"],
     needAuth: true,
