@@ -16,20 +16,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
-import React, { useEffect } from "react";
+import React, { useState } from "react";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { Input } from "@/src/components/ui/input";
-import {
-  TeamPlayerStats,
-  TeamStats,
-} from "@/src/lib/db/prisma/generated/prisma";
-import {
-  teamsStatsSchema,
-  TeamStatsForm,
-  teamStatsSchema,
-} from "@/src/utils/validation/team/team-stats";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { TeamPlayerStats } from "@/src/lib/db/prisma/generated/prisma";
+import { TeamStatsForm } from "@/src/utils/validation/team/team-stats";
+import { useForm } from "react-hook-form";
 import {
   Form,
   FormControl,
@@ -38,6 +30,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/src/components/ui/form";
+import { debounce } from "@/src/utils/debounce";
 
 const col: ColumnDef<TeamT>[] = [
   {
@@ -184,8 +177,13 @@ const UpdateTeamPlayerStats = ({
     },
   });
 
+  const debounceMutate = debounce(
+    (payload: TeamStatsForm & { matchId: string }) => mutate(payload),
+    2000,
+  );
+
   const onSubmit = (data: { playerId: string; kills: number }) => {
-    const payload = {
+    const payload: TeamStatsForm & { matchId: string } = {
       teamId: teamId,
       matchId: matchId,
       players: [
@@ -196,7 +194,7 @@ const UpdateTeamPlayerStats = ({
         },
       ],
     };
-    mutate(payload);
+    debounceMutate(payload);
   };
 
   return (
@@ -263,6 +261,11 @@ const UpdateTeamStatsPosition = ({
     },
   });
 
+  const debounceMutate = debounce(
+    (value: TeamStatsForm & { matchId: string }) => mutate(value),
+    1500,
+  );
+
   const onSubmit = (data: { position: number }) => {
     const payload: TeamStatsForm & { matchId: string } = {
       teamId: teamId,
@@ -270,7 +273,8 @@ const UpdateTeamStatsPosition = ({
       position: data.position,
       players: [],
     };
-    mutate(payload);
+
+    debounceMutate(payload);
   };
 
   return (
