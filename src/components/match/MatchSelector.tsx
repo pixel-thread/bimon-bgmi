@@ -21,7 +21,6 @@ import http from "@/src/utils/http";
 import { ADMIN_MATCH_ENDPOINTS } from "@/src/lib/endpoints/admin/match";
 import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
-import { useEffect } from "react";
 
 interface TournamentSelectorProps {
   className?: string;
@@ -37,14 +36,13 @@ export default function MatchSelector({
   const { seasonId } = useSeasonStore();
 
   const { tournamentId } = useTournamentStore();
-  const queryclient = useQueryClient();
-  const { data: matches, isFetching } = useMatches();
+  const { data: matches, isFetching, refetch } = useMatches();
 
   const onSelect = (value: string | null) => {
     setMatchId(value || "");
   };
 
-  const { mutate: onClickAddNewMatch } = useMutation({
+  const { mutate: onClickAddNewMatch, isPending } = useMutation({
     mutationFn: () =>
       http.post<{ id: string }>(ADMIN_MATCH_ENDPOINTS.POST_ADD_NEW_MATCH, {
         tournamentId,
@@ -52,7 +50,7 @@ export default function MatchSelector({
       }),
     onSuccess: (data) => {
       if (data.success) {
-        queryclient.invalidateQueries({ queryKey: ["match", tournamentId] });
+        refetch();
         onSelect(data?.data?.id || "");
         toast.success(data.message);
         return data;
@@ -64,16 +62,22 @@ export default function MatchSelector({
 
   const isMatchExist = matches?.length && matches?.length > 0 ? true : false;
 
-  if (isFetching) {
-    <Select value={matchId} onValueChange={(value) => onSelect(value || null)}>
-      <SelectTrigger
-        disabled={true}
-        className={className || "w-fit min-w-[200px]"}
+  if (isFetching || isPending) {
+    return (
+      <Select
+        value={matchId}
+        onValueChange={(value) => onSelect(value || null)}
       >
-        <SelectValue placeholder="Loading" />
-      </SelectTrigger>
-    </Select>;
+        <SelectTrigger
+          disabled={true}
+          className={className || "w-fit min-w-[200px]"}
+        >
+          <SelectValue placeholder="Loading" />
+        </SelectTrigger>
+      </Select>
+    );
   }
+
   return (
     <Select value={matchId} onValueChange={(value) => onSelect(value || null)}>
       <SelectTrigger

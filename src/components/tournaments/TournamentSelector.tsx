@@ -32,7 +32,7 @@ export default function TournamentSelector({
   const { setMatchId } = useMatchStore();
   const [createTournamentModal, setCreateTournamentModal] =
     useState<boolean>(false);
-  const { data: allTournaments } = useTournaments();
+  const { data: allTournaments, isFetching } = useTournaments();
 
   const onSelect = (value: string | null) => {
     setMatchId("");
@@ -42,6 +42,21 @@ export default function TournamentSelector({
   const isTournamentExist =
     allTournaments?.length && allTournaments?.length > 0 ? true : false;
 
+  if (isFetching) {
+    return (
+      <Select
+        value={tournamentId}
+        onValueChange={(value) => onSelect(value || null)}
+      >
+        <SelectTrigger
+          disabled={true}
+          className={className || "w-fit min-w-[200px]"}
+        >
+          <SelectValue placeholder="Loading" />
+        </SelectTrigger>
+      </Select>
+    );
+  }
   return (
     <>
       <Select

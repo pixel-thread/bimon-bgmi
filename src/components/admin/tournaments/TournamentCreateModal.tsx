@@ -18,7 +18,7 @@ import { Button } from "@/src/components/ui/button";
 import { toast } from "sonner";
 import { SubmitHandler, useForm } from "react-hook-form";
 import z from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { tournamentSchema } from "@/src/utils/validation/tournament";
 import { useActiveSeason } from "@/src/hooks/season/useActiveSeason";
@@ -43,6 +43,7 @@ export default function TournamentCreateModal({
   const { isFetching: isLoading, data: activeSeason } = useActiveSeason();
   const { seasonId } = useSeasonStore();
   const { setTournamentId: setSelectedTournament } = useTournamentStore();
+  const queryClient = useQueryClient();
 
   const form = useForm({
     resolver: zodResolver(tournamentSchema),
@@ -61,6 +62,7 @@ export default function TournamentCreateModal({
       if (data.success) {
         toast.success(data.message);
         setShowCreateModal(false);
+        queryClient.invalidateQueries({ queryKey: ["tournaments", seasonId] });
         if (data && data?.data?.id) {
           setSelectedTournament(data?.data?.id);
         }
