@@ -6,8 +6,10 @@ type Props = {
   where: Prisma.PlayerWhereInput;
   include?: Prisma.PlayerInclude;
   page?: string;
+  orderBy?: Prisma.SortOrder;
 };
-export async function getAllPlayers({ where, page = "1" }: Props) {
+
+export async function getAllPlayers({ where, page = "1", orderBy }: Props) {
   const { take, skip } = getPagination({ page });
 
   if (page === "all") {
@@ -21,6 +23,7 @@ export async function getAllPlayers({ where, page = "1" }: Props) {
           matchPlayerPlayed: true,
           uc: true,
         },
+        orderBy: { [orderBy || "createdAt"]: "desc" },
       }),
 
       prisma.player.count({ where }),
@@ -38,6 +41,7 @@ export async function getAllPlayers({ where, page = "1" }: Props) {
         },
         take,
         skip,
+        orderBy: { [orderBy || "createdAt"]: "desc" },
       }),
 
       prisma.player.count({ where }),

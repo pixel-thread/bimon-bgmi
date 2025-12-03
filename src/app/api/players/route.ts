@@ -6,6 +6,19 @@ import { SuccessResponse } from "@/src/utils/next-response";
 import { getMeta } from "@/src/utils/pagination/getMeta";
 import { NextRequest } from "next/server";
 
+type PaginateProps = {
+  array: any[];
+  pageSize: number;
+  pageNumber: number;
+};
+
+function paginate({ array, pageSize, pageNumber }: PaginateProps) {
+  const startIndex = (pageNumber - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  return array.slice(startIndex, endIndex);
+}
+
+// Example usage
 function getKdRank(kills: number, deaths: number): string {
   if (deaths === 0) {
     // Prevent division by zero; if kills > 0 and no deaths, consider as legend
@@ -39,6 +52,8 @@ export async function GET(req: NextRequest) {
 
     let seasonId: string | undefined =
       req.nextUrl.searchParams.get("season") || "all";
+    const sortBy = req.nextUrl.searchParams.get("sortBy") || "kd";
+    const sortOrder = req.nextUrl.searchParams.get("sortOrder") || "desc";
 
     let where: Prisma.PlayerWhereInput = {
       playerStats: { some: { seasonId } },
@@ -49,7 +64,7 @@ export async function GET(req: NextRequest) {
     }
 
     const [players, total] = await getAllPlayers({
-      page,
+      page: "all",
       where,
     });
 
@@ -62,7 +77,7 @@ export async function GET(req: NextRequest) {
         );
         const playerKd =
           playerStats.reduce((acc, curr) => acc + curr.kills, 0) /
-          playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
+            playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
         const matches =
           player?.matchPlayerPlayed.filter(
             (value) => value.seasonId === seasonId,
@@ -84,7 +99,7 @@ export async function GET(req: NextRequest) {
       data = players.map((player) => {
         const playerKd =
           player.playerStats.reduce((acc, curr) => acc + curr.kills, 0) /
-          player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
+            player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
         return {
           id: player.id,
           isBanned: player.isBanned,
@@ -101,8 +116,6 @@ export async function GET(req: NextRequest) {
     }
 
     // Get sort parameters
-    const sortBy = req.nextUrl.searchParams.get("sortBy") || "kd";
-    const sortOrder = req.nextUrl.searchParams.get("sortOrder") || "desc";
 
     // Sort the data
     data.sort((a: any, b: any) => {
@@ -139,7 +152,10 @@ export async function GET(req: NextRequest) {
     });
 
     return SuccessResponse({
-      data: data,
+      data:
+        seasonId === "all"
+          ? paginate({ array: data, pageSize: 1, pageNumber: parseInt(page) })
+          : data,
       message: "Players fetched successfully",
       meta: getMeta({ total: total, currentPage: page }),
     });
