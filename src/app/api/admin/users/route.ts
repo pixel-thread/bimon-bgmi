@@ -9,7 +9,9 @@ export async function GET(req: NextRequest) {
   try {
     await superAdminMiddleware(req);
     const page = req.nextUrl.searchParams.get("page") || "1";
-    const [users, total] = await getAllUsers({ page });
+    const roleParam = req.nextUrl.searchParams.get("role") || "USER";
+    const where = roleParam ? { role: { equals: roleParam as any } } : undefined;
+    const [users, total] = await getAllUsers({ page, where });
     return SuccessResponse({
       data: users,
       meta: getMeta({ total, currentPage: page }),

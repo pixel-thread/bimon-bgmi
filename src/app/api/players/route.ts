@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
         );
         const playerKd =
           playerStats.reduce((acc, curr) => acc + curr.kills, 0) /
-            playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
+          playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
         const matches =
           player?.matchPlayerPlayed.filter(
             (value) => value.seasonId === seasonId,
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
       data = players.map((player) => {
         const playerKd =
           player.playerStats.reduce((acc, curr) => acc + curr.kills, 0) /
-            player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
+          player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
         return {
           id: player.id,
           isBanned: player.isBanned,
@@ -99,6 +99,44 @@ export async function GET(req: NextRequest) {
         };
       });
     }
+
+    // Get sort parameters
+    const sortBy = req.nextUrl.searchParams.get("sortBy") || "kd";
+    const sortOrder = req.nextUrl.searchParams.get("sortOrder") || "desc";
+
+    // Sort the data
+    data.sort((a: any, b: any) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortBy) {
+        case "kd":
+          aValue = parseFloat(a.kd) || 0;
+          bValue = parseFloat(b.kd) || 0;
+          break;
+        case "kills":
+          aValue = a.kills || 0;
+          bValue = b.kills || 0;
+          break;
+        case "matches":
+          aValue = a.matches || 0;
+          bValue = b.matches || 0;
+          break;
+        case "balance":
+          aValue = a.uc || 0;
+          bValue = b.uc || 0;
+          break;
+        default:
+          aValue = parseFloat(a.kd) || 0;
+          bValue = parseFloat(b.kd) || 0;
+      }
+
+      if (sortOrder === "asc") {
+        return aValue - bValue;
+      } else {
+        return bValue - aValue;
+      }
+    });
 
     return SuccessResponse({
       data: data,
