@@ -21,67 +21,61 @@ export async function updateTeamStats({
   seasonId,
   data,
 }: Props) {
-  return await prisma.$transaction(
-    async (tx) => {
-      // Upsert TeamStats for this team in this match
-      await tx.teamStats.upsert({
-        where: {
-          teamId,
-          matchId,
-          tournamentId,
-          teamId_matchId: { teamId, matchId },
-        },
-        create: {
-          teamId,
-          matchId,
-          tournamentId,
-          seasonId,
-        },
-        update: { position: data.position },
-      });
-      await Promise.all(
-        data.players.map((player) =>
-          tx.teamPlayerStats.update({
-            where: {
-              playerId_teamId_matchId: {
-                playerId: player.playerId,
-                teamId,
-                matchId,
-              },
+  return await prisma.$transaction(async (tx) => {
+    // Upsert TeamStats for this team in this match
+    await tx.teamStats.upsert({
+      where: {
+        teamId,
+        matchId,
+        tournamentId,
+        teamId_matchId: { teamId, matchId },
+      },
+      create: {
+        teamId,
+        matchId,
+        tournamentId,
+        seasonId,
+      },
+      update: { position: data.position },
+    });
+    await Promise.all(
+      data.players.map((player) =>
+        tx.teamPlayerStats.update({
+          where: {
+            playerId_teamId_matchId: {
+              playerId: player.playerId,
+              teamId,
+              matchId,
             },
-            data: {
-              kills: player.kills ?? 0,
-              deaths: player.deaths ?? 0,
+          },
+          data: {
+            kills: player.kills ?? 0,
+            deaths: 1,
+          },
+        }),
+      ),
+    );
+    logger.log("TeamPlayerStats updated");
+    // Update PlayerStats
+    await Promise.all(
+      data.players.map((player) =>
+        tx.playerStats.update({
+          where: {
+            seasonId_playerId: {
+              playerId: player.playerId,
+              seasonId: seasonId || "",
             },
-          }),
-        ),
-      );
-      logger.log("TeamPlayerStats updated");
-      // Update PlayerStats
-      await Promise.all(
-        data.players.map((player) =>
-          tx.playerStats.update({
-            where: {
-              seasonId_playerId: {
-                playerId: player.playerId,
-                seasonId: seasonId || "",
-              },
-            },
-            data: {
-              kills: player.kills ?? 0,
-              deaths: 1, // player should be dead  1  for a single match in a team
-            },
-          }),
-        ),
-      );
+          },
+          data: {
+            kills: { increment: player.kills },
+            deaths: { increment: player.deaths }, // player should be dead  1  for a single match in a team
+          },
+        }),
+      ),
+    );
 
-      return { success: true };
-    },
-    {
-      maxWait: 20000,
-      timeout: 30000,
-    },
-  );
+    return { success: true };
+  });
 }
 
 export async function updateManyTeamsStats({
