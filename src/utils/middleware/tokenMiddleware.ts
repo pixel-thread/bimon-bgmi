@@ -54,14 +54,20 @@ export async function tokenMiddleware(req: NextRequest | Request) {
   }
 
   if (clerkUser.username !== user.userName) {
+    const newUserName =
+      clerkUser.username ||
+      clerkUser.firstName ||
+      clerkUser.primaryEmailAddress?.emailAddress.split("@")[0] ||
+      "";
+
+    const isVerified = clerkUser.primaryEmailAddress ? true : false;
+
     user = await updateUser({
       where: { id: user.id },
       data: {
-        userName:
-          clerkUser.username ||
-          clerkUser.firstName ||
-          clerkUser.primaryEmailAddress?.emailAddress.split("@")[0] ||
-          "",
+        isEmailLinked: isVerified,
+        isVerified: isVerified,
+        userName: newUserName,
         usernameLastChangeAt: new Date(),
         email: clerkUser.primaryEmailAddress?.emailAddress || "",
       },
