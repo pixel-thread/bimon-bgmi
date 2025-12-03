@@ -179,7 +179,7 @@ export const AdminTeamsManagement: React.FC = () => {
         visible={showStandingsModal}
         onClose={() => setShowStandingsModal(false)}
         backgroundImage={"/images/image.png"}
-        tournamentTitle={"Tournament"}
+        tournamentTitle={tournament?.name || "Tournament"}
         maxMatchNumber={1}
       />
     </>

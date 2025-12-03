@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { LoaderFive } from "@/src/components/ui/loader";
 
 import { PlayerFilters } from "./PlayerFilters";
-import { DynamicTopPlayersPodium } from "../ui/dynamic-top-players-podium";
 import { PlayerStatsModal } from "./PlayerStatsModal";
 import { usePlayerData } from "./hooks/usePlayerData";
 import { Button } from "../ui/button";
@@ -12,34 +11,38 @@ import { useAuth } from "@/src/hooks/context/auth/useAuth";
 // import { BalanceHistoryDialog } from "./BalanceHistoryDialog";
 import { BalanceAdjustmentDialog } from "./BalanceAdjustmentDialog";
 import { CreatePlayerDialog } from "./CreatePlayerDialog";
-import { DataTable } from "../data-table";
+import { CustomPlayerTable } from "./CustomPlayerTable";
 import { usePlayers } from "@/src/hooks/player/usePlayers";
-import { Card } from "../teamManagementImports";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSeasonStore } from "@/src/store/season";
-import { usePlayersColumn } from "@/src/hooks/player/usePlayersColumn";
 
 export function PlayersTab() {
   const search = useSearchParams();
   const page = search.get("page") || "1";
-  const { columns } = usePlayersColumn({ page });
   const router = useRouter();
   const ucId = search.get("uc") || "";
   const playerId = search.get("player") || "";
   const { seasonId, setSeasonId } = useSeasonStore();
   const { user } = useAuth();
   const role = user?.role;
-  const { data: players, meta, isFetching: isLoading } = usePlayers({ page });
   // States
   const [isCreatePlayerDialogOpen, setIsCreatePlayerDialogOpen] =
     useState(false);
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [query, setQuery] = useState("");
   const [selectedTier, setSelectedTier] = useState<string>("All");
   const [sortBy, setSortBy] = useState<
     "name" | "kd" | "kills" | "matches" | "balance" | "banned"
   >("kd");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const { data: players, meta, isFetching: isLoading } = usePlayers({
+    page,
+    search: query,
+    tier: selectedTier,
+    sortBy,
+    sortOrder,
+  });
 
   const handleOpenCreatePlayerDialog = () => {
     setIsCreatePlayerDialogOpen(true);
@@ -64,8 +67,8 @@ export function PlayersTab() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4">
           <div className="w-full sm:w-auto flex-grow">
             <PlayerFilters
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
+              searchQuery={query}
+              onSearchChange={setQuery}
               selectedSeason={seasonId}
               onSeasonChange={setSeasonId}
               selectedTier={selectedTier}
@@ -94,20 +97,7 @@ export function PlayersTab() {
             <LoaderFive text="Loading players..." />
           </div>
         ) : (
-          <>
-            {/* Top 3 Players Podium */}
-            <DynamicTopPlayersPodium
-              sortBy={sortBy}
-              selectedTier={selectedTier}
-              selectedSeason={seasonId}
-              isLoading={isLoading}
-              className="mb-6"
-            />
-
-            <Card className="p-3 overflow-x-auto">
-              <DataTable meta={meta} data={players ?? []} columns={columns} />
-            </Card>
-          </>
+          <CustomPlayerTable data={players ?? []} meta={meta} sortBy={sortBy} />
         )}
       </div>
 

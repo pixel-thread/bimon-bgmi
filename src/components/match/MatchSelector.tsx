@@ -32,7 +32,7 @@ export default function MatchSelector({
   className,
   isAllMatch = true,
 }: TournamentSelectorProps) {
-  const { setMatchId, matchId } = useMatchStore();
+  const { setMatchId, setMatch, matchId } = useMatchStore();
   const { isSuperAdmin } = useAuth();
   const { seasonId } = useSeasonStore();
 
@@ -40,7 +40,15 @@ export default function MatchSelector({
   const { data: matches, isFetching, refetch } = useMatches();
 
   const onSelect = (value: string | null) => {
-    setMatchId(value || "");
+    const id = value || "";
+    if (id === "all") {
+      setMatch("all", null);
+      return;
+    }
+    // compute a stable 1-based match number from the current list ordering
+    const idx = matches?.findIndex((m) => m.id === id) ?? -1;
+    const number = idx >= 0 ? idx + 1 : null;
+    setMatch(id, number);
   };
 
   const { mutate: onClickAddNewMatch, isPending } = useMutation({

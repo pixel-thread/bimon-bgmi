@@ -1,4 +1,4 @@
-// TwoColumnTable.tsx
+// TwoColumnTable.tsx (minimal, responsive redesign)
 "use client";
 
 import {
@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/src/components/ui/table";
 import { cn } from "@/src/lib/utils";
-import { Team } from "../lib/db/prisma/generated/prisma";
+
 export interface IPlayer {
   id: string;
   name: string;
@@ -33,189 +33,131 @@ interface TwoColumnTableProps {
 }
 
 export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
-  const useDoubleColumn = teams.length > 10;
-  const midPoint = Math.ceil(teams.length / 2);
-  const firstHalfTeams = useDoubleColumn ? teams.slice(0, midPoint) : teams;
-  const secondHalfTeams = useDoubleColumn ? teams.slice(midPoint) : [];
-
-  const renderTableContent = (
-    teamsToRender: ITeamStats[],
-    startIndex: number = 0,
-  ) => (
-    <Table className="table-fixed">
-      <TableHeader className="sticky top-0 z-10 bg-gradient-to-r from-orange-600 via-orange-500 to-orange-600">
-        <TableRow className="border-b-2 border-orange-400 hover:bg-transparent">
-          <TableHead className="w-[8%] p-3 text-center text-white font-bold text-sm tracking-wider">
-            #
-          </TableHead>
-          <TableHead className="w-[40%] p-3 text-left text-white font-bold text-sm tracking-wider">
-            TEAM
-          </TableHead>
-          <TableHead className="w-[13%] p-3 text-center text-white font-bold text-sm tracking-wider">
-            M
-          </TableHead>
-          <TableHead className="w-[13%] p-3 text-center text-white font-bold text-sm tracking-wider">
-            PTS
-          </TableHead>
-          <TableHead className="w-[13%] p-3 text-center text-white font-bold text-sm tracking-wider">
-            KILLS
-          </TableHead>
-          <TableHead className="w-[13%] p-3 text-center text-white font-bold text-sm tracking-wider">
-            TOTAL
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody className="text-white">
-        {teamsToRender.map((team, index) => {
-          const actualRank = startIndex + index + 1;
-
-          return (
-            <TableRow
-              key={team.id}
+  const TWO_COLUMN_THRESHOLD = 16; // switch to two columns when exceeding this count (desktop only)
+  // Mobile cards (smaller screens)
+  const MobileList = (
+    <div className="mobile-list sm:hidden space-y-2 max-h-[60vh] overflow-y-auto">
+      {teams.map((team, index) => {
+        const rank = index + 1;
+        const teamName = team.players.map((p) => p.name).join("_");
+        return (
+          <div
+            key={team.teamId || team.id}
+            className="rounded-md border border-border bg-background/60 px-3 py-2 flex items-start gap-3"
+          >
+            <div
               className={cn(
-                "border-b border-gray-700/30 transition-all duration-200 hover:bg-orange-500/10",
-                actualRank === 1 &&
-                  "bg-gradient-to-r from-yellow-500/20 via-transparent to-transparent border-l-4 border-yellow-500",
-                actualRank === 2 &&
-                  "bg-gradient-to-r from-gray-400/20 via-transparent to-transparent border-l-4 border-gray-400",
-                actualRank === 3 &&
-                  "bg-gradient-to-r from-orange-600/20 via-transparent to-transparent border-l-4 border-orange-600",
-                actualRank > 3 && "border-l-4 border-transparent",
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-semibold",
+                rank === 1 && "bg-yellow-500/20 text-yellow-400",
+                rank === 2 && "bg-gray-400/20 text-gray-300",
+                rank === 3 && "bg-orange-500/20 text-orange-400",
+                rank > 3 && "bg-muted text-foreground/70",
               )}
+              aria-label={`Rank ${rank}`}
             >
-              <TableCell className="p-3 text-center">
-                <span
-                  className={cn(
-                    "font-black text-sm inline-block min-w-[24px]",
-                    actualRank === 1 && "text-yellow-400 text-lg",
-                    actualRank === 2 && "text-gray-300 text-lg",
-                    actualRank === 3 && "text-orange-400 text-lg",
-                    actualRank > 3 && "text-orange-500",
-                  )}
-                >
-                  {actualRank}
+              {rank}
+            </div>
+            <div className="min-w-0 flex-1 marquee-on-hover">
+              <div className="text-sm font-medium truncate marquee-text">{teamName}</div>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded border px-2 py-0.5">
+                  <span className="opacity-70">M</span>
+                  <span className="font-medium">{team.matches}</span>
                 </span>
-              </TableCell>
-              <TableCell className="p-3 font-semibold text-sm text-left">
-                <div className="flex items-center gap-2">
-                  <span className="truncate">
-                    {team.players.map((player) => player.name).join("_")}
-                  </span>
-                  {team.position === 1 && (
-                    <span className="text-base flex-shrink-0">
-                      🍗{" "}
-                      <span className="text-yellow-400 font-bold">
-                        {team.position}
-                      </span>
-                    </span>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell className="p-3 text-center text-gray-300 font-medium text-sm">
-                {team.matches}
-              </TableCell>
-              <TableCell className="p-3 text-center text-blue-400 font-semibold text-sm">
-                {team.pts}
-              </TableCell>
-              <TableCell className="p-3 text-center font-semibold text-sm">
-                <span
-                  className={cn(
-                    team.kills >= 20
-                      ? "text-red-400"
-                      : team.kills >= 10
-                        ? "text-orange-400"
-                        : "text-green-400",
-                  )}
-                >
-                  {team.kills}
+                <span className="inline-flex items-center gap-1 rounded border px-2 py-0.5">
+                  <span className="opacity-70">PTS</span>
+                  <span className="font-medium">{team.pts}</span>
                 </span>
-              </TableCell>
-              <TableCell className="p-3 text-center">
-                <span className="font-black text-lg text-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]">
-                  {team.total}
+                <span className="inline-flex items-center gap-1 rounded border px-2 py-0.5">
+                  <span className="opacity-70">K</span>
+                  <span className="font-medium">{team.kills}</span>
                 </span>
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                <span className="inline-flex items-center gap-1 rounded border px-2 py-0.5">
+                  <span className="opacity-70">TOTAL</span>
+                  <span className="font-semibold">{team.total}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 
-  if (useDoubleColumn) {
-    return (
-      <div className="desktop-view w-full">
-        <div className="border-2 border-orange-500/40 rounded-xl overflow-hidden bg-gradient-to-br from-slate-900 via-gray-900 to-slate-900 shadow-2xl shadow-orange-500/20">
-          {/* Header Banner */}
-          <div className="bg-gradient-to-r from-orange-600 via-orange-500 to-orange-600 p-4 border-b-4 border-orange-400 shadow-lg">
-            <h2 className="text-2xl font-black text-white tracking-wider uppercase text-center flex items-center justify-center gap-3">
-              <span className="text-3xl">🏆</span>
-              <span>LEADERBOARD</span>
-              <span className="text-3xl">🏆</span>
-            </h2>
-          </div>
+  // Reusable minimal table renderer (desktop)
+  const renderDesktopTable = (slice: ITeamStats[], startIndex = 0) => (
+    <div className="overflow-x-auto rounded-md border border-border">
+      <Table className="w-full table-fixed">
+        <colgroup>
+          <col style={{ width: "64px" }} />
+          <col />
+          <col style={{ width: "80px" }} />
+          <col style={{ width: "100px" }} />
+          <col style={{ width: "100px" }} />
+          <col style={{ width: "108px" }} />
+        </colgroup>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[64px] px-4 text-center tabular-nums font-mono whitespace-nowrap">#</TableHead>
+            <TableHead className="min-w-[380px] md:min-w-[460px] xl:min-w-[560px] px-4 text-left">Team</TableHead>
+            <TableHead className="w-[80px] px-4 text-center tabular-nums font-mono whitespace-nowrap">M</TableHead>
+            <TableHead className="w-[100px] px-4 text-center tabular-nums font-mono whitespace-nowrap">PTS</TableHead>
+            <TableHead className="w-[100px] px-4 text-center tabular-nums font-mono whitespace-nowrap">Kills</TableHead>
+            <TableHead className="w-[108px] px-4 text-center tabular-nums font-mono whitespace-nowrap">Total</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {slice.map((team, idx) => {
+            const rank = startIndex + idx + 1;
+            const teamName = team.players.map((p) => p.name).join("_");
+            return (
+              <TableRow key={team.teamId || team.id} className="hover:bg-muted/40">
+                <TableCell className="px-4 py-2 text-center">
+                  <span
+                    className={cn(
+                      "inline-flex h-7 w-7 items-center justify-center rounded-md text-xs font-semibold",
+                      rank === 1 && "bg-yellow-500/20 text-yellow-400",
+                      rank === 2 && "bg-gray-400/20 text-gray-300",
+                      rank === 3 && "bg-orange-500/20 text-orange-400",
+                      rank > 3 && "bg-muted text-foreground/70",
+                    )}
+                  >
+                    {rank}
+                  </span>
+                </TableCell>
+                <TableCell className="px-4 py-2 font-medium text-left align-top max-w-0">
+                  <div className="truncate">{teamName}</div>
+                </TableCell>
+                <TableCell className="px-4 py-2 text-center text-muted-foreground tabular-nums font-mono whitespace-nowrap">{team.matches}</TableCell>
+                <TableCell className="px-4 py-2 text-center font-medium tabular-nums font-mono whitespace-nowrap">{team.pts}</TableCell>
+                <TableCell className="px-4 py-2 text-center tabular-nums font-mono whitespace-nowrap">{team.kills}</TableCell>
+                <TableCell className="px-4 py-2 text-center font-semibold tabular-nums font-mono whitespace-nowrap">{team.total}</TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
 
-          <div className="p-6">
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* First Column */}
-              <div className="flex-1 max-h-[650px] overflow-y-auto rounded-lg border border-orange-500/30 bg-black/40">
-                {renderTableContent(firstHalfTeams, 0)}
-              </div>
-
-              {/* Second Column */}
-              {secondHalfTeams.length > 0 && (
-                <div className="flex-1 max-h-[650px] overflow-y-auto rounded-lg border border-orange-500/30 bg-black/40">
-                  {renderTableContent(secondHalfTeams, midPoint)}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Footer Stats */}
-          <div className="bg-black/60 backdrop-blur-sm p-3 border-t-2 border-orange-500/30 flex justify-between items-center">
-            <div className="text-sm text-gray-400">
-              Total Teams:{" "}
-              <span className="text-orange-500 font-bold">{teams.length}</span>
-            </div>
-            <div className="text-sm text-gray-400 flex items-center gap-2">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              <span>Live Updates</span>
-            </div>
-          </div>
+  // Desktop Table (>= sm)
+  const DesktopTable = (
+    <div className="desktop-table hidden sm:block">
+      {teams.length > TWO_COLUMN_THRESHOLD ? (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          {renderDesktopTable(teams.slice(0, Math.ceil(teams.length / 2)), 0)}
+          {renderDesktopTable(teams.slice(Math.ceil(teams.length / 2)), Math.ceil(teams.length / 2))}
         </div>
-      </div>
-    );
-  }
+      ) : (
+        renderDesktopTable(teams, 0)
+      )}
+    </div>
+  );
 
-  // Single column layout
   return (
-    <div className="desktop-view w-full">
-      <div className="border-2 border-orange-500/40 rounded-xl overflow-hidden bg-gradient-to-br from-slate-900 via-gray-900 to-slate-900 shadow-2xl shadow-orange-500/20">
-        {/* Header Banner */}
-        <div className="bg-gradient-to-r from-orange-600 via-orange-500 to-orange-600 p-4 border-b-4 border-orange-400 shadow-lg">
-          <h2 className="text-2xl font-black text-white tracking-wider uppercase text-center flex items-center justify-center gap-3">
-            <span className="text-3xl">🏆</span>
-            <span>LEADERBOARD</span>
-            <span className="text-3xl">🏆</span>
-          </h2>
-        </div>
-
-        <div className="max-h-[600px] overflow-y-auto">
-          {renderTableContent(teams, 0)}
-        </div>
-
-        {/* Footer Stats */}
-        <div className="bg-black/60 backdrop-blur-sm p-3 border-t-2 border-orange-500/30 flex justify-between items-center">
-          <div className="text-sm text-gray-400">
-            Total Teams:{" "}
-            <span className="text-orange-500 font-bold">{teams.length}</span>
-          </div>
-          <div className="text-sm text-gray-400 flex items-center gap-2">
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            <span>Live Updates</span>
-          </div>
-        </div>
-      </div>
+    <div className="w-full">
+      {MobileList}
+      {DesktopTable}
     </div>
   );
 }

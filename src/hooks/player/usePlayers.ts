@@ -18,22 +18,48 @@ type PlayerT = {
   kd: number;
 };
 
-export function usePlayers({ page }: UsePlayersProps = { page: "1" }) {
+export function usePlayers({
+  page = "1",
+  search = "",
+  tier = "All",
+  sortBy = "kd",
+  sortOrder = "desc",
+}: {
+  page?: string | number;
+  search?: string;
+  tier?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+} = {}) {
   const { user } = useAuth();
   const { seasonId } = useSeasonStore();
+
+  const queryParams = new URLSearchParams({
+    page: page.toString(),
+    season: seasonId,
+    ...(search && { search }),
+    ...(tier !== "All" && { tier }),
+    sortBy,
+    sortOrder,
+  });
+
   const url =
     user?.role === "SUPER_ADMIN" || user?.role === "ADMIN"
-      ? `/admin/players?page=${page}&season=${seasonId}`
-      : `/players?page=${page}&season=${seasonId}`;
+      ? `/admin/players?${queryParams.toString()}`
+      : `/players?${queryParams.toString()}`;
 
   const [meta, setMeta] = useState<MetaT | undefined>(undefined);
 
   const query = useQuery({
     queryFn: () => http.get<PlayerT[]>(url),
-    queryKey: ["player", page, seasonId],
+    queryKey: ["player", page, seasonId, search, tier, sortBy, sortOrder],
     select: (data) => data,
     enabled: !!seasonId,
     placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   useEffect(() => {

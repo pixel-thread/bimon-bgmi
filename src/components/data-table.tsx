@@ -152,14 +152,18 @@ const DataTablePagination = ({ meta, table }: DataTablePaginationProps) => {
   const onNextPageChange = () => {
     const nextPage = Number(page) + 1;
     if (meta?.hasNextPage) {
-      router.push(`?page=${nextPage}`);
+      const params = new URLSearchParams(search.toString());
+      params.set("page", String(nextPage));
+      router.push(`?${params.toString()}`);
     }
   };
 
   const onPrevPageChange = () => {
     const prevPage = Number(page) - 1;
     if (meta?.hasPreviousPage) {
-      router.push(`?page=${prevPage}`);
+      const params = new URLSearchParams(search.toString());
+      params.set("page", String(prevPage));
+      router.push(`?${params.toString()}`);
     }
   };
 
