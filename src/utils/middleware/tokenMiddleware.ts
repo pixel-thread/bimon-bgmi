@@ -28,7 +28,7 @@ export async function tokenMiddleware(req: NextRequest | Request) {
     throw new UnauthorizedError("Unauthorized");
   }
   // Try to find user in your backend
-  let user = await getUserByClerkId({ id: claims.sub });
+  let user = await getUserByClerkId({ id: clerkUser.id });
 
   if (!user) {
     const newUser = await createUserIfNotExistInDB({
