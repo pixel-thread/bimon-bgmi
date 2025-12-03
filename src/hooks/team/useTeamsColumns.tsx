@@ -6,7 +6,7 @@ import { TeamT } from "@/src/types/team";
 import http from "@/src/utils/http";
 import { ADMIN_TEAM_ENDPOINTS } from "@/src/lib/endpoints/admin/team";
 import { toast } from "sonner";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, SaveIcon } from "lucide-react";
 import { useTournamentStore } from "@/src/store/tournament";
 import {
   DropdownMenu,
@@ -16,7 +16,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
-import React from "react";
+import React, { useState } from "react";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { Input } from "@/src/components/ui/input";
 import { TeamPlayerStats } from "@/src/lib/db/prisma/generated/prisma";
@@ -31,6 +31,7 @@ import {
 } from "@/src/components/ui/form";
 import { debounce } from "@/src/utils/debounce";
 import { Ternary } from "@/src/components/common/Ternary";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 type Props = {
   page?: string;
@@ -133,7 +134,13 @@ const UpdateTeamPlayerStats = ({
   teamPlayerStats: TeamPlayerStats[];
 }) => {
   const teamId = teamPlayerStats ? teamPlayerStats[0]?.teamId : "";
-  const form = useForm();
+  const [value, setValue] = useState<{
+    kills: number;
+    playerId: string;
+  }>({
+    kills: 0,
+    playerId: "",
+  });
 
   const { matchId } = useMatchStore();
 
@@ -153,66 +160,63 @@ const UpdateTeamPlayerStats = ({
     },
   });
 
-  const debounceMutate = debounce(
-    (payload: TeamStatsForm & { matchId: string }) => mutate(payload),
-    2000,
-  );
-
-  const onSubmit = (data: { playerId: string; kills: number }) => {
+  const onSubmit = () => {
     const payload: TeamStatsForm & { matchId: string } = {
       teamId: teamId,
       matchId: matchId,
       players: [
         {
-          playerId: data.playerId,
-          kills: data.kills,
+          playerId: value?.playerId,
+          kills: value?.kills,
           deaths: 1,
         },
       ],
     };
-    debounceMutate(payload);
+    mutate(payload);
   };
 
   return (
-    <Form {...form}>
-      <div className="flex flex-col gap-2 md:flex-row">
-        <div className="flex gap-2 items-center max-w-full justify-between flex-row">
-          <Ternary
-            condition={teamPlayerStats && teamPlayerStats.length > 0}
-            trueComponent={
-              <>
-                {teamPlayerStats?.map((playerStats) => (
-                  <FormField
-                    key={playerStats.playerId}
-                    name={playerStats.playerId}
-                    render={({ field: rField }) => (
-                      <FormItem className="w-full flex justify-between items-center h-full space-x-2">
-                        <FormControl>
-                          <Input
-                            defaultValue={playerStats.kills}
-                            disabled={isPending}
-                            onChange={(e) => {
-                              rField.onChange(e);
-                              onSubmit({
-                                playerId: playerStats.playerId,
-                                kills: Number(e.target.value),
-                              });
-                            }}
-                            className="max-w-[50px] min-w-[50px] w-full"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+    <div className="flex flex-col gap-2 md:flex-row">
+      <div className="flex gap-2 items-center max-w-full justify-between flex-row">
+        <Ternary
+          condition={teamPlayerStats && teamPlayerStats.length > 0}
+          trueComponent={
+            <>
+              {teamPlayerStats?.map((playerStats) => (
+                <div
+                  key={playerStats.playerId}
+                  className="w-full flex justify-between items-center h-full space-x-2"
+                >
+                  <Input
+                    defaultValue={playerStats.kills}
+                    onChange={(e) => {
+                      e.preventDefault();
+                      setValue({
+                        playerId: playerStats.playerId,
+                        kills: Number(e.target.value),
+                      });
+                    }}
+                    disabled={isPending}
+                    className="max-w-[50px] min-w-[50px] w-full"
                   />
-                ))}
-              </>
-            }
-            falseComponent={<h1>N/A</h1>}
-          />
-        </div>
+                  {!!value.playerId &&
+                    value.playerId === playerStats.playerId && (
+                      <Button
+                        disabled={isPending}
+                        onClick={() => onSubmit()}
+                        size={"icon-sm"}
+                      >
+                        <SaveIcon />
+                      </Button>
+                    )}
+                </div>
+              ))}
+            </>
+          }
+          falseComponent={<h1>N/A</h1>}
+        />
       </div>
-    </Form>
+    </div>
   );
 };
 
@@ -226,7 +230,6 @@ const UpdateTeamStatsPosition = ({
   const form = useForm();
 
   const { matchId } = useMatchStore();
-
   const { mutate, isPending } = useMutation({
     mutationFn: (data: TeamStatsForm) =>
       http.put<TeamStatsForm>(
