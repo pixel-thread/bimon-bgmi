@@ -3,13 +3,13 @@ import { getPollByTournamentId } from "@/src/services/polls/getPollByTournamentI
 import { getPolls } from "@/src/services/polls/getPolls";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { pollSchema } from "@/src/utils/validation/poll";
 
 export async function GET(req: Request) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
 
     const polls = await getPolls({
       include: { options: true, tournament: true },
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
 
     const body = pollSchema.omit({ id: true }).parse(await req.json());
 

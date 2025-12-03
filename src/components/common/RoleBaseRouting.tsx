@@ -1,12 +1,9 @@
 "use client";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { routeRoles } from "@/src/lib/route/role";
-import { LoaderFour } from "../ui/loader";
-import { useCookies } from "react-cookie";
-import { AUTH_TOKEN_KEY } from "@/src/lib/constant/jwt-key";
 
 type PropsT = {
   children: React.ReactNode;
@@ -22,8 +19,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   const { user, isAuthLoading, isSignedIn } = useAuth();
   const role = user?.role || "USER";
   const userRoles = useMemo(() => role, [role]); // Get the user's roles
-  const [cookies] = useCookies([AUTH_TOKEN_KEY]);
-  const isAuthenticated = isSignedIn && !!cookies.AUTH_TOKEN_KEY;
+  const isAuthenticated = isSignedIn;
 
   // Handle authentication and role-based redirects
   useEffect(() => {

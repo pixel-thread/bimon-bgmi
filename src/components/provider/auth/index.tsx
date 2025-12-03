@@ -1,19 +1,17 @@
 "use client";
-import { AUTH_TOKEN_KEY } from "@/src/lib/constant/jwt-key";
 import { AuthContext } from "@/src/lib/context/auth";
 import { UserT } from "@/src/types/context/auth";
 import axiosInstance from "@/src/utils/api";
 import http from "@/src/utils/http";
 import { useAuth } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect } from "react";
-import { useCookies } from "react-cookie";
+import { useCallback, useEffect, useState } from "react";
 
 type Props = { children: React.ReactNode };
 
 export const AuthProvider = ({ children }: Props) => {
   const { isSignedIn, getToken, signOut } = useAuth();
-
+  const [isTokenSet, setIsTokenSet] = useState(false);
   // Get user mutation
   const {
     data: user,
@@ -23,18 +21,22 @@ export const AuthProvider = ({ children }: Props) => {
     queryFn: () => http.get<UserT>("/auth"),
     queryKey: ["user"],
     select: (data) => data.data,
+    enabled: isTokenSet,
   });
 
   const getUser = useCallback(async () => {
     if (isSignedIn || isFetching === false) {
       const token = await getToken({ template: "jwt" });
+      console.log(token);
       if (token) {
         axiosInstance.defaults.headers.common["Authorization"] =
           `Bearer ${token}`;
-        refetch();
+        setIsTokenSet(true);
+        console.log("Teken la set");
       }
     }
-  }, [isSignedIn, getToken, refetch]);
+  }, [isSignedIn, getToken]);
+
   // logout
   const onLogout = async () => {
     await signOut({
@@ -47,10 +49,11 @@ export const AuthProvider = ({ children }: Props) => {
 
   // get user when signed in
   useEffect(() => {
-    if (isSignedIn && user === null) {
+    console.log("Here");
+    if (isSignedIn) {
       getUser();
     }
-  }, [isSignedIn, user]);
+  }, [isSignedIn]);
 
   // remove token when user is logout from clerk if token still exist
 

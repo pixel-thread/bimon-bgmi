@@ -2,7 +2,6 @@
 
 import React, { useState, useCallback } from "react";
 import { Card, CardContent } from "@/src/components/ui/card";
-import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
 import { useTournaments } from "@/src/hooks/tournament/useTournaments";
 import {
@@ -15,8 +14,8 @@ import { WhatsAppPollCard } from "./WhatsAppPollCard";
 import { LoaderFive } from "@/src/components/ui/loader";
 import { usePolls } from "@/src/hooks/poll/usePolls";
 import { PollT } from "@/src/types/poll";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import { useSearchParams } from "next/navigation";
 
 export interface PollVotingInterfaceProps {
   readOnly?: boolean;
@@ -27,7 +26,6 @@ export interface PollVotingInterfaceProps {
 }
 
 const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
-  readOnly = false,
   showAdminActions = true,
   showViewAllVotes = true,
   title = "Tournament Polls",
@@ -36,7 +34,8 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
   const { user: user } = useAuth();
 
   const isPlayer = user?.role === "PLAYER";
-
+  const searchQuery = useSearchParams();
+  const pollId = searchQuery.get("view") || "";
   const { data: polls, isFetching: loading } = usePolls({});
 
   const [showVotersDialog, setShowVotersDialog] = useState<PollT | null>(null);
@@ -45,9 +44,6 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
   const showVoters = useCallback((poll: PollT) => {
     setShowVotersDialog(poll);
   }, []);
-
-  // Close voters dialog
-  const closeVotersDialog = useCallback(() => setShowVotersDialog(null), []);
 
   // Render content based on state - all hooks must be called before any returns
   // Only require player login for voting, not for viewing
@@ -126,8 +122,7 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
       {/* Voters Dialog */}
       <VotersDialog
         isOpen={!!showVotersDialog}
-        onClose={closeVotersDialog}
-        poll={(showVotersDialog as any) || []}
+        id={showVotersDialog?.id || ""}
       />
     </div>
   );
