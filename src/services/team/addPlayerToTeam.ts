@@ -46,6 +46,8 @@ export async function addPlayerToTeam({ teamId, playerId, matchId }: Props) {
         seasonId: team?.seasonId || "",
         playerId: playerId || "",
         teamStatsId: teamStat.id || "",
+        kills: 0,
+        deaths: 1,
       },
     });
 
@@ -58,6 +60,26 @@ export async function addPlayerToTeam({ teamId, playerId, matchId }: Props) {
         teamId: team?.id || "",
       },
     });
+
+    // Initialize or update PlayerStats for this season
+    await tx.playerStats.upsert({
+      where: {
+        seasonId_playerId: {
+          playerId: playerId,
+          seasonId: team?.seasonId || "",
+        },
+      },
+      create: {
+        playerId: playerId,
+        seasonId: team?.seasonId || "",
+        kills: 0,
+        deaths: 1,
+      },
+      update: {
+        deaths: { increment: 1 },
+      },
+    });
+
     return team;
   });
 }

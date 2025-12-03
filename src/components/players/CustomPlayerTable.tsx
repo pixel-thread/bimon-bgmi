@@ -73,10 +73,12 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
     const renderDynamicCell = (player: PlayerT) => {
         switch (sortBy) {
             case "kd":
+                const kdValue = Number(player.kd || 0);
+                const displayKd = isFinite(kdValue) ? kdValue.toFixed(2) : "N/A";
                 return (
                     <div className="flex items-center gap-2">
-                        <span className={`font-bold ${Number(player.kd || 0) >= 3 ? 'text-green-600 dark:text-green-400' : 'text-zinc-700 dark:text-zinc-300'}`}>
-                            {Number(player.kd || 0).toFixed(2)}
+                        <span className={`font-bold ${kdValue >= 3 ? 'text-green-600 dark:text-green-400' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                            {displayKd}
                         </span>
                     </div>
                 );
@@ -95,10 +97,12 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
             case "balance":
                 return <span className="font-medium text-zinc-700 dark:text-zinc-300">{player.uc || 0}</span>;
             default:
+                const defaultKdValue = Number(player.kd || 0);
+                const defaultDisplayKd = isFinite(defaultKdValue) ? defaultKdValue.toFixed(2) : "N/A";
                 return (
                     <div className="flex items-center gap-2">
-                        <span className={`font-bold ${Number(player.kd || 0) >= 3 ? 'text-green-600 dark:text-green-400' : 'text-zinc-700 dark:text-zinc-300'}`}>
-                            {Number(player.kd || 0).toFixed(2)}
+                        <span className={`font-bold ${defaultKdValue >= 3 ? 'text-green-600 dark:text-green-400' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                            {defaultDisplayKd}
                         </span>
                     </div>
                 );

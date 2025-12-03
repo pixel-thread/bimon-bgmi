@@ -75,9 +75,9 @@ export async function GET(req: NextRequest) {
         const playerStats = player.playerStats.filter(
           (value) => value.seasonId === seasonId,
         );
-        const playerKd =
-          playerStats.reduce((acc, curr) => acc + curr.kills, 0) /
-            playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
+        const totalKills = playerStats.reduce((acc, curr) => acc + curr.kills, 0);
+        const totalDeaths = playerStats.reduce((acc, curr) => acc + curr.deaths, 0);
+        const playerKd = totalDeaths > 0 ? totalKills / totalDeaths : 0;
         const matches =
           player?.matchPlayerPlayed.filter(
             (value) => value.seasonId === seasonId,
@@ -97,9 +97,9 @@ export async function GET(req: NextRequest) {
       });
     } else {
       data = players.map((player) => {
-        const playerKd =
-          player.playerStats.reduce((acc, curr) => acc + curr.kills, 0) /
-            player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0) || 0;
+        const totalKills = player.playerStats.reduce((acc, curr) => acc + curr.kills, 0);
+        const totalDeaths = player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0);
+        const playerKd = totalDeaths > 0 ? totalKills / totalDeaths : 0;
         return {
           id: player.id,
           isBanned: player.isBanned,
