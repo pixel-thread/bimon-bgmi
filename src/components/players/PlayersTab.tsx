@@ -8,7 +8,7 @@ import { usePlayerData } from "./hooks/usePlayerData";
 import { Button } from "../ui/button";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
-// import { BalanceHistoryDialog } from "./BalanceHistoryDialog";
+import { BalanceHistoryDialog } from "./BalanceHistoryDialog";
 import { BalanceAdjustmentDialog } from "./BalanceAdjustmentDialog";
 import { CreatePlayerDialog } from "./CreatePlayerDialog";
 import { CustomPlayerTable } from "./CustomPlayerTable";
@@ -21,6 +21,7 @@ export function PlayersTab() {
   const page = search.get("page") || "1";
   const router = useRouter();
   const ucId = search.get("uc") || "";
+  const historyId = search.get("history") || "";
   const playerId = search.get("player") || "";
   const { seasonId, setSeasonId } = useSeasonStore();
   const { user } = useAuth();
@@ -102,12 +103,12 @@ export function PlayersTab() {
       </div>
 
       {/* Balance History Modal */}
-      {/* <BalanceHistoryDialog */}
-      {/*   isOpen={isBalanceHistoryModalOpen} */}
-      {/*   onOpenChange={setIsBalanceHistoryModalOpen} */}
-      {/*   player={selectedPlayerForBalance} */}
-      {/*   selectedSeason={seasonId} */}
-      {/* /> */}
+      <BalanceHistoryDialog
+        isOpen={!!historyId}
+        onOpenChange={() => router.back()}
+        playerId={historyId}
+        selectedSeason={seasonId}
+      />
 
       {/* Balance Adjustment Modal */}
       <BalanceAdjustmentDialog isOpen={!!ucId} playerId={ucId} />

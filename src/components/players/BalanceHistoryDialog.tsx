@@ -13,7 +13,7 @@ import { Badge } from "@/src/components/ui/badge";
 import { History, TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 import { LoaderFive } from "@/src/components/ui/loader";
-import { PlayerT } from "@/src/types/player";
+import { usePlayer } from "@/src/hooks/player/usePlayer";
 
 interface BalanceHistory {
   id: string;
@@ -28,16 +28,17 @@ interface BalanceHistory {
 interface BalanceHistoryDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  player: PlayerT | null;
+  playerId: string;
   selectedSeason: string;
 }
 
 export function BalanceHistoryDialog({
   isOpen,
   onOpenChange,
-  player,
+  playerId,
   selectedSeason,
 }: BalanceHistoryDialogProps) {
+  const { data: player } = usePlayer({ id: playerId });
   const [balanceHistory, setBalanceHistory] = useState<
     (BalanceHistory & { tournamentId?: string })[]
   >([]);
@@ -193,7 +194,7 @@ export function BalanceHistoryDialog({
   );
 
   const fetchBalanceHistory = useCallback(
-    async (playerId: string, reset: boolean = true) => {
+    async (pid: string, reset: boolean = true) => {
       if (reset) {
         setIsLoadingBalanceHistory(true);
         setHistoryPage(1);
@@ -211,16 +212,16 @@ export function BalanceHistoryDialog({
   );
 
   const handleLoadMoreHistory = async () => {
-    if (player) {
-      await fetchBalanceHistory(player.id, false);
+    if (playerId) {
+      await fetchBalanceHistory(playerId, false);
     }
   };
 
   React.useEffect(() => {
-    if (isOpen && player) {
-      fetchBalanceHistory(player.id, true);
+    if (isOpen && playerId) {
+      fetchBalanceHistory(playerId, true);
     }
-  }, [isOpen, player, fetchBalanceHistory]);
+  }, [isOpen, playerId, fetchBalanceHistory]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -228,7 +229,7 @@ export function BalanceHistoryDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <History className="w-5 h-5" />
-            Balance History - {player?.user.userName}
+            Balance History - {player?.user?.userName}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
@@ -280,11 +281,10 @@ export function BalanceHistoryDialog({
                   </div>
                   <div className="text-right">
                     <p
-                      className={`font-bold text-lg ${
-                        entry.type === "credit"
+                      className={`font-bold text-lg ${entry.type === "credit"
                           ? "text-green-600"
                           : "text-red-600"
-                      }`}
+                        }`}
                     >
                       {entry.type === "credit" ? "+" : "-"}₹
                       {Math.abs(entry.amount).toFixed(2)}
@@ -305,9 +305,8 @@ export function BalanceHistoryDialog({
             >
               {isLoadingMoreHistory
                 ? "Loading..."
-                : `Load More (${
-                    balanceHistory.length - displayedHistory.length
-                  } remaining)`}
+                : `Load More (${balanceHistory.length - displayedHistory.length
+                } remaining)`}
             </Button>
           )}
           <Button

@@ -2,7 +2,7 @@ import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 
 export type UserT = Prisma.UserGetPayload<{
   include: {
-    player: { include: { characterImage: true; playerBanned: true } };
+    player: { include: { characterImage: true; playerBanned: true; uc: true } };
   };
 }> | null;
 

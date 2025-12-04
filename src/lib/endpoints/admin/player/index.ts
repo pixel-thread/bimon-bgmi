@@ -1,8 +1,9 @@
 import { EndpointT } from "@/src/types/endpoints";
 
-type PlayerEndpointsT = "POST_TOGGLE_BANNED" | "DELETE_PLAYER_BY_ID";
+type PlayerEndpointsT = "POST_TOGGLE_BANNED" | "DELETE_PLAYER_BY_ID" | "POST_UPDATE_BALANCE";
 
 export const ADMIN_PLAYER_ENDPOINTS: EndpointT<PlayerEndpointsT> = {
   POST_TOGGLE_BANNED: "/admin/players/:id/toggle-banned",
   DELETE_PLAYER_BY_ID: "/admin/players/:id",
+  POST_UPDATE_BALANCE: "/admin/players/:id/uc",
 };

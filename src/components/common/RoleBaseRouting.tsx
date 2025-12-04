@@ -25,8 +25,10 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   useEffect(() => {
     // Wait until authentication loading is complete to proceed
     if (isAuthLoading) return;
-    // Do not redirect if user is still fetching
-    if (isAuthenticated && user === null && isAuthLoading) return;
+
+    // If user is authenticated but user data hasn't loaded yet, wait
+    if (isAuthenticated && !user) return;
+
     // Step 1: Identify the current route from the `routeRoles` configuration
     const currentRoute = routeRoles.find((route) => {
       if (route.url === pathName) return true; // Direct match for the route
@@ -47,7 +49,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
       }
 
       // Step 3: Handle role-based access control
-      if (isAuthenticated) {
+      if (isAuthenticated && user) {
         // Check if the user has at least one of the required roles for the current route
         const hasRequiredRole = currentRoute.role.some(
           (role) => role === userRoles,
@@ -61,7 +63,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
         }
       }
     }
-  }, [isAuthenticated, userRoles, pathName, isAuthLoading]);
+  }, [isAuthenticated, userRoles, pathName, isAuthLoading, user, router]);
 
   // Prevent authenticated users from accessing unauthenticated-only pages
   useEffect(() => {

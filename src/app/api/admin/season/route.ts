@@ -8,6 +8,9 @@ export async function POST(req: Request) {
   try {
     const user = await superAdminMiddleware(req);
     const body = seasonSchema.parse(await req.json());
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
     const season = await createSeason({
       data: {
         createdBy: user.id,

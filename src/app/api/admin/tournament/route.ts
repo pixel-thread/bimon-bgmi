@@ -22,6 +22,10 @@ export async function POST(req: Request) {
     const body = tournamentSchema.parse(await req.json());
     const activeSeason = await getActiveSeason();
 
+    if (!user) {
+      return ErrorResponse({ message: "Unauthorized", status: 401 });
+    }
+
     if (!activeSeason) {
       return ErrorResponse({ message: "No active season found", status: 400 });
     }

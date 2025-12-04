@@ -26,6 +26,7 @@ export default function DesktopNavigation() {
     { href: "/", label: "Home" },
     { href: "/about", label: "About" },
     { href: "/tournament", label: "Tournament" },
+    { href: "/profile", label: "Profile", authRequired: true },
     { href: "/settings", label: "Settings" },
     { href: "/guides", label: "Guides" },
     { href: "/blog", label: "Blog" },

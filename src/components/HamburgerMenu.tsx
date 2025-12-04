@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
-import { FiMenu, FiX, FiLogIn, FiSun, FiMoon } from "react-icons/fi";
+import { FiMenu, FiX, FiLogIn, FiSun, FiMoon, FiUser } from "react-icons/fi";
 import { UserAvatar, UserButton } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
 // Notifications removed
@@ -118,9 +118,19 @@ export default function HamburgerMenu() {
                     </button>
                   </div>
 
-                  {/* User Actions */}
-
                   {/* Profile Button - Only show if authenticated */}
+                  {isAuthorized && (
+                    <button
+                      onClick={() => {
+                        setIsOpen(false);
+                        router.push("/profile");
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                    >
+                      <FiUser className="h-5 w-5" />
+                      My Profile
+                    </button>
+                  )}
                   {isAuthorized && <UserButton />}
                   {/* Login/Logout Button */}
                   {!isAuthorized && (

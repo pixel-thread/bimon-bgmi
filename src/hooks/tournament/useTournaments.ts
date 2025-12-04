@@ -24,5 +24,6 @@ export function useTournaments() {
     queryFn: async () => await http.get<TournamentT[]>(url),
     select: (data) => data.data,
     enabled: !!seasonId,
+    refetchOnWindowFocus: false,
   });
 }
