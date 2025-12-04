@@ -19,6 +19,12 @@ CREATE TYPE "PlayerCategory" AS ENUM ('ULTRA_NOOB', 'NOOB', 'PRO', 'ULTRA_PRO');
 -- CreateEnum
 CREATE TYPE "Status" AS ENUM ('ACTIVE', 'INACTIVE', 'DELETED');
 
+-- CreateEnum
+CREATE TYPE "UCTransferStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'COMPLETED');
+
+-- CreateEnum
+CREATE TYPE "UCTransferType" AS ENUM ('REQUEST', 'SEND');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
@@ -43,8 +49,30 @@ CREATE TABLE "User" (
 -- CreateTable
 CREATE TABLE "Notification" (
     "id" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "type" TEXT NOT NULL,
+    "link" TEXT,
+    "playerId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Notification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UCTransfer" (
+    "id" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "type" "UCTransferType" NOT NULL,
+    "status" "UCTransferStatus" NOT NULL DEFAULT 'PENDING',
+    "message" TEXT,
+    "fromPlayerId" TEXT NOT NULL,
+    "toPlayerId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "UCTransfer_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -352,6 +380,21 @@ CREATE UNIQUE INDEX "User_userName_key" ON "User"("userName");
 CREATE UNIQUE INDEX "User_playerId_key" ON "User"("playerId");
 
 -- CreateIndex
+CREATE INDEX "Notification_playerId_idx" ON "Notification"("playerId");
+
+-- CreateIndex
+CREATE INDEX "Notification_isRead_idx" ON "Notification"("isRead");
+
+-- CreateIndex
+CREATE INDEX "UCTransfer_fromPlayerId_idx" ON "UCTransfer"("fromPlayerId");
+
+-- CreateIndex
+CREATE INDEX "UCTransfer_toPlayerId_idx" ON "UCTransfer"("toPlayerId");
+
+-- CreateIndex
+CREATE INDEX "UCTransfer_status_idx" ON "UCTransfer"("status");
+
+-- CreateIndex
 CREATE INDEX "Season_id_idx" ON "Season"("id");
 
 -- CreateIndex
@@ -508,6 +551,15 @@ CREATE INDEX "_PlayerStatsToTeamStats_B_index" ON "_PlayerStatsToTeamStats"("B")
 CREATE INDEX "_PlayerStatsToTeam_B_index" ON "_PlayerStatsToTeam"("B");
 
 -- AddForeignKey
+ALTER TABLE "Notification" ADD CONSTRAINT "Notification_playerId_fkey" FOREIGN KEY ("playerId") REFERENCES "Player"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UCTransfer" ADD CONSTRAINT "UCTransfer_fromPlayerId_fkey" FOREIGN KEY ("fromPlayerId") REFERENCES "Player"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UCTransfer" ADD CONSTRAINT "UCTransfer_toPlayerId_fkey" FOREIGN KEY ("toPlayerId") REFERENCES "Player"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Tournament" ADD CONSTRAINT "Tournament_seasonId_fkey" FOREIGN KEY ("seasonId") REFERENCES "Season"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -656,3 +708,4 @@ ALTER TABLE "_PlayerStatsToTeam" ADD CONSTRAINT "_PlayerStatsToTeam_A_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "_PlayerStatsToTeam" ADD CONSTRAINT "_PlayerStatsToTeam_B_fkey" FOREIGN KEY ("B") REFERENCES "Team"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
