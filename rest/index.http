@@ -10,7 +10,7 @@
 
 ### Create Poll
 
-POST http://localhost:3000/api/admin/temp HTTP/1.1
+POST https://bimon-bgmi.vercel.app/api/admin/temp HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 Authorization: Bearer {{TOKEN}}
