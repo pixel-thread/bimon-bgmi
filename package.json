@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "postinstall": "prisma generate && prisma migrate deploy",
+    "postinstall": "prisma generate",
     "dev": "next dev --turbopack",
     "dev:clean": "rm -rf .next && npm run dev",
     "dev:clear-cache": "rm -rf .next && rm -rf node_modules/.cache && npm run dev",
