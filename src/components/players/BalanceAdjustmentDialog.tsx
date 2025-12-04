@@ -55,6 +55,10 @@ export function BalanceAdjustmentDialog({
       if (data.success) {
         toast.success(data.message);
         form.reset();
+        // Small delay to let the user see the success state/toast
+        setTimeout(() => {
+          router.back();
+        }, 500);
         return data;
       }
       toast.success(data.message);
@@ -121,11 +125,10 @@ export function BalanceAdjustmentDialog({
                 onClick={() =>
                   !isAdjustingBalance && handleTransactionTypeChange("credit")
                 }
-                className={`flex items-center justify-center gap-2 w-full rounded-md border py-2 cursor-pointer transition-colors ${
-                  balanceAdjustment.type === "credit"
+                className={`flex items-center justify-center gap-2 w-full rounded-md border py-2 cursor-pointer transition-colors ${balanceAdjustment.type === "credit"
                     ? "border-primary bg-primary/5"
                     : "border-input hover:border-primary/50"
-                } ${isAdjustingBalance ? "opacity-50 cursor-not-allowed" : ""}`}
+                  } ${isAdjustingBalance ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <RadioGroupItem
                   value="credit"
@@ -143,11 +146,10 @@ export function BalanceAdjustmentDialog({
                 onClick={() =>
                   !isAdjustingBalance && handleTransactionTypeChange("debit")
                 }
-                className={`flex items-center justify-center gap-2 w-full rounded-md border py-2 cursor-pointer transition-colors ${
-                  balanceAdjustment.type === "debit"
+                className={`flex items-center justify-center gap-2 w-full rounded-md border py-2 cursor-pointer transition-colors ${balanceAdjustment.type === "debit"
                     ? "border-primary bg-primary/5"
                     : "border-input hover:border-primary/50"
-                } ${isAdjustingBalance ? "opacity-50 cursor-not-allowed" : ""}`}
+                  } ${isAdjustingBalance ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <RadioGroupItem
                   value="debit"

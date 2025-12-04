@@ -11,7 +11,7 @@ export async function updateUser({ where, data }: Props) {
     data,
     include: {
       player: {
-        include: { characterImage: true, playerBanned: true },
+        include: { characterImage: true, playerBanned: true, uc: true },
       },
     },
   });

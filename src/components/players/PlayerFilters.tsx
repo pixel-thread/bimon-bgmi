@@ -62,20 +62,21 @@ export function PlayerFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="All">All Categories</SelectItem>
-              <SelectItem value="Ultra Noob">Ultra Noob</SelectItem>
-              <SelectItem value="Noob">Noob</SelectItem>
-              <SelectItem value="Pro">Pro</SelectItem>
-              <SelectItem value="Ultra Pro">Ultra Pro</SelectItem>
+              <SelectItem value="legend">Legend</SelectItem>
+              <SelectItem value="ultra pro">Ultra Pro</SelectItem>
+              <SelectItem value="pro">Pro</SelectItem>
+              <SelectItem value="noob">Noob</SelectItem>
+              <SelectItem value="ultra noob">Ultra Noob</SelectItem>
+              <SelectItem value="bot">Bot</SelectItem>
             </SelectContent>
           </Select>
 
           <Select value={sortBy} onValueChange={onSortByChange}>
             <SelectTrigger
-              className={`h-11 w-full sm:w-32 ${
-                sortBy === "banned"
+              className={`h-11 w-full sm:w-32 ${sortBy === "banned"
                   ? "text-red-600 dark:text-red-400 font-medium"
                   : ""
-              }`}
+                }`}
             >
               <SelectValue />
             </SelectTrigger>

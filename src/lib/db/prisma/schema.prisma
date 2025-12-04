@@ -58,6 +58,18 @@ enum Status {
   DELETED
 }
 
+enum UCTransferStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum UCTransferType {
+  REQUEST
+  SEND
+}
+
 /**
  * --------------------------
  * MODELS
@@ -86,7 +98,36 @@ model User {
 }
 
 model Notification {
-  id String @id @default(uuid())
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  type      String   // "uc_request", "uc_approved", "uc_rejected", "uc_received"
+  link      String?
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([playerId])
+  @@index([isRead])
+}
+
+model UCTransfer {
+  id           String           @id @default(uuid())
+  amount       Int
+  type         UCTransferType
+  status       UCTransferStatus @default(PENDING)
+  message      String?
+  fromPlayerId String
+  fromPlayer   Player           @relation("UCTransferFrom", fields: [fromPlayerId], references: [id], onDelete: Cascade)
+  toPlayerId   String
+  toPlayer     Player           @relation("UCTransferTo", fields: [toPlayerId], references: [id], onDelete: Cascade)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([fromPlayerId])
+  @@index([toPlayerId])
+  @@index([status])
 }
 
 model Transaction {
@@ -272,7 +313,10 @@ model Player {
   teamPlayerStats TeamPlayerStats[]
   playerBannedId  String?
 
-  playerBanned PlayerBanned?
+  playerBanned       PlayerBanned?
+  notifications      Notification[]
+  ucTransfersFrom    UCTransfer[]   @relation("UCTransferFrom")
+  ucTransfersTo      UCTransfer[]   @relation("UCTransferTo")
 
   @@index([userId])
   @@index([teamId])

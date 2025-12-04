@@ -110,6 +110,20 @@ const http = {
       return handleAxiosError<T>(error);
     }
   },
+
+  patch: async <T>(
+    url: string,
+    data?: object,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> => {
+    try {
+      logger.log({ method: "PATCH =>", path: url });
+      const response = await axiosInstance.patch(url, data, config);
+      return handleResponse<T>(response);
+    } catch (error) {
+      return handleAxiosError<T>(error);
+    }
+  },
 };
 
 export default http;

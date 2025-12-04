@@ -17,9 +17,9 @@ export function useTeams({ page = "1" }: Props = { page: "1" }) {
   const { matchId } = useMatchStore();
   const urlBase = isSuperAdmin
     ? ADMIN_TOURNAMENT_ENDPOINTS.GET_TEAM_BY_TOURNAMENT_ID.replace(
-        ":matchId",
-        matchId,
-      ).replace(":page", page)
+      ":matchId",
+      matchId,
+    ).replace(":page", page)
     : TOURNAMENT_ENDPOINTS.GET_TEAM_BY_TOURNAMENT_ID;
 
   const url = urlBase.replace(":id", tournamentId).replace(":matchId", matchId);
@@ -30,6 +30,7 @@ export function useTeams({ page = "1" }: Props = { page: "1" }) {
     enabled: !!tournamentId && !!matchId,
     select: (data) => data,
     placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
   });
   const meta = query?.data?.meta;
 

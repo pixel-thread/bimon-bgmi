@@ -132,6 +132,8 @@ export async function createMatch({ data }: Props) {
             seasonId: data.seasonId,
             playerId,
             teamStatsId: teamStats.id!,
+            kills: 0,
+            deaths: 1,
           })),
         });
 
@@ -150,6 +152,25 @@ export async function createMatch({ data }: Props) {
           await tx.player.update({
             where: { id: player.id },
             data: { matches: { connect: { id: match.id } } },
+          });
+
+          // Initialize or update PlayerStats for this season
+          await tx.playerStats.upsert({
+            where: {
+              seasonId_playerId: {
+                playerId: player.id,
+                seasonId: data.seasonId,
+              },
+            },
+            create: {
+              playerId: player.id,
+              seasonId: data.seasonId,
+              kills: 0,
+              deaths: 1,
+            },
+            update: {
+              deaths: { increment: 1 },
+            },
           });
         }
       }

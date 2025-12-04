@@ -23,7 +23,7 @@ export async function updateTeamStats({
 }: Props) {
   return await prisma.$transaction(async (tx) => {
     // Upsert TeamStats for this team in this match
-    await tx.teamStats.upsert({
+    const teamStats = await tx.teamStats.upsert({
       where: {
         teamId,
         matchId,
@@ -35,12 +35,15 @@ export async function updateTeamStats({
         matchId,
         tournamentId,
         seasonId,
+        position: data.position,
       },
       update: { position: data.position },
     });
+
     await Promise.all(
-      data.players.map((player) =>
-        tx.teamPlayerStats.update({
+      data.players.map(async (player) => {
+        // Get existing stats to calculate delta
+        const existingStats = await tx.teamPlayerStats.findUnique({
           where: {
             playerId_teamId_matchId: {
               playerId: player.playerId,
@@ -48,31 +51,61 @@ export async function updateTeamStats({
               matchId,
             },
           },
-          data: {
-            kills: player.kills ?? 0,
+        });
+
+        const oldKills = existingStats?.kills ?? 0;
+        const newKills = player.kills ?? 0;
+        const killsDelta = newKills - oldKills;
+        const isNewMatchEntry = !existingStats;
+
+        // Upsert TeamPlayerStats
+        await tx.teamPlayerStats.upsert({
+          where: {
+            playerId_teamId_matchId: {
+              playerId: player.playerId,
+              teamId,
+              matchId,
+            },
+          },
+          create: {
+            playerId: player.playerId,
+            teamId,
+            matchId,
+            seasonId: seasonId || "",
+            teamStatsId: teamStats.id,
+            kills: newKills,
+            deaths: 1, // Default death for a match
+          },
+          update: {
+            kills: newKills,
             deaths: 1,
           },
-        }),
-      ),
-    );
-    logger.log("TeamPlayerStats updated");
-    // Update PlayerStats
-    await Promise.all(
-      data.players.map((player) =>
-        tx.playerStats.update({
+        });
+
+        // Update PlayerStats with delta and deaths
+        await tx.playerStats.upsert({
           where: {
             seasonId_playerId: {
               playerId: player.playerId,
               seasonId: seasonId || "",
             },
           },
-          data: {
-            kills: { increment: player.kills },
-            deaths: { increment: player.deaths }, // player should be dead  1  for a single match in a team
+          create: {
+            playerId: player.playerId,
+            seasonId: seasonId || "",
+            kills: newKills,
+            deaths: 1, // First match = 1 death
           },
-        }),
-      ),
+          update: {
+            kills: { increment: killsDelta },
+            // Increment deaths only if this is a new match entry for the player
+            deaths: isNewMatchEntry ? { increment: 1 } : undefined,
+          },
+        });
+      })
     );
+
+    logger.log("TeamPlayerStats updated");
 
     return { success: true };
   });
@@ -82,6 +115,7 @@ export async function updateManyTeamsStats({
   stats,
   tournamentId,
   matchId,
+  seasonId,
 }: TeamsStatsSchemaT & { seasonId: string | null }) {
   for (const stat of stats) {
     await updateTeamStats({
@@ -89,6 +123,7 @@ export async function updateManyTeamsStats({
       matchId,
       tournamentId,
       data: stat,
+      seasonId: seasonId || undefined,
     });
   }
 }

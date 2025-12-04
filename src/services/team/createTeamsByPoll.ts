@@ -176,6 +176,27 @@ export async function createTeamsByPolls({
               seasonId: seasonId,
               playerId: player.id || "",
               teamStatsId: teamStat.id || "",
+              kills: 0,
+              deaths: 1,
+            },
+          });
+
+          // Initialize or update PlayerStats for this season
+          await tx.playerStats.upsert({
+            where: {
+              seasonId_playerId: {
+                playerId: player.id,
+                seasonId: seasonId,
+              },
+            },
+            create: {
+              playerId: player.id,
+              seasonId: seasonId,
+              kills: 0,
+              deaths: 1,
+            },
+            update: {
+              deaths: { increment: 1 },
             },
           });
         }

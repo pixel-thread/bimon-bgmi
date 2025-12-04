@@ -21,5 +21,6 @@ export function useMatches() {
     queryFn: async () => await http.get<MatchT[]>(url),
     enabled: !!tournamentId && !!seasonId,
     select: (data) => data.data,
+    refetchOnWindowFocus: false,
   });
 }

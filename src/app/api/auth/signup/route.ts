@@ -29,10 +29,17 @@ export async function POST(req: Request) {
       });
     }
 
+    if (!superUser) {
+      return ErrorResponse({
+        message: "Unauthorized",
+        status: 401,
+      });
+    }
+
     const user = await createUser({
       data: {
         ...body,
-        createdBy: superUser?.id,
+        createdBy: superUser.id,
         role: superUser.role === "SUPER_ADMIN" ? "PLAYER" : "USER",
       },
     });

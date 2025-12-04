@@ -30,6 +30,7 @@ import http from "@/src/utils/http";
 import { TeamStatsForm } from "@/src/utils/validation/team/team-stats";
 import { ADMIN_MATCH_ENDPOINTS } from "@/src/lib/endpoints/admin/match";
 import { useSeasonStore } from "@/src/store/season";
+import { BulkEditStatsDialog } from "./BulkEditStatsDialog";
 
 const headers = [
   { label: "Total Players", key: "size" },
@@ -41,6 +42,7 @@ export const AdminTeamsManagement: React.FC = () => {
   const search = useSearchParams();
   const page = "all";
   const [showStandingsModal, setShowStandingsModal] = useState(false);
+  const [showBulkEdit, setShowBulkEdit] = useState(false);
   const { tournamentId } = useTournamentStore();
   const { seasonId } = useSeasonStore();
   const { data: tournament } = useTournament({ id: tournamentId });
@@ -140,6 +142,19 @@ export const AdminTeamsManagement: React.FC = () => {
               <IconPlus />
             </Button>
 
+            <Button
+              onClick={() => setShowBulkEdit(true)}
+              disabled={
+                isFetching ||
+                !tournamentId ||
+                matchId === "" ||
+                matchId === "all"
+              }
+              className="w-auto bg-blue-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white shadow-sm"
+            >
+              Bulk Edit
+            </Button>
+
             {matchId !== "all" && (
               <Button
                 variant={"destructive"}
@@ -181,6 +196,10 @@ export const AdminTeamsManagement: React.FC = () => {
         backgroundImage={"/images/image.png"}
         tournamentTitle={tournament?.name || "Tournament"}
         maxMatchNumber={1}
+      />
+      <BulkEditStatsDialog
+        open={showBulkEdit}
+        onOpenChange={setShowBulkEdit}
       />
     </>
   );

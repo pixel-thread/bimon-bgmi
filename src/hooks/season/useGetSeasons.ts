@@ -10,5 +10,6 @@ export function useGetSeasons() {
     queryKey: ["seasons"],
     queryFn: () => http.get<SeasonT[]>(SEASON_ENDPOINTS.GET_SEASONS),
     select: (data) => data.data,
+    refetchOnWindowFocus: false,
   });
 }
