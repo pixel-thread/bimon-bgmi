@@ -39,6 +39,7 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
         if (data.success) {
           queryClient.invalidateQueries({ queryKey: ["poll", id] });
           queryClient.invalidateQueries({ queryKey: ["player-vote", id] });
+          queryClient.invalidateQueries({ queryKey: ["polls"] });
           toast.success(data.message);
           return data;
         }
@@ -55,10 +56,9 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
           className={`
             w-full text-left relative overflow-hidden group py-4 px-4 rounded-xl border-2 
             transition-all duration-150 transform hover:scale-[1.01] active:scale-[0.99]
-            ${
-              isSelected
-                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md"
-                : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm"
+            ${isSelected
+              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md"
+              : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm"
             }
             ${isLoading ? "cursor-wait opacity-80" : "cursor-pointer"}
             ${isDisabled ? "opacity-60 cursor-not-allowed" : ""}
@@ -70,10 +70,9 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
               <div
                 className={`
                   w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 flex-shrink-0
-                  ${
-                    isSelected
-                      ? "border-blue-500 bg-blue-500 shadow-sm"
-                      : "border-gray-300 dark:border-gray-600 group-hover:border-blue-400"
+                  ${isSelected
+                    ? "border-blue-500 bg-blue-500 shadow-sm"
+                    : "border-gray-300 dark:border-gray-600 group-hover:border-blue-400"
                   }
                 `}
               >
@@ -85,11 +84,10 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
                 <span
                   className={`
                   font-medium text-base truncate block
-                  ${
-                    isSelected
+                  ${isSelected
                       ? "text-blue-700 dark:text-blue-300"
                       : "text-gray-900 dark:text-white"
-                  }
+                    }
                 `}
                 >
                   {option}

@@ -41,7 +41,7 @@ export function assignPlayersToTeamsBalanced(
       player.playerStats.find((p) => p.seasonId === seasonId)?.deaths ?? 0;
     team.totalWins += 0; // TODO:
     // player.playerStats.find((p) => p.seasonId === seasonId)?.wins ?? 0;
-    // @ts-ignore
+    // @ts-expect-error weightedScore is not in PlayerWithStatsT but added at runtime
     team.weightedScore += player.weightedScore;
 
     // Move index in snake pattern

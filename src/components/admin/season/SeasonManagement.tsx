@@ -6,10 +6,11 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
-import { PlusCircle, Calendar, Trophy } from "lucide-react";
+import { PlusCircle, Calendar, Trophy, Loader2, Clock } from "lucide-react";
 import { useGetSeasons } from "../../../hooks/season/useGetSeasons";
 import { CreateSeasonDialog } from "./create-season-dialog";
 
@@ -21,7 +22,6 @@ export function SeasonManagement() {
     if (!dateValue) return "Not set";
 
     try {
-      // Handle Firestore Timestamp objects
       const date = dateValue.toDate ? dateValue.toDate() : new Date(dateValue);
 
       if (isNaN(date.getTime())) {
@@ -38,83 +38,119 @@ export function SeasonManagement() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="p-3">
-          <div className="text-center text-xs">Loading seasons...</div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <div className="space-y-3">
-      <Card>
-        <CardHeader className="p-3 pb-0">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <Trophy className="w-3 h-3" />
-              Seasons
-            </CardTitle>
-            <Button
-              onClick={() => setIsDialogOpen(true)}
-              size="sm"
-              className="h-6 gap-1 text-xs"
-            >
-              <PlusCircle className="w-3 h-3" />
-              New
-            </Button>
+    <Card className="overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-purple-500/10 to-pink-500/5 border-b">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-500/20 rounded-lg">
+              <Trophy className="h-4 w-4 text-purple-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Season Management</CardTitle>
+              <CardDescription className="text-xs">
+                Create and manage tournament seasons
+              </CardDescription>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent className="p-3">
-          <div className="space-y-2">
-            {data?.length === 0 ? (
-              <div className="text-center py-6 text-muted-foreground text-xs">
-                <Trophy className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                No seasons found.
-              </div>
-            ) : (
-              data?.map((season) => (
-                <div
-                  key={season.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-muted/20 rounded-md"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-sm">{season.name}</h3>
-                      {season.status === "ACTIVE" && (
-                        <Badge className="bg-green-100 text-green-800 text-[10px] py-0">
-                          Active
-                        </Badge>
-                      )}
+          <Button
+            onClick={() => setIsDialogOpen(true)}
+            className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-600/90 hover:to-pink-600/90"
+          >
+            <PlusCircle className="w-4 h-4" />
+            New Season
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="p-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : !data || data.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="p-4 bg-muted/50 rounded-full mb-4">
+              <Trophy className="h-8 w-8 text-muted-foreground/50" />
+            </div>
+            <h3 className="font-medium text-muted-foreground">
+              No Seasons Yet
+            </h3>
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              Create your first season to organize tournaments
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            {data.map((season, index) => (
+              <div
+                key={season.id}
+                className={`relative p-4 rounded-xl transition-all ${season.status === "ACTIVE"
+                    ? "bg-gradient-to-r from-green-500/10 to-emerald-500/5 border border-green-500/20"
+                    : "bg-muted/30 border border-transparent hover:border-muted-foreground/20"
+                  }`}
+              >
+                {/* Active indicator line */}
+                {season.status === "ACTIVE" && (
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-green-500 to-emerald-500 rounded-l-xl" />
+                )}
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`p-2 rounded-lg ${season.status === "ACTIVE"
+                          ? "bg-green-500/20"
+                          : "bg-muted"
+                        }`}
+                    >
+                      <Trophy
+                        className={`h-4 w-4 ${season.status === "ACTIVE"
+                            ? "text-green-600"
+                            : "text-muted-foreground"
+                          }`}
+                      />
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-2.5 h-2.5" />
-                        Started: {formatDate(season.startDate)}
-                      </span>
-                      {season?.endDate && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-2.5 h-2.5" />
-                          Ended: {formatDate(season.endDate)}
-                        </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{season.name}</h3>
+                        {season.status === "ACTIVE" && (
+                          <Badge className="bg-green-500/20 text-green-700 border-green-500/30 text-xs">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse" />
+                            Active
+                          </Badge>
+                        )}
+                        {index === 0 && season.status !== "ACTIVE" && (
+                          <Badge variant="outline" className="text-xs">
+                            Latest
+                          </Badge>
+                        )}
+                      </div>
+                      {season.description && (
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
+                          {season.description}
+                        </p>
                       )}
+                      <div className="flex flex-wrap items-center gap-3 mt-2">
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Calendar className="w-3 h-3" />
+                          <span>Started: {formatDate(season.startDate)}</span>
+                        </div>
+                        {season.endDate && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Clock className="w-3 h-3" />
+                            <span>Ended: {formatDate(season.endDate)}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    {season?.description && (
-                      <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">
-                        {season.description}
-                      </p>
-                    )}
                   </div>
                 </div>
-              ))
-            )}
+              </div>
+            ))}
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </CardContent>
 
       <CreateSeasonDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
-    </div>
+    </Card>
   );
 }

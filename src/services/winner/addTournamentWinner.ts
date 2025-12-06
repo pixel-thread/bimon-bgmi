@@ -9,7 +9,10 @@ export async function addTournamentWinner({ data }: Props) {
   return prisma.$transaction(async (tx) => {
     const team = await tx.team.findUnique({
       where: { id: data.team.connect?.id },
-      include: { players: { include: { user: true } } },
+      include: {
+        players: { include: { user: true } },
+        tournament: true,
+      },
     });
 
     const teamPlayers = team?.players;
@@ -24,6 +27,15 @@ export async function addTournamentWinner({ data }: Props) {
             user: { connect: { id: player.user.id } },
           },
           update: { balance: { increment: splitAmount } },
+        });
+
+        await tx.transaction.create({
+          data: {
+            amount: splitAmount,
+            type: "credit",
+            description: `Tournament Prize: ${team?.tournament?.name || "Tournament"}`,
+            playerId: player.id,
+          },
         });
       }
     }

@@ -5,4 +5,5 @@ export const createTeamSchema = z.object({
   players: z.array(addPlayerSchema.pick({ playerId: true })),
   tournamentId: z.uuid(),
   matchId: z.uuid(),
+  deductUC: z.boolean().optional().default(false),
 });

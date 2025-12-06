@@ -26,15 +26,15 @@ export async function POST(req: Request) {
 
     const body = matchSchema.parse(await req.json());
 
-    const isTournamentExist = await getTournamentById({
-      id: body.tournamentId,
-    });
+    // Run validation in parallel for faster response
+    const [isTournamentExist, activeSeason] = await Promise.all([
+      getTournamentById({ id: body.tournamentId }),
+      getActiveSeason(),
+    ]);
 
     if (!isTournamentExist) {
       return ErrorResponse({ message: "Tournament not found", status: 404 });
     }
-
-    const activeSeason = await getActiveSeason();
 
     if (activeSeason?.id !== body.seasonId) {
       return ErrorResponse({ message: "season is not active", status: 400 });

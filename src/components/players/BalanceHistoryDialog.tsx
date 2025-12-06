@@ -18,7 +18,6 @@ import { usePlayer } from "@/src/hooks/player/usePlayer";
 interface BalanceHistory {
   id: string;
   playerId: string;
-  playerName: string;
   amount: number;
   type: "credit" | "debit";
   description: string;
@@ -39,15 +38,12 @@ export function BalanceHistoryDialog({
   selectedSeason,
 }: BalanceHistoryDialogProps) {
   const { data: player } = usePlayer({ id: playerId });
-  const [balanceHistory, setBalanceHistory] = useState<
-    (BalanceHistory & { tournamentId?: string })[]
-  >([]);
-  const [displayedHistory, setDisplayedHistory] = useState<
-    (BalanceHistory & { tournamentId?: string })[]
-  >([]);
+  const [balanceHistory, setBalanceHistory] = useState<BalanceHistory[]>([]);
+  const [displayedHistory, setDisplayedHistory] = useState<BalanceHistory[]>([]);
   const [isLoadingBalanceHistory, setIsLoadingBalanceHistory] = useState(false);
   const [isLoadingMoreHistory, setIsLoadingMoreHistory] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
+  const [totalHistory, setTotalHistory] = useState(0);
 
   // Tournament cache with TTL
   const tournamentCache = useMemo(
@@ -110,11 +106,11 @@ export function BalanceHistoryDialog({
 
   const filterTransactionsBySeason = useCallback(
     (
-      transactions: (BalanceHistory & { tournamentId?: string })[],
+      transactions: BalanceHistory[],
       season: string,
       seasonTournamentIds: Set<string>,
       seasonData?: { startDate?: string; endDate?: string; isActive?: boolean },
-    ): (BalanceHistory & { tournamentId?: string })[] => {
+    ): BalanceHistory[] => {
       // Helper to safely convert Firestore Timestamp or string/date-like to JS Date
       const toJSDate = (value: any): Date | null => {
         if (!value) return null;
@@ -130,65 +126,7 @@ export function BalanceHistoryDialog({
         }
       };
 
-      return transactions.filter((transaction) => {
-        if (transaction.tournamentId) {
-          if (season === "all") return true;
-          return seasonTournamentIds.has(transaction.tournamentId);
-        }
-
-        if (season === "all") return true;
-
-        const start = seasonData?.startDate
-          ? toJSDate(seasonData.startDate)
-          : null;
-        if (start) {
-          const tDate = toJSDate((transaction as any).timestamp);
-          if (!tDate) return true; // If transaction date can't be parsed, do not hide it
-
-          const now = new Date();
-          now.setHours(23, 59, 59, 999);
-
-          let end: Date;
-          if (seasonData?.endDate) {
-            end = toJSDate(seasonData.endDate) || now;
-          } else {
-            end = seasonData?.isActive
-              ? now
-              : new Date(start.getTime() + 365 * 24 * 60 * 60 * 1000);
-          }
-
-          const isSameDayRange =
-            !!seasonData?.endDate &&
-            !!start &&
-            !!end &&
-            start.toDateString() === end.toDateString();
-
-          const effectiveEnd = isSameDayRange ? now : end;
-
-          const tOnly = new Date(
-            tDate.getFullYear(),
-            tDate.getMonth(),
-            tDate.getDate(),
-          );
-          const startOnly = new Date(
-            start.getFullYear(),
-            start.getMonth(),
-            start.getDate(),
-          );
-          const endOnly = new Date(
-            effectiveEnd.getFullYear(),
-            effectiveEnd.getMonth(),
-            effectiveEnd.getDate(),
-          );
-
-          return tOnly >= startOnly && tOnly <= endOnly;
-        }
-
-        console.log(
-          `No valid season startDate for manual transaction filtering. Season: ${season}, Transaction: ${transaction.description}`,
-        );
-        return true;
-      });
+      return transactions;
     },
     [],
   );
@@ -201,14 +139,39 @@ export function BalanceHistoryDialog({
       } else {
         setIsLoadingMoreHistory(true);
       }
+
+      try {
+        const page = reset ? 1 : historyPage + 1;
+        const res = await fetch(
+          `/api/players/${pid}/transactions?page=${page}&limit=10`,
+        );
+        const data = await res.json();
+
+        if (data.success) {
+          if (reset) {
+            setBalanceHistory(data.data.transactions);
+            setDisplayedHistory(data.data.transactions);
+          } else {
+            setBalanceHistory((prev) => [...prev, ...data.data.transactions]);
+            setDisplayedHistory((prev) => [
+              ...prev,
+              ...data.data.transactions,
+            ]);
+          }
+          setHistoryPage(page);
+          setTotalHistory(data.data.pagination.total);
+        } else {
+          toast.error("Failed to fetch balance history");
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to fetch balance history");
+      } finally {
+        setIsLoadingBalanceHistory(false);
+        setIsLoadingMoreHistory(false);
+      }
     },
-    [
-      selectedSeason,
-      getTournamentData,
-      processTransactionDescription,
-      filterTransactionsBySeason,
-      historyPage,
-    ],
+    [historyPage],
   );
 
   const handleLoadMoreHistory = async () => {
@@ -282,8 +245,8 @@ export function BalanceHistoryDialog({
                   <div className="text-right">
                     <p
                       className={`font-bold text-lg ${entry.type === "credit"
-                          ? "text-green-600"
-                          : "text-red-600"
+                        ? "text-green-600"
+                        : "text-red-600"
                         }`}
                     >
                       {entry.type === "credit" ? "+" : "-"}₹
@@ -296,7 +259,7 @@ export function BalanceHistoryDialog({
           )}
         </div>
         <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
-          {displayedHistory.length < balanceHistory.length && (
+          {balanceHistory.length < totalHistory && (
             <Button
               variant="outline"
               onClick={handleLoadMoreHistory}
@@ -305,7 +268,7 @@ export function BalanceHistoryDialog({
             >
               {isLoadingMoreHistory
                 ? "Loading..."
-                : `Load More (${balanceHistory.length - displayedHistory.length
+                : `Load More (${totalHistory - balanceHistory.length
                 } remaining)`}
             </Button>
           )}

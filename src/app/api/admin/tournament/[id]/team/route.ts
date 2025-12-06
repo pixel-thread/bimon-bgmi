@@ -104,6 +104,7 @@ export async function GET(
         total: total,
         players: teamPlayers,
         teamPlayerStats: teamPlayerStats,
+        status: team.status,
       };
     });
 
