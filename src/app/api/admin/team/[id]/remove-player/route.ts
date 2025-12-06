@@ -33,7 +33,9 @@ export async function POST(
       });
     }
 
-    const isPlayerAlreadyOnTeam = isPlayerExist?.teamId?.includes(teamId);
+    const isPlayerAlreadyOnTeam = isTeamExist.players.some(
+      (player) => player.id === body.playerId,
+    );
 
     if (!isPlayerAlreadyOnTeam) {
       return ErrorResponse({

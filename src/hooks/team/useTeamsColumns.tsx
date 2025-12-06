@@ -6,7 +6,7 @@ import { TeamT } from "@/src/types/team";
 import http from "@/src/utils/http";
 import { ADMIN_TEAM_ENDPOINTS } from "@/src/lib/endpoints/admin/team";
 import { toast } from "sonner";
-import { MoreVertical, SaveIcon } from "lucide-react";
+import { Loader2, MoreVertical, SaveIcon } from "lucide-react";
 import { useTournamentStore } from "@/src/store/tournament";
 import {
   DropdownMenu,
@@ -32,6 +32,16 @@ import {
 import { debounce } from "@/src/utils/debounce";
 import { Ternary } from "@/src/components/common/Ternary";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/src/components/ui/alert-dialog";
 
 type Props = {
   page?: string;
@@ -44,8 +54,11 @@ export const useTeamsColumns = ({ page }: Props = { page: "1" }) => {
         accessorKey: "name",
         header: "Team Name",
         cell: ({ row }) => (
-          <Link href={`?teamStats=${row.original.id}`}>
+          <Link href={`?teamStats=${row.original.id}`} className="flex items-center gap-2">
             {row.original.name}
+            {row.original.status === "PROCESSING" && (
+              <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" title="Processing in background..." />
+            )}
           </Link>
         ),
       },
@@ -81,6 +94,7 @@ const ActionDropdown = ({ id, page }: { id: string; page?: string }) => {
   const { tournamentId } = useTournamentStore();
   const { matchId } = useMatchStore();
   const queryClient = useQueryClient();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { mutate: deleteTeam, isPending: isDeletingTeam } = useMutation({
     mutationFn: (id: string) =>
@@ -88,6 +102,7 @@ const ActionDropdown = ({ id, page }: { id: string; page?: string }) => {
         ADMIN_TEAM_ENDPOINTS.DELETE_TEAM_BY_ID.replace(":teamId", id),
       ),
     onSuccess: (data) => {
+      setShowDeleteConfirm(false);
       if (data.success) {
         toast.success(data.message);
         queryClient.invalidateQueries({
@@ -101,30 +116,65 @@ const ActionDropdown = ({ id, page }: { id: string; page?: string }) => {
   });
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button size={"icon-sm"} variant="ghost">
-          <MoreVertical />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="start">
-        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        <DropdownMenuGroup>
-          <DropdownMenuItem asChild>
-            <Link href={`/admin/teams?teamStats=${id}`}>Team Stats</Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href={`/admin/teams?update=${id}`}>Update Team</Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            disabled={isDeletingTeam || !tournamentId || !id}
-            onClick={() => deleteTeam(id)}
-          >
-            Delete Team
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size={"icon-sm"} variant="ghost">
+            <MoreVertical />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56" align="start">
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuGroup>
+            <DropdownMenuItem asChild>
+              <Link href={`/admin/teams?teamStats=${id}`}>Team Stats</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/admin/teams?update=${id}`}>Update Team</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!tournamentId || !id}
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              Delete Team
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Team</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this team? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingTeam}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeletingTeam}
+              onClick={(e) => {
+                e.preventDefault();
+                deleteTeam(id);
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isDeletingTeam ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

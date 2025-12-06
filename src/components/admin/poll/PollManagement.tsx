@@ -20,14 +20,15 @@ import http from "@/src/utils/http";
 import { DataTable } from "../../data-table";
 import { CreatePollDialog } from "./CreatePollDialog";
 import { usePollColumns } from "@/src/hooks/poll/usePollColumns";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { UpdatePollDialog } from "./UpdatePollDialog";
 import { Ternary } from "../../common/Ternary";
 
 type PollT = Prisma.PollGetPayload<{ include: { options: true } }>;
 
 const PollManagement: React.FC = () => {
-  const { columns } = usePollColumns();
+  const { columns, PreviewDialog } = usePollColumns();
+  const router = useRouter();
   const search = useSearchParams();
   const updateId = search.get("update") || "";
   const viewId = search.get("view") || "";
@@ -143,13 +144,23 @@ const PollManagement: React.FC = () => {
       </div>
 
       {/* Voters Dialog */}
-      {viewId && <VotersDialog isOpen={!!viewId} id={viewId} />}
+      {viewId && (
+        <VotersDialog
+          isOpen={!!viewId}
+          id={viewId}
+          onClose={() => router.push("/admin/polls")}
+          poll={polls?.find((p) => p.id === viewId)}
+        />
+      )}
 
       <CreatePollDialog
         open={isCreateModalOpen}
         onValueChange={setIsCreateModalOpen}
       />
       {!!updateId && <UpdatePollDialog open={!!updateId} id={updateId} />}
+
+      {/* Teams Preview Dialog */}
+      {PreviewDialog}
     </div>
   );
 };

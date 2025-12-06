@@ -15,7 +15,7 @@ import { Ternary } from "../common/Ternary";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { useMatches } from "@/src/hooks/match/useMatches";
 import { Button } from "../ui/button";
-import { PlusIcon } from "lucide-react";
+import { Loader2, PlusIcon } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { ADMIN_MATCH_ENDPOINTS } from "@/src/lib/endpoints/admin/match";
@@ -37,7 +37,7 @@ export default function MatchSelector({
   const { seasonId } = useSeasonStore();
 
   const { tournamentId } = useTournamentStore();
-  const { data: matches, isFetching, refetch } = useMatches();
+  const { data: matches, isLoading, refetch } = useMatches();
 
   const onSelect = (value: string | null) => {
     const id = value || "";
@@ -71,14 +71,15 @@ export default function MatchSelector({
 
   const isMatchExist = matches?.length && matches?.length > 0 ? true : false;
 
-  if (isFetching || isPending) {
+  // Only show loading on initial load, not during background polling
+  if (isLoading && !matches) {
     return (
       <Select
         value={matchId}
         onValueChange={(value) => onSelect(value || null)}
       >
         <SelectTrigger disabled={true} className={className}>
-          <SelectValue placeholder="Loading" />
+          <SelectValue placeholder="Loading..." />
         </SelectTrigger>
       </Select>
     );
@@ -87,10 +88,17 @@ export default function MatchSelector({
   return (
     <Select value={matchId} onValueChange={(value) => onSelect(value || null)}>
       <SelectTrigger
-        disabled={!seasonId || !tournamentId}
+        disabled={!seasonId || !tournamentId || isPending}
         className={cn(className, "w-fit")}
       >
-        <SelectValue placeholder="Select Match" />
+        {isPending ? (
+          <span className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Creating...
+          </span>
+        ) : (
+          <SelectValue placeholder="Select Match" />
+        )}
       </SelectTrigger>
       <SelectContent className="max-h-[200px] overflow-y-auto">
         <Ternary
@@ -100,15 +108,30 @@ export default function MatchSelector({
               {isAllMatch && <SelectItem value={"all"}>All Match</SelectItem>}
               {matches?.map((match, index) => (
                 <SelectItem key={match.id} value={match.id}>
-                  Match {index + 1}
+                  <span className="flex items-center gap-1.5">
+                    Match {index + 1}
+                    {match.status === "PROCESSING" && (
+                      <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+                    )}
+                  </span>
                 </SelectItem>
               ))}
               {isSuperAdmin && (
                 <Button
                   onClick={() => onClickAddNewMatch()}
+                  disabled={isPending}
                   className="w-full text-start flex"
                 >
-                  <PlusIcon /> Create Match
+                  {isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <PlusIcon className="mr-1" /> Create Match
+                    </>
+                  )}
                 </Button>
               )}
             </>
@@ -118,9 +141,19 @@ export default function MatchSelector({
               <SelectLabel>No Match</SelectLabel>
               <Button
                 onClick={() => onClickAddNewMatch()}
+                disabled={isPending}
                 className="w-full text-start flex"
               >
-                <PlusIcon /> Create Match
+                {isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <PlusIcon className="mr-1" /> Create Match
+                  </>
+                )}
               </Button>
             </SelectGroup>
           }

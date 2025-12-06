@@ -50,7 +50,12 @@ export async function tokenMiddleware(req: NextRequest | Request) {
   const reqMethod = req.method;
 
   if (user.role === "USER" && reqMethod !== "GET") {
-    throw new Error("Long ki ba jai jai se: Permission Denied");
+    // Allow voting for USER role
+    if (req.url.includes("/vote") && reqMethod === "POST") {
+      // Allow
+    } else {
+      throw new Error("Long ki ba jai jai se: Permission Denied");
+    }
   }
 
   if (clerkUser.username !== user.userName) {

@@ -8,8 +8,9 @@ type UseMatchStore = {
 };
 
 export const useMatchStore = create<UseMatchStore>((set) => ({
-  matchId: "",
+  matchId: "all",
   matchNumber: null,
   setMatchId: (id: string) => set({ matchId: id, matchNumber: id === "all" ? null : null }),
   setMatch: (id: string, number: number | null) => set({ matchId: id, matchNumber: number }),
 }));
+

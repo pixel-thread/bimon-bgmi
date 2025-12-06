@@ -12,6 +12,8 @@ import { FiClock, FiUsers, FiUserX } from "react-icons/fi";
 import { VotersDialog } from "./VotersDialog";
 import { WhatsAppPollCard } from "./WhatsAppPollCard";
 import { LoaderFive } from "@/src/components/ui/loader";
+import { PollCardSkeleton } from "./PollCardSkeleton";
+import { Skeleton } from "../ui/skeleton";
 import { usePolls } from "@/src/hooks/poll/usePolls";
 import { PollT } from "@/src/types/poll";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
@@ -65,8 +67,18 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
 
   if (loading) {
     return (
-      <div className="min-h-[400px] bg-background flex items-center justify-center">
-        <LoaderFive text="Loading Polls..." />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-6 w-20 rounded-full" />
+        </div>
+        <div className="space-y-4">
+          <PollCardSkeleton />
+          <PollCardSkeleton />
+        </div>
       </div>
     );
   }
@@ -123,6 +135,8 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
       <VotersDialog
         isOpen={!!showVotersDialog}
         id={showVotersDialog?.id || ""}
+        onClose={() => setShowVotersDialog(null)}
+        poll={showVotersDialog}
       />
     </div>
   );

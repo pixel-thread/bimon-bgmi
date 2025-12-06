@@ -131,7 +131,15 @@ model UCTransfer {
 }
 
 model Transaction {
-  id String @id @default(uuid())
+  id          String   @id @default(uuid())
+  amount      Int
+  type        String // "credit" | "debit"
+  description String
+  timestamp   DateTime @default(now())
+  playerId    String
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
 }
 
 model Season {
@@ -192,9 +200,15 @@ model Tournament {
   @@index([startDate])
 }
 
+enum MatchStatus {
+  PROCESSING
+  READY
+}
+
 model Match {
   id                String              @id @default(uuid())
   name              Int                 @default(autoincrement())
+  status            MatchStatus         @default(READY)
   tournamentId      String
   tournament        Tournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   seasonId          String?
@@ -210,6 +224,7 @@ model Match {
 
   @@index([tournamentId])
   @@index([seasonId])
+  @@index([status])
 }
 
 model PollOption {
@@ -245,7 +260,7 @@ model Poll {
   createdAt    DateTime  @default(now())
 
   // Relations
-  tournament   Tournament       @relation(fields: [tournamentId], references: [id])
+  tournament   Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   options      PollOption[]
   playersVotes PlayerPollVote[]
   players      Player[]
@@ -287,8 +302,8 @@ model PlayerBanned {
 model Player {
   id                String              @id @default(uuid())
   isBanned          Boolean             @default(false)
+  manualUnban       Boolean             @default(false)
   userId            String              @unique
-  teamId            String?
   matchPlayerPlayed MatchPlayerPlayed[]
 
   characterImageId String?  @unique
@@ -301,7 +316,7 @@ model Player {
   ucId            String?
   uc              UC?
   pollVote        Poll?             @relation(fields: [pollId], references: [id], onDelete: SetNull)
-  team            Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  teams           Team[]            // Many-to-many: player can be on multiple teams across tournaments
   user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   category        PlayerCategory    @default(NOOB)
   gameScore       GameScore[]
@@ -317,9 +332,9 @@ model Player {
   notifications      Notification[]
   ucTransfersFrom    UCTransfer[]   @relation("UCTransferFrom")
   ucTransfersTo      UCTransfer[]   @relation("UCTransferTo")
+  transactions       Transaction[]
 
   @@index([userId])
-  @@index([teamId])
   @@index([pollId])
   @@index([category])
 }
@@ -346,6 +361,7 @@ model PlayerStats {
 model Team {
   id                String              @id @default(uuid())
   name              String
+  status            MatchStatus         @default(READY)
   players           Player[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
@@ -364,6 +380,7 @@ model Team {
   @@index([tournamentId])
   @@index([seasonId])
   @@index([name])
+  @@index([status])
 }
 
 model TeamStats {
@@ -438,7 +455,7 @@ model TournamentWinner {
   teamId       String     @unique
   team         Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
   tournamentId String
-  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
 
   @@unique([tournamentId, teamId])

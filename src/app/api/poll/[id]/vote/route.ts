@@ -1,5 +1,7 @@
 import { getPlayerById } from "@/src/services/player/getPlayerById";
 import { addPlayerVote } from "@/src/services/polls/addPlayerVote";
+import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
+import { prisma } from "@/src/lib/db/prisma";
 import { deletePlayerVote } from "@/src/services/polls/deletePlayerVote";
 import { getPlayerVoteByPollId } from "@/src/services/polls/getPlayerVoteByPollId";
 import { getPollById } from "@/src/services/polls/getPollById";
@@ -51,8 +53,8 @@ export async function POST(
 
     const isPollExist = await getPollById({
       where: { id: pollId },
-      include: { options: true },
-    });
+      include: { options: true, tournament: true },
+    }) as Prisma.PollGetPayload<{ include: { options: true; tournament: true } }> | null;
 
     if (!isPollExist) {
       return ErrorResponse({
@@ -81,6 +83,55 @@ export async function POST(
         message: "Banned player cannot vote",
         status: 400,
       });
+    }
+
+    if (user.role === "USER" && body.vote !== "OUT") {
+      const tournamentFee = isPollExist.tournament?.fee || 0;
+      const userBalance = (user as any).player?.uc?.balance ?? 0;
+
+      // Calculate committed UC from other active polls
+      const activePollsVoted = await prisma.playerPollVote.findMany({
+        where: {
+          playerId: playerId,
+          poll: {
+            isActive: true,
+            id: { not: pollId }, // Exclude current poll
+            tournament: {
+              fee: { gt: 0 }, // Only count tournaments with fee
+            },
+          },
+        },
+        include: {
+          poll: {
+            include: {
+              tournament: true,
+            },
+          },
+        },
+      });
+
+      const committedUC = activePollsVoted.reduce((acc, vote) => {
+        return acc + (vote.poll.tournament?.fee || 0);
+      }, 0);
+
+      const potentialBalance = userBalance - committedUC;
+
+      if (potentialBalance < tournamentFee) {
+        return ErrorResponse({
+          message: "sen lot chwa bai rung sa vote bon",
+          status: 403,
+        });
+      }
+    }
+
+    if (user.role === "PLAYER" && body.vote !== "OUT") {
+      const userBalance = (user as any).player?.uc?.balance ?? 0;
+      if (userBalance < -30) {
+        return ErrorResponse({
+          message: "sen chuwa bai rung",
+          status: 403,
+        });
+      }
     }
 
     const isPlayerVoted = await getPlayerVoteByPollId({

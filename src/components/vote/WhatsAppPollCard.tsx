@@ -56,10 +56,14 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     const isBanned = user?.player?.isBanned || false;
     const options = poll.options || [];
     const pollId = poll.id;
-    const { data: playersVotes, isFetching: isLoadingVotes } = usePlayerVote({
+    // Use pre-fetched votes if available, otherwise fetch
+    const preFetchedVotes = poll.playersVotes;
+    const { data: fetchedVotes, isFetching: isLoadingVotes } = usePlayerVote({
       pollId,
-      enabled: true,
+      enabled: !preFetchedVotes,
     });
+
+    const playersVotes = preFetchedVotes || fetchedVotes;
 
     const totalVotes = playersVotes?.length || 0;
 
@@ -169,7 +173,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                     ?.percentage
                 }
                 showAvatars={showAvatars}
-                onClick={() => {}}
+                onClick={() => { }}
               />
             );
           })}
@@ -194,11 +198,10 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
               <button
                 onClick={() => onShowVoters(poll)}
                 disabled={isLoadingVotes}
-                className={`w-full text-center font-medium py-2 px-4 rounded-lg transition-colors ${
-                  isLoadingVotes
-                    ? "text-gray-400 dark:text-gray-500 cursor-not-allowed bg-gray-100 dark:bg-gray-800"
-                    : "text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                }`}
+                className={`w-full text-center font-medium py-2 px-4 rounded-lg transition-colors ${isLoadingVotes
+                  ? "text-gray-400 dark:text-gray-500 cursor-not-allowed bg-gray-100 dark:bg-gray-800"
+                  : "text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  }`}
               >
                 {isLoadingVotes ? (
                   <span className="flex items-center justify-center space-x-2">

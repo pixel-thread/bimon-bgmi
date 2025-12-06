@@ -12,6 +12,13 @@ type Props = {
   tournamentId: string;
   seasonId: string;
   pollId: string;
+  entryFee?: number;
+};
+
+export type CreateTeamsByPollsResult = {
+  teams: Awaited<ReturnType<typeof prisma.team.create>>[];
+  playersWithInsufficientBalance: { id: string; userName: string; balance: number }[];
+  entryFeeCharged: number;
 };
 
 export async function createTeamsByPolls({
@@ -19,7 +26,8 @@ export async function createTeamsByPolls({
   pollId,
   tournamentId,
   seasonId,
-}: Props) {
+  entryFee = 0,
+}: Props): Promise<CreateTeamsByPollsResult> {
   if (![1, 2, 3, 4].includes(groupSize)) {
     throw new Error("Invalid group size");
   }
@@ -38,8 +46,29 @@ export async function createTeamsByPolls({
       playerStats: true,
       playerPollVote: true,
       user: true,
+      uc: true,
     },
   });
+
+  // Track players with insufficient balance if entry fee is required
+  const playersWithInsufficientBalance: { id: string; userName: string; balance: number }[] = [];
+
+  if (entryFee > 0) {
+    // Filter out players who don't have enough UC balance
+    const eligiblePlayers = players.filter((p) => {
+      const balance = p.uc?.balance ?? 0;
+      if (balance < entryFee) {
+        playersWithInsufficientBalance.push({
+          id: p.id,
+          userName: p.user.userName,
+          balance,
+        });
+        return false;
+      }
+      return true;
+    });
+    players = eligiblePlayers;
+  }
 
   // Fetch eligible players who voted in the poll and are not banned
   if (players.length === 0) {
@@ -54,7 +83,7 @@ export async function createTeamsByPolls({
   // Compute weighted scores
   const playersWithScore: PlayerWithWeightT[] = players.map((p) => ({
     ...p,
-    // @ts-expect-error
+    // @ts-expect-error weightedScore is added at runtime
     weightedScore: computeWeightedScore(p),
   }));
 
@@ -199,6 +228,21 @@ export async function createTeamsByPolls({
               deaths: { increment: 1 },
             },
           });
+
+          // Debit entry fee from player's UC balance
+          if (entryFee > 0) {
+            await tx.uC.upsert({
+              where: { playerId: player.id },
+              create: {
+                balance: -entryFee,
+                player: { connect: { id: player.id } },
+                user: { connect: { id: player.userId } },
+              },
+              update: {
+                balance: { decrement: entryFee },
+              },
+            });
+          }
         }
 
         await tx.matchPlayerPlayed.create({
@@ -222,5 +266,9 @@ export async function createTeamsByPolls({
     },
   );
 
-  return createdTeams;
+  return {
+    teams: createdTeams,
+    playersWithInsufficientBalance,
+    entryFeeCharged: entryFee,
+  };
 }

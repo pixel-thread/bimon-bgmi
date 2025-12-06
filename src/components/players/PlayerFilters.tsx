@@ -44,7 +44,7 @@ export function PlayerFilters({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
           <Input
             type="text"
-            placeholder="Search players..."
+            placeholder="Search by name, email..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="h-11 pl-10 pr-4"
@@ -74,8 +74,8 @@ export function PlayerFilters({
           <Select value={sortBy} onValueChange={onSortByChange}>
             <SelectTrigger
               className={`h-11 w-full sm:w-32 ${sortBy === "banned"
-                  ? "text-red-600 dark:text-red-400 font-medium"
-                  : ""
+                ? "text-red-600 dark:text-red-400 font-medium"
+                : ""
                 }`}
             >
               <SelectValue />

@@ -17,5 +17,6 @@ export function usePolls({ page }: Props = { page: "1" }) {
     queryFn: () => http.get<PollT[]>(url),
     select: (data) => data.data,
     placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
   });
 }

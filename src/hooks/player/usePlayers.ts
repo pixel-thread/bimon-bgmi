@@ -16,6 +16,7 @@ type PlayerT = {
   category: string;
   matches: number;
   kd: number;
+  imageUrl?: string | null;
 };
 
 export function usePlayers({

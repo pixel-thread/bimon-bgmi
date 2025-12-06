@@ -22,25 +22,18 @@ function paginate({ array, pageSize, pageNumber }: PaginateProps) {
 
 // Example usage
 function getKdRank(kills: number, deaths: number): string {
-  if (deaths === 0) {
-    // Prevent division by zero; if kills > 0 and no deaths, consider as legend
-    return "bot";
-  }
-
   const kdRatio = kills / deaths;
 
-  if (kdRatio >= 2.5) {
+  if (kdRatio >= 1.7) {
     return "legend";
-  } else if (kdRatio >= 2.0) {
-    return "ultra pro";
   } else if (kdRatio >= 1.5) {
-    return "pro";
+    return "ultra pro";
   } else if (kdRatio >= 1.0) {
-    return "noob";
+    return "pro";
   } else if (kdRatio >= 0.5) {
+    return "noob";
+  } else if (kdRatio >= 0.2) {
     return "ultra noob";
-  } else if (kdRatio < 0.2) {
-    return "bot";
   } else {
     return "bot";
   }
@@ -204,8 +197,8 @@ export async function GET(req: NextRequest) {
 
     return SuccessResponse({
       data:
-        seasonId === "all"
-          ? paginate({ array: data, pageSize: 1, pageNumber: parseInt(page) })
+        seasonId === "all" && page !== "all"
+          ? paginate({ array: data, pageSize: 10, pageNumber: parseInt(page) })
           : data,
       message: "Players fetched successfully",
       meta: getMeta({ total: total, currentPage: page }),
