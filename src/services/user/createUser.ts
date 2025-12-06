@@ -44,6 +44,7 @@ export async function createUserIfNotExistInDB({ data }: ClerkUser) {
             clerkId: data.clerkId,
             createdBy: data.createdBy,
             email: data.email,
+            role: data.role,
             player: {
               create: { seasons: { connect: { id: activeSeason?.id || "" } } },
             },

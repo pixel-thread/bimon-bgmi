@@ -7,8 +7,5 @@ dotenv.config({ path: path.resolve(__dirname, "./.env") });
 
 export default defineConfig({
   schema: path.resolve(__dirname, "src/lib/db/prisma/schema.prisma"),
-  migrations: {
-    path: path.resolve(__dirname, "src/lib/db/prisma/migrations"),
-    // seed: "./seeds/user.ts",
-  },
+  migrations: { path: path.resolve(__dirname, "src/lib/db/prisma/migrations") },
 });
