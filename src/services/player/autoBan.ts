@@ -12,7 +12,7 @@ export async function checkAndApplyAutoBan(
 
     if (!player) return;
 
-    if (currentBalance <= 30) {
+    if (currentBalance <= -30) {
         // Should be banned unless manually unbanned
         if (!player.isBanned && !player.manualUnban) {
             await tx.player.update({
@@ -24,7 +24,7 @@ export async function checkAndApplyAutoBan(
             await tx.notification.create({
                 data: {
                     title: "Account Banned",
-                    message: "Your account has been automatically banned due to low UC balance (<= 30).",
+                    message: "Bann lah se?",
                     type: "ban",
                     playerId: playerId,
                 }
