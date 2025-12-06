@@ -17,7 +17,7 @@ export function debounce<T extends (...args: any[]) => void>(
 
     // Schedule the function call
     timerId = setTimeout(() => {
-      fn.apply(null, args);
+      fn(...args);
     }, delay);
   };
 }

@@ -48,7 +48,7 @@ export function BalanceAdjustmentDialog({
 
   const { data: player } = usePlayer({ id: playerId });
 
-  const { mutate } = useMutation({
+  const { mutate, isPending: isAdjustingBalance } = useMutation({
     mutationFn: () =>
       http.post(`/admin/players/${playerId}/uc`, { ...balanceAdjustment }),
     onSuccess: (data) => {
@@ -66,7 +66,15 @@ export function BalanceAdjustmentDialog({
     },
   });
 
-  const [isAdjustingBalance, setIsAdjustingBalance] = useState(false);
+  // Reset state when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setBalanceAdjustment({
+        amount: "", // Reset to empty
+        type: "credit",
+      });
+    }
+  }, [isOpen, playerId]); // Reset when opening or changing player
 
   const handleTransactionTypeChange = (newType: "credit" | "debit") => {
     setBalanceAdjustment((prev) => ({
@@ -77,15 +85,6 @@ export function BalanceAdjustmentDialog({
   const onClose = () => router.back();
 
   const handleConfirmBalanceAdjustment = async () => mutate();
-
-  useEffect(() => {
-    if (player?.uc) {
-      setBalanceAdjustment({
-        amount: player?.uc?.balance.toString() || "0",
-        type: "credit",
-      });
-    }
-  }, [player?.uc]);
 
   const uc = player?.uc;
 
@@ -126,8 +125,8 @@ export function BalanceAdjustmentDialog({
                   !isAdjustingBalance && handleTransactionTypeChange("credit")
                 }
                 className={`flex items-center justify-center gap-2 w-full rounded-md border py-2 cursor-pointer transition-colors ${balanceAdjustment.type === "credit"
-                    ? "border-primary bg-primary/5"
-                    : "border-input hover:border-primary/50"
+                  ? "border-primary bg-primary/5"
+                  : "border-input hover:border-primary/50"
                   } ${isAdjustingBalance ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <RadioGroupItem
@@ -147,8 +146,8 @@ export function BalanceAdjustmentDialog({
                   !isAdjustingBalance && handleTransactionTypeChange("debit")
                 }
                 className={`flex items-center justify-center gap-2 w-full rounded-md border py-2 cursor-pointer transition-colors ${balanceAdjustment.type === "debit"
-                    ? "border-primary bg-primary/5"
-                    : "border-input hover:border-primary/50"
+                  ? "border-primary bg-primary/5"
+                  : "border-input hover:border-primary/50"
                   } ${isAdjustingBalance ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <RadioGroupItem

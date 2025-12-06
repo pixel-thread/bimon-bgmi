@@ -59,6 +59,12 @@ export async function POST(
   try {
     const id = (await params).id;
     await tokenMiddleware(req);
+
+    const body = await req.json();
+    const { placements } = body as {
+      placements?: { position: number; amount: number }[];
+    };
+
     let where: Prisma.TeamStatsWhereInput;
     where = { tournamentId: id };
 
@@ -100,12 +106,12 @@ export async function POST(
       const groupStats = teamsStats.map((stat) => {
         const kills =
           stat.teamPlayerStats.reduce((acc, val) => acc + val.kills, 0) || 0;
-        const pts = calculatePlayerPoints(stat.position, 0); // Calculate points based on position
+        const pts = calculatePlayerPoints(stat.position, 0);
         const total = kills + pts;
         return {
-          ...stat, // Keep all original fields
-          pts, // Add calculated points
-          total, // Add total score
+          ...stat,
+          pts,
+          total,
         };
       });
 
@@ -132,17 +138,36 @@ export async function POST(
       };
     });
 
-    const sortedData = mappedData.sort((a, b) => b.total - a.total).slice(0, 2);
-    const firstPrice = 340;
-    const secondPrice = 140;
+    // Sort teams by total points (highest first)
+    const sortedData = mappedData.sort((a, b) => b.total - a.total);
+
+    // Use custom placements if provided, otherwise default to top 2 with default amounts
+    const placementsToUse = placements && placements.length > 0
+      ? placements
+      : [
+        { position: 1, amount: 340 },
+        { position: 2, amount: 140 },
+      ];
+
+    // Validate we have enough teams for the placements
+    if (sortedData.length < placementsToUse.length) {
+      return ErrorResponse({
+        message: `Not enough teams. Need ${placementsToUse.length} teams but only ${sortedData.length} available.`
+      });
+    }
 
     let winnerTeam = [];
-    for (let i = 0; i < sortedData.length; i++) {
+    for (let i = 0; i < placementsToUse.length; i++) {
+      const placement = placementsToUse[i];
+      const team = sortedData[placement.position - 1]; // position is 1-indexed
+
+      if (!team) continue;
+
       const winTeam = await addTournamentWinner({
         data: {
-          amount: i === 0 ? firstPrice : secondPrice,
-          position: i + 1,
-          team: { connect: { id: sortedData[i].teamId } },
+          amount: placement.amount,
+          position: placement.position,
+          team: { connect: { id: team.teamId } },
           tournament: { connect: { id: id } },
         },
       });
@@ -151,10 +176,11 @@ export async function POST(
     }
 
     return SuccessResponse({
-      message: "Tournament winner added",
+      message: "Tournament winners declared successfully",
       data: winnerTeam,
     });
   } catch (error) {
     return handleApiErrors(error);
   }
 }
+

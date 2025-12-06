@@ -29,6 +29,9 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
     // If user is authenticated but user data hasn't loaded yet, wait
     if (isAuthenticated && !user) return;
 
+    // Defensive: if authenticated and user exists but role is undefined, wait for proper data
+    if (isAuthenticated && user && !user.role) return;
+
     // Step 1: Identify the current route from the `routeRoles` configuration
     const currentRoute = routeRoles.find((route) => {
       if (route.url === pathName) return true; // Direct match for the route

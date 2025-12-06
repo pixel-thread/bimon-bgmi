@@ -16,17 +16,25 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/src/components/ui/popover";
-import {
-  calculateRemainingBanDuration,
-  formatRemainingBanDuration,
-} from "@/src/utils/banUtils";
+// import {
+//   calculateRemainingBanDuration,
+//   formatRemainingBanDuration,
+// } from "@/src/utils/banUtils";
 import { ChevronDown, Loader2, Search, X } from "lucide-react";
 import { useTournaments } from "@/src/hooks/tournament/useTournaments";
+
+export interface PlayerSuggestion {
+  id: string;
+  name: string;
+  isBanned: boolean;
+  banReason?: string;
+  category: string;
+}
 
 export interface NameAutocompleteProps {
   value: string;
   onValueChange: (value: string) => void;
-  onPlayerSelect: (player: any | null) => void;
+  onPlayerSelect: (player: PlayerSuggestion | null) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -44,12 +52,12 @@ export function NameAutocomplete({
 }: NameAutocompleteProps) {
   const [open, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
-  const [suggestions, setSuggestions] = React.useState<any[]>([]);
-  const [selectedPlayer, setSelectedPlayer] = React.useState<any | null>(null);
+  const [suggestions, setSuggestions] = React.useState<PlayerSuggestion[]>([]);
+  const [selectedPlayer, setSelectedPlayer] = React.useState<PlayerSuggestion | null>(null);
   const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
   const [fetchError, setFetchError] = React.useState<string | null>(null);
   const [suggestionCache, setSuggestionCache] = React.useState<
-    Record<string, any[]>
+    Record<string, PlayerSuggestion[]>
   >({});
 
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -109,7 +117,7 @@ export function NameAutocomplete({
     setHighlightedIndex(-1);
   };
 
-  const handlePlayerSelect = (player: any) => {};
+  const handlePlayerSelect = (player: PlayerSuggestion) => { };
 
   const handleClear = () => {
     onValueChange("");
@@ -257,7 +265,7 @@ export function NameAutocomplete({
                 <CommandEmpty className="py-6 px-4 text-center text-sm text-gray-500 dark:text-gray-300">
                   {value.trim() ? (
                     <>
-                      No players found for "{value}".
+                      No players found for &quot;{value}&quot;.
                       <button
                         className="mt-2 text-blue-500 hover:underline text-xs dark:text-blue-400 dark:hover:underline"
                         onClick={() => inputRef.current?.focus()}

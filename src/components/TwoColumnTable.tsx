@@ -25,6 +25,7 @@ export interface ITeamStats {
   total: number;
   matches: number;
   pts: number;
+  wins: number;
   players: IPlayer[];
 }
 
@@ -33,7 +34,6 @@ interface TwoColumnTableProps {
 }
 
 export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
-  const TWO_COLUMN_THRESHOLD = 16; // switch to two columns when exceeding this count (desktop only)
   // Mobile cards (smaller screens)
   const MobileList = (
     <div className="mobile-list sm:hidden space-y-2 max-h-[60vh] overflow-y-auto">
@@ -58,7 +58,14 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
               {rank}
             </div>
             <div className="min-w-0 flex-1 marquee-on-hover">
-              <div className="text-sm font-medium truncate marquee-text">{teamName}</div>
+              <div className="text-sm font-medium truncate marquee-text">
+                {teamName}
+                {team.wins > 0 && (
+                  <span className="ml-2 text-yellow-500 font-bold">
+                    🍗{team.wins > 1 ? ` x${team.wins}` : ""}
+                  </span>
+                )}
+              </div>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1 rounded border px-2 py-0.5">
                   <span className="opacity-70">M</span>
@@ -68,6 +75,7 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
                   <span className="opacity-70">PTS</span>
                   <span className="font-medium">{team.pts}</span>
                 </span>
+
                 <span className="inline-flex items-center gap-1 rounded border px-2 py-0.5">
                   <span className="opacity-70">K</span>
                   <span className="font-medium">{team.kills}</span>
@@ -99,7 +107,7 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[64px] px-4 text-center tabular-nums font-mono whitespace-nowrap">#</TableHead>
-            <TableHead className="min-w-[380px] md:min-w-[460px] xl:min-w-[560px] px-4 text-left">Team</TableHead>
+            <TableHead className="px-4 pl-12 text-left">Team</TableHead>
             <TableHead className="w-[80px] px-4 text-center tabular-nums font-mono whitespace-nowrap">M</TableHead>
             <TableHead className="w-[100px] px-4 text-center tabular-nums font-mono whitespace-nowrap">PTS</TableHead>
             <TableHead className="w-[100px] px-4 text-center tabular-nums font-mono whitespace-nowrap">Kills</TableHead>
@@ -126,7 +134,14 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
                   </span>
                 </TableCell>
                 <TableCell className="px-4 py-2 font-medium text-left align-top max-w-0">
-                  <div className="truncate">{teamName}</div>
+                  <div className="truncate">
+                    {teamName}
+                    {team.wins > 0 && (
+                      <span className="ml-2 text-yellow-500 font-bold">
+                        🍗{team.wins > 1 ? ` x${team.wins}` : ""}
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="px-4 py-2 text-center text-muted-foreground tabular-nums font-mono whitespace-nowrap">{team.matches}</TableCell>
                 <TableCell className="px-4 py-2 text-center font-medium tabular-nums font-mono whitespace-nowrap">{team.pts}</TableCell>
@@ -141,16 +156,18 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
   );
 
   // Desktop Table (>= sm)
+  // Always use two columns on lg+ screens for better space utilization
   const DesktopTable = (
     <div className="desktop-table hidden sm:block">
-      {teams.length > TWO_COLUMN_THRESHOLD ? (
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          {renderDesktopTable(teams.slice(0, Math.ceil(teams.length / 2)), 0)}
-          {renderDesktopTable(teams.slice(Math.ceil(teams.length / 2)), Math.ceil(teams.length / 2))}
-        </div>
-      ) : (
-        renderDesktopTable(teams, 0)
-      )}
+      {/* Single column on sm-md, two columns on lg+ */}
+      <div className="hidden lg:grid lg:grid-cols-2 lg:gap-4">
+        {renderDesktopTable(teams.slice(0, Math.ceil(teams.length / 2)), 0)}
+        {renderDesktopTable(teams.slice(Math.ceil(teams.length / 2)), Math.ceil(teams.length / 2))}
+      </div>
+      {/* Single column for sm-md screens */}
+      <div className="block lg:hidden">
+        {renderDesktopTable(teams, 0)}
+      </div>
     </div>
   );
 

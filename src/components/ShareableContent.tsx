@@ -52,6 +52,7 @@ export function ShareableContent({
     total: t.total ?? 0,
     matches: t.matches ?? 0,
     pts: t.pts ?? 0,
+    wins: t.wins ?? 0,
     players: (t.players || []).map((p: any) => ({ id: p.id, name: p.name })),
   }));
 

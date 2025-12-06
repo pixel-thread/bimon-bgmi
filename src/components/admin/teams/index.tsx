@@ -67,7 +67,8 @@ export const AdminTeamsManagement: React.FC = () => {
   };
 
   const onCloseCreateTeam = () => {
-    onValidateTeams();
+    // CreateTeamDialog now handles cache updates directly via setQueryData
+    // No refetch needed
     setOpen(false);
   };
 

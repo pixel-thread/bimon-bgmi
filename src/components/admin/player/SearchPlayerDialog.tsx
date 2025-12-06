@@ -13,9 +13,11 @@ import { useQuery } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import React from "react";
 import { PlayerT } from "@/src/types/player";
-import { Ternary } from "../../common/Ternary";
 import { LoaderFive } from "../../ui/loader";
 import { Input } from "../../ui/input";
+import { Button } from "../../ui/button";
+import { RefreshCwIcon } from "lucide-react";
+
 export const SearchPlayerDialog = ({
   open,
   onOpenChange,
@@ -23,15 +25,30 @@ export const SearchPlayerDialog = ({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onSelectPlayer: (playerId: string) => void;
+  onSelectPlayer: (playerId: string, playerName: string) => void;
 }) => {
   const [value, setValue] = React.useState("");
 
-  const { data: players, isFetching } = useQuery({
-    queryKey: ["search-player", value],
-    queryFn: () => http.post<PlayerT[]>(`/players/search`, { query: value }),
+  // Preload all players once and cache for 10 minutes
+  const { data: allPlayers, isFetching: isLoadingPlayers, refetch } = useQuery({
+    queryKey: ["all-players-search"],
+    queryFn: () => http.post<PlayerT[]>(`/players/search`, { query: "" }),
     select: (data) => data.data,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
+
+  // Filter players locally based on search value
+  const filteredPlayers = React.useMemo(() => {
+    if (!allPlayers) return [];
+    if (!value.trim()) return allPlayers;
+
+    const searchLower = value.toLowerCase().trim();
+    return allPlayers.filter((player) =>
+      player.user.userName.toLowerCase().includes(searchLower)
+    );
+  }, [allPlayers, value]);
 
   const onClose = () => {
     setValue("");
@@ -41,35 +58,44 @@ export const SearchPlayerDialog = ({
   return (
     <CommandDialog open={open} onOpenChange={onClose}>
       <Command className="rounded-lg border shadow-md md:min-w-[450px]">
-        <Input
-          value={value}
-          placeholder="Search player..."
-          onChange={(e) => setValue(e.target.value)}
-        />
+        <div className="flex items-center gap-2 p-2 border-b">
+          <Input
+            value={value}
+            placeholder="Search player..."
+            onChange={(e) => setValue(e.target.value)}
+            autoFocus
+            className="flex-1"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => refetch()}
+            disabled={isLoadingPlayers}
+            title="Refresh player list"
+            className="shrink-0"
+          >
+            <RefreshCwIcon className={`h-4 w-4 ${isLoadingPlayers ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
         <CommandList>
           <CommandGroup>
-            <Ternary
-              condition={isFetching}
-              trueComponent={
-                <CommandItem disabled>
-                  <LoaderFive text="Searching" />
+            {isLoadingPlayers && !allPlayers ? (
+              <CommandItem disabled>
+                <LoaderFive text="Loading players" />
+              </CommandItem>
+            ) : filteredPlayers.length === 0 ? (
+              <CommandEmpty>No players found.</CommandEmpty>
+            ) : (
+              filteredPlayers.map((player) => (
+                <CommandItem
+                  key={player.id}
+                  value={player.id}
+                  onSelect={() => onSelectPlayer(player.id, player.user.userName)}
+                >
+                  {player.user.userName}
                 </CommandItem>
-              }
-              falseComponent={
-                <>
-                  <CommandEmpty>No players found.</CommandEmpty>
-                  {players?.map((player) => (
-                    <CommandItem
-                      key={player.id}
-                      value={player.id}
-                      onSelect={() => onSelectPlayer(player.id)}
-                    >
-                      {player.user.userName}
-                    </CommandItem>
-                  ))}
-                </>
-              }
-            />
+              ))
+            )}
           </CommandGroup>
         </CommandList>
       </Command>

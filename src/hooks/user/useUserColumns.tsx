@@ -30,6 +30,14 @@ const role = [
   },
 ];
 
+interface UserRole {
+  id: string;
+  role: string;
+  userName: string;
+  email: string;
+  createdBy: string;
+}
+
 type Props = {
   value: string;
   onChange: (value: string) => void;
@@ -49,7 +57,9 @@ const RoleSelector: React.FC<Props> = ({ value, onChange, isLoading }) => {
         <SelectGroup>
           <SelectLabel>ROLE</SelectLabel>
           {role.map((role) => (
-            <SelectItem value={role.value}>{role.label}</SelectItem>
+            <SelectItem key={role.value} value={role.value}>
+              {role.label}
+            </SelectItem>
           ))}
         </SelectGroup>
       </SelectContent>
@@ -57,7 +67,7 @@ const RoleSelector: React.FC<Props> = ({ value, onChange, isLoading }) => {
   );
 };
 
-const cols: ColumnDef<any>[] = [
+const cols: ColumnDef<UserRole>[] = [
   {
     header: "Name",
     accessorKey: "userName",
@@ -84,7 +94,7 @@ export function useUserColumns() {
       }
     },
   });
-  const columns: ColumnDef<any>[] = [
+  const columns: ColumnDef<UserRole>[] = [
     ...cols,
     {
       header: "Role",

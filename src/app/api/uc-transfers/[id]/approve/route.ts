@@ -3,6 +3,7 @@ import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
+import { checkAndApplyAutoBan } from "@/src/services/player/autoBan";
 
 // PATCH - Approve a UC transfer request
 export async function PATCH(
@@ -53,6 +54,15 @@ export async function PATCH(
                 data: { balance: { decrement: transfer.amount } },
             });
 
+            await tx.transaction.create({
+                data: {
+                    amount: transfer.amount,
+                    type: "debit",
+                    description: `UC Transfer to ${transfer.fromPlayer.user.userName}`,
+                    playerId: transfer.toPlayerId,
+                },
+            });
+
             // Add to requester (fromPlayer)
             if (transfer.fromPlayer.uc) {
                 await tx.uC.update({
@@ -68,6 +78,15 @@ export async function PATCH(
                     },
                 });
             }
+
+            await tx.transaction.create({
+                data: {
+                    amount: transfer.amount,
+                    type: "credit",
+                    description: `UC Transfer from ${transfer.toPlayer.user.userName}`,
+                    playerId: transfer.fromPlayerId,
+                },
+            });
 
             // Update transfer status
             const updated = await tx.uCTransfer.update({
@@ -85,6 +104,23 @@ export async function PATCH(
                     link: "/profile",
                 },
             });
+
+            // Check for auto-ban for both players
+            // Sender (requester) received UC, so check if they can be unbanned (or banned if somehow balance is low, though unlikely on receive)
+            // Receiver (approver) sent UC, so check if they need to be banned
+
+            // We need current balances. 
+            // We can fetch them or calculate. 
+            // Let's fetch to be safe and simple inside tx.
+            const senderUc = await tx.uC.findUnique({ where: { playerId: transfer.fromPlayerId } });
+            const receiverUc = await tx.uC.findUnique({ where: { playerId: transfer.toPlayerId } });
+
+            if (senderUc) {
+                await checkAndApplyAutoBan(transfer.fromPlayerId, senderUc.balance, tx);
+            }
+            if (receiverUc) {
+                await checkAndApplyAutoBan(transfer.toPlayerId, receiverUc.balance, tx);
+            }
 
             return updated;
         });

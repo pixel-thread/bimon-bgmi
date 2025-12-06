@@ -27,22 +27,17 @@ export function calculatePlayerPoints(position: number, kills: number): number {
 }
 
 export function getKdRank(kills: number, deaths: number): string {
-  if (deaths === 0) {
-    // Prevent division by zero; if kills > 0 and no deaths, consider as legend
-    return "legend";
-  }
-
   const kdRatio = kills / deaths;
 
-  if (kdRatio >= 2.5) {
+  if (kdRatio >= 1.7) {
     return "legend";
-  } else if (kdRatio >= 2.0) {
-    return "ultra pro";
   } else if (kdRatio >= 1.5) {
-    return "pro";
+    return "ultra pro";
   } else if (kdRatio >= 1.0) {
-    return "noob";
+    return "pro";
   } else if (kdRatio >= 0.5) {
+    return "noob";
+  } else if (kdRatio >= 0.2) {
     return "ultra noob";
   } else {
     return "bot";

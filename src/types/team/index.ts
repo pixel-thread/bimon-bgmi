@@ -17,7 +17,10 @@ export type TeamT = {
   players: PlayerT[];
   pts: number;
   total: number;
+  wins?: number;
+  matches?: number;
   teamPlayerStats: TeamPlayerStats[];
+  status?: "PROCESSING" | "READY";
 };
 
 export type TeamStatsT = Prisma.TeamStatsGetPayload<{

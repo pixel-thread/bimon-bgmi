@@ -12,5 +12,7 @@ export function usePlayerVote({ pollId, enabled = true }: Props) {
     queryFn: () => http.get<PlayerPollVoteT[]>(`/poll/${pollId}/vote`),
     enabled: !!pollId && enabled,
     select: (data) => data.data,
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }

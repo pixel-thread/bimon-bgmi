@@ -73,6 +73,9 @@ export async function GET(
       const pts = groupStats
         .filter((val) => val.teamId === team.teamId)
         .reduce((acc, stat) => acc + stat.pts, 0);
+      const wins = teamsStats
+        .filter((val) => val.teamId === team.teamId)
+        .reduce((acc, stat) => acc + (stat.position === 1 ? 1 : 0), 0);
       const kills = team?._sum?.kills || 0;
       const total = kills + pts;
       const teamStats = teamsStats.find(
@@ -82,6 +85,7 @@ export async function GET(
         name: teamStats?.team?.name || "",
         teamId: team.teamId,
         kills: team._sum.kills,
+        wins: wins,
         position: position,
         total: total,
         matches: teamStats?.team?.matches.length,

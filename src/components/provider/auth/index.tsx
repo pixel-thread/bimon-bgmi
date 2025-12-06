@@ -71,7 +71,7 @@ export const AuthProvider = ({ children }: Props) => {
     <AuthContext.Provider
       value={{
         user: user,
-        isAuthLoading: isFetching,
+        isAuthLoading: (isSignedIn && !isTokenSet) || isFetching,
         isSignedIn: isSignedIn || false,
         refreshAuth: () => refetch(),
         logout: () => onLogout(),

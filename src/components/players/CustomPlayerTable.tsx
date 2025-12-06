@@ -102,6 +102,16 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
         }
     };
 
+    const getKdColor = (category: string) => {
+        const lowerCategory = category?.toLowerCase() || "";
+        if (lowerCategory === "legend") return "text-purple-600 dark:text-purple-400";
+        if (lowerCategory === "ultra pro") return "text-blue-600 dark:text-blue-400";
+        if (lowerCategory === "pro") return "text-green-600 dark:text-green-400";
+        if (lowerCategory === "noob") return "text-yellow-600 dark:text-yellow-400";
+        if (lowerCategory === "ultra noob") return "text-orange-600 dark:text-orange-400";
+        return "text-red-600 dark:text-red-400"; // Bot and others
+    };
+
     const renderDynamicCell = (player: PlayerT) => {
         switch (sortBy) {
             case "kd":
@@ -109,7 +119,7 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                 const displayKd = isFinite(kdValue) ? kdValue.toFixed(2) : "N/A";
                 return (
                     <div className="flex items-center gap-2">
-                        <span className={`font-bold ${kdValue >= 3 ? 'text-green-600 dark:text-green-400' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                        <span className={`font-bold ${getKdColor(player.category)}`}>
                             {displayKd}
                         </span>
                     </div>
@@ -119,13 +129,18 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
             case "matches":
                 return <span className="font-medium text-zinc-700 dark:text-zinc-300">{player.matches}</span>;
             case "balance":
-                return <span className="font-medium text-zinc-700 dark:text-zinc-300">{player.uc || 0}</span>;
+                const balance = player.uc || 0;
+                return (
+                    <span className={`font-medium ${balance > 0 ? 'text-green-600 dark:text-green-400' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                        {balance}
+                    </span>
+                );
             default:
                 const defaultKdValue = Number(player.kd || 0);
                 const defaultDisplayKd = isFinite(defaultKdValue) ? defaultKdValue.toFixed(2) : "N/A";
                 return (
                     <div className="flex items-center gap-2">
-                        <span className={`font-bold ${defaultKdValue >= 3 ? 'text-green-600 dark:text-green-400' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                        <span className={`font-bold ${getKdColor(player.category)}`}>
                             {defaultDisplayKd}
                         </span>
                     </div>

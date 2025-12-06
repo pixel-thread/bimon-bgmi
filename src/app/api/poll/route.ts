@@ -11,7 +11,12 @@ export async function GET(req: NextRequest) {
     const page = query.get("page");
     const polls = await getPolls({
       where: { isActive: true },
-      include: { options: true },
+      include: {
+        options: true,
+        playersVotes: {
+          include: { player: { include: { user: true, characterImage: true } } },
+        },
+      },
       page,
     });
 

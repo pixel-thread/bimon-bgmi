@@ -295,7 +295,7 @@ export function convertMockPlayersToStats(players: MockPlayerWithStats[]) {
 
 export function convertMockPlayersToPlayers(
   players: MockPlayerWithStats[],
-): any[] {
+): unknown[] {
   return players.map((player) => ({
     id: player.id,
     name: player.name,

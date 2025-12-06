@@ -1,12 +1,12 @@
 import { getUniqueSeason } from "@/src/services/season/getUniqueSeason";
 import { getTournamentWinners } from "@/src/services/winner/getTournamentWinners";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 
 export async function POST(req: Request) {
   try {
-    await superAdminMiddleware(req);
+    await tokenMiddleware(req);
 
     const body = await req.json();
 
@@ -25,13 +25,18 @@ export async function POST(req: Request) {
     const rawData = tournamentWinners.map((winner) => {
       return {
         id: winner.id,
-        tournamentId: winner.tournamentId, // Assuming this field exists on winner
+        tournamentId: winner.tournamentId,
         tournamentName: winner?.tournament?.name || "",
+        createdAt: winner.createdAt,
         amount: winner.amount,
         position: winner.position,
         teamName: winner.team.players
           .map((player) => player.user.userName)
           .join(", "),
+        players: winner.team.players.map((player) => ({
+          id: player.id,
+          name: player.user.userName,
+        })),
       };
     });
 
@@ -41,6 +46,7 @@ export async function POST(req: Request) {
           acc[winner.tournamentId] = {
             tournamentId: winner.tournamentId,
             tournamentName: winner.tournamentName,
+            createdAt: winner.createdAt,
             place1: null,
             place2: null,
           };
@@ -62,16 +68,83 @@ export async function POST(req: Request) {
         {
           tournamentId: string;
           tournamentName: string;
+          createdAt: Date;
           place1: (typeof rawData)[0] | null;
           place2: (typeof rawData)[0] | null;
         }
       >,
     );
 
-    const data = Object.values(groupedByTournament);
+    const allTournaments = Object.values(groupedByTournament);
+
+    // Sort by createdAt descending and get last 6 tournaments
+    const sortedTournaments = [...allTournaments].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    const recentTournaments = sortedTournaments.slice(0, 6);
+
+    // Calculate player placement stats for recent 6 tournaments
+    const playerPlacementMap: Record<
+      string,
+      { playerName: string; firstPlaceCount: number; secondPlaceCount: number }
+    > = {};
+
+    recentTournaments.forEach((tournament) => {
+      // Count 1st place players
+      if (tournament.place1?.players) {
+        tournament.place1.players.forEach((player) => {
+          if (!playerPlacementMap[player.id]) {
+            playerPlacementMap[player.id] = {
+              playerName: player.name,
+              firstPlaceCount: 0,
+              secondPlaceCount: 0,
+            };
+          }
+          playerPlacementMap[player.id].firstPlaceCount += 1;
+        });
+      }
+
+      // Count 2nd place players
+      if (tournament.place2?.players) {
+        tournament.place2.players.forEach((player) => {
+          if (!playerPlacementMap[player.id]) {
+            playerPlacementMap[player.id] = {
+              playerName: player.name,
+              firstPlaceCount: 0,
+              secondPlaceCount: 0,
+            };
+          }
+          playerPlacementMap[player.id].secondPlaceCount += 1;
+        });
+      }
+    });
+
+    // Convert to array and sort by total placements
+    const playerPlacements = Object.values(playerPlacementMap)
+      .map((p) => ({
+        ...p,
+        totalPlacements: p.firstPlaceCount + p.secondPlaceCount,
+      }))
+      .sort((a, b) => b.totalPlacements - a.totalPlacements);
+
+    // Format recent tournaments for the table
+    const recentTournamentResults = recentTournaments.map((t) => ({
+      tournamentId: t.tournamentId,
+      tournamentName: t.tournamentName,
+      firstPlace: t.place1?.players?.map((p) => p.name) || [],
+      secondPlace: t.place2?.players?.map((p) => p.name) || [],
+    }));
+
     return SuccessResponse({
       message: "Tournament Winners",
-      data: data,
+      data: {
+        tournaments: allTournaments,
+        recentStats: {
+          playerPlacements,
+          recentTournaments: recentTournamentResults,
+        },
+      },
     });
   } catch (error) {
     return handleApiErrors(error);

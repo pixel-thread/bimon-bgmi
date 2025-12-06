@@ -42,6 +42,11 @@ export async function POST(
             ? { increment: body.amount }
             : { decrement: body.amount },
       },
+      transaction: {
+        amount: body.amount,
+        type: body.type,
+        description: `Admin adjustment: ${body.type === "credit" ? "Credit" : "Debit"} of ${body.amount} UC`,
+      },
     });
     return SuccessResponse({
       data: updatedUc,

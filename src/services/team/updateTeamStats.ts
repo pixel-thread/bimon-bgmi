@@ -82,7 +82,28 @@ export async function updateTeamStats({
           },
         });
 
-        // Update PlayerStats with delta and deaths
+        // Recalculate PlayerStats (kills and deaths) from TeamPlayerStats
+        // This ensures consistency and avoids double-counting deaths on updates
+        const allPlayerStats = await tx.teamPlayerStats.findMany({
+          where: {
+            playerId: player.playerId,
+            seasonId: seasonId || "",
+          },
+          select: {
+            kills: true,
+            matchId: true,
+          },
+        });
+
+        const totalKills = allPlayerStats.reduce(
+          (acc, curr) => acc + curr.kills,
+          0
+        );
+        // Count unique matches as deaths (assuming 1 death per match)
+        const uniqueMatches = new Set(allPlayerStats.map((s) => s.matchId));
+        const totalDeaths = uniqueMatches.size;
+
+        // Update PlayerStats with recalculated values
         await tx.playerStats.upsert({
           where: {
             seasonId_playerId: {
@@ -93,13 +114,12 @@ export async function updateTeamStats({
           create: {
             playerId: player.playerId,
             seasonId: seasonId || "",
-            kills: newKills,
-            deaths: 1, // First match = 1 death
+            kills: totalKills,
+            deaths: totalDeaths,
           },
           update: {
-            kills: { increment: killsDelta },
-            // Increment deaths only if this is a new match entry for the player
-            deaths: isNewMatchEntry ? { increment: 1 } : undefined,
+            kills: totalKills,
+            deaths: totalDeaths,
           },
         });
       })
@@ -117,13 +137,108 @@ export async function updateManyTeamsStats({
   matchId,
   seasonId,
 }: TeamsStatsSchemaT & { seasonId: string | null }) {
-  for (const stat of stats) {
-    await updateTeamStats({
-      teamId: stat.teamId,
-      matchId,
-      tournamentId,
-      data: stat,
-      seasonId: seasonId || undefined,
-    });
-  }
+  // Use a single transaction for all updates - MUCH faster than individual transactions
+  await prisma.$transaction(async (tx) => {
+    // Collect all unique player IDs for batch recalculation at the end
+    const allPlayerIds = new Set<string>();
+
+    // Process all teams in parallel within the same transaction
+    await Promise.all(
+      stats.map(async (stat) => {
+        // Upsert TeamStats for this team
+        const teamStats = await tx.teamStats.upsert({
+          where: {
+            teamId: stat.teamId,
+            matchId,
+            tournamentId,
+            teamId_matchId: { teamId: stat.teamId, matchId },
+          },
+          create: {
+            teamId: stat.teamId,
+            matchId,
+            tournamentId,
+            seasonId,
+            position: stat.position,
+          },
+          update: { position: stat.position },
+        });
+
+        // Process all players for this team in parallel
+        await Promise.all(
+          stat.players.map(async (player) => {
+            allPlayerIds.add(player.playerId);
+
+            // Upsert TeamPlayerStats
+            await tx.teamPlayerStats.upsert({
+              where: {
+                playerId_teamId_matchId: {
+                  playerId: player.playerId,
+                  teamId: stat.teamId,
+                  matchId,
+                },
+              },
+              create: {
+                playerId: player.playerId,
+                teamId: stat.teamId,
+                matchId,
+                seasonId: seasonId || "",
+                teamStatsId: teamStats.id,
+                kills: player.kills ?? 0,
+                deaths: 1,
+              },
+              update: {
+                kills: player.kills ?? 0,
+                deaths: 1,
+              },
+            });
+          })
+        );
+      })
+    );
+
+    // Batch recalculate PlayerStats for all affected players at once
+    // This is more efficient than doing it per-player inside the loop
+    await Promise.all(
+      Array.from(allPlayerIds).map(async (playerId) => {
+        const allPlayerStats = await tx.teamPlayerStats.findMany({
+          where: {
+            playerId,
+            seasonId: seasonId || "",
+          },
+          select: {
+            kills: true,
+            matchId: true,
+          },
+        });
+
+        const totalKills = allPlayerStats.reduce(
+          (acc, curr) => acc + curr.kills,
+          0
+        );
+        const uniqueMatches = new Set(allPlayerStats.map((s) => s.matchId));
+        const totalDeaths = uniqueMatches.size;
+
+        await tx.playerStats.upsert({
+          where: {
+            seasonId_playerId: {
+              playerId,
+              seasonId: seasonId || "",
+            },
+          },
+          create: {
+            playerId,
+            seasonId: seasonId || "",
+            kills: totalKills,
+            deaths: totalDeaths,
+          },
+          update: {
+            kills: totalKills,
+            deaths: totalDeaths,
+          },
+        });
+      })
+    );
+
+    logger.log("Bulk TeamPlayerStats updated");
+  });
 }
