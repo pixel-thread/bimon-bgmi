@@ -31,12 +31,8 @@ import { TeamStatsForm } from "@/src/utils/validation/team/team-stats";
 import { ADMIN_MATCH_ENDPOINTS } from "@/src/lib/endpoints/admin/match";
 import { useSeasonStore } from "@/src/store/season";
 import { BulkEditStatsDialog } from "./BulkEditStatsDialog";
+import { useGlobalBackground } from "@/src/hooks/gallery/useGlobalBackground";
 
-const headers = [
-  { label: "Total Players", key: "size" },
-  { label: "Team Name", key: "name" },
-  { label: "Slot No", key: "slotNo" },
-];
 
 export const AdminTeamsManagement: React.FC = () => {
   const search = useSearchParams();
@@ -54,6 +50,35 @@ export const AdminTeamsManagement: React.FC = () => {
   const queryClient = useQueryClient();
   const { matchId, setMatchId } = useMatchStore();
   const { data: teams, isFetching, refetch, meta } = useTeams({ page });
+  const { data: globalBackground } = useGlobalBackground();
+
+  // Prepare CSV export data with tournament title at top and total at bottom
+  const csvData = React.useMemo(() => {
+    if (!teams) return [];
+
+    // Calculate total players across all teams
+    const totalPlayers = teams.reduce((sum, team) => sum + (team.players?.length || 0), 0);
+
+    // Title row (first row)
+    const titleRow = [tournament?.name || "Tournament", ""];
+
+    // Empty row for spacing
+    const emptyRow = ["", ""];
+
+    // Column headers row
+    const headerRow = ["Slot No", "Players"];
+
+    // Team data rows
+    const teamRows = teams.map((team) => [
+      team.slotNo,
+      team.players?.map((p) => p.name).join(", ") || "",
+    ]);
+
+    // Footer row with total
+    const footerRow = ["Total Players:", totalPlayers];
+
+    return [titleRow, emptyRow, headerRow, ...teamRows, emptyRow, footerRow];
+  }, [teams, tournament?.name]);
 
   const onValidateTeams = () => {
     queryClient.invalidateQueries({
@@ -93,79 +118,91 @@ export const AdminTeamsManagement: React.FC = () => {
   });
   return (
     <>
-      <div className="flex flex-col sm:flex-row gap-2 gap-y-5 items-start sm:items-center">
-        <div className="w-full flex flex-col md:flex-row justify-end items-center gap-x-2 gap-y-5">
-          <div className="flex flex-wrap md:flex-nowrap gap-2 justify-center md:justify-end w-full md:w-auto">
-            <SeasonSelector className="w-full max-w-[110px]" />
-            <TournamentSelector className="w-full max-w-[110px]" />
-            <MatchSelector className="w-[100px] max-w-[110px]" />
-          </div>
-          <div className="flex items-center justify-center md:justify-end md:w-auto w-full gap-2">
-            <Button
-              disabled={isFetching}
-              onClick={() => setShowStandingsModal(true)}
-            >
-              <MedalIcon />
-            </Button>
-            <Button
-              disabled={isFetching}
-              onClick={() => refetch()}
-              className="w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
-            >
-              <IconReload />
-            </Button>
+      {/* Toolbar - Clean, minimal design */}
+      <div className="flex flex-col gap-4">
+        {/* Selectors Row */}
+        <div className="flex flex-wrap items-center gap-2">
+          <SeasonSelector className="w-[120px]" />
+          <TournamentSelector className="w-[120px]" />
+          <MatchSelector className="w-[100px]" />
+        </div>
 
-            <Button
-              disabled={isFetching || !tournamentId}
-              className="w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
-              asChild
-            >
-              <CSVLink
-                filename={`${tournament?.name}.csv`}
-                aria-disabled={isFetching}
-                data={teams || []}
-                className="w-auto"
-                headers={headers}
-              >
-                <IconFileExport />
-              </CSVLink>
-            </Button>
-            <Button
-              onClick={() => setOpen(true)}
-              disabled={
-                isFetching ||
-                !tournamentId ||
-                matchId === "" ||
-                matchId === "all"
-              }
-              className="w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
-            >
-              <IconPlus />
-            </Button>
+        {/* Actions Row */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* View Actions */}
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={isFetching}
+            onClick={() => setShowStandingsModal(true)}
+            title="View Standings"
+          >
+            <MedalIcon className="h-4 w-4" />
+          </Button>
 
-            <Button
-              onClick={() => setShowBulkEdit(true)}
-              disabled={
-                isFetching ||
-                !tournamentId ||
-                matchId === "" ||
-                matchId === "all"
-              }
-              className="w-auto bg-blue-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white shadow-sm"
-            >
-              Bulk Edit
-            </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={isFetching}
+            onClick={() => refetch()}
+            title="Refresh"
+          >
+            <IconReload className="h-4 w-4" />
+          </Button>
 
-            {matchId !== "all" && (
-              <Button
-                variant={"destructive"}
-                disabled={isFetching || !matchId || isDeleting}
-                onClick={() => deleteMatch()}
-              >
-                Delete Match
-              </Button>
-            )}
-          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={isFetching || !tournamentId}
+            asChild
+            title="Export CSV"
+          >
+            <CSVLink
+              filename={`${tournament?.name}.csv`}
+              aria-disabled={isFetching}
+              data={csvData}
+            >
+              <IconFileExport className="h-4 w-4" />
+            </CSVLink>
+          </Button>
+
+          {/* Separator */}
+          <div className="h-6 w-px bg-border mx-1 hidden sm:block" />
+
+          {/* Edit Actions */}
+          <Button
+            size="sm"
+            variant="default"
+            onClick={() => setOpen(true)}
+            disabled={isFetching || !tournamentId || matchId === "" || matchId === "all"}
+            title="Add Team"
+          >
+            <IconPlus className="h-4 w-4 mr-1" />
+            <span className="hidden sm:inline">Add</span>
+          </Button>
+
+          <Button
+            size="sm"
+            variant="default"
+            onClick={() => setShowBulkEdit(true)}
+            disabled={isFetching || !tournamentId || matchId === "" || matchId === "all"}
+            title="Bulk Edit Stats"
+          >
+            <span>Bulk Edit</span>
+          </Button>
+
+          {matchId !== "all" && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+              disabled={isFetching || !matchId || isDeleting}
+              onClick={() => deleteMatch()}
+              title="Delete Match"
+            >
+              {isDeleting ? "Deleting..." : "Delete Match"}
+            </Button>
+          )}
         </div>
       </div>
       <Ternary
@@ -194,9 +231,10 @@ export const AdminTeamsManagement: React.FC = () => {
       <OverallStandingModal
         visible={showStandingsModal}
         onClose={() => setShowStandingsModal(false)}
-        backgroundImage={"/images/image.png"}
+        backgroundImage={globalBackground?.publicUrl || "/images/image.png"}
         tournamentTitle={tournament?.name || "Tournament"}
         maxMatchNumber={1}
+        initialTeams={teams as any}
       />
       <BulkEditStatsDialog
         open={showBulkEdit}

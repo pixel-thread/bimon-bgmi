@@ -1,10 +1,10 @@
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { SuccessResponse } from "@/src/utils/next-response";
 
 export async function POST(req: Request) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
     return SuccessResponse({
       data: "",
     });

@@ -2,11 +2,11 @@ import { addGalleryImage } from "@/src/services/gallery/addGalleryImage";
 import { getGalleryImages } from "@/src/services/gallery/getImages";
 import { uploadImage } from "@/src/services/upload/uploadImage";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 export async function GET(req: Request) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
     const images = await getGalleryImages();
     return SuccessResponse({
       data: images,
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
 }
 export async function POST(req: Request) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
     // Parse multipart/form-data for file upload
     const formData = await req.formData();
 

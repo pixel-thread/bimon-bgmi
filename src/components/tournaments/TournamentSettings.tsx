@@ -24,6 +24,7 @@ import {
   Sparkles,
   Loader2,
   ImagePlus,
+  Globe,
 } from "lucide-react";
 import { Ternary } from "../common/Ternary";
 import { useTournamentStore } from "../../store/tournament";
@@ -45,6 +46,7 @@ import { toast } from "sonner";
 import { DeclareWinnerDialog } from "./DeclareWinnerDialog";
 import { SeasonSelector } from "../SeasonSelector";
 import { useSeasonStore } from "../../store/season";
+import { compressGalleryImage } from "../../utils/image/compressImage";
 
 type TeamRanking = {
   teamId: string;
@@ -238,6 +240,11 @@ const GallerySection = () => {
   const { data } = useTournament({ id: tournamentId });
   const queryClient = useQueryClient();
 
+  // Find which image is currently set as global background
+  const globalBackgroundImage = backgroundGallery?.find(
+    (img) => (img as any).isGlobalBackground === true
+  );
+
   const { isPending: isSettingBackground, mutate } = useMutation({
     mutationFn: ({
       tournamentId,
@@ -260,13 +267,31 @@ const GallerySection = () => {
     },
   });
 
+  // Mutation for setting global background
+  const { isPending: isSettingGlobal, mutate: setGlobalBackground } = useMutation({
+    mutationFn: ({ galleryId }: { galleryId: string }) =>
+      http.post("/admin/gallery/global-background", { galleryId }),
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success("Global background set! This will be used for all standings.");
+        queryClient.invalidateQueries({ queryKey: ["gallery"] });
+        queryClient.invalidateQueries({ queryKey: ["global-background"] });
+      }
+    },
+  });
+
   const { isPending: isUploading, mutate: uploadGallery } = useMutation({
-    mutationFn: (data: { image: File }) =>
-      http.post("/admin/gallery", data, {
+    mutationFn: async (data: { image: File }) => {
+      // Auto-compress image before uploading
+      const compressedImage = await compressGalleryImage(data.image);
+      const formData = new FormData();
+      formData.append("image", compressedImage);
+      return http.post("/admin/gallery", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      }),
+      });
+    },
     onSuccess: (data) => {
       if (data.success) {
         toast.success("Image uploaded to gallery!");
@@ -284,6 +309,7 @@ const GallerySection = () => {
       if (data.success) {
         toast.success("Image deleted from gallery");
         queryClient.invalidateQueries({ queryKey: ["gallery"] });
+        queryClient.invalidateQueries({ queryKey: ["global-background"] });
       }
     },
   });
@@ -354,26 +380,30 @@ const GallerySection = () => {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {backgroundGallery.map((image, index) => {
                   const isSelected = currentBackgroundImage?.id === image.id;
+                  const isGlobal = globalBackgroundImage?.id === image.id;
                   return (
                     <div
                       key={image.id || index}
-                      className={`relative group rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${isSelected
-                        ? "border-primary ring-2 ring-primary/20"
-                        : "border-transparent hover:border-muted-foreground/30"
+                      className={`relative group rounded-lg overflow-hidden border-2 transition-all ${isGlobal
+                        ? "border-green-500 ring-2 ring-green-500/20"
+                        : isSelected
+                          ? "border-primary ring-2 ring-primary/20"
+                          : "border-transparent hover:border-muted-foreground/30"
                         }`}
-                      onClick={() => {
-                        if (tournamentId && !isSettingBackground) {
-                          mutate({ tournamentId, galleryId: image.id });
-                        }
-                      }}
                     >
                       <img
                         src={image.publicUrl}
                         alt={`Background ${index + 1}`}
                         className="w-full h-28 sm:h-32 object-cover"
                       />
-                      {/* Selected badge */}
-                      {isSelected && (
+                      {/* Global background badge */}
+                      {isGlobal && (
+                        <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1 shadow-lg" title="Global Background">
+                          <Globe className="h-3 w-3" />
+                        </div>
+                      )}
+                      {/* Selected for tournament badge */}
+                      {isSelected && !isGlobal && (
                         <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1 shadow-lg">
                           <Check className="h-3 w-3" />
                         </div>
@@ -391,11 +421,23 @@ const GallerySection = () => {
                       >
                         <X className="h-3 w-3" />
                       </button>
-                      {/* Overlay on hover */}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span className="text-white text-xs font-medium">
-                          {tournamentId ? "Click to select" : "Select tournament first"}
-                        </span>
+                      {/* Overlay with Set as Global button */}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isSettingGlobal && !isGlobal) {
+                              setGlobalBackground({ galleryId: image.id });
+                            }
+                          }}
+                          disabled={isGlobal || isSettingGlobal}
+                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${isGlobal
+                            ? "bg-green-500/50 text-white cursor-default"
+                            : "bg-green-500 hover:bg-green-600 text-white"
+                            }`}
+                        >
+                          {isGlobal ? "✓ Global BG" : "Set as Global"}
+                        </button>
                       </div>
                     </div>
                   );

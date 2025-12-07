@@ -12,3 +12,4 @@ export const ADMIN_MATCH_ENDPOINTS: EndpointT<MatchEndpointsT> = {
   DELETE_MATCH_BY_ID: "/admin/match/:id",
   PUT_BULK_UPDATE_MATCH_STATS: "/admin/match/:id/bulk-stats",
 };
+

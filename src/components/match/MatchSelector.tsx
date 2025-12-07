@@ -108,12 +108,7 @@ export default function MatchSelector({
               {isAllMatch && <SelectItem value={"all"}>All Match</SelectItem>}
               {matches?.map((match, index) => (
                 <SelectItem key={match.id} value={match.id}>
-                  <span className="flex items-center gap-1.5">
-                    Match {index + 1}
-                    {match.status === "PROCESSING" && (
-                      <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
-                    )}
-                  </span>
+                  Match {index + 1}
                 </SelectItem>
               ))}
               {isSuperAdmin && (

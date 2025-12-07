@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { routeRoles } from "@/src/lib/route/role";
+import { LoaderFour } from "@/src/components/ui/loader";
 
 type PropsT = {
   children: React.ReactNode;
@@ -21,6 +22,19 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   const userRoles = useMemo(() => role, [role]); // Get the user's roles
   const isAuthenticated = isSignedIn;
 
+  // Check if current route requires authentication and role check
+  const currentRoute = routeRoles.find((route) => {
+    if (route.url === pathName) return true;
+    if (route.url.endsWith("/*")) {
+      const basePath = route.url.replace("/*", "");
+      return pathName.startsWith(basePath);
+    }
+    return false;
+  });
+
+  // Show loader while auth is loading for protected routes
+  const needsAuthCheck = currentRoute?.needAuth || currentRoute?.role;
+
   // Handle authentication and role-based redirects
   useEffect(() => {
     // Wait until authentication loading is complete to proceed
@@ -32,17 +46,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
     // Defensive: if authenticated and user exists but role is undefined, wait for proper data
     if (isAuthenticated && user && !user.role) return;
 
-    // Step 1: Identify the current route from the `routeRoles` configuration
-    const currentRoute = routeRoles.find((route) => {
-      if (route.url === pathName) return true; // Direct match for the route
-      if (route.url.endsWith("/*")) {
-        const basePath = route.url.replace("/*", ""); // Handle wildcard route (e.g., `/dashboard/*`)
-        return pathName.startsWith(basePath); // Check if the current path starts with the base path
-      }
-      return false; // No match found
-    });
-
-    // Step 2: Handle authentication-based redirection
+    // Handle authentication-based redirection
     if (currentRoute) {
       // If the route requires authentication and the user is not authenticated
       if (currentRoute.needAuth && !isAuthenticated) {
@@ -51,7 +55,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
         return; // Exit the logic as redirection is in progress
       }
 
-      // Step 3: Handle role-based access control
+      // Handle role-based access control
       if (isAuthenticated && user) {
         // Check if the user has at least one of the required roles for the current route
         const hasRequiredRole = currentRoute.role.some(
@@ -66,7 +70,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
         }
       }
     }
-  }, [isAuthenticated, userRoles, pathName, isAuthLoading, user, router]);
+  }, [isAuthenticated, userRoles, pathName, isAuthLoading, user, router, currentRoute]);
 
   // Prevent authenticated users from accessing unauthenticated-only pages
   useEffect(() => {
@@ -75,6 +79,14 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
     }
   }, [isAuthenticated, pathName, redirectTo, router, isAuthLoading]);
 
-  // Display preloader if authentication or loading is in progress
+  // Display loader while auth is loading for protected routes
+  if (needsAuthCheck && isAuthLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-white dark:bg-zinc-950">
+        <LoaderFour text="PUBGMI" />
+      </div>
+    );
+  }
+
   return <>{children}</>;
 };

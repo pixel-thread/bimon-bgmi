@@ -1,7 +1,7 @@
 import { getGalleryImageById } from "@/src/services/gallery/getImageById";
 import { removeGalleryImage } from "@/src/services/gallery/removeGalleryImage";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 
 export async function DELETE(
@@ -10,7 +10,7 @@ export async function DELETE(
 ) {
   try {
     const id = (await params).id;
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
     const imageExist = await getGalleryImageById({ id });
     if (!imageExist) {
       return ErrorResponse({

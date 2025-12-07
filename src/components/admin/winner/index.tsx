@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { DataTable } from "../../data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -9,22 +10,30 @@ import {
 } from "@/src/hooks/winner/useTournamentWinner";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { useSeasonStore } from "@/src/store/season";
-import { Trophy, Medal, Users } from "lucide-react";
+import { Trophy, Medal, Users, Coins, Check } from "lucide-react";
+import { Button } from "../../ui/button";
+import { Badge } from "../../ui/badge";
+import { DistributeUCDialog } from "./DistributeUCDialog";
 
-const tournamentColumns: ColumnDef<any>[] = [
-  {
-    accessorKey: "tournamentName",
-    header: "Tournament",
-  },
-  {
-    header: "🥇 1st Place",
-    accessorKey: "place1.teamName",
-  },
-  {
-    header: "🥈 2nd Place",
-    accessorKey: "place2.teamName",
-  },
-];
+type TournamentResult = {
+  tournamentId: string;
+  tournamentName: string;
+  createdAt: Date;
+  place1: {
+    teamName: string;
+    teamId: string;
+    amount: number;
+    isDistributed: boolean;
+    players?: { id: string; name: string }[];
+  } | null;
+  place2: {
+    teamName: string;
+    teamId: string;
+    amount: number;
+    isDistributed: boolean;
+    players?: { id: string; name: string }[];
+  } | null;
+};
 
 const placementColumns: ColumnDef<PlayerPlacement>[] = [
   {
@@ -111,9 +120,104 @@ export const AdminWinnerPage = () => {
   const { seasonId } = useSeasonStore();
   const { data, isFetching } = useTournamentWinner({ seasonId });
 
-  const tournaments = data?.tournaments || [];
+  const [selectedTournament, setSelectedTournament] = useState<{
+    id: string;
+    name: string;
+    winners: { position: number; teamName: string; teamId: string; amount: number; isDistributed: boolean }[];
+  } | null>(null);
+
+  const tournaments = (data?.tournaments || []) as TournamentResult[];
   const playerPlacements = data?.recentStats?.playerPlacements || [];
   const recentTournaments = data?.recentStats?.recentTournaments || [];
+
+  const handleDistributeClick = (tournament: TournamentResult) => {
+    const winners = [];
+    if (tournament.place1) {
+      winners.push({
+        position: 1,
+        teamName: tournament.place1.teamName,
+        teamId: tournament.place1.teamId,
+        amount: tournament.place1.amount,
+        isDistributed: tournament.place1.isDistributed,
+      });
+    }
+    if (tournament.place2) {
+      winners.push({
+        position: 2,
+        teamName: tournament.place2.teamName,
+        teamId: tournament.place2.teamId,
+        amount: tournament.place2.amount,
+        isDistributed: tournament.place2.isDistributed,
+      });
+    }
+    setSelectedTournament({
+      id: tournament.tournamentId,
+      name: tournament.tournamentName,
+      winners,
+    });
+  };
+
+  // Check if any winner in the tournament has not been distributed
+  const needsDistribution = (tournament: TournamentResult) => {
+    const place1NotDistributed = tournament.place1 && !tournament.place1.isDistributed;
+    const place2NotDistributed = tournament.place2 && !tournament.place2.isDistributed;
+    return place1NotDistributed || place2NotDistributed;
+  };
+
+  // Tournament columns with action button
+  const tournamentColumns: ColumnDef<TournamentResult>[] = [
+    {
+      accessorKey: "tournamentName",
+      header: "Tournament",
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.tournamentName}</span>
+      ),
+    },
+    {
+      header: "🥇 1st Place",
+      accessorKey: "place1.teamName",
+      cell: ({ row }) => (
+        <span className="text-yellow-600 dark:text-yellow-400">
+          {row.original.place1?.teamName || "-"}
+        </span>
+      ),
+    },
+    {
+      header: "🥈 2nd Place",
+      accessorKey: "place2.teamName",
+      cell: ({ row }) => (
+        <span className="text-gray-500 dark:text-gray-400">
+          {row.original.place2?.teamName || "-"}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "UC Status",
+      cell: ({ row }) => {
+        const tournament = row.original;
+        if (needsDistribution(tournament)) {
+          return (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1 text-green-600 border-green-300 hover:bg-green-50 dark:hover:bg-green-900/20"
+              onClick={() => handleDistributeClick(tournament)}
+            >
+              <Coins className="h-4 w-4" />
+              Distribute UC
+            </Button>
+          );
+        }
+        return (
+          <Badge variant="secondary" className="gap-1">
+            <Check className="h-3 w-3" />
+            Distributed
+          </Badge>
+        );
+      },
+    },
+  ];
 
   if (seasonId && isFetching) {
     return <div className="text-center py-8">Loading...</div>;
@@ -180,7 +284,17 @@ export const AdminWinnerPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Distribute UC Dialog */}
+      {selectedTournament && (
+        <DistributeUCDialog
+          isOpen={!!selectedTournament}
+          onClose={() => setSelectedTournament(null)}
+          tournamentId={selectedTournament.id}
+          tournamentName={selectedTournament.name}
+          winners={selectedTournament.winners}
+        />
+      )}
     </div>
   );
 };
-
