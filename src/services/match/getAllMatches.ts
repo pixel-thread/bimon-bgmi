@@ -11,5 +11,6 @@ export async function getAllMatches(
   return await prisma.match.findMany({
     where,
     include,
+    orderBy: { createdAt: "asc" },
   });
 }
