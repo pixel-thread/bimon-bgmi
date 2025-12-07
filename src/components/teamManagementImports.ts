@@ -21,20 +21,6 @@ import {
   DialogFooter,
 } from "@/src/components/ui/dialog";
 
-// Firebase Firestore
-import {
-  doc,
-  updateDoc,
-  writeBatch,
-  collection,
-  onSnapshot,
-  query,
-  addDoc,
-  getDocs,
-  getDoc,
-  where,
-} from "firebase/firestore";
-
 // Custom Hooks
 // Types
 
@@ -65,16 +51,6 @@ export {
   CardContent,
   CardHeader,
   CardTitle,
-  doc,
-  updateDoc,
-  writeBatch,
-  collection,
-  onSnapshot,
-  query,
-  addDoc,
-  getDocs,
-  getDoc,
-  where,
   ActionToolbar,
   TeamCard,
   TournamentSelector,
