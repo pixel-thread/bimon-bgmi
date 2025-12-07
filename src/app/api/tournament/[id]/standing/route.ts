@@ -44,7 +44,11 @@ export async function GET(
     });
 
     const groupTeamsStats = await prisma.teamPlayerStats.groupBy({
-      where: { teamId: { in: teamsStats.map((team) => team.teamId) } },
+      where: {
+        teamId: { in: teamsStats.map((team) => team.teamId) },
+        // Only filter by matchId when viewing a specific match, not "all"
+        ...(matchId !== "all" && { matchId }),
+      },
       by: ["teamId"],
       _sum: {
         kills: true,
@@ -88,7 +92,8 @@ export async function GET(
         wins: wins,
         position: position,
         total: total,
-        matches: teamStats?.team?.matches.length,
+        // When viewing a specific match, show 1; otherwise show count of matches for this team
+        matches: matchId !== "all" ? 1 : teamsStats.filter(s => s.teamId === team.teamId).length,
         pts: pts,
         players: teamStats?.team?.players.map((player) => ({
           id: player.id,

@@ -1,37 +1,14 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/src/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { TeamT } from "@/src/types/team";
 import http from "@/src/utils/http";
 import { ADMIN_TEAM_ENDPOINTS } from "@/src/lib/endpoints/admin/team";
 import { toast } from "sonner";
-import { Loader2, MoreVertical, SaveIcon } from "lucide-react";
+import { Loader2, Trash2, UserMinus, Pencil } from "lucide-react";
 import { useTournamentStore } from "@/src/store/tournament";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/src/components/ui/dropdown-menu";
 import React, { useState } from "react";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
-import { Input } from "@/src/components/ui/input";
-import { TeamPlayerStats } from "@/src/lib/db/prisma/generated/prisma";
-import { TeamStatsForm } from "@/src/utils/validation/team/team-stats";
-import { useForm } from "react-hook-form";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/src/components/ui/form";
-import { debounce } from "@/src/utils/debounce";
-import { Ternary } from "@/src/components/common/Ternary";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +19,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/src/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/src/components/ui/dialog";
 
 type Props = {
   page?: string;
@@ -52,49 +36,40 @@ export const useTeamsColumns = ({ page }: Props = { page: "1" }) => {
     () => [
       {
         accessorKey: "name",
-        header: "Team Name",
+        header: "Team",
         cell: ({ row }) => (
-          <Link href={`?teamStats=${row.original.id}`} className="flex items-center gap-2">
+          <div className="flex items-center gap-2 font-medium">
             {row.original.name}
             {row.original.status === "PROCESSING" && (
-              <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" title="Processing in background..." />
+              <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" title="Processing..." />
             )}
-          </Link>
+          </div>
         ),
       },
       {
-        header: "Kill",
+        header: "Players",
         cell: ({ row }) => (
-          <UpdateTeamPlayerStats
-            teamPlayerStats={row.original.teamPlayerStats}
-          />
+          <span className="text-muted-foreground">{row.original.players?.length || 0}</span>
         ),
       },
       {
-        header: "Position",
-        cell: ({ row }) => (
-          <UpdateTeamStatsPosition
-            teamId={row.original.id}
-            position={row.original.position}
-          />
-        ),
-      },
-      {
-        header: "Action",
-        cell: ({ row }) => <ActionDropdown page={page} id={row.original.id} />,
+        header: "Actions",
+        cell: ({ row }) => <TeamActions team={row.original} page={page} />,
       },
     ],
-    [],
+    [page],
   );
 
   return { columns };
 };
 
-const ActionDropdown = ({ id, page }: { id: string; page?: string }) => {
+// Team action buttons component
+const TeamActions = ({ team, page }: { team: TeamT; page?: string }) => {
   const { tournamentId } = useTournamentStore();
   const { matchId } = useMatchStore();
   const queryClient = useQueryClient();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEditPlayers, setShowEditPlayers] = useState(false);
 
   const { mutate: deleteTeam, isPending: isDeletingTeam } = useMutation({
     mutationFn: (id: string) =>
@@ -106,48 +81,54 @@ const ActionDropdown = ({ id, page }: { id: string; page?: string }) => {
       if (data.success) {
         toast.success(data.message);
         queryClient.invalidateQueries({
-          queryKey: ["team", tournamentId, matchId, page],
+          queryKey: ["teams", tournamentId, matchId, page],
         });
-        return data;
+      } else {
+        toast.error(data.message);
       }
-      toast.error(data.message);
-      return data;
     },
   });
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button size={"icon-sm"} variant="ghost">
-            <MoreVertical />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="start">
-          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuGroup>
-            <DropdownMenuItem asChild>
-              <Link href={`/admin/teams?teamStats=${id}`}>Team Stats</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/admin/teams?update=${id}`}>Update Team</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              disabled={!tournamentId || !id}
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              Delete Team
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-1">
+        {/* Edit Players Button */}
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          onClick={() => setShowEditPlayers(true)}
+          title="Edit Players"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
 
+        {/* Delete Team Button */}
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          onClick={() => setShowDeleteConfirm(true)}
+          className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+          title="Delete Team"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Edit Players Dialog */}
+      <EditPlayersDialog
+        team={team}
+        open={showEditPlayers}
+        onOpenChange={setShowEditPlayers}
+        page={page}
+      />
+
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Team</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this team? This action cannot be undone.
+              Are you sure you want to delete <strong>{team.name}</strong>? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -158,7 +139,7 @@ const ActionDropdown = ({ id, page }: { id: string; page?: string }) => {
               disabled={isDeletingTeam}
               onClick={(e) => {
                 e.preventDefault();
-                deleteTeam(id);
+                deleteTeam(team.id);
               }}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
@@ -178,167 +159,93 @@ const ActionDropdown = ({ id, page }: { id: string; page?: string }) => {
   );
 };
 
-const UpdateTeamPlayerStats = ({
-  teamPlayerStats,
+// Edit Players Dialog - allows removing players from team
+const EditPlayersDialog = ({
+  team,
+  open,
+  onOpenChange,
+  page,
 }: {
-  teamPlayerStats: TeamPlayerStats[];
+  team: TeamT;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  page?: string;
 }) => {
-  const teamId = teamPlayerStats ? teamPlayerStats[0]?.teamId : "";
-  const [value, setValue] = useState<{
-    kills: number;
-    playerId: string;
-  }>({
-    kills: 0,
-    playerId: "",
-  });
-
+  const { tournamentId } = useTournamentStore();
   const { matchId } = useMatchStore();
+  const queryClient = useQueryClient();
+  const [removingPlayerId, setRemovingPlayerId] = useState<string | null>(null);
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: (data: TeamStatsForm) =>
-      http.put<TeamStatsForm>(
-        ADMIN_TEAM_ENDPOINTS.GET_TEAM_STATS.replace(":teamId", teamId),
-        data,
+  const { mutate: removePlayer, isPending: isRemoving } = useMutation({
+    mutationFn: (playerId: string) =>
+      http.post(
+        ADMIN_TEAM_ENDPOINTS.POST_REMOVE_PLAYER_FROM_TEAM.replace(":teamId", team.id),
+        { playerId },
       ),
     onSuccess: (data) => {
+      setRemovingPlayerId(null);
       if (data.success) {
-        toast.success(data.message);
-        return data;
+        toast.success(data.message || "Player removed from team");
+        queryClient.invalidateQueries({
+          queryKey: ["teams", tournamentId, matchId, page],
+        });
+      } else {
+        toast.error(data.message || "Failed to remove player");
       }
-      toast.error(data.message);
-      return data;
+    },
+    onError: () => {
+      setRemovingPlayerId(null);
+      toast.error("Failed to remove player");
     },
   });
 
-  const onSubmit = () => {
-    const payload: TeamStatsForm & { matchId: string } = {
-      teamId: teamId,
-      matchId: matchId,
-      players: [
-        {
-          playerId: value?.playerId,
-          kills: value?.kills,
-          deaths: 1,
-        },
-      ],
-    };
-    mutate(payload);
+  const handleRemovePlayer = (playerId: string) => {
+    setRemovingPlayerId(playerId);
+    removePlayer(playerId);
   };
 
   return (
-    <div className="flex flex-col gap-2 md:flex-row">
-      <div className="flex gap-2 items-center max-w-full justify-between flex-row">
-        <Ternary
-          condition={teamPlayerStats && teamPlayerStats.length > 0}
-          trueComponent={
-            <>
-              {teamPlayerStats?.map((playerStats) => (
-                <div
-                  key={playerStats.playerId}
-                  className="w-full flex justify-between items-center h-full space-x-2"
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Team Players</DialogTitle>
+          <DialogDescription>
+            {team.name} - {team.players?.length || 0} players
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2 py-4">
+          {team.players?.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No players in this team
+            </p>
+          ) : (
+            team.players?.map((player) => (
+              <div
+                key={player.id}
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+              >
+                <span className="font-medium">{player.name}</span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleRemovePlayer(player.id)}
+                  disabled={isRemoving}
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
                 >
-                  <Input
-                    defaultValue={playerStats.kills}
-                    onChange={(e) => {
-                      e.preventDefault();
-                      setValue({
-                        playerId: playerStats.playerId,
-                        kills: Number(e.target.value),
-                      });
-                    }}
-                    disabled={isPending}
-                    className="max-w-[50px] min-w-[50px] w-full"
-                  />
-                  {!!value.playerId &&
-                    value.playerId === playerStats.playerId && (
-                      <Button
-                        disabled={isPending}
-                        onClick={() => onSubmit()}
-                        size={"icon-sm"}
-                      >
-                        <SaveIcon />
-                      </Button>
-                    )}
-                </div>
-              ))}
-            </>
-          }
-          falseComponent={<h1>N/A</h1>}
-        />
-      </div>
-    </div>
-  );
-};
-
-const UpdateTeamStatsPosition = ({
-  teamId,
-  position,
-}: {
-  teamId: string;
-  position: number;
-}) => {
-  const form = useForm();
-
-  const { matchId } = useMatchStore();
-  const { mutate, isPending } = useMutation({
-    mutationFn: (data: TeamStatsForm) =>
-      http.put<TeamStatsForm>(
-        ADMIN_TEAM_ENDPOINTS.GET_TEAM_STATS.replace(":teamId", teamId),
-        data,
-      ),
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success(data.message);
-        return data;
-      }
-      toast.error(data.message);
-      return data;
-    },
-  });
-
-  const debounceMutate = debounce(
-    (value: TeamStatsForm & { matchId: string }) => mutate(value),
-    1500,
-  );
-
-  const onSubmit = (data: { position: number }) => {
-    const payload: TeamStatsForm & { matchId: string } = {
-      teamId: teamId,
-      matchId: matchId,
-      position: data.position,
-      players: [],
-    };
-
-    debounceMutate(payload);
-  };
-
-  return (
-    <Form {...form}>
-      <div className="flex flex-col gap-2 md:flex-row">
-        <div className="flex gap-2 items-center max-w-[250px] justify-between flex-row">
-          <FormField
-            name={teamId}
-            render={({ field: rField }) => (
-              <FormItem className="w-full">
-                <FormControl>
-                  <Input
-                    disabled={isPending || matchId === "all"}
-                    defaultValue={position}
-                    onChange={(e) => {
-                      rField.onChange(e);
-                      onSubmit({
-                        position: Number(e.target.value),
-                      });
-                    }}
-                    className="max-w-[50px] min-w-[50px] w-full"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  {removingPlayerId === player.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <UserMinus className="h-4 w-4 mr-1" />
+                      Remove
+                    </>
+                  )}
+                </Button>
+              </div>
+            ))
+          )}
         </div>
-      </div>
-    </Form>
+      </DialogContent>
+    </Dialog>
   );
 };

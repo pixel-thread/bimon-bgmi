@@ -8,7 +8,8 @@ type TournamentEndpointsT =
   | "GET_ALL_TOURNAMENTS"
   | "GET_TEAMS_STATS"
   | "GET_TOURNAMENT_WINNER"
-  | "POST_DECLEAR_TOURNAMENT_WINNER";
+  | "POST_DECLEAR_TOURNAMENT_WINNER"
+  | "POST_DISTRIBUTE_WINNER_UC";
 
 export const ADMIN_TOURNAMENT_ENDPOINTS: EndpointT<TournamentEndpointsT> = {
   POST_CREATE_TOURNAMENT: "/admin/tournament",
@@ -20,4 +21,5 @@ export const ADMIN_TOURNAMENT_ENDPOINTS: EndpointT<TournamentEndpointsT> = {
   GET_TEAMS_STATS: "/admin/tournament/:id/teams-stats?match=:matchId",
   GET_TOURNAMENT_WINNER: "/admin/tournament/:id/winner",
   POST_DECLEAR_TOURNAMENT_WINNER: "/admin/tournament/:id/winner",
+  POST_DISTRIBUTE_WINNER_UC: "/admin/tournament/:id/winner/distribute",
 };

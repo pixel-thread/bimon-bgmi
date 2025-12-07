@@ -6,7 +6,7 @@ import http from "@/src/utils/http";
 import { useAuth } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
-import { LoaderFive } from "../../ui/loader";
+import { LoaderFour } from "../../ui/loader";
 
 type Props = { children: React.ReactNode };
 
@@ -61,8 +61,8 @@ export const AuthProvider = ({ children }: Props) => {
 
   if (isSignedIn && !isTokenSet) {
     return (
-      <div className="h-screen w-full flex items-center justify-center">
-        <LoaderFive text="Loading..." />
+      <div className="h-screen w-full flex items-center justify-center bg-white dark:bg-zinc-950">
+        <LoaderFour text="PUBGMI" />
       </div>
     );
   }

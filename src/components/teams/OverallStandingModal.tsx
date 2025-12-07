@@ -18,6 +18,7 @@ interface OverallStandingModalProps {
   backgroundImage?: string;
   tournamentTitle: string;
   maxMatchNumber: number;
+  initialTeams?: TeamT[]; // Pre-fetched teams from parent page for instant display
 }
 
 export default function OverallStandingModal({
@@ -26,17 +27,22 @@ export default function OverallStandingModal({
   backgroundImage = "/images/image.png",
   tournamentTitle,
   maxMatchNumber,
+  initialTeams,
 }: OverallStandingModalProps) {
   const { matchId: selectedMatch } = useMatchStore();
   const { tournamentId } = useTournamentStore();
   const { data: teamsStats, isFetching } = useQuery({
-    queryKey: ["out standing", selectedMatch],
+    queryKey: ["out standing", tournamentId, selectedMatch],
     queryFn: () =>
       http.get<TeamT[]>(
         `/tournament/${tournamentId}/standing?match=${selectedMatch}`,
       ),
     select: (data) => data.data,
     enabled: !!selectedMatch && visible && !!tournamentId,
+    staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    // Use initial teams from page cache for instant display (wrapped in response format)
+    placeholderData: initialTeams ? { data: initialTeams, success: true, message: "" } as any : undefined,
   });
 
   // Render the modal if visible and selectedMatch is not empty.

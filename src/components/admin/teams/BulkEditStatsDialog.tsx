@@ -8,24 +8,15 @@ import {
     DialogTitle,
 } from "@/src/components/ui/dialog";
 import { Input } from "@/src/components/ui/input";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/src/components/ui/table";
 import { useTeams } from "@/src/hooks/team/useTeams";
-import { useMatches } from "@/src/hooks/match/useMatches";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { ADMIN_MATCH_ENDPOINTS } from "@/src/lib/endpoints/admin/match";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { TeamT } from "@/src/types/team";
 import http from "@/src/utils/http";
 import { TeamStatsForm } from "@/src/utils/validation/team/team-stats";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { LoaderFive } from "../../ui/loader";
 
@@ -47,52 +38,9 @@ type EditableTeamStats = {
 
 export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
     const { matchId } = useMatchStore();
-    const { data: teams, isFetching, refetch: refetchTeams } = useTeams({ page: "all" });
-    const { data: matches } = useMatches();
+    const { data: teams, isFetching } = useTeams({ page: "all" });
     const [editableStats, setEditableStats] = useState<EditableTeamStats[]>([]);
     const queryClient = useQueryClient();
-
-    // Check if current match is still processing
-    const currentMatch = matches?.find((m) => m.id === matchId);
-    const isMatchProcessing = currentMatch?.status === "PROCESSING";
-
-    // Track if processing just finished (was processing, now ready)
-    const wasProcessingRef = useRef(false);
-    const [showRefreshPrompt, setShowRefreshPrompt] = useState(false);
-    const [isBulkEditSave, setIsBulkEditSave] = useState(false);
-
-    // Check session storage on mount to see if this was a bulk edit save
-    useEffect(() => {
-        if (open && matchId) {
-            const isBulk = sessionStorage.getItem(`bulk_edit_processing_${matchId}`);
-            setIsBulkEditSave(!!isBulk);
-        }
-    }, [open, matchId]);
-
-    useEffect(() => {
-        if (isMatchProcessing) {
-            wasProcessingRef.current = true;
-            setShowRefreshPrompt(false);
-        } else if (wasProcessingRef.current && !isMatchProcessing) {
-            // Processing just finished
-            wasProcessingRef.current = false;
-
-            // Only show refresh prompt if it was a bulk edit save
-            if (isBulkEditSave) {
-                setShowRefreshPrompt(true);
-                sessionStorage.removeItem(`bulk_edit_processing_${matchId}`);
-                setIsBulkEditSave(false);
-            } else {
-                // If it was match creation, just refetch automatically to be safe
-                refetchTeams();
-            }
-        }
-    }, [isMatchProcessing, isBulkEditSave, matchId, refetchTeams]);
-
-    const handleRefresh = () => {
-        refetchTeams();
-        setShowRefreshPrompt(false);
-    };
 
     // Validate positions and return warning messages
     const validationErrors = useMemo(() => {
@@ -215,20 +163,8 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                 ADMIN_MATCH_ENDPOINTS.PUT_BULK_UPDATE_MATCH_STATS.replace(":id", matchId),
                 data
             ),
-        onSuccess: (response: { message?: string }) => {
-            // Check if it was processed synchronously (message contains "successfully")
-            const wasSync = response.message?.includes("successfully");
-
-            if (wasSync) {
-                toast.success("Stats saved successfully!");
-            } else {
-                toast.success("Stats update started - processing in background");
-                // Mark this as a bulk edit save for background processing
-                sessionStorage.setItem(`bulk_edit_processing_${matchId}`, "true");
-                setIsBulkEditSave(true);
-            }
-
-            // Invalidate queries to refresh data
+        onSuccess: () => {
+            toast.success("Stats saved successfully!");
             queryClient.invalidateQueries({ queryKey: ["match"] });
             queryClient.invalidateQueries({ queryKey: ["teams"] });
             onOpenChange(false);
@@ -271,35 +207,6 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                     <DialogDescription className="text-sm text-muted-foreground">
                         Edit position and kills for all teams in this match.
                     </DialogDescription>
-                    {isMatchProcessing && (
-                        <div className="mt-3 p-3 rounded-md bg-orange-500/10 border border-orange-500/30 flex flex-col gap-1">
-                            <div className="flex items-center gap-2">
-                                <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
-                                <span className="text-sm font-medium text-orange-500">
-                                    {isBulkEditSave ? "Saving changes in background..." : "Setting up match stats..."}
-                                </span>
-                            </div>
-                            <span className="text-xs text-orange-400">
-                                {isBulkEditSave
-                                    ? "Your previous changes are still being saved. Data shown may be outdated."
-                                    : "Please wait while we initialize stats for all teams."}
-                            </span>
-                        </div>
-                    )}
-                    {showRefreshPrompt && !isMatchProcessing && (
-                        <div className="mt-3 p-3 rounded-md bg-green-500/10 border border-green-500/30 flex items-center justify-between">
-                            <span className="text-sm font-medium text-green-500">Processing complete! Refresh to see latest data.</span>
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 px-3 text-xs text-green-500 hover:text-green-600 hover:bg-green-500/10"
-                                onClick={handleRefresh}
-                            >
-                                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                                Refresh
-                            </Button>
-                        </div>
-                    )}
                 </DialogHeader>
 
                 {/* SCROLLABLE CONTENT */}
@@ -310,90 +217,67 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                         </div>
                     ) : (
                         <div className="p-1 sm:p-4 pb-20 sm:pb-6">
-                            <div className="overflow-hidden rounded-md border bg-background shadow-sm">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="bg-muted/50 hover:bg-muted/50">
-                                            <TableHead className="w-[80px] text-center font-semibold">Pos</TableHead>
-                                            <TableHead className="min-w-[150px] font-semibold">Team Name</TableHead>
-                                            <TableHead className="min-w-[300px] font-semibold">Players (Kills)</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {editableStats.map((team, teamIndex) => {
-                                            const hasPositionData = team.position !== "" && team.position !== 0;
-                                            const hasAnyKills = team.players.some(p => p.kills !== "" && p.kills !== 0);
-                                            const hasTeamData = hasPositionData || hasAnyKills;
-                                            const isSoloPlayer = team.players.length === 1;
+                            <div className="space-y-2">
+                                {editableStats.map((team, teamIndex) => {
+                                    const hasPositionData = team.position !== "" && team.position !== 0;
+                                    const hasAnyKills = team.players.some(p => p.kills !== "" && p.kills !== 0);
+                                    const hasTeamData = hasPositionData || hasAnyKills;
 
-                                            // Determine row background
-                                            const rowBg = hasTeamData
-                                                ? "bg-emerald-500/10 dark:bg-emerald-500/15"
-                                                : teamIndex % 2 === 0
-                                                    ? "bg-background"
-                                                    : "bg-muted/30";
+                                    // Determine card background - bolder colors for visibility
+                                    const cardBg = hasTeamData
+                                        ? "bg-emerald-500/25 dark:bg-emerald-500/30"
+                                        : teamIndex % 2 === 0
+                                            ? "bg-background"
+                                            : "bg-black/20 dark:bg-white/10";
 
-                                            return (
-                                                <TableRow
-                                                    key={team.teamId}
-                                                    className={`hover:bg-accent/50 transition-colors ${rowBg}`}
-                                                >
-                                                    <TableCell className="p-2 sm:p-3 text-center align-top">
+                                    return (
+                                        <div
+                                            key={team.teamId}
+                                            className={`rounded-lg border p-3 ${cardBg}`}
+                                        >
+                                            {/* Team Name Header */}
+                                            <div className="text-sm font-bold mb-2 text-foreground/90 truncate" title={team.name}>
+                                                {team.name}
+                                            </div>
+
+                                            {/* Two Column Layout: 30% Position, 70% Kills */}
+                                            <div className="grid grid-cols-[30%_70%] gap-3 items-center">
+                                                {/* Position Column - vertically centered with kills */}
+                                                <div className="flex items-center justify-center">
+                                                    <Input
+                                                        type="number"
+                                                        value={team.position}
+                                                        onFocus={handleFocus}
+                                                        onChange={(e) => handlePositionChange(teamIndex, e.target.value)}
+                                                        className="w-full max-w-[80px] h-10 text-lg font-semibold text-center shadow-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                        placeholder="0"
+                                                    />
+                                                </div>
+
+                                                {/* Kills Column - wraps to multiple rows */}
+                                                <div className="flex flex-wrap gap-2 content-center">
+                                                    {team.players.map((player, playerIndex) => (
                                                         <Input
+                                                            key={player.playerId}
                                                             type="number"
-                                                            value={team.position}
+                                                            value={player.kills}
                                                             onFocus={handleFocus}
-                                                            onChange={(e) => handlePositionChange(teamIndex, e.target.value)}
-                                                            disabled={isMatchProcessing && isBulkEditSave}
-                                                            className="w-full h-9 sm:h-10 text-base font-semibold text-center shadow-sm"
-                                                            placeholder="-"
+                                                            onChange={(e) =>
+                                                                handleKillsChange(teamIndex, playerIndex, e.target.value)
+                                                            }
+                                                            className={`w-[calc(50%-4px)] h-10 text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${player.kills !== "" && player.kills !== 0
+                                                                ? "border-emerald-500/50 bg-emerald-500/10"
+                                                                : ""
+                                                                }`}
+                                                            placeholder={player.name}
+                                                            title={player.name}
                                                         />
-                                                    </TableCell>
-
-                                                    <TableCell className="p-2 sm:p-3 align-top pt-3.5 sm:pt-4">
-                                                        <span className="text-sm font-semibold block mb-1">
-                                                            {team.name}
-                                                        </span>
-                                                    </TableCell>
-
-                                                    <TableCell className="p-2 sm:p-3">
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                                            {team.players.map((player, playerIndex) => (
-                                                                <div
-                                                                    key={player.playerId}
-                                                                    className={`flex items-center gap-2 rounded-md border bg-background/50 p-1.5 sm:p-2 shadow-sm ${player.kills !== "" && player.kills !== 0
-                                                                        ? "border-emerald-500/30 bg-emerald-500/5"
-                                                                        : "border-border"
-                                                                        }`}
-                                                                >
-                                                                    {!isSoloPlayer && (
-                                                                        <span
-                                                                            className="text-xs sm:text-sm truncate flex-1 font-medium"
-                                                                            title={player.name}
-                                                                        >
-                                                                            {player.name}
-                                                                        </span>
-                                                                    )}
-                                                                    <Input
-                                                                        type="number"
-                                                                        value={player.kills}
-                                                                        onFocus={handleFocus}
-                                                                        onChange={(e) =>
-                                                                            handleKillsChange(teamIndex, playerIndex, e.target.value)
-                                                                        }
-                                                                        disabled={isMatchProcessing && isBulkEditSave}
-                                                                        className={`${isSoloPlayer ? "w-full text-left pl-3" : "w-14 text-center"} h-8 sm:h-9 text-sm font-medium`}
-                                                                        placeholder="0"
-                                                                    />
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
 
                             {/* Validation Warnings */}
@@ -426,7 +310,7 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
 
                         <Button
                             onClick={handleSave}
-                            disabled={isPending || isMatchProcessing}
+                            disabled={isPending}
                             className="flex-1 sm:flex-none h-10 sm:h-11 font-semibold shadow-md"
                         >
                             {isPending ? (
