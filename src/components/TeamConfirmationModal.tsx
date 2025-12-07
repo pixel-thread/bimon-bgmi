@@ -9,14 +9,6 @@ import {
 } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { ScrollArea } from "@/src/components/ui/scroll-area";
-import {
-  doc,
-  writeBatch,
-  getDoc,
-  collection,
-  getDocs,
-} from "firebase/firestore";
-import { toast } from "sonner";
 import { FaEdit, FaCheck } from "react-icons/fa";
 import { useTournamentStore } from "../store/tournament";
 

@@ -13,15 +13,6 @@ import {
   DialogFooter,
 } from "@/src/components/ui/dialog";
 import { Label } from "@/src/components/ui/label";
-import {
-  collection,
-  getDocs,
-  doc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  onSnapshot,
-} from "firebase/firestore";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2, BookOpen } from "lucide-react";
 import { LoaderFive } from "@/src/components/ui/loader";

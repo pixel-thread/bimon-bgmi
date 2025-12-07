@@ -7,7 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/src/components/ui/dialog";
-// import { collection, getDocs, doc, getDoc, setDoc } from "firebase/firestore";
 // import { db } from "@/src/lib/firebase";
 // import { useTournaments } from "@/src/hooks/tournament/useTournaments";
 // import { Loader2 } from "lucide-react";
