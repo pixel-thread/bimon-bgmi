@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DataTable } from "../../data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -14,6 +14,7 @@ import { Trophy, Medal, Users, Coins, Check } from "lucide-react";
 import { Button } from "../../ui/button";
 import { Badge } from "../../ui/badge";
 import { DistributeUCDialog } from "./DistributeUCDialog";
+import { useActiveSeason } from "@/src/hooks/season/useActiveSeason";
 
 type TournamentResult = {
   tournamentId: string;
@@ -117,8 +118,18 @@ const recentTournamentColumns: ColumnDef<RecentTournament>[] = [
 ];
 
 export const AdminWinnerPage = () => {
-  const { seasonId } = useSeasonStore();
-  const { data, isFetching } = useTournamentWinner({ seasonId });
+  const { seasonId, setSeasonId } = useSeasonStore();
+  const { data: activeSeason, isLoading: isActiveSeasonLoading } = useActiveSeason();
+
+  useEffect(() => {
+    if (!seasonId && activeSeason?.id) {
+      setSeasonId(activeSeason.id);
+    }
+  }, [seasonId, activeSeason, setSeasonId]);
+
+  const { data, isFetching } = useTournamentWinner({
+    seasonId: seasonId || activeSeason?.id || ""
+  });
 
   const [selectedTournament, setSelectedTournament] = useState<{
     id: string;
@@ -139,6 +150,7 @@ export const AdminWinnerPage = () => {
         teamId: tournament.place1.teamId,
         amount: tournament.place1.amount,
         isDistributed: tournament.place1.isDistributed,
+        players: tournament.place1.players,
       });
     }
     if (tournament.place2) {
@@ -148,6 +160,7 @@ export const AdminWinnerPage = () => {
         teamId: tournament.place2.teamId,
         amount: tournament.place2.amount,
         isDistributed: tournament.place2.isDistributed,
+        players: tournament.place2.players,
       });
     }
     setSelectedTournament({

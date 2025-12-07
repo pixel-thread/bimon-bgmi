@@ -13,17 +13,17 @@ export async function POST(
         const tournamentId = (await params).id;
 
         const body = await req.json();
-        const { placements } = body as {
-            placements: { position: number; amount: number }[];
+        const { playerAmounts } = body as {
+            playerAmounts: { playerId: string; amount: number }[];
         };
 
-        if (!placements || placements.length === 0) {
-            return ErrorResponse({ message: "Placements are required" });
+        if (!playerAmounts || playerAmounts.length === 0) {
+            return ErrorResponse({ message: "Player amounts are required" });
         }
 
         const result = await distributeWinnerUC({
             tournamentId,
-            placements,
+            playerAmounts,
         });
 
         return SuccessResponse({

@@ -14,7 +14,7 @@ import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
-import { Coins, Loader2, Trophy, History } from "lucide-react";
+import { Coins, Loader2, History, User } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ type Winner = {
     amount: number;
     isDistributed: boolean;
     recentWinnings?: number; // Total UC won in recent tournaments
+    players?: { id: string; name: string }[];
 };
 
 type Props = {
@@ -61,11 +62,12 @@ export function DistributeUCDialog({
     winners,
     isLoading = false,
 }: Props) {
-    const [amounts, setAmounts] = useState<Record<number, string>>({});
+    // Map of playerId -> amount string
+    const [playerAmounts, setPlayerAmounts] = useState<Record<string, string>>({});
     const queryClient = useQueryClient();
 
     const { isPending, mutate: distributeUC } = useMutation({
-        mutationFn: (data: { placements: { position: number; amount: number }[] }) =>
+        mutationFn: (data: { playerAmounts: { playerId: string; amount: number }[] }) =>
             http.post(
                 ADMIN_TOURNAMENT_ENDPOINTS.POST_DISTRIBUTE_WINNER_UC.replace(
                     ":id",
@@ -87,38 +89,43 @@ export function DistributeUCDialog({
     });
 
     const handleClose = () => {
-        setAmounts({});
+        setPlayerAmounts({});
         onClose();
     };
 
-    const updateAmount = (position: number, value: string) => {
-        setAmounts((prev) => ({ ...prev, [position]: value }));
+    const updatePlayerAmount = (playerId: string, value: string) => {
+        setPlayerAmounts((prev) => ({ ...prev, [playerId]: value }));
     };
 
     const handleSubmit = () => {
-        const placements = winners.map((winner) => ({
-            position: winner.position,
-            amount: amounts[winner.position] ? parseInt(amounts[winner.position]) : 0,
-        }));
+        const amounts = Object.entries(playerAmounts).map(([playerId, amount]) => ({
+            playerId,
+            amount: amount ? parseInt(amount) : 0,
+        })).filter(entry => entry.amount > 0);
 
-        distributeUC({ placements });
+        if (amounts.length === 0) {
+            toast.error("Please enter at least one prize amount");
+            return;
+        }
+
+        distributeUC({ playerAmounts: amounts });
     };
 
-    const totalUC = Object.values(amounts).reduce(
+    const totalUC = Object.values(playerAmounts).reduce(
         (sum, amt) => sum + (parseInt(amt) || 0),
         0
     );
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Coins className="h-5 w-5 text-green-500" />
                         Distribute UC
                     </DialogTitle>
                     <DialogDescription>
-                        Distribute UC prizes for <span className="font-medium">{tournamentName}</span>
+                        Distribute UC prizes for individual players in <span className="font-medium">{tournamentName}</span>
                     </DialogDescription>
                 </DialogHeader>
 
@@ -131,42 +138,62 @@ export function DistributeUCDialog({
                     ) : (
                         <>
                             {/* Winners with UC Input */}
-                            <div className="space-y-3">
-                                <Label className="text-sm font-medium">Prize Amounts (UC)</Label>
+                            <div className="space-y-4">
                                 {winners.map((winner) => (
-                                    <Card key={winner.position} className={`${winner.position === 1 ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20" : winner.position === 2 ? "border-gray-400 bg-gray-50 dark:bg-gray-800/50" : winner.position === 3 ? "border-orange-400 bg-orange-50 dark:bg-orange-900/20" : ""}`}>
-                                        <CardContent className="p-3">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <span className="text-xl">{getMedalEmoji(winner.position)}</span>
+                                    <Card key={winner.position} className={`${winner.position === 1 ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/10" : winner.position === 2 ? "border-gray-400 bg-gray-50 dark:bg-gray-800/30" : winner.position === 3 ? "border-orange-400 bg-orange-50 dark:bg-orange-900/10" : ""}`}>
+                                        <CardContent className="p-4">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <span className="text-2xl">{getMedalEmoji(winner.position)}</span>
                                                 <div className="flex-1">
-                                                    <p className="font-medium text-sm">
-                                                        {winner.teamName}
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {getOrdinal(winner.position)} Place
-                                                    </p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-bold text-lg leading-none">
+                                                            {winner.teamName}
+                                                        </p>
+                                                        <Badge variant="outline" className="text-xs">
+                                                            {getOrdinal(winner.position)} Place
+                                                        </Badge>
+                                                    </div>
+
+                                                    {/* Recent Winnings Info */}
+                                                    {winner.recentWinnings !== undefined && winner.recentWinnings > 0 && (
+                                                        <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                                            <History className="h-3 w-3" />
+                                                            Recent team winnings: {winner.recentWinnings} UC
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 
-                                            {/* Recent Winnings Info */}
-                                            {winner.recentWinnings !== undefined && winner.recentWinnings > 0 && (
-                                                <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 mb-2 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">
-                                                    <History className="h-3 w-3" />
-                                                    Recent winnings: {winner.recentWinnings} UC
+                                            {/* Players List */}
+                                            <div className="space-y-2 pl-2">
+                                                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Team Players</Label>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    {winner.players && winner.players.length > 0 ? (
+                                                        winner.players.map(player => (
+                                                            <div key={player.id} className="flex items-center gap-2 bg-background p-2 rounded-md border shadow-sm">
+                                                                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                                                                    <User className="h-4 w-4 text-muted-foreground" />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-sm font-medium truncate">{player.name}</p>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <Input
+                                                                        type="number"
+                                                                        placeholder="0"
+                                                                        value={playerAmounts[player.id] || ""}
+                                                                        onChange={(e) => updatePlayerAmount(player.id, e.target.value)}
+                                                                        className="w-20 h-8 text-sm text-right pr-1"
+                                                                        min="0"
+                                                                    />
+                                                                    <span className="text-xs text-muted-foreground w-4">UC</span>
+                                                                </div>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <p className="text-sm text-muted-foreground col-span-2">No players found in this team.</p>
+                                                    )}
                                                 </div>
-                                            )}
-
-                                            <div className="flex items-center gap-2">
-                                                <Label className="text-xs w-16">Amount:</Label>
-                                                <Input
-                                                    type="number"
-                                                    placeholder="Enter UC"
-                                                    value={amounts[winner.position] || ""}
-                                                    onChange={(e) => updateAmount(winner.position, e.target.value)}
-                                                    className="flex-1 h-8 text-sm"
-                                                    min="0"
-                                                />
-                                                <span className="text-xs text-muted-foreground">UC</span>
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -174,9 +201,9 @@ export function DistributeUCDialog({
                             </div>
 
                             {/* Total Summary */}
-                            <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg">
+                            <div className="flex items-center justify-between bg-muted/50 p-4 rounded-lg sticky bottom-0 border-t backdrop-blur-sm">
                                 <span className="text-sm font-medium">Total UC to distribute:</span>
-                                <Badge variant="secondary" className="text-base font-bold">
+                                <Badge variant="default" className="text-lg font-bold bg-green-600 hover:bg-green-700">
                                     {totalUC} UC
                                 </Badge>
                             </div>
