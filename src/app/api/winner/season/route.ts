@@ -30,6 +30,8 @@ export async function POST(req: Request) {
         createdAt: winner.createdAt,
         amount: winner.amount,
         position: winner.position,
+        isDistributed: winner.isDistributed,
+        teamId: winner.team.id,
         teamName: winner.team.players
           .map((player) => player.user.userName)
           .join(", "),

@@ -14,6 +14,8 @@ import Link from "next/link";
 import { cn } from "../lib/utils";
 import { usePathname } from "next/navigation";
 
+import { useSidebar } from "@/src/components/ui/sidebar";
+
 export function NavMain({
   items,
 }: {
@@ -24,13 +26,18 @@ export function NavMain({
   }[];
 }) {
   const pathname = usePathname();
+  const { isMobile, setOpenMobile } = useSidebar();
+
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <Link href={item.url}>
+              <Link
+                href={item.url}
+                onClick={() => isMobile && setOpenMobile(false)}
+              >
                 <SidebarMenuButton
                   className={cn(
                     buttonVariants({

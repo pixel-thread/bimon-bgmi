@@ -7,43 +7,23 @@ type Props = {
 
 export async function addTournamentWinner({ data }: Props) {
   return prisma.$transaction(async (tx) => {
+    // Create winner record (without UC distribution)
+    const winner = await tx.tournamentWinner.create({ data });
+
+    // Mark tournament as winner declared
     const team = await tx.team.findUnique({
       where: { id: data.team.connect?.id },
-      include: {
-        players: { include: { user: true } },
-        tournament: true,
-      },
+      select: { tournamentId: true },
     });
 
-    const teamPlayers = team?.players;
-    if (teamPlayers) {
-      for (const player of teamPlayers) {
-        const amount = data.amount || 0;
-        const splitAmount = amount / teamPlayers.length;
-        await tx.uC.upsert({
-          where: { playerId: player.id },
-          create: {
-            player: { connect: { id: player.id } },
-            user: { connect: { id: player.user.id } },
-          },
-          update: { balance: { increment: splitAmount } },
-        });
-
-        await tx.transaction.create({
-          data: {
-            amount: splitAmount,
-            type: "credit",
-            description: `Tournament Prize: ${team?.tournament?.name || "Tournament"}`,
-            playerId: player.id,
-          },
-        });
-      }
+    if (team?.tournamentId) {
+      await tx.tournament.update({
+        where: { id: team.tournamentId },
+        data: { isWinnerDeclared: true },
+      });
     }
-    await tx.tournament.update({
-      where: { id: team?.tournamentId || "" },
-      data: { isWinnerDeclared: true },
-    });
 
-    return await tx.tournamentWinner.create({ data });
+    return winner;
   });
 }
+

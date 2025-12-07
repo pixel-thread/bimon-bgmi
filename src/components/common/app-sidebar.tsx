@@ -25,63 +25,79 @@ import {
   SidebarMenuItem,
 } from "@/src/components/ui/sidebar";
 import Link from "next/link";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import { LucideIcon } from "lucide-react";
 
-const data = {
-  navMain: [
-    {
-      title: "Teams",
-      url: "/admin/teams",
-      icon: Shield,
-    },
-    {
-      title: "Players",
-      url: "/admin/players",
-      icon: Users,
-    },
-    {
-      title: "Games",
-      url: "/admin/games",
-      icon: Gamepad2,
-    },
-    {
-      title: "Income",
-      url: "/admin/income",
-      icon: DollarSign,
-    },
-    {
-      title: "Winners",
-      url: "/admin/winners",
-      icon: Trophy,
-    },
-    {
-      title: "Polls",
-      url: "/admin/polls",
-      icon: Vote,
-    },
-    {
-      title: "Rules",
-      url: "/admin/rules",
-      icon: BookOpen,
-    },
-    {
-      title: "Admins",
-      url: "/admin/admins",
-      icon: Shield,
-    },
-    {
-      title: "Profile",
-      url: "/admin/profile",
-      icon: User,
-    },
-    {
-      title: "Settings",
-      url: "/admin/settings",
-      icon: SettingsIcon,
-    },
-  ],
+type NavItem = {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+  superAdminOnly?: boolean;
 };
 
+const navItems: NavItem[] = [
+  {
+    title: "Teams",
+    url: "/admin/teams",
+    icon: Shield,
+  },
+  {
+    title: "Players",
+    url: "/admin/players",
+    icon: Users,
+  },
+  {
+    title: "Games",
+    url: "/admin/games",
+    icon: Gamepad2,
+  },
+  {
+    title: "Income",
+    url: "/admin/income",
+    icon: DollarSign,
+    superAdminOnly: true,
+  },
+  {
+    title: "Winners",
+    url: "/admin/winners",
+    icon: Trophy,
+  },
+  {
+    title: "Polls",
+    url: "/admin/polls",
+    icon: Vote,
+  },
+  {
+    title: "Rules",
+    url: "/admin/rules",
+    icon: BookOpen,
+  },
+  {
+    title: "Admins",
+    url: "/admin/admins",
+    icon: Shield,
+    superAdminOnly: true,
+  },
+  {
+    title: "Profile",
+    url: "/admin/profile",
+    icon: User,
+  },
+  {
+    title: "Settings",
+    url: "/admin/settings",
+    icon: SettingsIcon,
+  },
+];
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "SUPER_ADMIN";
+
+  const filteredNavItems = navItems.filter(
+    (item) => !item.superAdminOnly || isSuperAdmin
+  );
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -98,7 +114,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={filteredNavItems} />
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>

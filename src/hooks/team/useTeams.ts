@@ -31,16 +31,9 @@ export function useTeams({ page = "1" }: Props = { page: "1" }) {
     select: (data) => data,
     placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
-    refetchInterval: (query) => {
-      // Poll every 3s if any team is processing
-      const teams = query.state.data?.data;
-      if (Array.isArray(teams) && teams.some((t) => t.status === "PROCESSING")) {
-        return 3000;
-      }
-      return false;
-    },
   });
   const meta = query?.data?.meta;
 
   return { ...query, data: query.data?.data, meta };
 }
+

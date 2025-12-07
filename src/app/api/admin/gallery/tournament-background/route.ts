@@ -3,12 +3,12 @@ import { addTournamentBackgroundImage } from "@/src/services/tournament/addTourn
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { removeTournamentBackgroundImage } from "@/src/services/tournament/updateTournamentBackgroundImage";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 
 export async function POST(req: Request) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
 
     const { galleryId, tournamentId } = await req.json();
 

@@ -200,15 +200,11 @@ model Tournament {
   @@index([startDate])
 }
 
-enum MatchStatus {
-  PROCESSING
-  READY
-}
 
 model Match {
   id                String              @id @default(uuid())
   name              Int                 @default(autoincrement())
-  status            MatchStatus         @default(READY)
+
   tournamentId      String
   tournament        Tournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   seasonId          String?
@@ -224,7 +220,7 @@ model Match {
 
   @@index([tournamentId])
   @@index([seasonId])
-  @@index([status])
+
 }
 
 model PollOption {
@@ -361,7 +357,7 @@ model PlayerStats {
 model Team {
   id                String              @id @default(uuid())
   name              String
-  status            MatchStatus         @default(READY)
+
   players           Player[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
@@ -380,7 +376,7 @@ model Team {
   @@index([tournamentId])
   @@index([seasonId])
   @@index([name])
-  @@index([status])
+
 }
 
 model TeamStats {
@@ -433,14 +429,15 @@ model TeamPlayerStats {
 }
 
 model Gallery {
-  id             String        @id @default(uuid())
-  imageId        String        @unique
-  name           String
-  path           String
-  fullPath       String
-  publicUrl      String
-  status         GalleryStatus @default(ACTIVE)
-  isCharacterImg Boolean       @default(false)
+  id                 String        @id @default(uuid())
+  imageId            String        @unique
+  name               String
+  path               String
+  fullPath           String
+  publicUrl          String
+  status             GalleryStatus @default(ACTIVE)
+  isCharacterImg     Boolean       @default(false)
+  isGlobalBackground Boolean       @default(false)
 
   playerId String? @unique
   player   Player?
@@ -449,14 +446,15 @@ model Gallery {
 }
 
 model TournamentWinner {
-  id           String     @id @default(uuid())
-  amount       Int        @default(0)
-  position     Int
-  teamId       String     @unique
-  team         Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  tournamentId String
-  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  createdAt    DateTime   @default(now())
+  id            String     @id @default(uuid())
+  amount        Int        @default(0)
+  position      Int
+  isDistributed Boolean    @default(false)
+  teamId        String     @unique
+  team          Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tournamentId  String
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  createdAt     DateTime   @default(now())
 
   @@unique([tournamentId, teamId])
   @@unique([teamId, tournamentId])

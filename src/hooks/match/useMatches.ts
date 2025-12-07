@@ -23,14 +23,8 @@ export function useMatches() {
     enabled: !!tournamentId && !!seasonId,
     select: (data) => data.data,
     refetchOnWindowFocus: false,
-    // Poll every 3s if any match is still processing
-    refetchInterval: (query) => {
-      const response = query.state.data;
-      const matches = response?.data;
-      const hasProcessing = matches?.some((m: MatchT) => m.status === "PROCESSING");
-      return hasProcessing ? 3000 : false;
-    },
   });
 
   return query;
 }
+
