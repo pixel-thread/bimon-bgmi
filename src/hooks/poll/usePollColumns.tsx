@@ -145,6 +145,14 @@ export const usePollColumns = () => {
     }
   };
 
+  // Handle regenerate (shuffle teams)
+  const handleRegenerate = () => {
+    if (selectedPollId) {
+      setPreviewData(null);
+      fetchPreview({ id: selectedPollId, size: selectedTeamSize });
+    }
+  };
+
   const { mutate: updatePollStatus, isPending: isToggling } = useMutation({
     mutationFn: ({ id }: { id: string }) =>
       http.get<PollT>(`/admin/poll/${id}/toggle-status`),
@@ -265,6 +273,7 @@ export const usePollColumns = () => {
       isLoading={isPreviewLoading}
       isConfirming={isCreating}
       onConfirm={handleConfirm}
+      onRegenerate={handleRegenerate}
       teamSize={selectedTeamSize}
     />
   );

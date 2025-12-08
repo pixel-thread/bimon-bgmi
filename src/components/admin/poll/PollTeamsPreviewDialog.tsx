@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -10,9 +9,8 @@ import {
     DialogFooter,
 } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
-import { ScrollArea } from "@/src/components/ui/scroll-area";
 import { Badge } from "@/src/components/ui/badge";
-import { Loader2, AlertTriangle, Users, Coins } from "lucide-react";
+import { Loader2, AlertTriangle, Users, Coins, Trophy, RefreshCw } from "lucide-react";
 import type { PreviewTeamsByPollsResult, TeamPreview } from "@/src/services/team/previewTeamsByPoll";
 
 interface PollTeamsPreviewDialogProps {
@@ -22,49 +20,59 @@ interface PollTeamsPreviewDialogProps {
     isLoading: boolean;
     isConfirming: boolean;
     onConfirm: () => void;
+    onRegenerate?: () => void;
     teamSize: number;
 }
 
 function getKDColor(kd: number): string {
-    if (kd >= 3) return "text-green-500";
-    if (kd >= 2) return "text-blue-500";
-    if (kd >= 1) return "text-yellow-500";
-    return "text-red-500";
+    if (kd >= 1.7) return "text-purple-500"; // legend
+    if (kd >= 1.5) return "text-blue-500";   // ultra pro
+    if (kd >= 1.0) return "text-green-500";  // pro
+    if (kd >= 0.5) return "text-yellow-500"; // noob
+    return "text-red-500";                   // ultra noob / bot
 }
 
 function getBalanceColor(balance: number, entryFee: number): string {
-    if (balance >= entryFee * 2) return "text-green-500";
-    if (balance >= entryFee) return "text-yellow-500";
+    if (entryFee === 0) return "text-gray-500";
+    if (balance >= entryFee) return "text-green-500";
     return "text-red-500";
 }
 
 function TeamCard({ team, entryFee }: { team: TeamPreview; entryFee: number }) {
     return (
-        <div className="p-3 sm:p-4 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-3">
-                <span className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base">
+        <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            {/* Team header - compact */}
+            <div className="flex items-center justify-between mb-1.5">
+                <span className="font-semibold text-gray-800 dark:text-gray-100 text-xs">
                     Team {team.teamNumber}
                 </span>
-                <Badge variant="outline" className="text-xs">
-                    {team.players.length} player{team.players.length !== 1 ? "s" : ""}
-                </Badge>
+                <div className="flex items-center gap-1">
+                    {/* @ts-expect-error recentWins may exist */}
+                    {team.players.some(p => p.recentWins > 0) && (
+                        <Trophy className="w-3 h-3 text-yellow-500" />
+                    )}
+                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
+                        {team.players.length}p
+                    </Badge>
+                </div>
             </div>
-            <ul className="space-y-2">
+
+            {/* Players list - compact for mobile */}
+            <ul className="space-y-0.5">
                 {team.players.map((player) => (
                     <li
                         key={player.id}
-                        className="flex flex-col gap-1 p-2 bg-white dark:bg-gray-900 rounded border border-gray-100 dark:border-gray-700"
+                        className="flex items-center justify-between py-1 px-1.5 bg-white dark:bg-gray-900 rounded text-[10px] sm:text-xs"
                     >
-                        <span className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                        <span className="font-medium text-gray-900 dark:text-white truncate max-w-[45%]">
                             {player.userName}
                         </span>
-                        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                            <span className={getKDColor(player.kd)}>
-                                K/D: {player.kd.toFixed(2)}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            <span className={`font-mono ${getKDColor(player.kd)}`}>
+                                {player.kd.toFixed(2)}
                             </span>
-                            <span className={getBalanceColor(player.balance, entryFee)}>
-                                <Coins className="inline w-3 h-3 mr-0.5" />
-                                {player.balance} UC
+                            <span className={`font-mono ${getBalanceColor(player.balance, entryFee)}`}>
+                                {player.balance}
                             </span>
                         </div>
                     </li>
@@ -81,71 +89,69 @@ export function PollTeamsPreviewDialog({
     isLoading,
     isConfirming,
     onConfirm,
+    onRegenerate,
     teamSize,
 }: PollTeamsPreviewDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl max-h-[90vh] p-4 sm:p-6 rounded-2xl">
-                <DialogHeader>
-                    <DialogTitle className="text-lg sm:text-xl font-semibold flex items-center gap-2">
-                        <Users className="w-5 h-5" />
+            <DialogContent className="w-[95vw] max-w-4xl h-[80vh] max-h-[600px] p-0 rounded-xl flex flex-col overflow-hidden">
+                {/* Fixed Header */}
+                <DialogHeader className="flex-shrink-0 p-3 sm:p-4 pb-2 border-b">
+                    <DialogTitle className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                        <Users className="w-4 h-4" />
                         Preview Teams
                     </DialogTitle>
-                    <DialogDescription className="text-sm text-gray-500">
-                        Review the teams before confirming. UC will be debited upon confirmation.
+                    <DialogDescription className="text-[10px] sm:text-xs text-gray-500">
+                        Review teams. UC debited on confirm.
                     </DialogDescription>
                 </DialogHeader>
 
-                {isLoading ? (
-                    <div className="flex flex-col items-center justify-center py-12 gap-3">
-                        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                        <p className="text-gray-500">Generating team preview...</p>
-                    </div>
-                ) : previewData ? (
-                    <>
-                        {/* Summary Bar */}
-                        <div className="flex flex-wrap gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                            <Badge variant="secondary" className="text-sm">
-                                {previewData.tournamentName}
-                            </Badge>
-                            <Badge variant="outline" className="text-sm">
-                                {previewData.teams.length} Teams
-                            </Badge>
-                            <Badge variant="outline" className="text-sm">
-                                {previewData.totalPlayersEligible} Players
-                            </Badge>
-                            <Badge variant="outline" className="text-sm">
-                                Team Size: {teamSize}
-                            </Badge>
-                            {previewData.entryFee > 0 && (
-                                <Badge className="bg-yellow-500 text-white text-sm">
-                                    <Coins className="w-3 h-3 mr-1" />
-                                    {previewData.entryFee} UC Entry Fee
-                                </Badge>
-                            )}
+                {/* Scrollable Content Area */}
+                <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-8 gap-2">
+                            <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                            <p className="text-gray-500 text-sm">Generating teams...</p>
                         </div>
+                    ) : previewData ? (
+                        <div className="flex flex-col gap-2">
+                            {/* Summary Bar */}
+                            <div className="flex flex-wrap items-center gap-1.5 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                <Badge variant="secondary" className="text-[10px] sm:text-xs truncate max-w-[120px]">
+                                    {previewData.tournamentName}
+                                </Badge>
+                                <Badge variant="outline" className="text-[10px] sm:text-xs">
+                                    {previewData.teams.length} Teams
+                                </Badge>
+                                <Badge variant="outline" className="text-[10px] sm:text-xs">
+                                    {previewData.totalPlayersEligible} Players
+                                </Badge>
+                                {previewData.entryFee > 0 && (
+                                    <Badge variant="outline" className="text-[10px] sm:text-xs text-amber-600">
+                                        {previewData.entryFee} UC
+                                    </Badge>
+                                )}
+                            </div>
 
-                        {/* Excluded Players Warning */}
-                        {previewData.playersWithInsufficientBalance.length > 0 && (
-                            <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-sm font-medium text-red-700 dark:text-red-300">
-                                        Players excluded due to insufficient UC:
-                                    </p>
-                                    <p className="text-sm text-red-600 dark:text-red-400">
+                            {/* Low UC Warning */}
+                            {previewData.playersWithInsufficientBalance.length > 0 && (
+                                <div className="flex items-start gap-1.5 p-1.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+                                    <p className="text-[10px] text-amber-700 dark:text-amber-300 leading-tight">
+                                        <span className="font-medium">Low UC: </span>
                                         {previewData.playersWithInsufficientBalance
-                                            .map((p) => `${p.userName} (${p.balance} UC)`)
+                                            .slice(0, 5)
+                                            .map((p) => p.userName)
                                             .join(", ")}
+                                        {previewData.playersWithInsufficientBalance.length > 5 &&
+                                            ` +${previewData.playersWithInsufficientBalance.length - 5} more`}
                                     </p>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {/* Teams Grid */}
-                        <ScrollArea className="max-h-[50vh] border rounded-lg p-2 sm:p-4">
+                            {/* Teams Grid */}
                             {previewData.teams.length > 0 ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-2">
                                     {previewData.teams.map((team) => (
                                         <TeamCard
                                             key={team.teamNumber}
@@ -155,42 +161,54 @@ export function PollTeamsPreviewDialog({
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-gray-500 text-center py-8">
+                                <p className="text-gray-500 text-center py-6 text-sm">
                                     No teams generated.
                                 </p>
                             )}
-                        </ScrollArea>
-                    </>
-                ) : (
-                    <div className="flex flex-col items-center justify-center py-12 gap-3">
-                        <AlertTriangle className="w-8 h-8 text-yellow-500" />
-                        <p className="text-gray-500">Failed to load preview.</p>
-                    </div>
-                )}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-8 gap-2">
+                            <AlertTriangle className="w-6 h-6 text-yellow-500" />
+                            <p className="text-gray-500 text-sm">Failed to load preview.</p>
+                        </div>
+                    )}
+                </div>
 
-                <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-2">
+                {/* Fixed Footer */}
+                <DialogFooter className="flex-shrink-0 flex flex-row gap-2 p-3 sm:p-4 pt-2 border-t bg-background">
                     <Button
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                         disabled={isLoading || isConfirming}
-                        className="w-full sm:w-auto"
+                        className="flex-1 sm:flex-none h-9 text-xs sm:text-sm"
                     >
                         Cancel
                     </Button>
+                    {onRegenerate && (
+                        <Button
+                            variant="outline"
+                            onClick={onRegenerate}
+                            disabled={isLoading || isConfirming}
+                            className="flex-1 sm:flex-none h-9 text-xs sm:text-sm border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-950"
+                        >
+                            <RefreshCw className="w-3 h-3 mr-1.5" />
+                            Shuffle
+                        </Button>
+                    )}
                     <Button
                         onClick={onConfirm}
                         disabled={isLoading || isConfirming || !previewData}
-                        className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
+                        className="flex-1 sm:flex-none h-9 text-xs sm:text-sm bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white border-0"
                     >
                         {isConfirming ? (
                             <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Creating Teams...
+                                <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                                Creating...
                             </>
                         ) : (
                             <>
-                                <Coins className="w-4 h-4 mr-2" />
-                                Confirm & Deduct UC
+                                <Coins className="w-3 h-3 mr-1.5" />
+                                Confirm ({previewData?.teams.length || 0})
                             </>
                         )}
                     </Button>

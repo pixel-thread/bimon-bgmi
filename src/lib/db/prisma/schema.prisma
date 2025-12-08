@@ -46,10 +46,12 @@ enum Role {
 }
 
 enum PlayerCategory {
+  BOT
   ULTRA_NOOB
   NOOB
   PRO
   ULTRA_PRO
+  LEGEND
 }
 
 enum Status {

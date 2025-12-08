@@ -2,9 +2,11 @@ import { prisma } from "@/src/lib/db/prisma";
 import { shuffle } from "@/src/utils/shuffle";
 import {
   assignPlayersToTeamsBalanced,
+  createBalancedDuos,
   analyzeTeamBalance,
+  TeamStats,
 } from "@/src/utils/teamBalancer";
-import { computeWeightedScore } from "@/src/utils/scoreUtil";
+import { computeWeightedScore, PlayerWithWins } from "@/src/utils/scoreUtil";
 import { PlayerWithWeightT } from "@/src/types/player";
 
 type Props = {
@@ -32,6 +34,13 @@ export async function createTeamsByPolls({
     throw new Error("Invalid group size");
   }
 
+  // Get tournament name for transaction description
+  const tournament = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { name: true },
+  });
+  const tournamentName = tournament?.name ?? "Tournament";
+
   let players = await prisma.player.findMany({
     where: {
       isBanned: false,
@@ -50,12 +59,12 @@ export async function createTeamsByPolls({
     },
   });
 
-  // Track players with insufficient balance if entry fee is required
+  // Track players with insufficient balance (for info only - no longer excluded)
   const playersWithInsufficientBalance: { id: string; userName: string; balance: number }[] = [];
 
   if (entryFee > 0) {
-    // Filter out players who don't have enough UC balance
-    const eligiblePlayers = players.filter((p) => {
+    // Just track players with low balance for display purposes
+    players.forEach((p) => {
       const balance = p.uc?.balance ?? 0;
       if (balance < entryFee) {
         playersWithInsufficientBalance.push({
@@ -63,11 +72,9 @@ export async function createTeamsByPolls({
           userName: p.user.userName,
           balance,
         });
-        return false;
       }
-      return true;
     });
-    players = eligiblePlayers;
+    // Note: Players are no longer excluded - they can still participate
   }
 
   // Fetch eligible players who voted in the poll and are not banned
@@ -75,65 +82,70 @@ export async function createTeamsByPolls({
     throw new Error("No eligible players found for this poll.");
   }
 
-  // Filter players who voted SOLO
+  // Filter players who voted SOLO - they will ALWAYS be solo
   const playersWhoVotedSolo = players.filter((p) =>
     p.playerPollVote.some((vote) => vote.vote === "SOLO"),
   );
 
-  // Compute weighted scores
-  const playersWithScore: PlayerWithWeightT[] = players.map((p) => ({
-    ...p,
-    // @ts-expect-error weightedScore is added at runtime
-    weightedScore: computeWeightedScore(p),
-  }));
+  // Compute weighted scores (without wins for actual creation - wins are factored in preview)
+  const playersWithScore: PlayerWithWeightT[] = players.map((p) => {
+    const playerWithWins: PlayerWithWins = { ...p, recentWins: 0 };
+    return {
+      ...p,
+      weightedScore: computeWeightedScore(playerWithWins, seasonId),
+    };
+  });
 
-  const remainder = playersWithScore.length % groupSize;
-
-  let soloPlayer: PlayerWithWeightT | null = null;
+  // Separate solo voters from team players
+  const soloPlayers: PlayerWithWeightT[] = [];
   let playersForTeams: PlayerWithWeightT[] = [];
 
-  if (remainder === 1 && groupSize > 1 && playersWhoVotedSolo.length > 0) {
-    // Sort solo voters by KD descending
-    const soloWithScores = playersWithScore.filter((p) =>
-      playersWhoVotedSolo.some((solo) => solo.id === p.id),
-    );
-
-    soloWithScores.sort((a, b) => {
-      const getKD = (player: typeof a) => {
-        const stats = player.playerStats.find((p) => p.seasonId === seasonId);
-        if (stats?.deaths && stats?.deaths > 0) {
-          return stats?.kills / stats?.deaths;
-        }
-        return (
-          player.playerStats.find((p) => p.seasonId === seasonId)?.kills ?? 0
-        );
-      };
-      return getKD(b) - getKD(a);
-    });
-
-    soloPlayer = soloWithScores[0];
-
-    // Exclude the solo player from team groupings
-    playersForTeams = playersWithScore.filter((p) => p.id !== soloPlayer!.id);
-  } else {
-    playersForTeams = playersWithScore;
+  // All SOLO voters go to solo teams
+  for (const p of playersWithScore) {
+    if (playersWhoVotedSolo.some((solo) => solo.id === p.id)) {
+      soloPlayers.push(p);
+    } else {
+      playersForTeams.push(p);
+    }
   }
 
-  // Sort by weighted score descending
+  // Sort remaining players by weighted score descending
   playersForTeams.sort((a, b) => b.weightedScore - a.weightedScore);
 
+  // Check for odd number of players (when groupSize > 1)
+  // If odd, the highest-scoring player becomes a solo leftover
+  if (groupSize > 1 && playersForTeams.length % groupSize !== 0) {
+    const leftoverCount = playersForTeams.length % groupSize;
+    // Take the highest-scoring leftover players and make them solo
+    for (let i = 0; i < leftoverCount; i++) {
+      const leftover = playersForTeams.shift(); // Take from front (highest scores)
+      if (leftover) {
+        soloPlayers.push(leftover);
+      }
+    }
+  }
+
   const teamCount = Math.floor(playersForTeams.length / groupSize);
-  if (teamCount === 0) throw new Error("Not enough players to form teams.");
+  if (teamCount === 0 && soloPlayers.length === 0) {
+    throw new Error("Not enough players to form teams.");
+  }
 
-  // Assign balanced teams
-  let teams = assignPlayersToTeamsBalanced(
-    playersForTeams,
-    teamCount,
-    groupSize,
-  );
+  // Use duo pair optimization for groupSize 2, snake draft otherwise
+  let teams: TeamStats[] = [];
+  if (teamCount > 0) {
+    if (groupSize === 2) {
+      teams = createBalancedDuos(playersForTeams, seasonId);
+    } else {
+      teams = assignPlayersToTeamsBalanced(
+        playersForTeams,
+        teamCount,
+        groupSize,
+      );
+    }
+  }
 
-  // Include solo player team if present
-  if (soloPlayer) {
+  // Add all solo players as individual teams
+  for (const soloPlayer of soloPlayers) {
     const soloStats = soloPlayer.playerStats.find(
       (p) => p.seasonId === seasonId,
     );
@@ -141,7 +153,7 @@ export async function createTeamsByPolls({
       players: [soloPlayer],
       totalKills: soloStats?.kills ?? 0,
       totalDeaths: soloStats?.deaths ?? 0,
-      totalWins: 0, // TODO: p.playerStats.find((p) => p.seasonId === seasonId)?.wins ?? 0,
+      totalWins: 0,
       weightedScore: soloPlayer.weightedScore,
     });
   }
@@ -163,12 +175,10 @@ export async function createTeamsByPolls({
         },
       });
 
-      const result = [];
-
+      // Phase 1: Create all teams first
+      const createdTeamData = [];
       for (let i = 0; i < teams.length; i++) {
         const t = teams[i];
-
-        // Create Team
         const team = await tx.team.create({
           data: {
             name: `Team ${i + 1}`,
@@ -180,89 +190,163 @@ export async function createTeamsByPolls({
           },
           include: { players: true },
         });
+        createdTeamData.push({ team, originalTeam: t });
+      }
 
-        const teamStat = await tx.teamStats.create({
+      // Phase 2: Create all TeamStats in batch
+      const teamStatPromises = createdTeamData.map(({ team }) =>
+        tx.teamStats.create({
           data: {
             teamId: team.id,
             matchId: match.id,
             seasonId,
             tournamentId,
           },
-        });
+        })
+      );
+      const teamStats = await Promise.all(teamStatPromises);
 
-        for (const player of t.players) {
-          await tx.player.update({
-            where: { id: player.id },
-            data: {
-              teamStats: { connect: { id: teamStat.id || "" } },
-            },
+      // Phase 3: Batch create TeamPlayerStats using createMany
+      const teamPlayerStatsData: {
+        teamId: string;
+        matchId: string;
+        seasonId: string;
+        playerId: string;
+        teamStatsId: string;
+        kills: number;
+        deaths: number;
+      }[] = [];
+
+      for (let i = 0; i < createdTeamData.length; i++) {
+        const { team, originalTeam } = createdTeamData[i];
+        const teamStat = teamStats[i];
+
+        for (const player of originalTeam.players) {
+          teamPlayerStatsData.push({
+            teamId: team.id,
+            matchId: match.id,
+            seasonId,
+            playerId: player.id,
+            teamStatsId: teamStat.id,
+            kills: 0,
+            deaths: 1,
           });
+        }
+      }
 
-          await tx.teamPlayerStats.create({
-            data: {
-              teamId: team.id || "",
-              matchId: match.id || "",
-              seasonId: seasonId,
-              playerId: player.id || "",
-              teamStatsId: teamStat.id || "",
-              kills: 0,
-              deaths: 1,
-            },
-          });
+      // Batch insert all TeamPlayerStats
+      await tx.teamPlayerStats.createMany({
+        data: teamPlayerStatsData,
+      });
 
-          // Initialize or update PlayerStats for this season
-          await tx.playerStats.upsert({
-            where: {
-              seasonId_playerId: {
-                playerId: player.id,
-                seasonId: seasonId,
-              },
-            },
-            create: {
+      // Phase 4: Update player stats and UC in parallel batches per team
+      const allPlayers = teams.flatMap((t) => t.players);
+
+      // Batch upsert PlayerStats
+      const playerStatsPromises = allPlayers.map((player) =>
+        tx.playerStats.upsert({
+          where: {
+            seasonId_playerId: {
               playerId: player.id,
               seasonId: seasonId,
-              kills: 0,
-              deaths: 1,
+            },
+          },
+          create: {
+            playerId: player.id,
+            seasonId: seasonId,
+            kills: 0,
+            deaths: 1,
+          },
+          update: {
+            deaths: { increment: 1 },
+          },
+        })
+      );
+      await Promise.all(playerStatsPromises);
+
+      // Phase 5: Debit UC from all players in batch + record transactions
+      if (entryFee > 0) {
+        // Record transaction history first
+        await tx.transaction.createMany({
+          data: allPlayers.map((player) => ({
+            amount: entryFee,
+            type: "debit",
+            description: `Entry fee for ${tournamentName}`,
+            playerId: player.id,
+          })),
+        });
+
+        // Then debit UC
+        const ucPromises = allPlayers.map((player) =>
+          tx.uC.upsert({
+            where: { playerId: player.id },
+            create: {
+              balance: -entryFee,
+              player: { connect: { id: player.id } },
+              user: { connect: { id: player.userId } },
             },
             update: {
-              deaths: { increment: 1 },
+              balance: { decrement: entryFee },
             },
-          });
+          })
+        );
+        await Promise.all(ucPromises);
+      }
 
-          // Debit entry fee from player's UC balance
-          if (entryFee > 0) {
-            await tx.uC.upsert({
-              where: { playerId: player.id },
-              create: {
-                balance: -entryFee,
-                player: { connect: { id: player.id } },
-                user: { connect: { id: player.userId } },
-              },
-              update: {
-                balance: { decrement: entryFee },
-              },
-            });
-          }
-        }
+      // Phase 6: Create MatchPlayerPlayed entries for ALL players
+      const matchPlayerPlayedData: {
+        matchId: string;
+        playerId: string;
+        tournamentId: string;
+        seasonId: string;
+        teamId: string;
+      }[] = [];
 
-        await tx.matchPlayerPlayed.create({
-          data: {
-            matchId: match.id || "",
-            playerId: team.players[0].id || "",
-            tournamentId: tournamentId,
-            seasonId: seasonId,
+      for (const { team, originalTeam } of createdTeamData) {
+        for (const player of originalTeam.players) {
+          matchPlayerPlayedData.push({
+            matchId: match.id,
+            playerId: player.id,
+            tournamentId,
+            seasonId,
             teamId: team.id,
+          });
+        }
+      }
+
+      await tx.matchPlayerPlayed.createMany({
+        data: matchPlayerPlayedData,
+      });
+
+      // Phase 7: Connect players to match and teamStats
+      for (let i = 0; i < createdTeamData.length; i++) {
+        const { originalTeam } = createdTeamData[i];
+        const teamStat = teamStats[i];
+
+        // Connect teamStats to players
+        await tx.teamStats.update({
+          where: { id: teamStat.id },
+          data: {
+            players: { connect: originalTeam.players.map((p) => ({ id: p.id })) },
           },
         });
 
-        result.push(team);
+        // Connect each player to the match
+        for (const player of originalTeam.players) {
+          await tx.player.update({
+            where: { id: player.id },
+            data: {
+              matches: { connect: { id: match.id } },
+            },
+          });
+        }
       }
 
-      return result;
+      return createdTeamData.map(({ team }) => team);
     },
     {
-      maxWait: 10000, // Max wait to connect to Prisma (10 seconds)
-      timeout: 30000, // Transaction timeout (30 seconds)
+      maxWait: 30000, // Max wait to connect to Prisma (30 seconds)
+      timeout: 300000, // Transaction timeout (5 minutes for 64+ players)
     },
   );
 

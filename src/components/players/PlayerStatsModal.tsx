@@ -29,22 +29,11 @@ const CATEGORY_COLORS = {
     "bg-pink-100 text-pink-900 border-pink-200 dark:bg-pink-900 dark:text-pink-100 dark:border-pink-800",
 } as const;
 
+import { getKdRank } from "@/src/utils/categoryUtils";
+
 const getCategoryColor = (category: string) =>
   CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] ||
   "bg-gray-200 text-gray-800 border-gray-300";
-
-function getKdRank(kills: number, deaths: number): string {
-  if (deaths === 0) {
-    return kills > 0 ? "legend" : "bot";
-  }
-  const kdRatio = kills / deaths;
-  if (kdRatio >= 2.5) return "legend";
-  if (kdRatio >= 2.0) return "ultra pro";
-  if (kdRatio >= 1.5) return "pro";
-  if (kdRatio >= 1.0) return "noob";
-  if (kdRatio >= 0.5) return "ultra noob";
-  return "bot";
-}
 
 function ModalSkeleton() {
   return (
