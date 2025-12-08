@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import { usePendingUCRequests } from "@/src/hooks/uc/usePendingUCRequests";
 import { FiLogIn, FiSun, FiMoon } from "react-icons/fi";
 import { UserButton } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
@@ -10,6 +11,7 @@ export default function DesktopNavigation() {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const { isSignedIn: isAuthorized } = useAuth();
+  const { hasPendingRequests } = usePendingUCRequests();
   const onToggleTheme = () => {
     if (theme === "light") {
       setTheme("dark");
@@ -26,7 +28,7 @@ export default function DesktopNavigation() {
     { href: "/", label: "Home" },
     { href: "/about", label: "About" },
     { href: "/tournament", label: "Tournament" },
-    { href: "/profile", label: "Profile", authRequired: true },
+    { href: "/profile", label: "Profile", authRequired: true, showNotification: true },
     { href: "/settings", label: "Settings" },
     { href: "/guides", label: "Guides" },
     { href: "/blog", label: "Blog" },
@@ -46,9 +48,12 @@ export default function DesktopNavigation() {
           <button
             key={item.href}
             onClick={() => handleNavigation(item.href)}
-            className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            className="relative px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
           >
             {item.label}
+            {item.showNotification && hasPendingRequests && (
+              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse border-2 border-white dark:border-zinc-900"></span>
+            )}
           </button>
         ))}
       </nav>

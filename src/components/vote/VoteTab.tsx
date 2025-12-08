@@ -12,6 +12,7 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
       showViewAllVotes={true}
       title="Tournament Polls"
       description="Vote on active tournament polls"
+      forcePublic={true}
     />
   );
 };

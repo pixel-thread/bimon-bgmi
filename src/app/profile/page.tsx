@@ -390,11 +390,20 @@ export default function ProfilePage() {
                                             className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
                                         >
                                             <div className="flex items-center gap-3">
-                                                {transfer.fromPlayerId === playerId ? (
-                                                    <ArrowUpRight className="w-5 h-5 text-red-500" />
-                                                ) : (
-                                                    <ArrowDownLeft className="w-5 h-5 text-green-500" />
-                                                )}
+                                                {/* Determine if current user is losing or gaining UC */}
+                                                {(() => {
+                                                    // For SEND: fromPlayer loses money, toPlayer gains money
+                                                    // For REQUEST (approved): fromPlayer gains money (requester), toPlayer loses money (payer)
+                                                    const isLosingMoney = transfer.type === "SEND"
+                                                        ? transfer.fromPlayerId === playerId  // Sender loses money
+                                                        : transfer.toPlayerId === playerId;   // Payer loses money (when REQUEST is approved)
+
+                                                    return isLosingMoney ? (
+                                                        <ArrowUpRight className="w-5 h-5 text-red-500" />
+                                                    ) : (
+                                                        <ArrowDownLeft className="w-5 h-5 text-green-500" />
+                                                    );
+                                                })()}
                                                 <div>
                                                     <p className="font-medium">
                                                         {transfer.fromPlayerId === playerId ? (
@@ -415,9 +424,17 @@ export default function ProfilePage() {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <span className={`font-bold ${transfer.fromPlayerId === playerId ? "text-red-600" : "text-green-600"}`}>
-                                                    {transfer.fromPlayerId === playerId ? "-" : "+"}{transfer.amount} UC
-                                                </span>
+                                                {(() => {
+                                                    const isLosingMoney = transfer.type === "SEND"
+                                                        ? transfer.fromPlayerId === playerId
+                                                        : transfer.toPlayerId === playerId;
+
+                                                    return (
+                                                        <span className={`font-bold ${isLosingMoney ? "text-red-600" : "text-green-600"}`}>
+                                                            {isLosingMoney ? "-" : "+"}{transfer.amount} UC
+                                                        </span>
+                                                    );
+                                                })()}
                                                 {getStatusBadge(transfer.status)}
                                             </div>
                                         </div>

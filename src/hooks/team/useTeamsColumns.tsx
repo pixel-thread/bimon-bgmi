@@ -5,7 +5,7 @@ import { TeamT } from "@/src/types/team";
 import http from "@/src/utils/http";
 import { ADMIN_TEAM_ENDPOINTS } from "@/src/lib/endpoints/admin/team";
 import { toast } from "sonner";
-import { Loader2, Trash2, UserMinus, Pencil } from "lucide-react";
+import { Loader2, Trash2, Pencil } from "lucide-react";
 import { useTournamentStore } from "@/src/store/tournament";
 import React, { useState } from "react";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
@@ -19,13 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/src/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/src/components/ui/dialog";
+import { AddPlayerToTeamDialog } from "@/src/components/admin/teams/add-player-to-team-dialog";
 
 type Props = {
   page?: string;
@@ -115,11 +109,10 @@ const TeamActions = ({ team, page }: { team: TeamT; page?: string }) => {
       </div>
 
       {/* Edit Players Dialog */}
-      <EditPlayersDialog
-        team={team}
+      <AddPlayerToTeamDialog
+        teamId={team.id}
         open={showEditPlayers}
-        onOpenChange={setShowEditPlayers}
-        page={page}
+        onOpenChange={() => setShowEditPlayers(false)}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -159,93 +152,3 @@ const TeamActions = ({ team, page }: { team: TeamT; page?: string }) => {
   );
 };
 
-// Edit Players Dialog - allows removing players from team
-const EditPlayersDialog = ({
-  team,
-  open,
-  onOpenChange,
-  page,
-}: {
-  team: TeamT;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  page?: string;
-}) => {
-  const { tournamentId } = useTournamentStore();
-  const { matchId } = useMatchStore();
-  const queryClient = useQueryClient();
-  const [removingPlayerId, setRemovingPlayerId] = useState<string | null>(null);
-
-  const { mutate: removePlayer, isPending: isRemoving } = useMutation({
-    mutationFn: (playerId: string) =>
-      http.post(
-        ADMIN_TEAM_ENDPOINTS.POST_REMOVE_PLAYER_FROM_TEAM.replace(":teamId", team.id),
-        { playerId },
-      ),
-    onSuccess: (data) => {
-      setRemovingPlayerId(null);
-      if (data.success) {
-        toast.success(data.message || "Player removed from team");
-        queryClient.invalidateQueries({
-          queryKey: ["teams", tournamentId, matchId, page],
-        });
-      } else {
-        toast.error(data.message || "Failed to remove player");
-      }
-    },
-    onError: () => {
-      setRemovingPlayerId(null);
-      toast.error("Failed to remove player");
-    },
-  });
-
-  const handleRemovePlayer = (playerId: string) => {
-    setRemovingPlayerId(playerId);
-    removePlayer(playerId);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Edit Team Players</DialogTitle>
-          <DialogDescription>
-            {team.name} - {team.players?.length || 0} players
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-2 py-4">
-          {team.players?.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No players in this team
-            </p>
-          ) : (
-            team.players?.map((player) => (
-              <div
-                key={player.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-              >
-                <span className="font-medium">{player.name}</span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleRemovePlayer(player.id)}
-                  disabled={isRemoving}
-                  className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                >
-                  {removingPlayerId === player.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <UserMinus className="h-4 w-4 mr-1" />
-                      Remove
-                    </>
-                  )}
-                </Button>
-              </div>
-            ))
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-};

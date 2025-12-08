@@ -32,13 +32,15 @@ import { ADMIN_MATCH_ENDPOINTS } from "@/src/lib/endpoints/admin/match";
 import { useSeasonStore } from "@/src/store/season";
 import { BulkEditStatsDialog } from "./BulkEditStatsDialog";
 import { useGlobalBackground } from "@/src/hooks/gallery/useGlobalBackground";
-
+import { SwapPlayersDialog } from "./swap-players-dialog";
+import { ArrowLeftRight } from "lucide-react";
 
 export const AdminTeamsManagement: React.FC = () => {
   const search = useSearchParams();
   const page = "all";
   const [showStandingsModal, setShowStandingsModal] = useState(false);
   const [showBulkEdit, setShowBulkEdit] = useState(false);
+  const [showSwapPlayers, setShowSwapPlayers] = useState(false);
   const { tournamentId } = useTournamentStore();
   const { seasonId } = useSeasonStore();
   const { data: tournament } = useTournament({ id: tournamentId });
@@ -191,6 +193,17 @@ export const AdminTeamsManagement: React.FC = () => {
             <span>Bulk Edit</span>
           </Button>
 
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowSwapPlayers(true)}
+            disabled={isFetching || !tournamentId}
+            title="Swap Players"
+          >
+            <ArrowLeftRight className="h-4 w-4 mr-1" />
+            <span className="hidden sm:inline">Swap</span>
+          </Button>
+
           {matchId !== "all" && (
             <Button
               size="sm"
@@ -239,6 +252,10 @@ export const AdminTeamsManagement: React.FC = () => {
       <BulkEditStatsDialog
         open={showBulkEdit}
         onOpenChange={setShowBulkEdit}
+      />
+      <SwapPlayersDialog
+        open={showSwapPlayers}
+        onOpenChange={setShowSwapPlayers}
       />
     </>
   );

@@ -25,6 +25,7 @@ export interface PollVotingInterfaceProps {
   showViewAllVotes?: boolean;
   title?: string;
   description?: string;
+  forcePublic?: boolean;
 }
 
 const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
@@ -32,13 +33,14 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
   showViewAllVotes = true,
   title = "Tournament Polls",
   description = "Vote on active tournament polls",
+  forcePublic = false,
 }) => {
   const { user: user } = useAuth();
 
   const isPlayer = user?.role === "PLAYER";
   const searchQuery = useSearchParams();
   const pollId = searchQuery.get("view") || "";
-  const { data: polls, isFetching: loading } = usePolls({});
+  const { data: polls, isFetching: loading } = usePolls({ forcePublic });
 
   const [showVotersDialog, setShowVotersDialog] = useState<PollT | null>(null);
 
