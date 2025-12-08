@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/src/components/ui/select";
-import { PlusIcon, XIcon, SaveIcon } from "lucide-react";
+import { PlusIcon, XIcon, SaveIcon, AlertCircle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { ADMIN_TEAM_ENDPOINTS } from "@/src/lib/endpoints/admin/team";
@@ -28,6 +28,17 @@ import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { LoaderFive } from "../../ui/loader";
 import { Ternary } from "../../common/Ternary";
 import { SearchPlayerDialog } from "../player/SearchPlayerDialog";
+import { useTournament } from "@/src/hooks/tournament/useTournament";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/src/components/ui/alert-dialog";
 
 type AddPlayerToTeamDialogProps = {
   open?: boolean;
@@ -48,6 +59,12 @@ export const AddPlayerToTeamDialog = ({
   const [originalPlayersList, setOriginalPlayersList] = React.useState<string[]>([]);
   const [hasChanges, setHasChanges] = React.useState(false);
 
+  // UC deduction confirmation state
+  const [pendingPlayer, setPendingPlayer] = React.useState<{ id: string; name: string } | null>(null);
+  const [showUCConfirm, setShowUCConfirm] = React.useState(false);
+  // Track players to add with UC deduction
+  const [playersWithUCDeduction, setPlayersWithUCDeduction] = React.useState<Set<string>>(new Set());
+
   const { data: team, isFetching } = useQuery({
     queryKey: ["team", teamId],
     queryFn: () =>
@@ -61,9 +78,11 @@ export const AddPlayerToTeamDialog = ({
   const { data: players, isFetching: isFetchingPlayers } = usePlayers();
 
   const { tournamentId } = useTournamentStore();
+  const { data: tournament } = useTournament({ id: tournamentId });
+  const entryFee = tournament?.fee || 0;
 
   const { mutateAsync: addPlayer, isPending: isAdding } = useMutation({
-    mutationFn: (data: { playerId: string; matchId: string }) =>
+    mutationFn: (data: { playerId: string; matchId: string; deductUC?: boolean }) =>
       http.post<{ id: string }>(
         ADMIN_TEAM_ENDPOINTS.POST_ADD_PLAYER_TO_TEAM.replace(":teamId", teamId),
         data,
@@ -90,6 +109,7 @@ export const AddPlayerToTeamDialog = ({
       setPlayersList(playerIds);
       setOriginalPlayersList(playerIds);
       setHasChanges(false);
+      setPlayersWithUCDeduction(new Set());
     }
   }, [team]);
 
@@ -102,24 +122,62 @@ export const AddPlayerToTeamDialog = ({
     setHasChanges(playersChanged);
   }, [playersList, originalPlayersList]);
 
-  /** Insert selected player from dialog (local only) */
+  /** Insert selected player from dialog - checks if UC deduction is needed */
   const handleInsertPlayer = (playerId: string) => {
-    if (!playersList.includes(playerId)) {
+    const player = players?.find(p => p.id === playerId);
+    setSearchDialogOpen(false);
+
+    if (!player) return;
+    if (playersList.includes(playerId)) return;
+
+    // If tournament has entry fee, ask about UC deduction
+    if (entryFee > 0) {
+      setPendingPlayer({ id: playerId, name: player.userName });
+      setShowUCConfirm(true);
+    } else {
+      // No entry fee, just add
       setPlayersList((prev) => [...prev, playerId]);
     }
-    setSearchDialogOpen(false);
+  };
+
+  /** Handle UC confirmation response */
+  const handleUCConfirmResponse = (deductUC: boolean) => {
+    if (pendingPlayer) {
+      setPlayersList((prev) => [...prev, pendingPlayer.id]);
+      if (deductUC) {
+        setPlayersWithUCDeduction(prev => new Set(prev).add(pendingPlayer.id));
+      }
+    }
+    setPendingPlayer(null);
+    setShowUCConfirm(false);
   };
 
   /** Remove player locally */
   const handleRemovePlayer = (playerId: string) => {
     setPlayersList((list) => list.filter((id) => id !== playerId));
+    setPlayersWithUCDeduction(prev => {
+      const next = new Set(prev);
+      next.delete(playerId);
+      return next;
+    });
   };
 
   /** Replace player in select field (local only) */
   const handleReplacePlayer = (index: number, newPlayerId: string) => {
+    const oldPlayerId = playersList[index];
     const updated = [...playersList];
     updated[index] = newPlayerId;
     setPlayersList(updated);
+
+    // Transfer UC deduction status if applicable
+    if (playersWithUCDeduction.has(oldPlayerId)) {
+      setPlayersWithUCDeduction(prev => {
+        const next = new Set(prev);
+        next.delete(oldPlayerId);
+        next.add(newPlayerId);
+        return next;
+      });
+    }
   };
 
   /** Save all changes */
@@ -144,9 +202,10 @@ export const AddPlayerToTeamDialog = ({
       }
     }
 
-    // Then process additions
+    // Then process additions with UC deduction flag
     for (const playerId of playersToAdd) {
-      const result = await addPlayer({ playerId, matchId });
+      const deductUC = playersWithUCDeduction.has(playerId);
+      const result = await addPlayer({ playerId, matchId, deductUC });
       if (!result.success) {
         toast.error(result.message || `Failed to add player`);
         hasError = true;
@@ -160,15 +219,16 @@ export const AddPlayerToTeamDialog = ({
     // Invalidate queries to refresh data
     queryClient.invalidateQueries({ queryKey: ["team", teamId] });
     queryClient.invalidateQueries({
-      queryKey: ["team", tournamentId, matchId],
+      queryKey: ["teams", tournamentId, matchId],
     });
     queryClient.invalidateQueries({
-      queryKey: ["team", tournamentId],
+      queryKey: ["teams", tournamentId],
     });
 
     // Update original list to reflect saved state
     setOriginalPlayersList([...playersList]);
     setHasChanges(false);
+    setPlayersWithUCDeduction(new Set());
   };
 
   return (
@@ -178,6 +238,11 @@ export const AddPlayerToTeamDialog = ({
           <DialogTitle>Update Team</DialogTitle>
           <DialogDescription>
             Add or remove players, then click Save to apply all changes at once.
+            {entryFee > 0 && (
+              <span className="block mt-1 text-orange-500">
+                Entry Fee: {entryFee} UC per player
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -188,6 +253,34 @@ export const AddPlayerToTeamDialog = ({
           onSelectPlayer={handleInsertPlayer}
         />
 
+        {/* UC Deduction Confirmation Dialog */}
+        <AlertDialog open={showUCConfirm} onOpenChange={setShowUCConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-orange-500" />
+                Deduct Entry Fee?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                <strong>{pendingPlayer?.name}</strong> will be added to the team.
+                <br /><br />
+                Do you want to deduct <strong className="text-orange-500">{entryFee} UC</strong> as entry fee?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => handleUCConfirmResponse(false)}>
+                Add without deduction
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => handleUCConfirmResponse(true)}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                Deduct {entryFee} UC
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <Ternary
           condition={isFetchingPlayers || isFetching}
           trueComponent={
@@ -197,39 +290,49 @@ export const AddPlayerToTeamDialog = ({
           }
           falseComponent={
             <div className="flex flex-col space-y-4 mt-3">
-              {playersList.map((playerId, index) => (
-                <div key={index} className="space-y-1">
-                  <p className="text-sm font-medium">Player {index + 1}</p>
+              {playersList.map((playerId, index) => {
+                const isNewWithUC = !originalPlayersList.includes(playerId) && playersWithUCDeduction.has(playerId);
+                return (
+                  <div key={index} className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium">Player {index + 1}</p>
+                      {isNewWithUC && (
+                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded dark:bg-orange-900 dark:text-orange-300">
+                          -{entryFee} UC
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={playerId}
-                      onValueChange={(value) => handleReplacePlayer(index, value)}
-                      disabled={isFetchingPlayers || isSaving}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select player" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {players?.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.userName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={playerId}
+                        onValueChange={(value) => handleReplacePlayer(index, value)}
+                        disabled={isFetchingPlayers || isSaving}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select player" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {players?.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.userName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      disabled={isSaving}
-                      onClick={() => handleRemovePlayer(playerId)}
-                    >
-                      <XIcon className="w-4 h-4" />
-                    </Button>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        disabled={isSaving}
+                        onClick={() => handleRemovePlayer(playerId)}
+                      >
+                        <XIcon className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               <div className="flex gap-2">
                 <Button

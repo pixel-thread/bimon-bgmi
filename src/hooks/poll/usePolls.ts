@@ -5,12 +5,16 @@ import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 type Props = {
   page?: string | null;
+  forcePublic?: boolean;
 };
-export function usePolls({ page }: Props = { page: "1" }) {
+export function usePolls({ page, forcePublic }: Props = { page: "1" }) {
   const { user } = useAuth();
   const isAdmin =
     user?.role === "SUPER_ADMIN" ? true : user?.role === "ADMIN" ? true : false;
-  const url = isAdmin ? `/admin/poll?page=${page}` : `/poll?page=${page}`;
+  const url =
+    isAdmin && !forcePublic
+      ? `/admin/poll?page=${page}`
+      : `/poll?page=${page}`;
 
   return useQuery({
     queryKey: ["polls"],

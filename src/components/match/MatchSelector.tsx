@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import {
   Select,
   SelectContent,
@@ -38,6 +40,13 @@ export default function MatchSelector({
 
   const { tournamentId } = useTournamentStore();
   const { data: matches, isLoading, refetch } = useMatches();
+
+  // Auto-select "all" for match when data loads and isAllMatch is true
+  useEffect(() => {
+    if (!matchId && isAllMatch && matches && matches.length > 0) {
+      setMatch("all", null);
+    }
+  }, [matches, matchId, isAllMatch, setMatch]);
 
   const onSelect = (value: string | null) => {
     const id = value || "";
