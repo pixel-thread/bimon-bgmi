@@ -4,15 +4,16 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import { usePendingUCRequests } from "@/src/hooks/uc/usePendingUCRequests";
 import { FiMenu, FiX, FiLogIn, FiSun, FiMoon, FiUser } from "react-icons/fi";
 import { UserAvatar } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
-// Notifications removed
 
 export default function HamburgerMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const { isSignedIn: isAuthorized, user: playerUser } = useAuth();
+  const { hasPendingRequests } = usePendingUCRequests();
   const { theme, setTheme } = useTheme();
   const onToggleTheme = () => {
     if (theme === "light") {
@@ -30,27 +31,33 @@ export default function HamburgerMenu() {
   return (
     <>
       {/* Hamburger Button */}
-      <button
-        className="fixed top-4 right-4 z-50 p-2 rounded-lg bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border border-gray-200 dark:border-zinc-700 md:hidden"
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label="Toggle menu"
-      >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={isOpen ? "close" : "menu"}
-            initial={{ rotate: -90, opacity: 0 }}
-            animate={{ rotate: 0, opacity: 1 }}
-            exit={{ rotate: 90, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            {isOpen ? (
-              <FiX className="h-6 w-6 text-gray-900 dark:text-white" />
-            ) : (
-              <FiMenu className="h-6 w-6 text-gray-900 dark:text-white" />
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </button>
+      <div className="fixed top-4 right-4 z-50 md:hidden">
+        <button
+          className="relative p-2 rounded-lg bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border border-gray-200 dark:border-zinc-700"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Toggle menu"
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={isOpen ? "close" : "menu"}
+              initial={{ rotate: -90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: 90, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {isOpen ? (
+                <FiX className="h-6 w-6 text-gray-900 dark:text-white" />
+              ) : (
+                <FiMenu className="h-6 w-6 text-gray-900 dark:text-white" />
+              )}
+            </motion.div>
+          </AnimatePresence>
+          {/* Notification dot for pending UC requests */}
+          {hasPendingRequests && !isOpen && (
+            <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse border-2 border-white dark:border-zinc-900"></span>
+          )}
+        </button>
+      </div>
 
       {/* Menu Overlay */}
       <AnimatePresence>
@@ -124,12 +131,15 @@ export default function HamburgerMenu() {
                         setIsOpen(false);
                         router.push("/profile");
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                      className="relative w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                     >
                       <div className="h-5 w-5 rounded-full overflow-hidden">
                         <UserAvatar />
                       </div>
                       My Profile
+                      {hasPendingRequests && (
+                        <span className="absolute top-2 right-2 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse border-2 border-white dark:border-zinc-900"></span>
+                      )}
                     </button>
                   )}
 

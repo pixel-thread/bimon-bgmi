@@ -118,7 +118,7 @@ export async function POST(
 
       if (potentialBalance < tournamentFee) {
         return ErrorResponse({
-          message: "sen lot chwa bai rung sa vote bon",
+          message: "dap rat bai rung",
           status: 403,
         });
       }

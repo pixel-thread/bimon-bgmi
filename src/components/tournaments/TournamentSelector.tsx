@@ -35,6 +35,14 @@ export default function TournamentSelector({
     useState<boolean>(false);
   const { data: allTournaments, isFetching } = useTournaments();
 
+  // Auto-select the latest tournament (last in the list) when data loads and no tournament is selected
+  useEffect(() => {
+    if (!tournamentId && allTournaments && allTournaments.length > 0) {
+      // Select the last tournament (most recent) since tournaments are ordered oldest-first
+      setTournamentId(allTournaments[allTournaments.length - 1].id);
+    }
+  }, [allTournaments, tournamentId, setTournamentId]);
+
   const onSelect = (value: string | null) => {
     setMatchId("");
     setTournamentId(value || "");
