@@ -3,9 +3,16 @@ import { TournamentLayoutContent } from "@/src/components/tournaments/Tournament
 
 import { usePathname } from "next/navigation";
 import { FiAward, FiBarChart } from "react-icons/fi";
+import { Gamepad2 } from "lucide-react";
 
 const getLayoutDetails = (path: string) => {
   switch (path) {
+    case "/tournament/games":
+      return {
+        title: "Games",
+        description: "Take a break and have some fun with mini games!",
+        icon: Gamepad2,
+      };
     case "/tournament/players":
       return {
         title: "Position",
