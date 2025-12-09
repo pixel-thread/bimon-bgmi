@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { FiUsers } from "react-icons/fi";
+import { User } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -20,7 +21,6 @@ import { Ternary } from "../common/Ternary";
 import { Progress } from "../ui/progress";
 import { usePlayerVote } from "@/src/hooks/poll/usePlayerVote";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
-import { usePoll } from "@/src/hooks/poll/usePoll";
 import { VotersListSkeleton, VotersSkeleton } from "./VotersSkeleton";
 
 import { PollT } from "@/src/types/poll";
@@ -55,7 +55,8 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
     const totalVotes = allVotes?.length || 0;
 
     const filterPollVote = (vote: VoteT) => {
-      return pollVoters?.filter((val) => val.vote === vote) || [];
+      return (pollVoters?.filter((val) => val.vote === vote) || [])
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     };
 
     // Collect all unique votes
@@ -170,15 +171,14 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                                         <Avatar>
                                           <AvatarImage
                                             src={
-                                              vote.player.characterImage
-                                                ?.publicUrl
+                                              (vote.player as any)?.imageUrl ||
+                                              vote.player?.characterImage?.publicUrl ||
+                                              ''
                                             }
                                             alt={vote.playerId}
                                           />
                                           <AvatarFallback>
-                                            {vote.player.user.userName
-                                              .split(" ")
-                                              .map((name) => name[0])}
+                                            <User className="w-5 h-5 text-gray-400" />
                                           </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1">
@@ -188,7 +188,14 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                                           <p className="text-xs text-gray-500 dark:text-gray-400">
                                             {new Date(
                                               vote.createdAt,
-                                            ).toLocaleString()}
+                                            ).toLocaleString('en-US', {
+                                              hour: 'numeric',
+                                              minute: '2-digit',
+                                              second: '2-digit',
+                                              hour12: true,
+                                              day: 'numeric',
+                                              month: 'short',
+                                            })}
                                           </p>
                                         </div>
                                       </div>
@@ -208,9 +215,12 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                                     >
                                       <Avatar>
                                         <AvatarImage
-                                          src=""
+                                          src={(vote.player as any)?.imageUrl || vote.player?.characterImage?.publicUrl || ''}
                                           alt={vote.playerId}
                                         />
+                                        <AvatarFallback>
+                                          <User className="w-5 h-5 text-gray-400" />
+                                        </AvatarFallback>
                                       </Avatar>
                                       <span className="text-sm text-gray-700 dark:text-gray-300">
                                         {vote.player.userId}
