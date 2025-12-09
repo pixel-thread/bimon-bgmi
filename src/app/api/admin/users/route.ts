@@ -10,8 +10,17 @@ export async function GET(req: NextRequest) {
     await superAdminMiddleware(req);
     const page = req.nextUrl.searchParams.get("page") || "1";
     const roleParam = req.nextUrl.searchParams.get("role") || "USER";
-    const where = roleParam ? { role: { equals: roleParam as any } } : undefined;
-    const [users, total] = await getAllUsers({ page, where });
+    const searchParam = req.nextUrl.searchParams.get("search") || "";
+
+    const where: any = {};
+    if (roleParam) {
+      where.role = { equals: roleParam as any };
+    }
+    if (searchParam) {
+      where.email = { contains: searchParam, mode: "insensitive" };
+    }
+
+    const [users, total] = await getAllUsers({ page, where: Object.keys(where).length > 0 ? where : undefined });
     return SuccessResponse({
       data: users,
       meta: getMeta({ total, currentPage: page }),

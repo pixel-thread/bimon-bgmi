@@ -78,7 +78,7 @@ export const DynamicTopPlayersPodium = React.memo(
       (player: PlayerStatsT) => {
         switch (sortBy) {
           // case "balance":
-          // return player.playerStats.balance ? `₹${player.balance}` : "₹0";
+          // return player.playerStats.balance ? `${player.balance} UC` : "0 UC";
           case "kd":
             // @ts-ignore
             return `${player?.kd ? player.kd.toFixed(2) : 0} K/D`;
@@ -89,7 +89,7 @@ export const DynamicTopPlayersPodium = React.memo(
           case "name":
             return player?.player.category;
           // case "banned":
-          //   return player.balance ? `₹${player.balance}` : "₹0";
+          //   return player.balance ? `${player.balance} UC` : "0 UC";
           default:
             // @ts-ignore
             return `${player?.kd ? player.kd.toFixed(2) : 0} K/D`;
@@ -145,7 +145,7 @@ export const DynamicTopPlayersPodium = React.memo(
         transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer
       `}
             style={{ aspectRatio: "9/22" }}
-            // onClick={() => onPlayerClick && onPlayerClick(player)}
+          // onClick={() => onPlayerClick && onPlayerClick(player)}
           >
             {/* Subtle background pattern for better theme support */}
             <div

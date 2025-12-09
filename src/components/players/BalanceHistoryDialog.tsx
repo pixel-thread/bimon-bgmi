@@ -249,8 +249,8 @@ export function BalanceHistoryDialog({
                         : "text-red-600"
                         }`}
                     >
-                      {entry.type === "credit" ? "+" : "-"}₹
-                      {Math.abs(entry.amount).toFixed(2)}
+                      {entry.type === "credit" ? "+" : "-"}
+                      {Math.abs(entry.amount).toFixed(2)} UC
                     </p>
                   </div>
                 </div>

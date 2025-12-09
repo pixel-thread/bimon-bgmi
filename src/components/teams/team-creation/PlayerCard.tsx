@@ -88,9 +88,8 @@ export function PlayerCard({
       <div className="flex-1 flex flex-col gap-0.5 sm:gap-1 min-w-0">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <span
-            className={`font-medium text-sm sm:text-base truncate select-none ${
-              player.isBanned ? "text-red-700" : ""
-            }`}
+            className={`font-medium text-sm sm:text-base truncate select-none ${player.isBanned ? "text-red-700" : ""
+              }`}
           >
             {player.user.userName}
           </span>
@@ -117,15 +116,14 @@ export function PlayerCard({
           {activeTab === "solo" && (
             <Badge
               variant="outline"
-              className={`text-xs px-1 sm:px-1.5 py-0.5 flex-shrink-0 ${
-                player.category === "ULTRA_NOOB"
+              className={`text-xs px-1 sm:px-1.5 py-0.5 flex-shrink-0 ${player.category === "ULTRA_NOOB"
                   ? "border-red-300 text-red-700"
                   : player.category === "NOOB"
                     ? "border-yellow-300 text-yellow-700"
                     : player.category === "PRO"
                       ? "border-green-300 text-green-700"
                       : "border-purple-300 text-purple-700"
-              }`}
+                }`}
             >
               <span className="hidden sm:inline">
                 {player.category === "ULTRA_NOOB"
@@ -171,17 +169,16 @@ export function PlayerCard({
         </div>
 
         <span
-          className={`text-xs font-normal ${
-            typeof player.balance === "number"
+          className={`text-xs font-normal ${typeof player.balance === "number"
               ? player.balance > 0
                 ? "text-green-600"
                 : player.balance < 0
                   ? "text-red-600"
                   : "text-yellow-600"
               : "text-yellow-600"
-          }`}
+            }`}
         >
-          ₹{typeof player.balance === "number" ? player.balance : 0}
+          {typeof player.balance === "number" ? player.balance : 0} UC
         </span>
       </div>
 
@@ -197,11 +194,10 @@ export function PlayerCard({
                   onToggleExclusion();
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className={`w-5 h-5 ml-2 rounded border-2 transition-colors duration-150 focus:ring-0 focus:outline-none ${
-                  excludedFromDeduction
+                className={`w-5 h-5 ml-2 rounded border-2 transition-colors duration-150 focus:ring-0 focus:outline-none ${excludedFromDeduction
                     ? "border-green-500 bg-green-100"
                     : "border-gray-300 bg-white"
-                } hover:border-green-400 cursor-pointer`}
+                  } hover:border-green-400 cursor-pointer`}
                 aria-label="Exclude from deduction"
               />
             </TooltipTrigger>

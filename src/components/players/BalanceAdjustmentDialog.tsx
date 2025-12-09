@@ -102,10 +102,9 @@ export function BalanceAdjustmentDialog({
           <div>
             <label className="text-sm font-medium">Current Balance</label>
             <div className="text-lg font-bold text-muted-foreground">
-              ₹
               {typeof uc?.balance === "number"
                 ? uc?.balance.toFixed(2)
-                : "0.00"}
+                : "0.00"} UC
             </div>
           </div>
 
@@ -166,7 +165,7 @@ export function BalanceAdjustmentDialog({
           </div>
 
           <div>
-            <label className="text-sm font-medium">Amount (₹)</label>
+            <label className="text-sm font-medium">Amount (UC)</label>
             <Input
               type="number"
               min="0"
@@ -187,16 +186,16 @@ export function BalanceAdjustmentDialog({
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
             <p className="text-sm text-yellow-800">
               <strong>Preview:</strong>{" "}
-              {balanceAdjustment.type === "credit" ? "Add" : "Deduct"} ₹
-              {(parseFloat(balanceAdjustment.amount) || 0).toFixed(2)}
+              {balanceAdjustment.type === "credit" ? "Add" : "Deduct"}{" "}
+              {(parseFloat(balanceAdjustment.amount) || 0).toFixed(2)} UC
               <br />
-              <strong>New Balance:</strong> ₹
+              <strong>New Balance:</strong>{" "}
               {(
                 (typeof uc?.balance === "number" ? uc?.balance : 0) +
                 (balanceAdjustment.type === "credit"
                   ? parseFloat(balanceAdjustment.amount) || 0
                   : -(parseFloat(balanceAdjustment.amount) || 0))
-              ).toFixed(2)}
+              ).toFixed(2)} UC
             </p>
           </div>
         </div>
