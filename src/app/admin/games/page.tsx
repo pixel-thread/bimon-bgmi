@@ -159,32 +159,30 @@ export default function AdminGamesPage() {
     const comingSoonGames = GAMES.filter((g) => g.status === "coming_soon");
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-xl">
-                        <Gamepad2 className="h-6 w-6 text-indigo-500" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold">Games Management</h1>
-                        <p className="text-sm text-muted-foreground">
-                            Manage game leaderboards and settings
-                        </p>
-                    </div>
+            <div className="flex items-center gap-3">
+                <div className="p-2 sm:p-2.5 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-xl">
+                    <Gamepad2 className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-500" />
+                </div>
+                <div>
+                    <h1 className="text-xl sm:text-2xl font-bold">Games Management</h1>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                        Manage game leaderboards and settings
+                    </p>
                 </div>
             </div>
 
             {/* Games Overview Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-                    <CardContent className="p-4 flex items-center gap-3">
-                        <div className="p-2 bg-blue-500/20 rounded-lg">
-                            <Gamepad2 className="h-5 w-5 text-blue-500" />
+                    <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 bg-blue-500/20 rounded-lg">
+                            <Gamepad2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
                         </div>
                         <div>
-                            <p className="text-xs text-muted-foreground">Active Games</p>
-                            <p className="text-2xl font-bold text-blue-500">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">Active</p>
+                            <p className="text-xl sm:text-2xl font-bold text-blue-500">
                                 {activeGames.length}
                             </p>
                         </div>
@@ -192,13 +190,13 @@ export default function AdminGamesPage() {
                 </Card>
 
                 <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-                    <CardContent className="p-4 flex items-center gap-3">
-                        <div className="p-2 bg-purple-500/20 rounded-lg">
-                            <Clock className="h-5 w-5 text-purple-500" />
+                    <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 bg-purple-500/20 rounded-lg">
+                            <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
                         </div>
                         <div>
-                            <p className="text-xs text-muted-foreground">Coming Soon</p>
-                            <p className="text-2xl font-bold text-purple-500">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">Soon</p>
+                            <p className="text-xl sm:text-2xl font-bold text-purple-500">
                                 {comingSoonGames.length}
                             </p>
                         </div>
@@ -206,13 +204,13 @@ export default function AdminGamesPage() {
                 </Card>
 
                 <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
-                    <CardContent className="p-4 flex items-center gap-3">
-                        <div className="p-2 bg-emerald-500/20 rounded-lg">
-                            <Users className="h-5 w-5 text-emerald-500" />
+                    <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 bg-emerald-500/20 rounded-lg">
+                            <Users className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
                         </div>
                         <div>
-                            <p className="text-xs text-muted-foreground">Total Players</p>
-                            <p className="text-2xl font-bold text-emerald-500">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">Players</p>
+                            <p className="text-xl sm:text-2xl font-bold text-emerald-500">
                                 {leaderboard.length}
                             </p>
                         </div>
@@ -220,13 +218,13 @@ export default function AdminGamesPage() {
                 </Card>
 
                 <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
-                    <CardContent className="p-4 flex items-center gap-3">
-                        <div className="p-2 bg-amber-500/20 rounded-lg">
-                            <Trophy className="h-5 w-5 text-amber-500" />
+                    <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 bg-amber-500/20 rounded-lg">
+                            <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
                         </div>
                         <div>
-                            <p className="text-xs text-muted-foreground">Top Score</p>
-                            <p className="text-2xl font-bold text-amber-500">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">Top Score</p>
+                            <p className="text-xl sm:text-2xl font-bold text-amber-500">
                                 {leaderboard[0]?.highScore ?? "-"}
                             </p>
                         </div>
@@ -236,39 +234,44 @@ export default function AdminGamesPage() {
 
             {/* Games Tabs */}
             <Tabs value={selectedGame} onValueChange={setSelectedGame}>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <TabsList>
-                        {GAMES.map((game) => (
-                            <TabsTrigger
-                                key={game.id}
-                                value={game.id}
-                                disabled={game.status === "coming_soon"}
-                                className="gap-2"
-                            >
-                                {game.icon}
-                                {game.name}
-                                {game.status === "coming_soon" && (
-                                    <Badge variant="secondary" className="text-[10px] px-1.5">
-                                        Soon
-                                    </Badge>
-                                )}
-                            </TabsTrigger>
-                        ))}
-                    </TabsList>
+                <div className="flex flex-col gap-4">
+                    {/* Tabs - scrollable on mobile */}
+                    <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                        <TabsList className="w-max sm:w-auto">
+                            {GAMES.map((game) => (
+                                <TabsTrigger
+                                    key={game.id}
+                                    value={game.id}
+                                    disabled={game.status === "coming_soon"}
+                                    className="gap-1.5 text-xs sm:text-sm sm:gap-2"
+                                >
+                                    {game.icon}
+                                    <span className="hidden xs:inline">{game.name}</span>
+                                    <span className="xs:hidden">{game.name.split(' ')[0]}</span>
+                                    {game.status === "coming_soon" && (
+                                        <Badge variant="secondary" className="text-[8px] sm:text-[10px] px-1 sm:px-1.5">
+                                            Soon
+                                        </Badge>
+                                    )}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </div>
 
+                    {/* Reset Button - full width on mobile */}
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button
                                 variant="destructive"
                                 size="sm"
-                                className="gap-2"
+                                className="gap-2 w-full sm:w-auto"
                                 disabled={leaderboard.length === 0 || isResetting}
                             >
-                                <RotateCcw className="h-4 w-4" />
+                                <RotateCcw className={`h-4 w-4 ${isResetting ? "animate-spin" : ""}`} />
                                 Reset Leaderboard
                             </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="mx-4 sm:mx-auto max-w-[calc(100%-2rem)] sm:max-w-md">
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Reset Leaderboard?</AlertDialogTitle>
                                 <AlertDialogDescription>
@@ -277,11 +280,11 @@ export default function AdminGamesPage() {
                                     cannot be undone.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                                <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                     onClick={handleResetLeaderboard}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                     Yes, Reset All Scores
                                 </AlertDialogAction>
