@@ -24,15 +24,15 @@ export const Wrapper = ({ children }: Props) => {
           }}
         >
           <TQueryProvider>
-            <AuthProvider>
-              <RoleBaseRoute>
-                <ThemeProvider attribute="class" defaultTheme="light">
+            <ThemeProvider attribute="class" defaultTheme="light">
+              <AuthProvider>
+                <RoleBaseRoute>
                   <Layout>{children}</Layout>
                   {/* <InstallPrompt /> */}
                   <Toaster richColors position="top-right" />
-                </ThemeProvider>
-              </RoleBaseRoute>
-            </AuthProvider>
+                </RoleBaseRoute>
+              </AuthProvider>
+            </ThemeProvider>
           </TQueryProvider>
         </CookiesProvider>
       </ClerkLoaded>

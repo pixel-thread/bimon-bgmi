@@ -1,4 +1,5 @@
 import "./globals.css";
+import Script from "next/script";
 import { HtmlHead } from "@/src/components/common/html/head";
 import { Wrapper } from "../components/provider/wrapper";
 import { GridGuide } from "../components/common/GridGuide";
@@ -63,6 +64,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <HtmlHead />
       <body className="bg-background text-foreground">
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2651043074081875"
+          crossOrigin="anonymous"
+        />
         <Wrapper>
           {children}
           {/* {process.env.NODE_ENV === "development" && <GridGuide />} */}
