@@ -213,7 +213,7 @@ export function IncomeManagement() {
                             <div>
                                 <p className="text-xs text-muted-foreground">Total Income</p>
                                 <p className="text-2xl font-bold text-emerald-500">
-                                    ₹{(totalFunds.total || 0).toFixed(2)}
+                                    {(totalFunds.total || 0).toFixed(2)} UC
                                 </p>
                             </div>
                         </div>
@@ -229,7 +229,7 @@ export function IncomeManagement() {
                             <div>
                                 <p className="text-xs text-muted-foreground">This Month</p>
                                 <p className="text-2xl font-bold text-blue-500">
-                                    ₹{(totalFunds.income || 0).toFixed(2)}
+                                    {(totalFunds.income || 0).toFixed(2)} UC
                                 </p>
                             </div>
                         </div>
@@ -362,7 +362,7 @@ export function IncomeManagement() {
                                                         </div>
                                                         <div className="flex items-center gap-3 flex-shrink-0">
                                                             <div className="text-lg font-bold text-emerald-500">
-                                                                ₹{transaction.amount.toFixed(2)}
+                                                                {transaction.amount.toFixed(2)} UC
                                                             </div>
                                                             <div className="flex items-center gap-1">
                                                                 <Button
@@ -420,7 +420,7 @@ export function IncomeManagement() {
                                                                     </div>
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="text-sm font-medium text-emerald-500">
-                                                                            ₹{subIncome.amount.toFixed(2)}
+                                                                            {subIncome.amount.toFixed(2)} UC
                                                                         </div>
                                                                         <div className="flex items-center gap-1">
                                                                             <Button
@@ -548,7 +548,7 @@ export function IncomeManagement() {
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <Label htmlFor="amount">Amount (₹)</Label>
+                            <Label htmlFor="amount">Amount (UC)</Label>
                             <Input
                                 id="amount"
                                 type="number"

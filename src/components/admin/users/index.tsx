@@ -14,15 +14,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/src/components/ui/select";
-import { useMemo } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
+import { Input } from "@/src/components/ui/input";
+import { FiSearch, FiX } from "react-icons/fi";
 
 export const AdminUserPage = () => {
   const { columns } = useUserColumns();
-  const search = useSearchParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const page = search.get("page") || "1";
-  const role = search.get("role") || "USER";
+  const page = searchParams.get("page") || "1";
+  const role = searchParams.get("role") || "USER";
+  const searchQuery = searchParams.get("search") || "";
+
+  const [searchInput, setSearchInput] = useState(searchQuery);
 
   const roles = useMemo(
     () => [
@@ -34,18 +39,46 @@ export const AdminUserPage = () => {
     []
   );
 
+  // Debounced search update - only update if value differs from current URL param
+  useEffect(() => {
+    const currentSearch = searchParams.get("search") || "";
+    // Skip update if the input matches the current URL param
+    if (searchInput === currentSearch) return;
+
+    const handler = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (searchInput) {
+        params.set("search", searchInput);
+      } else {
+        params.delete("search");
+      }
+      params.set("page", "1");
+      router.replace(`${pathname}?${params.toString()}`);
+    }, 400);
+
+    return () => clearTimeout(handler);
+  }, [searchInput, pathname, router, searchParams]);
+
   const onChangeRole = (nextRole: string) => {
-    const params = new URLSearchParams(search.toString());
+    const params = new URLSearchParams(searchParams.toString());
     params.set("role", nextRole);
     params.set("page", "1");
     router.replace(`${pathname}?${params.toString()}`);
   };
+
+  const clearSearch = useCallback(() => {
+    setSearchInput("");
+  }, []);
+
   const { data, isFetching } = useQuery({
-    queryKey: ["users", page, role],
-    queryFn: () =>
-      http.get(
-        `${ADMIN_USER_ENDPOINTS.GET_ALL_USER.replace(":page", page || "1")}&role=${role}`
-      ),
+    queryKey: ["users", page, role, searchQuery],
+    queryFn: () => {
+      let url = `${ADMIN_USER_ENDPOINTS.GET_ALL_USER.replace(":page", page || "1")}&role=${role}`;
+      if (searchQuery) {
+        url += `&search=${encodeURIComponent(searchQuery)}`;
+      }
+      return http.get(url);
+    },
   });
   const meta = data?.meta;
   const users = data?.data || [];
@@ -60,7 +93,25 @@ export const AdminUserPage = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="relative flex-1 max-w-md">
+          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search by email..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="pl-9 pr-9"
+          />
+          {searchInput && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            >
+              <FiX className="h-4 w-4 text-muted-foreground" />
+            </button>
+          )}
+        </div>
         <div className="min-w-[220px]">
           <Select value={role} onValueChange={onChangeRole}>
             <SelectTrigger className="w-full">
