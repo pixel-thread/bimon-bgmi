@@ -22,11 +22,13 @@ interface LeaderboardEntry {
 interface GameLeaderboardProps {
     currentPlayerId?: string;
     maxEntries?: number;
+    lastUpdated?: number;
 }
 
 export function GameLeaderboard({
     currentPlayerId,
     maxEntries = 10,
+    lastUpdated,
 }: GameLeaderboardProps) {
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -46,7 +48,7 @@ export function GameLeaderboard({
             }
         };
         fetchLeaderboard();
-    }, [maxEntries]);
+    }, [maxEntries, lastUpdated]);
 
     const getRankIcon = (rank: number) => {
         switch (rank) {
