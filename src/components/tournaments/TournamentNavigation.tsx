@@ -35,7 +35,7 @@ const TournamentNavigation = () => {
 
   // Hide notification when user visits games page
   useEffect(() => {
-    if (pathname === "/tournament/games") {
+    if (pathname.startsWith("/tournament/games")) {
       localStorage.setItem("hasSeenMemoryGame", "true");
       localStorage.setItem("hasSeenSnakeGame", "true");
       setShowMemoryGameNotification(false);
@@ -112,7 +112,10 @@ const TournamentNavigation = () => {
       <div ref={containerRef} className="flex overflow-x-auto scrollbar-hide">
         {navItems.map(
           ({ href, label, icon: Icon, glowing, hasNotification }) => {
-            const isActive = pathname === href;
+            // Use startsWith for games to support nested routes like /tournament/games/memory
+            const isActive = href === "/tournament/games"
+              ? pathname.startsWith(href)
+              : pathname === href;
             const isLoading = isNavigating === href;
 
             return (
@@ -122,27 +125,23 @@ const TournamentNavigation = () => {
                 onClick={() => handleNavigation(href)}
                 disabled={!!isLoading}
                 variant="ghost"
-                className={`px-4 py-3 h-auto font-medium text-sm flex items-center gap-2 whitespace-nowrap transition-all duration-200 relative rounded-none ${
-                  isActive
+                className={`px-4 py-3 h-auto font-medium text-sm flex items-center gap-2 whitespace-nowrap transition-all duration-200 relative rounded-none ${isActive
                     ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-white bg-indigo-50/50 dark:bg-indigo-900/20"
                     : "text-slate-600 hover:text-slate-800 dark:text-white/70 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                } ${
-                  isLoading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
-                }`}
+                  } ${isLoading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                  }`}
               >
                 {isLoading ? (
                   <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <Icon
-                    className={`h-4 w-4 transition-transform duration-200 ${
-                      glowing ? "animate-pulse text-blue-400" : ""
-                    } ${isActive ? "scale-110" : ""}`}
+                    className={`h-4 w-4 transition-transform duration-200 ${glowing ? "animate-pulse text-blue-400" : ""
+                      } ${isActive ? "scale-110" : ""}`}
                   />
                 )}
                 <span
-                  className={`transition-opacity duration-200 ${
-                    isLoading ? "opacity-70" : ""
-                  }`}
+                  className={`transition-opacity duration-200 ${isLoading ? "opacity-70" : ""
+                    }`}
                 >
                   {label}
                 </span>
