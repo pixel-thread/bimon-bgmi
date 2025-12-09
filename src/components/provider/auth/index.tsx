@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }: Props) => {
   if (isSignedIn && !isTokenSet) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-white dark:bg-zinc-950">
-        <LoaderFour text="PUBGMI" />
+        <LoaderFour text="PUBGMI TOURNAMENT" />
       </div>
     );
   }
