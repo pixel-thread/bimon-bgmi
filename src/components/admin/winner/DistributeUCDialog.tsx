@@ -14,7 +14,8 @@ import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
-import { Coins, Loader2, History, User } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/src/components/ui/avatar";
+import { Coins, Loader2, History } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
@@ -27,7 +28,7 @@ type Winner = {
     amount: number;
     isDistributed: boolean;
     recentWinnings?: number; // Total UC won in recent tournaments
-    players?: { id: string; name: string }[];
+    players?: { id: string; name: string; imageUrl?: string | null }[];
 };
 
 type Props = {
@@ -116,20 +117,24 @@ export function DistributeUCDialog({
         0
     );
 
+    const getInitials = (name: string) => {
+        return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Coins className="h-5 w-5 text-green-500" />
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
+                <DialogHeader className="pb-2">
+                    <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+                        <Coins className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                         Distribute UC
                     </DialogTitle>
-                    <DialogDescription>
-                        Distribute UC prizes for individual players in <span className="font-medium">{tournamentName}</span>
+                    <DialogDescription className="text-xs sm:text-sm">
+                        Distribute UC prizes for players in <span className="font-medium">{tournamentName}</span>
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-4">
+                <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
                     {isLoading ? (
                         <div className="flex items-center justify-center py-8">
                             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -138,60 +143,62 @@ export function DistributeUCDialog({
                     ) : (
                         <>
                             {/* Winners with UC Input */}
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                                 {winners.map((winner) => (
                                     <Card key={winner.position} className={`${winner.position === 1 ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/10" : winner.position === 2 ? "border-gray-400 bg-gray-50 dark:bg-gray-800/30" : winner.position === 3 ? "border-orange-400 bg-orange-50 dark:bg-orange-900/10" : ""}`}>
-                                        <CardContent className="p-4">
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <span className="text-2xl">{getMedalEmoji(winner.position)}</span>
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="font-bold text-lg leading-none">
+                                        <CardContent className="p-3 sm:p-4">
+                                            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                                                <span className="text-xl sm:text-2xl">{getMedalEmoji(winner.position)}</span>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                                        <p className="font-bold text-sm sm:text-lg leading-none truncate">
                                                             {winner.teamName}
                                                         </p>
-                                                        <Badge variant="outline" className="text-xs">
-                                                            {getOrdinal(winner.position)} Place
+                                                        <Badge variant="outline" className="text-[10px] sm:text-xs shrink-0">
+                                                            {getOrdinal(winner.position)}
                                                         </Badge>
                                                     </div>
 
                                                     {/* Recent Winnings Info */}
                                                     {winner.recentWinnings !== undefined && winner.recentWinnings > 0 && (
-                                                        <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 mt-1">
-                                                            <History className="h-3 w-3" />
-                                                            Recent team winnings: {winner.recentWinnings} UC
+                                                        <div className="flex items-center gap-1 text-[10px] sm:text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                                            <History className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                                            Recent: {winner.recentWinnings} UC
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
 
                                             {/* Players List */}
-                                            <div className="space-y-2 pl-2">
-                                                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Team Players</Label>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">Team Players</Label>
+                                                <div className="space-y-2">
                                                     {winner.players && winner.players.length > 0 ? (
                                                         winner.players.map(player => (
-                                                            <div key={player.id} className="flex items-center gap-2 bg-background p-2 rounded-md border shadow-sm">
-                                                                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                                                                    <User className="h-4 w-4 text-muted-foreground" />
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="text-sm font-medium truncate">{player.name}</p>
-                                                                </div>
-                                                                <div className="flex items-center gap-1">
+                                                            <div key={player.id} className="flex items-center gap-2 sm:gap-3 bg-background p-2 sm:p-2.5 rounded-md border shadow-sm">
+                                                                <Avatar className="h-8 w-8 sm:h-9 sm:w-9 shrink-0">
+                                                                    {player.imageUrl ? (
+                                                                        <AvatarImage src={player.imageUrl} alt={player.name} />
+                                                                    ) : null}
+                                                                    <AvatarFallback className="text-[10px] sm:text-xs bg-muted">
+                                                                        {getInitials(player.name)}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <div className="flex items-center gap-1 flex-1">
                                                                     <Input
                                                                         type="number"
-                                                                        placeholder="0"
+                                                                        placeholder={player.name}
                                                                         value={playerAmounts[player.id] || ""}
                                                                         onChange={(e) => updatePlayerAmount(player.id, e.target.value)}
-                                                                        className="w-20 h-8 text-sm text-right pr-1"
+                                                                        className="flex-1 h-7 sm:h-8 text-xs sm:text-sm text-right pr-1"
                                                                         min="0"
                                                                     />
-                                                                    <span className="text-xs text-muted-foreground w-4">UC</span>
+                                                                    <span className="text-base sm:text-lg font-bold text-primary shrink-0">UC</span>
                                                                 </div>
                                                             </div>
                                                         ))
                                                     ) : (
-                                                        <p className="text-sm text-muted-foreground col-span-2">No players found in this team.</p>
+                                                        <p className="text-xs sm:text-sm text-muted-foreground">No players found in this team.</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -201,9 +208,9 @@ export function DistributeUCDialog({
                             </div>
 
                             {/* Total Summary */}
-                            <div className="flex items-center justify-between bg-muted/50 p-4 rounded-lg sticky bottom-0 border-t backdrop-blur-sm">
-                                <span className="text-sm font-medium">Total UC to distribute:</span>
-                                <Badge variant="default" className="text-lg font-bold bg-green-600 hover:bg-green-700">
+                            <div className="flex items-center justify-between bg-muted/50 p-3 sm:p-4 rounded-lg sticky bottom-0 border-t backdrop-blur-sm">
+                                <span className="text-xs sm:text-sm font-medium">Total UC to distribute:</span>
+                                <Badge variant="default" className="text-sm sm:text-lg font-bold bg-green-600 hover:bg-green-700">
                                     {totalUC} UC
                                 </Badge>
                             </div>
@@ -211,14 +218,14 @@ export function DistributeUCDialog({
                     )}
                 </div>
 
-                <DialogFooter className="gap-2">
-                    <Button variant="outline" onClick={handleClose} disabled={isPending}>
+                <DialogFooter className="gap-2 flex-col sm:flex-row">
+                    <Button variant="outline" onClick={handleClose} disabled={isPending} className="w-full sm:w-auto">
                         Cancel
                     </Button>
                     <Button
                         onClick={handleSubmit}
                         disabled={isPending || winners.length === 0 || totalUC === 0}
-                        className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                        className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
                     >
                         {isPending ? (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
