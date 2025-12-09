@@ -2,9 +2,11 @@ import { prisma } from "@/src/lib/db/prisma";
 import { shuffle } from "@/src/utils/shuffle";
 import {
     assignPlayersToTeamsBalanced,
+    createBalancedDuos,
     analyzeTeamBalance,
+    TeamStats,
 } from "@/src/utils/teamBalancer";
-import { computeWeightedScore } from "@/src/utils/scoreUtil";
+import { computeWeightedScore, PlayerWithWins } from "@/src/utils/scoreUtil";
 import { PlayerWithWeightT } from "@/src/types/player";
 
 type Props = {
@@ -22,6 +24,8 @@ export type TeamPreviewPlayer = {
     kills: number;
     deaths: number;
     kd: number;
+    category?: string;
+    recentWins?: number;
 };
 
 export type TeamPreview = {
@@ -40,6 +44,59 @@ export type PreviewTeamsByPollsResult = {
     tournamentName: string;
     totalPlayersEligible: number;
 };
+
+/**
+ * Query recent wins (1st & 2nd place) in last N tournaments for given players.
+ * Returns map of playerId -> win points (1st=2pts, 2nd=1pt)
+ */
+async function getPlayerRecentWins(
+    playerIds: string[],
+    seasonId: string,
+    limit: number = 6
+): Promise<Map<string, number>> {
+    const recentWins = new Map<string, number>();
+
+    if (playerIds.length === 0) return recentWins;
+
+    // Get recent tournaments in the season
+    const recentTournaments = await prisma.tournament.findMany({
+        where: { seasonId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        select: { id: true },
+    });
+
+    const tournamentIds = recentTournaments.map(t => t.id);
+    if (tournamentIds.length === 0) return recentWins;
+
+    // Get winners for these tournaments (position 1 or 2)
+    const winners = await prisma.tournamentWinner.findMany({
+        where: {
+            tournamentId: { in: tournamentIds },
+            position: { in: [1, 2] },
+        },
+        include: {
+            team: {
+                include: {
+                    players: { select: { id: true } },
+                },
+            },
+        },
+    });
+
+    // Count wins per player (1st = 2 points, 2nd = 1 point)
+    for (const winner of winners) {
+        const points = winner.position === 1 ? 2 : 1;
+        for (const player of winner.team.players) {
+            if (playerIds.includes(player.id)) {
+                const current = recentWins.get(player.id) ?? 0;
+                recentWins.set(player.id, current + points);
+            }
+        }
+    }
+
+    return recentWins;
+}
 
 export async function previewTeamsByPolls({
     groupSize,
@@ -82,12 +139,13 @@ export async function previewTeamsByPolls({
         playerBalanceMap.set(p.id, p.uc?.balance ?? 0);
     });
 
-    // Track players with insufficient balance if entry fee is required
+
+    // Track players with insufficient balance (for info only - no longer excluded)
     const playersWithInsufficientBalance: { id: string; userName: string; balance: number }[] = [];
 
     if (entryFee > 0) {
-        // Filter out players who don't have enough UC balance
-        const eligiblePlayers = players.filter((p) => {
+        // Just track players with low balance for display purposes
+        players.forEach((p) => {
             const balance = p.uc?.balance ?? 0;
             if (balance < entryFee) {
                 playersWithInsufficientBalance.push({
@@ -95,11 +153,9 @@ export async function previewTeamsByPolls({
                     userName: p.user.userName,
                     balance,
                 });
-                return false;
             }
-            return true;
         });
-        players = eligiblePlayers;
+        // Note: Players are no longer excluded - they can still participate
     }
 
     // Fetch eligible players who voted in the poll and are not banned
@@ -107,70 +163,86 @@ export async function previewTeamsByPolls({
         throw new Error("No eligible players found for this poll.");
     }
 
-    // Filter players who voted SOLO
+    // Get recent wins for all players (last 6 tournaments)
+    const recentWinsMap = await getPlayerRecentWins(
+        players.map(p => p.id),
+        seasonId,
+        6
+    );
+
+    // Filter players who voted SOLO - they will ALWAYS be solo
     const playersWhoVotedSolo = players.filter((p) =>
         p.playerPollVote.some((vote) => vote.vote === "SOLO"),
     );
 
-    // Compute weighted scores
-    const playersWithScore: PlayerWithWeightT[] = players.map((p) => ({
-        ...p,
-        // @ts-expect-error weightedScore is added at runtime
-        weightedScore: computeWeightedScore(p),
-    }));
+    // Compute weighted scores with recent wins
+    const playersWithScore: (PlayerWithWeightT & { recentWins: number })[] = players.map((p) => {
+        const recentWins = recentWinsMap.get(p.id) ?? 0;
+        const playerWithWins: PlayerWithWins = { ...p, recentWins };
+        return {
+            ...p,
+            recentWins,
+            weightedScore: computeWeightedScore(playerWithWins, seasonId),
+        };
+    });
 
-    const remainder = playersWithScore.length % groupSize;
+    // Separate solo voters from team players
+    const soloPlayers: typeof playersWithScore = [];
+    let playersForTeams: typeof playersWithScore = [];
 
-    let soloPlayer: PlayerWithWeightT | null = null;
-    let playersForTeams: PlayerWithWeightT[] = [];
-
-    if (remainder === 1 && groupSize > 1 && playersWhoVotedSolo.length > 0) {
-        // Sort solo voters by KD descending
-        const soloWithScores = playersWithScore.filter((p) =>
-            playersWhoVotedSolo.some((solo) => solo.id === p.id),
-        );
-
-        soloWithScores.sort((a, b) => {
-            const getKD = (player: typeof a) => {
-                const stats = player.playerStats.find((p) => p.seasonId === seasonId);
-                if (stats?.deaths && stats?.deaths > 0) {
-                    return stats?.kills / stats?.deaths;
-                }
-                return (
-                    player.playerStats.find((p) => p.seasonId === seasonId)?.kills ?? 0
-                );
-            };
-            return getKD(b) - getKD(a);
-        });
-
-        soloPlayer = soloWithScores[0];
-
-        // Exclude the solo player from team groupings
-        playersForTeams = playersWithScore.filter((p) => p.id !== soloPlayer!.id);
-    } else {
-        playersForTeams = playersWithScore;
+    // All SOLO voters go to solo teams
+    for (const p of playersWithScore) {
+        if (playersWhoVotedSolo.some((solo) => solo.id === p.id)) {
+            soloPlayers.push(p);
+        } else {
+            playersForTeams.push(p);
+        }
     }
 
-    // Sort by weighted score descending
+    // Sort remaining players by weighted score descending
     playersForTeams.sort((a, b) => b.weightedScore - a.weightedScore);
 
+    // Check for odd number of players (when groupSize > 1)
+    // If odd, the highest-scoring player becomes a solo leftover
+    if (groupSize > 1 && playersForTeams.length % groupSize !== 0) {
+        const leftoverCount = playersForTeams.length % groupSize;
+        // Take the highest-scoring leftover players and make them solo
+        for (let i = 0; i < leftoverCount; i++) {
+            const leftover = playersForTeams.shift(); // Take from front (highest scores)
+            if (leftover) {
+                soloPlayers.push(leftover);
+            }
+        }
+    }
+
     const teamCount = Math.floor(playersForTeams.length / groupSize);
-    if (teamCount === 0) throw new Error("Not enough players to form teams.");
+    if (teamCount === 0 && soloPlayers.length === 0) {
+        throw new Error("Not enough players to form teams.");
+    }
 
-    // Assign balanced teams
-    let teams = assignPlayersToTeamsBalanced(
-        playersForTeams,
-        teamCount,
-        groupSize,
-    );
+    // Use duo pair optimization for groupSize 2, snake draft otherwise
+    let teams: TeamStats[] = [];
+    if (teamCount > 0) {
+        if (groupSize === 2) {
+            // Duo mode: pair strongest with weakest for balanced teams
+            teams = createBalancedDuos(playersForTeams as unknown as PlayerWithWeightT[], seasonId);
+        } else {
+            // Squad/Solo mode: use snake draft
+            teams = assignPlayersToTeamsBalanced(
+                playersForTeams as unknown as PlayerWithWeightT[],
+                teamCount,
+                groupSize,
+            );
+        }
+    }
 
-    // Include solo player team if present
-    if (soloPlayer) {
+    // Add all solo players as individual teams
+    for (const soloPlayer of soloPlayers) {
         const soloStats = soloPlayer.playerStats.find(
             (p) => p.seasonId === seasonId,
         );
         teams.push({
-            players: [soloPlayer],
+            players: [soloPlayer as unknown as PlayerWithWeightT],
             totalKills: soloStats?.kills ?? 0,
             totalDeaths: soloStats?.deaths ?? 0,
             totalWins: 0,
@@ -191,6 +263,8 @@ export async function previewTeamsByPolls({
             const kills = stats?.kills ?? 0;
             const deaths = stats?.deaths ?? 1;
             const kd = deaths > 0 ? kills / deaths : kills;
+            // @ts-expect-error recentWins added at runtime
+            const recentWins = p.recentWins ?? 0;
 
             return {
                 id: p.id,
@@ -199,6 +273,7 @@ export async function previewTeamsByPolls({
                 kills,
                 deaths,
                 kd: Math.round(kd * 100) / 100,
+                recentWins,
             };
         });
 

@@ -26,20 +26,5 @@ export function calculatePlayerPoints(position: number, kills: number): number {
   return positionPoints + killPoints;
 }
 
-export function getKdRank(kills: number, deaths: number): string {
-  const kdRatio = kills / deaths;
-
-  if (kdRatio >= 1.7) {
-    return "legend";
-  } else if (kdRatio >= 1.5) {
-    return "ultra pro";
-  } else if (kdRatio >= 1.0) {
-    return "pro";
-  } else if (kdRatio >= 0.5) {
-    return "noob";
-  } else if (kdRatio >= 0.2) {
-    return "ultra noob";
-  } else {
-    return "bot";
-  }
-}
+// Re-export from unified category utils for backward compatibility
+export { getKdRank } from "./categoryUtils";

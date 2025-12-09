@@ -59,6 +59,44 @@ export function assignPlayersToTeamsBalanced(
 }
 
 /**
+ * Creates balanced duo teams by pairing strongest with weakest players.
+ * This results in more even team total scores than snake draft.
+ */
+export function createBalancedDuos(
+  players: PlayerWithStatsT[],
+  seasonId?: string,
+): TeamStats[] {
+  // Sort by weighted score descending
+  const sorted = [...players].sort((a, b) => {
+    // @ts-expect-error weightedScore is added at runtime
+    return (b.weightedScore ?? 0) - (a.weightedScore ?? 0);
+  });
+
+  const teams: TeamStats[] = [];
+  const half = Math.floor(sorted.length / 2);
+
+  // Pair highest with lowest
+  for (let i = 0; i < half; i++) {
+    const strong = sorted[i];
+    const weak = sorted[sorted.length - 1 - i];
+
+    const strongStats = strong.playerStats.find((p) => p.seasonId === seasonId);
+    const weakStats = weak.playerStats.find((p) => p.seasonId === seasonId);
+
+    teams.push({
+      players: [strong, weak],
+      totalKills: (strongStats?.kills ?? 0) + (weakStats?.kills ?? 0),
+      totalDeaths: (strongStats?.deaths ?? 0) + (weakStats?.deaths ?? 0),
+      totalWins: 0,
+      // @ts-expect-error weightedScore is added at runtime
+      weightedScore: (strong.weightedScore ?? 0) + (weak.weightedScore ?? 0),
+    });
+  }
+
+  return teams;
+}
+
+/**
  * Checks how balanced the teams are based on weighted scores.
  */
 export function analyzeTeamBalance(teams: TeamStats[]): void {

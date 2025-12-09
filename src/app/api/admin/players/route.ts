@@ -7,6 +7,7 @@ import { SuccessResponse } from "@/src/utils/next-response";
 import { getMeta } from "@/src/utils/pagination/getMeta";
 import { NextRequest } from "next/server";
 import { clientClerk } from "@/src/lib/clerk/client";
+import { getKdRank } from "@/src/utils/categoryUtils";
 
 type PaginateProps = {
   array: any[];
@@ -18,25 +19,6 @@ function paginate({ array, pageSize, pageNumber }: PaginateProps) {
   const startIndex = (pageNumber - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   return array.slice(startIndex, endIndex);
-}
-
-// Example usage
-function getKdRank(kills: number, deaths: number): string {
-  const kdRatio = kills / deaths;
-
-  if (kdRatio >= 1.7) {
-    return "legend";
-  } else if (kdRatio >= 1.5) {
-    return "ultra pro";
-  } else if (kdRatio >= 1.0) {
-    return "pro";
-  } else if (kdRatio >= 0.5) {
-    return "noob";
-  } else if (kdRatio >= 0.2) {
-    return "ultra noob";
-  } else {
-    return "bot";
-  }
 }
 
 export async function GET(req: NextRequest) {
