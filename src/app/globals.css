@@ -135,7 +135,8 @@ link[rel="icon"],
 link[rel="shortcut icon"],
 link[rel="apple-touch-icon"],
 link[rel="mask-icon"] {
-  border-radius: 4px; /* Adjust this value for more/less rounding */
+  border-radius: 4px;
+  /* Adjust this value for more/less rounding */
   overflow: hidden;
 }
 
@@ -199,8 +200,7 @@ link[rel="mask-icon"] {
   }
 
   .pixel-border {
-    border-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="0" y="0" width="100" height="100" fill="none" stroke="%23000" stroke-width="2" stroke-dasharray="4,4"/></svg>')
-      2;
+    border-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="0" y="0" width="100" height="100" fill="none" stroke="%23000" stroke-width="2" stroke-dasharray="4,4"/></svg>') 2;
   }
 
   /* Removed marquee animations - keeping text styling only */
@@ -234,14 +234,18 @@ link[rel="mask-icon"] {
   }
 
   input[type="number"].no-spinner {
-    -moz-appearance: textfield !important; /* Firefox */
+    -moz-appearance: textfield !important;
+    /* Firefox */
   }
 }
+
 @keyframes float {
+
   0%,
   100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -251,6 +255,7 @@ link[rel="mask-icon"] {
   0% {
     transform: translateX(-100%) skewX(-12deg);
   }
+
   100% {
     transform: translateX(200%) skewX(-12deg);
   }
@@ -295,6 +300,7 @@ link[rel="mask-icon"] {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
 /* Card flip animations */
 .transform-style-preserve-3d {
   transform-style: preserve-3d;
@@ -308,11 +314,35 @@ link[rel="mask-icon"] {
   transform: rotateY(180deg);
 }
 
+/* Card shuffle animation - dramatic randomizing effect */
+@keyframes shuffle {
+  0% {
+    transform: translateX(0) translateY(0) rotate(0deg) scale(1);
+  }
+
+  25% {
+    transform: translateX(var(--shuffle-x, 10px)) translateY(var(--shuffle-y, -15px)) rotate(var(--shuffle-r, 5deg)) scale(0.9);
+  }
+
+  50% {
+    transform: translateX(calc(var(--shuffle-x, 10px) * -1)) translateY(var(--shuffle-y, 10px)) rotate(calc(var(--shuffle-r, 5deg) * -1)) scale(0.85);
+  }
+
+  75% {
+    transform: translateX(var(--shuffle-x, -5px)) translateY(calc(var(--shuffle-y, -10px) * -0.5)) rotate(var(--shuffle-r, 3deg)) scale(0.95);
+  }
+
+  100% {
+    transform: translateX(0) translateY(0) rotate(0deg) scale(1);
+  }
+}
+
 /* Shimmer animation */
 @keyframes shimmer {
   0% {
     transform: translateX(-100%) skewX(-12deg);
   }
+
   100% {
     transform: translateX(200%) skewX(-12deg);
   }
@@ -347,10 +377,12 @@ link[rel="mask-icon"] {
 
 /* Particle animations */
 @keyframes float {
+
   0%,
   100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -371,13 +403,16 @@ link[rel="mask-icon"] {
 
 /* Smooth horizontal scrolling for podium */
 .scrollbar-hide {
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  /* Internet Explorer 10+ */
+  scrollbar-width: none;
+  /* Firefox */
   scroll-behavior: smooth;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none; /* Safari and Chrome */
+  display: none;
+  /* Safari and Chrome */
 }
 
 /* Enhanced smooth scrolling */
@@ -403,6 +438,7 @@ link[rel="mask-icon"] {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
