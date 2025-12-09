@@ -3,6 +3,7 @@ import { getTournamentWinners } from "@/src/services/winner/getTournamentWinners
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
+import { clerkClient } from "@clerk/nextjs/server";
 
 export async function POST(req: Request) {
   try {
@@ -22,6 +23,33 @@ export async function POST(req: Request) {
       where: { team: { seasonId: body.seasonId } },
     });
 
+    // Collect all unique clerkIds from players
+    const allClerkIds = new Set<string>();
+    tournamentWinners.forEach((winner) => {
+      winner.team.players.forEach((player) => {
+        if (player.user?.clerkId) {
+          allClerkIds.add(player.user.clerkId);
+        }
+      });
+    });
+
+    // Fetch Clerk user images in batch
+    const clerkUserMap = new Map<string, string | null>();
+    if (allClerkIds.size > 0) {
+      try {
+        const clientClerk = await clerkClient();
+        const clerkUsers = await clientClerk.users.getUserList({
+          userId: Array.from(allClerkIds),
+          limit: 100,
+        });
+        clerkUsers.data.forEach((user) => {
+          clerkUserMap.set(user.id, user.imageUrl || null);
+        });
+      } catch (error) {
+        console.error("Failed to fetch Clerk users:", error);
+      }
+    }
+
     const rawData = tournamentWinners.map((winner) => {
       return {
         id: winner.id,
@@ -38,6 +66,9 @@ export async function POST(req: Request) {
         players: winner.team.players.map((player) => ({
           id: player.id,
           name: player.user.userName,
+          imageUrl: player.user?.clerkId
+            ? clerkUserMap.get(player.user.clerkId) || null
+            : null,
         })),
       };
     });
