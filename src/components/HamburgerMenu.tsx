@@ -33,16 +33,15 @@ export default function HamburgerMenu() {
   const handleSignOut = async () => {
     setIsSigningOut(true);
     setIsOpen(false);
-    // Navigate away from protected route first to avoid RoleBaseRouting redirect
-    window.location.href = "/";
-    // Small delay to ensure navigation starts before sign out
-    setTimeout(async () => {
-      try {
-        await signOut();
-      } catch (error) {
-        console.error("Error signing out:", error);
-      }
-    }, 100);
+    try {
+      // Sign out first, then redirect
+      await signOut();
+      // Force redirect to home after sign out completes
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Error signing out:", error);
+      setIsSigningOut(false);
+    }
   };
 
   return (
