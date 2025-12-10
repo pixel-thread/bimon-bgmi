@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { usePendingUCRequests } from "@/src/hooks/uc/usePendingUCRequests";
 import { FiMenu, FiX, FiLogIn, FiLogOut, FiSun, FiMoon } from "react-icons/fi";
-import { UserAvatar, SignOutButton } from "@clerk/nextjs";
+import { UserAvatar, useClerk } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
 
 export default function HamburgerMenu() {
@@ -15,6 +15,7 @@ export default function HamburgerMenu() {
   const router = useRouter();
   const { isSignedIn: isAuthorized, user: playerUser } = useAuth();
   const { hasPendingRequests } = usePendingUCRequests();
+  const { signOut } = useClerk();
   const { theme, setTheme } = useTheme();
   const onToggleTheme = () => {
     if (theme === "light") {
@@ -27,6 +28,21 @@ export default function HamburgerMenu() {
   const handleLogin = () => {
     setIsOpen(false);
     router.push("/auth");
+  };
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    setIsOpen(false);
+    // Navigate away from protected route first to avoid RoleBaseRouting redirect
+    window.location.href = "/";
+    // Small delay to ensure navigation starts before sign out
+    setTimeout(async () => {
+      try {
+        await signOut();
+      } catch (error) {
+        console.error("Error signing out:", error);
+      }
+    }, 100);
   };
 
   return (
@@ -211,20 +227,18 @@ export default function HamburgerMenu() {
                         {playerUser.role === "PLAYER" ? "Player" : "Admin"}
                       </p>
                       {/* Sign Out Button */}
-                      <SignOutButton redirectUrl="/">
-                        <button
-                          onClick={() => setIsSigningOut(true)}
-                          disabled={isSigningOut}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          {isSigningOut ? (
-                            <div className="h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <FiLogOut className="h-5 w-5" />
-                          )}
-                          {isSigningOut ? "Signing out..." : "Sign Out"}
-                        </button>
-                      </SignOutButton>
+                      <button
+                        onClick={handleSignOut}
+                        disabled={isSigningOut}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        {isSigningOut ? (
+                          <div className="h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <FiLogOut className="h-5 w-5" />
+                        )}
+                        {isSigningOut ? "Signing out..." : "Sign Out"}
+                      </button>
                     </div>
                   )}
                 </nav>
