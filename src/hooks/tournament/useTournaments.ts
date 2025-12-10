@@ -22,7 +22,12 @@ export function useTournaments() {
   return useQuery({
     queryKey: ["tournaments", seasonId],
     queryFn: async () => await http.get<TournamentT[]>(url),
-    select: (data) => data.data,
+    select: (data) => {
+      // Natural sort: properly handles numbers in names (e.g., "1, 2, 10" instead of "1, 10, 2")
+      return data.data?.sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+      );
+    },
     enabled: !!seasonId,
     refetchOnWindowFocus: false,
   });

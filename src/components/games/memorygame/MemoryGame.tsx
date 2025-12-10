@@ -560,18 +560,20 @@ export function MemoryGame() {
               <span className="hidden sm:inline">Leaderboard</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Leaderboard</DialogTitle>
             </DialogHeader>
-            <Suspense fallback={<LeaderboardSkeleton />}>
-              <GameLeaderboard
-                currentPlayerId={playerId}
-                maxEntries={10}
-                lastUpdated={leaderboardUpdate}
-                preloadedData={leaderboardData.length > 0 ? leaderboardData : undefined}
-              />
-            </Suspense>
+            <div className="overflow-y-auto flex-1 -mx-6 px-6">
+              <Suspense fallback={<LeaderboardSkeleton />}>
+                <GameLeaderboard
+                  currentPlayerId={playerId}
+                  maxEntries={10}
+                  lastUpdated={leaderboardUpdate}
+                  preloadedData={leaderboardData.length > 0 ? leaderboardData : undefined}
+                />
+              </Suspense>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
