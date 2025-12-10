@@ -6,14 +6,17 @@ import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs";
-import { UserProfile } from "@clerk/nextjs";
+import { Skeleton } from "@/src/components/ui/skeleton";
+import { ProfileSettings } from "@/src/components/profile/ProfileSettings";
 import {
     Bell, Check, X, ArrowUpRight, ArrowDownLeft, Clock, DollarSign,
     User, Target, Skull, Swords, TrendingUp, Settings
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import { useUser } from "@clerk/nextjs";
 import { formatDistanceToNow } from "date-fns";
+import Image from "next/image";
 
 type UCTransfer = {
     id: string;
@@ -45,10 +48,15 @@ type PlayerStats = {
 };
 
 export default function ProfilePage() {
-    const { user } = useAuth();
+    const { user, isAuthLoading } = useAuth();
+    const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
     const queryClient = useQueryClient();
     const playerId = user?.playerId || user?.player?.id;
     const userBalance = user?.player?.uc?.balance || 0;
+    const profileImageUrl = clerkUser?.imageUrl;
+
+    // Loading state
+    const isPageLoading = isAuthLoading || !isClerkLoaded;
 
     // Fetch player stats
     const { data: statsData, isLoading: statsLoading } = useQuery({
@@ -140,6 +148,61 @@ export default function ProfilePage() {
         }
     };
 
+    // Show skeleton while loading
+    if (isPageLoading) {
+        return (
+            <div className="container mx-auto px-4 py-8 space-y-6">
+                {/* Header skeleton */}
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-16 w-16 rounded-full" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-48" />
+                        <Skeleton className="h-4 w-32" />
+                    </div>
+                </div>
+
+                {/* Tabs skeleton */}
+                <Skeleton className="h-10 w-full max-w-md" />
+
+                {/* Stats grid skeleton */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[...Array(4)].map((_, i) => (
+                        <Card key={i}>
+                            <CardContent className="p-4">
+                                <Skeleton className="h-4 w-20 mb-2" />
+                                <Skeleton className="h-8 w-16" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+
+                {/* Additional stats skeleton */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[...Array(3)].map((_, i) => (
+                        <Card key={i}>
+                            <CardContent className="p-4">
+                                <Skeleton className="h-4 w-24 mb-2" />
+                                <Skeleton className="h-8 w-20" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+
+                {/* Notifications skeleton */}
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-6 w-32" />
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {[...Array(3)].map((_, i) => (
+                            <Skeleton key={i} className="h-16 w-full" />
+                        ))}
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
     // Show login message if no user at all
     if (!user) {
         return (
@@ -171,9 +234,19 @@ export default function ProfilePage() {
         <div className="container mx-auto px-4 py-8 space-y-6">
             {/* Header with User Info */}
             <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-2xl font-bold text-primary-foreground">
-                    {user.userName?.charAt(0).toUpperCase()}
-                </div>
+                {profileImageUrl ? (
+                    <Image
+                        src={profileImageUrl}
+                        alt={user.userName || "Profile"}
+                        width={64}
+                        height={64}
+                        className="h-16 w-16 rounded-full object-cover"
+                    />
+                ) : (
+                    <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-2xl font-bold text-primary-foreground">
+                        {user.userName?.charAt(0).toUpperCase()}
+                    </div>
+                )}
                 <div>
                     <h1 className="text-3xl font-bold">{user.userName}</h1>
                     <p className="text-muted-foreground">{user.email || "No email linked"}</p>
@@ -447,27 +520,7 @@ export default function ProfilePage() {
 
                 {/* Account Settings Tab */}
                 <TabsContent value="account" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Account Settings</CardTitle>
-                            <p className="text-sm text-muted-foreground">
-                                Manage your account details, update your username, email, and security settings.
-                            </p>
-                        </CardHeader>
-                        <CardContent className="flex justify-center">
-                            <UserProfile
-                                routing="hash"
-                                appearance={{
-                                    elements: {
-                                        rootBox: "w-full",
-                                        card: "shadow-none border-0 w-full",
-                                        navbar: "hidden",
-                                        pageScrollBox: "p-0",
-                                    },
-                                }}
-                            />
-                        </CardContent>
-                    </Card>
+                    <ProfileSettings />
                 </TabsContent>
             </Tabs>
         </div>
