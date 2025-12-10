@@ -87,14 +87,6 @@ export function PollCard({
 
     return (
         <Card className="border bg-card hover:shadow-sm transition-shadow">
-            {/* Status indicator strip */}
-            <div
-                className={`absolute top-0 left-0 w-full h-0.5 ${poll.isActive
-                    ? "bg-emerald-500"
-                    : "bg-muted"
-                    }`}
-            />
-
             <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -108,6 +100,11 @@ export function PollCard({
                             <Badge variant="outline" className="shrink-0">
                                 {poll.tournament?.name || "No Tournament"}
                             </Badge>
+                            {poll.days && (
+                                <Badge variant="secondary" className="shrink-0 text-xs">
+                                    {poll.days}
+                                </Badge>
+                            )}
                         </div>
                         <CardTitle className="text-base font-medium line-clamp-2">
                             {poll.question}
