@@ -8,8 +8,8 @@ type Props = {
 };
 
 /**
- * Creates a match and processes all teams synchronously.
- * This ensures all team stats are ready by the time the response is returned.
+ * Creates a match and processes all teams in parallel for optimal performance.
+ * Uses batch operations to minimize database round-trips.
  */
 export async function createMatch({ data }: Props) {
   // Create match
@@ -29,69 +29,72 @@ export async function createMatch({ data }: Props) {
     },
   });
 
-  // Process each team
-  for (const team of teams) {
-    await prisma.$transaction(async (tx) => {
-      // Create TeamStats
-      const teamStats = await tx.teamStats.create({
-        data: {
-          teamId: team.id,
-          matchId: match.id,
-          seasonId: data.seasonId,
-          tournamentId: data.tournamentId,
-        },
-      });
+  // Process all teams in parallel for better performance
+  await Promise.all(
+    teams.map(async (team) => {
+      await prisma.$transaction(async (tx) => {
+        // Create TeamStats
+        const teamStats = await tx.teamStats.create({
+          data: {
+            teamId: team.id,
+            matchId: match.id,
+            seasonId: data.seasonId,
+            tournamentId: data.tournamentId,
+          },
+        });
 
-      // Connect team to match
-      await tx.team.update({
-        where: { id: team.id },
-        data: { matches: { connect: { id: match.id } } },
-      });
+        // Connect team to match
+        await tx.team.update({
+          where: { id: team.id },
+          data: { matches: { connect: { id: match.id } } },
+        });
 
-      if (team.players && team.players.length > 0) {
-        const playerIds = team.players.map((p) => p.id);
+        if (team.players && team.players.length > 0) {
+          const playerIds = team.players.map((p) => p.id);
 
-        // Bulk create teamPlayerStats and matchPlayerPlayed
-        await Promise.all([
-          tx.teamPlayerStats.createMany({
-            data: playerIds.map((playerId) => ({
-              teamId: team.id,
-              matchId: match.id,
-              seasonId: data.seasonId,
-              playerId,
-              teamStatsId: teamStats.id,
-              kills: 0,
-              deaths: 1,
-            })),
-          }),
-          tx.matchPlayerPlayed.createMany({
-            data: playerIds.map((playerId) => ({
-              matchId: match.id,
-              playerId,
-              tournamentId: data.tournamentId,
-              seasonId: data.seasonId,
-              teamId: team.id,
-            })),
-          }),
-        ]);
-
-        // Update players
-        for (const playerId of playerIds) {
-          await tx.player.update({
-            where: { id: playerId },
-            data: { matches: { connect: { id: match.id } } },
-          });
-          await tx.playerStats.upsert({
-            where: {
-              seasonId_playerId: { playerId, seasonId: data.seasonId },
-            },
-            create: { playerId, seasonId: data.seasonId, kills: 0, deaths: 1 },
-            update: { deaths: { increment: 1 } },
-          });
+          // Bulk create teamPlayerStats, matchPlayerPlayed, and connect players in parallel
+          await Promise.all([
+            tx.teamPlayerStats.createMany({
+              data: playerIds.map((playerId) => ({
+                teamId: team.id,
+                matchId: match.id,
+                seasonId: data.seasonId,
+                playerId,
+                teamStatsId: teamStats.id,
+                kills: 0,
+                deaths: 1,
+              })),
+            }),
+            tx.matchPlayerPlayed.createMany({
+              data: playerIds.map((playerId) => ({
+                matchId: match.id,
+                playerId,
+                tournamentId: data.tournamentId,
+                seasonId: data.seasonId,
+                teamId: team.id,
+              })),
+            }),
+            // Process all player updates in parallel instead of sequentially
+            ...playerIds.map((playerId) =>
+              tx.player.update({
+                where: { id: playerId },
+                data: { matches: { connect: { id: match.id } } },
+              })
+            ),
+            ...playerIds.map((playerId) =>
+              tx.playerStats.upsert({
+                where: {
+                  seasonId_playerId: { playerId, seasonId: data.seasonId },
+                },
+                create: { playerId, seasonId: data.seasonId, kills: 0, deaths: 1 },
+                update: { deaths: { increment: 1 } },
+              })
+            ),
+          ]);
         }
-      }
-    });
-  }
+      });
+    })
+  );
 
   return match;
 }
