@@ -188,16 +188,18 @@ Player names to match: ${teams.flatMap(t => t.players.map(p => p.name)).join(", 
 Teams and their players:
 ${teams.map(t => `- ${t.name}: ${t.players.map(p => p.name).join(", ")}`).join("\n")}
 
-Custom name mappings (use these exact names in output):
-- Zsyiem = sing
-
 IMPORTANT:
 - Position = the rank number shown next to each team (1, 2, 3, etc.)
 - The crown icon = position 1
 - Players in the same row belong to the same team
 - If uploading multiple images, combine ALL results into ONE JSON array
 
-Return ONLY JSON: [{"name": "player_name", "kills": 0, "position": 1}, ...]`;
+Return format:
+[{"name": "player_name", "kills": 0, "position": 1}, ...]
+
+After the JSON, list:
+Missing players (from list but not in scoreboard): player1, player2
+New players (in scoreboard but not in list): new_player1, new_player2`;
 
         navigator.clipboard.writeText(prompt);
         toast.success("Prompt copied to clipboard!");
