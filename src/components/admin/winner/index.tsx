@@ -14,7 +14,7 @@ import { Trophy, Medal, Users, Coins, Check } from "lucide-react";
 import { Button } from "../../ui/button";
 import { Badge } from "../../ui/badge";
 import { DistributeUCDialog } from "./DistributeUCDialog";
-import { useActiveSeason } from "@/src/hooks/season/useActiveSeason";
+import { useAppContext } from "@/src/hooks/context/useAppContext";
 
 type TournamentResult = {
   tournamentId: string;
@@ -119,7 +119,7 @@ const recentTournamentColumns: ColumnDef<RecentTournament>[] = [
 
 export const AdminWinnerPage = () => {
   const { seasonId, setSeasonId } = useSeasonStore();
-  const { data: activeSeason, isLoading: isActiveSeasonLoading } = useActiveSeason();
+  const { activeSeason, isLoading: isActiveSeasonLoading } = useAppContext();
 
   useEffect(() => {
     if (!seasonId && activeSeason?.id) {

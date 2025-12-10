@@ -15,7 +15,7 @@ import { Ternary } from "./common/Ternary";
 import { SelectGroup } from "@radix-ui/react-select";
 import { useTournamentStore } from "../store/tournament";
 import { useMatchStore } from "../store/match/useMatchStore";
-import { useActiveSeason } from "../hooks/season/useActiveSeason";
+import { useAppContext } from "../hooks/context/useAppContext";
 import { useAuth } from "../hooks/context/auth/useAuth";
 import { CreateSeasonDialog } from "./admin/season/create-season-dialog";
 import { FiPlus } from "react-icons/fi";
@@ -37,7 +37,7 @@ export function SeasonSelector({
 }: SeasonSelectorProps) {
   const { setSeasonId, seasonId: selectedSeason } = useSeasonStore();
   const { isSuperAdmin } = useAuth();
-  const { data: activeSeason } = useActiveSeason();
+  const { activeSeason } = useAppContext();
   const { setTournamentId } = useTournamentStore();
   const { setMatchId } = useMatchStore();
   const { isFetching, data, isLoading } = useGetSeasons();

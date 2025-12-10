@@ -41,7 +41,7 @@ import {
   SelectItem,
 } from "../../ui/select";
 import { toast } from "sonner";
-import { useActiveSeason } from "@/src/hooks/season/useActiveSeason";
+import { useAppContext } from "@/src/hooks/context/useAppContext";
 import { useSeasonStore } from "@/src/store/season";
 import { useTournament } from "@/src/hooks/tournament/useTournament";
 import { usePoll } from "@/src/hooks/poll/usePoll";
@@ -77,7 +77,7 @@ export const UpdatePollDialog = ({ open, id }: UpdatePollDialogProps) => {
   const { setSeasonId } = useSeasonStore();
   const queryClient = useQueryClient();
 
-  const { data: activeSeason } = useActiveSeason();
+  const { activeSeason } = useAppContext();
 
   const { data, isFetching } = usePoll({ id });
 
