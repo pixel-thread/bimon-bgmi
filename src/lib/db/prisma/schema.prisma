@@ -195,6 +195,7 @@ model Tournament {
   galleryId         String?
   gallery           Gallery?            @relation(fields: [galleryId], references: [id], onDelete: SetNull)
   matchPlayerPlayed MatchPlayerPlayed[]
+  income            Income[]
 
   @@index([seasonId])
   @@index([name])
@@ -301,6 +302,7 @@ model Player {
   id                String              @id @default(uuid())
   isBanned          Boolean             @default(false)
   manualUnban       Boolean             @default(false)
+  isUCExempt        Boolean             @default(false)
   userId            String              @unique
   matchPlayerPlayed MatchPlayerPlayed[]
 
@@ -478,4 +480,24 @@ model GameScore {
   lastPlayedAt DateTime
   playerId     String   @unique
   player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+}
+
+model Income {
+  id             String      @id @default(uuid())
+  amount         Float
+  description    String
+  tournamentId   String?
+  tournamentName String?
+  tournament     Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  parentId       String?
+  parent         Income?     @relation("IncomeChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children       Income[]    @relation("IncomeChildren")
+  isSubIncome    Boolean     @default(false)
+  createdBy      String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([tournamentId])
+  @@index([parentId])
+  @@index([createdAt])
 }

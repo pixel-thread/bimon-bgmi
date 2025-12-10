@@ -68,39 +68,44 @@ export async function POST(
     if (body.deductUC && entryFee > 0) {
       const player = await prisma.player.findUnique({
         where: { id: body.playerId },
-        select: { id: true, userId: true, uc: { select: { balance: true } } },
+        select: { id: true, userId: true, isUCExempt: true, uc: { select: { balance: true } } },
       });
 
-      const currentBalance = player?.uc?.balance || 0;
-      const newBalance = currentBalance - entryFee;
+      // Skip UC deduction for exempt players
+      if (player?.isUCExempt) {
+        message += " (UC exemption applied)";
+      } else {
+        const currentBalance = player?.uc?.balance || 0;
+        const newBalance = currentBalance - entryFee;
 
-      await prisma.$transaction(async (tx) => {
-        // Create transaction record
-        await tx.transaction.create({
-          data: {
-            amount: entryFee,
-            type: "debit",
-            description: `Entry fee for ${tournament?.name}`,
-            playerId: body.playerId,
-          },
+        await prisma.$transaction(async (tx) => {
+          // Create transaction record
+          await tx.transaction.create({
+            data: {
+              amount: entryFee,
+              type: "debit",
+              description: `Entry fee for ${tournament?.name}`,
+              playerId: body.playerId,
+            },
+          });
+
+          // Update UC balance
+          await tx.uC.upsert({
+            where: { playerId: body.playerId },
+            create: {
+              balance: newBalance,
+              player: { connect: { id: body.playerId } },
+              user: { connect: { id: player?.userId } },
+            },
+            update: { balance: newBalance },
+          });
+
+          // Check for auto-ban
+          await checkAndApplyAutoBan(body.playerId, newBalance, tx);
         });
 
-        // Update UC balance
-        await tx.uC.upsert({
-          where: { playerId: body.playerId },
-          create: {
-            balance: newBalance,
-            player: { connect: { id: body.playerId } },
-            user: { connect: { id: player?.userId } },
-          },
-          update: { balance: newBalance },
-        });
-
-        // Check for auto-ban
-        await checkAndApplyAutoBan(body.playerId, newBalance, tx);
-      });
-
-      message += `. ${entryFee} UC debited`;
+        message += `. ${entryFee} UC debited`;
+      }
     }
 
     const updatedTeam = await addPlayerToTeam({

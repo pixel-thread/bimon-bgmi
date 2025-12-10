@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
     Card,
     CardContent,
@@ -17,6 +17,7 @@ import {
     Trash2,
     TrendingUp,
     Filter,
+    Loader2,
 } from "lucide-react";
 import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
@@ -45,11 +46,28 @@ import {
     PaginationPrevious,
 } from "@/src/components/ui/pagination";
 import { useTournaments } from "@/src/hooks/tournament/useTournaments";
+import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import http from "@/src/utils/http";
+
+interface Income {
+    id: string;
+    amount: number;
+    description: string;
+    tournamentId: string | null;
+    tournamentName: string | null;
+    parentId: string | null;
+    isSubIncome: boolean;
+    createdBy: string;
+    createdAt: string;
+    updatedAt: string;
+}
 
 export function IncomeManagement() {
     // Fund Tracker States
-    const [fundTransactions, setFundTransactions] = useState<any[]>([]);
+    const [fundTransactions, setFundTransactions] = useState<Income[]>([]);
     const [isLoadingFunds, setIsLoadingFunds] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const [showFundDialog, setShowFundDialog] = useState(false);
     const [fundForm, setFundForm] = useState({
         amount: "",
@@ -62,9 +80,8 @@ export function IncomeManagement() {
     });
     const [totalFunds, setTotalFunds] = useState({
         income: 0,
-        expense: 0,
-        balance: 0,
         total: 0,
+        count: 0,
     });
     const [selectedParentIncome, setSelectedParentIncome] = useState<
         string | null
@@ -77,12 +94,51 @@ export function IncomeManagement() {
     const itemsPerPage = 10;
 
     const { data: tournaments } = useTournaments();
+    const { user, isAuthLoading } = useAuth();
+
+    // Fetch income data
+    const fetchIncomeData = useCallback(async () => {
+        if (!user) return; // Don't fetch if user not ready
+
+        setIsLoadingFunds(true);
+        try {
+            const result = await http.get<{
+                incomes: Income[];
+                totals: { thisMonth: number; total: number; count: number };
+            }>("/admin/income");
+
+            if (result.success && result.data) {
+                setFundTransactions(result.data.incomes);
+                setTotalFunds({
+                    income: result.data.totals.thisMonth,
+                    total: result.data.totals.total,
+                    count: result.data.totals.count,
+                });
+            } else {
+                toast.error(result.message || "Failed to fetch income data");
+            }
+        } catch (error) {
+            console.error("Error fetching income data:", error);
+            toast.error("Failed to fetch income data");
+        } finally {
+            setIsLoadingFunds(false);
+        }
+    }, [user]);
+
+    // Fetch data on mount (when user is ready)
+    useEffect(() => {
+        if (user && !isAuthLoading) {
+            fetchIncomeData();
+        }
+    }, [fetchIncomeData, user, isAuthLoading]);
 
     const handleAddFundTransaction = async () => {
         if (!fundForm.amount || !fundForm.description) {
             toast.error("Amount and description are required");
             return;
         }
+
+        setIsSaving(true);
         try {
             const transactionData = {
                 amount: parseFloat(fundForm.amount),
@@ -98,26 +154,47 @@ export function IncomeManagement() {
                         : null,
                 parentId: fundForm.parentId || null,
                 isSubIncome: !!fundForm.parentId,
-                createdBy: "admin",
             };
+
+            let result;
             if (isEditing && editingIncomeId) {
-                toast.success("Income updated successfully!");
+                // Update existing income
+                result = await http.put<Income>(
+                    `/admin/income/${editingIncomeId}`,
+                    transactionData
+                );
             } else {
-                toast.success("Income added successfully!");
+                // Create new income
+                result = await http.post<Income>(
+                    "/admin/income",
+                    transactionData
+                );
             }
-            setSelectedParentIncome(null);
-            setIsEditing(false);
-            setEditingIncomeId(null);
-            setShowFundDialog(false);
-            setFundForm({
-                amount: "",
-                description: "",
-                tournamentId: "",
-                parentId: "",
-            });
+
+            if (result.success) {
+                toast.success(
+                    isEditing ? "Income updated successfully!" : "Income added successfully!"
+                );
+                setSelectedParentIncome(null);
+                setIsEditing(false);
+                setEditingIncomeId(null);
+                setShowFundDialog(false);
+                setFundForm({
+                    amount: "",
+                    description: "",
+                    tournamentId: "",
+                    parentId: "",
+                });
+                // Refetch data
+                await fetchIncomeData();
+            } else {
+                toast.error(result.message || "Failed to save income");
+            }
         } catch (error) {
             console.error("Error saving income:", error);
             toast.error("Failed to save income");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -156,17 +233,17 @@ export function IncomeManagement() {
                 const bTime = b.id.includes("_") ? parseInt(b.id.split("_")[1]) : 0;
                 return bTime - aTime;
             });
-            if (sortedTournaments.length > 0 && !fundForm.tournamentId) {
+            if (sortedTournaments.length > 0 && !fundForm.tournamentId && !isEditing) {
                 setFundForm((prev) => ({
                     ...prev,
                     tournamentId: sortedTournaments[0].id,
-                    description: sortedTournaments[0].name,
+                    description: prev.description || sortedTournaments[0].name,
                 }));
             }
         }
-    }, [showFundDialog, tournaments]);
+    }, [showFundDialog, tournaments, isEditing]);
 
-    const handleEditIncome = (income: any) => {
+    const handleEditIncome = (income: Income) => {
         setFundForm({
             amount: income.amount.toString(),
             description: income.description,
@@ -184,19 +261,23 @@ export function IncomeManagement() {
         isMainIncome: boolean
     ) => {
         if (!confirm("Are you sure you want to delete this income entry?")) return;
+
+        setIsDeleting(incomeId);
         try {
-            if (isMainIncome) {
-                const subEntries = fundTransactions.filter(
-                    (t) => t.parentId === incomeId
-                );
-                if (subEntries.length > 0) {
-                    // Delete sub-entries first if needed
-                }
+            const result = await http.delete(`/admin/income/${incomeId}`);
+
+            if (result.success) {
+                toast.success(result.message || "Income entry deleted successfully");
+                // Refetch data
+                await fetchIncomeData();
+            } else {
+                toast.error(result.message || "Failed to delete income entry");
             }
-            toast.success("Income entry deleted successfully");
         } catch (error) {
             console.error("Error deleting income entry:", error);
             toast.error("Failed to delete income entry");
+        } finally {
+            setIsDeleting(null);
         }
     };
 
@@ -245,7 +326,7 @@ export function IncomeManagement() {
                             <div>
                                 <p className="text-xs text-muted-foreground">Entries</p>
                                 <p className="text-2xl font-bold text-purple-500">
-                                    {mainIncomeTransactions.length}
+                                    {totalFunds.count}
                                 </p>
                             </div>
                         </div>
@@ -290,29 +371,31 @@ export function IncomeManagement() {
                 </CardHeader>
                 <CardContent className="p-4 space-y-4">
                     {/* Filter */}
-                    <div className="flex items-center gap-2">
-                        <Filter className="h-4 w-4 text-muted-foreground" />
-                        <Select
-                            value={fundFilter.tournament}
-                            onValueChange={(value) =>
-                                setFundFilter((prev) => ({ ...prev, tournament: value }))
-                            }
-                        >
-                            <SelectTrigger className="w-[200px]">
-                                <SelectValue placeholder="All Tournaments" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Tournaments</SelectItem>
-                                <SelectItem value="general">
-                                    General (No Tournament)
-                                </SelectItem>
-                                {tournaments?.map((tournament) => (
-                                    <SelectItem key={tournament.id} value={tournament.id}>
-                                        {tournament.name}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <div className="flex items-center gap-2">
+                            <Filter className="h-4 w-4 text-muted-foreground" />
+                            <Select
+                                value={fundFilter.tournament}
+                                onValueChange={(value) =>
+                                    setFundFilter((prev) => ({ ...prev, tournament: value }))
+                                }
+                            >
+                                <SelectTrigger className="w-full sm:w-[200px]">
+                                    <SelectValue placeholder="All Tournaments" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Tournaments</SelectItem>
+                                    <SelectItem value="general">
+                                        General (No Tournament)
                                     </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                                    {tournaments?.map((tournament) => (
+                                        <SelectItem key={tournament.id} value={tournament.id}>
+                                            {tournament.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     {/* Income List */}
@@ -338,17 +421,18 @@ export function IncomeManagement() {
                                         return (
                                             <div
                                                 key={transaction.id}
-                                                className="p-4 hover:bg-muted/50 transition-colors"
+                                                className="p-3 sm:p-4 hover:bg-muted/50 transition-colors"
                                             >
-                                                <div className="flex flex-col gap-3">
-                                                    <div className="flex items-start justify-between">
+                                                <div className="flex flex-col gap-2 sm:gap-3">
+                                                    {/* Mobile: Stack everything, Desktop: Side by side */}
+                                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
                                                         <div className="min-w-0 flex-1">
-                                                            <div className="font-medium">
+                                                            <div className="font-medium text-sm sm:text-base break-words">
                                                                 {transaction.description}
                                                             </div>
-                                                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                                            <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground">
                                                                 {transaction.tournamentName && (
-                                                                    <Badge variant="secondary">
+                                                                    <Badge variant="secondary" className="text-xs">
                                                                         {transaction.tournamentName}
                                                                     </Badge>
                                                                 )}
@@ -360,15 +444,16 @@ export function IncomeManagement() {
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center gap-3 flex-shrink-0">
-                                                            <div className="text-lg font-bold text-emerald-500">
+                                                        {/* Amount and Actions */}
+                                                        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 flex-shrink-0">
+                                                            <div className="text-base sm:text-lg font-bold text-emerald-500">
                                                                 {transaction.amount.toFixed(2)} UC
                                                             </div>
-                                                            <div className="flex items-center gap-1">
+                                                            <div className="flex items-center gap-0.5 sm:gap-1">
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="h-8 w-8"
+                                                                    className="h-7 w-7 sm:h-8 sm:w-8"
                                                                     onClick={() => {
                                                                         setFundForm({
                                                                             amount: "",
@@ -378,55 +463,62 @@ export function IncomeManagement() {
                                                                             parentId: transaction.id,
                                                                         });
                                                                         setSelectedParentIncome(transaction.id);
+                                                                        setIsEditing(false);
+                                                                        setEditingIncomeId(null);
                                                                         setShowFundDialog(true);
                                                                     }}
                                                                     title="Add sub-income"
                                                                 >
-                                                                    <Plus className="h-4 w-4" />
+                                                                    <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                                                 </Button>
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="h-8 w-8"
+                                                                    className="h-7 w-7 sm:h-8 sm:w-8"
                                                                     onClick={() => handleEditIncome(transaction)}
                                                                     title="Edit income"
                                                                 >
-                                                                    <Edit className="h-4 w-4" />
+                                                                    <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                                                 </Button>
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                                                    className="h-7 w-7 sm:h-8 sm:w-8 text-destructive hover:text-destructive"
                                                                     onClick={() =>
                                                                         handleDeleteIncome(transaction.id, true)
                                                                     }
+                                                                    disabled={isDeleting === transaction.id}
                                                                     title="Delete income"
                                                                 >
-                                                                    <Trash2 className="h-4 w-4" />
+                                                                    {isDeleting === transaction.id ? (
+                                                                        <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                                                                    ) : (
+                                                                        <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                                                    )}
                                                                 </Button>
                                                             </div>
                                                         </div>
                                                     </div>
 
                                                     {hasSubIncome && (
-                                                        <div className="ml-4 pl-4 border-l-2 border-muted space-y-2">
+                                                        <div className="ml-2 sm:ml-4 pl-2 sm:pl-4 border-l-2 border-muted space-y-2">
                                                             {subIncomeEntries.map((subIncome) => (
                                                                 <div
                                                                     key={subIncome.id}
-                                                                    className="flex items-center justify-between py-2"
+                                                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 py-2"
                                                                 >
-                                                                    <div className="text-sm text-muted-foreground">
+                                                                    <div className="text-xs sm:text-sm text-muted-foreground break-words">
                                                                         {subIncome.description}
                                                                     </div>
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="text-sm font-medium text-emerald-500">
+                                                                    <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
+                                                                        <div className="text-xs sm:text-sm font-medium text-emerald-500">
                                                                             {subIncome.amount.toFixed(2)} UC
                                                                         </div>
-                                                                        <div className="flex items-center gap-1">
+                                                                        <div className="flex items-center gap-0.5">
                                                                             <Button
                                                                                 variant="ghost"
                                                                                 size="icon"
-                                                                                className="h-7 w-7"
+                                                                                className="h-6 w-6 sm:h-7 sm:w-7"
                                                                                 onClick={() =>
                                                                                     handleEditIncome(subIncome)
                                                                                 }
@@ -437,16 +529,21 @@ export function IncomeManagement() {
                                                                             <Button
                                                                                 variant="ghost"
                                                                                 size="icon"
-                                                                                className="h-7 w-7 text-destructive hover:text-destructive"
+                                                                                className="h-6 w-6 sm:h-7 sm:w-7 text-destructive hover:text-destructive"
                                                                                 onClick={() =>
                                                                                     handleDeleteIncome(
                                                                                         subIncome.id,
                                                                                         false
                                                                                     )
                                                                                 }
+                                                                                disabled={isDeleting === subIncome.id}
                                                                                 title="Delete sub-income"
                                                                             >
-                                                                                <Trash2 className="h-3 w-3" />
+                                                                                {isDeleting === subIncome.id ? (
+                                                                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                                                                ) : (
+                                                                                    <Trash2 className="h-3 w-3" />
+                                                                                )}
                                                                             </Button>
                                                                         </div>
                                                                     </div>
@@ -617,10 +714,12 @@ export function IncomeManagement() {
                                 setIsEditing(false);
                                 setEditingIncomeId(null);
                             }}
+                            disabled={isSaving}
                         >
                             Cancel
                         </Button>
-                        <Button onClick={handleAddFundTransaction}>
+                        <Button onClick={handleAddFundTransaction} disabled={isSaving}>
+                            {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                             {isEditing
                                 ? "Update Income"
                                 : selectedParentIncome

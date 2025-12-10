@@ -9,7 +9,7 @@ import {
 } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
-import { History, Ban, AlertTriangle, CheckCircle, DollarSign, ArrowUpRight } from "lucide-react";
+import { History, Ban, AlertTriangle, CheckCircle, DollarSign, ArrowUpRight, Shield } from "lucide-react";
 import { usePlayer } from "@/src/hooks/player/usePlayer";
 import { usePlayerStats } from "@/src/hooks/player/usePlayerStats";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -94,6 +94,26 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
     },
   });
 
+  const { mutate: toggleUCExemption, isPending: isExemptionPending } = useMutation({
+    mutationFn: (isUCExempt: boolean) =>
+      http.patch(
+        ADMIN_PLAYER_ENDPOINTS.PATCH_PLAYER.replace(":id", id),
+        { isUCExempt }
+      ),
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message || "UC exemption status updated");
+        queryClient.invalidateQueries({ queryKey: ["player", id] });
+        queryClient.invalidateQueries({ queryKey: ["players"] });
+      } else {
+        toast.error(data.message || "Failed to update exemption status");
+      }
+    },
+    onError: () => {
+      toast.error("Failed to update exemption status");
+    },
+  });
+
   const isLoading = isPlayerLoading || isStatsLoading;
 
   const handleBalanceAdjustment = () => {
@@ -125,6 +145,15 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                       >
                         <Ban className="w-3 h-3 mr-1" />
                         BANNED
+                      </Badge>
+                    )}
+                    {player.isUCExempt && (
+                      <Badge
+                        variant="secondary"
+                        className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100"
+                      >
+                        <Shield className="w-3 h-3 mr-1" />
+                        UC EXEMPT
                       </Badge>
                     )}
                   </div>
@@ -229,13 +258,24 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
 
               <div className="flex gap-3 justify-center flex-wrap">
                 {isSuperAdmin && (
-                  <Button
-                    variant="outline"
-                    onClick={handleBalanceAdjustment}
-                  >
-                    <DollarSign className="w-4 h-4 mr-2" />
-                    Balance Adjustment
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={handleBalanceAdjustment}
+                    >
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      Balance Adjustment
+                    </Button>
+                    <Button
+                      variant={player.isUCExempt ? "outline" : "secondary"}
+                      onClick={() => toggleUCExemption(!player.isUCExempt)}
+                      disabled={isExemptionPending}
+                      className={player.isUCExempt ? "border-amber-600 text-amber-600 hover:bg-amber-50" : ""}
+                    >
+                      <Shield className="w-4 h-4 mr-2" />
+                      {player.isUCExempt ? "Remove UC Exemption" : "Grant UC Exemption"}
+                    </Button>
+                  </>
                 )}
 
                 {isAdmin && (
