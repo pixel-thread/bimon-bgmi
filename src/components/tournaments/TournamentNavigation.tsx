@@ -10,7 +10,7 @@ import {
   FiAward,
   FiBarChart,
 } from "react-icons/fi";
-import { Gift, GamepadIcon } from "lucide-react";
+import { GamepadIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/src/components/ui/button";
 
@@ -94,7 +94,6 @@ const TournamentNavigation = () => {
     { href: "/tournament/players", label: "Balance", icon: FiUsers },
     { href: "/tournament/rules", label: "Rules", icon: FiFileText },
     { href: "/tournament/winners", label: "Winners", icon: FiAward },
-    { href: "/tournament/wheel", label: "Claim", icon: Gift },
   ];
 
   return (
@@ -126,8 +125,8 @@ const TournamentNavigation = () => {
                 disabled={!!isLoading}
                 variant="ghost"
                 className={`px-4 py-3 h-auto font-medium text-sm flex items-center gap-2 whitespace-nowrap transition-all duration-200 relative rounded-none ${isActive
-                    ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-white bg-indigo-50/50 dark:bg-indigo-900/20"
-                    : "text-slate-600 hover:text-slate-800 dark:text-white/70 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                  ? "border-b-2 border-indigo-600 text-indigo-600 dark:text-white bg-indigo-50/50 dark:bg-indigo-900/20"
+                  : "text-slate-600 hover:text-slate-800 dark:text-white/70 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50"
                   } ${isLoading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
                   }`}
               >

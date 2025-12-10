@@ -29,12 +29,10 @@ export const AuthProvider = ({ children }: Props) => {
   const getUser = useCallback(async () => {
     if (isSignedIn || isFetching === false) {
       const token = await getToken({ template: "jwt" });
-      console.log(token);
       if (token) {
         axiosInstance.defaults.headers.common["Authorization"] =
           `Bearer ${token}`;
         setIsTokenSet(true);
-        console.log("Teken la set");
       }
     }
   }, [isSignedIn, getToken]);
@@ -51,7 +49,6 @@ export const AuthProvider = ({ children }: Props) => {
 
   // get user when signed in
   useEffect(() => {
-    console.log("Here");
     if (isSignedIn) {
       getUser();
     }
