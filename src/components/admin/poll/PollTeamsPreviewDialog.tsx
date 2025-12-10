@@ -40,7 +40,7 @@ function getBalanceColor(balance: number, entryFee: number): string {
 
 function TeamCard({ team, entryFee }: { team: TeamPreview; entryFee: number }) {
     return (
-        <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="p-2 sm:p-2.5 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             {/* Team header - compact */}
             <div className="flex items-center justify-between mb-1.5">
                 <span className="font-semibold text-gray-800 dark:text-gray-100 text-xs">
@@ -62,16 +62,16 @@ function TeamCard({ team, entryFee }: { team: TeamPreview; entryFee: number }) {
                 {team.players.map((player) => (
                     <li
                         key={player.id}
-                        className="flex items-center justify-between py-1 px-1.5 bg-white dark:bg-gray-900 rounded text-[10px] sm:text-xs"
+                        className="flex items-center justify-between py-1.5 sm:py-1 px-2 sm:px-1.5 bg-white dark:bg-gray-900 rounded text-xs"
                     >
-                        <span className="font-medium text-gray-900 dark:text-white truncate max-w-[45%]">
+                        <span className="font-medium text-gray-900 dark:text-white truncate max-w-[50%] sm:max-w-[45%]">
                             {player.userName}
                         </span>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                            <span className={`font-mono ${getKDColor(player.kd)}`}>
+                        <div className="flex items-center gap-2 sm:gap-1.5 shrink-0">
+                            <span className={`font-mono text-xs ${getKDColor(player.kd)}`}>
                                 {player.kd.toFixed(2)}
                             </span>
-                            <span className={`font-mono ${getBalanceColor(player.balance, entryFee)}`}>
+                            <span className={`font-mono text-xs ${getBalanceColor(player.balance, entryFee)}`}>
                                 {player.balance}
                             </span>
                         </div>
@@ -94,14 +94,14 @@ export function PollTeamsPreviewDialog({
 }: PollTeamsPreviewDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] max-w-4xl h-[80vh] max-h-[600px] p-0 rounded-xl flex flex-col overflow-hidden">
+            <DialogContent className="w-full h-[100dvh] sm:w-[95vw] sm:h-[85vh] sm:max-w-4xl sm:max-h-[700px] p-0 sm:rounded-xl rounded-none flex flex-col overflow-hidden">
                 {/* Fixed Header */}
                 <DialogHeader className="flex-shrink-0 p-3 sm:p-4 pb-2 border-b">
                     <DialogTitle className="text-base sm:text-lg font-semibold flex items-center gap-2">
                         <Users className="w-4 h-4" />
                         Preview Teams
                     </DialogTitle>
-                    <DialogDescription className="text-[10px] sm:text-xs text-gray-500">
+                    <DialogDescription className="text-xs text-gray-500">
                         Review teams. UC debited on confirm.
                     </DialogDescription>
                 </DialogHeader>
@@ -109,25 +109,25 @@ export function PollTeamsPreviewDialog({
                 {/* Scrollable Content Area */}
                 <div className="flex-1 overflow-y-auto p-3 sm:p-4">
                     {isLoading ? (
-                        <div className="flex flex-col items-center justify-center py-8 gap-2">
-                            <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                        <div className="flex flex-col items-center justify-center py-12 gap-3">
+                            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
                             <p className="text-gray-500 text-sm">Generating teams...</p>
                         </div>
                     ) : previewData ? (
-                        <div className="flex flex-col gap-2">
-                            {/* Summary Bar */}
-                            <div className="flex flex-wrap items-center gap-1.5 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                                <Badge variant="secondary" className="text-[10px] sm:text-xs truncate max-w-[120px]">
+                        <div className="flex flex-col gap-3">
+                            {/* Summary Bar - stacks on mobile */}
+                            <div className="flex flex-wrap items-center gap-1.5 p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                <Badge variant="secondary" className="text-xs truncate max-w-[150px] sm:max-w-[120px]">
                                     {previewData.tournamentName}
                                 </Badge>
-                                <Badge variant="outline" className="text-[10px] sm:text-xs">
+                                <Badge variant="outline" className="text-xs">
                                     {previewData.teams.length} Teams
                                 </Badge>
-                                <Badge variant="outline" className="text-[10px] sm:text-xs">
+                                <Badge variant="outline" className="text-xs">
                                     {previewData.totalPlayersEligible} Players
                                 </Badge>
                                 {previewData.entryFee > 0 && (
-                                    <Badge variant="outline" className="text-[10px] sm:text-xs text-amber-600">
+                                    <Badge variant="outline" className="text-xs text-amber-600">
                                         {previewData.entryFee} UC
                                     </Badge>
                                 )}
@@ -135,9 +135,9 @@ export function PollTeamsPreviewDialog({
 
                             {/* Low UC Warning */}
                             {previewData.playersWithInsufficientBalance.length > 0 && (
-                                <div className="flex items-start gap-1.5 p-1.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
-                                    <p className="text-[10px] text-amber-700 dark:text-amber-300 leading-tight">
+                                <div className="flex items-start gap-2 p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                    <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                                    <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
                                         <span className="font-medium">Low UC: </span>
                                         {previewData.playersWithInsufficientBalance
                                             .slice(0, 5)
@@ -149,9 +149,9 @@ export function PollTeamsPreviewDialog({
                                 </div>
                             )}
 
-                            {/* Teams Grid */}
+                            {/* Teams Grid - single column on very small screens */}
                             {previewData.teams.length > 0 ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-2">
+                                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-2.5">
                                     {previewData.teams.map((team) => (
                                         <TeamCard
                                             key={team.teamNumber}
@@ -161,26 +161,26 @@ export function PollTeamsPreviewDialog({
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-gray-500 text-center py-6 text-sm">
+                                <p className="text-gray-500 text-center py-8 text-sm">
                                     No teams generated.
                                 </p>
                             )}
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-8 gap-2">
-                            <AlertTriangle className="w-6 h-6 text-yellow-500" />
+                        <div className="flex flex-col items-center justify-center py-12 gap-3">
+                            <AlertTriangle className="w-8 h-8 text-yellow-500" />
                             <p className="text-gray-500 text-sm">Failed to load preview.</p>
                         </div>
                     )}
                 </div>
 
-                {/* Fixed Footer */}
+                {/* Fixed Footer - better mobile touch targets */}
                 <DialogFooter className="flex-shrink-0 flex flex-row gap-2 p-3 sm:p-4 pt-2 border-t bg-background">
                     <Button
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                         disabled={isLoading || isConfirming}
-                        className="flex-1 sm:flex-none h-9 text-xs sm:text-sm"
+                        className="flex-1 h-10 sm:h-9 text-sm sm:text-sm"
                     >
                         Cancel
                     </Button>
@@ -189,25 +189,25 @@ export function PollTeamsPreviewDialog({
                             variant="outline"
                             onClick={onRegenerate}
                             disabled={isLoading || isConfirming}
-                            className="flex-1 sm:flex-none h-9 text-xs sm:text-sm border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-950"
+                            className="flex-1 h-10 sm:h-9 text-sm border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-950"
                         >
-                            <RefreshCw className="w-3 h-3 mr-1.5" />
+                            <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
                             Shuffle
                         </Button>
                     )}
                     <Button
                         onClick={onConfirm}
                         disabled={isLoading || isConfirming || !previewData}
-                        className="flex-1 sm:flex-none h-9 text-xs sm:text-sm bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white border-0"
+                        className="flex-1 h-10 sm:h-9 text-sm bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white border-0"
                     >
                         {isConfirming ? (
                             <>
-                                <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                                 Creating...
                             </>
                         ) : (
                             <>
-                                <Coins className="w-3 h-3 mr-1.5" />
+                                <Coins className="w-3.5 h-3.5 mr-1.5" />
                                 Confirm ({previewData?.teams.length || 0})
                             </>
                         )}
@@ -217,3 +217,4 @@ export function PollTeamsPreviewDialog({
         </Dialog>
     );
 }
+

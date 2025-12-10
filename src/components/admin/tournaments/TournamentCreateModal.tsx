@@ -21,7 +21,7 @@ import z from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { tournamentSchema } from "@/src/utils/validation/tournament";
-import { useActiveSeason } from "@/src/hooks/season/useActiveSeason";
+import { useAppContext } from "@/src/hooks/context/useAppContext";
 import http from "@/src/utils/http";
 import { Input } from "../../ui/input";
 import { useTournamentStore } from "@/src/store/tournament";
@@ -40,7 +40,7 @@ export default function TournamentCreateModal({
   showCreateModal,
   setShowCreateModal,
 }: TournamentCreateModalProps) {
-  const { isFetching: isLoading, data: activeSeason } = useActiveSeason();
+  const { isLoading, activeSeason } = useAppContext();
   const { seasonId } = useSeasonStore();
   const { setTournamentId: setSelectedTournament } = useTournamentStore();
   const queryClient = useQueryClient();

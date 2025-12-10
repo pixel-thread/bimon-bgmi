@@ -8,7 +8,7 @@ import {
     RecentTournament,
 } from "@/src/hooks/winner/useTournamentWinner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
-import { useActiveSeason } from "@/src/hooks/season/useActiveSeason";
+import { useAppContext } from "@/src/hooks/context/useAppContext";
 import { Trophy, Medal, Users, Loader2 } from "lucide-react";
 
 const placementColumns: ColumnDef<PlayerPlacement>[] = [
@@ -94,7 +94,7 @@ const recentTournamentColumns: ColumnDef<RecentTournament>[] = [
 
 export default function WinnersPage() {
     // Auto-fetch active season
-    const { data: activeSeason, isLoading: isLoadingSeason } = useActiveSeason();
+    const { activeSeason, isLoading: isLoadingSeason } = useAppContext();
     const seasonId = activeSeason?.id || "";
 
     const { data, isFetching } = useTournamentWinner({ seasonId });

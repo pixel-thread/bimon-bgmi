@@ -215,6 +215,10 @@ export async function previewTeamsByPolls({
         }
     }
 
+    // Shuffle players to allow regeneration to produce different team compositions
+    // The balanced algorithms will still distribute fairly, but with different pairings
+    playersForTeams = shuffle(playersForTeams);
+
     const teamCount = Math.floor(playersForTeams.length / groupSize);
     if (teamCount === 0 && soloPlayers.length === 0) {
         throw new Error("Not enough players to form teams.");

@@ -35,7 +35,7 @@ import {
   SelectItem,
 } from "../../ui/select";
 import { toast } from "sonner";
-import { useActiveSeason } from "@/src/hooks/season/useActiveSeason";
+import { useAppContext } from "@/src/hooks/context/useAppContext";
 import { useSeasonStore } from "@/src/store/season";
 import { useTournament } from "@/src/hooks/tournament/useTournament";
 
@@ -70,7 +70,7 @@ export const CreatePollDialog = ({
   const { setSeasonId } = useSeasonStore();
   const queryClient = useQueryClient();
 
-  const { data } = useActiveSeason();
+  const { activeSeason: data } = useAppContext();
 
   const { data: tournament } = useTournament({ id: tournamentId });
 
