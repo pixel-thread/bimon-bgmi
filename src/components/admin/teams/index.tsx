@@ -34,6 +34,17 @@ import { BulkEditStatsDialog } from "./BulkEditStatsDialog";
 import { useGlobalBackground } from "@/src/hooks/gallery/useGlobalBackground";
 import { SwapPlayersDialog } from "./swap-players-dialog";
 import { ArrowLeftRight } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../../ui/alert-dialog";
 
 export const AdminTeamsManagement: React.FC = () => {
   const search = useSearchParams();
@@ -205,16 +216,36 @@ export const AdminTeamsManagement: React.FC = () => {
           </Button>
 
           {matchId !== "all" && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-              disabled={isFetching || !matchId || isDeleting}
-              onClick={() => deleteMatch()}
-              title="Delete Match"
-            >
-              {isDeleting ? "Deleting..." : "Delete Match"}
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                  disabled={isFetching || !matchId || isDeleting}
+                  title="Delete Match"
+                >
+                  {isDeleting ? "Deleting..." : "Delete Match"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Match?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete this match and all associated team stats, player stats, and records. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => deleteMatch()}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
       </div>

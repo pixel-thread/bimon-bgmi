@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { formatDistanceToNow } from "date-fns";
+import { AddBalanceDialog } from "@/src/components/profile/AddBalanceDialog";
 
 type UCTransfer = {
     id: string;
@@ -192,9 +193,12 @@ export default function AdminProfilePage() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
                                 <CardContent className="p-4">
-                                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-1">
-                                        <DollarSign className="w-4 h-4" />
-                                        <span className="text-sm font-medium">UC Balance</span>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                                            <DollarSign className="w-4 h-4" />
+                                            <span className="text-sm font-medium">UC Balance</span>
+                                        </div>
+                                        <AddBalanceDialog />
                                     </div>
                                     <p className="text-2xl font-bold">{userBalance}</p>
                                 </CardContent>
