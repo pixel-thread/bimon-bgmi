@@ -125,40 +125,40 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
+            <DialogTitle className="flex items-center gap-2 sm:gap-3">
               {isLoading ? (
                 <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 animate-pulse"></div>
               ) : !player ? (
                 <span>Player Not Found</span>
               ) : (
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
                       {player.user?.userName}
                     </span>
                     {player.isBanned && (
                       <Badge
                         variant="destructive"
-                        className="bg-red-600 hover:bg-red-700"
+                        className="bg-red-600 hover:bg-red-700 text-xs"
                       >
-                        <Ban className="w-3 h-3 mr-1" />
+                        <Ban className="w-3 h-3 mr-0.5 sm:mr-1" />
                         BANNED
                       </Badge>
                     )}
                     {player.isUCExempt && (
                       <Badge
                         variant="secondary"
-                        className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100"
+                        className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 text-xs"
                       >
-                        <Shield className="w-3 h-3 mr-1" />
+                        <Shield className="w-3 h-3 mr-0.5 sm:mr-1" />
                         UC EXEMPT
                       </Badge>
                     )}
                   </div>
                   <div className="flex justify-start mt-1">
-                    <Badge className={getCategoryColor(stats ? getKdRank(stats.kills || 0, stats.deaths || 0) : player.category)}>
+                    <Badge className={`text-xs ${getCategoryColor(stats ? getKdRank(stats.kills || 0, stats.deaths || 0) : player.category)}`}>
                       {stats ? getKdRank(stats.kills || 0, stats.deaths || 0) : player.category}
                     </Badge>
                   </div>
@@ -174,22 +174,22 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
               Player data could not be loaded
             </div>
           ) : (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-4">
+                <div className="text-center p-2.5 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <p className="text-xl sm:text-2xl font-bold text-blue-600">
                     {player.matchPlayerPlayed?.length || stats?.matches?.length || 0}
                   </p>
-                  <p className="text-sm text-muted-foreground">Matches</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Matches</p>
                 </div>
-                <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <p className="text-2xl font-bold text-green-600">
+                <div className="text-center p-2.5 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <p className="text-xl sm:text-2xl font-bold text-green-600">
                     {stats?.kills || 0}
                   </p>
-                  <p className="text-sm text-muted-foreground">Kills</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Kills</p>
                 </div>
-                <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                  <p className="text-2xl font-bold text-yellow-600">
+                <div className="text-center p-2.5 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <p className="text-xl sm:text-2xl font-bold text-yellow-600">
                     {(() => {
                       const kills = stats?.kills || 0;
                       const deaths = stats?.deaths || 0;
@@ -197,11 +197,11 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                       return kd.toFixed(2);
                     })()}
                   </p>
-                  <p className="text-sm text-muted-foreground">K/D</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">K/D</p>
                 </div>
-                <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <div className="text-center p-2.5 sm:p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                   <p
-                    className={`text-2xl font-bold ${Number(player.uc?.balance) >= 0
+                    className={`text-xl sm:text-2xl font-bold ${Number(player.uc?.balance) >= 0
                       ? "text-green-600"
                       : "text-red-600"
                       }`}
@@ -210,25 +210,25 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                       ? Math.floor(player.uc?.balance)
                       : "0"} UC
                   </p>
-                  <p className="text-sm text-muted-foreground">Balance</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Balance</p>
                 </div>
               </div>
 
               {player.isBanned && player.playerBanned && (
-                <div className="bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertTriangle className="w-5 h-5 text-red-700 dark:text-red-300" />
-                    <h4 className="font-semibold text-red-800 dark:text-red-200">
+                <div className="bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 rounded-lg p-3 sm:p-4">
+                  <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                    <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-700 dark:text-red-300" />
+                    <h4 className="font-semibold text-sm sm:text-base text-red-800 dark:text-red-200">
                       Ban Information
                     </h4>
                   </div>
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                     {player.playerBanned.banReason && (
                       <div>
                         <span className="font-medium text-red-800 dark:text-red-200">
                           Reason:
                         </span>
-                        <span className="ml-2 text-red-700 dark:text-red-100">
+                        <span className="ml-1.5 sm:ml-2 text-red-700 dark:text-red-100">
                           {player.playerBanned.banReason}
                         </span>
                       </div>
@@ -238,7 +238,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                         <span className="font-medium text-red-800 dark:text-red-200">
                           Banned On:
                         </span>
-                        <span className="ml-2 text-red-700 dark:text-red-100">
+                        <span className="ml-1.5 sm:ml-2 text-red-700 dark:text-red-100">
                           {new Date(player.playerBanned.bannedAt).toLocaleDateString()}
                         </span>
                       </div>
@@ -247,7 +247,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                       <span className="font-medium text-red-800 dark:text-red-200">
                         Duration:
                       </span>
-                      <span className="ml-2 text-red-700 dark:text-red-100">
+                      <span className="ml-1.5 sm:ml-2 text-red-700 dark:text-red-100">
                         {player.playerBanned.banDuration} tournament
                         {player.playerBanned.banDuration !== 1 ? "s" : ""}
                       </span>
@@ -256,24 +256,27 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                 </div>
               )}
 
-              <div className="flex gap-3 justify-center flex-wrap">
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
                 {isSuperAdmin && (
                   <>
                     <Button
                       variant="outline"
                       onClick={handleBalanceAdjustment}
+                      className="w-[calc(50%-0.25rem)] sm:w-auto text-sm"
+                      size="sm"
                     >
-                      <DollarSign className="w-4 h-4 mr-2" />
+                      <DollarSign className="w-4 h-4 mr-1.5" />
                       Balance Adjustment
                     </Button>
                     <Button
                       variant={player.isUCExempt ? "outline" : "secondary"}
                       onClick={() => toggleUCExemption(!player.isUCExempt)}
                       disabled={isExemptionPending}
-                      className={player.isUCExempt ? "border-amber-600 text-amber-600 hover:bg-amber-50" : ""}
+                      className={`w-[calc(50%-0.25rem)] sm:w-auto text-sm ${player.isUCExempt ? "border-amber-600 text-amber-600 hover:bg-amber-50" : ""}`}
+                      size="sm"
                     >
-                      <Shield className="w-4 h-4 mr-2" />
-                      {player.isUCExempt ? "Remove UC Exemption" : "Grant UC Exemption"}
+                      <Shield className="w-4 h-4 mr-1.5" />
+                      <span className="truncate">{player.isUCExempt ? "Remove UC Exemption" : "Grant UC Exemption"}</span>
                     </Button>
                   </>
                 )}
@@ -283,16 +286,17 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     variant={player.isBanned ? "outline" : "destructive"}
                     onClick={() => toggleBan()}
                     disabled={isBanPending}
-                    className={player.isBanned ? "border-green-600 text-green-600 hover:bg-green-50" : ""}
+                    className={`w-[calc(50%-0.25rem)] sm:w-auto text-sm ${player.isBanned ? "border-green-600 text-green-600 hover:bg-green-50" : ""}`}
+                    size="sm"
                   >
                     {player.isBanned ? (
                       <>
-                        <CheckCircle className="w-4 h-4 mr-2" />
+                        <CheckCircle className="w-4 h-4 mr-1.5" />
                         Unban Player
                       </>
                     ) : (
                       <>
-                        <Ban className="w-4 h-4 mr-2" />
+                        <Ban className="w-4 h-4 mr-1.5" />
                         Ban Player
                       </>
                     )}
@@ -306,8 +310,10 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     params.set("history", id);
                     router.push(`?${params.toString()}`);
                   }}
+                  className="w-[calc(50%-0.25rem)] sm:w-auto text-sm"
+                  size="sm"
                 >
-                  <History className="w-4 h-4 mr-2" />
+                  <History className="w-4 h-4 mr-1.5" />
                   Balance History
                 </Button>
 
@@ -315,10 +321,11 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                 {(user?.role === "PLAYER" || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && !isOwnProfile && (
                   <Button
                     variant="outline"
-                    className="border-green-600 text-green-600 hover:bg-green-50"
+                    className="w-[calc(50%-0.25rem)] sm:w-auto text-sm border-green-600 text-green-600 hover:bg-green-50"
                     onClick={() => setIsTransferDialogOpen(true)}
+                    size="sm"
                   >
-                    <ArrowUpRight className="w-4 h-4 mr-2" />
+                    <ArrowUpRight className="w-4 h-4 mr-1.5" />
                     Send / Request UC
                   </Button>
                 )}
@@ -326,8 +333,8 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={onClose}>
+          <DialogFooter className="mt-4 sm:mt-6">
+            <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
               Close
             </Button>
           </DialogFooter>
