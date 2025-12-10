@@ -264,33 +264,38 @@ export async function createTeamsByPolls({
       );
       await Promise.all(playerStatsPromises);
 
-      // Phase 5: Debit UC from all players in batch + record transactions
+      // Phase 5: Debit UC from non-exempt players in batch + record transactions
       if (entryFee > 0) {
-        // Record transaction history first
-        await tx.transaction.createMany({
-          data: allPlayers.map((player) => ({
-            amount: entryFee,
-            type: "debit",
-            description: `Entry fee for ${tournamentName}`,
-            playerId: player.id,
-          })),
-        });
+        // Filter out UC-exempt players
+        const playersToCharge = allPlayers.filter((player) => !player.isUCExempt);
 
-        // Then debit UC
-        const ucPromises = allPlayers.map((player) =>
-          tx.uC.upsert({
-            where: { playerId: player.id },
-            create: {
-              balance: -entryFee,
-              player: { connect: { id: player.id } },
-              user: { connect: { id: player.userId } },
-            },
-            update: {
-              balance: { decrement: entryFee },
-            },
-          })
-        );
-        await Promise.all(ucPromises);
+        if (playersToCharge.length > 0) {
+          // Record transaction history first
+          await tx.transaction.createMany({
+            data: playersToCharge.map((player) => ({
+              amount: entryFee,
+              type: "debit",
+              description: `Entry fee for ${tournamentName}`,
+              playerId: player.id,
+            })),
+          });
+
+          // Then debit UC
+          const ucPromises = playersToCharge.map((player) =>
+            tx.uC.upsert({
+              where: { playerId: player.id },
+              create: {
+                balance: -entryFee,
+                player: { connect: { id: player.id } },
+                user: { connect: { id: player.userId } },
+              },
+              update: {
+                balance: { decrement: entryFee },
+              },
+            })
+          );
+          await Promise.all(ucPromises);
+        }
       }
 
       // Phase 6: Create MatchPlayerPlayed entries for ALL players
