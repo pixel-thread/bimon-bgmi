@@ -262,21 +262,21 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     <Button
                       variant="outline"
                       onClick={handleBalanceAdjustment}
-                      className="w-[calc(50%-0.25rem)] sm:w-auto text-sm"
+                      className="w-[calc(50%-0.25rem)] sm:w-auto text-sm min-w-0"
                       size="sm"
                     >
-                      <DollarSign className="w-4 h-4 mr-1.5" />
-                      Balance Adjustment
+                      <DollarSign className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
+                      <span className="truncate">Adjust UC</span>
                     </Button>
                     <Button
                       variant={player.isUCExempt ? "outline" : "secondary"}
                       onClick={() => toggleUCExemption(!player.isUCExempt)}
                       disabled={isExemptionPending}
-                      className={`w-[calc(50%-0.25rem)] sm:w-auto text-sm ${player.isUCExempt ? "border-amber-600 text-amber-600 hover:bg-amber-50" : ""}`}
+                      className={`w-[calc(50%-0.25rem)] sm:w-auto text-sm min-w-0 ${player.isUCExempt ? "border-amber-600 text-amber-600 hover:bg-amber-50" : ""}`}
                       size="sm"
                     >
-                      <Shield className="w-4 h-4 mr-1.5" />
-                      <span className="truncate">{player.isUCExempt ? "Remove UC Exemption" : "Grant UC Exemption"}</span>
+                      <Shield className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
+                      <span className="truncate">{player.isUCExempt ? "Remove Exempt" : "UC Exempt"}</span>
                     </Button>
                   </>
                 )}
@@ -286,18 +286,18 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     variant={player.isBanned ? "outline" : "destructive"}
                     onClick={() => toggleBan()}
                     disabled={isBanPending}
-                    className={`w-[calc(50%-0.25rem)] sm:w-auto text-sm ${player.isBanned ? "border-green-600 text-green-600 hover:bg-green-50" : ""}`}
+                    className={`w-[calc(50%-0.25rem)] sm:w-auto text-sm min-w-0 ${player.isBanned ? "border-green-600 text-green-600 hover:bg-green-50" : ""}`}
                     size="sm"
                   >
                     {player.isBanned ? (
                       <>
-                        <CheckCircle className="w-4 h-4 mr-1.5" />
-                        Unban Player
+                        <CheckCircle className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
+                        <span className="truncate">Unban</span>
                       </>
                     ) : (
                       <>
-                        <Ban className="w-4 h-4 mr-1.5" />
-                        Ban Player
+                        <Ban className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
+                        <span className="truncate">Ban</span>
                       </>
                     )}
                   </Button>
@@ -310,23 +310,23 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     params.set("history", id);
                     router.push(`?${params.toString()}`);
                   }}
-                  className="w-[calc(50%-0.25rem)] sm:w-auto text-sm"
+                  className="w-[calc(50%-0.25rem)] sm:w-auto text-sm min-w-0"
                   size="sm"
                 >
-                  <History className="w-4 h-4 mr-1.5" />
-                  Balance History
+                  <History className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
+                  <span className="truncate">History</span>
                 </Button>
 
                 {/* UC Transfer - for PLAYER, ADMIN, SUPER_ADMIN roles, not viewing own profile */}
                 {(user?.role === "PLAYER" || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && !isOwnProfile && (
                   <Button
                     variant="outline"
-                    className="w-[calc(50%-0.25rem)] sm:w-auto text-sm border-green-600 text-green-600 hover:bg-green-50"
+                    className="w-[calc(50%-0.25rem)] sm:w-auto text-sm min-w-0 border-green-600 text-green-600 hover:bg-green-50"
                     onClick={() => setIsTransferDialogOpen(true)}
                     size="sm"
                   >
-                    <ArrowUpRight className="w-4 h-4 mr-1.5" />
-                    Send / Request UC
+                    <ArrowUpRight className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
+                    <span className="truncate">Send / Request</span>
                   </Button>
                 )}
               </div>
