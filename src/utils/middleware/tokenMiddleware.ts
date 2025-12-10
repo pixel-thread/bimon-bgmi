@@ -53,6 +53,8 @@ export async function tokenMiddleware(req: NextRequest | Request) {
     // Allow voting for USER role
     if (req.url.includes("/vote") && reqMethod === "POST") {
       // Allow
+    } else if (req.url.includes("/payments/") && reqMethod === "POST") {
+      // Allow payment endpoints for users
     } else {
       throw new Error("Long ki ba jai jai se: Permission Denied");
     }
