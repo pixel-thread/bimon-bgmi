@@ -560,11 +560,11 @@ export function MemoryGame() {
               <span className="hidden sm:inline">Leaderboard</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col">
-            <DialogHeader>
+          <DialogContent className="sm:max-w-md !flex !flex-col max-h-[85vh] overflow-hidden">
+            <DialogHeader className="flex-shrink-0 pb-2">
               <DialogTitle>Leaderboard</DialogTitle>
             </DialogHeader>
-            <div className="overflow-y-auto flex-1 -mx-6 px-6">
+            <div className="overflow-y-auto flex-1 min-h-0 -mx-8 px-8 pb-2 max-h-[calc(85vh-100px)] overscroll-contain scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
               <Suspense fallback={<LeaderboardSkeleton />}>
                 <GameLeaderboard
                   currentPlayerId={playerId}
