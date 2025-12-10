@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useState } from "react";
 import {
   SettingsIcon,
   Users,
@@ -11,6 +12,7 @@ import {
   Trophy,
   DollarSign,
   User,
+  LogOut,
 } from "lucide-react";
 
 import { NavMain } from "@/src/components/nav-main";
@@ -23,9 +25,11 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
+  SidebarMenuButton,
 } from "@/src/components/ui/sidebar";
 import Link from "next/link";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import { useClerk } from "@clerk/nextjs";
 import { LucideIcon } from "lucide-react";
 
 type NavItem = {
@@ -92,11 +96,27 @@ const navItems: NavItem[] = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuth();
+  const { signOut } = useClerk();
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
 
   const filteredNavItems = navItems.filter(
     (item) => !item.superAdminOnly || isSuperAdmin
   );
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    // Navigate away from protected route first to avoid RoleBaseRouting redirect
+    window.location.href = "/";
+    // Small delay to ensure navigation starts before sign out
+    setTimeout(async () => {
+      try {
+        await signOut();
+      } catch (error) {
+        console.error("Error signing out:", error);
+      }
+    }, 100);
+  };
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -120,6 +140,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarThemeToggle />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+              className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+            >
+              {isSigningOut ? (
+                <div className="h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <LogOut className="h-4 w-4" />
+              )}
+              <span>{isSigningOut ? "Signing out..." : "Sign Out"}</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
         <NavUser />
