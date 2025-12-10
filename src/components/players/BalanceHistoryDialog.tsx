@@ -207,54 +207,77 @@ export function BalanceHistoryDialog({
             </div>
           ) : (
             <div className="space-y-3">
-              {displayedHistory.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="flex items-center justify-between p-4 border rounded-lg bg-card"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge
-                        className={
-                          entry.type === "credit"
-                            ? "bg-green-100 text-green-800 border-green-200"
-                            : "bg-red-100 text-red-800 border-red-200"
-                        }
-                      >
-                        {entry.type === "credit" ? (
-                          <TrendingUp className="w-3 h-3 mr-1" />
-                        ) : (
-                          <TrendingDown className="w-3 h-3 mr-1" />
-                        )}
-                        {entry.type === "credit" ? "Credit" : "Debit"}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(entry.timestamp).toLocaleDateString("en-IN", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
+              {(() => {
+                // Calculate running balance for each transaction
+                // Start from current balance and work backwards through transactions
+                const currentBalance = player?.uc?.balance || 0;
+                let runningBalance = currentBalance;
+
+                // First pass: calculate balance after each transaction
+                // Since transactions are sorted by DESC (newest first), we need to work backwards
+                const transactionsWithBalance = displayedHistory.map((entry, index) => {
+                  const balanceAfter = runningBalance;
+                  // For the next (older) transaction, adjust the running balance
+                  if (entry.type === "credit") {
+                    runningBalance = runningBalance - entry.amount;
+                  } else {
+                    runningBalance = runningBalance + Math.abs(entry.amount);
+                  }
+                  return { ...entry, balanceAfter };
+                });
+
+                return transactionsWithBalance.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between p-4 border rounded-lg bg-card"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge
+                          className={
+                            entry.type === "credit"
+                              ? "bg-green-100 text-green-800 border-green-200"
+                              : "bg-red-100 text-red-800 border-red-200"
+                          }
+                        >
+                          {entry.type === "credit" ? (
+                            <TrendingUp className="w-3 h-3 mr-1" />
+                          ) : (
+                            <TrendingDown className="w-3 h-3 mr-1" />
+                          )}
+                          {entry.type === "credit" ? "Credit" : "Debit"}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(entry.timestamp).toLocaleDateString("en-IN", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {entry.description}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {entry.description}
-                    </p>
+                    <div className="text-right">
+                      <p
+                        className={`font-bold text-lg ${entry.type === "credit"
+                          ? "text-green-600"
+                          : "text-red-600"
+                          }`}
+                      >
+                        {entry.type === "credit" ? "+" : "-"}
+                        {Math.abs(entry.amount).toFixed(2)} UC
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Bal: {entry.balanceAfter} UC
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p
-                      className={`font-bold text-lg ${entry.type === "credit"
-                        ? "text-green-600"
-                        : "text-red-600"
-                        }`}
-                    >
-                      {entry.type === "credit" ? "+" : "-"}
-                      {Math.abs(entry.amount).toFixed(2)} UC
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           )}
         </div>
