@@ -16,7 +16,7 @@ import { TeamT } from "@/src/types/team";
 import http from "@/src/utils/http";
 import { TeamStatsForm } from "@/src/utils/validation/team/team-stats";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { LoaderFive } from "../../ui/loader";
 
@@ -52,67 +52,17 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
         // If no positions filled yet, no warnings
         if (positions.length === 0) return errors;
 
-        // Rule: Total must always be 8 teams
-        if (positions.length !== 8) {
-            errors.push(`Need exactly 8 positions filled (currently ${positions.length})`);
-        }
-
-        // Count occurrences of each position
-        const positionCounts: Record<number, number> = {};
-        positions.forEach((pos) => {
-            positionCounts[pos] = (positionCounts[pos] || 0) + 1;
-        });
-
-        // Rule: Positions can only be 1-8
-        const invalidPositions = positions.filter((p) => p < 1 || p > 8);
-        if (invalidPositions.length > 0) {
-            errors.push(`Invalid positions: ${invalidPositions.join(', ')} (only 1-8 allowed)`);
-        }
-
-        // Rule: Positions 1-6 must be unique (exactly one team each)
-        for (let i = 1; i <= 6; i++) {
-            const count = positionCounts[i] || 0;
-            if (count === 0) {
-                errors.push(`Position ${i} is missing`);
-            } else if (count > 1) {
-                errors.push(`Position ${i} has ${count} teams (must be unique)`);
+        // Check that positions 1-8 are each filled at least once
+        const filledPositions = new Set(positions);
+        const missingPositions: number[] = [];
+        for (let i = 1; i <= 8; i++) {
+            if (!filledPositions.has(i)) {
+                missingPositions.push(i);
             }
         }
 
-        // Rule: Exactly one duplicate allowed, only at position 7 or 8
-        const pos7Count = positionCounts[7] || 0;
-        const pos8Count = positionCounts[8] || 0;
-
-        // Valid combinations for positions 7 and 8:
-        // - 7:1, 8:1 (both unique) = valid
-        // - 7:2, 8:0 (7 has duplicate, no 8) = valid
-        // - 7:0, 8:2 (8 has duplicate, no 7) = valid
-        const validCombos = [
-            pos7Count === 1 && pos8Count === 1,  // 1,2,3,4,5,6,7,8
-            pos7Count === 2 && pos8Count === 0,  // 1,2,3,4,5,6,7,7
-            pos7Count === 0 && pos8Count === 2,  // 1,2,3,4,5,6,8,8
-        ];
-
-        if (!validCombos.some(Boolean) && positions.length === 8) {
-            if (pos7Count > 2) {
-                errors.push(`Position 7 has ${pos7Count} teams (max 2 allowed)`);
-            }
-            if (pos8Count > 2) {
-                errors.push(`Position 8 has ${pos8Count} teams (max 2 allowed)`);
-            }
-            if (pos7Count === 2 && pos8Count > 0) {
-                errors.push(`Cannot have both position 7 duplicate and position 8`);
-            }
-            if (pos8Count === 2 && pos7Count > 0) {
-                errors.push(`Cannot have both position 8 duplicate and position 7`);
-            }
-            if (pos7Count === 0 && pos8Count === 0) {
-                errors.push(`Missing positions 7 and 8`);
-            } else if (pos7Count === 1 && pos8Count === 0) {
-                errors.push(`Position 8 is missing (or make position 7 a duplicate)`);
-            } else if (pos7Count === 0 && pos8Count === 1) {
-                errors.push(`Position 7 is missing (or make position 8 a duplicate)`);
-            }
+        if (missingPositions.length > 0) {
+            errors.push(`Missing positions: ${missingPositions.join(", ")}`);
         }
 
         return errors;
@@ -141,6 +91,8 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
         }
     }, [teams]);
 
+    // Teams data is reset on dialog open/close via editableStats initialization
+
     const handlePositionChange = (index: number, value: string) => {
         const newStats = [...editableStats];
         newStats[index].position = value;
@@ -156,6 +108,100 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
         newStats[teamIndex].players[playerIndex].kills = value;
         setEditableStats(newStats);
     };
+
+    // Process JSON text and apply to stats
+    const processJsonText = useCallback((text: string) => {
+        if (!teams) return;
+
+        if (!text.trim()) {
+            toast.error("No JSON data. Copy JSON from AI first, then paste here.");
+            return;
+        }
+
+        try {
+            // Parse the JSON input
+            const data = JSON.parse(text) as Array<{ name: string; kills: number; position?: number }>;
+
+            if (!Array.isArray(data) || data.length === 0) {
+                throw new Error("Invalid JSON. Expected array like: [{name, kills, position}]");
+            }
+
+            // Map to track team positions from JSON
+            const teamPositions: Map<string, number> = new Map();
+
+            // Create a copy of editableStats with kills and positions from JSON
+            const newStats: EditableTeamStats[] = teams.map((team: TeamT) => ({
+                teamId: team.id,
+                name: team.name,
+                position: "" as string | number,
+                players: team.players.map((player) => {
+                    // Find matching player in JSON data
+                    const match = data.find(d =>
+                        d.name.toLowerCase() === player.name.toLowerCase()
+                    );
+
+                    // If match found and has position, track it for the team
+                    if (match?.position && !teamPositions.has(team.id)) {
+                        teamPositions.set(team.id, match.position);
+                    }
+
+                    return {
+                        playerId: player.id,
+                        name: player.name,
+                        kills: match ? String(match.kills) : ("" as string | number),
+                    };
+                }),
+            }));
+
+            // Apply positions from JSON to teams
+            newStats.forEach((team) => {
+                const position = teamPositions.get(team.teamId);
+                if (position !== undefined) {
+                    team.position = String(position);
+                }
+            });
+
+            setEditableStats(newStats);
+            toast.success(`Applied ${data.length} players!`);
+        } catch (error: unknown) {
+            const err = error as Error;
+            toast.error(err.message || "Failed to parse JSON");
+        }
+    }, [teams]);
+
+    // Handle paste event from textarea
+    const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        const text = e.clipboardData.getData("text");
+        processJsonText(text);
+        // Clear the textarea after processing
+        e.currentTarget.value = "";
+    }, [processJsonText]);
+
+    // Copy AI prompt to clipboard
+    const copyPrompt = useCallback(() => {
+        if (!teams) return;
+
+        const prompt = `Extract player names, kills (finishes), and team positions from this BGMI scoreboard.
+
+Player names to match: ${teams.flatMap(t => t.players.map(p => p.name)).join(", ")}
+
+Teams and their players:
+${teams.map(t => `- ${t.name}: ${t.players.map(p => p.name).join(", ")}`).join("\n")}
+
+Custom name mappings (use these exact names in output):
+- Zsyiem = sing
+
+IMPORTANT:
+- Position = the rank number shown next to each team (1, 2, 3, etc.)
+- The crown icon = position 1
+- Players in the same row belong to the same team
+- If uploading multiple images, combine ALL results into ONE JSON array
+
+Return ONLY JSON: [{"name": "player_name", "kills": 0, "position": 1}, ...]`;
+
+        navigator.clipboard.writeText(prompt);
+        toast.success("Prompt copied to clipboard!");
+    }, [teams]);
 
     const { mutate, isPending } = useMutation({
         mutationFn: (data: { stats: TeamStatsForm[] }) =>
@@ -209,76 +255,112 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                     </DialogDescription>
                 </DialogHeader>
 
-                {/* SCROLLABLE CONTENT */}
-                <div className="flex-1 overflow-y-auto min-h-0 bg-muted/5">
+                {/* AI BUTTONS - Copy Prompt & Paste JSON */}
+                <div className="px-3 sm:px-4 pt-3 flex flex-col sm:flex-row gap-2 flex-shrink-0">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={copyPrompt}
+                        className="gap-2 w-full sm:w-auto"
+                    >
+                        📋 Copy Prompt
+                    </Button>
+                    <div className="flex gap-2 flex-1">
+                        <textarea
+                            onPaste={handlePaste}
+                            placeholder="Click & Ctrl+V"
+                            className="flex-1 h-9 px-3 py-2 text-sm rounded-md border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                        <Button
+                            variant="default"
+                            size="sm"
+                            onClick={async () => {
+                                try {
+                                    const text = await navigator.clipboard.readText();
+                                    processJsonText(text);
+                                } catch {
+                                    toast.error("Click the input and use Ctrl+V");
+                                }
+                            }}
+                            className="gap-2 flex-shrink-0"
+                        >
+                            📥 Paste
+                        </Button>
+                    </div>
+                </div>
+
+                {/* TEAM CARDS */}
+                <div className="flex-1 overflow-y-auto min-h-0 bg-muted/5 p-1 sm:p-4 pb-20 sm:pb-6">
                     {isFetching ? (
                         <div className="h-full flex flex-col items-center justify-center p-8 text-muted-foreground">
                             <LoaderFive text="Loading teams..." />
                         </div>
                     ) : (
-                        <div className="p-1 sm:p-4 pb-20 sm:pb-6">
-                            <div className="space-y-2">
-                                {editableStats.map((team, teamIndex) => {
-                                    const hasPositionData = team.position !== "" && team.position !== 0;
-                                    const hasAnyKills = team.players.some(p => p.kills !== "" && p.kills !== 0);
-                                    const hasTeamData = hasPositionData || hasAnyKills;
+                        <div className="space-y-2">
+                            {editableStats.map((team, teamIndex) => {
+                                const hasPositionData = team.position !== "" && team.position !== 0;
+                                const hasAnyKills = team.players.some(p => p.kills !== "" && p.kills !== 0);
+                                const hasTeamData = hasPositionData || hasAnyKills;
 
-                                    // Determine card background - bolder colors for visibility
-                                    const cardBg = hasTeamData
-                                        ? "bg-emerald-500/25 dark:bg-emerald-500/30"
-                                        : teamIndex % 2 === 0
-                                            ? "bg-background"
-                                            : "bg-black/20 dark:bg-white/10";
+                                const cardBg = hasTeamData
+                                    ? "bg-emerald-500/25 dark:bg-emerald-500/30"
+                                    : teamIndex % 2 === 0
+                                        ? "bg-background"
+                                        : "bg-black/20 dark:bg-white/10";
 
-                                    return (
-                                        <div
-                                            key={team.teamId}
-                                            className={`rounded-lg border p-3 ${cardBg}`}
-                                        >
-                                            {/* Team Name Header */}
-                                            <div className="text-sm font-bold mb-2 text-foreground/90 truncate" title={team.name}>
+                                return (
+                                    <div
+                                        key={team.teamId}
+                                        className={`rounded-lg border p-3 ${cardBg}`}
+                                    >
+                                        {/* Team Name Header */}
+                                        <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                                            <span className="font-medium text-sm truncate flex-1">
                                                 {team.name}
+                                            </span>
+                                            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                                                <span className="text-xs text-muted-foreground hidden sm:inline">
+                                                    Position:
+                                                </span>
+                                                <span className="text-xs text-muted-foreground sm:hidden">
+                                                    #
+                                                </span>
+                                                <Input
+                                                    type="number"
+                                                    min="1"
+                                                    max="20"
+                                                    value={team.position}
+                                                    onChange={(e) => handlePositionChange(teamIndex, e.target.value)}
+                                                    className="w-12 sm:w-16 h-8 text-center text-sm"
+                                                    placeholder="#"
+                                                />
                                             </div>
+                                        </div>
 
-                                            {/* Two Column Layout: 30% Position, 70% Kills */}
-                                            <div className="grid grid-cols-[30%_70%] gap-3 items-center">
-                                                {/* Position Column - vertically centered with kills */}
-                                                <div className="flex items-center justify-center">
+                                        {/* Players Grid */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
+                                            {team.players.map((player, playerIndex) => (
+                                                <div
+                                                    key={player.playerId}
+                                                    className="flex items-center gap-1.5 sm:gap-2 bg-muted/40 rounded-md px-2 py-1"
+                                                >
+                                                    <span className="text-xs truncate flex-1 min-w-0" title={player.name}>
+                                                        {player.name}
+                                                    </span>
                                                     <Input
                                                         type="number"
-                                                        value={team.position}
-                                                        onFocus={handleFocus}
-                                                        onChange={(e) => handlePositionChange(teamIndex, e.target.value)}
-                                                        className="w-full max-w-[80px] h-10 text-lg font-semibold text-center shadow-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                        min="0"
+                                                        value={player.kills}
+                                                        onChange={(e) => handleKillsChange(teamIndex, playerIndex, e.target.value)}
+                                                        className="w-10 sm:w-12 h-6 text-center text-xs flex-shrink-0"
                                                         placeholder="0"
                                                     />
                                                 </div>
-
-                                                {/* Kills Column - wraps to multiple rows */}
-                                                <div className="flex flex-wrap gap-2 content-center">
-                                                    {team.players.map((player, playerIndex) => (
-                                                        <Input
-                                                            key={player.playerId}
-                                                            type="number"
-                                                            value={player.kills}
-                                                            onFocus={handleFocus}
-                                                            onChange={(e) =>
-                                                                handleKillsChange(teamIndex, playerIndex, e.target.value)
-                                                            }
-                                                            className={`w-[calc(50%-4px)] h-10 text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${player.kills !== "" && player.kills !== 0
-                                                                ? "border-emerald-500/50 bg-emerald-500/10"
-                                                                : ""
-                                                                }`}
-                                                            placeholder={player.name}
-                                                            title={player.name}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
+                                            ))}
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                    </div>
+                                );
+                            })}
 
                             {/* Validation Warnings */}
                             {validationErrors.length > 0 && (
