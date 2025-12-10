@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { usePendingUCRequests } from "@/src/hooks/uc/usePendingUCRequests";
-import { FiMenu, FiX, FiLogIn, FiSun, FiMoon, FiUser } from "react-icons/fi";
-import { UserAvatar } from "@clerk/nextjs";
+import { FiMenu, FiX, FiLogIn, FiLogOut, FiSun, FiMoon } from "react-icons/fi";
+import { UserAvatar, SignOutButton } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
 
 export default function HamburgerMenu() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const router = useRouter();
   const { isSignedIn: isAuthorized, user: playerUser } = useAuth();
   const { hasPendingRequests } = usePendingUCRequests();
@@ -133,7 +134,7 @@ export default function HamburgerMenu() {
                       }}
                       className="relative w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                     >
-                      <div className="h-5 w-5 rounded-full overflow-hidden">
+                      <div className="h-6 w-6 flex-shrink-0">
                         <UserAvatar />
                       </div>
                       My Profile
@@ -200,15 +201,30 @@ export default function HamburgerMenu() {
                   {/* User Info - Show if authenticated */}
                   {isAuthorized && playerUser && (
                     <div className="pt-4 border-t border-gray-200 dark:border-zinc-700">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 px-4">
                         Logged in as:
                       </p>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white px-4">
                         {playerUser.userName}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 px-4 mb-3">
                         {playerUser.role === "PLAYER" ? "Player" : "Admin"}
                       </p>
+                      {/* Sign Out Button */}
+                      <SignOutButton redirectUrl="/">
+                        <button
+                          onClick={() => setIsSigningOut(true)}
+                          disabled={isSigningOut}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {isSigningOut ? (
+                            <div className="h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <FiLogOut className="h-5 w-5" />
+                          )}
+                          {isSigningOut ? "Signing out..." : "Sign Out"}
+                        </button>
+                      </SignOutButton>
                     </div>
                   )}
                 </nav>
