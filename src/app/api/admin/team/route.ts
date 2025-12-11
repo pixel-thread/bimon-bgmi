@@ -1,5 +1,6 @@
 import { prisma } from "@/src/lib/db/prisma";
 import { addPlayersToTeamBatch } from "@/src/services/team/addPlayersToTeamBatch";
+import { removePlayerFromTeam } from "@/src/services/team/removePlayerFromTeam";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
@@ -47,11 +48,17 @@ export async function POST(req: NextRequest) {
 
     const entryFee = tournament.fee || 0;
 
-    // 2. Check if any player is already on a team for this tournament (batch query)
+    // 2. Check if any player is already on a team for this tournament
+    // Build a map of players that need to be moved
+    const playersWithMoveInfo = body.players.filter(p => p.moveFromTeamId);
+    const playerIdsBeingMoved = playersWithMoveInfo.map(p => p.playerId);
+    const newPlayerIds = playerIds.filter(id => !playerIdsBeingMoved.includes(id));
+
+    // Check for players already on teams that are NOT being moved
     const existingTeamPlayers = await prisma.teamPlayerStats.findMany({
       where: {
         team: { tournamentId: body.tournamentId },
-        playerId: { in: playerIds },
+        playerId: { in: newPlayerIds },
       },
       select: { playerId: true },
     });
@@ -63,7 +70,17 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3. Get current team count for team number
+    // 3. Remove players being moved from their old teams
+    for (const playerMove of playersWithMoveInfo) {
+      if (playerMove.moveFromTeamId) {
+        await removePlayerFromTeam({
+          playerId: playerMove.playerId,
+          teamId: playerMove.moveFromTeamId,
+        });
+      }
+    }
+
+    // 4. Get current team count for team number
     const teamCount = await prisma.team.count({
       where: { tournamentId: body.tournamentId },
     });

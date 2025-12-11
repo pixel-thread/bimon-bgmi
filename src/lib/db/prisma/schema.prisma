@@ -15,13 +15,6 @@ datasource db {
  * ---------------------------
  */
 
-enum Category {
-  NOOB
-  PRO
-  ULTRA_NOOB
-  ULTRA_PRO
-}
-
 enum SeasonStatus {
   ACTIVE
   INACTIVE

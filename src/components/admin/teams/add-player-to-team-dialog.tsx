@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/src/components/ui/select";
-import { PlusIcon, XIcon, SaveIcon, AlertCircle } from "lucide-react";
+import { PlusIcon, XIcon, SaveIcon, AlertCircle, ArrowRight } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { ADMIN_TEAM_ENDPOINTS } from "@/src/lib/endpoints/admin/team";
@@ -65,6 +65,17 @@ export const AddPlayerToTeamDialog = ({
   // Track players to add with UC deduction
   const [playersWithUCDeduction, setPlayersWithUCDeduction] = React.useState<Set<string>>(new Set());
 
+  // Move confirmation state
+  const [showMoveConfirm, setShowMoveConfirm] = React.useState(false);
+  const [playerToMove, setPlayerToMove] = React.useState<{
+    id: string;
+    name: string;
+    currentTeamId: string;
+    currentTeamName: string;
+  } | null>(null);
+  // Track players that need to be moved from other teams (playerId -> {teamId, teamName})
+  const [playersToMoveFrom, setPlayersToMoveFrom] = React.useState<Map<string, { teamId: string; teamName: string }>>(new Map());
+
   const { data: team, isFetching } = useQuery({
     queryKey: ["team", teamId],
     queryFn: () =>
@@ -82,7 +93,7 @@ export const AddPlayerToTeamDialog = ({
   const entryFee = tournament?.fee || 0;
 
   const { mutateAsync: addPlayer, isPending: isAdding } = useMutation({
-    mutationFn: (data: { playerId: string; matchId: string; deductUC?: boolean }) =>
+    mutationFn: (data: { playerId: string; matchId: string; deductUC?: boolean; moveFromTeamId?: string }) =>
       http.post<{ id: string }>(
         ADMIN_TEAM_ENDPOINTS.POST_ADD_PLAYER_TO_TEAM.replace(":teamId", teamId),
         data,
@@ -110,6 +121,7 @@ export const AddPlayerToTeamDialog = ({
       setOriginalPlayersList(playerIds);
       setHasChanges(false);
       setPlayersWithUCDeduction(new Set());
+      setPlayersToMoveFrom(new Map());
     }
   }, [team]);
 
@@ -122,17 +134,31 @@ export const AddPlayerToTeamDialog = ({
     setHasChanges(playersChanged);
   }, [playersList, originalPlayersList]);
 
-  /** Insert selected player from dialog - checks if UC deduction is needed */
-  const handleInsertPlayer = (playerId: string) => {
-    const player = players?.find(p => p.id === playerId);
+  /** Insert selected player from dialog - checks if UC deduction is needed or if player needs to be moved */
+  const handleInsertPlayer = (
+    playerId: string,
+    playerName: string,
+    teamInfo: { teamId: string; teamName: string } | null
+  ) => {
     setSearchDialogOpen(false);
 
-    if (!player) return;
     if (playersList.includes(playerId)) return;
+
+    // If player is already on another team, ask to move
+    if (teamInfo && teamInfo.teamId !== teamId) {
+      setPlayerToMove({
+        id: playerId,
+        name: playerName,
+        currentTeamId: teamInfo.teamId,
+        currentTeamName: teamInfo.teamName,
+      });
+      setShowMoveConfirm(true);
+      return;
+    }
 
     // If tournament has entry fee, ask about UC deduction
     if (entryFee > 0) {
-      setPendingPlayer({ id: playerId, name: player.userName });
+      setPendingPlayer({ id: playerId, name: playerName });
       setShowUCConfirm(true);
     } else {
       // No entry fee, just add
@@ -150,6 +176,19 @@ export const AddPlayerToTeamDialog = ({
     }
     setPendingPlayer(null);
     setShowUCConfirm(false);
+  };
+
+  /** Handle move confirmation response */
+  const handleMoveConfirmResponse = (shouldMove: boolean) => {
+    if (playerToMove && shouldMove) {
+      setPlayersList((prev) => [...prev, playerToMove.id]);
+      setPlayersToMoveFrom(prev => new Map(prev).set(playerToMove.id, {
+        teamId: playerToMove.currentTeamId,
+        teamName: playerToMove.currentTeamName,
+      }));
+    }
+    setPlayerToMove(null);
+    setShowMoveConfirm(false);
   };
 
   /** Remove player locally */
@@ -202,10 +241,12 @@ export const AddPlayerToTeamDialog = ({
       }
     }
 
-    // Then process additions with UC deduction flag
+    // Then process additions with UC deduction flag and move info
     for (const playerId of playersToAdd) {
       const deductUC = playersWithUCDeduction.has(playerId);
-      const result = await addPlayer({ playerId, matchId, deductUC });
+      const moveInfo = playersToMoveFrom.get(playerId);
+      const moveFromTeamId = moveInfo?.teamId;
+      const result = await addPlayer({ playerId, matchId, deductUC, moveFromTeamId });
       if (!result.success) {
         toast.error(result.message || `Failed to add player`);
         hasError = true;
@@ -213,7 +254,19 @@ export const AddPlayerToTeamDialog = ({
     }
 
     if (!hasError) {
-      toast.success("Team updated successfully");
+      // Build informative message
+      const movedPlayers = Array.from(playersToMoveFrom.entries());
+      if (movedPlayers.length > 0) {
+        const playerNames = movedPlayers.map(([id]) => {
+          const player = players?.find(p => p.id === id);
+          return player?.userName || 'Player';
+        });
+        const fromTeams = movedPlayers.map(([, info]) => info.teamName);
+        const moveDetails = playerNames.map((name, i) => `${name} moved from ${fromTeams[i]}`).join(", ");
+        toast.success(`Team updated. ${moveDetails}`);
+      } else {
+        toast.success("Team updated successfully");
+      }
     }
 
     // Invalidate queries to refresh data
@@ -229,6 +282,7 @@ export const AddPlayerToTeamDialog = ({
     setOriginalPlayersList([...playersList]);
     setHasChanges(false);
     setPlayersWithUCDeduction(new Set());
+    setPlayersToMoveFrom(new Map());
   };
 
   return (
@@ -251,6 +305,7 @@ export const AddPlayerToTeamDialog = ({
           open={searchDialogOpen}
           onOpenChange={setSearchDialogOpen}
           onSelectPlayer={handleInsertPlayer}
+          tournamentId={tournamentId}
         />
 
         {/* UC Deduction Confirmation Dialog */}
@@ -281,6 +336,34 @@ export const AddPlayerToTeamDialog = ({
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* Move Player Confirmation Dialog */}
+        <AlertDialog open={showMoveConfirm} onOpenChange={setShowMoveConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <ArrowRight className="h-5 w-5 text-blue-500" />
+                Move Player?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                <strong>{playerToMove?.name}</strong> is currently on <strong className="text-blue-500">{playerToMove?.currentTeamName}</strong>.
+                <br /><br />
+                Do you want to move this player to this team?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => handleMoveConfirmResponse(false)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => handleMoveConfirmResponse(true)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Move Player
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <Ternary
           condition={isFetchingPlayers || isFetching}
           trueComponent={
@@ -292,13 +375,20 @@ export const AddPlayerToTeamDialog = ({
             <div className="flex flex-col space-y-4 mt-3">
               {playersList.map((playerId, index) => {
                 const isNewWithUC = !originalPlayersList.includes(playerId) && playersWithUCDeduction.has(playerId);
+                const moveFromInfo = playersToMoveFrom.get(playerId);
+                const isBeingMoved = !originalPlayersList.includes(playerId) && !!moveFromInfo;
                 return (
                   <div key={index} className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-medium">Player {index + 1}</p>
                       {isNewWithUC && (
                         <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded dark:bg-orange-900 dark:text-orange-300">
                           -{entryFee} UC
+                        </span>
+                      )}
+                      {isBeingMoved && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                          Moving from {moveFromInfo.teamName}
                         </span>
                       )}
                     </div>

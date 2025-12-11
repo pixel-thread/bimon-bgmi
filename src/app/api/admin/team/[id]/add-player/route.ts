@@ -2,6 +2,7 @@ import { getPlayerById } from "@/src/services/player/getPlayerById";
 import { addPlayerToTeam } from "@/src/services/team/addPlayerToTeam";
 import { getTeamById } from "@/src/services/team/getTeamById";
 import { getTeamByTournamentId } from "@/src/services/team/getTeamByTournamentId";
+import { removePlayerFromTeam } from "@/src/services/team/removePlayerFromTeam";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
@@ -42,15 +43,29 @@ export async function POST(
       page: "all",
     });
 
-    if (teams) {
-      const isPlayerAlreadyOnTeam = teams.find((team) =>
-        team.players.find((player) => player.id === body.playerId),
-      );
+    // Check if player is already on a team in this tournament
+    const existingTeam = teams?.find((team) =>
+      team.players.find((player) => player.id === body.playerId),
+    );
 
-      if (isPlayerAlreadyOnTeam) {
+    if (existingTeam) {
+      // If moveFromTeamId is provided and matches, perform the move
+      if (body.moveFromTeamId && body.moveFromTeamId === existingTeam.id) {
+        // Remove player from old team first
+        await removePlayerFromTeam({
+          playerId: body.playerId,
+          teamId: body.moveFromTeamId,
+        });
+      } else {
+        // Player is on another team but no move requested - return error with team info
         return ErrorResponse({
-          message: "Player already on a a team please remove player first",
+          message: "Player already on a team",
           status: 400,
+          error: {
+            code: "PLAYER_ON_TEAM",
+            currentTeamId: existingTeam.id,
+            currentTeamName: existingTeam.name,
+          },
         });
       }
     }
@@ -63,6 +78,13 @@ export async function POST(
 
     const entryFee = tournament?.fee || 0;
     let message = "Player added to team successfully";
+    let movedFromTeamName: string | null = null;
+
+    // Track if player was moved
+    if (existingTeam && body.moveFromTeamId) {
+      movedFromTeamName = existingTeam.name;
+      message = `Player moved from ${existingTeam.name}`;
+    }
 
     // UC deduction if requested and entry fee exists
     if (body.deductUC && entryFee > 0) {
@@ -115,7 +137,10 @@ export async function POST(
     });
 
     return SuccessResponse({
-      data: updatedTeam,
+      data: {
+        ...updatedTeam,
+        movedFrom: movedFromTeamName ? { teamName: movedFromTeamName } : null,
+      },
       message,
     });
   } catch (error) {
