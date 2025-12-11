@@ -168,9 +168,9 @@ export function AddBalanceDialog() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button size="sm" className="gap-1">
+                <Button size="sm" className="gap-1 shrink-0">
                     <Plus className="w-4 h-4" />
-                    Add Balance
+                    <span className="hidden sm:inline">Add Balance</span>
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">

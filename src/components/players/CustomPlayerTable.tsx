@@ -162,83 +162,87 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
     return (
         <>
             <div className="w-full bg-white dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                <Table>
-                    <TableHeader className="bg-zinc-50 dark:bg-zinc-900/50">
-                        <TableRow className="hover:bg-transparent border-b border-zinc-200 dark:border-zinc-800">
-                            <TableHead className="w-16 pl-6">#</TableHead>
-                            <TableHead className="w-[300px]">Player</TableHead>
-                            <TableHead>{getDynamicHeader()}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {data?.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={3} className="h-24 text-center text-zinc-500">
-                                    No players found.
-                                </TableCell>
+                <div className="overflow-x-auto">
+                    <Table className="min-w-full">
+                        <TableHeader className="bg-zinc-50 dark:bg-zinc-900/50">
+                            <TableRow className="hover:bg-transparent border-b border-zinc-200 dark:border-zinc-800">
+                                <TableHead className="w-10 sm:w-16 pl-3 sm:pl-6">#</TableHead>
+                                <TableHead className="min-w-[180px] sm:min-w-[280px]">Player</TableHead>
+                                <TableHead className="min-w-[70px] sm:min-w-[100px] pr-3 sm:pr-6">{getDynamicHeader()}</TableHead>
                             </TableRow>
-                        ) : (
-                            data?.map((player, index) => {
-                                const globalIndex = meta ? (meta.page - 1) * meta.pageSize + index + 1 : index + 1;
-                                return (
-                                    <TableRow
-                                        key={player.id}
-                                        onClick={() => {
-                                            const params = new URLSearchParams(search.toString());
-                                            params.set("player", player.id);
-                                            router.push(`?${params.toString()}`);
-                                        }}
-                                        className={`group hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors border-b border-zinc-100 dark:border-zinc-800/50 last:border-0 cursor-pointer ${player.isBanned ? 'opacity-60' : ''}`}
-                                    >
-                                        <TableCell className="pl-6 py-4 font-semibold text-zinc-600 dark:text-zinc-400">
-                                            {globalIndex}
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="h-10 w-10 border border-zinc-200 dark:border-zinc-700">
-                                                    <AvatarImage src={player.imageUrl || undefined} />
-                                                    <AvatarFallback>{player.userName.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex flex-col gap-1">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <span className="font-medium text-zinc-900 dark:text-zinc-100 truncate max-w-[120px] sm:max-w-[180px]">
-                                                            {player.userName}
-                                                        </span>
-                                                        {player.isBanned && (
-                                                            <Badge variant="destructive" className="text-xs shrink-0">
-                                                                Banned
-                                                            </Badge>
-                                                        )}
+                        </TableHeader>
+                        <TableBody>
+                            {data?.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="h-24 text-center text-zinc-500">
+                                        No players found.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                data?.map((player, index) => {
+                                    const globalIndex = meta ? (meta.page - 1) * meta.pageSize + index + 1 : index + 1;
+                                    return (
+                                        <TableRow
+                                            key={player.id}
+                                            onClick={() => {
+                                                const params = new URLSearchParams(search.toString());
+                                                params.set("player", player.id);
+                                                router.push(`?${params.toString()}`);
+                                            }}
+                                            className={`group hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors border-b border-zinc-100 dark:border-zinc-800/50 last:border-0 cursor-pointer ${player.isBanned ? 'opacity-60' : ''}`}
+                                        >
+                                            <TableCell className="pl-3 sm:pl-6 py-3 sm:py-4 font-semibold text-zinc-600 dark:text-zinc-400 text-sm sm:text-base">
+                                                {globalIndex}
+                                            </TableCell>
+                                            <TableCell className="py-3 sm:py-4">
+                                                <div className="flex items-center gap-2 sm:gap-3">
+                                                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border border-zinc-200 dark:border-zinc-700 shrink-0">
+                                                        <AvatarImage src={player.imageUrl || undefined} />
+                                                        <AvatarFallback className="text-xs sm:text-sm">{player.userName.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                                            <span className="font-medium text-zinc-900 dark:text-zinc-100 truncate max-w-[100px] xs:max-w-[120px] sm:max-w-[180px] text-sm sm:text-base">
+                                                                {player.userName}
+                                                            </span>
+                                                            {player.isBanned && (
+                                                                <Badge variant="destructive" className="text-[10px] sm:text-xs shrink-0 px-1.5 sm:px-2">
+                                                                    Banned
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        <Badge variant="secondary" className="w-fit text-[10px] sm:text-xs font-normal bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 px-1.5 sm:px-2">
+                                                            {player.category}
+                                                        </Badge>
                                                     </div>
-                                                    <Badge variant="secondary" className="w-fit text-xs font-normal bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700">
-                                                        {player.category}
-                                                    </Badge>
                                                 </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            {renderDynamicCell(player)}
-                                        </TableCell>
-                                    </TableRow>
-                                )
-                            })
-                        )}
-                    </TableBody>
-                </Table>
+                                            </TableCell>
+                                            <TableCell className="pr-3 sm:pr-6">
+                                                <div className="text-sm sm:text-base">
+                                                    {renderDynamicCell(player)}
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
 
                 {/* Pagination */}
                 {meta && (
-                    <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-                        <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                    <div className="flex flex-col xs:flex-row items-center justify-between gap-3 px-3 sm:px-6 py-3 sm:py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+                        <div className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 order-2 xs:order-1">
                             Page {meta.page} of {meta.totalPages}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 order-1 xs:order-2 w-full xs:w-auto">
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handlePageChange(Number(page) - 1)}
                                 disabled={!meta.hasPreviousPage}
-                                className="h-8"
+                                className="h-8 flex-1 xs:flex-none text-xs sm:text-sm"
                             >
                                 Previous
                             </Button>
@@ -247,7 +251,7 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                                 size="sm"
                                 onClick={() => handlePageChange(Number(page) + 1)}
                                 disabled={!meta.hasNextPage}
-                                className="h-8"
+                                className="h-8 flex-1 xs:flex-none text-xs sm:text-sm"
                             >
                                 Next
                             </Button>
