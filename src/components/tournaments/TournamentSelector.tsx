@@ -44,7 +44,8 @@ export default function TournamentSelector({
   }, [allTournaments, tournamentId, setTournamentId]);
 
   const onSelect = (value: string | null) => {
-    setMatchId("");
+    // Reset to "all" instead of empty so useTeams query stays enabled
+    setMatchId("all");
     setTournamentId(value || "");
   };
 

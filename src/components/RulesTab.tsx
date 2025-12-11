@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
@@ -41,6 +41,46 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
     title: "",
     content: "",
   });
+  const [overflowingRules, setOverflowingRules] = useState<Set<string>>(new Set());
+  const contentRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Check which rules have overflowing content
+  const checkOverflow = useCallback(() => {
+    const newOverflowing = new Set<string>();
+    contentRefs.current.forEach((element, ruleId) => {
+      if (element && element.scrollHeight > element.clientHeight) {
+        newOverflowing.add(ruleId);
+      }
+    });
+    setOverflowingRules(newOverflowing);
+  }, []);
+
+  // Check overflow when rules change or window resizes
+  useEffect(() => {
+    checkOverflow();
+    window.addEventListener('resize', checkOverflow);
+    return () => window.removeEventListener('resize', checkOverflow);
+  }, [rules, checkOverflow]);
+
+  const fetchRules = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch("/api/admin/rules");
+      const result = await response.json();
+      if (result.success) {
+        setRules(result.data);
+      }
+    } catch (error) {
+      console.error("Error fetching rules:", error);
+      toast.error("Failed to load rules");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRules();
+  }, []);
 
   const handleSaveRule = async () => {
     if (!newRule.title.trim() || !newRule.content.trim()) {
@@ -54,25 +94,41 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
         title: newRule.title.trim(),
         content: newRule.content.trim(),
         order: editingRule ? editingRule.order : rules.length + 1,
-        createdAt: editingRule
-          ? editingRule.createdAt
-          : new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       };
 
       if (editingRule) {
+        // Update existing rule
+        const response = await fetch(`/api/admin/rules/${editingRule.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(ruleData),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.message || "Failed to update rule");
+        }
         toast.success("Rule updated successfully!");
       } else {
-        const ruleId = `rule_${Date.now()}`;
+        // Create new rule
+        const response = await fetch("/api/admin/rules", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(ruleData),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.message || "Failed to create rule");
+        }
         toast.success("Rule created successfully!");
       }
 
       setNewRule({ title: "", content: "" });
       setEditingRule(null);
       setIsDialogOpen(false);
+      await fetchRules(); // Refresh the list
     } catch (error) {
       console.error("Error saving rule:", error);
-      toast.error("Failed to save rule");
+      toast.error(error instanceof Error ? error.message : "Failed to save rule");
     } finally {
       setIsSaving(false);
     }
@@ -93,10 +149,18 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
     }
 
     try {
+      const response = await fetch(`/api/admin/rules/${ruleId}`, {
+        method: "DELETE",
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to delete rule");
+      }
       toast.success("Rule deleted successfully!");
+      await fetchRules(); // Refresh the list
     } catch (error) {
       console.error("Error deleting rule:", error);
-      toast.error("Failed to delete rule");
+      toast.error(error instanceof Error ? error.message : "Failed to delete rule");
     }
   };
 
@@ -110,10 +174,18 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
     }
 
     try {
-      toast.success("All rules deleted successfully!");
+      const response = await fetch("/api/admin/rules", {
+        method: "DELETE",
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to clear rules");
+      }
+      toast.success(result.message || "All rules deleted successfully!");
+      await fetchRules(); // Refresh the list
     } catch (error) {
       console.error("Error clearing rules:", error);
-      toast.error("Failed to clear rules");
+      toast.error(error instanceof Error ? error.message : "Failed to clear rules");
     }
   };
 
@@ -231,16 +303,18 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
 
                       <div className="mt-1">
                         <div
-                          className={`text-foreground/90 text-sm sm:text-base ${
-                            expandedRule === rule.id ? "" : "line-clamp-3"
-                          }`}
+                          ref={(el) => {
+                            if (el) contentRefs.current.set(rule.id, el);
+                          }}
+                          className={`text-foreground/90 text-sm sm:text-base ${expandedRule === rule.id ? "" : "line-clamp-3"
+                            }`}
                         >
                           <div className="whitespace-pre-wrap leading-relaxed">
                             {rule.content}
                           </div>
                         </div>
 
-                        {rule.content.length > 100 && (
+                        {(overflowingRules.has(rule.id) || expandedRule === rule.id) && (
                           <button
                             onClick={() =>
                               setExpandedRule(
@@ -284,13 +358,13 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
 
         {/* Add/Edit Rule Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
-          <DialogContent className="w-[calc(100%-1rem)] max-w-lg sm:max-w-xl md:max-w-2xl mx-auto p-0 sm:p-6 max-h-[90vh] overflow-hidden flex flex-col">
-            <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-0">
+          <DialogContent className="!p-0 !gap-0 w-[98vw] sm:w-auto sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto h-[85vh] sm:h-[80vh] flex flex-col">
+            <DialogHeader className="px-3 sm:px-6 pt-4 pb-2 shrink-0 border-b border-border/30">
               <DialogTitle className="text-lg sm:text-xl md:text-2xl">
                 {editingRule ? "Edit Rule" : "Create New Rule"}
               </DialogTitle>
             </DialogHeader>
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-2 space-y-4">
+            <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-4">
               <div className="space-y-2">
                 <Label
                   htmlFor="ruleTitle"
@@ -308,7 +382,7 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
                   className="text-sm sm:text-base h-10 sm:h-11 px-3"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 flex-1 flex flex-col">
                 <Label
                   htmlFor="ruleContent"
                   className="text-sm sm:text-base font-medium"
@@ -322,23 +396,22 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
                     setNewRule((prev) => ({ ...prev, content: e.target.value }))
                   }
                   placeholder="Enter the rule details..."
-                  rows={4}
-                  className="text-sm sm:text-base min-h-[100px] sm:min-h-[140px] p-3 resize-y max-h-[40vh] overflow-y-auto"
+                  className="text-sm sm:text-base flex-1 min-h-[200px] p-3 resize-none"
                 />
               </div>
             </div>
-            <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-3 p-4 sm:px-6 border-t border-border/50">
+            <DialogFooter className="flex flex-row gap-2 sm:gap-3 p-4 sm:px-6 border-t border-border/50 shrink-0 bg-background">
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto px-4 sm:px-6 h-10 text-sm sm:text-base"
+                className="flex-1 sm:flex-none sm:w-auto px-3 sm:px-6 h-10 text-sm sm:text-base"
                 onClick={handleCloseDialog}
               >
                 Cancel
               </Button>
               <Button
                 size="lg"
-                className="w-full sm:w-auto px-4 sm:px-6 h-10 text-sm sm:text-base"
+                className="flex-1 sm:flex-none sm:w-auto px-3 sm:px-6 h-10 text-sm sm:text-base"
                 onClick={handleSaveRule}
                 disabled={
                   isSaving || !newRule.title.trim() || !newRule.content.trim()
@@ -347,8 +420,8 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
                 {isSaving
                   ? "Saving..."
                   : editingRule
-                    ? "Save Changes"
-                    : "Create Rule"}
+                    ? "Save"
+                    : "Create"}
               </Button>
             </DialogFooter>
           </DialogContent>
