@@ -200,12 +200,12 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                                                     <AvatarFallback>{player.userName.substring(0, 2).toUpperCase()}</AvatarFallback>
                                                 </Avatar>
                                                 <div className="flex flex-col gap-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="font-medium text-zinc-900 dark:text-zinc-100 truncate max-w-[120px] sm:max-w-[180px]">
                                                             {player.userName}
                                                         </span>
                                                         {player.isBanned && (
-                                                            <Badge variant="destructive" className="text-xs">
+                                                            <Badge variant="destructive" className="text-xs shrink-0">
                                                                 Banned
                                                             </Badge>
                                                         )}

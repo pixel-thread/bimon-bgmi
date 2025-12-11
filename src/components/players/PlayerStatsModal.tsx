@@ -9,7 +9,9 @@ import {
 } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { History, Ban, AlertTriangle, CheckCircle, DollarSign, ArrowUpRight, Shield } from "lucide-react";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { usePlayer } from "@/src/hooks/player/usePlayer";
 import { usePlayerStats } from "@/src/hooks/player/usePlayerStats";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -73,6 +75,29 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
   const isOwnProfile = user?.playerId === id;
 
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+  const [avatarPosition, setAvatarPosition] = useState({ x: 0, y: 0 });
+  const avatarRef = React.useRef<HTMLDivElement>(null);
+
+  // Reset image preview when modal closes or player changes
+  React.useEffect(() => {
+    if (!isOpen) {
+      setIsImagePreviewOpen(false);
+    }
+  }, [isOpen, id]);
+
+  const handleAvatarClick = () => {
+    if (player?.clerkImageUrl && avatarRef.current) {
+      const rect = avatarRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      // Calculate offset from screen center
+      const offsetX = centerX - window.innerWidth / 2;
+      const offsetY = centerY - window.innerHeight / 2;
+      setAvatarPosition({ x: offsetX, y: offsetY });
+      setIsImagePreviewOpen(true);
+    }
+  };
 
   const { mutate: toggleBan, isPending: isBanPending } = useMutation({
     mutationFn: () =>
@@ -125,7 +150,10 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogContent
+          className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6"
+          onClick={() => isImagePreviewOpen && setIsImagePreviewOpen(false)}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 sm:gap-3">
               {isLoading ? (
@@ -133,34 +161,54 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
               ) : !player ? (
                 <span>Player Not Found</span>
               ) : (
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                    <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
-                      {player.user?.userName}
-                    </span>
-                    {player.isBanned && (
-                      <Badge
-                        variant="destructive"
-                        className="bg-red-600 hover:bg-red-700 text-xs"
-                      >
-                        <Ban className="w-3 h-3 mr-0.5 sm:mr-1" />
-                        BANNED
-                      </Badge>
-                    )}
-                    {player.isUCExempt && (
-                      <Badge
-                        variant="secondary"
-                        className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 text-xs"
-                      >
-                        <Shield className="w-3 h-3 mr-0.5 sm:mr-1" />
-                        UC EXEMPT
-                      </Badge>
+                <div className="flex items-center gap-3">
+                  {/* Clickable Avatar */}
+                  <div
+                    ref={avatarRef}
+                    className="h-12 w-12 sm:h-14 sm:w-14 rounded-full border-2 border-zinc-200 dark:border-zinc-700 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={handleAvatarClick}
+                  >
+                    {player.clerkImageUrl ? (
+                      <img
+                        src={player.clerkImageUrl}
+                        alt={player.user?.userName || "Player"}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-lg font-semibold bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                        {player.user?.userName?.substring(0, 2).toUpperCase()}
+                      </div>
                     )}
                   </div>
-                  <div className="flex justify-start mt-1">
-                    <Badge className={`text-xs ${getCategoryColor(stats ? getKdRank(stats.kills || 0, stats.deaths || 0) : player.category)}`}>
-                      {stats ? getKdRank(stats.kills || 0, stats.deaths || 0) : player.category}
-                    </Badge>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                      <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
+                        {player.user?.userName}
+                      </span>
+                      {player.isBanned && (
+                        <Badge
+                          variant="destructive"
+                          className="bg-red-600 hover:bg-red-700 text-xs"
+                        >
+                          <Ban className="w-3 h-3 mr-0.5 sm:mr-1" />
+                          BANNED
+                        </Badge>
+                      )}
+                      {player.isUCExempt && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 text-xs"
+                        >
+                          <Shield className="w-3 h-3 mr-0.5 sm:mr-1" />
+                          UC EXEMPT
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex justify-start mt-1">
+                      <Badge className={`text-xs ${getCategoryColor(stats ? getKdRank(stats.kills || 0, stats.deaths || 0) : player.category)}`}>
+                        {stats ? getKdRank(stats.kills || 0, stats.deaths || 0) : player.category}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
               )}
@@ -349,6 +397,48 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
           toPlayerName={player.user?.userName || "Player"}
         />
       )}
+
+      {/* Image Preview Overlay */}
+      <AnimatePresence>
+        {isImagePreviewOpen && player?.clerkImageUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsImagePreviewOpen(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {isImagePreviewOpen && player?.clerkImageUrl ? (
+          <div
+            className="fixed inset-0 z-[201] grid place-items-center pointer-events-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <motion.div
+              initial={{ scale: 0.15, opacity: 0, x: avatarPosition.x, y: avatarPosition.y }}
+              animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
+              exit={{ scale: 0.15, opacity: 0, x: avatarPosition.x, y: avatarPosition.y }}
+              transition={{ type: "spring", stiffness: 300, damping: 28 }}
+              className="w-64 h-64 sm:w-80 sm:h-80 rounded-full border-4 border-white dark:border-zinc-800 shadow-2xl overflow-hidden cursor-pointer pointer-events-auto"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsImagePreviewOpen(false);
+              }}
+            >
+              <img
+                src={player.clerkImageUrl}
+                alt={player.user?.userName || "Player"}
+                className="w-full h-full object-cover"
+              />
+            </motion.div>
+          </div>
+        ) : null}
+      </AnimatePresence>
     </>
   );
 }
