@@ -44,9 +44,12 @@ export async function POST(req: Request) {
       data: body,
     });
 
+    // Build informative message
+    const message = "Match created successfully";
+
     return SuccessResponse({
-      message: "Success created Match",
-      data: createdMatch,
+      message,
+      data: { id: createdMatch.id },
     });
   } catch (error) {
     return handleApiErrors(error);
