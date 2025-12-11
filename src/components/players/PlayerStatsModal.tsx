@@ -10,6 +10,7 @@ import {
 } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
+import { CategoryBadge } from "@/src/components/ui/category-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { History, Ban, AlertTriangle, CheckCircle, DollarSign, ArrowUpRight, Shield } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
@@ -23,20 +24,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { UCTransferDialog } from "./UCTransferDialog";
 
-const CATEGORY_COLORS = {
-  "Ultra Noob":
-    "bg-purple-100 text-purple-900 border-purple-200 dark:bg-purple-900 dark:text-purple-100 dark:border-purple-800",
-  Noob: "bg-green-100 text-green-900 border-green-200 dark:bg-green-900 dark:text-green-100 dark:border-green-800",
-  Pro: "bg-yellow-100 text-yellow-900 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-100 dark:border-yellow-800",
-  "Ultra Pro":
-    "bg-pink-100 text-pink-900 border-pink-200 dark:bg-pink-900 dark:text-pink-100 dark:border-pink-800",
-} as const;
-
 import { getKdRank } from "@/src/utils/categoryUtils";
-
-const getCategoryColor = (category: string) =>
-  CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] ||
-  "bg-gray-200 text-gray-800 border-gray-300";
 
 function ModalSkeleton() {
   return (
@@ -263,9 +251,10 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                       )}
                     </div>
                     <div className="flex justify-start mt-1">
-                      <Badge className={`text-xs ${getCategoryColor(stats ? getKdRank(stats.kills || 0, stats.deaths || 0) : player.category)}`}>
-                        {stats ? getKdRank(stats.kills || 0, stats.deaths || 0) : player.category}
-                      </Badge>
+                      <CategoryBadge
+                        category={stats ? getKdRank(stats.kills || 0, stats.deaths || 0) : player.category}
+                        size="sm"
+                      />
                     </div>
                   </div>
                 </div>

@@ -4,6 +4,7 @@
 import { Card } from "@/src/components/ui/card";
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { Badge } from "@/src/components/ui/badge";
+import { CategoryBadge } from "@/src/components/ui/category-badge";
 import {
   Tooltip,
   TooltipContent,
@@ -114,36 +115,7 @@ export function PlayerCard({
           )}
 
           {activeTab === "solo" && (
-            <Badge
-              variant="outline"
-              className={`text-xs px-1 sm:px-1.5 py-0.5 flex-shrink-0 ${player.category === "ULTRA_NOOB"
-                  ? "border-red-300 text-red-700"
-                  : player.category === "NOOB"
-                    ? "border-yellow-300 text-yellow-700"
-                    : player.category === "PRO"
-                      ? "border-green-300 text-green-700"
-                      : "border-purple-300 text-purple-700"
-                }`}
-            >
-              <span className="hidden sm:inline">
-                {player.category === "ULTRA_NOOB"
-                  ? "🔴 UN"
-                  : player.category === "NOOB"
-                    ? "🟡 N "
-                    : player.category === "PRO"
-                      ? "🟢 P"
-                      : "🟣 UP"}
-              </span>
-              <span className="sm:hidden">
-                {player.category === "ULTRA_NOOB"
-                  ? "🔴"
-                  : player.category === "NOOB"
-                    ? "🟡"
-                    : player.category === "PRO"
-                      ? "🟢"
-                      : "🟣"}
-              </span>
-            </Badge>
+            <CategoryBadge category={player.category} mode="short" size="xs" />
           )}
 
           {isSolo && activeTab !== "solo" && (
@@ -170,12 +142,12 @@ export function PlayerCard({
 
         <span
           className={`text-xs font-normal ${typeof player.balance === "number"
-              ? player.balance > 0
-                ? "text-green-600"
-                : player.balance < 0
-                  ? "text-red-600"
-                  : "text-yellow-600"
-              : "text-yellow-600"
+            ? player.balance > 0
+              ? "text-green-600"
+              : player.balance < 0
+                ? "text-red-600"
+                : "text-yellow-600"
+            : "text-yellow-600"
             }`}
         >
           {typeof player.balance === "number" ? player.balance : 0} UC
@@ -195,8 +167,8 @@ export function PlayerCard({
                 }}
                 onClick={(e) => e.stopPropagation()}
                 className={`w-5 h-5 ml-2 rounded border-2 transition-colors duration-150 focus:ring-0 focus:outline-none ${excludedFromDeduction
-                    ? "border-green-500 bg-green-100"
-                    : "border-gray-300 bg-white"
+                  ? "border-green-500 bg-green-100"
+                  : "border-gray-300 bg-white"
                   } hover:border-green-400 cursor-pointer`}
                 aria-label="Exclude from deduction"
               />

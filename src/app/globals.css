@@ -401,6 +401,162 @@ link[rel="mask-icon"] {
   text-shadow: 0 4px 8px rgba(0, 0, 0, 0.9);
 }
 
+/* Shining text animation for Legend players */
+@keyframes shine {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.text-shine-legend {
+  background: linear-gradient(90deg,
+      #9333ea 0%,
+      #c084fc 25%,
+      #f0abfc 50%,
+      #c084fc 75%,
+      #9333ea 100%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 4s linear infinite;
+}
+
+.dark .text-shine-legend {
+  background: linear-gradient(90deg,
+      #a855f7 0%,
+      #d8b4fe 25%,
+      #fae8ff 50%,
+      #d8b4fe 75%,
+      #a855f7 100%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 4s linear infinite;
+}
+
+.text-shine-ultrapro {
+  background: linear-gradient(90deg,
+      #2563eb 0%,
+      #60a5fa 25%,
+      #93c5fd 50%,
+      #60a5fa 75%,
+      #2563eb 100%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 5s linear infinite;
+}
+
+.dark .text-shine-ultrapro {
+  background: linear-gradient(90deg,
+      #3b82f6 0%,
+      #93c5fd 25%,
+      #dbeafe 50%,
+      #93c5fd 75%,
+      #3b82f6 100%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 5s linear infinite;
+}
+
+/* Premium badge styles for Legend and Ultra Pro with sweep shine */
+.badge-glow-legend {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #7c3aed 100%);
+  color: white !important;
+  border: 1px solid rgba(168, 85, 247, 0.4) !important;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(139, 92, 246, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  font-weight: 600 !important;
+}
+
+.badge-glow-legend::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 100%);
+  transform: skewX(-20deg);
+  animation: sweep-shine 2s ease-out forwards;
+  animation-delay: 0.2s;
+}
+
+.dark .badge-glow-legend {
+  background: linear-gradient(135deg, #8b5cf6 0%, #c084fc 50%, #8b5cf6 100%);
+  border: 1px solid rgba(192, 132, 252, 0.4) !important;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 2px 12px rgba(139, 92, 246, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.badge-glow-ultrapro {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 50%, #1d4ed8 100%);
+  color: white !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(59, 130, 246, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  font-weight: 600 !important;
+}
+
+.badge-glow-ultrapro::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 100%);
+  transform: skewX(-20deg);
+  animation: sweep-shine 2.5s ease-out forwards;
+  animation-delay: 0.3s;
+}
+
+.dark .badge-glow-ultrapro {
+  background: linear-gradient(135deg, #2563eb 0%, #60a5fa 50%, #2563eb 100%);
+  border: 1px solid rgba(96, 165, 250, 0.4) !important;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 2px 12px rgba(59, 130, 246, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+@keyframes sweep-shine {
+  0% {
+    left: -100%;
+  }
+
+  100% {
+    left: 150%;
+  }
+}
+
 /* Smooth horizontal scrolling for podium */
 .scrollbar-hide {
   -ms-overflow-style: none;
