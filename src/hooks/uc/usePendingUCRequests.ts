@@ -15,7 +15,7 @@ type PendingCountResponse = {
  */
 export function usePendingUCRequests() {
     const { user } = useAuth();
-    const playerId = user?.playerId || user?.player?.id;
+    const playerId = user?.playerId;
 
     const { data, isLoading } = useQuery({
         queryKey: ["uc-transfers-pending-count", playerId],

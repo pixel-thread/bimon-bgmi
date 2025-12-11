@@ -42,7 +42,7 @@ const GameLeaderboard = lazy(() =>
 
 export function MemoryGame() {
   const { user } = useAuth();
-  const playerId = user?.playerId || user?.player?.id;
+  const playerId = user?.playerId;
 
   // Core game state
   const [cards, setCards] = useState<CardType[]>([]);
@@ -567,7 +567,7 @@ export function MemoryGame() {
             <div className="overflow-y-auto flex-1 min-h-0 -mx-8 px-8 pb-2 max-h-[calc(85vh-100px)] overscroll-contain scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
               <Suspense fallback={<LeaderboardSkeleton />}>
                 <GameLeaderboard
-                  currentPlayerId={playerId}
+                  currentPlayerId={playerId ?? undefined}
                   maxEntries={10}
                   lastUpdated={leaderboardUpdate}
                   preloadedData={leaderboardData.length > 0 ? leaderboardData : undefined}
