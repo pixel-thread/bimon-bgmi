@@ -85,7 +85,7 @@ export async function createMatch({ data }: Props): Promise<CreateMatchResult> {
                       playerId,
                       teamStatsId: teamStats.id,
                       kills: 0,
-                      deaths: 1,
+                      deaths: 0, // Placeholder - actual stats counted when scoreboard is submitted
                     })),
                   }),
                   tx.matchPlayerPlayed.createMany({
@@ -104,13 +104,14 @@ export async function createMatch({ data }: Props): Promise<CreateMatchResult> {
                       data: { matches: { connect: { id: match.id } } },
                     })
                   ),
+                  // Ensure PlayerStats exists for each player (no increment - stats counted on submission)
                   ...playerIds.map((playerId) =>
                     tx.playerStats.upsert({
                       where: {
                         seasonId_playerId: { playerId, seasonId: data.seasonId },
                       },
-                      create: { playerId, seasonId: data.seasonId, kills: 0, deaths: 1 },
-                      update: { deaths: { increment: 1 } },
+                      create: { playerId, seasonId: data.seasonId, kills: 0, deaths: 0 },
+                      update: {}, // No increment here - deaths counted when player appears in scoreboard
                     })
                   ),
                 ]);
