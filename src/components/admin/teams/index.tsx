@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { CSVLink } from "react-csv";
 import { LoaderFive } from "../../ui/loader";
 import { DataTable } from "../../data-table";
 import { useTeamsColumns } from "@/src/hooks/team/useTeamsColumns";
@@ -14,6 +13,7 @@ import React from "react";
 import { useTournamentStore } from "@/src/store/tournament";
 import { TeamStatsSheet } from "./TeamStatsSheet";
 import { useTeams } from "@/src/hooks/team/useTeams";
+import { useMatches } from "@/src/hooks/match/useMatches";
 import { useTournament } from "@/src/hooks/tournament/useTournament";
 import { IconFileExport, IconPlus, IconReload } from "@tabler/icons-react";
 import {
@@ -33,7 +33,7 @@ import { useSeasonStore } from "@/src/store/season";
 import { BulkEditStatsDialog } from "./BulkEditStatsDialog";
 import { useGlobalBackground } from "@/src/hooks/gallery/useGlobalBackground";
 import { SwapPlayersDialog } from "./swap-players-dialog";
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, Loader2, Pencil, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,34 +63,86 @@ export const AdminTeamsManagement: React.FC = () => {
   const queryClient = useQueryClient();
   const { matchId, setMatchId } = useMatchStore();
   const { data: teams, isFetching, refetch, meta } = useTeams({ page });
+  const { isLoading: isMatchesLoading } = useMatches();
   const { data: globalBackground } = useGlobalBackground();
 
-  // Prepare CSV export data with tournament title at top and total at bottom
-  const csvData = React.useMemo(() => {
-    if (!teams) return [];
+  // Combined loading state for teams and matches
+  const isLoading = isFetching || isMatchesLoading;
+
+  // Export to Excel with merged cells and centered text
+  const exportToExcel = React.useCallback(async () => {
+    if (!teams) return;
+
+    const ExcelJS = (await import("exceljs")).default;
 
     // Calculate total players across all teams
     const totalPlayers = teams.reduce((sum, team) => sum + (team.players?.length || 0), 0);
 
-    // Title row (first row)
-    const titleRow = [tournament?.name || "Tournament", ""];
+    // Find the maximum number of players in any team
+    const maxPlayers = Math.max(...teams.map((team) => team.players?.length || 0), 1);
+    const totalColumns = maxPlayers + 1; // Slot No + Player columns
 
-    // Empty row for spacing
-    const emptyRow = ["", ""];
+    // Create workbook and worksheet
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Teams");
 
-    // Column headers row
-    const headerRow = ["Slot No", "Players"];
+    // Set column widths
+    worksheet.columns = [
+      { width: 12 }, // Slot No
+      ...Array(maxPlayers).fill({ width: 18 }), // Player columns
+    ];
+
+    // Row 1: Title row (merged across all columns)
+    const titleRow = worksheet.addRow([tournament?.name || "Tournament"]);
+    worksheet.mergeCells(1, 1, 1, totalColumns);
+    titleRow.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
+    titleRow.getCell(1).font = { name: "PUBG SANS", bold: true, size: 14 };
+    titleRow.height = 24;
+
+    // Row 2: Empty row for spacing (merged)
+    const emptyRow1 = worksheet.addRow([""]);
+    worksheet.mergeCells(2, 1, 2, totalColumns);
+
+    // Row 3: Column headers
+    const headerData = ["Slot No", ...Array(maxPlayers).fill(0).map((_, i) => `Player ${i + 1}`)];
+    const headerRow = worksheet.addRow(headerData);
+    headerRow.eachCell((cell) => {
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+      cell.font = { name: "PUBG SANS", bold: true };
+    });
 
     // Team data rows
-    const teamRows = teams.map((team) => [
-      team.slotNo,
-      team.players?.map((p) => p.name).join(", ") || "",
-    ]);
+    teams.forEach((team) => {
+      const players = team.players?.map((p) => p.name) || [];
+      const paddedPlayers = [...players, ...Array(maxPlayers - players.length).fill("")];
+      const row = worksheet.addRow([team.slotNo, ...paddedPlayers]);
+      row.eachCell((cell) => {
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.font = { name: "PUBG SANS" };
+      });
+    });
 
-    // Footer row with total
-    const footerRow = ["Total Players:", totalPlayers];
+    // Empty row for spacing (merged)
+    const emptyRow2Index = worksheet.rowCount + 1;
+    const emptyRow2 = worksheet.addRow([""]);
+    worksheet.mergeCells(emptyRow2Index, 1, emptyRow2Index, totalColumns);
 
-    return [titleRow, emptyRow, headerRow, ...teamRows, emptyRow, footerRow];
+    // Footer row: Total Players in one merged cell
+    const footerRowIndex = worksheet.rowCount + 1;
+    const footerRow = worksheet.addRow([`Total Players: ${totalPlayers}`]);
+    worksheet.mergeCells(footerRowIndex, 1, footerRowIndex, totalColumns);
+    footerRow.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
+    footerRow.getCell(1).font = { name: "PUBG SANS", bold: true };
+
+    // Generate and download the file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${tournament?.name || "Teams"}.xlsx`;
+    link.click();
+    window.URL.revokeObjectURL(url);
   }, [teams, tournament?.name]);
 
   const onValidateTeams = () => {
@@ -131,22 +183,22 @@ export const AdminTeamsManagement: React.FC = () => {
   });
   return (
     <>
-      {/* Toolbar - Clean, minimal design */}
-      <div className="flex flex-col gap-4">
-        {/* Selectors Row */}
-        <div className="flex flex-wrap items-center gap-2">
-          <SeasonSelector className="w-[120px]" />
-          <TournamentSelector className="w-[120px]" />
-          <MatchSelector className="w-[100px]" />
+      {/* Toolbar - Fully responsive design */}
+      <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
+        {/* Selectors Row - Grid on mobile, flex on tablet, inline on desktop */}
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-2 lg:gap-3">
+          <SeasonSelector className="w-full sm:w-[120px] lg:w-fit lg:min-w-[120px]" />
+          <TournamentSelector className="w-full sm:w-[120px] lg:w-fit lg:min-w-[160px]" />
+          <MatchSelector className="w-full sm:w-[100px] lg:w-[120px]" />
         </div>
 
-        {/* Actions Row */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Actions Row - Centered on mobile, left-aligned on desktop */}
+        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:justify-start sm:gap-2 lg:gap-3">
           {/* View Actions */}
           <Button
             size="sm"
             variant="outline"
-            disabled={isFetching}
+            disabled={isLoading}
             onClick={() => setShowStandingsModal(true)}
             title="View Standings"
           >
@@ -156,7 +208,7 @@ export const AdminTeamsManagement: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            disabled={isFetching}
+            disabled={isLoading}
             onClick={() => refetch()}
             title="Refresh"
           >
@@ -166,52 +218,47 @@ export const AdminTeamsManagement: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            disabled={isFetching || !tournamentId}
-            asChild
-            title="Export CSV"
+            disabled={isLoading || !tournamentId}
+            onClick={exportToExcel}
+            title="Export Excel"
           >
-            <CSVLink
-              filename={`${tournament?.name}.csv`}
-              aria-disabled={isFetching}
-              data={csvData}
-            >
-              <IconFileExport className="h-4 w-4" />
-            </CSVLink>
+            <IconFileExport className="h-4 w-4" />
           </Button>
 
-          {/* Separator */}
+          {/* Separator - Hidden on mobile */}
           <div className="h-6 w-px bg-border mx-1 hidden sm:block" />
 
           {/* Edit Actions */}
           <Button
             size="sm"
-            variant="default"
+            variant="outline"
             onClick={() => setOpen(true)}
-            disabled={isFetching || !tournamentId || matchId === "" || matchId === "all"}
+            disabled={isLoading || !tournamentId || matchId === "" || matchId === "all"}
             title="Add Team"
           >
-            <IconPlus className="h-4 w-4 mr-1" />
+            <IconPlus className="h-4 w-4 sm:mr-1" />
             <span className="hidden sm:inline">Add</span>
           </Button>
 
           <Button
             size="sm"
-            variant="default"
+            variant="outline"
             onClick={() => setShowBulkEdit(true)}
-            disabled={isFetching || !tournamentId || matchId === "" || matchId === "all"}
+            disabled={isLoading || !tournamentId || matchId === "" || matchId === "all"}
             title="Bulk Edit Stats"
           >
-            <span>Bulk Edit</span>
+            <Pencil className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Bulk Edit</span>
           </Button>
 
           <Button
             size="sm"
             variant="outline"
             onClick={() => setShowSwapPlayers(true)}
-            disabled={isFetching || !tournamentId}
+            disabled={isLoading || !tournamentId}
             title="Swap Players"
           >
-            <ArrowLeftRight className="h-4 w-4 mr-1" />
+            <ArrowLeftRight className="h-4 w-4 sm:mr-1" />
             <span className="hidden sm:inline">Swap</span>
           </Button>
 
@@ -222,13 +269,18 @@ export const AdminTeamsManagement: React.FC = () => {
                   size="sm"
                   variant="ghost"
                   className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                  disabled={isFetching || !matchId || isDeleting}
+                  disabled={isLoading || !matchId || isDeleting}
                   title="Delete Match"
                 >
-                  {isDeleting ? "Deleting..." : "Delete Match"}
+                  {isDeleting ? (
+                    <Loader2 className="h-4 w-4 animate-spin sm:mr-1" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 sm:mr-1" />
+                  )}
+                  <span className="hidden sm:inline">{isDeleting ? "Deleting..." : "Delete"}</span>
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="mx-4 max-w-[calc(100%-2rem)] sm:max-w-lg">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Match?</AlertDialogTitle>
                   <AlertDialogDescription>
