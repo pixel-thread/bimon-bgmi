@@ -229,7 +229,7 @@ export async function createTeamsByPolls({
             playerId: player.id,
             teamStatsId: teamStat.id,
             kills: 0,
-            deaths: 1,
+            deaths: 0, // Placeholder - actual stats counted when scoreboard is submitted
           });
         }
       }
@@ -255,11 +255,9 @@ export async function createTeamsByPolls({
             playerId: player.id,
             seasonId: seasonId,
             kills: 0,
-            deaths: 1,
+            deaths: 0, // Placeholder - stats counted when scoreboard is submitted
           },
-          update: {
-            deaths: { increment: 1 },
-          },
+          update: {}, // No increment here - deaths counted when player appears in scoreboard
         })
       );
       await Promise.all(playerStatsPromises);
