@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Dialog,
   DialogContent,
@@ -39,18 +40,36 @@ const getCategoryColor = (category: string) =>
 
 function ModalSkeleton() {
   return (
-    <div className="space-y-6 animate-pulse">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="text-center p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-12 mx-auto mb-2"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div>
-          </div>
-        ))}
+    <div className="space-y-4 sm:space-y-6">
+      {/* Stats Grid Skeleton */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-4">
+        {/* Matches */}
+        <div className="text-center p-2.5 sm:p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30">
+          <div className="h-6 sm:h-8 w-10 sm:w-14 bg-blue-200/60 dark:bg-blue-700/40 rounded-md mx-auto mb-2 animate-pulse" />
+          <div className="h-3 sm:h-4 w-12 sm:w-16 bg-blue-100 dark:bg-blue-800/30 rounded mx-auto animate-pulse" />
+        </div>
+        {/* Kills */}
+        <div className="text-center p-2.5 sm:p-4 bg-green-50/50 dark:bg-green-900/10 rounded-lg border border-green-100 dark:border-green-900/30">
+          <div className="h-6 sm:h-8 w-10 sm:w-14 bg-green-200/60 dark:bg-green-700/40 rounded-md mx-auto mb-2 animate-pulse" />
+          <div className="h-3 sm:h-4 w-10 sm:w-12 bg-green-100 dark:bg-green-800/30 rounded mx-auto animate-pulse" />
+        </div>
+        {/* K/D */}
+        <div className="text-center p-2.5 sm:p-4 bg-yellow-50/50 dark:bg-yellow-900/10 rounded-lg border border-yellow-100 dark:border-yellow-900/30">
+          <div className="h-6 sm:h-8 w-10 sm:w-14 bg-yellow-200/60 dark:bg-yellow-700/40 rounded-md mx-auto mb-2 animate-pulse" />
+          <div className="h-3 sm:h-4 w-8 sm:w-10 bg-yellow-100 dark:bg-yellow-800/30 rounded mx-auto animate-pulse" />
+        </div>
+        {/* Balance */}
+        <div className="text-center p-2.5 sm:p-4 bg-purple-50/50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-900/30">
+          <div className="h-6 sm:h-8 w-14 sm:w-20 bg-purple-200/60 dark:bg-purple-700/40 rounded-md mx-auto mb-2 animate-pulse" />
+          <div className="h-3 sm:h-4 w-12 sm:w-14 bg-purple-100 dark:bg-purple-800/30 rounded mx-auto animate-pulse" />
+        </div>
       </div>
-      <div className="flex gap-3 justify-center">
-        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-36"></div>
-        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+
+      {/* Action Buttons Skeleton */}
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+        <div className="h-8 sm:h-9 w-24 sm:w-28 bg-zinc-200 dark:bg-zinc-700/50 rounded-md animate-pulse" />
+        <div className="h-8 sm:h-9 w-24 sm:w-28 bg-zinc-200 dark:bg-zinc-700/50 rounded-md animate-pulse" />
+        <div className="h-8 sm:h-9 w-20 sm:w-24 bg-zinc-200 dark:bg-zinc-700/50 rounded-md animate-pulse" />
       </div>
     </div>
   );
@@ -85,6 +104,25 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
       setIsImagePreviewOpen(false);
     }
   }, [isOpen, id]);
+
+  // Global click listener to close image preview when clicking anywhere except on the image
+  const imagePreviewRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (!isImagePreviewOpen) return;
+
+    const handleGlobalClick = (e: MouseEvent) => {
+      // If click is on the preview image itself, let the onClick handler deal with it
+      if (imagePreviewRef.current && imagePreviewRef.current.contains(e.target as Node)) {
+        return;
+      }
+      // Close preview on any other click
+      setIsImagePreviewOpen(false);
+    };
+
+    // Use capture phase to catch the click before other handlers
+    document.addEventListener('click', handleGlobalClick, true);
+    return () => document.removeEventListener('click', handleGlobalClick, true);
+  }, [isImagePreviewOpen]);
 
   const handleAvatarClick = () => {
     if (player?.clerkImageUrl && avatarRef.current) {
@@ -149,15 +187,35 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          // If closing and image preview is open, just close the preview, not the modal
+          if (!open && isImagePreviewOpen) {
+            setIsImagePreviewOpen(false);
+            return;
+          }
+          if (!open) {
+            onClose();
+          }
+        }}
+      >
         <DialogContent
           className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6"
-          onClick={() => isImagePreviewOpen && setIsImagePreviewOpen(false)}
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 sm:gap-3">
               {isLoading ? (
-                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 animate-pulse"></div>
+                <div className="flex items-center gap-3">
+                  {/* Avatar skeleton */}
+                  <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-700 dark:to-zinc-600 animate-pulse" />
+                  <div className="flex-1 min-w-0">
+                    {/* Name skeleton */}
+                    <div className="h-5 sm:h-6 w-28 sm:w-36 bg-zinc-200 dark:bg-zinc-700 rounded-md animate-pulse mb-2" />
+                    {/* Badge skeleton */}
+                    <div className="h-5 w-16 sm:w-20 bg-zinc-100 dark:bg-zinc-800 rounded-full animate-pulse" />
+                  </div>
+                </div>
               ) : !player ? (
                 <span>Player Not Found</span>
               ) : (
@@ -398,47 +456,38 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
         />
       )}
 
-      {/* Image Preview Overlay */}
-      <AnimatePresence>
-        {isImagePreviewOpen && player?.clerkImageUrl && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm cursor-pointer"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsImagePreviewOpen(false);
-            }}
-          />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {isImagePreviewOpen && player?.clerkImageUrl ? (
-          <div
-            className="fixed inset-0 z-[201] grid place-items-center pointer-events-none"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <motion.div
-              initial={{ scale: 0.15, opacity: 0, x: avatarPosition.x, y: avatarPosition.y }}
-              animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
-              exit={{ scale: 0.15, opacity: 0, x: avatarPosition.x, y: avatarPosition.y }}
-              transition={{ type: "spring", stiffness: 300, damping: 28 }}
-              className="w-64 h-64 sm:w-80 sm:h-80 rounded-full border-4 border-white dark:border-zinc-800 shadow-2xl overflow-hidden cursor-pointer pointer-events-auto"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsImagePreviewOpen(false);
-              }}
-            >
-              <img
-                src={player.clerkImageUrl}
-                alt={player.user?.userName || "Player"}
-                className="w-full h-full object-cover"
+      {/* Image Preview Overlay - rendered via Portal to document.body to cover everything */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isImagePreviewOpen && player?.clerkImageUrl && (
+            <>
+              {/* Backdrop - covers entire page including modal */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-md"
               />
-            </motion.div>
-          </div>
-        ) : null}
-      </AnimatePresence>
+              {/* Image - centered, also click to close */}
+              <motion.div
+                ref={imagePreviewRef}
+                initial={{ scale: 0.15, opacity: 0, x: avatarPosition.x, y: avatarPosition.y }}
+                animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
+                exit={{ scale: 0.15, opacity: 0, x: avatarPosition.x, y: avatarPosition.y }}
+                transition={{ type: "spring", stiffness: 300, damping: 28 }}
+                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[10000] w-64 h-64 sm:w-80 sm:h-80 rounded-full border-4 border-white dark:border-zinc-800 shadow-2xl overflow-hidden"
+              >
+                <img
+                  src={player.clerkImageUrl}
+                  alt={player.user?.userName || "Player"}
+                  className="w-full h-full object-cover"
+                />
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 }
