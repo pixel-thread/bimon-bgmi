@@ -52,6 +52,14 @@ export async function createUserIfNotExistInDB({ data }: ClerkUser) {
           include: { player: true },
         });
 
+        // Set playerId on User for consistent access
+        if (user.player?.id) {
+          await tx.user.update({
+            where: { id: user.id },
+            data: { playerId: user.player.id },
+          });
+        }
+
         await tx.uC.create({
           data: {
             user: { connect: { id: user.id } },
@@ -103,6 +111,14 @@ export async function createUser({ data }: Props) {
           },
           include: { player: true },
         });
+
+        // Set playerId on User for consistent access
+        if (user.player?.id) {
+          await tx.user.update({
+            where: { id: user.id },
+            data: { playerId: user.player.id },
+          });
+        }
 
         await tx.uC.create({
           data: {

@@ -148,7 +148,6 @@ export default function OverallStandingModal({
   };
 
   const handleClose = () => {
-    console.log("Close button clicked");
     onClose();
   };
 

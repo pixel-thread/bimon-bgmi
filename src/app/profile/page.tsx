@@ -52,7 +52,7 @@ export default function ProfilePage() {
     const { user, isAuthLoading } = useAuth();
     const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
     const queryClient = useQueryClient();
-    const playerId = user?.playerId || user?.player?.id;
+    const playerId = user?.playerId;
     const userBalance = user?.player?.uc?.balance || 0;
     const profileImageUrl = clerkUser?.imageUrl;
 

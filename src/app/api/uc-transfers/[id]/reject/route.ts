@@ -11,7 +11,7 @@ export async function PATCH(
 ) {
     try {
         const user = await tokenMiddleware(req);
-        const playerId = user?.playerId || user?.player?.id;
+        const playerId = user?.playerId;
         const transferId = (await params).id;
 
         if (!playerId) {

@@ -48,7 +48,7 @@ type PlayerStats = {
 export default function AdminProfilePage() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
-    const playerId = user?.playerId || user?.player?.id;
+    const playerId = user?.playerId;
     const userBalance = user?.player?.uc?.balance || 0;
     const hasPlayerRecord = !!playerId;
 

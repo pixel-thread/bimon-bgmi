@@ -418,8 +418,8 @@ model TeamPlayerStats {
   updatedAt DateTime @updatedAt
 
   player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  seasonId    String
-  seasons     Season    @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  seasonId    String?
+  season      Season?   @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   team        Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
   match       Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
   teamStatsId String
@@ -461,7 +461,6 @@ model TournamentWinner {
   createdAt     DateTime   @default(now())
 
   @@unique([tournamentId, teamId])
-  @@unique([teamId, tournamentId])
 }
 
 model UC {

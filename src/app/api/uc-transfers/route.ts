@@ -8,7 +8,7 @@ import { NextRequest } from "next/server";
 export async function GET(req: NextRequest) {
     try {
         const user = await tokenMiddleware(req);
-        const playerId = user?.playerId || user?.player?.id;
+        const playerId = user?.playerId;
 
         if (!playerId) {
             return ErrorResponse({ message: "Player not found", status: 404 });
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const user = await tokenMiddleware(req);
-        const playerId = user?.playerId || user?.player?.id;
+        const playerId = user?.playerId;
 
         if (!playerId) {
             return ErrorResponse({ message: "Player not found", status: 404 });

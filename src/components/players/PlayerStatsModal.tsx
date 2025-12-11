@@ -70,7 +70,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
 
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
   const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
-  const isOwnProfile = (user?.playerId || user?.player?.id) === id;
+  const isOwnProfile = user?.playerId === id;
 
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
 
