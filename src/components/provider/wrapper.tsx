@@ -2,7 +2,6 @@
 import { CookiesProvider } from "react-cookie";
 import { AuthProvider } from "./auth";
 import { RoleBaseRoute } from "../common/RoleBaseRouting";
-import InstallPrompt from "../InstallPrompt";
 import { Toaster } from "sonner";
 import { TQueryProvider } from "./query";
 import { Layout } from "../common/layout";

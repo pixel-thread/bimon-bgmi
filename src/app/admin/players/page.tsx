@@ -1,7 +1,7 @@
 "use client";
 
 import { FiUsers } from "react-icons/fi";
-import { PlayersTab } from "@/src/components/PlayersTab";
+import { PlayersTab } from "@/src/components/players";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 const AdminPlayersPage = () => {
