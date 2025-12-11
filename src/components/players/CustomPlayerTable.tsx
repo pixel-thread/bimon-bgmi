@@ -13,6 +13,7 @@ import { Button } from "@/src/components/ui/button";
 import { Switch } from "@/src/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { Badge } from "@/src/components/ui/badge";
+import { CategoryBadge } from "@/src/components/ui/category-badge";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -104,8 +105,8 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
 
     const getKdColor = (category: string) => {
         const lowerCategory = category?.toLowerCase() || "";
-        if (lowerCategory === "legend") return "text-purple-600 dark:text-purple-400";
-        if (lowerCategory === "ultra pro") return "text-blue-600 dark:text-blue-400";
+        if (lowerCategory === "legend") return "text-purple-600 dark:text-purple-400 font-bold";
+        if (lowerCategory === "ultra pro") return "text-blue-600 dark:text-blue-400 font-bold";
         if (lowerCategory === "pro") return "text-green-600 dark:text-green-400";
         if (lowerCategory === "noob") return "text-yellow-600 dark:text-yellow-400";
         if (lowerCategory === "ultra noob") return "text-orange-600 dark:text-orange-400";
@@ -162,73 +163,69 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
     return (
         <>
             <div className="w-full bg-white dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <Table className="min-w-full">
-                        <TableHeader className="bg-zinc-50 dark:bg-zinc-900/50">
-                            <TableRow className="hover:bg-transparent border-b border-zinc-200 dark:border-zinc-800">
-                                <TableHead className="w-10 sm:w-16 pl-3 sm:pl-6">#</TableHead>
-                                <TableHead className="min-w-[180px] sm:min-w-[280px]">Player</TableHead>
-                                <TableHead className="min-w-[70px] sm:min-w-[100px] pr-3 sm:pr-6">{getDynamicHeader()}</TableHead>
+                <Table className="w-full table-fixed">
+                    <TableHeader className="bg-zinc-50 dark:bg-zinc-900/50">
+                        <TableRow className="hover:bg-transparent border-b border-zinc-200 dark:border-zinc-800">
+                            <TableHead className="w-10 sm:w-16 pl-3 sm:pl-6">#</TableHead>
+                            <TableHead className="pl-1 sm:pl-2">Player</TableHead>
+                            <TableHead className="w-16 sm:w-24 pr-3 sm:pr-6">{getDynamicHeader()}</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {data?.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={3} className="h-24 text-center text-zinc-500">
+                                    No players found.
+                                </TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {data?.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={3} className="h-24 text-center text-zinc-500">
-                                        No players found.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                data?.map((player, index) => {
-                                    const globalIndex = meta ? (meta.page - 1) * meta.pageSize + index + 1 : index + 1;
-                                    return (
-                                        <TableRow
-                                            key={player.id}
-                                            onClick={() => {
-                                                const params = new URLSearchParams(search.toString());
-                                                params.set("player", player.id);
-                                                router.push(`?${params.toString()}`);
-                                            }}
-                                            className={`group hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors border-b border-zinc-100 dark:border-zinc-800/50 last:border-0 cursor-pointer ${player.isBanned ? 'opacity-60' : ''}`}
-                                        >
-                                            <TableCell className="pl-3 sm:pl-6 py-3 sm:py-4 font-semibold text-zinc-600 dark:text-zinc-400 text-sm sm:text-base">
-                                                {globalIndex}
-                                            </TableCell>
-                                            <TableCell className="py-3 sm:py-4">
-                                                <div className="flex items-center gap-2 sm:gap-3">
-                                                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border border-zinc-200 dark:border-zinc-700 shrink-0">
-                                                        <AvatarImage src={player.imageUrl || undefined} />
-                                                        <AvatarFallback className="text-xs sm:text-sm">{player.userName.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
-                                                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                                                            <span className="font-medium text-zinc-900 dark:text-zinc-100 truncate max-w-[100px] xs:max-w-[120px] sm:max-w-[180px] text-sm sm:text-base">
-                                                                {player.userName}
-                                                            </span>
-                                                            {player.isBanned && (
-                                                                <Badge variant="destructive" className="text-[10px] sm:text-xs shrink-0 px-1.5 sm:px-2">
-                                                                    Banned
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-                                                        <Badge variant="secondary" className="w-fit text-[10px] sm:text-xs font-normal bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 px-1.5 sm:px-2">
-                                                            {player.category}
-                                                        </Badge>
+                        ) : (
+                            data?.map((player, index) => {
+                                const globalIndex = meta ? (meta.page - 1) * meta.pageSize + index + 1 : index + 1;
+                                return (
+                                    <TableRow
+                                        key={player.id}
+                                        onClick={() => {
+                                            const params = new URLSearchParams(search.toString());
+                                            params.set("player", player.id);
+                                            router.push(`?${params.toString()}`);
+                                        }}
+                                        className={`group hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors border-b border-zinc-100 dark:border-zinc-800/50 last:border-0 cursor-pointer ${player.isBanned ? 'opacity-60' : ''}`}
+                                    >
+                                        <TableCell className="pl-3 sm:pl-6 py-3 sm:py-4 font-semibold text-zinc-600 dark:text-zinc-400 text-sm sm:text-base">
+                                            {globalIndex}
+                                        </TableCell>
+                                        <TableCell className="py-3 sm:py-4">
+                                            <div className="flex items-center gap-2 sm:gap-3">
+                                                <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border border-zinc-200 dark:border-zinc-700 shrink-0">
+                                                    <AvatarImage src={player.imageUrl || undefined} />
+                                                    <AvatarFallback className="text-xs sm:text-sm">{player.userName.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
+                                                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                                        <span className="font-medium text-zinc-900 dark:text-zinc-100 truncate max-w-[100px] xs:max-w-[120px] sm:max-w-[180px] text-sm sm:text-base">
+                                                            {player.userName}
+                                                        </span>
+                                                        {player.isBanned && (
+                                                            <Badge variant="destructive" className="text-[10px] sm:text-xs shrink-0 px-1.5 sm:px-2">
+                                                                Banned
+                                                            </Badge>
+                                                        )}
                                                     </div>
+                                                    <CategoryBadge category={player.category} size="xs" className="w-fit" />
                                                 </div>
-                                            </TableCell>
-                                            <TableCell className="pr-3 sm:pr-6">
-                                                <div className="text-sm sm:text-base">
-                                                    {renderDynamicCell(player)}
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    )
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="pr-3 sm:pr-6">
+                                            <div className="text-sm sm:text-base">
+                                                {renderDynamicCell(player)}
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            })
+                        )}
+                    </TableBody>
+                </Table>
 
                 {/* Pagination */}
                 {meta && (
