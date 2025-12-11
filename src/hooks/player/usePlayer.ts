@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 
 type PlayerT = Prisma.PlayerGetPayload<{
   include: { user: true; playerStats: true; uc: true; playerBanned: true; matchPlayerPlayed: true };
-}>;
+}> & { clerkImageUrl?: string | null };
 
 type UsePlayerT = {
   id: string;

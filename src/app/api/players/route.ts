@@ -49,6 +49,14 @@ export async function GET(req: NextRequest) {
       where = {};
     }
 
+    // If sortBy is "banned", filter to only show banned players
+    if (sortBy === "banned") {
+      where = {
+        ...where,
+        isBanned: true,
+      };
+    }
+
     const [players, total] = await getAllPlayers({
       page: "all",
       where,

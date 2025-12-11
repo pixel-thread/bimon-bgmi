@@ -1,6 +1,5 @@
 "use client";
 import React, { useState } from "react";
-import { LoaderFive } from "@/src/components/ui/loader";
 
 import { PlayerFilters } from "./PlayerFilters";
 import { PlayerStatsModal } from "./PlayerStatsModal";
@@ -12,6 +11,7 @@ import { BalanceHistoryDialog } from "./BalanceHistoryDialog";
 import { BalanceAdjustmentDialog } from "./BalanceAdjustmentDialog";
 import { CreatePlayerDialog } from "./CreatePlayerDialog";
 import { CustomPlayerTable } from "./CustomPlayerTable";
+import { PlayerTableSkeleton } from "./PlayerTableSkeleton";
 import { usePlayers } from "@/src/hooks/player/usePlayers";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSeasonStore } from "@/src/store/season";
@@ -93,10 +93,8 @@ export function PlayersTab() {
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <LoaderFive text="Loading players..." />
-          </div>
+        {isLoading || !seasonId ? (
+          <PlayerTableSkeleton />
         ) : (
           <CustomPlayerTable data={players ?? []} meta={meta} sortBy={sortBy} />
         )}
