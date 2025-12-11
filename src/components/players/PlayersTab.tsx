@@ -54,7 +54,11 @@ export function PlayersTab() {
       {/* Player Stats Modal */}
       <PlayerStatsModal
         isOpen={!!playerId}
-        onClose={() => router.back()}
+        onClose={() => {
+          const params = new URLSearchParams(search.toString());
+          params.delete("player");
+          router.push(`?${params.toString()}`, { scroll: false });
+        }}
         id={playerId}
       />
 
@@ -103,7 +107,11 @@ export function PlayersTab() {
       {/* Balance History Modal */}
       <BalanceHistoryDialog
         isOpen={!!historyId}
-        onOpenChange={() => router.back()}
+        onOpenChange={() => {
+          const params = new URLSearchParams(search.toString());
+          params.delete("history");
+          router.push(`?${params.toString()}`, { scroll: false });
+        }}
         playerId={historyId}
         selectedSeason={seasonId}
       />

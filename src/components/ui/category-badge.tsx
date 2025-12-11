@@ -98,7 +98,7 @@ export function CategoryBadge({
 
     return (
         <Badge
-            variant={isPremium ? "default" : "secondary"}
+            variant={isPremium ? "default" : "outline"}
             className={cn(
                 sizeClasses[size],
                 style,
