@@ -63,7 +63,7 @@ export function ShareableContent({
         className="relative w-full min-h-screen flex items-center justify-center bg-cover bg-center bg-background text-foreground"
         style={{ backgroundImage: `url(${backgroundImage})` }}
       >
-        <div className="absolute inset-0 bg-black/70" />
+        <div className="absolute inset-0 bg-black/85" />
         <div className="modal-container relative z-10 w-full max-w-[98%] sm:max-w-none mx-auto p-4 sm:p-6">
           <div className="text-center mb-4 sm:mb-6">
             <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-orange-500 font-montserrat tracking-wide">
@@ -100,7 +100,7 @@ export function ShareableContent({
           will-change: transform;
         }
       `}</style>
-      <div className="absolute inset-0 bg-black/40" />
+      <div className="absolute inset-0 bg-black/85" />
       <div className="modal-container relative z-10 w-full max-w-7xl 2xl:max-w-[90rem] mx-auto p-4 sm:p-6">
         <div className="text-center mb-4 sm:mb-6">
           <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-orange-500 font-montserrat tracking-wide">
@@ -116,7 +116,7 @@ export function ShareableContent({
           </p>
         </div>
         {/* Content Panel for contrast */}
-        <div className="rounded-lg border border-border/30 bg-background/60 backdrop-blur-sm shadow-sm p-3 sm:p-4">
+        <div className="rounded-lg border border-border/30 bg-black/60 backdrop-blur-sm shadow-sm p-3 sm:p-4">
           <TwoColumnTable teams={normalizedTeams} />
         </div>
         <div className="text-center mt-4 text-gray-400 text-xs">
