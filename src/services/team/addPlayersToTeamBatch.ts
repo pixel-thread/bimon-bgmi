@@ -135,8 +135,8 @@ export async function addPlayersToTeamBatch({
         }
 
         // 8. Batch upsert PlayerStats for this season
-        const totalMatchesPlayed = allMatches.length;
-
+        // NOTE: We do NOT increment deaths here. Deaths (match count) is only updated
+        // when scoreboard stats are submitted via bulk edit, not when players are added.
         for (const playerId of playerIds) {
             await tx.playerStats.upsert({
                 where: {
@@ -149,11 +149,9 @@ export async function addPlayersToTeamBatch({
                     playerId,
                     seasonId,
                     kills: 0,
-                    deaths: totalMatchesPlayed,
+                    deaths: 0, // Start at 0 - will be updated when scoreboard is saved
                 },
-                update: {
-                    deaths: { increment: totalMatchesPlayed },
-                },
+                update: {}, // No update needed - deaths counted via bulk edit only
             });
         }
 

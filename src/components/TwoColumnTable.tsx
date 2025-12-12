@@ -160,9 +160,13 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
   const DesktopTable = (
     <div className="desktop-table hidden sm:block">
       {/* Single column on sm-md, two columns on lg+ */}
-      <div className="hidden lg:grid lg:grid-cols-2 lg:gap-4">
-        {renderDesktopTable(teams.slice(0, Math.ceil(teams.length / 2)), 0)}
-        {renderDesktopTable(teams.slice(Math.ceil(teams.length / 2)), Math.ceil(teams.length / 2))}
+      <div className="hidden lg:flex lg:gap-6 lg:justify-center">
+        <div className="flex-1 max-w-[540px]">
+          {renderDesktopTable(teams.slice(0, Math.ceil(teams.length / 2)), 0)}
+        </div>
+        <div className="flex-1 max-w-[540px]">
+          {renderDesktopTable(teams.slice(Math.ceil(teams.length / 2)), Math.ceil(teams.length / 2))}
+        </div>
       </div>
       {/* Single column for sm-md screens */}
       <div className="block lg:hidden">

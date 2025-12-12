@@ -117,9 +117,8 @@ export async function addPlayerToTeam({ teamId, playerId, matchId }: Props) {
     }
 
     // Initialize or update PlayerStats for this season
-    // Count total matches played by this player in this season
-    const totalMatchesPlayed = allMatches.length;
-
+    // NOTE: We do NOT increment deaths here. Deaths (match count) is only updated
+    // when scoreboard stats are submitted via bulk edit, not when players are added.
     await tx.playerStats.upsert({
       where: {
         seasonId_playerId: {
@@ -131,11 +130,9 @@ export async function addPlayerToTeam({ teamId, playerId, matchId }: Props) {
         playerId: playerId,
         seasonId: team.seasonId || "",
         kills: 0,
-        deaths: totalMatchesPlayed,
+        deaths: 0, // Start at 0 - will be updated when scoreboard is saved
       },
-      update: {
-        deaths: { increment: totalMatchesPlayed },
-      },
+      update: {}, // No update needed - deaths counted via bulk edit only
     });
 
     return team;

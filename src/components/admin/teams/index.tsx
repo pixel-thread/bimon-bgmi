@@ -75,11 +75,22 @@ export const AdminTeamsManagement: React.FC = () => {
 
     const ExcelJS = (await import("exceljs")).default;
 
-    // Calculate total players across all teams
-    const totalPlayers = teams.reduce((sum, team) => sum + (team.players?.length || 0), 0);
+    // Deduplicate teams based on player composition (sorted player names as key)
+    const seenTeams = new Set<string>();
+    const uniqueTeams = teams.filter((team) => {
+      const playerKey = (team.players?.map((p) => p.name).sort().join(",")) || team.id;
+      if (seenTeams.has(playerKey)) {
+        return false;
+      }
+      seenTeams.add(playerKey);
+      return true;
+    });
+
+    // Calculate total players across unique teams
+    const totalPlayers = uniqueTeams.reduce((sum, team) => sum + (team.players?.length || 0), 0);
 
     // Find the maximum number of players in any team
-    const maxPlayers = Math.max(...teams.map((team) => team.players?.length || 0), 1);
+    const maxPlayers = Math.max(...uniqueTeams.map((team) => team.players?.length || 0), 1);
     const totalColumns = maxPlayers + 1; // Slot No + Player columns
 
     // Create workbook and worksheet
@@ -111,11 +122,11 @@ export const AdminTeamsManagement: React.FC = () => {
       cell.font = { name: "PUBG SANS", bold: true };
     });
 
-    // Team data rows
-    teams.forEach((team) => {
+    // Team data rows - use index+2 for slot number to ensure sequential numbering
+    uniqueTeams.forEach((team, index) => {
       const players = team.players?.map((p) => p.name) || [];
       const paddedPlayers = [...players, ...Array(maxPlayers - players.length).fill("")];
-      const row = worksheet.addRow([team.slotNo, ...paddedPlayers]);
+      const row = worksheet.addRow([index + 2, ...paddedPlayers]); // Sequential slot numbers starting from 2
       row.eachCell((cell) => {
         cell.alignment = { horizontal: "center", vertical: "middle" };
         cell.font = { name: "PUBG SANS" };

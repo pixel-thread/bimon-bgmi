@@ -131,6 +131,7 @@ const PollManagement: React.FC = () => {
         toast.success(data.message);
         queryClient.invalidateQueries({ queryKey: ["polls"] });
         queryClient.invalidateQueries({ queryKey: ["teams"] });
+        queryClient.invalidateQueries({ queryKey: ["match"] });
         setPreviewDialogOpen(false);
         setPreviewData(null);
         setSelectedPollId(null);
