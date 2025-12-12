@@ -183,19 +183,23 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
 
         const prompt = `Extract player names, kills (finishes), and team positions from this BGMI scoreboard.
 
-Player names to match: ${teams.flatMap(t => t.players.map(p => p.name)).join(", ")}
+Player names to match (USE THESE EXACT NAMES in output): 
+${teams.flatMap(t => t.players.map(p => p.name)).join(", ")}
 
 Teams and their players:
 ${teams.map(t => `- ${t.name}: ${t.players.map(p => p.name).join(", ")}`).join("\n")}
 
 IMPORTANT:
+- Match scoreboard names to the player list above (ignore special characters/symbols when matching)
+- In the JSON output, use the EXACT name from MY list above, NOT the scoreboard name
+- Example: if scoreboard shows "ツREAL乂SNAR" and my list has "realxsnar", return "realxsnar"
 - Position = the rank number shown next to each team (1, 2, 3, etc.)
 - The crown icon = position 1
 - Players in the same row belong to the same team
 - If uploading multiple images, combine ALL results into ONE JSON array
 
 Return format:
-[{"name": "player_name", "kills": 0, "position": 1}, ...]
+[{"name": "player_name_from_my_list", "kills": 0, "position": 1}, ...]
 
 After the JSON, list:
 Missing players (from list but not in scoreboard): player1, player2
@@ -227,11 +231,16 @@ New players (in scoreboard but not in list): new_player1, new_player2`;
             teamId: stat.teamId,
             matchId,
             position: stat.position === "" ? 0 : Number(stat.position),
-            players: stat.players.map((p) => ({
-                playerId: p.playerId,
-                kills: p.kills === "" ? 0 : Number(p.kills),
-                deaths: 0,
-            })),
+            // Only include players who have kills data (were in scoreboard)
+            // Empty kills ("") = NOT in scoreboard = no death count
+            // Kills of 0 = WAS in scoreboard with 0 kills = should count death
+            players: stat.players
+                .filter((p) => p.kills !== "")
+                .map((p) => ({
+                    playerId: p.playerId,
+                    kills: Number(p.kills),
+                    deaths: 0,
+                })),
         }));
 
         mutate({ stats: payload });

@@ -28,36 +28,37 @@ import { getKdRank } from "@/src/utils/categoryUtils";
 
 function ModalSkeleton() {
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-5 sm:space-y-8 py-2">
       {/* Stats Grid Skeleton */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
         {/* Matches */}
-        <div className="text-center p-2.5 sm:p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30">
-          <div className="h-6 sm:h-8 w-10 sm:w-14 bg-blue-200/60 dark:bg-blue-700/40 rounded-md mx-auto mb-2 animate-pulse" />
-          <div className="h-3 sm:h-4 w-12 sm:w-16 bg-blue-100 dark:bg-blue-800/30 rounded mx-auto animate-pulse" />
+        <div className="text-center p-4 sm:p-5 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30">
+          <div className="h-7 sm:h-9 w-12 sm:w-16 bg-blue-200/60 dark:bg-blue-700/40 rounded-md mx-auto mb-2.5 animate-pulse" />
+          <div className="h-3.5 sm:h-4 w-14 sm:w-18 bg-blue-100 dark:bg-blue-800/30 rounded mx-auto animate-pulse" />
         </div>
         {/* Kills */}
-        <div className="text-center p-2.5 sm:p-4 bg-green-50/50 dark:bg-green-900/10 rounded-lg border border-green-100 dark:border-green-900/30">
-          <div className="h-6 sm:h-8 w-10 sm:w-14 bg-green-200/60 dark:bg-green-700/40 rounded-md mx-auto mb-2 animate-pulse" />
-          <div className="h-3 sm:h-4 w-10 sm:w-12 bg-green-100 dark:bg-green-800/30 rounded mx-auto animate-pulse" />
+        <div className="text-center p-4 sm:p-5 bg-green-50/50 dark:bg-green-900/10 rounded-xl border border-green-100 dark:border-green-900/30">
+          <div className="h-7 sm:h-9 w-12 sm:w-16 bg-green-200/60 dark:bg-green-700/40 rounded-md mx-auto mb-2.5 animate-pulse" />
+          <div className="h-3.5 sm:h-4 w-12 sm:w-14 bg-green-100 dark:bg-green-800/30 rounded mx-auto animate-pulse" />
         </div>
         {/* K/D */}
-        <div className="text-center p-2.5 sm:p-4 bg-yellow-50/50 dark:bg-yellow-900/10 rounded-lg border border-yellow-100 dark:border-yellow-900/30">
-          <div className="h-6 sm:h-8 w-10 sm:w-14 bg-yellow-200/60 dark:bg-yellow-700/40 rounded-md mx-auto mb-2 animate-pulse" />
-          <div className="h-3 sm:h-4 w-8 sm:w-10 bg-yellow-100 dark:bg-yellow-800/30 rounded mx-auto animate-pulse" />
+        <div className="text-center p-4 sm:p-5 bg-yellow-50/50 dark:bg-yellow-900/10 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
+          <div className="h-7 sm:h-9 w-10 sm:w-14 bg-yellow-200/60 dark:bg-yellow-700/40 rounded-md mx-auto mb-2.5 animate-pulse" />
+          <div className="h-3.5 sm:h-4 w-10 sm:w-12 bg-yellow-100 dark:bg-yellow-800/30 rounded mx-auto animate-pulse" />
         </div>
         {/* Balance */}
-        <div className="text-center p-2.5 sm:p-4 bg-purple-50/50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-900/30">
-          <div className="h-6 sm:h-8 w-14 sm:w-20 bg-purple-200/60 dark:bg-purple-700/40 rounded-md mx-auto mb-2 animate-pulse" />
-          <div className="h-3 sm:h-4 w-12 sm:w-14 bg-purple-100 dark:bg-purple-800/30 rounded mx-auto animate-pulse" />
+        <div className="text-center p-4 sm:p-5 bg-purple-50/50 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-900/30">
+          <div className="h-7 sm:h-9 w-16 sm:w-22 bg-purple-200/60 dark:bg-purple-700/40 rounded-md mx-auto mb-2.5 animate-pulse" />
+          <div className="h-3.5 sm:h-4 w-14 sm:w-16 bg-purple-100 dark:bg-purple-800/30 rounded mx-auto animate-pulse" />
         </div>
       </div>
 
       {/* Action Buttons Skeleton */}
-      <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-        <div className="h-8 sm:h-9 w-24 sm:w-28 bg-zinc-200 dark:bg-zinc-700/50 rounded-md animate-pulse" />
-        <div className="h-8 sm:h-9 w-24 sm:w-28 bg-zinc-200 dark:bg-zinc-700/50 rounded-md animate-pulse" />
-        <div className="h-8 sm:h-9 w-20 sm:w-24 bg-zinc-200 dark:bg-zinc-700/50 rounded-md animate-pulse" />
+      <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3 pt-1">
+        <div className="h-9 sm:h-10 w-[calc(50%-0.375rem)] sm:w-32 bg-zinc-200 dark:bg-zinc-700/50 rounded-lg animate-pulse" />
+        <div className="h-9 sm:h-10 w-[calc(50%-0.375rem)] sm:w-32 bg-zinc-200 dark:bg-zinc-700/50 rounded-lg animate-pulse" />
+        <div className="h-9 sm:h-10 w-[calc(50%-0.375rem)] sm:w-28 bg-zinc-200 dark:bg-zinc-700/50 rounded-lg animate-pulse" />
+        <div className="h-9 sm:h-10 w-[calc(50%-0.375rem)] sm:w-28 bg-zinc-200 dark:bg-zinc-700/50 rounded-lg animate-pulse" />
       </div>
     </div>
   );
@@ -189,7 +190,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
         }}
       >
         <DialogContent
-          className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6"
+          className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto p-5 sm:p-7"
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 sm:gap-3">
@@ -269,22 +270,22 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
               Player data could not be loaded
             </div>
           ) : (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-4">
-                <div className="text-center p-2.5 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <p className="text-xl sm:text-2xl font-bold text-blue-600">
+            <div className="space-y-5 sm:space-y-8 py-2">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+                <div className="text-center p-4 sm:p-5 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                  <p className="text-2xl sm:text-3xl font-bold text-blue-600">
                     {stats?.deaths || 0}
                   </p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Matches</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">Matches</p>
                 </div>
-                <div className="text-center p-2.5 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <p className="text-xl sm:text-2xl font-bold text-green-600">
+                <div className="text-center p-4 sm:p-5 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-900/30">
+                  <p className="text-2xl sm:text-3xl font-bold text-green-600">
                     {stats?.kills || 0}
                   </p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Kills</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">Kills</p>
                 </div>
-                <div className="text-center p-2.5 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                  <p className="text-xl sm:text-2xl font-bold text-yellow-600">
+                <div className="text-center p-4 sm:p-5 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
+                  <p className="text-2xl sm:text-3xl font-bold text-yellow-600">
                     {(() => {
                       const kills = stats?.kills || 0;
                       const deaths = stats?.deaths || 0;
@@ -292,11 +293,11 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                       return kd.toFixed(2);
                     })()}
                   </p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">K/D</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">K/D</p>
                 </div>
-                <div className="text-center p-2.5 sm:p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <div className="text-center p-4 sm:p-5 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-900/30">
                   <p
-                    className={`text-xl sm:text-2xl font-bold ${Number(player.uc?.balance) >= 0
+                    className={`text-2xl sm:text-3xl font-bold ${Number(player.uc?.balance) >= 0
                       ? "text-green-600"
                       : "text-red-600"
                       }`}
@@ -305,7 +306,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                       ? Math.floor(player.uc?.balance)
                       : "0"} UC
                   </p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Balance</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">Balance</p>
                 </div>
               </div>
 
@@ -351,7 +352,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                 </div>
               )}
 
-              <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+              <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3 pt-1">
                 {isSuperAdmin && (
                   <>
                     <Button
@@ -428,7 +429,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
             </div>
           )}
 
-          <DialogFooter className="mt-4 sm:mt-6">
+          <DialogFooter className="mt-5 sm:mt-8 pt-2">
             <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
               Close
             </Button>
