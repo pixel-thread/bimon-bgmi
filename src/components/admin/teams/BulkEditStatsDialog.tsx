@@ -37,7 +37,7 @@ type EditableTeamStats = {
 };
 
 export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
-    const { matchId } = useMatchStore();
+    const { matchId, matchNumber } = useMatchStore();
     const { data: teams, isFetching } = useTeams({ page: "all" });
     const [editableStats, setEditableStats] = useState<EditableTeamStats[]>([]);
     const queryClient = useQueryClient();
@@ -181,10 +181,15 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
     const copyPrompt = useCallback(() => {
         if (!teams) return;
 
+        const totalTeams = teams.length;
+        const totalPlayers = teams.reduce((acc, t) => acc + t.players.length, 0);
+
         const prompt = `Extract player names, kills (finishes), and team positions from this BGMI scoreboard.
 
 Player names to match (USE THESE EXACT NAMES in output): 
 ${teams.flatMap(t => t.players.map(p => p.name)).join(", ")}
+
+Total: ${totalTeams} teams, ${totalPlayers} players
 
 Teams and their players:
 ${teams.map(t => `- ${t.name}: ${t.players.map(p => p.name).join(", ")}`).join("\n")}
@@ -197,13 +202,19 @@ IMPORTANT:
 - The crown icon = position 1
 - Players in the same row belong to the same team
 - If uploading multiple images, combine ALL results into ONE JSON array
+- Flag any player with 10+ kills (unusual, double-check)
+- Flag if any player appears more than once in the scoreboard
 
 Return format:
 [{"name": "player_name_from_my_list", "kills": 0, "position": 1}, ...]
 
-After the JSON, list:
-Missing players (from list but not in scoreboard): player1, player2
-New players (in scoreboard but not in list): new_player1, new_player2`;
+After the JSON (ONLY show sections that have items, skip any that are empty):
+Players found: X/${totalPlayers}
+⚠️ High kills (10+): player_name (X kills)
+⚠️ Duplicates: player_name (appeared X times)
+⚠️ Uncertain matches: scoreboard_name → matched_name
+Missing players: player1, player2
+New players: new_player1, new_player2`;
 
         navigator.clipboard.writeText(prompt);
         toast.success("Prompt copied to clipboard!");
@@ -260,7 +271,7 @@ New players (in scoreboard but not in list): new_player1, new_player2`;
             <DialogContent className="w-full max-w-4xl sm:max-w-6xl max-h-[90vh] h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden p-0 gap-0">
                 {/* HEADERS */}
                 <DialogHeader className="p-3 sm:p-4 border-b flex-shrink-0 bg-background z-10">
-                    <DialogTitle className="text-lg font-semibold">Bulk Edit Stats</DialogTitle>
+                    <DialogTitle className="text-lg font-semibold">Bulk Edit Stats{matchNumber ? ` - Match ${matchNumber}` : ""}</DialogTitle>
                     <DialogDescription className="text-sm text-muted-foreground">
                         Edit position and kills for all teams in this match.
                     </DialogDescription>
