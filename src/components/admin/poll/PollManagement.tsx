@@ -129,9 +129,11 @@ const PollManagement: React.FC = () => {
     onSuccess: (data) => {
       if (data.success) {
         toast.success(data.message);
-        queryClient.invalidateQueries({ queryKey: ["polls"] });
-        queryClient.invalidateQueries({ queryKey: ["teams"] });
-        queryClient.invalidateQueries({ queryKey: ["match"] });
+        // Force refetch ALL queries with these prefixes to ensure /teams page updates
+        queryClient.invalidateQueries({ queryKey: ["polls"], refetchType: "all" });
+        queryClient.invalidateQueries({ queryKey: ["teams"], refetchType: "all" });
+        queryClient.invalidateQueries({ queryKey: ["match"], refetchType: "all" });
+        queryClient.invalidateQueries({ queryKey: ["matches"], refetchType: "all" });
         setPreviewDialogOpen(false);
         setPreviewData(null);
         setSelectedPollId(null);
