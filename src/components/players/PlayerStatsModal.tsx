@@ -273,7 +273,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
               <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-4">
                 <div className="text-center p-2.5 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                   <p className="text-xl sm:text-2xl font-bold text-blue-600">
-                    {player.matchPlayerPlayed?.length || stats?.matches?.length || 0}
+                    {stats?.deaths || 0}
                   </p>
                   <p className="text-xs sm:text-sm text-muted-foreground">Matches</p>
                 </div>

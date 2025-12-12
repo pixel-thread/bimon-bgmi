@@ -134,7 +134,7 @@ export const CreatePollDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-md p-0 gap-0 overflow-hidden">
+      <DialogContent className="w-full h-[100dvh] inset-0 translate-x-0 translate-y-0 sm:inset-auto sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:h-auto sm:max-w-md max-w-none p-0 gap-0 overflow-hidden rounded-none sm:rounded-lg flex flex-col">
         {/* Header */}
         <DialogHeader className="px-4 py-3 border-b bg-muted/30">
           <DialogTitle className="text-base font-medium">
@@ -143,8 +143,8 @@ export const CreatePollDialog = ({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col">
-            <div className="px-4 py-4 space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
+            <div className="px-4 py-4 space-y-4 flex-1 overflow-y-auto">
               {/* Tournament Selector - Compact */}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Tournament</label>

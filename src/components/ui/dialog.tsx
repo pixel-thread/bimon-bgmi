@@ -57,10 +57,14 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          // Base styles for modal positioning, animation and spacing
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-6 rounded-xl border border-gray-200 p-8 shadow-2xl transition-all duration-300",
-          // Set maximum width to 90% of viewport for a larger modal
-          "max-w-[90vw] sm:max-w-[90vw]",
+          // Base styles for modal positioning and animation
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed z-50 border border-gray-200 shadow-2xl transition-all duration-300",
+          // Default centered positioning (can be overridden for fullscreen)
+          "top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]",
+          // Default styling - components can override these
+          "w-full max-w-lg gap-4 rounded-lg p-6",
+          // Allow full-screen on mobile when specified
+          "sm:max-w-[90vw] sm:rounded-xl",
           className
         )}
         {...props}

@@ -94,7 +94,7 @@ export function PollTeamsPreviewDialog({
 }: PollTeamsPreviewDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-full h-[100dvh] sm:w-[95vw] sm:h-[85vh] sm:max-w-4xl sm:max-h-[700px] p-0 sm:rounded-xl rounded-none flex flex-col overflow-hidden">
+            <DialogContent className="w-full h-[100dvh] inset-0 translate-x-0 translate-y-0 sm:inset-auto sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:w-[95vw] sm:h-[85vh] sm:max-w-4xl sm:max-h-[700px] max-w-none p-0 sm:rounded-xl rounded-none flex flex-col overflow-hidden">
                 {/* Fixed Header */}
                 <DialogHeader className="flex-shrink-0 p-3 sm:p-4 pb-2 border-b">
                     <DialogTitle className="text-base sm:text-lg font-semibold flex items-center gap-2">

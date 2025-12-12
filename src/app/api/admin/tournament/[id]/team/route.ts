@@ -40,9 +40,15 @@ export async function GET(
 
     let data;
 
-    const isAllMatchFilter = matchId === "all";
+    const isAllMatchFilter = matchId === "all" || matchId === "";
 
-    data = teams?.map((team) => {
+    // Filter teams to only include those that have the selected match
+    // This prevents showing duplicate teams from different matches
+    const filteredTeams = isAllMatchFilter
+      ? teams
+      : teams.filter((team) => team.matches.some((m) => m.id === matchId));
+
+    data = filteredTeams?.map((team) => {
       const teamStats = isAllMatchFilter
         ? team.teamStats
         : team.teamStats.filter((val) => val.matchId === matchId);
