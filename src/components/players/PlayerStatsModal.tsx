@@ -54,11 +54,9 @@ function ModalSkeleton() {
       </div>
 
       {/* Action Buttons Skeleton */}
-      <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3 pt-1">
-        <div className="h-9 sm:h-10 w-[calc(50%-0.375rem)] sm:w-32 bg-zinc-200 dark:bg-zinc-700/50 rounded-lg animate-pulse" />
-        <div className="h-9 sm:h-10 w-[calc(50%-0.375rem)] sm:w-32 bg-zinc-200 dark:bg-zinc-700/50 rounded-lg animate-pulse" />
-        <div className="h-9 sm:h-10 w-[calc(50%-0.375rem)] sm:w-28 bg-zinc-200 dark:bg-zinc-700/50 rounded-lg animate-pulse" />
-        <div className="h-9 sm:h-10 w-[calc(50%-0.375rem)] sm:w-28 bg-zinc-200 dark:bg-zinc-700/50 rounded-lg animate-pulse" />
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-2.5 sm:gap-3 pt-1">
+        <div className="h-9 sm:h-10 w-full sm:w-32 bg-zinc-200 dark:bg-zinc-700/50 rounded-lg animate-pulse" />
+        <div className="h-9 sm:h-10 w-full sm:w-32 bg-zinc-200 dark:bg-zinc-700/50 rounded-lg animate-pulse" />
       </div>
     </div>
   );
@@ -191,6 +189,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
       >
         <DialogContent
           className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto p-5 sm:p-7"
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 sm:gap-3">
@@ -352,27 +351,27 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                 </div>
               )}
 
-              <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3 pt-1">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-2.5 sm:gap-3 pt-1 [&>*:last-child:nth-child(odd)]:col-span-2 [&>*:last-child:nth-child(odd)]:justify-self-center [&>*:last-child:nth-child(odd)]:w-1/2">
                 {isSuperAdmin && (
                   <>
                     <Button
                       variant="outline"
                       onClick={handleBalanceAdjustment}
-                      className="w-[calc(50%-0.25rem)] sm:w-auto text-sm min-w-0"
+                      className="w-full sm:w-auto text-sm"
                       size="sm"
                     >
                       <DollarSign className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
-                      <span className="truncate">Adjust UC</span>
+                      Adjust UC
                     </Button>
                     <Button
                       variant={player.isUCExempt ? "outline" : "secondary"}
                       onClick={() => toggleUCExemption(!player.isUCExempt)}
                       disabled={isExemptionPending}
-                      className={`w-[calc(50%-0.25rem)] sm:w-auto text-sm min-w-0 ${player.isUCExempt ? "border-amber-600 text-amber-600 hover:bg-amber-50" : ""}`}
+                      className={`w-full sm:w-auto text-sm ${player.isUCExempt ? "border-amber-600 text-amber-600 hover:bg-amber-50" : ""}`}
                       size="sm"
                     >
                       <Shield className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
-                      <span className="truncate">{player.isUCExempt ? "Remove Exempt" : "UC Exempt"}</span>
+                      {player.isUCExempt ? "Remove Exempt" : "UC Exempt"}
                     </Button>
                   </>
                 )}
@@ -382,18 +381,18 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     variant={player.isBanned ? "outline" : "destructive"}
                     onClick={() => toggleBan()}
                     disabled={isBanPending}
-                    className={`w-[calc(50%-0.25rem)] sm:w-auto text-sm min-w-0 ${player.isBanned ? "border-green-600 text-green-600 hover:bg-green-50" : ""}`}
+                    className={`w-full sm:w-auto text-sm ${player.isBanned ? "border-green-600 text-green-600 hover:bg-green-50" : ""}`}
                     size="sm"
                   >
                     {player.isBanned ? (
                       <>
                         <CheckCircle className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
-                        <span className="truncate">Unban</span>
+                        Unban
                       </>
                     ) : (
                       <>
                         <Ban className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
-                        <span className="truncate">Ban</span>
+                        Ban
                       </>
                     )}
                   </Button>
@@ -406,23 +405,23 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     params.set("history", id);
                     router.push(`?${params.toString()}`);
                   }}
-                  className="w-[calc(50%-0.25rem)] sm:w-auto text-sm min-w-0"
+                  className="w-full sm:w-auto text-sm"
                   size="sm"
                 >
                   <History className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
-                  <span className="truncate">History</span>
+                  History
                 </Button>
 
                 {/* UC Transfer - for PLAYER, ADMIN, SUPER_ADMIN roles, not viewing own profile */}
                 {(user?.role === "PLAYER" || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && !isOwnProfile && (
                   <Button
                     variant="outline"
-                    className="w-[calc(50%-0.25rem)] sm:w-auto text-sm min-w-0 border-green-600 text-green-600 hover:bg-green-50"
+                    className="w-full sm:w-auto text-sm border-green-600 text-green-600 hover:bg-green-50"
                     onClick={() => setIsTransferDialogOpen(true)}
                     size="sm"
                   >
                     <ArrowUpRight className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
-                    <span className="truncate">Send / Request</span>
+                    Send / Request
                   </Button>
                 )}
               </div>
@@ -430,7 +429,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
           )}
 
           <DialogFooter className="mt-5 sm:mt-8 pt-2">
-            <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
+            <Button variant="outline" onClick={onClose} className="w-full sm:w-auto" tabIndex={-1}>
               Close
             </Button>
           </DialogFooter>

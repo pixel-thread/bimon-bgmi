@@ -114,6 +114,7 @@ export async function GET(req: NextRequest) {
           userName: player?.user?.userName,
           uc: player.uc?.balance || 0,
           matches: matches,
+          kills: totalKills,
           kd: playerKd.toFixed(2) || 0,
           category: getKdRank(
             playerStats.reduce((acc, curr) => acc + curr.kills, 0),
@@ -140,6 +141,7 @@ export async function GET(req: NextRequest) {
           uc: player.uc?.balance || 0,
           userName: player?.user?.userName,
           matches: player?.matchPlayerPlayed.length,
+          kills: totalKills,
           kd: playerKd.toFixed(2) || 0,
           category: getKdRank(
             player.playerStats.reduce((acc, curr) => acc + curr.kills, 0),
