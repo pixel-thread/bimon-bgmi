@@ -6,6 +6,7 @@ import { PlayerStatsModal } from "./PlayerStatsModal";
 import { usePlayerData } from "./hooks/usePlayerData";
 import { Button } from "../ui/button";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import { FooterAd } from "@/src/components/ads";
 
 import { BalanceHistoryDialog } from "./BalanceHistoryDialog";
 import { BalanceAdjustmentDialog } from "./BalanceAdjustmentDialog";
@@ -118,6 +119,9 @@ export function PlayersTab() {
 
       {/* Balance Adjustment Modal */}
       <BalanceAdjustmentDialog isOpen={!!ucId} playerId={ucId} />
+
+      {/* Ad Placement - Footer */}
+      <FooterAd className="mb-8" />
     </div>
   );
 }

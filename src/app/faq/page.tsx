@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { HorizontalAd } from "@/src/components/ads";
 
 export default function FAQPage() {
   const [openItems, setOpenItems] = useState<number[]>([]);
@@ -134,6 +135,11 @@ export default function FAQPage() {
           </p>
         </div>
 
+        {/* Ad Placement - After Header */}
+        <div className="mb-12">
+          <HorizontalAd />
+        </div>
+
         {/* FAQ List */}
         <div className="max-w-4xl mx-auto">
           {faqs.map((category, categoryIndex) => (
@@ -159,9 +165,8 @@ export default function FAQPage() {
                           {faq.question}
                         </h3>
                         <svg
-                          className={`w-5 h-5 text-slate-500 transform transition-transform duration-200 ${
-                            isOpen ? "rotate-180" : ""
-                          }`}
+                          className={`w-5 h-5 text-slate-500 transform transition-transform duration-200 ${isOpen ? "rotate-180" : ""
+                            }`}
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -190,6 +195,11 @@ export default function FAQPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Ad Placement - Before Contact */}
+        <div className="mt-12">
+          <HorizontalAd />
         </div>
 
         {/* Contact Section */}
