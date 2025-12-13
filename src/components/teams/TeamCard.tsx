@@ -49,35 +49,24 @@ export default function TeamCard({ team }: TeamCardProps) {
           </p>
         )}
 
-        {selectedMatch === "All" ? (
+        {selectedMatch === "all" ? (
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
             <div className="px-2 py-1 rounded-full text-xs font-medium bg-accent text-accent-foreground">
-              Total Points:{" "}
-              {Object.values(matchScores).reduce(
-                (acc, s) => acc + (s.kills || 0) + (s.total || 0),
-                0,
-              )}
+              Kills: {team.kills}
             </div>
-            <div
-              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                position === 1
-                  ? "bg-yellow-300 text-yellow-900"
-                  : position === 2
-                    ? "bg-gray-300 text-gray-900"
-                    : position === 3
-                      ? "bg-orange-300 text-orange-900"
-                      : "bg-accent text-accent-foreground"
-              }`}
-            >
-              Overall Position: {position !== undefined ? position : "-"}
+            <div className="px-2 py-1 rounded-full text-xs font-medium bg-accent text-accent-foreground">
+              Placement Points: {team.pts}
+            </div>
+            <div className="text-xs sm:text-sm font-medium text-foreground ml-auto">
+              Total: {team.total}
             </div>
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
-            <div className={`px-2 py-1 rounded-full text-xs font-medium`}>
+            <div className="px-2 py-1 rounded-full text-xs font-medium bg-accent text-accent-foreground">
               Placement Points: {team.pts}
             </div>
-            <div className={`px-2 py-1 rounded-full text-xs font-medium`}>
+            <div className="px-2 py-1 rounded-full text-xs font-medium bg-accent text-accent-foreground">
               Kills: {team.kills}
             </div>
             <div className="text-xs sm:text-sm font-medium text-foreground ml-auto">

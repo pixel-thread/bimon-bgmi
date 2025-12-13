@@ -16,17 +16,23 @@ import { useTeams } from "../../hooks/team/useTeams";
 import { useTournamentStore } from "../../store/tournament";
 import MatchSelector from "../match/MatchSelector";
 import { useMatchStore } from "../../store/match/useMatchStore";
+import { useTournament } from "../../hooks/tournament/useTournament";
+import { useGlobalBackground } from "@/src/hooks/gallery/useGlobalBackground";
+import { MedalIcon } from "lucide-react";
 
 export default function TeamsPage() {
   // Auth state for role-based UI
   const [searchTerm, setSearchTerm] = useState("");
+  const [showStandingsModal, setShowStandingsModal] = useState(false);
   const { matchId: selectedMatch } = useMatchStore();
   const { tournamentId: selectedTournament } = useTournamentStore();
 
-  const { data: sortedTeams } = useTeams();
+  const { data: sortedTeams } = useTeams({ page: "all" });
+  const { data: tournament } = useTournament({ id: selectedTournament });
+  const { data: globalBackground } = useGlobalBackground();
 
   // Use teams from Firestore
-  const { data: teams, isFetching: loading } = useTeams();
+  const { data: teams, isFetching: loading } = useTeams({ page: "all" });
 
   return (
     <>
@@ -36,18 +42,26 @@ export default function TeamsPage() {
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
             actions={
-              <div className="flex flex-col gap-2 w-full">
-                {/* First row: Season and Tournament selectors */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-                  <SeasonSelector
-                    size="sm"
-                    variant="blue"
-                    placeholder="Season"
-                    showAllSeasons={false}
-                  />
-                  <TournamentSelector />
-                  <MatchSelector isAllMatch={true} />
-                </div>
+              <div className="flex flex-wrap items-center gap-2 w-full">
+                <SeasonSelector
+                  size="sm"
+                  variant="blue"
+                  placeholder="Season"
+                  showAllSeasons={false}
+                  className="min-w-[100px] flex-1 sm:flex-none sm:w-auto"
+                />
+                <TournamentSelector className="min-w-[120px] flex-1 sm:flex-none sm:w-auto" />
+                <MatchSelector isAllMatch={true} className="min-w-[90px] flex-1 sm:flex-none sm:w-auto" />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={loading || !selectedTournament}
+                  onClick={() => setShowStandingsModal(true)}
+                  className="min-w-[100px] flex-1 sm:flex-none sm:w-auto flex items-center justify-center gap-2"
+                >
+                  <MedalIcon className="h-4 w-4" />
+                  Standings
+                </Button>
               </div>
             }
           />
@@ -97,7 +111,7 @@ export default function TeamsPage() {
                       transition={{ duration: 0.4 }}
                     >
                       <TeamCard
-                        onClick={() => {}}
+                        onClick={() => { }}
                         team={team as any}
                         searchTerm={searchTerm}
                         selectedMatch={selectedMatch}
@@ -110,6 +124,15 @@ export default function TeamsPage() {
           )}
         </div>
       </div>
+
+      <OverallStandingModal
+        visible={showStandingsModal}
+        onClose={() => setShowStandingsModal(false)}
+        backgroundImage={globalBackground?.publicUrl || "/images/image.png"}
+        tournamentTitle={tournament?.name || "Tournament"}
+        maxMatchNumber={1}
+        initialTeams={teams as any}
+      />
     </>
   );
 }

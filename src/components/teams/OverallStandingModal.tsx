@@ -1,5 +1,6 @@
 "use client";
-import { FiX, FiShare2 } from "react-icons/fi";
+import { FiX, FiCheck } from "react-icons/fi";
+import { useState } from "react";
 import html2canvas from "html2canvas-pro";
 import { Button } from "@/src/components/ui/button";
 import { ShareableContent } from "../ShareableContent";
@@ -11,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { useTournamentStore } from "@/src/store/tournament";
 import { LoaderFive } from "../ui/loader";
+import { Download } from "lucide-react";
 
 interface OverallStandingModalProps {
   visible: boolean;
@@ -18,7 +20,7 @@ interface OverallStandingModalProps {
   backgroundImage?: string;
   tournamentTitle: string;
   maxMatchNumber: number;
-  initialTeams?: TeamT[]; // Pre-fetched teams from parent page for instant display
+  initialTeams?: TeamT[];
 }
 
 export default function OverallStandingModal({
@@ -31,6 +33,9 @@ export default function OverallStandingModal({
 }: OverallStandingModalProps) {
   const { matchId: selectedMatch } = useMatchStore();
   const { tournamentId } = useTournamentStore();
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareSuccess, setShareSuccess] = useState(false);
+
   const { data: teamsStats, isFetching } = useQuery({
     queryKey: ["out standing", tournamentId, selectedMatch],
     queryFn: () =>
@@ -39,32 +44,27 @@ export default function OverallStandingModal({
       ),
     select: (data) => data.data,
     enabled: !!selectedMatch && visible && !!tournamentId,
-    staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    // Use initial teams from page cache for instant display (wrapped in response format)
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     placeholderData: initialTeams ? { data: initialTeams, success: true, message: "" } as any : undefined,
   });
 
-  // Render the modal if visible and selectedMatch is not empty.
-
   const shareImage = async () => {
-    const shareButton = document.querySelector(
-      ".share-button",
-    ) as HTMLButtonElement | null;
-    if (shareButton) {
-      shareButton.disabled = true;
-      shareButton.classList.add("loading");
-    }
+    setIsSharing(true);
+    setShareSuccess(false);
 
     const element = document.getElementById(
       "shareable-content",
     ) as HTMLDivElement | null;
-    if (!element) return;
+    if (!element) {
+      setIsSharing(false);
+      return;
+    }
 
     // Dynamically load screenshot.css
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "/screenshot.css"; // Ensure this matches your file location
+    link.href = "/screenshot.css";
     document.head.appendChild(link);
 
     const tempContainer = document.createElement("div");
@@ -115,7 +115,7 @@ export default function OverallStandingModal({
       downloadLink.href = canvas.toDataURL("image/png");
       downloadLink.click();
 
-      // --- Auto Copy to Clipboard ---
+      // Auto Copy to Clipboard
       if (navigator.clipboard && window.ClipboardItem) {
         canvas.toBlob(async (blob) => {
           if (blob) {
@@ -123,13 +123,14 @@ export default function OverallStandingModal({
               await navigator.clipboard.write([
                 new window.ClipboardItem({ "image/png": blob }),
               ]);
+              setShareSuccess(true);
+              setTimeout(() => setShareSuccess(false), 2000);
             } catch (e) {
               console.warn("Could not copy image to clipboard:", e);
             }
           }
         }, "image/png");
       }
-      // -----------------------------
     } catch (error) {
       console.error("Screenshot error:", error);
     } finally {
@@ -139,11 +140,8 @@ export default function OverallStandingModal({
         originalParent.appendChild(element);
       }
       document.body.removeChild(tempContainer);
-      document.head.removeChild(link); // Remove screenshot.css
-      if (shareButton) {
-        shareButton.disabled = false;
-        shareButton.classList.remove("loading");
-      }
+      document.head.removeChild(link);
+      setIsSharing(false);
     }
   };
 
@@ -156,42 +154,72 @@ export default function OverallStandingModal({
   return (
     <>
       <style jsx>{`
-        .share-button.loading::after {
-          content: "";
-          position: absolute;
-          width: 16px;
-          height: 16px;
-          border: 2px solid #f97316;
-          border-top: 2px solid transparent;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-        }
         @keyframes spin {
           to {
-            transform: translate(-50%, -50%) rotate(360deg);
+            transform: rotate(360deg);
           }
         }
-        .share-button.loading {
-          pointer-events: none;
-          position: relative;
+        
+        @keyframes pulse-glow {
+          0%, 100% {
+            box-shadow: 0 0 10px rgba(249, 115, 22, 0.4), 0 0 20px rgba(249, 115, 22, 0.2);
+          }
+          50% {
+            box-shadow: 0 0 15px rgba(249, 115, 22, 0.6), 0 0 30px rgba(249, 115, 22, 0.3);
+          }
+        }
+        
+        .share-button-glow {
+          animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        .share-button-glow:hover {
+          animation: none;
+          box-shadow: 0 0 20px rgba(249, 115, 22, 0.6), 0 0 40px rgba(249, 115, 22, 0.3);
         }
       `}</style>
+
       <div className="fixed inset-0 flex items-center justify-center z-50">
+        {/* Floating Control Buttons */}
         <div className="floating-button-group absolute top-4 right-4 z-30 flex gap-2">
+          {/* Download Button */}
           <Button
             onClick={shareImage}
+            disabled={isSharing}
             variant="ghost"
-            className="share-button text-white hover:text-orange-500 hover:bg-gray-800/50 bg-gray-900/80 p-2 rounded-full relative"
+            className={`
+              relative overflow-hidden
+              text-white hover:text-orange-400
+              bg-black/60 hover:bg-black/80
+              backdrop-blur-md
+              border border-white/20 hover:border-orange-500/50
+              p-2.5 rounded-xl
+              transition-all duration-300
+              ${!isSharing && !shareSuccess ? 'share-button-glow' : ''}
+              ${shareSuccess ? 'bg-green-500/20 border-green-500/50' : ''}
+            `}
           >
-            <FiShare2 className="h-5 w-5" />
+            {isSharing ? (
+              <div className="h-5 w-5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+            ) : shareSuccess ? (
+              <FiCheck className="h-5 w-5 text-green-400" />
+            ) : (
+              <Download className="h-5 w-5" />
+            )}
           </Button>
+
+          {/* Close Button */}
           <Button
             onClick={handleClose}
             variant="ghost"
-            className="text-white hover:text-red-500 hover:bg-gray-800/50 bg-gray-900/80 p-2 rounded-full"
+            className="
+              text-white hover:text-red-400
+              bg-black/60 hover:bg-black/80
+              backdrop-blur-md
+              border border-white/20 hover:border-red-500/50
+              p-2.5 rounded-xl
+              transition-all duration-300
+            "
           >
             <FiX className="h-6 w-6" />
           </Button>

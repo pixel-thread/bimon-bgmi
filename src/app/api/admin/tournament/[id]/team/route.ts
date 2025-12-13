@@ -89,7 +89,11 @@ export async function GET(
 
       const teamPosition = position || 0;
 
-      const pts = calculatePlayerPoints(teamPosition, 0);
+      // For "all" view, calculate pts for EACH match position separately, then sum
+      // For single match, calculate pts from that match's position
+      const pts = isAllMatchFilter
+        ? teamStats.reduce((acc, stat) => acc + calculatePlayerPoints(stat.position, 0), 0)
+        : calculatePlayerPoints(teamPosition, 0);
 
       const total = kills + pts;
 
