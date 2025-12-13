@@ -34,7 +34,9 @@ export async function GET(
 
     // mapping data
     let data;
-    if (matchId !== "all") {
+    const isAllMatches = matchId === "all" || matchId === "";
+
+    if (!isAllMatches) {
       data = teams?.map((team) => {
         const teamStats = team.teamStats.find((val) => val.matchId === matchId);
         const teamPlayerStats = team.teamPlayerStats.find(
@@ -77,6 +79,51 @@ export async function GET(
         };
       });
     } else {
+      // For "all" matches, fetch data the same way as standing API
+      const { prisma } = await import("@/src/lib/db/prisma");
+
+      // Get all team stats for this tournament (same as standing API)
+      const allTeamStats = await prisma.teamStats.findMany({
+        where: { tournamentId: id },
+        include: {
+          teamPlayerStats: true,
+          team: {
+            include: { matches: true, players: { include: { user: true } } },
+          },
+        },
+      });
+
+
+
+      // Aggregate kills per team using groupBy (same as standing API)
+      const teamIds = teams?.map((t) => t.id) || [];
+      const groupedKills = await prisma.teamPlayerStats.groupBy({
+        where: {
+          teamId: { in: teamIds },
+        },
+        by: ["teamId"],
+        _sum: {
+          kills: true,
+        },
+      });
+
+
+
+      // Create a map of teamId -> kills
+      const killsMap = new Map(
+        groupedKills.map((g) => [g.teamId, g._sum?.kills || 0])
+      );
+
+      // Group teamStats by teamId for pts calculation
+      const teamStatsMap = new Map<string, typeof allTeamStats>();
+      for (const stat of allTeamStats) {
+        const existing = teamStatsMap.get(stat.teamId) || [];
+        existing.push(stat);
+        teamStatsMap.set(stat.teamId, existing);
+      }
+
+
+
       data = teams?.map((team) => {
         const teamPlayers = team.players.map((player) => {
           const playerStats = player.playerStats.find(
@@ -93,28 +140,18 @@ export async function GET(
           };
         });
 
-        const teamStats = team.teamStats.filter(
-          (val) => val.seasonId === seasonId && val.teamId === team.id,
-        );
-        const teamPlayerStats = team.teamPlayerStats.find(
-          (val) => val.seasonId === seasonId && val.teamId === team.id,
-        );
+        // Get kills from the groupBy map
+        const totalKills = killsMap.get(team.id) || 0;
 
-        const groupStats = teamStats.map((stat) => {
-          const kills = teamPlayerStats?.kills || 0;
-          const pts = calculatePlayerPoints(stat.position, 0); // Calculate points based on position
-          const total = kills + pts;
-          return {
-            ...stat, // Keep all original fields
-            kills,
-            pts, // Add calculated points
-            total, // Add total score
-          };
-        });
+        // Get team stats for this team and calculate pts
+        const teamStatsList = teamStatsMap.get(team.id) || [];
+        const totalPts = teamStatsList.reduce((acc, stat) => {
+          return acc + calculatePlayerPoints(stat.position, 0);
+        }, 0);
 
-        const kills = groupStats.reduce((acc, val) => acc + val.kills, 0);
-        const pts = groupStats.reduce((acc, val) => acc + val.pts, 0);
-        const total = pts + kills;
+
+
+        const total = totalPts + totalKills;
         const teamName = team.players
           .map((player) => player.user.userName)
           .join("_");
@@ -124,10 +161,10 @@ export async function GET(
           matches: team.matches,
           size: team.players.length,
           slotNo: team.teamNumber + 1,
-          kills: kills,
+          kills: totalKills,
           deaths: 0,
           position: 0,
-          pts: pts,
+          pts: totalPts,
           total: total,
           players: teamPlayers,
         };
