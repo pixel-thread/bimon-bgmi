@@ -4,6 +4,7 @@ import { MemoryGame } from "@/src/components/games/memorygame/MemoryGame";
 import { Button } from "@/src/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { FooterAd } from "@/src/components/ads";
 
 export default function MemoryGamePage() {
     return (
@@ -18,6 +19,9 @@ export default function MemoryGamePage() {
 
             {/* Game Area */}
             <MemoryGame />
+
+            {/* Ad Placement - Footer */}
+            <FooterAd />
         </div>
     );
 }

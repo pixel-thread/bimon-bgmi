@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { FooterAd } from "@/src/components/ads";
 
 interface GameInfo {
   id: string;
@@ -130,8 +131,8 @@ export default function GamesPage() {
             <CardWrapper key={game.id}>
               <Card
                 className={`group overflow-hidden transition-all duration-300 ${game.status === "available"
-                    ? "hover:shadow-xl hover:shadow-indigo-500/10 hover:border-indigo-500/30 cursor-pointer"
-                    : "opacity-75"
+                  ? "hover:shadow-xl hover:shadow-indigo-500/10 hover:border-indigo-500/30 cursor-pointer"
+                  : "opacity-75"
                   }`}
               >
                 {/* Game Image/Preview */}
@@ -199,6 +200,9 @@ export default function GamesPage() {
           );
         })}
       </div>
+
+      {/* Ad Placement - Footer */}
+      <FooterAd />
     </div>
   );
 }

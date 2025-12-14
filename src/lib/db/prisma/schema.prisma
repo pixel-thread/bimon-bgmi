@@ -180,10 +180,11 @@ model Tournament {
   status           Status    @default(ACTIVE)
   isWinnerDeclared Boolean   @default(false)
 
-  tournamentWinner TournamentWinner[]
-  teamStats        TeamStats[]
-  pollVote         Poll[]
-  matches          Match[]
+  tournamentWinner  TournamentWinner[]
+  teamStats         TeamStats[]
+  pollVote          Poll[]
+  matches           Match[]
+  recentMatchGroups RecentMatchGroup[]
 
   galleryId         String?
   gallery           Gallery?            @relation(fields: [galleryId], references: [id], onDelete: SetNull)
@@ -521,4 +522,31 @@ model Rule {
   createdBy String
 
   @@index([order])
+}
+
+model RecentMatchGroup {
+  id              String             @id @default(uuid())
+  tournamentId    String
+  tournament      Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournamentTitle String
+  deletionMarker  Int
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  images          RecentMatchImage[]
+
+  @@index([deletionMarker])
+  @@index([tournamentId])
+}
+
+model RecentMatchImage {
+  id          String           @id @default(uuid())
+  matchNumber Int
+  imageUrl    String
+  imagePath   String
+  groupId     String
+  group       RecentMatchGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+
+  @@index([groupId])
+  @@index([matchNumber])
 }

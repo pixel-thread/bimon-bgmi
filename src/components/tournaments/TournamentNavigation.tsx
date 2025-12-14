@@ -9,6 +9,7 @@ import {
   FiFileText,
   FiAward,
   FiBarChart,
+  FiImage,
 } from "react-icons/fi";
 import { GamepadIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -84,6 +85,8 @@ const TournamentNavigation = () => {
   const navItems = [
     { href: "/tournament", label: "Positions", icon: FiSmartphone }, // Changed from /tournament/teams to /tournament
     { href: "/tournament/vote", label: "Vote", icon: FiBarChart },
+    { href: "/tournament/recent-matches", label: "Scoreboards", icon: FiImage },
+    { href: "/tournament/players", label: "Balance", icon: FiUsers },
     {
       href: "/tournament/games",
       label: "Games",
@@ -91,7 +94,6 @@ const TournamentNavigation = () => {
       glowing: true,
       hasNotification: showMemoryGameNotification || showSnakeGameNotification,
     },
-    { href: "/tournament/players", label: "Balance", icon: FiUsers },
     { href: "/tournament/rules", label: "Rules", icon: FiFileText },
     { href: "/tournament/winners", label: "Winners", icon: FiAward },
   ];

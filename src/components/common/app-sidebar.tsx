@@ -13,6 +13,7 @@ import {
   DollarSign,
   User,
   LogOut,
+  ImageIcon,
 } from "lucide-react";
 
 import { NavMain } from "@/src/components/nav-main";
@@ -54,6 +55,11 @@ const navItems: NavItem[] = [
     title: "Games",
     url: "/admin/games",
     icon: Gamepad2,
+  },
+  {
+    title: "Scoreboards",
+    url: "/admin/recent-matches",
+    icon: ImageIcon,
   },
   {
     title: "Income",
