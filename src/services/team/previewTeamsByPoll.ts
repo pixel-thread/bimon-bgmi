@@ -170,9 +170,10 @@ export async function previewTeamsByPolls({
         6
     );
 
-    // Filter players who voted SOLO - they will ALWAYS be solo
+    // Filter players who voted SOLO in THIS poll - they will be solo
+    // Important: Only check the vote for the current pollId, not all historical votes
     const playersWhoVotedSolo = players.filter((p) =>
-        p.playerPollVote.some((vote) => vote.vote === "SOLO"),
+        p.playerPollVote.some((vote) => vote.pollId === pollId && vote.vote === "SOLO"),
     );
 
     // Compute weighted scores with recent wins
