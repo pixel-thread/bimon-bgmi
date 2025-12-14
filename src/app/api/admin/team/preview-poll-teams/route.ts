@@ -1,6 +1,5 @@
 import { getPollById } from "@/src/services/polls/getPollById";
 import { previewTeamsByPolls } from "@/src/services/team/previewTeamsByPoll";
-import { getTeamByTournamentId } from "@/src/services/team/getTeamByTournamentId";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
@@ -31,14 +30,8 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        const [existingTeams] = await getTeamByTournamentId({ tournamentId });
-
-        if (existingTeams.length > 0) {
-            return ErrorResponse({
-                message: "Teams already created for this tournament",
-                status: 400,
-            });
-        }
+        // Note: We intentionally don't check for existing teams here
+        // Preview should always be allowed - the check happens on confirm (create)
 
         // Get the entry fee from the tournament settings
         const entryFee = tournamentExist.fee || 0;
