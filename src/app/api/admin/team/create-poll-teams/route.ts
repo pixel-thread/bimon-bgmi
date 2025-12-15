@@ -51,25 +51,13 @@ export async function POST(req: NextRequest) {
       entryFee,
     });
 
-    // Build response message
-    let message = "Teams created successfully";
-    if (entryFee > 0) {
-      message += `. ${entryFee} UC debited from each player`;
-    }
-    if (result.playersWithInsufficientBalance.length > 0) {
-      const excludedNames = result.playersWithInsufficientBalance
-        .map((p) => p.userName)
-        .join(", ");
-      message += `. Players excluded due to insufficient UC: ${excludedNames}`;
-    }
-
     return SuccessResponse({
       data: {
         teams: result.teams,
         entryFeeCharged: result.entryFeeCharged,
         playersExcluded: result.playersWithInsufficientBalance,
       },
-      message,
+      message: "Team created successfully",
     });
   } catch (error) {
     return handleApiErrors(error);
