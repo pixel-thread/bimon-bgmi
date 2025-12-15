@@ -13,6 +13,7 @@ import { ADMIN_PLAYER_ENDPOINTS } from "@/src/lib/endpoints/admin/player";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Crown, Medal, Award, TrendingUp, Target, Gamepad2, Coins } from "lucide-react";
+import { InFeedAd } from "@/src/components/ads/AdUnit";
 
 type PlayerT = {
     id: string;
@@ -176,12 +177,12 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                         <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">Try adjusting your filters</p>
                     </div>
                 ) : (
-                    data?.map((player, index) => {
+                    data?.flatMap((player, index) => {
                         const globalIndex = meta ? (meta.page - 1) * meta.pageSize + index + 1 : index + 1;
                         const rankStyle = getRankStyle(globalIndex);
                         const RankIcon = rankStyle.icon;
 
-                        return (
+                        const playerRow = (
                             <div
                                 key={player.id}
                                 onClick={() => handleRowClick(player.id)}
@@ -243,8 +244,8 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                                     {/* Stat Value */}
                                     <div className="text-right shrink-0">
                                         <div className={`text-lg sm:text-xl font-bold ${sortBy === "balance"
-                                                ? getBalanceColor(player.uc || 0)
-                                                : getKdColor(player.category)
+                                            ? getBalanceColor(player.uc || 0)
+                                            : getKdColor(player.category)
                                             }`}>
                                             {renderDynamicValue(player)}
                                         </div>
@@ -260,6 +261,21 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                                 </div>
                             </div>
                         );
+
+                        // Insert ad row after 5th player (index 4)
+                        if (index === 4) {
+                            const adRow = (
+                                <div
+                                    key="ad-row-5"
+                                    className="rounded-xl border p-3 sm:p-4 bg-zinc-50 dark:bg-zinc-900/30 border-zinc-200 dark:border-zinc-800"
+                                >
+                                    <InFeedAd className="!min-h-0" />
+                                </div>
+                            );
+                            return [playerRow, adRow];
+                        }
+
+                        return playerRow;
                     })
                 )}
             </div>
