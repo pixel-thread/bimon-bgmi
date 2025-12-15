@@ -85,7 +85,7 @@ const TournamentNavigation = () => {
   const navItems = [
     { href: "/tournament", label: "Positions", icon: FiSmartphone }, // Changed from /tournament/teams to /tournament
     { href: "/tournament/vote", label: "Vote", icon: FiBarChart },
-    { href: "/tournament/recent-matches", label: "Scoreboards", icon: FiImage },
+    // Scoreboards hidden from public nav - still accessible via admin
     { href: "/tournament/players", label: "Balance", icon: FiUsers },
     {
       href: "/tournament/games",
