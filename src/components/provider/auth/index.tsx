@@ -3,7 +3,7 @@ import { AuthContext } from "@/src/lib/context/auth";
 import { UserT } from "@/src/types/context/auth";
 import axiosInstance from "@/src/utils/api";
 import http from "@/src/utils/http";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { LoaderFour } from "../../ui/loader";

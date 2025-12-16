@@ -6,6 +6,9 @@ import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { z } from "zod";
 import crypto from "crypto";
 
+// Platform fee percentage (2.4%)
+const PLATFORM_FEE_PERCENT = 2.4;
+
 const verifyPaymentSchema = z.object({
     razorpay_order_id: z.string(),
     razorpay_payment_id: z.string(),
@@ -52,8 +55,10 @@ export async function POST(req: NextRequest) {
             return ErrorResponse({ message: "Payment already processed", status: 400 });
         }
 
-        // Convert paisa back to UC (₹1 = 1 UC, 100 paisa = 1 UC)
-        const ucAmount = payment.amount / 100;
+        // Convert paisa back to rupees (₹1 = 100 paisa)
+        const amountInRupees = payment.amount / 100;
+        // Apply platform fee (2.4%) and calculate UC (floor to round down)
+        const ucAmount = Math.floor(amountInRupees * (1 - PLATFORM_FEE_PERCENT / 100));
 
         // Update payment status and credit UC balance in a transaction
         await prisma.$transaction(async (tx) => {

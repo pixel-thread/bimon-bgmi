@@ -66,12 +66,23 @@ interface VerifyPaymentResponse {
     ucAdded: number;
 }
 
-const QUICK_AMOUNTS = [100, 200, 500, 1000];
+// Platform fee percentage (2.4%)
+const PLATFORM_FEE_PERCENT = 2.4;
+const QUICK_AMOUNTS = [10, 50, 100, 200];
+
+// Calculate UC after platform fee (from rupees)
+const calculateUC = (rupees: number) => Math.floor(rupees * (1 - PLATFORM_FEE_PERCENT / 100));
+
+// Calculate rupees needed to get desired UC (inverse calculation)
+const calculateRupees = (uc: number) => Math.ceil(uc / (1 - PLATFORM_FEE_PERCENT / 100));
 
 export function AddBalanceDialog() {
     const [open, setOpen] = useState(false);
-    const [amount, setAmount] = useState<number>(100);
+    const [desiredUC, setDesiredUC] = useState<number>(10);
     const queryClient = useQueryClient();
+
+    // Calculate the rupee amount needed for the desired UC
+    const rupeeAmount = calculateRupees(desiredUC);
 
     // Load Razorpay script
     const loadRazorpayScript = (): Promise<boolean> => {
@@ -90,7 +101,7 @@ export function AddBalanceDialog() {
 
     // Create order mutation
     const { mutate: createOrder, isPending: isCreatingOrder } = useMutation({
-        mutationFn: () => http.post<CreateOrderResponse>("/payments/create-order", { amount }),
+        mutationFn: () => http.post<CreateOrderResponse>("/payments/create-order", { amount: rupeeAmount }),
         onSuccess: async (response) => {
             if (!response.success || !response.data) {
                 toast.error(response.message || "Failed to create order");
@@ -110,7 +121,7 @@ export function AddBalanceDialog() {
                 amount: orderAmount,
                 currency: currency,
                 name: "BIMON BGMI",
-                description: `Add ${amount} UC to your balance`,
+                description: `Add ${desiredUC} UC to your balance`,
                 order_id: orderId,
                 handler: function (response: RazorpayResponse) {
                     verifyPayment(response);
@@ -143,7 +154,7 @@ export function AddBalanceDialog() {
                 queryClient.invalidateQueries({ queryKey: ["player"] });
                 queryClient.invalidateQueries({ queryKey: ["uc-transfers"] });
                 setOpen(false);
-                setAmount(100);
+                setDesiredUC(10);
             } else {
                 toast.error(response.message || "Payment verification failed");
             }
@@ -153,17 +164,17 @@ export function AddBalanceDialog() {
         },
     });
 
-    const handleAmountChange = (value: string) => {
+    const handleUCChange = (value: string) => {
         const numValue = parseInt(value, 10);
         if (!isNaN(numValue) && numValue >= 0) {
-            setAmount(numValue);
+            setDesiredUC(numValue);
         } else if (value === "") {
-            setAmount(0);
+            setDesiredUC(0);
         }
     };
 
     const isLoading = isCreatingOrder || isVerifying;
-    const isValidAmount = amount >= 100 && amount <= 10000;
+    const isValidAmount = desiredUC >= 10 && rupeeAmount <= 10000;
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -180,53 +191,61 @@ export function AddBalanceDialog() {
                         Add UC Balance
                     </DialogTitle>
                     <DialogDescription>
-                        Add UC to your account balance. ₹1 = 1 UC
+                        Add UC to your account balance. A {PLATFORM_FEE_PERCENT}% platform fee applies.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
                     {/* Quick amount buttons */}
                     <div className="space-y-2">
-                        <Label>Quick Select</Label>
+                        <Label>Quick Select (UC)</Label>
                         <div className="grid grid-cols-4 gap-2">
-                            {QUICK_AMOUNTS.map((quickAmount) => (
+                            {QUICK_AMOUNTS.map((ucAmount) => (
                                 <Button
-                                    key={quickAmount}
-                                    variant={amount === quickAmount ? "default" : "outline"}
+                                    key={ucAmount}
+                                    variant={desiredUC === ucAmount ? "default" : "outline"}
                                     size="sm"
-                                    onClick={() => setAmount(quickAmount)}
+                                    onClick={() => setDesiredUC(ucAmount)}
                                     disabled={isLoading}
                                 >
-                                    ₹{quickAmount}
+                                    {ucAmount} UC
                                 </Button>
                             ))}
                         </div>
                     </div>
 
-                    {/* Custom amount input */}
+                    {/* Custom UC input */}
                     <div className="space-y-2">
-                        <Label htmlFor="amount">Custom Amount (₹)</Label>
+                        <Label htmlFor="uc-amount">Custom UC Amount</Label>
                         <Input
-                            id="amount"
+                            id="uc-amount"
                             type="number"
-                            min={100}
-                            max={10000}
-                            value={amount || ""}
-                            onChange={(e) => handleAmountChange(e.target.value)}
-                            placeholder="Enter amount"
+                            min={10}
+                            max={9756}
+                            value={desiredUC || ""}
+                            onChange={(e) => handleUCChange(e.target.value)}
+                            placeholder="Enter UC amount"
                             disabled={isLoading}
                         />
                         <p className="text-xs text-muted-foreground">
-                            Min: ₹100 • Max: ₹10,000
+                            Min: 10 UC • Max: 9,756 UC (₹10,000)
                         </p>
                     </div>
 
-                    {/* UC preview */}
-                    <div className="p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20">
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">You will receive</span>
-                            <span className="text-2xl font-bold text-green-600 dark:text-green-400">
-                                {amount} UC
+                    {/* Payment preview */}
+                    <div className="p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20 space-y-2">
+                        <div className="flex justify-between items-center text-sm text-muted-foreground">
+                            <span>UC to receive</span>
+                            <span className="font-semibold text-green-600 dark:text-green-400">{desiredUC} UC</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm text-muted-foreground">
+                            <span>Platform Fee ({PLATFORM_FEE_PERCENT}%)</span>
+                            <span className="text-muted-foreground">included</span>
+                        </div>
+                        <div className="border-t border-green-500/20 pt-2 flex justify-between items-center">
+                            <span className="text-sm font-medium">You pay</span>
+                            <span className="text-2xl font-bold">
+                                ₹{rupeeAmount}
                             </span>
                         </div>
                     </div>
@@ -253,7 +272,7 @@ export function AddBalanceDialog() {
                         ) : (
                             <>
                                 <CreditCard className="w-4 h-4" />
-                                Pay ₹{amount}
+                                Pay ₹{rupeeAmount}
                             </>
                         )}
                     </Button>

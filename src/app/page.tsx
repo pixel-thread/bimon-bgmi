@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Ternary } from "../components/common/Ternary";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
+import { FcGoogle } from "react-icons/fc";
 
 export default function HomePage() {
   const { user, isSignedIn: isAuthorized, isAuthLoading } = useAuth();
@@ -14,7 +15,7 @@ export default function HomePage() {
   const isAdmin = user?.role === "ADMIN";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-white dark:bg-black">
       <div className="container h-full mx-auto px-4 py-8 sm:py-16">
         <div className="text-center mb-8 sm:mb-12">
           <h1 className="text-2xl sm:text-4xl font-bold text-slate-800 dark:text-slate-200 mb-3 sm:mb-4">
@@ -61,9 +62,10 @@ export default function HomePage() {
                   <Link href="/auth">
                     <Button
                       size="lg"
-                      className="w-full sm:w-auto min-w-[220px] bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-base sm:text-lg py-4 px-6 shadow-lg transition-all duration-200"
+                      className="w-full sm:w-auto min-w-[220px] bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-base sm:text-lg py-4 px-6 shadow-lg transition-all duration-200 flex items-center gap-2"
                     >
-                      Sign In
+                      <FcGoogle className="w-5 h-5" />
+                      Sign in with Google
                     </Button>
                   </Link>
                   <div className="text-sm text-slate-500 dark:text-slate-400 pt-2">

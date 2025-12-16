@@ -5,10 +5,11 @@ import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { z } from "zod";
 import Razorpay from "razorpay";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+// Platform fee percentage (2.4%)
+const PLATFORM_FEE_PERCENT = 2.4;
 
 const createOrderSchema = z.object({
-    amount: z.number().min(100, "Minimum amount is ₹100").max(10000, "Maximum amount is ₹10,000"),
+    amount: z.number().min(10, "Minimum amount is ₹10").max(10000, "Maximum amount is ₹10,000"),
 });
 
 const razorpay = new Razorpay({
@@ -18,7 +19,7 @@ const razorpay = new Razorpay({
 
 export async function POST(req: NextRequest) {
     try {
-        const user = await superAdminMiddleware(req);
+        const user = await tokenMiddleware(req);
 
         if (!user) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
