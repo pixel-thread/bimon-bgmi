@@ -35,7 +35,7 @@ const navItems = [
     { href: "/how-it-works", label: "How It Works", icon: FiHelpCircle },
     { href: "/tournament/players", label: "Balance", icon: FiDollarSign },
     { href: "/tournament/vote", label: "Vote", icon: FiBarChart2 },
-    { href: "/rules", label: "Rules", icon: FiFileText },
+    { href: "/tournament/rules", label: "Rules", icon: FiFileText },
 ];
 
 const authNavItems = [
