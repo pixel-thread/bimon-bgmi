@@ -15,32 +15,45 @@ import { GamepadIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/src/components/ui/button";
 
+// List of all available games - update this when adding new games
+const AVAILABLE_GAMES = ["memory"] as const;
+const GAMES_PLAYED_KEY = "gamesPlayed";
+
 const TournamentNavigation = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const activeTabRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState<string | null>(null);
-  const [showMemoryGameNotification, setShowMemoryGameNotification] =
-    useState(true);
-  const [showSnakeGameNotification, setShowSnakeGameNotification] =
-    useState(true);
+  const [hasUnplayedGames, setHasUnplayedGames] = useState(false);
 
-  // Check if user has seen the snake game notification
+  // Check if there are any games the user hasn't played yet
   useEffect(() => {
-    const hasSeenSnakeGame = localStorage.getItem("hasSeenSnakeGame");
-    if (hasSeenSnakeGame) {
-      setShowSnakeGameNotification(false);
-    }
+    const gamesPlayedStr = localStorage.getItem(GAMES_PLAYED_KEY);
+    const gamesPlayed: string[] = gamesPlayedStr ? JSON.parse(gamesPlayedStr) : [];
+
+    // Check if any available game hasn't been played
+    const unplayedGames = AVAILABLE_GAMES.filter(game => !gamesPlayed.includes(game));
+    setHasUnplayedGames(unplayedGames.length > 0);
   }, []);
 
-  // Hide notification when user visits games page
+  // Mark game as played when user visits a specific game page
   useEffect(() => {
-    if (pathname.startsWith("/tournament/games")) {
-      localStorage.setItem("hasSeenMemoryGame", "true");
-      localStorage.setItem("hasSeenSnakeGame", "true");
-      setShowMemoryGameNotification(false);
-      setShowSnakeGameNotification(false);
+    // Check if user is on a specific game page (e.g., /tournament/games/memory)
+    const gameMatch = pathname.match(/^\/tournament\/games\/(\w+)/);
+    if (gameMatch) {
+      const gameName = gameMatch[1];
+      const gamesPlayedStr = localStorage.getItem(GAMES_PLAYED_KEY);
+      const gamesPlayed: string[] = gamesPlayedStr ? JSON.parse(gamesPlayedStr) : [];
+
+      if (!gamesPlayed.includes(gameName)) {
+        gamesPlayed.push(gameName);
+        localStorage.setItem(GAMES_PLAYED_KEY, JSON.stringify(gamesPlayed));
+
+        // Update state to hide notification if all games are now played
+        const unplayedGames = AVAILABLE_GAMES.filter(game => !gamesPlayed.includes(game));
+        setHasUnplayedGames(unplayedGames.length > 0);
+      }
     }
   }, [pathname]);
 
@@ -92,7 +105,7 @@ const TournamentNavigation = () => {
       label: "Games",
       icon: GamepadIcon,
       glowing: true,
-      hasNotification: showMemoryGameNotification || showSnakeGameNotification,
+      hasNotification: hasUnplayedGames,
     },
     { href: "/tournament/winners", label: "Winners", icon: FiAward },
   ];
@@ -135,8 +148,11 @@ const TournamentNavigation = () => {
                   <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <Icon
-                    className={`h-4 w-4 transition-transform duration-200 ${glowing ? "animate-pulse text-blue-400" : ""
-                      } ${isActive ? "scale-110" : ""}`}
+                    className={`h-4 w-4 transition-transform duration-200 ${isActive ? "scale-110" : ""}`}
+                    style={glowing ? {
+                      color: '#60a5fa',
+                      animation: 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                    } : undefined}
                   />
                 )}
                 <span

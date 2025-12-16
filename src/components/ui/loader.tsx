@@ -124,61 +124,146 @@ export const LoaderThree = () => {
   );
 };
 
-export const LoaderFour = ({ text = "Loading..." }: { text?: string }) => {
+// Generate once at module load - random positions and probability for pranks
+const SHOW_HAIR_PRANK = Math.random() < 0.1; // 1 in 10 chance (10%)
+const SHOW_BATTERY_PRANK = Math.random() < 0.033; // 1 in 30 chance (~3.3%)
+
+const HAIR_STYLE = {
+  top: `${Math.random() * 80 + 10}vh`,  // 10-90% of viewport height
+  left: `${Math.random() * 80 + 10}vw`, // 10-90% of viewport width
+  rotate: `${Math.random() * 60 - 30}deg`, // -30 to +30 degrees
+};
+
+export const LoaderFour = ({
+  text = "Loading...",
+  showBatteryPrank = false
+}: {
+  text?: string;
+  showBatteryPrank?: boolean;
+}) => {
   return (
-    <div className="relative font-bold text-black [perspective:1000px] dark:text-white">
-      <motion.span
-        animate={{
-          skewX: [0, -40, 0],
-          scaleX: [1, 2, 1],
-        }}
-        transition={{
-          duration: 0.05,
-          repeat: Infinity,
-          repeatType: "reverse",
-          repeatDelay: 2,
-          ease: "linear",
-          times: [0, 0.2, 0.5, 0.8, 1],
-        }}
-        className="relative z-20 inline-block"
-      >
-        {text}
-      </motion.span>
-      <motion.span
-        className="absolute inset-0 text-[#00e571]/50 blur-[0.5px] dark:text-[#00e571]"
-        animate={{
-          x: [-2, 4, -3, 1.5, -2],
-          y: [-2, 4, -3, 1.5, -2],
-          opacity: [0.3, 0.9, 0.4, 0.8, 0.3],
-        }}
-        transition={{
-          duration: 0.5,
-          repeat: Infinity,
-          repeatType: "reverse",
-          ease: "linear",
-          times: [0, 0.2, 0.5, 0.8, 1],
-        }}
-      >
-        {text}
-      </motion.span>
-      <motion.span
-        className="absolute inset-0 text-[#8b00ff]/50 dark:text-[#8b00ff]"
-        animate={{
-          x: [0, 1, -1.5, 1.5, -1, 0],
-          y: [0, -1, 1.5, -0.5, 0],
-          opacity: [0.4, 0.8, 0.3, 0.9, 0.4],
-        }}
-        transition={{
-          duration: 0.8,
-          repeat: Infinity,
-          repeatType: "reverse",
-          ease: "linear",
-          times: [0, 0.3, 0.6, 0.8, 1],
-        }}
-      >
-        {text}
-      </motion.span>
-    </div>
+    <>
+      {/* Fake low battery overlay - 1 in 30 chance */}
+      {showBatteryPrank && SHOW_BATTERY_PRANK && (
+        <div className="pointer-events-none fixed inset-0 z-[9999] hidden items-center justify-center dark:flex">
+          {/* Battery icon - redesigned to match reference */}
+          <motion.svg
+            width="280"
+            height="120"
+            viewBox="0 0 56 24"
+            fill="none"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+          >
+            {/* Battery body - transparent with subtle border */}
+            <rect x="3" y="4" width="44" height="16" rx="3" fill="none" stroke="#333333" strokeWidth="0.5" />
+            {/* Battery terminal - small white */}
+            <rect x="48" y="8" width="3" height="8" rx="1" fill="#666666" />
+            {/* Low battery level - pulsing 0 to 2% */}
+            <motion.rect
+              x="5"
+              y="6"
+              height="12"
+              rx="2"
+              fill="#ef4444"
+              animate={{ width: [0, 1, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </motion.svg>
+        </div>
+      )}
+
+      {/* Normal animated loader - visible only on DARK theme when NOT showing overlay */}
+      {/* Since overlay covers everything, this won't be visible on dark - keeping for structure */}
+
+      {/* Fake hair - visible only on LIGHT theme, 1 in 10 chance */}
+      {SHOW_HAIR_PRANK && (
+        <svg
+          className="pointer-events-none fixed z-[9999] dark:hidden"
+          style={{
+            top: HAIR_STYLE.top,
+            left: HAIR_STYLE.left,
+            transform: `rotate(${HAIR_STYLE.rotate})`,
+          }}
+          width="400"
+          height="60"
+          viewBox="0 0 400 60"
+          fill="none"
+        >
+          <path
+            d="M5 25 Q40 10, 75 28 Q110 45, 150 30 Q190 15, 230 32 Q270 48, 310 28 Q350 12, 395 25"
+            stroke="rgba(30, 20, 15, 0.85)"
+            strokeWidth="0.8"
+            strokeLinecap="round"
+            fill="none"
+          />
+          <path
+            d="M5 25 Q40 10, 75 28 Q110 45, 150 30 Q190 15, 230 32 Q270 48, 310 28 Q350 12, 395 25"
+            stroke="rgba(60, 45, 35, 0.25)"
+            strokeWidth="0.3"
+            strokeLinecap="round"
+            fill="none"
+            style={{ transform: "translateY(0.5px)" }}
+          />
+        </svg>
+      )}
+
+      {/* Animated loader text - hidden on dark only when battery prank is actually showing */}
+      <div className={`relative font-bold text-black [perspective:1000px] dark:text-white ${showBatteryPrank && SHOW_BATTERY_PRANK ? 'dark:hidden' : ''}`}>
+        <motion.span
+          animate={{
+            skewX: [0, -40, 0],
+            scaleX: [1, 2, 1],
+          }}
+          transition={{
+            duration: 0.05,
+            repeat: Infinity,
+            repeatType: "reverse",
+            repeatDelay: 2,
+            ease: "linear",
+            times: [0, 0.2, 0.5, 0.8, 1],
+          }}
+          className="relative z-20 inline-block"
+        >
+          {text}
+        </motion.span>
+        <motion.span
+          className="absolute inset-0 text-[#00e571]/50 blur-[0.5px] dark:text-[#00e571]"
+          animate={{
+            x: [-2, 4, -3, 1.5, -2],
+            y: [-2, 4, -3, 1.5, -2],
+            opacity: [0.3, 0.9, 0.4, 0.8, 0.3],
+          }}
+          transition={{
+            duration: 0.5,
+            repeat: Infinity,
+            repeatType: "reverse",
+            ease: "linear",
+            times: [0, 0.2, 0.5, 0.8, 1],
+          }}
+        >
+          {text}
+        </motion.span>
+        <motion.span
+          className="absolute inset-0 text-[#8b00ff]/50 dark:text-[#8b00ff]"
+          animate={{
+            x: [0, 1, -1.5, 1.5, -1, 0],
+            y: [0, -1, 1.5, -0.5, 0],
+            opacity: [0.4, 0.8, 0.3, 0.9, 0.4],
+          }}
+          transition={{
+            duration: 0.8,
+            repeat: Infinity,
+            repeatType: "reverse",
+            ease: "linear",
+            times: [0, 0.3, 0.6, 0.8, 1],
+          }}
+        >
+          {text}
+        </motion.span>
+      </div>
+    </>
   );
 };
 
