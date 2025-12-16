@@ -94,7 +94,6 @@ const TournamentNavigation = () => {
       glowing: true,
       hasNotification: showMemoryGameNotification || showSnakeGameNotification,
     },
-    { href: "/tournament/rules", label: "Rules", icon: FiFileText },
     { href: "/tournament/winners", label: "Winners", icon: FiAward },
   ];
 

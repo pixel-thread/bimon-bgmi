@@ -72,6 +72,7 @@ export const AuthProvider = ({ children }: Props) => {
         isSignedIn: isSignedIn || false,
         refreshAuth: () => refetch(),
         logout: () => onLogout(),
+        isAdmin: user?.role === "ADMIN" || user?.role === "SUPER_ADMIN",
         isSuperAdmin: user?.role === "SUPER_ADMIN",
       }}
     >

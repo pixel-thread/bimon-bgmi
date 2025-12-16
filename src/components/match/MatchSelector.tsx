@@ -9,6 +9,7 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
+  SelectSeparator,
 } from "@/src/components/ui/select";
 import { useSeasonStore } from "@/src/store/season";
 import { useTournamentStore } from "@/src/store/tournament";
@@ -17,7 +18,8 @@ import { Ternary } from "../common/Ternary";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { useMatches } from "@/src/hooks/match/useMatches";
 import { Button } from "../ui/button";
-import { Loader2, PlusIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { FiPlus } from "react-icons/fi";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { ADMIN_MATCH_ENDPOINTS } from "@/src/lib/endpoints/admin/match";
@@ -35,7 +37,7 @@ export default function MatchSelector({
   isAllMatch = true,
 }: TournamentSelectorProps) {
   const { setMatchId, setMatch, matchId } = useMatchStore();
-  const { isSuperAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const { seasonId } = useSeasonStore();
 
   const { tournamentId } = useTournamentStore();
@@ -120,45 +122,54 @@ export default function MatchSelector({
                   Match {index + 1}
                 </SelectItem>
               ))}
-              {isSuperAdmin && (
-                <Button
-                  onClick={() => onClickAddNewMatch()}
-                  disabled={isPending}
-                  className="w-full text-start flex"
-                >
-                  {isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <PlusIcon className="mr-1" /> Create Match
-                    </>
-                  )}
-                </Button>
+              {isAdmin && (
+                <SelectGroup>
+                  <SelectSeparator className="my-1" />
+                  <Button
+                    onClick={() => onClickAddNewMatch()}
+                    disabled={isPending}
+                    variant="ghost"
+                    className="w-full justify-start gap-2 font-medium text-primary hover:text-primary hover:bg-primary/10"
+                  >
+                    {isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <FiPlus className="h-4 w-4" />
+                        Create Match
+                      </>
+                    )}
+                  </Button>
+                </SelectGroup>
               )}
             </>
           }
           falseComponent={
             <SelectGroup>
-              <SelectLabel>No Match</SelectLabel>
-              <Button
-                onClick={() => onClickAddNewMatch()}
-                disabled={isPending}
-                className="w-full text-start flex"
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <PlusIcon className="mr-1" /> Create Match
-                  </>
-                )}
-              </Button>
+              <SelectLabel className="text-muted-foreground">No matches yet</SelectLabel>
+              {isAdmin && (
+                <Button
+                  onClick={() => onClickAddNewMatch()}
+                  disabled={isPending}
+                  variant="ghost"
+                  className="w-full justify-start gap-2 font-medium text-primary hover:text-primary hover:bg-primary/10"
+                >
+                  {isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <FiPlus className="h-4 w-4" />
+                      Create Match
+                    </>
+                  )}
+                </Button>
+              )}
             </SelectGroup>
           }
         />

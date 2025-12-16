@@ -1,5 +1,4 @@
-import HamburgerMenu from "@/src/components/HamburgerMenu";
-import DesktopNavigation from "../../DesktopNavigation";
+import Navigation from "@/src/components/Navigation";
 
 export const Header = () => {
   return (
@@ -12,11 +11,10 @@ export const Header = () => {
                 PUBGMI
               </h1>
             </div>
-            <DesktopNavigation />
+            <Navigation />
           </div>
         </div>
       </header>
-      <HamburgerMenu />
     </>
   );
 };
