@@ -15,7 +15,7 @@ export default function HomePage() {
   const isAdmin = user?.role === "ADMIN";
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
+    <div className="min-h-screen bg-background">
       <div className="container h-full mx-auto px-4 py-8 sm:py-16">
         <div className="text-center mb-8 sm:mb-12">
           <h1 className="text-2xl sm:text-4xl font-bold text-slate-800 dark:text-slate-200 mb-3 sm:mb-4">

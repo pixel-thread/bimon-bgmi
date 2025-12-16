@@ -82,8 +82,8 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   // Display loader while auth is loading for protected routes
   if (needsAuthCheck && isAuthLoading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-white dark:bg-zinc-950">
-        <LoaderFour text="PUBGMI TOURNAMENT" showBatteryPrank />
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <LoaderFour text="PUBGMI TOURNAMENT" />
       </div>
     );
   }

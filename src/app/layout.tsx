@@ -1,7 +1,5 @@
 import "./globals.css";
-import { HtmlHead } from "@/src/components/common/html/head";
 import { Wrapper } from "../components/provider/wrapper";
-import { GridGuide } from "../components/common/GridGuide";
 
 export const metadata = {
   title: "PUBGMI Tournament Management System",
@@ -38,17 +36,44 @@ export const metadata = {
       {
         rel: "mask-icon",
         url: "/safari-pinned-tab.svg",
-        color: "#5bbad5", // You can change this color to match your brand
+        color: "#5bbad5",
       },
     ],
+  },
+  openGraph: {
+    title: "PUBGMI Tournament Management System",
+    description:
+      "Professional tournament management platform for PUBG Mobile and BGMI esports competitions. Track teams, manage players, calculate K/D statistics, and run competitive gaming events with comprehensive analytics and real-time scoring.",
+    images: ["/og-image.png"],
+    type: "website",
+    url: "https://bgmi-tournament.vercel.app/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PUBGMI Tournament Management System",
+    description:
+      "Professional tournament management platform for PUBG Mobile and BGMI esports competitions.",
+    images: ["/og-image.png"],
   },
 };
 
 export const viewport = {
   width: "device-width",
   initialScale: 1.0,
-  themeColor: "#ffffff", // Moved from metadata to viewport
+  themeColor: "#ffffff",
 };
+
+// Inline script to prevent theme flash - runs before any CSS/JS
+const themeScript = `
+(function() {
+  try {
+    var theme = localStorage.getItem('theme');
+    var isDark = theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+  } catch (e) {}
+})();
+`;
 
 export default function RootLayout({
   children,
@@ -56,12 +81,34 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <HtmlHead />
+    <html
+      lang="en"
+      suppressHydrationWarning
+      style={{ backgroundColor: "var(--background, #f5f5f5)" }}
+    >
+      <head>
+        {/* Blocking script to prevent theme flash - MUST be first */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        {/* Critical inline CSS for theme backgrounds */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              :root { --background: #f5f5f5; --foreground: #18181b; }
+              .dark { --background: #000000; --foreground: #fafafa; }
+              html, body { background-color: var(--background); color: var(--foreground); }
+            `,
+          }}
+        />
+        <meta name="google-adsense-account" content="ca-pub-2651043074081875" />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2651043074081875"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body className="bg-background text-foreground">
         <Wrapper>
           {children}
-          {/* {process.env.NODE_ENV === "development" && <GridGuide />} */}
         </Wrapper>
       </body>
     </html>

@@ -1,6 +1,37 @@
 "use client";
 import { motion, Easing } from "motion/react";
-import React from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+
+// Loading context to track when any loader is active and battery state
+type LoadingContextType = {
+  loaderCount: number;
+  registerLoader: () => void;
+  unregisterLoader: () => void;
+  isBatteryShowing: boolean;
+  setIsBatteryShowing: (v: boolean) => void;
+};
+const LoadingContext = createContext<LoadingContextType | null>(null);
+
+export const LoadingProvider = ({ children }: { children: React.ReactNode }) => {
+  const [loaderCount, setLoaderCount] = useState(0);
+  const [isBatteryShowing, setIsBatteryShowing] = useState(false);
+
+  const registerLoader = useCallback(() => {
+    setLoaderCount((c) => c + 1);
+  }, []);
+
+  const unregisterLoader = useCallback(() => {
+    setLoaderCount((c) => Math.max(0, c - 1));
+  }, []);
+
+  return (
+    <LoadingContext.Provider value={{ loaderCount, registerLoader, unregisterLoader, isBatteryShowing, setIsBatteryShowing }}>
+      {children}
+    </LoadingContext.Provider>
+  );
+};
+
+export const useLoadingContext = () => useContext(LoadingContext);
 
 export const LoaderOne = () => {
   const transition = (x: number) => {
@@ -124,93 +155,165 @@ export const LoaderThree = () => {
   );
 };
 
-// Generate once at module load - random positions and probability for pranks
-const SHOW_HAIR_PRANK = Math.random() < 0.1; // 1 in 10 chance (10%)
-const SHOW_BATTERY_PRANK = Math.random() < 0.033; // 1 in 30 chance (~3.3%)
+// Battery prank component - separate from loader to persist through transitions
+export const BatteryPrank = () => {
+  const loadingContext = useLoadingContext();
+  const [isMounted, setIsMounted] = useState(false);
+  const hasHadLoader = React.useRef(false);
+  const [showBattery, setShowBattery] = useState(false);
 
-const HAIR_STYLE = {
-  top: `${Math.random() * 80 + 10}vh`,  // 10-90% of viewport height
-  left: `${Math.random() * 80 + 10}vw`, // 10-90% of viewport width
-  rotate: `${Math.random() * 60 - 30}deg`, // -30 to +30 degrees
+  // Generate random check only on client (once per session)
+  const [shouldShow] = useState(() => Math.random() < 0.033); // 1 in 30 chance
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const loaderCount = loadingContext?.loaderCount ?? 0;
+  if (loaderCount > 0) {
+    hasHadLoader.current = true;
+  }
+
+  const isLoading = !isMounted || !hasHadLoader.current || loaderCount > 0;
+  const batteryStartTime = React.useRef<number | null>(null);
+
+  // Show battery after a delay when loading starts (only if prank is triggered)
+  useEffect(() => {
+    // Early exit if battery prank is not triggered
+    if (!shouldShow) return;
+
+    if (isLoading && isMounted) {
+      const timer = setTimeout(() => {
+        setShowBattery(true);
+        batteryStartTime.current = Date.now();
+        loadingContext?.setIsBatteryShowing(true);
+      }, 200); // 0.2 second delay for glitch to play first
+      return () => clearTimeout(timer);
+    } else if (showBattery && batteryStartTime.current) {
+      // Keep battery visible for minimum 2 seconds
+      const elapsed = Date.now() - batteryStartTime.current;
+      const minDisplayTime = 2000; // 2 seconds minimum
+      const remaining = Math.max(0, minDisplayTime - elapsed);
+
+      const hideTimer = setTimeout(() => {
+        setShowBattery(false);
+        loadingContext?.setIsBatteryShowing(false);
+        batteryStartTime.current = null;
+      }, remaining);
+      return () => clearTimeout(hideTimer);
+    }
+  }, [isLoading, isMounted, loadingContext, showBattery]);
+
+  if (!shouldShow || !showBattery) return null;
+
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[9999] hidden items-center justify-center bg-black dark:flex">
+      <motion.svg
+        width="280"
+        height="120"
+        viewBox="0 0 56 24"
+        fill="none"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+      >
+        <rect x="3" y="4" width="44" height="16" rx="3" fill="none" stroke="#333333" strokeWidth="0.5" />
+        <rect x="48" y="8" width="3" height="8" rx="1" fill="#666666" />
+        <motion.rect
+          x="5"
+          y="6"
+          height="12"
+          rx="2"
+          fill="#ef4444"
+          animate={{ width: [0, 1, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </motion.svg>
+    </div>
+  );
+};
+
+// Separate component for hair prank - uses loading context to know when to show
+export const HairPrank = () => {
+  const loadingContext = useLoadingContext();
+  const [isMounted, setIsMounted] = useState(false);
+  const hasHadLoader = React.useRef(false);
+
+  // Generate random values only on client (once per session)
+  const [shouldShow] = useState(() => Math.random() < 0.1); // 1 in 10 chance
+  const [hairStyle] = useState(() => ({
+    top: `${Math.random() * 80 + 10}vh`,
+    left: `${Math.random() * 80 + 10}vw`,
+    rotate: `${Math.random() * 60 - 30}deg`,
+  }));
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Track if we've ever had a loader
+  const loaderCount = loadingContext?.loaderCount ?? 0;
+  if (loaderCount > 0) {
+    hasHadLoader.current = true;
+  }
+
+  const isLoading = !isMounted || !hasHadLoader.current || loaderCount > 0;
+
+  // Don't render on server or if prank not triggered
+  if (!isMounted || !shouldShow || !isLoading) return null;
+
+  return (
+    <svg
+      className="pointer-events-none fixed z-[9999] dark:hidden"
+      style={{
+        top: hairStyle.top,
+        left: hairStyle.left,
+        transform: `rotate(${hairStyle.rotate})`,
+      }}
+      width="400"
+      height="60"
+      viewBox="0 0 400 60"
+      fill="none"
+    >
+      <path
+        d="M5 25 Q40 10, 75 28 Q110 45, 150 30 Q190 15, 230 32 Q270 48, 310 28 Q350 12, 395 25"
+        stroke="rgba(30, 20, 15, 0.85)"
+        strokeWidth="0.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M5 25 Q40 10, 75 28 Q110 45, 150 30 Q190 15, 230 32 Q270 48, 310 28 Q350 12, 395 25"
+        stroke="rgba(60, 45, 35, 0.25)"
+        strokeWidth="0.3"
+        strokeLinecap="round"
+        fill="none"
+        style={{ transform: "translateY(0.5px)" }}
+      />
+    </svg>
+  );
 };
 
 export const LoaderFour = ({
   text = "Loading...",
-  showBatteryPrank = false
 }: {
   text?: string;
-  showBatteryPrank?: boolean;
 }) => {
+  // Register/unregister with loading context
+  const loadingContext = useLoadingContext();
+  const isBatteryShowing = loadingContext?.isBatteryShowing ?? false;
+
+  useEffect(() => {
+    if (loadingContext) {
+      loadingContext.registerLoader();
+      return () => loadingContext.unregisterLoader();
+    }
+  }, [loadingContext]);
+
   return (
     <>
-      {/* Fake low battery overlay - 1 in 30 chance */}
-      {showBatteryPrank && SHOW_BATTERY_PRANK && (
-        <div className="pointer-events-none fixed inset-0 z-[9999] hidden items-center justify-center dark:flex">
-          {/* Battery icon - redesigned to match reference */}
-          <motion.svg
-            width="280"
-            height="120"
-            viewBox="0 0 56 24"
-            fill="none"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-          >
-            {/* Battery body - transparent with subtle border */}
-            <rect x="3" y="4" width="44" height="16" rx="3" fill="none" stroke="#333333" strokeWidth="0.5" />
-            {/* Battery terminal - small white */}
-            <rect x="48" y="8" width="3" height="8" rx="1" fill="#666666" />
-            {/* Low battery level - pulsing 0 to 2% */}
-            <motion.rect
-              x="5"
-              y="6"
-              height="12"
-              rx="2"
-              fill="#ef4444"
-              animate={{ width: [0, 1, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            />
-          </motion.svg>
-        </div>
-      )}
-
-      {/* Normal animated loader - visible only on DARK theme when NOT showing overlay */}
-      {/* Since overlay covers everything, this won't be visible on dark - keeping for structure */}
-
-      {/* Fake hair - visible only on LIGHT theme, 1 in 10 chance */}
-      {SHOW_HAIR_PRANK && (
-        <svg
-          className="pointer-events-none fixed z-[9999] dark:hidden"
-          style={{
-            top: HAIR_STYLE.top,
-            left: HAIR_STYLE.left,
-            transform: `rotate(${HAIR_STYLE.rotate})`,
-          }}
-          width="400"
-          height="60"
-          viewBox="0 0 400 60"
-          fill="none"
-        >
-          <path
-            d="M5 25 Q40 10, 75 28 Q110 45, 150 30 Q190 15, 230 32 Q270 48, 310 28 Q350 12, 395 25"
-            stroke="rgba(30, 20, 15, 0.85)"
-            strokeWidth="0.8"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <path
-            d="M5 25 Q40 10, 75 28 Q110 45, 150 30 Q190 15, 230 32 Q270 48, 310 28 Q350 12, 395 25"
-            stroke="rgba(60, 45, 35, 0.25)"
-            strokeWidth="0.3"
-            strokeLinecap="round"
-            fill="none"
-            style={{ transform: "translateY(0.5px)" }}
-          />
-        </svg>
-      )}
-
-      {/* Animated loader text - hidden on dark only when battery prank is actually showing */}
-      <div className={`relative font-bold text-black [perspective:1000px] dark:text-white ${showBatteryPrank && SHOW_BATTERY_PRANK ? 'dark:hidden' : ''}`}>
+      {/* Animated loader text - hidden on dark theme when battery is showing */}
+      <div className={`relative font-bold text-black [perspective:1000px] dark:text-white ${isBatteryShowing ? 'dark:hidden' : ''}`}>
         <motion.span
           animate={{
             skewX: [0, -40, 0],
