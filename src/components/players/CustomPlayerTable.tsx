@@ -13,7 +13,6 @@ import { ADMIN_PLAYER_ENDPOINTS } from "@/src/lib/endpoints/admin/player";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Crown, Medal, Award, TrendingUp, Target, Gamepad2, Coins } from "lucide-react";
-import { InFeedAd } from "@/src/components/ads/AdUnit";
 
 type PlayerT = {
     id: string;
@@ -261,19 +260,6 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                                 </div>
                             </div>
                         );
-
-                        // Insert ad row after 5th player (index 4)
-                        if (index === 4) {
-                            const adRow = (
-                                <div
-                                    key="ad-row-5"
-                                    className="rounded-xl border p-3 sm:p-4 bg-zinc-50 dark:bg-zinc-900/30 border-zinc-200 dark:border-zinc-800"
-                                >
-                                    <InFeedAd className="!min-h-0" />
-                                </div>
-                            );
-                            return [playerRow, adRow];
-                        }
 
                         return playerRow;
                     })

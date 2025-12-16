@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { HorizontalAd } from "@/src/components/ads";
 
 export const metadata: Metadata = {
   title: "Guides - PUBGMI Tournament Management",
@@ -118,11 +117,6 @@ export default function GuidesPage() {
             </p>
           </div>
 
-          {/* Ad Placement - After Header */}
-          <div className="mb-12">
-            <HorizontalAd />
-          </div>
-
           {/* Guides Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {guides.map((guide) => (
@@ -179,11 +173,6 @@ export default function GuidesPage() {
                 </Link>
               </div>
             ))}
-          </div>
-
-          {/* Ad Placement - Before Help Section */}
-          <div className="mt-12">
-            <HorizontalAd />
           </div>
 
           {/* Help Section */}

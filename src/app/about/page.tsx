@@ -9,7 +9,6 @@ import {
   FiSmartphone,
 } from "react-icons/fi";
 import Link from "next/link";
-import { HorizontalAd } from "@/src/components/ads";
 
 export default function AboutPage() {
   return (
@@ -42,11 +41,6 @@ export default function AboutPage() {
             gaming and competitive esports by providing the tools needed for
             fair, transparent, and exciting tournament management.
           </p>
-        </div>
-
-        {/* Ad Placement - After Mission */}
-        <div className="mb-12">
-          <HorizontalAd />
         </div>
 
         {/* Features Grid */}
@@ -203,11 +197,6 @@ export default function AboutPage() {
               </p>
             </div>
           </div>
-        </div>
-
-        {/* Ad Placement - Before CTA */}
-        <div className="mb-12">
-          <HorizontalAd />
         </div>
 
         {/* Call to Action */}

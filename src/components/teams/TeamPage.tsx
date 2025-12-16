@@ -19,7 +19,6 @@ import { useMatchStore } from "../../store/match/useMatchStore";
 import { useTournament } from "../../hooks/tournament/useTournament";
 import { useGlobalBackground } from "@/src/hooks/gallery/useGlobalBackground";
 import { MedalIcon } from "lucide-react";
-import { FooterAd } from "@/src/components/ads";
 
 export default function TeamsPage() {
   // Auth state for role-based UI
@@ -134,9 +133,6 @@ export default function TeamsPage() {
         maxMatchNumber={1}
         initialTeams={teams as any}
       />
-
-      {/* Ad Placement - Footer */}
-      <FooterAd className="mx-6 mb-8" />
     </>
   );
 }

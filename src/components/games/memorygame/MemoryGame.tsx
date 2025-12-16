@@ -31,9 +31,6 @@ import { ProgressBarSkeleton, LeaderboardSkeleton } from "./ProgressBarSkeleton"
 import { ShareScoreButton } from "./ShareScoreButton";
 import { ParticleEffect } from "./ParticleEffect";
 
-// Ads
-import { InterstitialAd, useInterstitialAd } from "@/src/components/ads";
-
 // Types & Constants
 import type { CardType, GameStats, GameState } from "./types";
 import { CARD_ICONS, GAME_CONFIG, SCORE_CONFIG, STORAGE_KEYS } from "./constants";
@@ -93,9 +90,6 @@ export function MemoryGame() {
   const { isMuted, toggleMute, playSound } = useGameSounds();
   const { trackGameStart, trackGameComplete } = useGameAnalytics();
 
-  // Interstitial ad hook - shows every 3 game retries
-  const { showAd, recordRetry, closeAd } = useInterstitialAd(3);
-
   // Initialize cards
   const initializeGame = useCallback(() => {
     const shuffledIcons = [...CARD_ICONS, ...CARD_ICONS]
@@ -121,12 +115,6 @@ export function MemoryGame() {
     const totalCards = CARD_ICONS.length * 2;
 
     if (gameState === "playing" || gameState === "won") {
-      // Check if we should show interstitial ad
-      const willShowAd = recordRetry();
-      if (willShowAd) {
-        return; // Don't restart yet, ad will be shown first
-      }
-
       setIsRestarting(true);
 
       // Step 1: First hide all revealed cards (flip them back)
@@ -775,51 +763,5 @@ export function MemoryGame() {
     </div>
   );
 
-  // Wrap with interstitial ad that shows every 3 retries
-  return (
-    <>
-      {gameContent}
-
-      {/* Interstitial Ad - Shows every 3 retries */}
-      <InterstitialAd
-        isOpen={showAd}
-        onClose={() => {
-          closeAd();
-          // Now actually restart the game after ad closes
-          setIsRestarting(true);
-          const totalCards = CARD_ICONS.length * 2;
-
-          setCards(prev => prev.map(card => ({
-            ...card,
-            isFlipped: false,
-            isMatched: false,
-          })));
-
-          setTimeout(() => {
-            setIsShuffling(true);
-            let step = 0;
-            const shuffleInterval = setInterval(() => {
-              const randomOrder = Array.from({ length: totalCards }, (_, i) => i)
-                .sort(() => Math.random() - 0.5);
-              setShuffleOrder(randomOrder);
-              step++;
-
-              if (step >= 5) {
-                clearInterval(shuffleInterval);
-                setTimeout(() => {
-                  initializeGame();
-                  setShuffleOrder([]);
-                  setGameState("playing");
-                  setIsRestarting(false);
-                  setIsShuffling(false);
-                  trackGameStart();
-                }, 200);
-              }
-            }, 250);
-          }, 500);
-        }}
-        title="Take a Quick Break"
-      />
-    </>
-  );
+  return gameContent;
 }

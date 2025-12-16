@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { FooterAd } from "@/src/components/ads";
 
 interface GameInfo {
   id: string;
@@ -200,9 +199,6 @@ export default function GamesPage() {
           );
         })}
       </div>
-
-      {/* Ad Placement - Footer */}
-      <FooterAd />
     </div>
   );
 }

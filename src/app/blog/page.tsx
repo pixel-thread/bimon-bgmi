@@ -1,5 +1,3 @@
-import { HorizontalAd } from "@/src/components/ads";
-
 export default function BlogPage() {
   const blogPosts = [
     {
@@ -75,11 +73,6 @@ export default function BlogPage() {
               </div>
             </article>
           ))}
-        </div>
-
-        {/* Ad Placement - After Blog Posts */}
-        <div className="mt-12 mb-8">
-          <HorizontalAd />
         </div>
 
         <div className="text-center mt-16">
