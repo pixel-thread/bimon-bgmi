@@ -128,10 +128,10 @@ export default function Navigation() {
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`px - 3 py - 2 rounded - md text - sm font - medium transition - all duration - 200 ${isActive(item.href)
+                            className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${isActive(item.href)
                                 ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20"
                                 : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-indigo-600 dark:hover:text-indigo-400"
-                                } `}
+                                }`}
                         >
                             {item.label}
                         </Link>
@@ -141,10 +141,10 @@ export default function Navigation() {
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`relative px - 3 py - 2 rounded - md text - sm font - medium transition - all duration - 200 ${isActive(item.href)
+                                className={`relative px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${isActive(item.href)
                                     ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20"
                                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-indigo-600 dark:hover:text-indigo-400"
-                                    } `}
+                                    }`}
                             >
                                 {item.label}
                                 {item.showNotification && hasPendingRequests && (
@@ -335,10 +335,10 @@ export default function Navigation() {
                                                 {theme === "dark" ? "Light" : "Dark"}
                                             </span>
                                         </div>
-                                        <div className={`w - 10 h - 6 rounded - full p - 1 transition - colors ${theme === "dark" ? "bg-white" : "bg-gray-300"} `}>
+                                        <div className={`w-10 h-6 rounded-full p-1 transition-colors ${theme === "dark" ? "bg-white" : "bg-gray-300"}`}>
                                             <motion.div
                                                 layout
-                                                className={`w - 4 h - 4 rounded - full shadow - sm ${theme === "dark" ? "bg-black" : "bg-white"} `}
+                                                className={`w-4 h-4 rounded-full shadow-sm ${theme === "dark" ? "bg-black" : "bg-white"}`}
                                                 animate={{ x: theme === "dark" ? 16 : 0 }}
                                                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
                                             />

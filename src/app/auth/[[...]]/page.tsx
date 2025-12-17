@@ -14,7 +14,7 @@ export default function AuthPage() {
     signIn.authenticateWithRedirect({
       strategy: "oauth_google",
       redirectUrl: "/auth/sso-callback",
-      redirectUrlComplete: "/tournament",
+      redirectUrlComplete: "/",
     }).catch((err) => {
       console.error("Failed to redirect to Google:", err);
       setError("Failed to start sign-in. Please try again.");
@@ -25,7 +25,7 @@ export default function AuthPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <p className="text-red-500">{error}</p>
-        <button 
+        <button
           onClick={() => window.location.reload()}
           className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800"
         >

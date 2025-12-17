@@ -75,19 +75,11 @@ export async function createMatch({ data }: Props): Promise<CreateMatchResult> {
               if (team.players && team.players.length > 0) {
                 const playerIds = team.players.map((p) => p.id);
 
-                // Bulk create teamPlayerStats, matchPlayerPlayed, and connect players in parallel
+                // Bulk create matchPlayerPlayed (TeamPlayerStats NOT created here - only via bulk edit)
                 await Promise.all([
-                  tx.teamPlayerStats.createMany({
-                    data: playerIds.map((playerId) => ({
-                      teamId: team.id,
-                      matchId: match.id,
-                      seasonId: data.seasonId,
-                      playerId,
-                      teamStatsId: teamStats.id,
-                      kills: 0,
-                      deaths: 0, // Placeholder - actual stats counted when scoreboard is submitted
-                    })),
-                  }),
+                  // NOTE: TeamPlayerStats is NOT created here. It is only created when
+                  // scoreboard stats are submitted via bulk edit, ensuring deaths are
+                  // only counted for players who actually appeared in the match.
                   tx.matchPlayerPlayed.createMany({
                     data: playerIds.map((playerId) => ({
                       matchId: match.id,

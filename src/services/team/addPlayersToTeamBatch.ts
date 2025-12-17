@@ -81,34 +81,11 @@ export async function addPlayersToTeamBatch({
                 },
             });
 
-            // 6. Batch create TeamPlayerStats for all players in this match
-            const existingPlayerStats = await tx.teamPlayerStats.findMany({
-                where: {
-                    teamId,
-                    matchId: match.id,
-                    playerId: { in: playerIds },
-                },
-                select: { playerId: true },
-            });
+            // NOTE: TeamPlayerStats is NOT created here. It is only created when
+            // scoreboard stats are submitted via bulk edit, ensuring deaths are
+            // only counted for players who actually appeared in the match.
 
-            const existingPlayerIds = new Set(existingPlayerStats.map((s) => s.playerId));
-            const newPlayerIds = playerIds.filter((id) => !existingPlayerIds.has(id));
-
-            if (newPlayerIds.length > 0) {
-                await tx.teamPlayerStats.createMany({
-                    data: newPlayerIds.map((playerId) => ({
-                        teamId,
-                        matchId: match.id,
-                        seasonId,
-                        playerId,
-                        teamStatsId: teamStat!.id,
-                        kills: 0,
-                        deaths: 1,
-                    })),
-                });
-            }
-
-            // 7. Batch create MatchPlayerPlayed for all players
+            // 6. Batch create MatchPlayerPlayed for all players
             const existingMatchPlayed = await tx.matchPlayerPlayed.findMany({
                 where: {
                     matchId: match.id,

@@ -207,38 +207,9 @@ export async function createTeamsByPolls({
       );
       const teamStats = await Promise.all(teamStatPromises);
 
-      // Phase 3: Batch create TeamPlayerStats using createMany
-      const teamPlayerStatsData: {
-        teamId: string;
-        matchId: string;
-        seasonId: string;
-        playerId: string;
-        teamStatsId: string;
-        kills: number;
-        deaths: number;
-      }[] = [];
-
-      for (let i = 0; i < createdTeamData.length; i++) {
-        const { team, originalTeam } = createdTeamData[i];
-        const teamStat = teamStats[i];
-
-        for (const player of originalTeam.players) {
-          teamPlayerStatsData.push({
-            teamId: team.id,
-            matchId: match.id,
-            seasonId,
-            playerId: player.id,
-            teamStatsId: teamStat.id,
-            kills: 0,
-            deaths: 0, // Placeholder - actual stats counted when scoreboard is submitted
-          });
-        }
-      }
-
-      // Batch insert all TeamPlayerStats
-      await tx.teamPlayerStats.createMany({
-        data: teamPlayerStatsData,
-      });
+      // NOTE: TeamPlayerStats is NOT created here. It is only created when
+      // scoreboard stats are submitted via bulk edit, ensuring deaths are
+      // only counted for players who actually appeared in the match.
 
       // Phase 4: Update player stats and UC in parallel batches per team
       const allPlayers = teams.flatMap((t) => t.players);

@@ -2,6 +2,7 @@ import "./globals.css";
 import { Wrapper } from "../components/provider/wrapper";
 
 export const metadata = {
+  metadataBase: new URL("https://bgmi-tournament.vercel.app"),
   title: "PUBGMI Tournament Management System",
   description:
     "Professional tournament management platform for PUBG Mobile and BGMI esports competitions. Track teams, manage players, calculate K/D statistics, and run competitive gaming events with comprehensive analytics and real-time scoring.",

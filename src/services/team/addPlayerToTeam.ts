@@ -69,30 +69,9 @@ export async function addPlayerToTeam({ teamId, playerId, matchId }: Props) {
         },
       });
 
-      // Create TeamPlayerStats for this match
-      const existingPlayerStats = await tx.teamPlayerStats.findUnique({
-        where: {
-          playerId_teamId_matchId: {
-            playerId: playerId,
-            teamId: teamId,
-            matchId: match.id,
-          },
-        },
-      });
-
-      if (!existingPlayerStats) {
-        await tx.teamPlayerStats.create({
-          data: {
-            teamId: teamId,
-            matchId: match.id,
-            seasonId: team.seasonId || "",
-            playerId: playerId,
-            teamStatsId: teamStat.id,
-            kills: 0,
-            deaths: 1,
-          },
-        });
-      }
+      // NOTE: TeamPlayerStats is NOT created here. It is only created when
+      // scoreboard stats are submitted via bulk edit, ensuring deaths are
+      // only counted for players who actually appeared in the match.
 
       // Create MatchPlayerPlayed for this match
       const existingMatchPlayed = await tx.matchPlayerPlayed.findFirst({

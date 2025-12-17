@@ -33,6 +33,7 @@ type EditableTeamStats = {
         playerId: string;
         name: string;
         kills: string | number;
+        isAbsent: boolean; // True if player was NOT found in AI JSON (absent from match)
     }[];
 };
 
@@ -84,6 +85,7 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                         playerId: player.id,
                         name: player.name,
                         kills: playerStats?.kills === 0 ? "" : (playerStats?.kills ?? ""),
+                        isAbsent: false, // Default: all players are present until JSON is pasted
                     };
                 }),
             }));
@@ -119,8 +121,8 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
         }
 
         try {
-            // Parse the JSON input
-            const data = JSON.parse(text) as Array<{ name: string; kills: number; position?: number }>;
+            // Parse the JSON input - kills can be number or null (null = absent)
+            const data = JSON.parse(text) as Array<{ name: string; kills: number | null; position?: number | null }>;
 
             if (!Array.isArray(data) || data.length === 0) {
                 throw new Error("Invalid JSON. Expected array like: [{name, kills, position}]");
@@ -128,8 +130,11 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
 
             // Map to track team positions from JSON
             const teamPositions: Map<string, number> = new Map();
+            let presentCount = 0;
+            let absentCount = 0;
 
             // Create a copy of editableStats with kills and positions from JSON
+            // Players with kills: null are marked as absent (red names, no death counted)
             const newStats: EditableTeamStats[] = teams.map((team: TeamT) => ({
                 teamId: team.id,
                 name: team.name,
@@ -140,15 +145,24 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                         d.name.toLowerCase() === player.name.toLowerCase()
                     );
 
-                    // If match found and has position, track it for the team
-                    if (match?.position && !teamPositions.has(team.id)) {
-                        teamPositions.set(team.id, match.position);
+                    // Determine if player is absent (not in JSON or kills is null)
+                    const isAbsent = !match || match.kills === null;
+
+                    if (isAbsent) {
+                        absentCount++;
+                    } else {
+                        presentCount++;
+                        // If match found with position, track it for the team
+                        if (match?.position && !teamPositions.has(team.id)) {
+                            teamPositions.set(team.id, match.position);
+                        }
                     }
 
                     return {
                         playerId: player.id,
                         name: player.name,
-                        kills: match ? String(match.kills) : ("" as string | number),
+                        kills: (!isAbsent && match) ? String(match.kills) : ("" as string | number),
+                        isAbsent,
                     };
                 }),
             }));
@@ -162,7 +176,7 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
             });
 
             setEditableStats(newStats);
-            toast.success(`Applied ${data.length} players!`);
+            toast.success(`Applied! ${presentCount} present, ${absentCount} absent`);
         } catch (error: unknown) {
             const err = error as Error;
             toast.error(err.message || "Failed to parse JSON");
@@ -195,6 +209,9 @@ Teams and their players:
 ${teams.map(t => `- ${t.name}: ${t.players.map(p => p.name).join(", ")}`).join("\n")}
 
 IMPORTANT:
+- Return ALL ${totalPlayers} players from my list in the JSON
+- For players FOUND in scoreboard: include their kills and position
+- For players NOT FOUND in scoreboard (absent): set kills to null
 - Match scoreboard names to the player list above (ignore special characters/symbols when matching)
 - In the JSON output, use the EXACT name from MY list above, NOT the scoreboard name
 - Example: if scoreboard shows "ツREAL乂SNAR" and my list has "realxsnar", return "realxsnar"
@@ -203,18 +220,19 @@ IMPORTANT:
 - Players in the same row belong to the same team
 - If uploading multiple images, combine ALL results into ONE JSON array
 - Flag any player with 10+ kills (unusual, double-check)
-- Flag if any player appears more than once in the scoreboard
 
-Return format:
-[{"name": "player_name_from_my_list", "kills": 0, "position": 1}, ...]
+Return format (MUST include all ${totalPlayers} players):
+[
+  {"name": "present_player", "kills": 5, "position": 1},
+  {"name": "absent_player", "kills": null, "position": null},
+  ...
+]
 
-After the JSON (ONLY show sections that have items, skip any that are empty):
+After the JSON (ONLY show sections that have items):
 Players found: X/${totalPlayers}
+Players absent: X (list names)
 ⚠️ High kills (10+): player_name (X kills)
-⚠️ Duplicates: player_name (appeared X times)
-⚠️ Uncertain matches: scoreboard_name → matched_name
-Missing players: player1, player2
-New players: new_player1, new_player2`;
+⚠️ Uncertain matches: scoreboard_name → matched_name`;
 
         navigator.clipboard.writeText(prompt);
         toast.success("Prompt copied to clipboard!");
@@ -242,14 +260,13 @@ New players: new_player1, new_player2`;
             teamId: stat.teamId,
             matchId,
             position: stat.position === "" ? 0 : Number(stat.position),
-            // Only include players who have kills data (were in scoreboard)
-            // Empty kills ("") = NOT in scoreboard = no death count
-            // Kills of 0 = WAS in scoreboard with 0 kills = should count death
+            // Only include players who are NOT absent (were found in JSON/scoreboard)
+            // Absent players (not in JSON) don't count as having played
             players: stat.players
-                .filter((p) => p.kills !== "")
+                .filter((p) => !p.isAbsent)
                 .map((p) => ({
                     playerId: p.playerId,
-                    kills: Number(p.kills),
+                    kills: p.kills === "" ? 0 : Number(p.kills),
                     deaths: 0,
                 })),
         }));
@@ -268,33 +285,35 @@ New players: new_player1, new_player2`;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-full max-w-4xl sm:max-w-6xl max-h-[90vh] h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden p-0 gap-0">
-                {/* HEADERS */}
-                <DialogHeader className="p-3 sm:p-4 border-b flex-shrink-0 bg-background z-10">
-                    <DialogTitle className="text-lg font-semibold">Bulk Edit Stats{matchNumber ? ` - Match ${matchNumber}` : ""}</DialogTitle>
-                    <DialogDescription className="text-sm text-muted-foreground">
-                        Edit position and kills for all teams in this match.
-                    </DialogDescription>
-                </DialogHeader>
+            <DialogContent className="w-full max-w-4xl sm:max-w-6xl max-h-[90vh] h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden p-0 gap-0 [&>button]:hidden">
+                {/* Scrollable content including header, buttons, and teams */}
+                <div className="flex-1 overflow-y-auto min-h-0 bg-muted/5">
+                    {/* HEADER - scrolls with content */}
+                    <DialogHeader className="p-3 sm:p-4 bg-background">
+                        <DialogTitle className="text-lg font-semibold">Bulk Edit Stats{matchNumber ? ` - Match ${matchNumber}` : ""}</DialogTitle>
+                        <DialogDescription className="text-sm text-muted-foreground">
+                            Edit position and kills for all teams in this match.
+                        </DialogDescription>
+                    </DialogHeader>
 
-                {/* AI BUTTONS - Copy Prompt & Paste JSON */}
-                <div className="px-3 sm:px-4 pt-3 flex flex-col sm:flex-row gap-2 flex-shrink-0">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={copyPrompt}
-                        className="gap-2 w-full sm:w-auto"
-                    >
-                        📋 Copy Prompt
-                    </Button>
-                    <div className="flex gap-2 flex-1">
+                    {/* AI BUTTONS - Copy Prompt & Paste JSON */}
+                    <div className="flex gap-2 mb-3 px-3 sm:px-4">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={copyPrompt}
+                            className="gap-2 flex-1 sm:flex-none"
+                        >
+                            📋 Copy Prompt
+                        </Button>
+                        {/* Textarea - hidden on mobile */}
                         <textarea
                             onPaste={handlePaste}
                             placeholder="Click & Ctrl+V"
-                            className="flex-1 h-9 px-3 py-2 text-sm rounded-md border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                            className="hidden sm:block flex-1 h-9 px-3 py-2 text-sm rounded-md border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                         <Button
-                            variant="default"
+                            variant="outline"
                             size="sm"
                             onClick={async () => {
                                 try {
@@ -304,15 +323,12 @@ New players: new_player1, new_player2`;
                                     toast.error("Click the input and use Ctrl+V");
                                 }
                             }}
-                            className="gap-2 flex-shrink-0"
+                            className="gap-2 flex-1 sm:flex-none"
                         >
                             📥 Paste
                         </Button>
                     </div>
-                </div>
 
-                {/* TEAM CARDS */}
-                <div className="flex-1 overflow-y-auto min-h-0 bg-muted/5 p-1 sm:p-4 pb-20 sm:pb-6">
                     {isFetching ? (
                         <div className="h-full flex flex-col items-center justify-center p-8 text-muted-foreground">
                             <LoaderFive text="Loading teams..." />
@@ -338,7 +354,32 @@ New players: new_player1, new_player2`;
                                         {/* Team Name Header */}
                                         <div className="flex items-center gap-2 sm:gap-3 mb-2">
                                             <span className="font-medium text-sm truncate flex-1">
-                                                {team.name}
+                                                {(() => {
+                                                    // Get absent player names (lowercase for matching)
+                                                    const absentNames = team.players
+                                                        .filter(p => p.isAbsent)
+                                                        .map(p => p.name.toLowerCase());
+
+                                                    if (absentNames.length === 0) {
+                                                        return team.name;
+                                                    }
+
+                                                    // Split team name by underscores and highlight absent names
+                                                    const parts = team.name.split('_');
+                                                    return parts.map((part, i) => {
+                                                        const isAbsent = absentNames.some(name =>
+                                                            part.toLowerCase().includes(name) || name.includes(part.toLowerCase())
+                                                        );
+                                                        return (
+                                                            <span key={i}>
+                                                                {i > 0 && '_'}
+                                                                <span className={isAbsent ? "text-red-600 dark:text-red-400" : ""}>
+                                                                    {part}
+                                                                </span>
+                                                            </span>
+                                                        );
+                                                    });
+                                                })()}
                                             </span>
                                             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                                                 <span className="text-xs text-muted-foreground hidden sm:inline">
@@ -366,7 +407,13 @@ New players: new_player1, new_player2`;
                                                     key={player.playerId}
                                                     className="flex items-center gap-1.5 sm:gap-2 bg-muted/40 rounded-md px-2 py-1"
                                                 >
-                                                    <span className="text-xs truncate flex-1 min-w-0" title={player.name}>
+                                                    <span
+                                                        className={`text-xs truncate flex-1 min-w-0 ${player.isAbsent
+                                                            ? "text-red-600 dark:text-red-400 font-medium"
+                                                            : ""
+                                                            }`}
+                                                        title={player.name}
+                                                    >
                                                         {player.name}
                                                     </span>
                                                     <Input
