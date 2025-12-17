@@ -73,8 +73,17 @@ const QUICK_AMOUNTS = [10, 50, 100, 200];
 // Calculate UC after platform fee (from rupees)
 const calculateUC = (rupees: number) => Math.floor(rupees * (1 - PLATFORM_FEE_PERCENT / 100));
 
-// Calculate rupees needed to get desired UC (inverse calculation)
-const calculateRupees = (uc: number) => Math.ceil(uc / (1 - PLATFORM_FEE_PERCENT / 100));
+// Calculate rupees needed to get desired UC (inverse calculation) - exact with paise
+const calculateRupees = (uc: number) => {
+    const exactAmount = uc / (1 - PLATFORM_FEE_PERCENT / 100);
+    // Round to 2 decimal places (paise precision)
+    return Math.round(exactAmount * 100) / 100;
+};
+
+// Format rupee amount with paise
+const formatRupees = (amount: number) => {
+    return amount % 1 === 0 ? amount.toString() : amount.toFixed(2);
+};
 
 export function AddBalanceDialog() {
     const [open, setOpen] = useState(false);
@@ -101,7 +110,7 @@ export function AddBalanceDialog() {
 
     // Create order mutation
     const { mutate: createOrder, isPending: isCreatingOrder } = useMutation({
-        mutationFn: () => http.post<CreateOrderResponse>("/payments/create-order", { amount: rupeeAmount }),
+        mutationFn: () => http.post<CreateOrderResponse>("/payments/create-order", { amount: rupeeAmount, amountInPaise: Math.round(rupeeAmount * 100) }),
         onSuccess: async (response) => {
             if (!response.success || !response.data) {
                 toast.error(response.message || "Failed to create order");
@@ -245,7 +254,7 @@ export function AddBalanceDialog() {
                         <div className="border-t border-green-500/20 pt-2 flex justify-between items-center">
                             <span className="text-sm font-medium">You pay</span>
                             <span className="text-2xl font-bold">
-                                ₹{rupeeAmount}
+                                ₹{formatRupees(rupeeAmount)}
                             </span>
                         </div>
                     </div>
@@ -272,7 +281,7 @@ export function AddBalanceDialog() {
                         ) : (
                             <>
                                 <CreditCard className="w-4 h-4" />
-                                Pay ₹{rupeeAmount}
+                                Pay ₹{formatRupees(rupeeAmount)}
                             </>
                         )}
                     </Button>

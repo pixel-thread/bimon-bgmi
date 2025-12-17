@@ -10,6 +10,7 @@ const PLATFORM_FEE_PERCENT = 2.4;
 
 const createOrderSchema = z.object({
     amount: z.number().min(10, "Minimum amount is ₹10").max(10000, "Maximum amount is ₹10,000"),
+    amountInPaise: z.number().min(1000, "Minimum amount is 1000 paise").max(1000000, "Maximum amount is 1000000 paise").optional(),
 });
 
 const razorpay = new Razorpay({
@@ -31,14 +32,14 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { amount } = createOrderSchema.parse(body);
+        const { amount, amountInPaise } = createOrderSchema.parse(body);
 
-        // Convert to paisa (₹1 = 100 paisa)
-        const amountInPaisa = amount * 100;
+        // Use exact paise if provided, otherwise convert from rupees (backwards compatibility)
+        const finalAmountInPaisa = amountInPaise ?? Math.round(amount * 100);
 
         // Create Razorpay order
         const order = await razorpay.orders.create({
-            amount: amountInPaisa,
+            amount: finalAmountInPaisa,
             currency: "INR",
             receipt: `receipt_${Date.now()}`,
             notes: {
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
         await prisma.payment.create({
             data: {
                 razorpayOrderId: order.id,
-                amount: amountInPaisa,
+                amount: finalAmountInPaisa,
                 currency: "INR",
                 status: "created",
                 userId: user.id,
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
         return SuccessResponse({
             data: {
                 orderId: order.id,
-                amount: amountInPaisa,
+                amount: finalAmountInPaisa,
                 currency: "INR",
                 keyId: process.env.RAZORPAY_KEY_ID,
             },
