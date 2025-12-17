@@ -3,7 +3,6 @@ import { getTeamById } from "@/src/services/team/getTeamById";
 import { removePlayerFromTeam } from "@/src/services/team/removePlayerFromTeam";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { addPlayerSchema } from "@/src/utils/validation/team/add-player";
 

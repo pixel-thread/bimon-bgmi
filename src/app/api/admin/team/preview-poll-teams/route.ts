@@ -2,13 +2,13 @@ import { getPollById } from "@/src/services/polls/getPollById";
 import { previewTeamsByPolls } from "@/src/services/team/previewTeamsByPoll";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
     try {
-        await superAdminMiddleware(req);
+        await adminMiddleware(req);
         const team = req.nextUrl.searchParams.get("size") || `1`;
         const teamSize = parseInt(team);
         const body = await req.json();

@@ -2,14 +2,14 @@ import { getUniqueMatch } from "@/src/services/match/getMatchById";
 import { updateManyTeamsStats } from "@/src/services/team/updateTeamStats";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { teamsStatsSchema } from "@/src/utils/validation/team/team-stats";
 import { NextRequest } from "next/server";
 
 export async function PUT(req: NextRequest) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
     const { tournamentId, matchId, stats } = teamsStatsSchema.parse(
       await req.json(),
     );

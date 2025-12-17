@@ -314,7 +314,7 @@ export default function Navigation() {
                                                         )}
                                                     </div>
                                                     {hasPendingRequests && (
-                                                        <span className="h-2 w-2 bg-gray-900 dark:bg-white rounded-full"></span>
+                                                        <span className="h-2 w-2 bg-red-500 rounded-full animate-pulse"></span>
                                                     )}
                                                 </motion.button>
                                             </div>

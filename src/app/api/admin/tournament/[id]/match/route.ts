@@ -1,7 +1,7 @@
 import { getAllMatches } from "@/src/services/match/getAllMatches";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
     const tournamentId = (await params).id;
     const isTournamentExist = await getTournamentById({ id: tournamentId });
     if (!isTournamentExist) {

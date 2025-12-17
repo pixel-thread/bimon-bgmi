@@ -2,7 +2,7 @@ import { prisma } from "@/src/lib/db/prisma";
 import { addPlayersToTeamBatch } from "@/src/services/team/addPlayersToTeamBatch";
 import { removePlayerFromTeam } from "@/src/services/team/removePlayerFromTeam";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { createTeamSchema } from "@/src/utils/validation/team/create-team-schema";
 import { NextRequest } from "next/server";
@@ -10,7 +10,7 @@ import { checkAndApplyAutoBan } from "@/src/services/player/autoBan";
 
 export async function POST(req: NextRequest) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
     const body = createTeamSchema.parse(await req.json());
 
     const playerIds = body.players.map((p) => p.playerId);

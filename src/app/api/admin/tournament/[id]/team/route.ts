@@ -7,7 +7,7 @@ import {
   getKdRank,
 } from "@/src/utils/calculatePlayersPoints";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { getMeta } from "@/src/utils/pagination/getMeta";
 import { NextRequest } from "next/server";
@@ -17,7 +17,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
 
     const id = (await params).id;
 
@@ -132,7 +132,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
     const team = req.nextUrl.searchParams.get("team") || `1`;
     const teamSize = parseInt(team);
     const id = (await params).id;
@@ -180,7 +180,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
 
     const id = (await params).id;
 
