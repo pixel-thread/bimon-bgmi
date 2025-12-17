@@ -28,7 +28,7 @@ export const handleAxiosError = <T>(error: unknown): ApiResponse<T> => {
         error.response.data ||
         "";
     } else if (error.request) {
-      errorMessage = "No response from server. Please check your connection.";
+      errorMessage = "Request timed out. Refresh to check if it completed.";
     } else {
       errorMessage = error.message;
     }

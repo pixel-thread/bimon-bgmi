@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
     const teamSize = parseInt(team);
     const body = await req.json();
     const id = body.pollId;
+    const previewTeams = body.previewTeams; // Optional: array of { teamNumber, playerIds }
     const poll = await getPollById({ where: { id } });
     if (!poll) {
       return ErrorResponse({
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
       seasonId: tournamentExist?.seasonId || "",
       pollId: poll.id,
       entryFee,
+      previewTeams, // Pass preview teams if provided
     });
 
     return SuccessResponse({

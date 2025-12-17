@@ -49,6 +49,7 @@ export default function TournamentCreateModal({
     resolver: zodResolver(tournamentSchema),
     defaultValues: {
       name: "",
+      fee: 20, // Default entry fee of 20 UC
     },
   });
 

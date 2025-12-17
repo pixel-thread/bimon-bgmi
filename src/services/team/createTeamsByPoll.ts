@@ -9,12 +9,18 @@ import {
 import { computeWeightedScore, PlayerWithWins } from "@/src/utils/scoreUtil";
 import { PlayerWithWeightT } from "@/src/types/player";
 
+type PreviewTeamInput = {
+  teamNumber: number;
+  playerIds: string[];
+};
+
 type Props = {
   groupSize: 1 | 2 | 3 | 4;
   tournamentId: string;
   seasonId: string;
   pollId: string;
   entryFee?: number;
+  previewTeams?: PreviewTeamInput[]; // If provided, use these exact team arrangements
 };
 
 export type CreateTeamsByPollsResult = {
@@ -29,6 +35,7 @@ export async function createTeamsByPolls({
   tournamentId,
   seasonId,
   entryFee = 0,
+  previewTeams,
 }: Props): Promise<CreateTeamsByPollsResult> {
   if (![1, 2, 3, 4].includes(groupSize)) {
     throw new Error("Invalid group size");
@@ -97,73 +104,114 @@ export async function createTeamsByPolls({
     };
   });
 
-  // Separate solo voters from team players
-  const soloPlayers: PlayerWithWeightT[] = [];
-  let playersForTeams: PlayerWithWeightT[] = [];
-
-  // All SOLO voters go to solo teams
-  for (const p of playersWithScore) {
-    if (playersWhoVotedSolo.some((solo) => solo.id === p.id)) {
-      soloPlayers.push(p);
-    } else {
-      playersForTeams.push(p);
-    }
-  }
-
-  // Sort remaining players by weighted score descending
-  playersForTeams.sort((a, b) => b.weightedScore - a.weightedScore);
-
-  // Check for odd number of players (when groupSize > 1)
-  // If odd, the highest-scoring player becomes a solo leftover
-  if (groupSize > 1 && playersForTeams.length % groupSize !== 0) {
-    const leftoverCount = playersForTeams.length % groupSize;
-    // Take the highest-scoring leftover players and make them solo
-    for (let i = 0; i < leftoverCount; i++) {
-      const leftover = playersForTeams.shift(); // Take from front (highest scores)
-      if (leftover) {
-        soloPlayers.push(leftover);
-      }
-    }
-  }
-
-  const teamCount = Math.floor(playersForTeams.length / groupSize);
-  if (teamCount === 0 && soloPlayers.length === 0) {
-    throw new Error("Not enough players to form teams.");
-  }
-
   // Use duo pair optimization for groupSize 2, snake draft otherwise
   let teams: TeamStats[] = [];
-  if (teamCount > 0) {
-    if (groupSize === 2) {
-      teams = createBalancedDuos(playersForTeams, seasonId);
-    } else {
-      teams = assignPlayersToTeamsBalanced(
-        playersForTeams,
-        teamCount,
-        groupSize,
-      );
+
+  // If previewTeams is provided, use those exact team arrangements
+  if (previewTeams && previewTeams.length > 0) {
+    // Build teams from preview data
+    const playerMap = new Map(playersWithScore.map(p => [p.id, p]));
+
+    for (const previewTeam of previewTeams) {
+      const teamPlayers: PlayerWithWeightT[] = [];
+      for (const playerId of previewTeam.playerIds) {
+        const player = playerMap.get(playerId);
+        if (player) {
+          teamPlayers.push(player);
+        }
+      }
+
+      if (teamPlayers.length > 0) {
+        const totalKills = teamPlayers.reduce((sum, p) => {
+          const stats = p.playerStats.find(s => s.seasonId === seasonId);
+          return sum + (stats?.kills ?? 0);
+        }, 0);
+        const totalDeaths = teamPlayers.reduce((sum, p) => {
+          const stats = p.playerStats.find(s => s.seasonId === seasonId);
+          return sum + (stats?.deaths ?? 0);
+        }, 0);
+        const weightedScore = teamPlayers.reduce((sum, p) => sum + p.weightedScore, 0);
+
+        teams.push({
+          players: teamPlayers,
+          totalKills,
+          totalDeaths,
+          totalWins: 0,
+          weightedScore,
+        });
+      }
     }
+  } else {
+    // Generate teams normally (when no preview is provided)
+    // Separate solo voters from team players
+    const soloPlayers: PlayerWithWeightT[] = [];
+    let playersForTeams: PlayerWithWeightT[] = [];
+
+    // All SOLO voters go to solo teams
+    for (const p of playersWithScore) {
+      if (playersWhoVotedSolo.some((solo) => solo.id === p.id)) {
+        soloPlayers.push(p);
+      } else {
+        playersForTeams.push(p);
+      }
+    }
+
+    // Sort remaining players by weighted score descending
+    playersForTeams.sort((a, b) => b.weightedScore - a.weightedScore);
+
+    // Check for odd number of players (when groupSize > 1)
+    // If odd, the highest-scoring player becomes a solo leftover
+    if (groupSize > 1 && playersForTeams.length % groupSize !== 0) {
+      const leftoverCount = playersForTeams.length % groupSize;
+      // Take the highest-scoring leftover players and make them solo
+      for (let i = 0; i < leftoverCount; i++) {
+        const leftover = playersForTeams.shift(); // Take from front (highest scores)
+        if (leftover) {
+          soloPlayers.push(leftover);
+        }
+      }
+    }
+
+    // Shuffle players to produce different team compositions (matches preview behavior)
+    playersForTeams = shuffle(playersForTeams);
+
+    const teamCount = Math.floor(playersForTeams.length / groupSize);
+    if (teamCount === 0 && soloPlayers.length === 0) {
+      throw new Error("Not enough players to form teams.");
+    }
+
+    if (teamCount > 0) {
+      if (groupSize === 2) {
+        teams = createBalancedDuos(playersForTeams, seasonId);
+      } else {
+        teams = assignPlayersToTeamsBalanced(
+          playersForTeams,
+          teamCount,
+          groupSize,
+        );
+      }
+    }
+
+    // Add all solo players as individual teams
+    for (const soloPlayer of soloPlayers) {
+      const soloStats = soloPlayer.playerStats.find(
+        (p) => p.seasonId === seasonId,
+      );
+      teams.push({
+        players: [soloPlayer],
+        totalKills: soloStats?.kills ?? 0,
+        totalDeaths: soloStats?.deaths ?? 0,
+        totalWins: 0,
+        weightedScore: soloPlayer.weightedScore,
+      });
+    }
+
+    // Analyze team balance
+    analyzeTeamBalance(teams);
+
+    // Shuffle final teams order
+    teams = shuffle(teams);
   }
-
-  // Add all solo players as individual teams
-  for (const soloPlayer of soloPlayers) {
-    const soloStats = soloPlayer.playerStats.find(
-      (p) => p.seasonId === seasonId,
-    );
-    teams.push({
-      players: [soloPlayer],
-      totalKills: soloStats?.kills ?? 0,
-      totalDeaths: soloStats?.deaths ?? 0,
-      totalWins: 0,
-      weightedScore: soloPlayer.weightedScore,
-    });
-  }
-
-  // Analyze team balance
-  analyzeTeamBalance(teams);
-
-  // Shuffle final teams order
-  teams = shuffle(teams);
 
   // Persist all in a transaction atomically
   const createdTeams = await prisma.$transaction(

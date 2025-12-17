@@ -118,13 +118,13 @@ const PollManagement: React.FC = () => {
   });
 
   const { mutate: createTeams, isPending: isCreating } = useMutation({
-    mutationFn: ({ id, size }: { id: string; size: number }) =>
+    mutationFn: ({ id, size, previewTeams }: { id: string; size: number; previewTeams?: { teamNumber: number; playerIds: string[] }[] }) =>
       http.post<PollT>(
         ADMIN_TEAM_ENDPOINTS.POST_CREATE_TEAM_BY_POLL.replace(
           ":size",
           size.toString(),
         ),
-        { pollId: id },
+        { pollId: id, previewTeams },
       ),
     onSuccess: (data) => {
       if (data.success) {
@@ -138,11 +138,20 @@ const PollManagement: React.FC = () => {
         setPreviewData(null);
         setSelectedPollId(null);
       } else {
-        toast.error(data.message);
+        // Show warning for timeout, error for other failures
+        if (data.message?.includes("timed out")) {
+          toast.warning(data.message);
+        } else {
+          toast.error(data.message);
+        }
       }
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to create teams");
+      if (error.message?.includes("timed out")) {
+        toast.warning(error.message);
+      } else {
+        toast.error(error.message || "Failed to create teams");
+      }
     },
   });
 
@@ -155,7 +164,15 @@ const PollManagement: React.FC = () => {
   };
 
   const handleConfirm = () => {
-    if (selectedPollId) {
+    if (selectedPollId && previewData) {
+      // Convert preview data to the format expected by the API
+      const previewTeams = previewData.teams.map(team => ({
+        teamNumber: team.teamNumber,
+        playerIds: team.players.map(p => p.id),
+      }));
+      createTeams({ id: selectedPollId, size: selectedTeamSize, previewTeams });
+    } else if (selectedPollId) {
+      // Fallback: create without preview (shouldn't normally happen)
       createTeams({ id: selectedPollId, size: selectedTeamSize });
     }
   };
