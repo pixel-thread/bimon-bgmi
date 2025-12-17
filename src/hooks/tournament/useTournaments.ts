@@ -23,9 +23,10 @@ export function useTournaments() {
     queryKey: ["tournaments", seasonId],
     queryFn: async () => await http.get<TournamentT[]>(url),
     select: (data) => {
-      // Natural sort: properly handles numbers in names (e.g., "1, 2, 10" instead of "1, 10, 2")
+      // Sort by creation date (oldest first, newest last)
+      // This ensures the latest tournament is at the end of the list for auto-selection
       return data.data?.sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
     },
     enabled: !!seasonId,

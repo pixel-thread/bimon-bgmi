@@ -2,7 +2,6 @@ import { getActiveSeason } from "@/src/services/season/getActiveSeason";
 import { createTournament } from "@/src/services/tournament/createTournament";
 import { getAllTournament } from "@/src/services/tournament/getAllTournament";
 import { cleanupOldRecentMatches } from "@/src/services/recentMatches/cleanupOldRecentMatches";
-import { cleanupOldUCTransfers } from "@/src/services/uc/cleanupOldUCTransfers";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
@@ -43,8 +42,7 @@ export async function POST(req: Request) {
     // Cleanup old scoreboard groups (auto-delete after 1 week)
     await cleanupOldRecentMatches();
 
-    // Cleanup old UC transfer history (auto-delete after 1 week)
-    await cleanupOldUCTransfers();
+    // Note: UC transfers are NO LONGER auto-deleted to preserve transaction history
 
     return SuccessResponse({ data: tournament, message: "Success" });
   } catch (error) {

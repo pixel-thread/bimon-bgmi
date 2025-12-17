@@ -37,7 +37,7 @@ export default function MatchSelector({
   isAllMatch = true,
 }: TournamentSelectorProps) {
   const { setMatchId, setMatch, matchId } = useMatchStore();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isAuthLoading } = useAuth();
   const { seasonId } = useSeasonStore();
 
   const { tournamentId } = useTournamentStore();
@@ -122,7 +122,7 @@ export default function MatchSelector({
                   Match {index + 1}
                 </SelectItem>
               ))}
-              {isAdmin && (
+              {!isAuthLoading && isAdmin && (
                 <SelectGroup>
                   <SelectSeparator className="my-1" />
                   <Button
@@ -150,7 +150,7 @@ export default function MatchSelector({
           falseComponent={
             <SelectGroup>
               <SelectLabel className="text-muted-foreground">No matches yet</SelectLabel>
-              {isAdmin && (
+              {!isAuthLoading && isAdmin && (
                 <Button
                   onClick={() => onClickAddNewMatch()}
                   disabled={isPending}

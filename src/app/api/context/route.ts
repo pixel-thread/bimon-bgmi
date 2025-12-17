@@ -35,9 +35,9 @@ export async function GET(req: Request) {
             seasonId: activeSeason.id,
         });
 
-        // Sort tournaments by name (natural sort) and get the latest one
+        // Sort tournaments by creation date (oldest first, newest last)
         const sortedTournaments = tournaments.sort((a, b) =>
-            a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" })
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
 
         // Get matches for the latest tournament (if any)

@@ -3,13 +3,13 @@ import { getAllMatches } from "@/src/services/match/getAllMatches";
 import { getActiveSeason } from "@/src/services/season/getActiveSeason";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
+import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { matchSchema } from "@/src/utils/validation/match";
 
 export async function GET(req: Request) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
     const matches = await getAllMatches();
     return SuccessResponse({
       data: matches,
@@ -22,7 +22,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    await superAdminMiddleware(req);
+    await adminMiddleware(req);
 
     const body = matchSchema.parse(await req.json());
 

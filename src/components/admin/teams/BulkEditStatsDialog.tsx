@@ -73,22 +73,33 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
 
     useEffect(() => {
         if (teams) {
-            const stats = teams.map((team: TeamT) => ({
-                teamId: team.id,
-                name: team.name,
-                position: team.position === 0 ? "" : team.position,
-                players: team.players.map((player) => {
-                    const playerStats = team.teamPlayerStats?.find(
-                        (ps) => ps.playerId === player.id
-                    );
-                    return {
-                        playerId: player.id,
-                        name: player.name,
-                        kills: playerStats?.kills === 0 ? "" : (playerStats?.kills ?? ""),
-                        isAbsent: false, // Default: all players are present until JSON is pasted
-                    };
-                }),
-            }));
+            // Check if ANY team has stats submitted (meaning scoreboard was saved for this match)
+            const matchHasStats = teams.some((team: TeamT) =>
+                team.teamPlayerStats && team.teamPlayerStats.length > 0
+            );
+
+            const stats = teams.map((team: TeamT) => {
+                return {
+                    teamId: team.id,
+                    name: team.name,
+                    position: team.position === 0 ? "" : team.position,
+                    players: team.players.map((player) => {
+                        const playerStats = team.teamPlayerStats?.find(
+                            (ps) => ps.playerId === player.id
+                        );
+                        // Player is absent if: match has stats saved but this player doesn't have stats
+                        // This works for solo players too - if any team has stats, the scoreboard was submitted
+                        const wasAbsent = matchHasStats && !playerStats;
+
+                        return {
+                            playerId: player.id,
+                            name: player.name,
+                            kills: playerStats?.kills === 0 ? "" : (playerStats?.kills ?? ""),
+                            isAbsent: wasAbsent,
+                        };
+                    }),
+                };
+            });
             setEditableStats(stats);
         }
     }, [teams]);

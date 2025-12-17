@@ -4,7 +4,7 @@ import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
 
-// GET - Get user's UC transfers
+// GET - Get user's UC transfers (shows only last 7 days for profile display)
 export async function GET(req: NextRequest) {
     try {
         const user = await tokenMiddleware(req);
@@ -14,9 +14,15 @@ export async function GET(req: NextRequest) {
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
 
+        // Only show transfers from the last 7 days on the profile page
+        // Full history is preserved in the database for transaction records
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
         const transfers = await prisma.uCTransfer.findMany({
             where: {
                 OR: [{ fromPlayerId: playerId }, { toPlayerId: playerId }],
+                createdAt: { gte: oneWeekAgo },
             },
             include: {
                 fromPlayer: {
