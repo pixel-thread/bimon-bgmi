@@ -98,13 +98,27 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
         setOptimisticVote(newVote);
         setPendingVote(newVote); // Track for loader
       },
-      onSuccess: (data) => {
+      onSuccess: (data, newVote) => {
         setPendingVote(null);
         if (data.success) {
           toast.success(data.message);
-          // Invalidate polls query so VotersDialog shows updated vote
-          queryClient.invalidateQueries({ queryKey: ["polls"] });
-          queryClient.invalidateQueries({ queryKey: ["player-vote", pollId] });
+          // Update polls cache so VotersDialog shows correct vote
+          queryClient.setQueryData(["polls"], (oldData: any) => {
+            if (!oldData?.data) return oldData;
+            return {
+              ...oldData,
+              data: oldData.data.map((p: any) => {
+                if (p.id !== pollId) return p;
+                // Update playersVotes for this poll
+                const updatedVotes = p.playersVotes?.map((v: any) =>
+                  v.playerId === playerId ? { ...v, vote: newVote } : v
+                ) || [];
+                return { ...p, playersVotes: updatedVotes };
+              }),
+            };
+          });
+          // Don't clear optimistic state here - let useEffect handle it
+          // when server data catches up to avoid race condition
         } else {
           // Revert on failure - go back to server state
           setOptimisticVote(null);
