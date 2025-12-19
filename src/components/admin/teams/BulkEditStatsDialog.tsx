@@ -19,7 +19,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { LoaderFive } from "../../ui/loader";
-import { toBGMIDisplay } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/bgmiDisplay";
 
 type Props = {
     open: boolean;
@@ -424,9 +424,9 @@ Players absent: X (list names)
                                                             ? "text-red-600 dark:text-red-400 font-medium"
                                                             : ""
                                                             }`}
-                                                        title={toBGMIDisplay(player.name)}
+                                                        title={getDisplayName(player.name, player.name)}
                                                     >
-                                                        {toBGMIDisplay(player.name)}
+                                                        {getDisplayName(player.name, player.name)}
                                                     </span>
                                                     <Input
                                                         type="number"

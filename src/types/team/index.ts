@@ -3,6 +3,7 @@ import { Prisma, TeamPlayerStats } from "@/src/lib/db/prisma/generated/prisma";
 type PlayerT = {
   id: string;
   name: string;
+  displayName?: string | null;
   category: number;
 };
 

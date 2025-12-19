@@ -59,6 +59,7 @@ export async function GET(
         players: team.team.players.map((player) => ({
           id: player.id,
           name: player.user.userName,
+          displayName: player.user.displayName,
         })),
       };
     });

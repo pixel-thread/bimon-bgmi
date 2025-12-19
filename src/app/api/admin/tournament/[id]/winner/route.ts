@@ -38,7 +38,7 @@ export async function GET(
         amount: winner.amount,
         position: winner.position,
         teamName: winner.team.players
-          .map((player) => player.user.userName)
+          .map((player) => player.user.displayName || player.user.userName)
           .join(", "),
         teamId: winner.team.id,
       };
@@ -134,6 +134,7 @@ export async function POST(
         players: teamStats?.team?.players.map((player) => ({
           id: player.id,
           name: player.user.userName,
+          displayName: player.user.displayName,
         })),
       };
     });

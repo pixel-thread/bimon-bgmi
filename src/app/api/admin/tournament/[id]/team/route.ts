@@ -75,6 +75,7 @@ export async function GET(
         return {
           id: player.id,
           name: player.user.userName,
+          displayName: player.user.displayName,
           category: category,
         };
       });
@@ -98,7 +99,7 @@ export async function GET(
       const total = kills + pts;
 
       const teamName = team.players
-        .map((player) => player.user.userName)
+        .map((player) => player.user.displayName || player.user.userName)
         .join("_");
 
       return {

@@ -29,7 +29,7 @@ type TeamRanking = {
     placementPoints?: number;
     totalKills?: number;
     lastMatchPosition?: number;
-    players?: { id: string; name: string }[];
+    players?: { id: string; name: string; displayName?: string | null }[];
 };
 
 type Props = {
@@ -152,7 +152,7 @@ export function DeclareWinnerDialog({
                                             <span className="text-xl">{getMedalEmoji(idx + 1)}</span>
                                             <div className="flex-1">
                                                 <p className="font-medium text-sm">
-                                                    {team.players?.map(p => p.name).join(", ") || "No players"}
+                                                    {team.players?.map(p => p.displayName || p.name).join(", ") || "No players"}
                                                 </p>
                                                 <p className="text-xs text-muted-foreground">
                                                     {getOrdinal(idx + 1)} Place

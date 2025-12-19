@@ -104,6 +104,7 @@ export async function GET(
         players: teamStat.team?.players.map((player) => ({
           id: player.id,
           name: player.user.userName,
+          displayName: player.user.displayName,
         })),
       };
     });
@@ -149,6 +150,7 @@ export async function GET(
             players: teamStat.team?.players.map((p) => ({
               id: p.id,
               name: p.user.userName,
+              displayName: p.user.displayName,
             })),
           });
         }

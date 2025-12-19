@@ -14,6 +14,7 @@ export async function GET() {
                         user: {
                             select: {
                                 userName: true,
+                                displayName: true,
                             },
                         },
                     },
@@ -25,7 +26,7 @@ export async function GET() {
             leaderboard: leaderboard.map((entry, index) => ({
                 rank: index + 1,
                 playerId: entry.playerId,
-                playerName: entry.player.user.userName,
+                playerName: entry.player.user.displayName || entry.player.user.userName,
                 highScore: entry.highScore,
                 lastPlayedAt: entry.lastPlayedAt,
             })),

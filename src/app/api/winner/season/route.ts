@@ -61,11 +61,12 @@ export async function POST(req: Request) {
         isDistributed: winner.isDistributed,
         teamId: winner.team.id,
         teamName: winner.team.players
-          .map((player) => player.user.userName)
+          .map((player) => player.user.displayName || player.user.userName)
           .join(", "),
         players: winner.team.players.map((player) => ({
           id: player.id,
           name: player.user.userName,
+          displayName: player.user.displayName,
           imageUrl: player.user?.clerkId
             ? clerkUserMap.get(player.user.clerkId) || null
             : null,

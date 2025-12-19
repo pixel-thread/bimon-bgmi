@@ -42,7 +42,7 @@ export async function GET(
         (val) => val.matchId === matchId,
       );
       return {
-        name: team.team.players.map((player) => player.user.userName).join("_"),
+        name: team.team.players.map((player) => player.user.displayName || player.user.userName).join("_"),
         position: team.position,
         kills: teamPlayerStats.reduce(
           (total, playerStats) => total + playerStats.kills,
@@ -55,6 +55,7 @@ export async function GET(
         players: team.team.players.map((player) => ({
           id: player.id,
           name: player.user.userName,
+          displayName: player.user.displayName,
         })),
       };
     });

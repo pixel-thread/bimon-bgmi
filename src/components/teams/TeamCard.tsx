@@ -45,7 +45,7 @@ export default function TeamCard({ team }: TeamCardProps) {
         {team?.players && (
           <p className="text-xs sm:text-sm text-muted-foreground truncate">
             <span className="font-medium text-foreground">Players:</span>{" "}
-            {team?.players?.map((p) => p.name).join(", ")}
+            {team?.players?.map((p) => p.displayName || p.name).join(", ")}
           </p>
         )}
 

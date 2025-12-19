@@ -85,6 +85,7 @@ export async function GET(
                     players: stat.team?.players.map((player) => ({
                         id: player.id,
                         name: player.user.userName,
+                        displayName: player.user.displayName,
                     })) || [],
                 });
             }
