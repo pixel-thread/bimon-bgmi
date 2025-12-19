@@ -24,7 +24,37 @@ type ClerkUser = {
 // Only Create user in our db if it doesn't exist
 export async function createUserIfNotExistInDB({ data }: ClerkUser) {
   let activeSeason = await getActiveSeason();
+
+  // Generate a temporary username for new users (will be replaced during onboarding)
+  const tempUsername = `user_${data.clerkId.slice(-8)}`;
+
   try {
+    // First, check if user with this email already exists
+    if (data.email) {
+      const existingUserByEmail = await prisma.user.findUnique({
+        where: { email: data.email },
+        include: {
+          player: {
+            include: { characterImage: true, playerBanned: true, uc: true },
+          },
+        },
+      });
+
+      if (existingUserByEmail) {
+        // User exists with this email - update their clerkId to link accounts
+        const updatedUser = await prisma.user.update({
+          where: { id: existingUserByEmail.id },
+          data: { clerkId: data.clerkId },
+          include: {
+            player: {
+              include: { characterImage: true, playerBanned: true, uc: true },
+            },
+          },
+        });
+        return updatedUser;
+      }
+    }
+
     return await prisma.$transaction(
       async (tx) => {
         if (!activeSeason) {
@@ -40,11 +70,12 @@ export async function createUserIfNotExistInDB({ data }: ClerkUser) {
 
         const user = await tx.user.create({
           data: {
-            userName: data.userName,
+            userName: tempUsername, // Temporary username
             clerkId: data.clerkId,
             createdBy: data.createdBy,
-            email: data.email,
+            email: data.email || null, // Handle empty email
             role: data.role,
+            isOnboarded: false, // New users need to complete onboarding
             player: {
               create: { seasons: { connect: { id: activeSeason?.id || "" } } },
             },

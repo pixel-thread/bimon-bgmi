@@ -55,12 +55,16 @@ export async function tokenMiddleware(req: NextRequest | Request) {
       // Allow
     } else if (req.url.includes("/payments/") && reqMethod === "POST") {
       // Allow payment endpoints for users
+    } else if (req.url.includes("/onboarding") && reqMethod === "POST") {
+      // Allow onboarding for new users to set their username
     } else {
       throw new Error("Long ki ba jai jai se: Permission Denied");
     }
   }
 
-  if (clerkUser.username !== user.userName) {
+  // Only sync username from Clerk if user has completed onboarding
+  // Non-onboarded users will set their own username during onboarding
+  if (user.isOnboarded && clerkUser.username !== user.userName) {
     const newUserName =
       clerkUser.username ||
       clerkUser.firstName ||

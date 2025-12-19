@@ -79,6 +79,30 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
     }
   }, [isAuthenticated, pathName, redirectTo, router, isAuthLoading]);
 
+  // Redirect non-onboarded users to onboarding page
+  useEffect(() => {
+    // Wait for auth to load
+    if (isAuthLoading) return;
+
+    // Skip if not authenticated or no user data
+    if (!isAuthenticated || !user) return;
+
+    // Skip if already on onboarding page or auth pages
+    if (skipOnboardingPaths.some(path => pathName.startsWith(path))) return;
+
+    // Redirect to onboarding if user hasn't completed it
+    if (user.isOnboarded === false) {
+      router.push("/onboarding");
+    }
+  }, [isAuthenticated, user, pathName, isAuthLoading, router]);
+
+  // Check if user needs onboarding (blocking check)
+  const needsOnboarding =
+    isAuthenticated &&
+    user &&
+    user.isOnboarded === false &&
+    !skipOnboardingPaths.some(path => pathName.startsWith(path));
+
   // Display loader while auth is loading for protected routes
   if (needsAuthCheck && isAuthLoading) {
     return (
@@ -88,5 +112,16 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
     );
   }
 
+  // Display loader while redirecting to onboarding
+  if (needsOnboarding) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <LoaderFour text="PUBGMI TOURNAMENT" />
+      </div>
+    );
+  }
+
   return <>{children}</>;
 };
+
+const skipOnboardingPaths = ["/onboarding", "/auth", "/auth/sign-up", "/auth/sso-callback"];
