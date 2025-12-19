@@ -11,6 +11,7 @@ import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
+import { SlotMachineCounter } from "@/src/components/ui/AnimatedCounter";
 
 const bannedStampStyles = {
   position: "absolute" as const,
@@ -150,9 +151,24 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
 
     // Calculate prize pool for card styling - count "IN" and "SOLO" votes, exclude "OUT"
     const entryFee = poll.tournament?.fee || 0;
-    const inVotesCount = playersVotes?.filter(v => v.vote === 'IN').length || 0;
-    const soloVotesCount = playersVotes?.filter(v => v.vote === 'SOLO').length || 0;
+
+    // Base counts from server data
+    let inVotesCount = playersVotes?.filter(v => v.vote === 'IN').length || 0;
+    let soloVotesCount = playersVotes?.filter(v => v.vote === 'SOLO').length || 0;
+
+    // Apply optimistic adjustment for the current user's vote
+    // This makes the prize pool animate immediately on vote switch
+    if (playerId && optimisticVote && serverVotedOption !== optimisticVote) {
+      // Remove from old vote count
+      if (serverVotedOption === 'IN') inVotesCount = Math.max(0, inVotesCount - 1);
+      if (serverVotedOption === 'SOLO') soloVotesCount = Math.max(0, soloVotesCount - 1);
+      // Add to new vote count
+      if (optimisticVote === 'IN') inVotesCount++;
+      if (optimisticVote === 'SOLO') soloVotesCount++;
+    }
+
     const participantCount = inVotesCount + soloVotesCount;
+
     const prizePool = entryFee * participantCount;
     const hasPrizePool = prizePool > 0;
 
@@ -255,7 +271,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     const theme = hasPrizePool ? getTheme() : null;
 
     return (
-      <div className={`relative rounded-xl overflow-hidden max-w-2xl mx-auto ${theme
+      <div className={`relative rounded-xl overflow-hidden max-w-2xl mx-auto transition-all duration-700 ease-in-out ${theme
         ? theme.card
         : 'bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700'
         }`}>
@@ -337,7 +353,12 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                     <span className="text-3xl">🏆</span>
                     <div className="text-center">
                       <p className="text-xs font-medium text-white/80 uppercase tracking-widest">Prize Pool</p>
-                      <p className="text-2xl font-black text-white drop-shadow-lg">₹{prizePool.toLocaleString()}</p>
+                      <p className="text-2xl font-black text-white drop-shadow-lg">
+                        <SlotMachineCounter
+                          value={prizePool}
+                          prefix="₹"
+                        />
+                      </p>
                     </div>
                   </div>
                 )}
@@ -347,7 +368,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
         })()}
 
         {/* Poll Options */}
-        <div className={`p-6 space-y-3 ${theme ? theme.options : ''}`}>
+        <div className={`p-6 space-y-3 transition-all duration-700 ease-in-out ${theme ? theme.options : ''}`}>
           {options.map((option, index) => {
             const optionKey =
               typeof option === "string" ? option : `${option.name}-${index}`;
@@ -356,19 +377,34 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
             const optionVoters = filterPollVote(option.vote)
               .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-            // Build recent voters list: current user first (if voted for this option), then most recent others
-            const currentUserVote = optionVoters.find((v) => v.playerId === playerId);
+            // Build recent voters list with optimistic updates
+            // When user optimistically switches vote, move their avatar accordingly
+            const currentUserServerVote = optionVoters.find((v) => v.playerId === playerId);
             const otherVoters = optionVoters.filter((v) => v.playerId !== playerId);
 
+            // Determine if current user should appear in this option's avatars (optimistically)
+            let showCurrentUserHere = false;
+            if (optimisticVote) {
+              // User has an optimistic vote - show avatar on the optimistic option
+              showCurrentUserHere = option.vote === optimisticVote;
+            } else if (currentUserServerVote) {
+              // No optimistic vote, use server data
+              showCurrentUserHere = true;
+            }
+
+            // Get current user's info from server data (from any option they voted on)
+            const currentUserInfo = playersVotes?.find((v) => v.playerId === playerId);
+
             const recentVoters = [
-              ...(currentUserVote ? [{
-                id: currentUserVote.id,
-                imageUrl: (currentUserVote.player as any)?.imageUrl || null,
-                characterImageUrl: currentUserVote.player?.characterImage?.publicUrl || null,
-                displayName: currentUserVote.player?.user?.displayName || null,
-                userName: currentUserVote.player?.user?.userName || '',
+              // Show current user if they voted for this option (optimistically determined)
+              ...(showCurrentUserHere && currentUserInfo ? [{
+                id: currentUserInfo.id,
+                imageUrl: (currentUserInfo.player as any)?.imageUrl || null,
+                characterImageUrl: currentUserInfo.player?.characterImage?.publicUrl || null,
+                displayName: currentUserInfo.player?.user?.displayName || null,
+                userName: currentUserInfo.player?.user?.userName || '',
               }] : []),
-              ...otherVoters.slice(0, currentUserVote ? 1 : 2).map((v) => ({
+              ...otherVoters.slice(0, showCurrentUserHere ? 1 : 2).map((v) => ({
                 id: v.id,
                 imageUrl: (v.player as any)?.imageUrl || null,
                 characterImageUrl: v.player?.characterImage?.publicUrl || null,
@@ -408,7 +444,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
 
         {/* Poll Footer */}
         {totalVotes > 0 && (showViewAllVotes ?? true) && (
-          <div className={`px-6 pb-6 ${theme ? theme.footer : ''}`}>
+          <div className={`px-6 pb-6 transition-all duration-700 ease-in-out ${theme ? theme.footer : ''}`}>
             <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
               <span className="flex items-center space-x-1">
                 <FiUsers className="w-4 h-4" />
