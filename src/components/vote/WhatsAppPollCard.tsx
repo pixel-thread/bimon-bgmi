@@ -102,7 +102,9 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
         setPendingVote(null);
         if (data.success) {
           toast.success(data.message);
-          // Don't refetch - optimistic state is already correct
+          // Invalidate polls query so VotersDialog shows updated vote
+          queryClient.invalidateQueries({ queryKey: ["polls"] });
+          queryClient.invalidateQueries({ queryKey: ["player-vote", pollId] });
         } else {
           // Revert on failure - go back to server state
           setOptimisticVote(null);
@@ -129,11 +131,27 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     // Collect all unique votes
     const allUniqueVotes = [...new Set(playersVotes?.map((v) => v.vote))];
 
-    // Count votes for each option
-    const voteCounts = allUniqueVotes.map((vote) => ({
+    // Count votes for each option (base counts from server)
+    const baseVoteCounts = allUniqueVotes.map((vote) => ({
       vote,
       count: filterPollVote(vote).length,
     }));
+
+    // Apply optimistic adjustment to vote counts when user changes vote
+    const voteCounts = baseVoteCounts.map((vc) => {
+      let adjustedCount = vc.count;
+      if (playerId && optimisticVote && serverVotedOption !== optimisticVote) {
+        // Remove from old vote count
+        if (vc.vote === serverVotedOption) {
+          adjustedCount = Math.max(0, adjustedCount - 1);
+        }
+        // Add to new vote count
+        if (vc.vote === optimisticVote) {
+          adjustedCount++;
+        }
+      }
+      return { vote: vc.vote, count: adjustedCount };
+    });
 
     const maxVoteCount = Math.max(...voteCounts.map((vc) => vc.count), 1);
 
