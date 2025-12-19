@@ -40,16 +40,31 @@ export function PlayerFilters({
     <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
       {/* Left side: Search and Season */}
       <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+        <form
+          className="relative w-full sm:w-64"
+          onSubmit={(e) => {
+            e.preventDefault();
+            // Blur the input to dismiss the mobile keyboard
+            const input = e.currentTarget.querySelector('input');
+            input?.blur();
+          }}
+        >
           <Input
-            type="text"
+            type="search"
+            enterKeyHint="search"
             placeholder="Search by IGN, username, email..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="h-11 pl-10 pr-4"
+            className="h-11 pl-4 pr-10"
           />
-        </div>
+          <button
+            type="submit"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:opacity-70 transition-opacity"
+            aria-label="Search"
+          >
+            <Search className="h-5 w-5 text-gray-400" />
+          </button>
+        </form>
         <SeasonSelector className="h-11 w-full sm:w-40" showAllSeasons={true} />
       </div>
 
