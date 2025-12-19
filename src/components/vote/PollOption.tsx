@@ -95,8 +95,11 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
                 {/* Recent voter avatars */}
                 {recentVoters.length > 0 && (
                   <div className="flex -space-x-2">
-                    {recentVoters.slice(0, 2).map((voter) => (
-                      <Avatar key={voter.id} className="w-6 h-6 border-2 border-white dark:border-gray-800">
+                    {recentVoters.slice(0, 2).map((voter, index) => (
+                      <Avatar
+                        key={voter.id}
+                        className={`w-6 h-6 border-2 border-white dark:border-gray-800 ${index === 0 ? 'z-10' : 'z-0'}`}
+                      >
                         <AvatarImage
                           src={voter.imageUrl || voter.characterImageUrl || ''}
                           alt={voter.displayName || voter.userName || 'Voter'}
