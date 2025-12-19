@@ -36,17 +36,21 @@ export async function GET(req: NextRequest) {
 
     let where: Prisma.PlayerWhereInput = {
       playerStats: { some: { seasonId } },
+      user: { isOnboarded: true }, // Only show onboarded users
     };
 
     if (seasonId === "all") {
-      where = {};
+      where = {
+        user: { isOnboarded: true }, // Only show onboarded users
+      };
     }
 
-    // Add search filter
+    // Add search filter (merge with existing user filter)
     if (search) {
       where = {
         ...where,
         user: {
+          ...where.user as object,
           userName: {
             contains: search,
             mode: "insensitive",
@@ -107,6 +111,7 @@ export async function GET(req: NextRequest) {
           id: player.id,
           isBanned: player.isBanned,
           userName: player?.user?.userName,
+          displayName: player?.user?.displayName,
           uc: player.uc?.balance || 0,
           matches: matches,
           kills: totalKills,
@@ -125,6 +130,7 @@ export async function GET(req: NextRequest) {
           isBanned: player.isBanned,
           uc: player.uc?.balance || 0,
           userName: player?.user?.userName,
+          displayName: player?.user?.displayName,
           matches: player?.matchPlayerPlayed.length,
           kills: totalKills,
           kd: playerKd.toFixed(2) || 0,

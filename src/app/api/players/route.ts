@@ -43,10 +43,13 @@ export async function GET(req: NextRequest) {
 
     let where: Prisma.PlayerWhereInput = {
       playerStats: { some: { seasonId } },
+      user: { isOnboarded: true }, // Only show onboarded users
     };
 
     if (seasonId === "all") {
-      where = {};
+      where = {
+        user: { isOnboarded: true }, // Only show onboarded users
+      };
     }
 
     // If sortBy is "banned", filter to only show banned players

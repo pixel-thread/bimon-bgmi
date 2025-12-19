@@ -22,9 +22,8 @@ type ClerkUser = {
 };
 
 // Only Create user in our db if it doesn't exist
+// NOTE: Player, UC, and PlayerStats are created during onboarding, not here
 export async function createUserIfNotExistInDB({ data }: ClerkUser) {
-  let activeSeason = await getActiveSeason();
-
   // Generate a temporary username for new users (will be replaced during onboarding)
   const tempUsername = `user_${data.clerkId.slice(-8)}`;
 
@@ -55,62 +54,24 @@ export async function createUserIfNotExistInDB({ data }: ClerkUser) {
       }
     }
 
-    return await prisma.$transaction(
-      async (tx) => {
-        if (!activeSeason) {
-          activeSeason = await prisma.season.create({
-            data: {
-              startDate: new Date(),
-              description: "DEFAULT",
-              name: "DEFAULT",
-              createdBy: "DEFAULT",
-            },
-          });
-        }
-
-        const user = await tx.user.create({
-          data: {
-            userName: tempUsername, // Temporary username
-            clerkId: data.clerkId,
-            createdBy: data.createdBy,
-            email: data.email || null, // Handle empty email
-            role: data.role,
-            isOnboarded: false, // New users need to complete onboarding
-            player: {
-              create: { seasons: { connect: { id: activeSeason?.id || "" } } },
-            },
-          },
-          include: { player: true },
-        });
-
-        // Set playerId on User for consistent access
-        if (user.player?.id) {
-          await tx.user.update({
-            where: { id: user.id },
-            data: { playerId: user.player.id },
-          });
-        }
-
-        await tx.uC.create({
-          data: {
-            user: { connect: { id: user.id } },
-            player: { connect: { id: user?.player?.id || "" } },
-          },
-        });
-
-        await tx.playerStats.create({
-          data: {
-            season: { connect: { id: activeSeason?.id || "" } },
-            player: { connect: { id: user?.player?.id || "" } },
-          },
-        });
-        return user;
+    // Create only the User record - Player/UC/PlayerStats created during onboarding
+    const user = await prisma.user.create({
+      data: {
+        userName: tempUsername, // Temporary username
+        clerkId: data.clerkId,
+        createdBy: data.createdBy,
+        email: data.email || null,
+        role: data.role,
+        isOnboarded: false, // New users need to complete onboarding
       },
-      {
-        maxWait: 10000, // Max wait to connect to Prisma (10 seconds)
-        timeout: 30000, // Transaction timeout (30 seconds)
+      include: {
+        player: {
+          include: { characterImage: true, playerBanned: true, uc: true },
+        },
       },
-    );
+    });
+
+    return user;
   } catch (error) {
     throw error;
   }

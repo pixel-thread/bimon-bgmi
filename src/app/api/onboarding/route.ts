@@ -5,6 +5,7 @@ import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { SuccessResponse, ErrorResponse } from "@/src/utils/next-response";
 import { clientClerk } from "@/src/lib/clerk/client";
+import { getActiveSeason } from "@/src/services/season/getActiveSeason";
 import z from "zod";
 
 const onboardingSchema = z.object({
@@ -49,24 +50,67 @@ export async function POST(req: Request) {
             });
         }
 
-        // Update user in local database
-        const updatedUser = await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                userName,
-                displayName,
-                isOnboarded: true,
-                usernameLastChangeAt: new Date(),
-            },
-            include: {
-                player: {
-                    include: {
-                        characterImage: true,
-                        playerBanned: true,
-                        uc: true,
+        // Get or create active season
+        let activeSeason = await getActiveSeason();
+        if (!activeSeason) {
+            activeSeason = await prisma.season.create({
+                data: {
+                    startDate: new Date(),
+                    description: "DEFAULT",
+                    name: "DEFAULT",
+                    createdBy: "SYSTEM",
+                },
+            });
+        }
+
+        // Create Player, UC, PlayerStats and update user in a transaction
+        const updatedUser = await prisma.$transaction(async (tx) => {
+            // 1. Create Player
+            const player = await tx.player.create({
+                data: {
+                    userId: user.id,
+                    seasons: { connect: { id: activeSeason.id } },
+                },
+            });
+
+            // 2. Create UC for the player
+            await tx.uC.create({
+                data: {
+                    userId: user.id,
+                    playerId: player.id,
+                },
+            });
+
+            // 3. Create PlayerStats for the active season
+            await tx.playerStats.create({
+                data: {
+                    playerId: player.id,
+                    seasonId: activeSeason.id,
+                },
+            });
+
+            // 4. Update user with playerId, userName, displayName, and mark as onboarded
+            const updated = await tx.user.update({
+                where: { id: user.id },
+                data: {
+                    playerId: player.id,
+                    userName,
+                    displayName,
+                    isOnboarded: true,
+                    usernameLastChangeAt: new Date(),
+                },
+                include: {
+                    player: {
+                        include: {
+                            characterImage: true,
+                            playerBanned: true,
+                            uc: true,
+                        },
                     },
                 },
-            },
+            });
+
+            return updated;
         });
 
         // Also update username in Clerk
@@ -87,3 +131,4 @@ export async function POST(req: Request) {
         return handleApiErrors(error);
     }
 }
+
