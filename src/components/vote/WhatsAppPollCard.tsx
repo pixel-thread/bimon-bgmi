@@ -453,7 +453,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                 </span>
               </span>
               <span className="text-xs">
-                {new Date(poll.createdAt).toLocaleDateString()}
+                {entryFee > 0 ? `Entry: ₹${entryFee}` : 'Free Entry'}
               </span>
             </div>
 
