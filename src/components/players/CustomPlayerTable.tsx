@@ -13,11 +13,13 @@ import { ADMIN_PLAYER_ENDPOINTS } from "@/src/lib/endpoints/admin/player";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Crown, Medal, Award, TrendingUp, Target, Gamepad2, Coins } from "lucide-react";
+import { getDisplayName } from "@/src/utils/bgmiDisplay";
 
 type PlayerT = {
     id: string;
     isBanned: boolean;
     userName: string;
+    displayName?: string | null;
     category: string;
     matches: number;
     kd: number;
@@ -219,7 +221,7 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                                     `}>
                                         <AvatarImage src={player.imageUrl || undefined} />
                                         <AvatarFallback className="text-xs sm:text-sm font-semibold bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                                            {player.userName.substring(0, 2).toUpperCase()}
+                                            {getDisplayName(player.displayName, player.userName).substring(0, 2).toUpperCase()}
                                         </AvatarFallback>
                                     </Avatar>
 
@@ -227,7 +229,7 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate text-sm sm:text-base">
-                                                {player.userName}
+                                                {getDisplayName(player.displayName, player.userName)}
                                             </span>
                                             {player.isBanned && (
                                                 <Badge variant="destructive" className="text-[10px] px-1.5 py-0">

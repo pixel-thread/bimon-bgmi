@@ -12,6 +12,7 @@ import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
 import { Loader2, AlertTriangle, Users, Coins, Trophy, RefreshCw } from "lucide-react";
 import type { PreviewTeamsByPollsResult, TeamPreview } from "@/src/services/team/previewTeamsByPoll";
+import { getDisplayName } from "@/src/utils/bgmiDisplay";
 
 interface PollTeamsPreviewDialogProps {
     open: boolean;
@@ -65,7 +66,7 @@ function TeamCard({ team, entryFee }: { team: TeamPreview; entryFee: number }) {
                         className="flex items-center justify-between py-1.5 sm:py-1 px-2 sm:px-1.5 bg-white dark:bg-gray-900 rounded text-xs"
                     >
                         <span className="font-medium text-gray-900 dark:text-white truncate max-w-[50%] sm:max-w-[45%]">
-                            {player.userName}
+                            {getDisplayName(player.displayName, player.userName)}
                         </span>
                         <div className="flex items-center gap-2 sm:gap-1.5 shrink-0">
                             <span className={`font-mono text-xs ${getKDColor(player.kd)}`}>

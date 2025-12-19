@@ -13,6 +13,7 @@ type PlayerT = {
   id: string;
   isBanned: boolean;
   userName: string;
+  displayName?: string | null;
   category: string;
   matches: number;
   kd: number;

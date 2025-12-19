@@ -7,7 +7,7 @@ import { SuccessResponse, ErrorResponse } from "@/src/utils/next-response";
 import { clientClerk } from "@/src/lib/clerk/client";
 import z from "zod";
 
-const usernameSchema = z.object({
+const onboardingSchema = z.object({
     userName: z
         .string()
         .min(3, "Username must be at least 3 characters")
@@ -16,6 +16,10 @@ const usernameSchema = z.object({
             /^[a-zA-Z0-9_]+$/,
             "Username can only contain letters, numbers, and underscores"
         ),
+    displayName: z
+        .string()
+        .min(2, "IGN must be at least 2 characters")
+        .max(50, "IGN must be at most 50 characters"),
 });
 
 export async function POST(req: Request) {
@@ -31,7 +35,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { userName } = usernameSchema.parse(body);
+        const { userName, displayName } = onboardingSchema.parse(body);
 
         // Check if username is already taken
         const existingUser = await prisma.user.findUnique({
@@ -50,6 +54,7 @@ export async function POST(req: Request) {
             where: { id: user.id },
             data: {
                 userName,
+                displayName,
                 isOnboarded: true,
                 usernameLastChangeAt: new Date(),
             },

@@ -34,6 +34,7 @@ import { BulkEditStatsDialog } from "./BulkEditStatsDialog";
 import { useGlobalBackground } from "@/src/hooks/gallery/useGlobalBackground";
 import { SwapPlayersDialog } from "./swap-players-dialog";
 import { ArrowLeftRight, Loader2, Pencil, Trash2 } from "lucide-react";
+import { toBGMIDisplay } from "@/src/utils/bgmiDisplay";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -124,7 +125,7 @@ export const AdminTeamsManagement: React.FC = () => {
 
     // Team data rows - use index+2 for slot number to ensure sequential numbering
     uniqueTeams.forEach((team, index) => {
-      const players = team.players?.map((p) => p.name) || [];
+      const players = team.players?.map((p) => toBGMIDisplay(p.name)) || [];
       const paddedPlayers = [...players, ...Array(maxPlayers - players.length).fill("")];
       const row = worksheet.addRow([index + 2, ...paddedPlayers]); // Sequential slot numbers starting from 2
       row.eachCell((cell) => {

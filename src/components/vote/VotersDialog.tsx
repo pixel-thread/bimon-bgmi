@@ -24,6 +24,7 @@ import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { VotersListSkeleton, VotersSkeleton } from "./VotersSkeleton";
 
 import { PollT } from "@/src/types/poll";
+import { getDisplayName } from "@/src/utils/bgmiDisplay";
 
 type VotersDialogsProps = {
   isOpen: boolean;
@@ -183,7 +184,7 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                                         </Avatar>
                                         <div className="flex-1">
                                           <p className="font-medium text-gray-900 dark:text-white">
-                                            {vote.player.user.userName}
+                                            {getDisplayName(vote.player.user.displayName, vote.player.user.userName)}
                                           </p>
                                           <p className="text-xs text-gray-500 dark:text-gray-400">
                                             {new Date(

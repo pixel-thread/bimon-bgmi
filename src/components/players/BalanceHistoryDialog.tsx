@@ -14,6 +14,7 @@ import { History, TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 import { LoaderFive } from "@/src/components/ui/loader";
 import { usePlayer } from "@/src/hooks/player/usePlayer";
+import { getDisplayName } from "@/src/utils/bgmiDisplay";
 
 interface BalanceHistory {
   id: string;
@@ -192,7 +193,7 @@ export function BalanceHistoryDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <History className="w-5 h-5" />
-            Balance History - {player?.user?.userName}
+            Balance History - {getDisplayName(player?.user?.displayName, player?.user?.userName)}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">

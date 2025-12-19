@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { FiCheck, FiUsers } from "react-icons/fi";
 import { Badge } from "@/src/components/ui/badge";
 import { PollOption } from "./PollOption";
@@ -8,6 +8,9 @@ import { usePlayerVote } from "@/src/hooks/poll/usePlayerVote";
 import { PollT } from "@/src/types/poll";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import http from "@/src/utils/http";
+import { toast } from "sonner";
 
 const bannedStampStyles = {
   position: "absolute" as const,
@@ -40,7 +43,7 @@ type VoteT = Prisma.PlayerPollVoteCreateInput["vote"];
 type WhatAppPollCardProps = {
   poll: PollT;
   readOnly: boolean;
-  showAvatars?: boolean; // Default to false for performance
+  showAvatars?: boolean;
   onShowVoters: (poll: PollT) => void;
 };
 
@@ -49,13 +52,19 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     poll,
     onShowVoters,
     readOnly,
-    showAvatars = false, // Default to false for performance
+    showAvatars = false,
   }) => {
-    // Banned stamp styles
     const { user } = useAuth();
+    const queryClient = useQueryClient();
     const isBanned = user?.player?.isBanned || false;
     const options = poll.options || [];
     const pollId = poll.id;
+    const playerId = user?.player?.id || "";
+
+    // Optimistic vote state - tracks which option user is voting for
+    const [optimisticVote, setOptimisticVote] = useState<VoteT | null>(null);
+    const [pendingVote, setPendingVote] = useState<VoteT | null>(null); // For loader
+
     // Use pre-fetched votes if available, otherwise fetch
     const preFetchedVotes = poll.playersVotes;
     const { data: fetchedVotes, isFetching: isLoadingVotes } = usePlayerVote({
@@ -65,19 +74,51 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
 
     const playersVotes = preFetchedVotes || fetchedVotes;
 
-    const totalVotes = playersVotes?.length || 0;
-
-    const playerId = user?.player?.id || "";
-    const isUserVoted = playersVotes?.find((val) => val.playerId === playerId)
-      ? true
-      : false;
-
-    const showViewAllVotes = true;
-
-    const userVotedOption = playersVotes?.find(
-      (vote) => vote.playerId === playerId,
+    // Server-side voted option
+    const serverVotedOption = playersVotes?.find(
+      (vote) => vote.playerId === playerId
     )?.vote;
 
+    // Use optimistic vote if set, otherwise use server data
+    const userVotedOption = optimisticVote ?? serverVotedOption;
+
+    // Reset optimistic vote when server catches up (but not during pending)
+    useEffect(() => {
+      if (optimisticVote && !pendingVote && serverVotedOption === optimisticVote) {
+        setOptimisticVote(null);
+      }
+    }, [serverVotedOption, optimisticVote, pendingVote]);
+
+    // Vote mutation
+    const { mutate: submitVote } = useMutation({
+      mutationFn: (vote: VoteT) => http.post(`/poll/${pollId}/vote`, { vote }),
+      onMutate: (newVote) => {
+        // Optimistically update - old selection disappears, new one appears
+        setOptimisticVote(newVote);
+        setPendingVote(newVote); // Track for loader
+      },
+      onSuccess: (data) => {
+        setPendingVote(null);
+        if (data.success) {
+          toast.success(data.message);
+          // Don't refetch - optimistic state is already correct
+        } else {
+          // Revert on failure - go back to server state
+          setOptimisticVote(null);
+          toast.error(data.message);
+        }
+      },
+      onError: () => {
+        // Revert on error
+        setPendingVote(null);
+        setOptimisticVote(null);
+        toast.error("Failed to vote. Please try again.");
+      },
+    });
+
+    const totalVotes = playersVotes?.length || 0;
+    const isUserVoted = !!userVotedOption;
+    const showViewAllVotes = true;
     const showResults = !!isUserVoted || totalVotes > 0;
 
     const filterPollVote = (vote: VoteT) => {
@@ -93,15 +134,19 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
       count: filterPollVote(vote).length,
     }));
 
-    // Find the highest vote count for normalization
-    const maxVoteCount = Math.max(...voteCounts.map((vc) => vc.count), 1); // Use 1 to avoid division by zero
+    const maxVoteCount = Math.max(...voteCounts.map((vc) => vc.count), 1);
 
-    // Calculate percentages
     const votePercentages = voteCounts.map((vc) => ({
       vote: vc.vote,
       count: vc.count,
       percentage: Math.round((vc.count / maxVoteCount) * 100),
     }));
+
+    const handleVote = (optionVote: VoteT) => {
+      if (!pendingVote && !readOnly && !isBanned && poll.isActive) {
+        submitVote(optionVote);
+      }
+    };
 
     return (
       <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden max-w-2xl mx-auto">
@@ -155,25 +200,53 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
             const optionKey =
               typeof option === "string" ? option : `${option.name}-${index}`;
 
+            // Get voters for this option, sorted by most recent
+            const optionVoters = filterPollVote(option.vote)
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+            // Build recent voters list: current user first (if voted for this option), then most recent others
+            const currentUserVote = optionVoters.find((v) => v.playerId === playerId);
+            const otherVoters = optionVoters.filter((v) => v.playerId !== playerId);
+
+            const recentVoters = [
+              ...(currentUserVote ? [{
+                id: currentUserVote.id,
+                imageUrl: (currentUserVote.player as any)?.imageUrl || null,
+                characterImageUrl: currentUserVote.player?.characterImage?.publicUrl || null,
+                displayName: currentUserVote.player?.user?.displayName || null,
+                userName: currentUserVote.player?.user?.userName || '',
+              }] : []),
+              ...otherVoters.slice(0, currentUserVote ? 1 : 2).map((v) => ({
+                id: v.id,
+                imageUrl: (v.player as any)?.imageUrl || null,
+                characterImageUrl: v.player?.characterImage?.publicUrl || null,
+                displayName: v.player?.user?.displayName || null,
+                userName: v.player?.user?.userName || '',
+              })),
+            ].slice(0, 2);
+
+            // This option is selected if it matches the current vote (optimistic or server)
+            const isSelected = userVotedOption === option.vote;
+            // Show loading spinner only on the option being voted for
+            const isOptionLoading = pendingVote === option.vote;
+
             return (
               <PollOption
-                id={poll.id}
-                value={option.vote}
                 key={optionKey}
                 option={option.name}
-                isSelected={userVotedOption === option.vote}
-                isDisabled={!poll.isActive || !!readOnly}
+                isSelected={isSelected}
+                isDisabled={!poll.isActive || !!readOnly || isBanned}
+                isLoading={isOptionLoading}
                 showResults={showResults}
-                // TODO: Add recent voters
+                recentVoters={recentVoters}
                 totalVoters={
-                  votePercentages.find((val) => val.vote === option.vote)?.count
+                  votePercentages.find((val) => val.vote === option.vote)?.count || 0
                 }
                 totalVotes={
-                  votePercentages.find((val) => val.vote === option.vote)
-                    ?.percentage
+                  votePercentages.find((val) => val.vote === option.vote)?.percentage || 0
                 }
                 showAvatars={showAvatars}
-                onClick={() => { }}
+                onClick={() => handleVote(option.vote)}
               />
             );
           })}
@@ -196,6 +269,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
 
             {onShowVoters && (
               <button
+                type="button"
                 onClick={() => onShowVoters(poll)}
                 disabled={isLoadingVotes}
                 className={`w-full text-center font-medium py-2 px-4 rounded-lg transition-colors ${isLoadingVotes

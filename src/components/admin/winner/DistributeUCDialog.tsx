@@ -20,6 +20,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
 import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
+import { toBGMIDisplay } from "@/src/utils/bgmiDisplay";
 
 type Winner = {
     position: number;
@@ -178,16 +179,16 @@ export function DistributeUCDialog({
                                                             <div key={player.id} className="flex items-center gap-2 sm:gap-3 bg-background p-2 sm:p-2.5 rounded-md border shadow-sm">
                                                                 <Avatar className="h-8 w-8 sm:h-9 sm:w-9 shrink-0">
                                                                     {player.imageUrl ? (
-                                                                        <AvatarImage src={player.imageUrl} alt={player.name} />
+                                                                        <AvatarImage src={player.imageUrl} alt={toBGMIDisplay(player.name)} />
                                                                     ) : null}
                                                                     <AvatarFallback className="text-[10px] sm:text-xs bg-muted">
-                                                                        {getInitials(player.name)}
+                                                                        {getInitials(toBGMIDisplay(player.name))}
                                                                     </AvatarFallback>
                                                                 </Avatar>
                                                                 <div className="flex items-center gap-1 flex-1">
                                                                     <Input
                                                                         type="number"
-                                                                        placeholder={player.name}
+                                                                        placeholder={toBGMIDisplay(player.name)}
                                                                         value={playerAmounts[player.id] || ""}
                                                                         onChange={(e) => updatePlayerAmount(player.id, e.target.value)}
                                                                         className="flex-1 h-7 sm:h-8 text-xs sm:text-sm text-right pr-1"

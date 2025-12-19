@@ -112,6 +112,7 @@ export async function GET(req: NextRequest) {
           clerkId: player?.user?.clerkId || null,
           isBanned: player.isBanned,
           userName: player?.user?.userName,
+          displayName: player?.user?.displayName,
           uc: player.uc?.balance || 0,
           matches: matches,
           kills: totalKills,
@@ -140,6 +141,7 @@ export async function GET(req: NextRequest) {
           isBanned: player.isBanned,
           uc: player.uc?.balance || 0,
           userName: player?.user?.userName,
+          displayName: player?.user?.displayName,
           matches: player?.matchPlayerPlayed.length,
           kills: totalKills,
           kd: playerKd.toFixed(2) || 0,
@@ -155,10 +157,11 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Apply search filter (search by username, email, firstName, lastName)
+    // Apply search filter (search by displayName, username, email, firstName, lastName)
     if (search) {
       const searchLower = search.toLowerCase();
       data = data.filter((player) => {
+        const displayName = player.displayName?.toLowerCase() || "";
         const userName = player.userName?.toLowerCase() || "";
         const email = player.email?.toLowerCase() || "";
         const firstName = player.firstName?.toLowerCase() || "";
@@ -166,6 +169,7 @@ export async function GET(req: NextRequest) {
         const fullName = `${firstName} ${lastName}`.trim();
 
         return (
+          displayName.includes(searchLower) ||
           userName.includes(searchLower) ||
           email.includes(searchLower) ||
           firstName.includes(searchLower) ||

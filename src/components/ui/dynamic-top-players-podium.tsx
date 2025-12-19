@@ -8,6 +8,7 @@ import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { cn } from "@/src/lib/utils";
 import { PLAYER_ENDPOINTS } from "@/src/lib/endpoints/player";
 import { useSeasonStore } from "@/src/store/season";
+import { getDisplayName } from "@/src/utils/bgmiDisplay";
 
 type PlayerStatsT = Prisma.PlayerStatsGetPayload<{
   include: {
@@ -244,14 +245,14 @@ export const DynamicTopPlayersPodium = React.memo(
                     {player.characterImage?.publicUrl ? (
                       <img
                         src={player.characterImage.publicUrl}
-                        alt={player.user.userName}
+                        alt={getDisplayName(player.user.displayName, player.user.userName)}
                         className="w-full h-full object-cover"
                         loading="lazy"
                         style={{ imageRendering: "auto" }}
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
-                        {player.user.userName.charAt(0).toUpperCase()}
+                        {getDisplayName(player.user.displayName, player.user.userName).charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
@@ -267,9 +268,9 @@ export const DynamicTopPlayersPodium = React.memo(
                 <div className="mb-1 h-7">
                   <div
                     className="font-military text-lg leading-tight drop-shadow-lg text-shadow truncate"
-                    title={player.user.userName}
+                    title={getDisplayName(player.user.displayName, player.user.userName)}
                   >
-                    {player.user.userName}
+                    {getDisplayName(player.user.displayName, player.user.userName)}
                   </div>
                 </div>
                 <div className="opacity-90 font-medium drop-shadow text-shadow h-5">

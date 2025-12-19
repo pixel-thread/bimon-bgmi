@@ -26,10 +26,10 @@ export async function GET(req: NextRequest) {
             },
             include: {
                 fromPlayer: {
-                    include: { user: { select: { userName: true } } },
+                    include: { user: { select: { userName: true, displayName: true } } },
                 },
                 toPlayer: {
-                    include: { user: { select: { userName: true } } },
+                    include: { user: { select: { userName: true, displayName: true } } },
                 },
             },
             orderBy: { createdAt: "desc" },

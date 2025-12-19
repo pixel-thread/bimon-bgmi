@@ -22,6 +22,7 @@ import {
 // } from "@/src/utils/banUtils";
 import { ChevronDown, Loader2, Search, X } from "lucide-react";
 import { useTournaments } from "@/src/hooks/tournament/useTournaments";
+import { toBGMIDisplay } from "@/src/utils/bgmiDisplay";
 
 export interface PlayerSuggestion {
   id: string;
@@ -308,7 +309,7 @@ export function NameAutocomplete({
                             player.isBanned && "text-red-700 dark:text-red-300",
                           )}
                         >
-                          <span className="truncate">{player.name}</span>
+                          <span className="truncate">{toBGMIDisplay(player.name)}</span>
                           {player.isBanned && (
                             <span className="ml-2 text-xs bg-red-100 text-red-800 px-1.5 py-0.5 rounded-full font-semibold"></span>
                           )}

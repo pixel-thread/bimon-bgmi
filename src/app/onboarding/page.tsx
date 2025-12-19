@@ -15,9 +15,11 @@ export default function OnboardingPage() {
     const { user, refreshAuth } = useAuth();
     const router = useRouter();
     const [userName, setUserName] = useState("");
-    const [error, setError] = useState("");
+    const [displayName, setDisplayName] = useState("");
+    const [userNameError, setUserNameError] = useState("");
+    const [displayNameError, setDisplayNameError] = useState("");
 
-    // Validation function
+    // Validation for simple username (alphanumeric + underscore)
     const validateUsername = (value: string) => {
         if (value.length < 3) {
             return "Username must be at least 3 characters";
@@ -31,8 +33,20 @@ export default function OnboardingPage() {
         return "";
     };
 
-    const { mutate: submitUsername, isPending } = useMutation({
-        mutationFn: (data: { userName: string }) => http.post("/onboarding", data),
+    // Validation for display name (any Unicode, just length check)
+    const validateDisplayName = (value: string) => {
+        if (value.length < 2) {
+            return "IGN must be at least 2 characters";
+        }
+        if (value.length > 50) {
+            return "IGN must be at most 50 characters";
+        }
+        return "";
+    };
+
+    const { mutate: submitUsernames, isPending } = useMutation({
+        mutationFn: (data: { userName: string; displayName: string }) =>
+            http.post("/onboarding", data),
         onSuccess: () => {
             toast.success("Welcome to PUBGMI Tournament! Your account is ready.");
             refreshAuth();
@@ -41,20 +55,31 @@ export default function OnboardingPage() {
         onError: (err: { response?: { data?: { message?: string } } }) => {
             const message =
                 err?.response?.data?.message || "Failed to set username. Please try again.";
-            setError(message);
+            setUserNameError(message);
             toast.error(message);
         },
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const validationError = validateUsername(userName);
-        if (validationError) {
-            setError(validationError);
+
+        const usernameError = validateUsername(userName);
+        const displayError = validateDisplayName(displayName);
+
+        if (usernameError) {
+            setUserNameError(usernameError);
+        }
+        if (displayError) {
+            setDisplayNameError(displayError);
+        }
+
+        if (usernameError || displayError) {
             return;
         }
-        setError("");
-        submitUsername({ userName });
+
+        setUserNameError("");
+        setDisplayNameError("");
+        submitUsernames({ userName, displayName });
     };
 
     // If user is already onboarded, redirect to home
@@ -77,13 +102,12 @@ export default function OnboardingPage() {
 
                     {/* Title */}
                     <h1 className="text-2xl font-bold text-center text-slate-800 dark:text-slate-200 mb-2">
-                        Set Your Username
+                        Set Your Usernames
                     </h1>
 
                     {/* Description */}
                     <p className="text-center text-slate-600 dark:text-slate-400 mb-6">
                         Thoh kyrteng <span className="font-semibold text-indigo-600 dark:text-indigo-400">kumjuh ha BGMI (IGN)</span>.
-                       
                     </p>
 
                     {/* Important notice */}
@@ -92,19 +116,20 @@ export default function OnboardingPage() {
                             <FiAlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                             <div className="text-sm text-amber-700 dark:text-amber-300">
                                 <p className="font-medium mb-1">Balei ban thoh da kyrteng kumjuh na bgmi?</p>
-                                <p>Ban suk ban thoh points bad ban ym shah kick ha room </p>
+                                <p>Ban suk ban thoh points bad ban ym shah kick ha room</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Simple Username */}
                         <div>
                             <label
                                 htmlFor="username"
                                 className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                             >
-                                Username (BGMI IGN)
+                                Simple Username (for system)
                             </label>
                             <Input
                                 id="username"
@@ -112,30 +137,64 @@ export default function OnboardingPage() {
                                 value={userName}
                                 onChange={(e) => {
                                     setUserName(e.target.value);
-                                    setError("");
+                                    setUserNameError("");
                                 }}
-                                placeholder="Kyrteng ha BGMI"
-                                className={`w-full ${error
+                                placeholder="e.g. meban_ks"
+                                className={`w-full ${userNameError
                                     ? "border-red-500 focus-visible:ring-red-500"
                                     : "focus-visible:ring-indigo-500"
                                     }`}
                                 disabled={isPending}
                                 autoFocus
                             />
-                            {error && (
+                            {userNameError && (
                                 <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
                                     <FiAlertCircle className="w-4 h-4" />
-                                    {error}
+                                    {userNameError}
                                 </p>
                             )}
                             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                                3-30 characters. Letters, numbers, and underscores only _.
+                                3-30 characters. Letters, numbers, and underscores only.
+                            </p>
+                        </div>
+
+                        {/* Display Name (BGMI IGN) */}
+                        <div>
+                            <label
+                                htmlFor="displayName"
+                                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                            >
+                                BGMI IGN (shown everywhere)
+                            </label>
+                            <Input
+                                id="displayName"
+                                type="text"
+                                value={displayName}
+                                onChange={(e) => {
+                                    setDisplayName(e.target.value);
+                                    setDisplayNameError("");
+                                }}
+                                placeholder="e.g. KŠツMeban"
+                                className={`w-full ${displayNameError
+                                    ? "border-red-500 focus-visible:ring-red-500"
+                                    : "focus-visible:ring-indigo-500"
+                                    }`}
+                                disabled={isPending}
+                            />
+                            {displayNameError && (
+                                <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                                    <FiAlertCircle className="w-4 h-4" />
+                                    {displayNameError}
+                                </p>
+                            )}
+                            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                Enter exactly as shown in BGMI. Special characters allowed.
                             </p>
                         </div>
 
                         <Button
                             type="submit"
-                            disabled={isPending || !userName.trim()}
+                            disabled={isPending || !userName.trim() || !displayName.trim()}
                             className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-2.5"
                         >
                             {isPending ? (
@@ -152,7 +211,7 @@ export default function OnboardingPage() {
 
                 {/* Footer text */}
                 <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-4">
-                   Phi lah ban change biang na profile page
+                    Phi lah ban change biang na profile page
                 </p>
             </div>
         </div>

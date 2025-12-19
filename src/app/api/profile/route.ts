@@ -9,6 +9,7 @@ import { z } from "zod";
 
 const updateProfileSchema = z.object({
     userName: z.string().min(3, "Username must be at least 3 characters").max(30, "Username must be at most 30 characters").regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores").optional(),
+    displayName: z.string().min(2, "IGN must be at least 2 characters").max(50, "IGN must be at most 50 characters").optional(),
 });
 
 // GET - Get current user profile
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
             data: {
                 id: user.id,
                 userName: user.userName,
+                displayName: user.displayName,
                 email: user.email,
                 role: user.role,
                 isEmailLinked: user.isEmailLinked,
@@ -92,6 +94,9 @@ export async function PATCH(req: NextRequest) {
                     userName: body.userName,
                     usernameLastChangeAt: new Date(),
                 }),
+                ...(body.displayName !== undefined && {
+                    displayName: body.displayName,
+                }),
             },
         });
 
@@ -99,6 +104,7 @@ export async function PATCH(req: NextRequest) {
             data: {
                 id: updatedUser.id,
                 userName: updatedUser.userName,
+                displayName: updatedUser.displayName,
                 email: updatedUser.email,
                 role: updatedUser.role,
                 usernameLastChangeAt: updatedUser.usernameLastChangeAt,

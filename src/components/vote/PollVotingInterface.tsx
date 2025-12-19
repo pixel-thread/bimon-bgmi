@@ -129,7 +129,7 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
             key={poll.id}
             poll={poll}
             onShowVoters={showVoters}
-            readOnly={true}
+            readOnly={false}
           />
         ))}
       </div>

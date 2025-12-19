@@ -25,6 +25,7 @@ import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { UCTransferDialog } from "./UCTransferDialog";
 
 import { getKdRank } from "@/src/utils/categoryUtils";
+import { getDisplayName } from "@/src/utils/bgmiDisplay";
 
 function ModalSkeleton() {
   return (
@@ -217,19 +218,19 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     {player.clerkImageUrl ? (
                       <img
                         src={player.clerkImageUrl}
-                        alt={player.user?.userName || "Player"}
+                        alt={getDisplayName(player.user?.displayName, player.user?.userName) || "Player"}
                         className="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-lg font-semibold bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                        {player.user?.userName?.substring(0, 2).toUpperCase()}
+                        {getDisplayName(player.user?.displayName, player.user?.userName)?.substring(0, 2).toUpperCase()}
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                       <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
-                        {player.user?.userName}
+                        {getDisplayName(player.user?.displayName, player.user?.userName)}
                       </span>
                       {player.isBanned && (
                         <Badge
@@ -441,7 +442,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
           isOpen={isTransferDialogOpen}
           onClose={() => setIsTransferDialogOpen(false)}
           toPlayerId={id}
-          toPlayerName={player.user?.userName || "Player"}
+          toPlayerName={getDisplayName(player.user?.displayName, player.user?.userName) || "Player"}
         />
       )}
 
@@ -468,7 +469,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
               >
                 <img
                   src={player.clerkImageUrl}
-                  alt={player.user?.userName || "Player"}
+                  alt={getDisplayName(player.user?.displayName, player.user?.userName) || "Player"}
                   className="w-full h-full object-cover"
                 />
               </motion.div>

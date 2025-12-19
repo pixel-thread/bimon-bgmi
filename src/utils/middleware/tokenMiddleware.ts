@@ -57,6 +57,8 @@ export async function tokenMiddleware(req: NextRequest | Request) {
       // Allow payment endpoints for users
     } else if (req.url.includes("/onboarding") && reqMethod === "POST") {
       // Allow onboarding for new users to set their username
+    } else if (req.url.includes("/profile") && reqMethod === "PATCH") {
+      // Allow profile updates for users
     } else {
       throw new Error("Long ki ba jai jai se: Permission Denied");
     }

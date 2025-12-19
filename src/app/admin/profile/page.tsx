@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { formatDistanceToNow } from "date-fns";
 import { AddBalanceDialog } from "@/src/components/profile/AddBalanceDialog";
+import { ProfileSettings } from "@/src/components/profile/ProfileSettings";
+import { getDisplayName } from "@/src/utils/bgmiDisplay";
 
 type UCTransfer = {
     id: string;
@@ -23,9 +25,9 @@ type UCTransfer = {
     status: "PENDING" | "APPROVED" | "REJECTED" | "COMPLETED";
     message?: string;
     fromPlayerId: string;
-    fromPlayer: { user: { userName: string } };
+    fromPlayer: { user: { userName: string; displayName?: string | null } };
     toPlayerId: string;
-    toPlayer: { user: { userName: string } };
+    toPlayer: { user: { userName: string; displayName?: string | null } };
     createdAt: string;
 };
 
@@ -51,6 +53,9 @@ export default function AdminProfilePage() {
     const playerId = user?.playerId;
     const userBalance = user?.player?.uc?.balance || 0;
     const hasPlayerRecord = !!playerId;
+
+    // Check if displayName guide should be shown (no displayName set)
+    const showDisplayNameGuide = !user?.displayName && !!user;
 
     // Fetch player stats (only if has player record)
     const { data: statsData, isLoading: statsLoading } = useQuery({
@@ -162,7 +167,7 @@ export default function AdminProfilePage() {
                 </div>
                 <div>
                     <h1 className="text-3xl font-bold flex items-center gap-2">
-                        {user.userName}
+                        {getDisplayName(user.displayName, user.userName)}
                         <Badge variant="secondary" className="flex items-center gap-1">
                             <Shield className="w-3 h-3" />
                             {user.role}
@@ -180,9 +185,12 @@ export default function AdminProfilePage() {
                             Overview
                         </TabsTrigger>
                     )}
-                    <TabsTrigger value="account" className="flex items-center gap-2">
+                    <TabsTrigger value="account" className="relative flex items-center gap-2">
                         <Settings className="w-4 h-4" />
                         Account Settings
+                        {showDisplayNameGuide && (
+                            <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-blue-500 rounded-full animate-pulse border-2 border-white dark:border-zinc-900"></span>
+                        )}
                     </TabsTrigger>
                 </TabsList>
 
@@ -284,7 +292,7 @@ export default function AdminProfilePage() {
                                         >
                                             <div>
                                                 <p className="font-medium">
-                                                    <span className="text-blue-600">{request.fromPlayer.user.userName}</span>
+                                                    <span className="text-blue-600">{getDisplayName(request.fromPlayer.user.displayName, request.fromPlayer.user.userName)}</span>
                                                     {" "}requested{" "}
                                                     <span className="font-bold text-green-600">{request.amount} UC</span>
                                                 </p>
@@ -398,12 +406,12 @@ export default function AdminProfilePage() {
                                                             {transfer.fromPlayerId === playerId ? (
                                                                 <>
                                                                     {transfer.type === "SEND" ? "Sent to" : "Requested from"}{" "}
-                                                                    <span className="text-blue-600">{transfer.toPlayer.user.userName}</span>
+                                                                    <span className="text-blue-600">{getDisplayName(transfer.toPlayer.user.displayName, transfer.toPlayer.user.userName)}</span>
                                                                 </>
                                                             ) : (
                                                                 <>
                                                                     {transfer.type === "SEND" ? "Received from" : "Request from"}{" "}
-                                                                    <span className="text-blue-600">{transfer.fromPlayer.user.userName}</span>
+                                                                    <span className="text-blue-600">{getDisplayName(transfer.fromPlayer.user.displayName, transfer.fromPlayer.user.userName)}</span>
                                                                 </>
                                                             )}
                                                         </p>
@@ -429,42 +437,7 @@ export default function AdminProfilePage() {
 
                 {/* Account Settings Tab */}
                 <TabsContent value="account" className="mt-6">
-                    {!hasPlayerRecord && (
-                        <Card className="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-900/20">
-                            <CardContent className="py-6">
-                                <div className="flex items-center gap-3">
-                                    <Shield className="w-8 h-8 text-blue-600" />
-                                    <div>
-                                        <p className="font-medium text-blue-800 dark:text-blue-200">Admin Account</p>
-                                        <p className="text-sm text-blue-600 dark:text-blue-300">
-                                            You&apos;re logged in as an admin. UC features are available if your account has a linked player profile.
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Account Settings</CardTitle>
-                            <p className="text-sm text-muted-foreground">
-                                Manage your account details, update your username, email, and security settings.
-                            </p>
-                        </CardHeader>
-                        <CardContent className="flex justify-center">
-                            <UserProfile
-                                routing="hash"
-                                appearance={{
-                                    elements: {
-                                        rootBox: "w-full",
-                                        card: "shadow-none border-0 w-full",
-                                        navbar: "hidden",
-                                        pageScrollBox: "p-0",
-                                    },
-                                }}
-                            />
-                        </CardContent>
-                    </Card>
+                    <ProfileSettings />
                 </TabsContent>
             </Tabs>
         </div>

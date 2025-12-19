@@ -27,6 +27,7 @@ import { useTournamentStore } from "@/src/store/tournament";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { useQuery } from "@tanstack/react-query";
 import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
+import { toBGMIDisplay } from "@/src/utils/bgmiDisplay";
 
 type SwapPlayersDialogProps = {
     open: boolean;
@@ -150,7 +151,7 @@ export const SwapPlayersDialog = ({
                                     <SelectContent>
                                         {teamA.players?.map((player: { id: string; name: string }) => (
                                             <SelectItem key={player.id} value={player.id}>
-                                                {player.name}
+                                                {toBGMIDisplay(player.name)}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -189,7 +190,7 @@ export const SwapPlayersDialog = ({
                                     <SelectContent>
                                         {teamB.players?.map((player: { id: string; name: string }) => (
                                             <SelectItem key={player.id} value={player.id}>
-                                                {player.name}
+                                                {toBGMIDisplay(player.name)}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -202,12 +203,12 @@ export const SwapPlayersDialog = ({
                             <div className="p-3 rounded-lg bg-muted/50 text-sm">
                                 <p className="font-medium mb-2">Preview:</p>
                                 <p>
-                                    <span className="text-primary">{teamA.players?.find((p: { id: string; name: string }) => p.id === playerAId)?.name}</span>
+                                    <span className="text-primary">{toBGMIDisplay(teamA.players?.find((p: { id: string; name: string }) => p.id === playerAId)?.name)}</span>
                                     {" → "}
                                     <span className="text-muted-foreground">{teamB.name}</span>
                                 </p>
                                 <p>
-                                    <span className="text-primary">{teamB.players?.find((p: { id: string; name: string }) => p.id === playerBId)?.name}</span>
+                                    <span className="text-primary">{toBGMIDisplay(teamB.players?.find((p: { id: string; name: string }) => p.id === playerBId)?.name)}</span>
                                     {" → "}
                                     <span className="text-muted-foreground">{teamA.name}</span>
                                 </p>

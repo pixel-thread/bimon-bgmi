@@ -1,58 +1,49 @@
 "use client";
 
 import React from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import http from "@/src/utils/http";
-import { toast } from "sonner";
 import { Progress } from "../ui/progress";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { User } from "lucide-react";
 
-type DataT = { vote: "IN" | "OUT" | "SOLO" };
+type RecentVoter = {
+  id: string;
+  imageUrl?: string | null;
+  characterImageUrl?: string | null;
+  displayName?: string | null;
+  userName?: string;
+};
 
 export interface PollOptionProps {
-  id: string;
-  value: "IN" | "OUT" | "SOLO";
   option: string;
   isSelected: boolean;
   isDisabled: boolean;
-  showResults: boolean;
   isLoading?: boolean;
+  showResults: boolean;
   totalVoters?: number;
   totalVotes?: number;
-  showAvatars?: boolean; // Add this prop to control avatar visibility
+  showAvatars?: boolean;
+  recentVoters?: RecentVoter[];
   onClick: () => void;
 }
 
 export const PollOption: React.FC<PollOptionProps> = React.memo(
   ({
-    id,
     option,
-    value,
     isSelected,
     isDisabled,
+    isLoading = false,
     showResults = true,
     totalVotes = 0,
+    totalVoters = 0,
+    recentVoters = [],
+    onClick,
   }) => {
-    const queryClient = useQueryClient();
-    const { mutate, isPending: isLoading } = useMutation({
-      mutationFn: (data: DataT) => http.post(`/poll/${id}/vote`, data),
-      onSuccess: (data) => {
-        if (data.success) {
-          queryClient.invalidateQueries({ queryKey: ["poll", id] });
-          queryClient.invalidateQueries({ queryKey: ["player-vote", id] });
-          queryClient.invalidateQueries({ queryKey: ["polls"] });
-          toast.success(data.message);
-          return data;
-        }
-        toast.error(data.message);
-        return data;
-      },
-    });
-
     return (
       <div className="relative">
         <button
-          onClick={() => mutate({ vote: value as "IN" | "OUT" | "SOLO" })}
-          disabled={isLoading}
+          type="button"
+          onClick={onClick}
+          disabled={isLoading || isDisabled}
           className={`
             w-full text-left relative overflow-hidden group py-4 px-4 rounded-xl border-2 
             transition-all duration-150 transform hover:scale-[1.01] active:scale-[0.99]
@@ -94,9 +85,35 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
                 </span>
               </div>
               {isLoading && (
-                <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin opacity-70"></div>
+                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
               )}
             </div>
+
+            {/* Right side - Recent voters avatars and count */}
+            {showResults && totalVoters > 0 && (
+              <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+                {/* Recent voter avatars */}
+                {recentVoters.length > 0 && (
+                  <div className="flex -space-x-2">
+                    {recentVoters.slice(0, 2).map((voter) => (
+                      <Avatar key={voter.id} className="w-6 h-6 border-2 border-white dark:border-gray-800">
+                        <AvatarImage
+                          src={voter.imageUrl || voter.characterImageUrl || ''}
+                          alt={voter.displayName || voter.userName || 'Voter'}
+                        />
+                        <AvatarFallback className="text-xs">
+                          <User className="w-3 h-3 text-gray-400" />
+                        </AvatarFallback>
+                      </Avatar>
+                    ))}
+                  </div>
+                )}
+                {/* Vote count */}
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  {totalVoters}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Enhanced progress bar with smooth animation */}

@@ -19,6 +19,7 @@ import { Button } from "../../ui/button";
 import { RefreshCwIcon, Users } from "lucide-react";
 import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
 import { TeamT } from "@/src/types/team";
+import { getDisplayName } from "@/src/utils/bgmiDisplay";
 
 type PlayerTeamInfo = {
   teamId: string;
@@ -83,7 +84,7 @@ export const SearchPlayerDialog = ({
 
     const searchLower = value.toLowerCase().trim();
     return allPlayers.filter((player) =>
-      player.user.userName.toLowerCase().includes(searchLower)
+      (player.user.displayName || player.user.userName).toLowerCase().includes(searchLower)
     );
   }, [allPlayers, value]);
 
@@ -94,7 +95,7 @@ export const SearchPlayerDialog = ({
 
   const handleSelectPlayer = (player: PlayerT) => {
     const teamInfo = playerTeamMap.get(player.id) || null;
-    onSelectPlayer(player.id, player.user.userName, teamInfo);
+    onSelectPlayer(player.id, getDisplayName(player.user.displayName, player.user.userName), teamInfo);
   };
 
   return (
@@ -137,7 +138,7 @@ export const SearchPlayerDialog = ({
                     onSelect={() => handleSelectPlayer(player)}
                     className="flex items-center justify-between"
                   >
-                    <span>{player.user.userName}</span>
+                    <span>{getDisplayName(player.user.displayName, player.user.userName)}</span>
                     {teamInfo && (
                       <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
                         <Users className="h-3 w-3" />

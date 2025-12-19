@@ -23,6 +23,7 @@ import { TeamT } from "@/src/types/team";
 import { usePlayers } from "@/src/hooks/player/usePlayers";
 import React from "react";
 import { toast } from "sonner";
+import { getDisplayName } from "@/src/utils/bgmiDisplay";
 import { useTournamentStore } from "@/src/store/tournament";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { LoaderFive } from "../../ui/loader";
@@ -259,7 +260,7 @@ export const AddPlayerToTeamDialog = ({
       if (movedPlayers.length > 0) {
         const playerNames = movedPlayers.map(([id]) => {
           const player = players?.find(p => p.id === id);
-          return player?.userName || 'Player';
+          return getDisplayName(player?.displayName, player?.userName) || 'Player';
         });
         const fromTeams = movedPlayers.map(([, info]) => info.teamName);
         const moveDetails = playerNames.map((name, i) => `${name} moved from ${fromTeams[i]}`).join(", ");
@@ -405,7 +406,7 @@ export const AddPlayerToTeamDialog = ({
                         <SelectContent>
                           {players?.map((p) => (
                             <SelectItem key={p.id} value={p.id}>
-                              {p.userName}
+                              {getDisplayName(p.displayName, p.userName)}
                             </SelectItem>
                           ))}
                         </SelectContent>

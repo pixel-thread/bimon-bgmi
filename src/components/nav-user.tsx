@@ -9,6 +9,7 @@ import {
 } from "@/src/components/ui/sidebar";
 import { useAuth } from "../hooks/context/auth/useAuth";
 import { UserButton } from "@clerk/nextjs";
+import { getDisplayName } from "@/src/utils/bgmiDisplay";
 
 export function NavUser() {
   const { user } = useAuth();
@@ -21,7 +22,7 @@ export function NavUser() {
         >
           <UserButton />
           <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-medium">{user?.userName}</span>
+            <span className="truncate font-medium">{getDisplayName(user?.displayName, user?.userName)}</span>
             <span className="truncate text-xs text-muted-foreground">
               {user?.email}
             </span>

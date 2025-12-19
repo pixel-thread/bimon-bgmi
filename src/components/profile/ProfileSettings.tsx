@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
@@ -11,52 +11,71 @@ import { Separator } from "@/src/components/ui/separator";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
-import { Loader2, User, Mail, Shield, AlertCircle, CheckCircle, Edit2 } from "lucide-react";
+import { Loader2, User, Mail, Shield, AlertCircle, CheckCircle, Edit2, Gamepad2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-
-type ProfileData = {
-    id: string;
-    userName: string;
-    email: string | null;
-    role: string;
-    isEmailLinked: boolean;
-    usernameLastChangeAt: string;
-};
 
 export function ProfileSettings() {
     const { user, refreshAuth } = useAuth();
     const queryClient = useQueryClient();
 
-    const [isEditing, setIsEditing] = useState(false);
+    // Username editing state
+    const [isEditingUsername, setIsEditingUsername] = useState(false);
     const [userName, setUserName] = useState("");
-    const [error, setError] = useState("");
+    const [userNameError, setUserNameError] = useState("");
 
-
+    // Display name editing state
+    const [isEditingDisplayName, setIsEditingDisplayName] = useState(false);
+    const [displayName, setDisplayName] = useState("");
+    const [displayNameError, setDisplayNameError] = useState("");
 
     // Update local state when user changes
     useEffect(() => {
         if (user?.userName) {
             setUserName(user.userName);
         }
-    }, [user?.userName]);
+        if (user?.displayName) {
+            setDisplayName(user.displayName);
+        }
+    }, [user?.userName, user?.displayName]);
 
-    const { mutate: updateProfile, isPending: isUpdating } = useMutation({
+    const { mutate: updateUsername, isPending: isUpdatingUsername } = useMutation({
         mutationFn: (data: { userName: string }) => http.patch("/profile", data),
         onSuccess: (response) => {
             if (response.success) {
-                toast.success(response.message || "Profile updated successfully!");
-                setIsEditing(false);
-                setError("");
-                refreshAuth(); // Refresh auth context to get updated user data
+                toast.success("Username updated successfully!");
+                setIsEditingUsername(false);
+                setUserNameError("");
+                refreshAuth();
                 queryClient.invalidateQueries({ queryKey: ["auth"] });
             } else {
-                setError(response.message || "Failed to update profile");
-                toast.error(response.message || "Failed to update profile");
+                setUserNameError(response.message || "Failed to update username");
+                toast.error(response.message || "Failed to update username");
             }
         },
         onError: (error: any) => {
-            const message = error?.response?.data?.message || "Failed to update profile";
-            setError(message);
+            const message = error?.response?.data?.message || "Failed to update username";
+            setUserNameError(message);
+            toast.error(message);
+        },
+    });
+
+    const { mutate: updateDisplayName, isPending: isUpdatingDisplayName } = useMutation({
+        mutationFn: (data: { displayName: string }) => http.patch("/profile", data),
+        onSuccess: (response) => {
+            if (response.success) {
+                toast.success("BGMI IGN updated successfully!");
+                setIsEditingDisplayName(false);
+                setDisplayNameError("");
+                refreshAuth();
+                queryClient.invalidateQueries({ queryKey: ["auth"] });
+            } else {
+                setDisplayNameError(response.message || "Failed to update IGN");
+                toast.error(response.message || "Failed to update IGN");
+            }
+        },
+        onError: (error: any) => {
+            const message = error?.response?.data?.message || "Failed to update IGN";
+            setDisplayNameError(message);
             toast.error(message);
         },
     });
@@ -74,26 +93,58 @@ export function ProfileSettings() {
         return "";
     };
 
-    const handleSave = () => {
+    const validateDisplayName = (value: string) => {
+        if (value.length < 2) {
+            return "IGN must be at least 2 characters";
+        }
+        if (value.length > 50) {
+            return "IGN must be at most 50 characters";
+        }
+        return "";
+    };
+
+    const handleSaveUsername = () => {
         const validationError = validateUsername(userName);
         if (validationError) {
-            setError(validationError);
+            setUserNameError(validationError);
             return;
         }
 
         if (userName === user?.userName) {
-            setError("This is already your current username");
+            setUserNameError("This is already your current username");
             return;
         }
 
-        setError("");
-        updateProfile({ userName });
+        setUserNameError("");
+        updateUsername({ userName });
     };
 
-    const handleCancel = () => {
+    const handleSaveDisplayName = () => {
+        const validationError = validateDisplayName(displayName);
+        if (validationError) {
+            setDisplayNameError(validationError);
+            return;
+        }
+
+        if (displayName === user?.displayName) {
+            setDisplayNameError("This is already your current IGN");
+            return;
+        }
+
+        setDisplayNameError("");
+        updateDisplayName({ displayName });
+    };
+
+    const handleCancelUsername = () => {
         setUserName(user?.userName || "");
-        setIsEditing(false);
-        setError("");
+        setIsEditingUsername(false);
+        setUserNameError("");
+    };
+
+    const handleCancelDisplayName = () => {
+        setDisplayName(user?.displayName || "");
+        setIsEditingDisplayName(false);
+        setDisplayNameError("");
     };
 
     const getRoleBadgeColor = (role: string) => {
@@ -119,21 +170,103 @@ export function ProfileSettings() {
                         Profile Information
                     </CardTitle>
                     <CardDescription>
-                        Manage your account details and username
+                        Manage your account details and usernames
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {/* Username Section */}
+                    {/* Display Name (BGMI IGN) Section */}
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <Label htmlFor="username" className="text-base font-medium">
-                                Username
+                            <Label htmlFor="displayName" className="text-base font-medium flex items-center gap-2">
+                                <Gamepad2 className="w-4 h-4" />
+                                BGMI IGN (Display Name)
                             </Label>
-                            {!isEditing && (
+                            {!isEditingDisplayName && (
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => setIsEditing(true)}
+                                    onClick={() => setIsEditingDisplayName(true)}
+                                    className="relative text-primary hover:text-primary/80"
+                                >
+                                    <Edit2 className="w-4 h-4 mr-1" />
+                                    Edit
+                                    {!user?.displayName && (
+                                        <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-blue-500 rounded-full animate-pulse border-2 border-white dark:border-zinc-900"></span>
+                                    )}
+                                </Button>
+                            )}
+                        </div>
+
+                        {isEditingDisplayName ? (
+                            <div className="space-y-3">
+                                <Input
+                                    id="displayName"
+                                    value={displayName}
+                                    onChange={(e) => {
+                                        setDisplayName(e.target.value);
+                                        setDisplayNameError("");
+                                    }}
+                                    placeholder="e.g. KŠツMeban"
+                                    className={displayNameError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                    disabled={isUpdatingDisplayName}
+                                />
+                                {displayNameError && (
+                                    <div className="flex items-center gap-2 text-sm text-red-600">
+                                        <AlertCircle className="w-4 h-4" />
+                                        {displayNameError}
+                                    </div>
+                                )}
+                                <p className="text-xs text-muted-foreground">
+                                    This is shown everywhere in the app. Special characters allowed (2-50 characters)
+                                </p>
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={handleSaveDisplayName}
+                                        disabled={isUpdatingDisplayName || !displayName.trim()}
+                                        size="sm"
+                                    >
+                                        {isUpdatingDisplayName ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle className="w-4 h-4 mr-2" />
+                                                Save
+                                            </>
+                                        )}
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleCancelDisplayName}
+                                        disabled={isUpdatingDisplayName}
+                                        size="sm"
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                <span className="font-medium">{user?.displayName || <span className="italic text-muted-foreground">Not set</span>}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <Separator />
+
+                    {/* Simple Username Section */}
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="username" className="text-base font-medium">
+                                System Username
+                            </Label>
+                            {!isEditingUsername && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setIsEditingUsername(true)}
                                     className="text-primary hover:text-primary/80"
                                 >
                                     <Edit2 className="w-4 h-4 mr-1" />
@@ -142,35 +275,35 @@ export function ProfileSettings() {
                             )}
                         </div>
 
-                        {isEditing ? (
+                        {isEditingUsername ? (
                             <div className="space-y-3">
                                 <Input
                                     id="username"
                                     value={userName}
                                     onChange={(e) => {
                                         setUserName(e.target.value);
-                                        setError("");
+                                        setUserNameError("");
                                     }}
                                     placeholder="Enter new username"
-                                    className={error ? "border-red-500 focus-visible:ring-red-500" : ""}
-                                    disabled={isUpdating}
+                                    className={userNameError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                    disabled={isUpdatingUsername}
                                 />
-                                {error && (
+                                {userNameError && (
                                     <div className="flex items-center gap-2 text-sm text-red-600">
                                         <AlertCircle className="w-4 h-4" />
-                                        {error}
+                                        {userNameError}
                                     </div>
                                 )}
                                 <p className="text-xs text-muted-foreground">
-                                    Username can only contain letters, numbers, and underscores (3-30 characters)
+                                    Letters, numbers, and underscores only (3-30 characters)
                                 </p>
                                 <div className="flex gap-2">
                                     <Button
-                                        onClick={handleSave}
-                                        disabled={isUpdating || !userName.trim()}
+                                        onClick={handleSaveUsername}
+                                        disabled={isUpdatingUsername || !userName.trim()}
                                         size="sm"
                                     >
-                                        {isUpdating ? (
+                                        {isUpdatingUsername ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                                 Saving...
@@ -178,14 +311,14 @@ export function ProfileSettings() {
                                         ) : (
                                             <>
                                                 <CheckCircle className="w-4 h-4 mr-2" />
-                                                Save Changes
+                                                Save
                                             </>
                                         )}
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        onClick={handleCancel}
-                                        disabled={isUpdating}
+                                        onClick={handleCancelUsername}
+                                        disabled={isUpdatingUsername}
                                         size="sm"
                                     >
                                         Cancel

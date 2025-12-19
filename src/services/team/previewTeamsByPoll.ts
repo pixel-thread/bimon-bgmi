@@ -20,6 +20,7 @@ type Props = {
 export type TeamPreviewPlayer = {
     id: string;
     userName: string;
+    displayName?: string | null;
     balance: number;
     kills: number;
     deaths: number;
@@ -150,7 +151,7 @@ export async function previewTeamsByPolls({
             if (balance < entryFee) {
                 playersWithInsufficientBalance.push({
                     id: p.id,
-                    userName: p.user.userName,
+                    userName: p.user.displayName || p.user.userName,
                     balance,
                 });
             }
@@ -274,6 +275,7 @@ export async function previewTeamsByPolls({
             return {
                 id: p.id,
                 userName: p.user.userName,
+                displayName: p.user.displayName,
                 balance: playerBalanceMap.get(p.id) ?? 0,
                 kills,
                 deaths,

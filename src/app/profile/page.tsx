@@ -18,6 +18,7 @@ import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { useUser } from "@clerk/nextjs";
 import { formatDistanceToNow } from "date-fns";
 import Image from "next/image";
+import { getDisplayName } from "@/src/utils/bgmiDisplay";
 
 type UCTransfer = {
     id: string;
@@ -26,9 +27,9 @@ type UCTransfer = {
     status: "PENDING" | "APPROVED" | "REJECTED" | "COMPLETED";
     message?: string;
     fromPlayerId: string;
-    fromPlayer: { user: { userName: string } };
+    fromPlayer: { user: { userName: string; displayName?: string | null } };
     toPlayerId: string;
-    toPlayer: { user: { userName: string } };
+    toPlayer: { user: { userName: string; displayName?: string | null } };
     createdAt: string;
 };
 
@@ -58,6 +59,9 @@ export default function ProfilePage() {
 
     // Loading state
     const isPageLoading = isAuthLoading || !isClerkLoaded;
+
+    // Check if displayName guide should be shown (no displayName set)
+    const showDisplayNameGuide = !user?.displayName && !!user;
 
     // Fetch player stats
     const { data: statsData, isLoading: statsLoading } = useQuery({
@@ -249,10 +253,12 @@ export default function ProfilePage() {
                     </div>
                 )}
                 <div>
-                    <h1 className="text-3xl font-bold">{user.userName}</h1>
+                    <h1 className="text-3xl font-bold">{getDisplayName(user.displayName, user.userName)}</h1>
+                    <p className="text-sm text-muted-foreground">@{user.userName}</p>
                     <p className="text-muted-foreground">{user.email || "No email linked"}</p>
                 </div>
             </div>
+
 
             <Tabs defaultValue="overview" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 max-w-md">
@@ -260,9 +266,12 @@ export default function ProfilePage() {
                         <User className="w-4 h-4" />
                         Overview
                     </TabsTrigger>
-                    <TabsTrigger value="account" className="flex items-center gap-2">
+                    <TabsTrigger value="account" className="relative flex items-center gap-2">
                         <Settings className="w-4 h-4" />
                         Account Settings
+                        {showDisplayNameGuide && (
+                            <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-blue-500 rounded-full animate-pulse border-2 border-white dark:border-zinc-900"></span>
+                        )}
                     </TabsTrigger>
                 </TabsList>
 
@@ -363,7 +372,7 @@ export default function ProfilePage() {
                                     >
                                         <div>
                                             <p className="font-medium">
-                                                <span className="text-blue-600">{request.fromPlayer.user.userName}</span>
+                                                <span className="text-blue-600">{getDisplayName(request.fromPlayer.user.displayName, request.fromPlayer.user.userName)}</span>
                                                 {" "}requested{" "}
                                                 <span className="font-bold text-green-600">{request.amount} UC</span>
                                             </p>
@@ -486,12 +495,12 @@ export default function ProfilePage() {
                                                         {transfer.fromPlayerId === playerId ? (
                                                             <>
                                                                 {transfer.type === "SEND" ? "Sent to" : "Requested from"}{" "}
-                                                                <span className="text-blue-600">{transfer.toPlayer.user.userName}</span>
+                                                                <span className="text-blue-600">{getDisplayName(transfer.toPlayer.user.displayName, transfer.toPlayer.user.userName)}</span>
                                                             </>
                                                         ) : (
                                                             <>
                                                                 {transfer.type === "SEND" ? "Received from" : "Request from"}{" "}
-                                                                <span className="text-blue-600">{transfer.fromPlayer.user.userName}</span>
+                                                                <span className="text-blue-600">{getDisplayName(transfer.fromPlayer.user.displayName, transfer.fromPlayer.user.userName)}</span>
                                                             </>
                                                         )}
                                                     </p>

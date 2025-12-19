@@ -21,6 +21,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
+import { getDisplayName } from "@/src/utils/bgmiDisplay";
 
 interface BalanceAdjustmentDialogProps {
   isOpen: boolean;
@@ -94,7 +95,7 @@ export function BalanceAdjustmentDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Wallet className="w-5 h-5" />
-            Adjust Balance - {player?.user.userName}
+            Adjust Balance - {getDisplayName(player?.user.displayName, player?.user.userName)}
           </DialogTitle>
         </DialogHeader>
 
