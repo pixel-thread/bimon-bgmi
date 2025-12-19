@@ -118,7 +118,7 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
                         className={`w-6 h-6 border-2 border-white dark:border-gray-800 ${index === 0 ? 'z-10' : 'z-0'}`}
                       >
                         <AvatarImage
-                          src={voter.imageUrl || voter.characterImageUrl || ''}
+                          src={voter.characterImageUrl || voter.imageUrl || ''}
                           alt={voter.displayName || voter.userName || 'Voter'}
                         />
                         <AvatarFallback className="text-xs">

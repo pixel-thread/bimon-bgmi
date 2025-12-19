@@ -25,6 +25,7 @@ import { VotersListSkeleton, VotersSkeleton } from "./VotersSkeleton";
 
 import { PollT } from "@/src/types/poll";
 import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getPollTheme, calculateParticipantCount } from "./pollTheme";
 
 type VotersDialogsProps = {
   isOpen: boolean;
@@ -79,12 +80,16 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
       percentage: Math.round((vc.count / maxVoteCount) * 100),
     }));
 
+    // Calculate theme based on participant count
+    const participantCount = calculateParticipantCount(pollVoters as { vote: string }[] | undefined);
+    const theme = getPollTheme(participantCount);
+
     return (
       <Dialog open={isOpen} onOpenChange={() => onClose()}>
-        <DialogContent className="sm:max-w-lg mx-2 sm:mx-0">
+        <DialogContent className={`sm:max-w-lg mx-2 sm:mx-0 ${theme ? `border-2 ${theme.dialogBorder}` : ''}`}>
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${theme ? theme.dialogIcon : 'bg-blue-500'}`}>
                 <FiUsers className="w-4 h-4 text-white" />
               </div>
               <div>{pollQuestion}</div>
@@ -103,7 +108,7 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                   poll?.options?.map((option, index) => (
                     <div className="space-y-2 grid" key={index}>
                       {!selectedGroup && (
-                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <div className={`border rounded-lg p-4 ${theme ? theme.dialogBorder : 'border-gray-200 dark:border-gray-700'}`}>
                           <div className="flex items-center space-x-2 justify-between mb-3">
                             <div>
                               <h4 className="font-medium text-gray-900 dark:text-white">
@@ -117,13 +122,10 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                               </span>
                             </div>
                           </div>
-                          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full mb-3">
-                            <Progress
-                              value={
-                                votePercentages.find(
-                                  (val) => val.vote === option.vote,
-                                )?.percentage
-                              }
+                          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full mb-3 overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-300 rounded-full ${theme ? theme.progressBar : 'bg-blue-500'}`}
+                              style={{ width: `${votePercentages.find((val) => val.vote === option.vote)?.percentage || 0}%` }}
                             />
                           </div>
                           <div className="flex justify-end">
@@ -131,7 +133,7 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                               displayLimit && (
                                 <button
                                   onClick={() => setSelectedGroup(option.vote)}
-                                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+                                  className={`text-sm font-medium ${theme ? theme.button : 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300'}`}
                                 >
                                   See all {filterPollVote(option.vote).length}{" "}
                                   voters
@@ -147,14 +149,14 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                           <Ternary
                             condition={selectedGroup === option.vote}
                             trueComponent={
-                              <div className="border border-gray-200  dark:border-gray-700 rounded-lg p-4">
+                              <div className={`border rounded-lg p-4 ${theme ? theme.dialogBorder : 'border-gray-200 dark:border-gray-700'}`}>
                                 <div className="flex items-center justify-between mb-4">
                                   <h4 className="font-medium text-gray-900 dark:text-white">
                                     Voters for &quot;{option.name}&quot;
                                   </h4>
                                   <button
                                     onClick={() => setSelectedGroup(null)}
-                                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                                    className={`text-sm ${theme ? theme.button : 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300'}`}
                                   >
                                     ← Back
                                   </button>
@@ -167,13 +169,13 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                                     filterPollVote(option.vote)?.map((vote) => (
                                       <div
                                         key={vote.id}
-                                        className="flex items-center space-x-3 p-3 rounded-lg bg-white dark:bg-gray-700"
+                                        className={`flex items-center space-x-3 p-3 rounded-lg ${theme ? theme.voterCard : 'bg-white dark:bg-gray-700'}`}
                                       >
                                         <Avatar>
                                           <AvatarImage
                                             src={
-                                              (vote.player as any)?.imageUrl ||
                                               vote.player?.characterImage?.publicUrl ||
+                                              (vote.player as any)?.imageUrl ||
                                               ''
                                             }
                                             alt={vote.playerId}
@@ -216,7 +218,7 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                                     >
                                       <Avatar>
                                         <AvatarImage
-                                          src={(vote.player as any)?.imageUrl || vote.player?.characterImage?.publicUrl || ''}
+                                          src={vote.player?.characterImage?.publicUrl || (vote.player as any)?.imageUrl || ''}
                                           alt={vote.playerId}
                                         />
                                         <AvatarFallback>
@@ -239,7 +241,12 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
           </div>
 
           <DialogFooter>
-            <Button onClick={() => onClose()}>Close</Button>
+            <Button
+              onClick={() => onClose()}
+              className={theme ? `${theme.dialogIcon} hover:opacity-90` : ''}
+            >
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -248,4 +255,3 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
 );
 
 VotersDialog.displayName = "VotersDialog";
-
