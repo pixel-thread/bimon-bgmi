@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
       where: { isActive: true },
       include: {
         options: true,
+        tournament: true,
         playersVotes: {
           include: { player: { include: { user: true, characterImage: true } } },
         },

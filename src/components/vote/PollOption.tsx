@@ -13,6 +13,11 @@ type RecentVoter = {
   userName?: string;
 };
 
+type ThemeColors = {
+  optionSelected: { border: string; bg: string; text: string; radio: string };
+  optionUnselected: { border: string; radio: string };
+} | null;
+
 export interface PollOptionProps {
   option: string;
   isSelected: boolean;
@@ -23,6 +28,8 @@ export interface PollOptionProps {
   totalVotes?: number;
   showAvatars?: boolean;
   recentVoters?: RecentVoter[];
+  hasPrizePool?: boolean;
+  theme?: ThemeColors;
   onClick: () => void;
 }
 
@@ -36,6 +43,8 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
     totalVotes = 0,
     totalVoters = 0,
     recentVoters = [],
+    hasPrizePool = false,
+    theme,
     onClick,
   }) => {
     return (
@@ -48,8 +57,16 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
             w-full text-left relative overflow-hidden group py-4 px-4 rounded-xl border-2 
             transition-all duration-150 transform hover:scale-[1.01] active:scale-[0.99]
             ${isSelected
-              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md"
-              : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm"
+              ? theme
+                ? `${theme.optionSelected.border} ${theme.optionSelected.bg} shadow-md`
+                : hasPrizePool
+                  ? "border-amber-500 bg-amber-50 dark:bg-amber-900/20 shadow-md"
+                  : "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md"
+              : theme
+                ? `${theme.optionUnselected.border} bg-white dark:bg-gray-800 hover:shadow-sm`
+                : hasPrizePool
+                  ? "border-amber-200 dark:border-amber-700 bg-white dark:bg-gray-800 hover:border-amber-400 dark:hover:border-amber-500 hover:shadow-sm"
+                  : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm"
             }
             ${isLoading ? "cursor-wait opacity-80" : "cursor-pointer"}
             ${isDisabled ? "opacity-60 cursor-not-allowed" : ""}
@@ -62,8 +79,8 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
                 className={`
                   w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 flex-shrink-0
                   ${isSelected
-                    ? "border-blue-500 bg-blue-500 shadow-sm"
-                    : "border-gray-300 dark:border-gray-600 group-hover:border-blue-400"
+                    ? theme ? theme.optionSelected.radio + ' shadow-sm' : hasPrizePool ? "border-amber-500 bg-amber-500 shadow-sm" : "border-blue-500 bg-blue-500 shadow-sm"
+                    : theme ? theme.optionUnselected.radio : hasPrizePool ? "border-amber-300 dark:border-amber-600 group-hover:border-amber-400" : "border-gray-300 dark:border-gray-600 group-hover:border-blue-400"
                   }
                 `}
               >
@@ -76,7 +93,7 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
                   className={`
                   font-medium text-base truncate block
                   ${isSelected
-                      ? "text-blue-700 dark:text-blue-300"
+                      ? theme ? theme.optionSelected.text : hasPrizePool ? "text-amber-700 dark:text-amber-300" : "text-blue-700 dark:text-blue-300"
                       : "text-gray-900 dark:text-white"
                     }
                 `}
@@ -85,7 +102,7 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
                 </span>
               </div>
               {isLoading && (
-                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <div className={`w-4 h-4 border-2 ${hasPrizePool ? 'border-amber-600' : 'border-blue-600'} border-t-transparent rounded-full animate-spin`}></div>
               )}
             </div>
 
