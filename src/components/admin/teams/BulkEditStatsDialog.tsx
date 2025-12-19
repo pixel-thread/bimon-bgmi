@@ -33,6 +33,7 @@ type EditableTeamStats = {
     players: {
         playerId: string;
         name: string;
+        displayName: string | null;
         kills: string | number;
         isAbsent: boolean; // True if player was NOT found in AI JSON (absent from match)
     }[];
@@ -95,6 +96,7 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                         return {
                             playerId: player.id,
                             name: player.name,
+                            displayName: player.displayName ?? null,
                             kills: playerStats?.kills === 0 ? "" : (playerStats?.kills ?? ""),
                             isAbsent: wasAbsent,
                         };
@@ -152,10 +154,13 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                 name: team.name,
                 position: "" as string | number,
                 players: team.players.map((player) => {
-                    // Find matching player in JSON data
-                    const match = data.find(d =>
-                        d.name.toLowerCase() === player.name.toLowerCase()
-                    );
+                    // Find matching player in JSON data - try displayName first, then userName
+                    const displayNameLower = (player.displayName || "").toLowerCase();
+                    const nameLower = player.name.toLowerCase();
+                    const match = data.find(d => {
+                        const jsonNameLower = d.name.toLowerCase();
+                        return jsonNameLower === displayNameLower || jsonNameLower === nameLower;
+                    });
 
                     // Determine if player is absent (not in JSON or kills is null)
                     const isAbsent = !match || match.kills === null;
@@ -173,6 +178,7 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                     return {
                         playerId: player.id,
                         name: player.name,
+                        displayName: player.displayName ?? null,
                         kills: (!isAbsent && match) ? String(match.kills) : ("" as string | number),
                         isAbsent,
                     };
@@ -210,15 +216,22 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
         const totalTeams = teams.length;
         const totalPlayers = teams.reduce((acc, t) => acc + t.players.length, 0);
 
+        // Build player list with displayName for better scoreboard matching
+        const playerList = teams.flatMap(t => t.players.map(p => {
+            const displayName = p.displayName || p.name;
+            // If displayName differs from name, show both for context
+            return displayName !== p.name ? `${displayName} (userName: ${p.name})` : p.name;
+        }));
+
         const prompt = `Extract player names, kills (finishes), and team positions from this BGMI scoreboard.
 
-Player names to match (USE THESE EXACT NAMES in output): 
-${teams.flatMap(t => t.players.map(p => p.name)).join(", ")}
+Player names to match (USE THESE EXACT NAMES in output - use displayName if provided): 
+${playerList.join(", ")}
 
 Total: ${totalTeams} teams, ${totalPlayers} players
 
 Teams and their players:
-${teams.map(t => `- ${t.name}: ${t.players.map(p => p.name).join(", ")}`).join("\n")}
+${teams.map(t => `- ${t.name}: ${t.players.map(p => p.displayName || p.name).join(", ")}`).join("\n")}
 
 IMPORTANT:
 - Return ALL ${totalPlayers} players from my list in the JSON
@@ -367,10 +380,13 @@ Players absent: X (list names)
                                         <div className="flex items-center gap-2 sm:gap-3 mb-2">
                                             <span className="font-medium text-sm truncate flex-1">
                                                 {(() => {
-                                                    // Get absent player names (lowercase for matching)
+                                                    // Get absent player names (lowercase for matching) - use both displayName and userName
                                                     const absentNames = team.players
                                                         .filter(p => p.isAbsent)
-                                                        .map(p => p.name.toLowerCase());
+                                                        .flatMap(p => [
+                                                            (p.displayName || '').toLowerCase(),
+                                                            p.name.toLowerCase()
+                                                        ].filter(Boolean));
 
                                                     if (absentNames.length === 0) {
                                                         return team.name;
@@ -424,9 +440,9 @@ Players absent: X (list names)
                                                             ? "text-red-600 dark:text-red-400 font-medium"
                                                             : ""
                                                             }`}
-                                                        title={getDisplayName(player.name, player.name)}
+                                                        title={player.displayName || player.name}
                                                     >
-                                                        {getDisplayName(player.name, player.name)}
+                                                        {player.displayName || player.name}
                                                     </span>
                                                     <Input
                                                         type="number"
