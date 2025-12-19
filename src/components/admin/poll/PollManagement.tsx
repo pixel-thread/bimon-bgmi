@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/src/components/ui/button";
 import {
   DropdownMenu,
@@ -23,9 +23,24 @@ import { PollCard } from "./PollCard";
 import { PollTeamsPreviewDialog } from "./PollTeamsPreviewDialog";
 import type { PreviewTeamsByPollsResult } from "@/src/services/team/previewTeamsByPoll";
 import { ADMIN_TEAM_ENDPOINTS } from "@/src/lib/endpoints/admin/team";
+import { ADMIN_JOB_ENDPOINTS } from "@/src/lib/endpoints/admin/job";
 import { toast } from "sonner";
 import { PollT } from "@/src/types/poll";
 import { Badge } from "@/src/components/ui/badge";
+
+type JobStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+
+interface JobResponse {
+  id: string;
+  status: JobStatus;
+  progress: string | null;
+  error: string | null;
+  result: {
+    teamsCreated?: number;
+    entryFeeCharged?: number;
+    playersExcluded?: number;
+  } | null;
+}
 
 const PollManagement: React.FC = () => {
   const queryClient = useQueryClient();
@@ -44,6 +59,13 @@ const PollManagement: React.FC = () => {
   const [previewData, setPreviewData] = useState<PreviewTeamsByPollsResult | null>(null);
   const [selectedPollId, setSelectedPollId] = useState<string | null>(null);
   const [selectedTeamSize, setSelectedTeamSize] = useState<number>(2);
+
+  // Job tracking state
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
+  const [jobProgress, setJobProgress] = useState<string | null>(null);
+  const [jobError, setJobError] = useState<string | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const adminFilterLabels = {
     active: "Active Polls",
@@ -119,7 +141,7 @@ const PollManagement: React.FC = () => {
 
   const { mutate: createTeams, isPending: isCreating } = useMutation({
     mutationFn: ({ id, size, previewTeams }: { id: string; size: number; previewTeams?: { teamNumber: number; playerIds: string[] }[] }) =>
-      http.post<PollT>(
+      http.post<{ jobId: string }>(
         ADMIN_TEAM_ENDPOINTS.POST_CREATE_TEAM_BY_POLL.replace(
           ":size",
           size.toString(),
@@ -127,33 +149,94 @@ const PollManagement: React.FC = () => {
         { pollId: id, previewTeams },
       ),
     onSuccess: (data) => {
-      if (data.success) {
-        toast.success(data.message);
-        // Force refetch ALL queries with these prefixes to ensure /teams page updates
-        queryClient.invalidateQueries({ queryKey: ["polls"], refetchType: "all" });
-        queryClient.invalidateQueries({ queryKey: ["teams"], refetchType: "all" });
-        queryClient.invalidateQueries({ queryKey: ["match"], refetchType: "all" });
-        queryClient.invalidateQueries({ queryKey: ["matches"], refetchType: "all" });
-        setPreviewDialogOpen(false);
-        setPreviewData(null);
-        setSelectedPollId(null);
+      if (data.success && data.data?.jobId) {
+        // Start polling for job status
+        setJobId(data.data.jobId);
+        setJobStatus("PENDING");
+        setJobProgress("Starting...");
+        setJobError(null);
+        startPolling(data.data.jobId);
       } else {
-        // Show warning for timeout, error for other failures
-        if (data.message?.includes("timed out")) {
-          toast.warning(data.message);
-        } else {
-          toast.error(data.message);
-        }
+        toast.error(data.message || "Failed to start team creation");
       }
     },
     onError: (error: Error) => {
-      if (error.message?.includes("timed out")) {
-        toast.warning(error.message);
-      } else {
-        toast.error(error.message || "Failed to create teams");
-      }
+      toast.error(error.message || "Failed to create teams");
     },
   });
+
+  // Polling function for job status
+  const startPolling = (id: string) => {
+    // Clear any existing interval
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    const pollJobStatus = async () => {
+      try {
+        const response = await http.get<JobResponse>(
+          ADMIN_JOB_ENDPOINTS.GET_JOB_STATUS.replace(":id", id)
+        );
+
+        if (response.success && response.data) {
+          const job = response.data;
+          setJobStatus(job.status);
+          setJobProgress(job.progress);
+
+          if (job.status === "COMPLETED") {
+            // Job completed successfully
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+            toast.success(`Teams created successfully! (${job.result?.teamsCreated || 0} teams)`);
+            // Force refetch queries
+            queryClient.invalidateQueries({ queryKey: ["polls"], refetchType: "all" });
+            queryClient.invalidateQueries({ queryKey: ["teams"], refetchType: "all" });
+            queryClient.invalidateQueries({ queryKey: ["match"], refetchType: "all" });
+            queryClient.invalidateQueries({ queryKey: ["matches"], refetchType: "all" });
+            // Close dialog after a short delay to show success
+            setTimeout(() => {
+              setPreviewDialogOpen(false);
+              setPreviewData(null);
+              setSelectedPollId(null);
+              resetJobState();
+            }, 1500);
+          } else if (job.status === "FAILED") {
+            // Job failed
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+            setJobError(job.error || "Unknown error occurred");
+            toast.error(job.error || "Failed to create teams");
+          }
+        }
+      } catch (error) {
+        console.error("Error polling job status:", error);
+      }
+    };
+
+    // Poll immediately, then every 2 seconds
+    pollJobStatus();
+    pollingIntervalRef.current = setInterval(pollJobStatus, 2000);
+  };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const resetJobState = () => {
+    setJobId(null);
+    setJobStatus(null);
+    setJobProgress(null);
+    setJobError(null);
+  };
 
   const handlePreviewClick = (pollId: string, size: number) => {
     setSelectedPollId(pollId);
@@ -352,14 +435,23 @@ const PollManagement: React.FC = () => {
           if (!open) {
             setPreviewData(null);
             setSelectedPollId(null);
+            resetJobState();
+            // Clear polling if dialog is closed
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
           }
         }}
         previewData={previewData}
         isLoading={isPreviewLoading}
-        isConfirming={isCreating}
+        isConfirming={isCreating || jobStatus === "PENDING" || jobStatus === "PROCESSING"}
         onConfirm={handleConfirm}
         onRegenerate={handleRegenerate}
         teamSize={selectedTeamSize}
+        jobStatus={jobStatus}
+        jobProgress={jobProgress}
+        jobError={jobError}
       />
     </div>
   );

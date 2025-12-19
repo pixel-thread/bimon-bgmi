@@ -10,9 +10,11 @@ import {
 } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
-import { Loader2, AlertTriangle, Users, Coins, Trophy, RefreshCw } from "lucide-react";
+import { Loader2, AlertTriangle, Users, Coins, Trophy, RefreshCw, CheckCircle2 } from "lucide-react";
 import type { PreviewTeamsByPollsResult, TeamPreview } from "@/src/services/team/previewTeamsByPoll";
 import { getDisplayName } from "@/src/utils/bgmiDisplay";
+
+type JobStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
 
 interface PollTeamsPreviewDialogProps {
     open: boolean;
@@ -23,6 +25,10 @@ interface PollTeamsPreviewDialogProps {
     onConfirm: () => void;
     onRegenerate?: () => void;
     teamSize: number;
+    // Job status props
+    jobStatus?: JobStatus | null;
+    jobProgress?: string | null;
+    jobError?: string | null;
 }
 
 function getKDColor(kd: number): string {
@@ -92,6 +98,9 @@ export function PollTeamsPreviewDialog({
     onConfirm,
     onRegenerate,
     teamSize,
+    jobStatus,
+    jobProgress,
+    jobError,
 }: PollTeamsPreviewDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -198,13 +207,28 @@ export function PollTeamsPreviewDialog({
                     )}
                     <Button
                         onClick={onConfirm}
-                        disabled={isLoading || isConfirming || !previewData}
-                        className="flex-1 h-10 sm:h-9 text-sm bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white border-0"
+                        disabled={isLoading || isConfirming || !previewData || jobStatus === "COMPLETED"}
+                        className={`flex-1 h-10 sm:h-9 text-sm border-0 ${jobStatus === "COMPLETED"
+                                ? "bg-green-500 hover:bg-green-500"
+                                : jobStatus === "FAILED"
+                                    ? "bg-red-600 hover:bg-red-700"
+                                    : "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+                            } text-white`}
                     >
-                        {isConfirming ? (
+                        {jobStatus === "COMPLETED" ? (
+                            <>
+                                <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+                                Created!
+                            </>
+                        ) : jobStatus === "FAILED" ? (
+                            <>
+                                <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
+                                Failed - Retry
+                            </>
+                        ) : isConfirming ? (
                             <>
                                 <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                                Creating...
+                                {jobProgress || "Creating..."}
                             </>
                         ) : (
                             <>

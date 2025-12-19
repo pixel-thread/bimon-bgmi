@@ -65,6 +65,17 @@ enum UCTransferType {
   SEND
 }
 
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum JobType {
+  CREATE_TEAMS_BY_POLL
+}
+
 /**
  * --------------------------
  * MODELS
@@ -551,4 +562,27 @@ model RecentMatchImage {
 
   @@index([groupId])
   @@index([matchNumber])
+}
+
+model Job {
+  id          String    @id @default(uuid())
+  type        JobType
+  status      JobStatus @default(PENDING)
+  progress    String?   // e.g., "Creating teams...", "Deducting UC..."
+  result      Json?     // Store result data (team IDs, etc.)
+  error       String?   // Error message if failed
+
+  // Reference to the poll being processed
+  pollId      String?
+
+  // Metadata
+  createdBy   String    // Admin who triggered it
+  createdAt   DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  @@index([pollId])
+  @@index([status])
+  @@index([type])
 }
