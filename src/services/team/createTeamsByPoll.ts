@@ -1,8 +1,9 @@
 import { prisma } from "@/src/lib/db/prisma";
 import { shuffle } from "@/src/utils/shuffle";
 import {
-  assignPlayersToTeamsBalanced,
   createBalancedDuos,
+  createBalancedTrios,
+  createBalancedQuads,
   analyzeTeamBalance,
   TeamStats,
 } from "@/src/utils/teamBalancer";
@@ -183,12 +184,10 @@ export async function createTeamsByPolls({
     if (teamCount > 0) {
       if (groupSize === 2) {
         teams = createBalancedDuos(playersForTeams, seasonId);
-      } else {
-        teams = assignPlayersToTeamsBalanced(
-          playersForTeams,
-          teamCount,
-          groupSize,
-        );
+      } else if (groupSize === 3) {
+        teams = createBalancedTrios(playersForTeams, seasonId);
+      } else if (groupSize === 4) {
+        teams = createBalancedQuads(playersForTeams, seasonId);
       }
     }
 

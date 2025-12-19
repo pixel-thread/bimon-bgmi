@@ -1,8 +1,9 @@
 import { prisma } from "@/src/lib/db/prisma";
 import { shuffle } from "@/src/utils/shuffle";
 import {
-    assignPlayersToTeamsBalanced,
     createBalancedDuos,
+    createBalancedTrios,
+    createBalancedQuads,
     analyzeTeamBalance,
     TeamStats,
 } from "@/src/utils/teamBalancer";
@@ -226,19 +227,18 @@ export async function previewTeamsByPolls({
         throw new Error("Not enough players to form teams.");
     }
 
-    // Use duo pair optimization for groupSize 2, snake draft otherwise
+    // Use balanced team creation for all modes - pair players from different skill tiers
     let teams: TeamStats[] = [];
     if (teamCount > 0) {
         if (groupSize === 2) {
             // Duo mode: pair strongest with weakest for balanced teams
             teams = createBalancedDuos(playersForTeams as unknown as PlayerWithWeightT[], seasonId);
-        } else {
-            // Squad/Solo mode: use snake draft
-            teams = assignPlayersToTeamsBalanced(
-                playersForTeams as unknown as PlayerWithWeightT[],
-                teamCount,
-                groupSize,
-            );
+        } else if (groupSize === 3) {
+            // Trio mode: combine one from each of 3 skill tiers
+            teams = createBalancedTrios(playersForTeams as unknown as PlayerWithWeightT[], seasonId);
+        } else if (groupSize === 4) {
+            // Quad mode: combine one from each of 4 skill tiers
+            teams = createBalancedQuads(playersForTeams as unknown as PlayerWithWeightT[], seasonId);
         }
     }
 
