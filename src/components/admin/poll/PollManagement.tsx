@@ -185,12 +185,13 @@ const PollManagement: React.FC = () => {
           setJobProgress(job.progress);
 
           if (job.status === "COMPLETED") {
-            // Job completed successfully
+            // Job completed successfully - only show toast if not already completed
             if (pollingIntervalRef.current) {
               clearInterval(pollingIntervalRef.current);
               pollingIntervalRef.current = null;
+              // Only show toast when we first detect completion (interval was active)
+              toast.success(`Teams created successfully! (${job.result?.teamsCreated || 0} teams)`);
             }
-            toast.success(`Teams created successfully! (${job.result?.teamsCreated || 0} teams)`);
             // Force refetch queries
             queryClient.invalidateQueries({ queryKey: ["polls"], refetchType: "all" });
             queryClient.invalidateQueries({ queryKey: ["teams"], refetchType: "all" });

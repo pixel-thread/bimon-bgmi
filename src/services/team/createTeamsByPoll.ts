@@ -30,6 +30,21 @@ export type CreateTeamsByPollsResult = {
   entryFeeCharged: number;
 };
 
+// Helper to process promises in batches to avoid overwhelming PgBouncer
+async function processBatches<T, R>(
+  items: T[],
+  batchSize: number,
+  processor: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const batchResults = await Promise.all(batch.map(processor));
+    results.push(...batchResults);
+  }
+  return results;
+}
+
 export async function createTeamsByPolls({
   groupSize,
   pollId,
@@ -212,6 +227,9 @@ export async function createTeamsByPolls({
     teams = shuffle(teams);
   }
 
+  // Batch size for parallel operations - keep low for PgBouncer compatibility
+  const BATCH_SIZE = 5;
+
   // Persist all in a transaction atomically
   const createdTeams = await prisma.$transaction(
     async (tx) => {
@@ -223,33 +241,36 @@ export async function createTeamsByPolls({
         },
       });
 
-      // Phase 1: Create all teams in parallel
-      const teamCreatePromises = teams.map((t, i) =>
-        tx.team.create({
-          data: {
-            name: `Team ${i + 1}`,
-            teamNumber: i + 1,
-            tournamentId,
-            seasonId,
-            players: { connect: t.players.map((p) => ({ id: p.id })) },
-            matches: { connect: { id: match.id } },
-          },
-          include: { players: true },
-        })
-      );
-      const createdTeamsArray = await Promise.all(teamCreatePromises);
-      const createdTeamData = createdTeamsArray.map((team, i) => ({
-        team,
-        originalTeam: teams[i],
-      }));
+      // Phase 1: Create teams in batches (not all at once to avoid PgBouncer issues)
+      const createdTeamData: { team: Awaited<ReturnType<typeof tx.team.create>>, originalTeam: TeamStats }[] = [];
 
-      // Phase 2, 4, 5: Run TeamStats creation, PlayerStats upserts, and UC debits in parallel
-      // These operations are independent of each other
-      const allPlayers = teams.flatMap((t) => t.players);
+      for (let i = 0; i < teams.length; i += BATCH_SIZE) {
+        const batch = teams.slice(i, i + BATCH_SIZE);
+        const batchPromises = batch.map((t, batchIdx) => {
+          const teamIdx = i + batchIdx;
+          return tx.team.create({
+            data: {
+              name: `Team ${teamIdx + 1}`,
+              teamNumber: teamIdx + 1,
+              tournamentId,
+              seasonId,
+              players: { connect: t.players.map((p) => ({ id: p.id })) },
+              matches: { connect: { id: match.id } },
+            },
+            include: { players: true },
+          });
+        });
+        const batchResults = await Promise.all(batchPromises);
+        batchResults.forEach((team, batchIdx) => {
+          createdTeamData.push({ team, originalTeam: batch[batchIdx] });
+        });
+      }
 
-      // Prepare TeamStats creation promises
-      const teamStatPromises = createdTeamData.map(({ team }) =>
-        tx.teamStats.create({
+      // Phase 2: Create TeamStats in batches
+      const teamStats = await processBatches(
+        createdTeamData,
+        BATCH_SIZE,
+        ({ team }) => tx.teamStats.create({
           data: {
             teamId: team.id,
             matchId: match.id,
@@ -259,9 +280,13 @@ export async function createTeamsByPolls({
         })
       );
 
-      // Prepare PlayerStats upsert promises
-      const playerStatsPromises = allPlayers.map((player) =>
-        tx.playerStats.upsert({
+      const allPlayers = teams.flatMap((t) => t.players);
+
+      // Phase 3: Upsert PlayerStats in batches
+      await processBatches(
+        allPlayers,
+        BATCH_SIZE,
+        (player) => tx.playerStats.upsert({
           where: {
             seasonId_playerId: {
               playerId: player.id,
@@ -278,50 +303,41 @@ export async function createTeamsByPolls({
         })
       );
 
-      // Prepare UC debit promises (if entry fee exists)
-      const ucPromises: Promise<unknown>[] = [];
+      // Phase 4: Debit UC from non-exempt players
       if (entryFee > 0) {
         const playersToCharge = allPlayers.filter((player) => !player.isUCExempt);
+
         if (playersToCharge.length > 0) {
-          // Transaction history - use createMany for bulk insert
-          ucPromises.push(
-            tx.transaction.createMany({
-              data: playersToCharge.map((player) => ({
-                amount: entryFee,
-                type: "debit",
-                description: `Entry fee for ${tournamentName}`,
-                playerId: player.id,
-              })),
+          // Record transaction history in bulk
+          await tx.transaction.createMany({
+            data: playersToCharge.map((player) => ({
+              amount: entryFee,
+              type: "debit",
+              description: `Entry fee for ${tournamentName}`,
+              playerId: player.id,
+            })),
+          });
+
+          // UC decrements in batches
+          await processBatches(
+            playersToCharge,
+            BATCH_SIZE,
+            (player) => tx.uC.upsert({
+              where: { playerId: player.id },
+              create: {
+                balance: -entryFee,
+                player: { connect: { id: player.id } },
+                user: { connect: { id: player.userId } },
+              },
+              update: {
+                balance: { decrement: entryFee },
+              },
             })
           );
-
-          // UC decrements
-          for (const player of playersToCharge) {
-            ucPromises.push(
-              tx.uC.upsert({
-                where: { playerId: player.id },
-                create: {
-                  balance: -entryFee,
-                  player: { connect: { id: player.id } },
-                  user: { connect: { id: player.userId } },
-                },
-                update: {
-                  balance: { decrement: entryFee },
-                },
-              })
-            );
-          }
         }
       }
 
-      // Execute all phases in parallel
-      const [teamStats] = await Promise.all([
-        Promise.all(teamStatPromises),
-        Promise.all(playerStatsPromises),
-        Promise.all(ucPromises),
-      ]);
-
-      // Phase 6 & 7: Create MatchPlayerPlayed entries AND connect players to match/teamStats in parallel
+      // Phase 5: Create MatchPlayerPlayed entries (bulk insert - efficient)
       const matchPlayerPlayedData: {
         matchId: string;
         playerId: string;
@@ -330,13 +346,7 @@ export async function createTeamsByPolls({
         teamId: string;
       }[] = [];
 
-      const phase7Promises: Promise<unknown>[] = [];
-
-      for (let i = 0; i < createdTeamData.length; i++) {
-        const { team, originalTeam } = createdTeamData[i];
-        const teamStat = teamStats[i];
-
-        // Prepare MatchPlayerPlayed data
+      for (const { team, originalTeam } of createdTeamData) {
         for (const player of originalTeam.players) {
           matchPlayerPlayedData.push({
             matchId: match.id,
@@ -346,41 +356,52 @@ export async function createTeamsByPolls({
             teamId: team.id,
           });
         }
+      }
 
-        // Connect teamStats to players
-        phase7Promises.push(
-          tx.teamStats.update({
-            where: { id: teamStat.id },
-            data: {
-              players: { connect: originalTeam.players.map((p) => ({ id: p.id })) },
-            },
-          })
-        );
+      await tx.matchPlayerPlayed.createMany({
+        data: matchPlayerPlayedData,
+      });
 
-        // Connect each player to the match
-        for (const player of originalTeam.players) {
-          phase7Promises.push(
-            tx.player.update({
-              where: { id: player.id },
+      // Phase 6: Connect teamStats to players and players to match in batches
+      for (let i = 0; i < createdTeamData.length; i += BATCH_SIZE) {
+        const batchEnd = Math.min(i + BATCH_SIZE, createdTeamData.length);
+        const batchPromises: Promise<unknown>[] = [];
+
+        for (let j = i; j < batchEnd; j++) {
+          const { originalTeam } = createdTeamData[j];
+          const teamStat = teamStats[j];
+
+          // Connect teamStats to players
+          batchPromises.push(
+            tx.teamStats.update({
+              where: { id: teamStat.id },
               data: {
-                matches: { connect: { id: match.id } },
+                players: { connect: originalTeam.players.map((p) => ({ id: p.id })) },
               },
             })
           );
-        }
-      }
 
-      // Execute Phase 6 and 7 together
-      await Promise.all([
-        tx.matchPlayerPlayed.createMany({ data: matchPlayerPlayedData }),
-        ...phase7Promises,
-      ]);
+          // Connect each player to the match
+          for (const player of originalTeam.players) {
+            batchPromises.push(
+              tx.player.update({
+                where: { id: player.id },
+                data: {
+                  matches: { connect: { id: match.id } },
+                },
+              })
+            );
+          }
+        }
+
+        await Promise.all(batchPromises);
+      }
 
       return createdTeamData.map(({ team }) => team);
     },
     {
-      maxWait: 30000, // Max wait to connect to Prisma (30 seconds)
-      timeout: 300000, // Transaction timeout (5 minutes for 64+ players)
+      maxWait: 60000, // Max wait to connect to Prisma (60 seconds)
+      timeout: 600000, // Transaction timeout (10 minutes - match global config)
     },
   );
 

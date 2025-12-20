@@ -9,6 +9,7 @@ import { NextRequest } from "next/server";
 import { createJob } from "@/src/services/job/createJob";
 import { updateJobProgress } from "@/src/services/job/updateJobProgress";
 import { JobType, JobStatus } from "@/src/lib/db/prisma/generated/prisma";
+import { waitUntil } from "@vercel/functions";
 
 export async function POST(req: NextRequest) {
   try {
@@ -52,16 +53,11 @@ export async function POST(req: NextRequest) {
       createdBy: user.id,
     });
 
-    // Return job ID immediately so client can start polling
-    // Continue processing in the background
-    const response = SuccessResponse({
-      data: { jobId: job.id },
-      message: "Team creation started. Use job ID to check status.",
-    });
+    // Get the entry fee from the tournament settings
+    const entryFee = tournamentExist.fee || 0;
 
-    // Process the team creation asynchronously
-    // We use a self-executing async function to not block the response
-    (async () => {
+    // Define the background task
+    const backgroundTask = async () => {
       try {
         // Update job status to PROCESSING
         await updateJobProgress({
@@ -69,9 +65,6 @@ export async function POST(req: NextRequest) {
           status: JobStatus.PROCESSING,
           progress: "Creating match and teams...",
         });
-
-        // Get the entry fee from the tournament settings
-        const entryFee = tournamentExist.fee || 0;
 
         // Progress update - deducting UC if applicable
         if (entryFee > 0) {
@@ -111,9 +104,17 @@ export async function POST(req: NextRequest) {
           error: errorMessage,
         });
       }
-    })();
+    };
 
-    return response;
+    // Use waitUntil to keep the serverless function alive while the background task runs
+    // This is the Vercel-recommended way to run background tasks
+    waitUntil(backgroundTask());
+
+    // Return job ID immediately so client can start polling
+    return SuccessResponse({
+      data: { jobId: job.id },
+      message: "Team creation started. Use job ID to check status.",
+    });
   } catch (error) {
     return handleApiErrors(error);
   }
