@@ -12,7 +12,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
 import { SlotMachineCounter } from "@/src/components/ui/AnimatedCounter";
-import { getPollTheme } from "./pollTheme";
+import { getPollTheme, PollTheme } from "./pollTheme";
+import { motion, AnimatePresence } from "motion/react";
 
 const bannedStampStyles = {
   position: "absolute" as const,
@@ -41,6 +42,63 @@ const bannedStampStyles = {
 };
 
 type VoteT = Prisma.PlayerPollVoteCreateInput["vote"];
+
+// Aceternity-style animated tooltip for prize breakdown
+const PrizeBreakdownTooltip = ({ prizePool, theme }: { prizePool: number; theme: PollTheme }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div
+      className="absolute bottom-2 right-3"
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      <AnimatePresence mode="wait">
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scale: 1,
+            }}
+            exit={{
+              opacity: 0,
+              y: 5,
+              scale: 0.98,
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 25,
+            }}
+            className={`absolute bottom-full right-0 mb-2 z-50 rounded-lg px-3 py-2 text-sm shadow-xl border ${theme.voterCard} ${theme.dialogBorder}`}
+          >
+            <div className={`absolute inset-x-0 -bottom-px h-px bg-gradient-to-r ${theme.dialogHeader}`} />
+            <div className="space-y-1 whitespace-nowrap">
+              <div className="flex items-center justify-between gap-4">
+                <span className={theme.optionSelected.text}>🥇 1st</span>
+                <span className={`font-semibold ${theme.optionSelected.text}`}>₹{Math.round(prizePool * 0.6).toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className={theme.optionSelected.text}>🥈 2nd</span>
+                <span className={`font-semibold ${theme.optionSelected.text}`}>₹{Math.round(prizePool * 0.3).toLocaleString()}</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <button
+        type="button"
+        className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/25 hover:bg-white/40 active:bg-white/50 text-white text-xs font-bold cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110 backdrop-blur-sm border border-white/30"
+        aria-label="View prize breakdown"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        ?
+      </button>
+    </div>
+  );
+};
 
 type WhatAppPollCardProps = {
   poll: PollT;
@@ -289,18 +347,22 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
 
                 {/* Prize Pool Display */}
                 {theme && (
-                  <div className="mt-4 flex items-center justify-center gap-3">
-                    <span className="text-3xl">🏆</span>
-                    <div className="text-center">
-                      <p className="text-xs font-medium text-white/80 uppercase tracking-widest">Prize Pool</p>
-                      <p className="text-2xl font-black text-white drop-shadow-lg">
-                        <SlotMachineCounter
-                          value={prizePool}
-                          prefix="₹"
-                        />
-                      </p>
+                  <>
+                    <div className="mt-4 flex items-center justify-center gap-3">
+                      <span className="text-3xl">🏆</span>
+                      <div className="text-center">
+                        <p className="text-xs font-medium text-white/80 uppercase tracking-widest">Prize Pool</p>
+                        <p className="text-2xl font-black text-white drop-shadow-lg">
+                          <SlotMachineCounter
+                            value={prizePool}
+                            prefix="₹"
+                          />
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                    {/* Info icon in bottom right corner - Aceternity style */}
+                    <PrizeBreakdownTooltip prizePool={prizePool} theme={theme} />
+                  </>
                 )}
               </div>
             </div>

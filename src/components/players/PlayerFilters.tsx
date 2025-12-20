@@ -37,78 +37,75 @@ export function PlayerFilters({
   onSortOrderChange,
 }: PlayerFiltersProps) {
   return (
-    <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
-      {/* Left side: Search and Season */}
-      <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-        <form
-          className="relative w-full sm:w-64"
-          onSubmit={(e) => {
-            e.preventDefault();
-            // Blur the input to dismiss the mobile keyboard
-            const input = e.currentTarget.querySelector('input');
-            input?.blur();
-          }}
+    <div className="flex flex-col gap-3 w-full">
+      {/* Row 1: Search - takes full width on all screens */}
+      <form
+        className="relative w-full"
+        onSubmit={(e) => {
+          e.preventDefault();
+          // Blur the input to dismiss the mobile keyboard
+          const input = e.currentTarget.querySelector('input');
+          input?.blur();
+        }}
+      >
+        <Input
+          type="search"
+          enterKeyHint="search"
+          placeholder="Search by IGN, username, email..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="h-11 pl-4 pr-10 w-full"
+        />
+        <button
+          type="submit"
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:opacity-70 transition-opacity"
+          aria-label="Search"
         >
-          <Input
-            type="search"
-            enterKeyHint="search"
-            placeholder="Search by IGN, username, email..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="h-11 pl-4 pr-10"
-          />
-          <button
-            type="submit"
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:opacity-70 transition-opacity"
-            aria-label="Search"
-          >
-            <Search className="h-5 w-5 text-gray-400" />
-          </button>
-        </form>
+          <Search className="h-5 w-5 text-gray-400" />
+        </button>
+      </form>
+
+      {/* Row 2: All dropdowns - 2x2 grid on mobile, inline on desktop */}
+      <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-3 w-full">
         <SeasonSelector className="h-11 w-full sm:w-40" showAllSeasons={true} />
-      </div>
 
-      {/* Right side: Filter dropdowns */}
-      <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-        <div className="flex gap-3">
-          <Select value={selectedTier} onValueChange={onTierChange}>
-            <SelectTrigger className="h-11 w-full sm:w-36">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All Categories</SelectItem>
-              <SelectItem value="legend">Legend</SelectItem>
-              <SelectItem value="ultra pro">Ultra Pro</SelectItem>
-              <SelectItem value="pro">Pro</SelectItem>
-              <SelectItem value="noob">Noob</SelectItem>
-              <SelectItem value="ultra noob">Ultra Noob</SelectItem>
-              <SelectItem value="bot">Bot</SelectItem>
-            </SelectContent>
-          </Select>
+        <Select value={selectedTier} onValueChange={onTierChange}>
+          <SelectTrigger className="h-11 w-full sm:w-36">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All Categories</SelectItem>
+            <SelectItem value="legend">Legend</SelectItem>
+            <SelectItem value="ultra pro">Ultra Pro</SelectItem>
+            <SelectItem value="pro">Pro</SelectItem>
+            <SelectItem value="noob">Noob</SelectItem>
+            <SelectItem value="ultra noob">Ultra Noob</SelectItem>
+            <SelectItem value="bot">Bot</SelectItem>
+          </SelectContent>
+        </Select>
 
-          <Select value={sortBy} onValueChange={onSortByChange}>
-            <SelectTrigger
-              className={`h-11 w-full sm:w-32 ${sortBy === "banned"
-                ? "text-red-600 dark:text-red-400 font-medium"
-                : ""
-                }`}
+        <Select value={sortBy} onValueChange={onSortByChange}>
+          <SelectTrigger
+            className={`h-11 w-full sm:w-32 ${sortBy === "banned"
+              ? "text-red-600 dark:text-red-400 font-medium"
+              : ""
+              }`}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="kd">K/D Ratio</SelectItem>
+            <SelectItem value="kills">Total Kills</SelectItem>
+            <SelectItem value="matches">Matches</SelectItem>
+            <SelectItem value="balance">Balance</SelectItem>
+            <SelectItem
+              value="banned"
+              className="text-red-600 dark:text-red-400 font-medium"
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="kd">K/D Ratio</SelectItem>
-              <SelectItem value="kills">Total Kills</SelectItem>
-              <SelectItem value="matches">Matches</SelectItem>
-              <SelectItem value="balance">Balance</SelectItem>
-              <SelectItem
-                value="banned"
-                className="text-red-600 dark:text-red-400 font-medium"
-              >
-                Banned
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+              Banned
+            </SelectItem>
+          </SelectContent>
+        </Select>
 
         <Select value={sortOrder} onValueChange={onSortOrderChange}>
           <SelectTrigger className="h-11 w-full sm:w-28">

@@ -37,6 +37,35 @@ export function PlayersTab() {
   >("kd");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
+  // Reset pagination to page 1 when search/filter changes
+  const resetToFirstPage = () => {
+    const params = new URLSearchParams(search.toString());
+    if (params.get("page") !== "1") {
+      params.set("page", "1");
+      router.push(`?${params.toString()}`, { scroll: false });
+    }
+  };
+
+  const handleSearchChange = (newQuery: string) => {
+    setQuery(newQuery);
+    resetToFirstPage();
+  };
+
+  const handleTierChange = (newTier: string) => {
+    setSelectedTier(newTier);
+    resetToFirstPage();
+  };
+
+  const handleSortByChange = (newSortBy: "name" | "kd" | "kills" | "matches" | "balance" | "banned") => {
+    setSortBy(newSortBy);
+    resetToFirstPage();
+  };
+
+  const handleSortOrderChange = (newSortOrder: "asc" | "desc") => {
+    setSortOrder(newSortOrder);
+    resetToFirstPage();
+  };
+
   const { data: players, meta, isFetching: isLoading } = usePlayers({
     page,
     search: query,
@@ -73,15 +102,15 @@ export function PlayersTab() {
           <div className="w-full sm:w-auto flex-grow">
             <PlayerFilters
               searchQuery={query}
-              onSearchChange={setQuery}
+              onSearchChange={handleSearchChange}
               selectedSeason={seasonId}
               onSeasonChange={setSeasonId}
               selectedTier={selectedTier}
-              onTierChange={setSelectedTier}
+              onTierChange={handleTierChange}
               sortBy={sortBy}
-              onSortByChange={setSortBy}
+              onSortByChange={handleSortByChange}
               sortOrder={sortOrder}
-              onSortOrderChange={setSortOrder}
+              onSortOrderChange={handleSortOrderChange}
             />
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
