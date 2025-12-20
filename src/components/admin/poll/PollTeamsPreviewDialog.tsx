@@ -190,7 +190,7 @@ export function PollTeamsPreviewDialog({
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                         disabled={isLoading || isConfirming}
-                        className="flex-1 h-10 sm:h-9 text-sm sm:text-sm"
+                        className="shrink-0 h-10 sm:h-9 text-sm px-3 sm:px-4"
                     >
                         Cancel
                     </Button>
@@ -199,41 +199,41 @@ export function PollTeamsPreviewDialog({
                             variant="outline"
                             onClick={onRegenerate}
                             disabled={isLoading || isConfirming}
-                            className="flex-1 h-10 sm:h-9 text-sm border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-950"
+                            className="shrink-0 h-10 sm:h-9 text-sm px-3 sm:px-4 border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-950"
                         >
-                            <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-                            Shuffle
+                            <RefreshCw className="w-3.5 h-3.5 sm:mr-1.5" />
+                            <span className="hidden sm:inline">Shuffle</span>
                         </Button>
                     )}
                     <Button
                         onClick={onConfirm}
                         disabled={isLoading || isConfirming || !previewData || jobStatus === "COMPLETED"}
-                        className={`flex-1 h-10 sm:h-9 text-sm border-0 ${jobStatus === "COMPLETED"
-                                ? "bg-green-500 hover:bg-green-500"
-                                : jobStatus === "FAILED"
-                                    ? "bg-red-600 hover:bg-red-700"
-                                    : "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+                        className={`flex-1 min-w-0 h-10 sm:h-9 text-sm border-0 ${jobStatus === "COMPLETED"
+                            ? "bg-green-500 hover:bg-green-500"
+                            : jobStatus === "FAILED"
+                                ? "bg-red-600 hover:bg-red-700"
+                                : "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
                             } text-white`}
                     >
                         {jobStatus === "COMPLETED" ? (
                             <>
-                                <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-                                Created!
+                                <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+                                <span className="truncate">Created!</span>
                             </>
                         ) : jobStatus === "FAILED" ? (
                             <>
-                                <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
-                                Failed - Retry
+                                <AlertTriangle className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+                                <span className="truncate">Retry</span>
                             </>
                         ) : isConfirming ? (
                             <>
-                                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                                {jobProgress || "Creating..."}
+                                <Loader2 className="w-3.5 h-3.5 mr-1.5 shrink-0 animate-spin" />
+                                <span className="truncate">{jobProgress || "Creating..."}</span>
                             </>
                         ) : (
                             <>
-                                <Coins className="w-3.5 h-3.5 mr-1.5" />
-                                Confirm ({previewData?.teams.length || 0})
+                                <Coins className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+                                <span className="truncate">Confirm ({previewData?.teams.length || 0})</span>
                             </>
                         )}
                     </Button>

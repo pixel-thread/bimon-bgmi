@@ -77,6 +77,7 @@ const PollManagement: React.FC = () => {
     queryKey: ["polls"],
     queryFn: async () => http.get<PollT[]>("/admin/poll"),
     select: (data) => data.data,
+    refetchOnWindowFocus: false,
   });
 
   // Mutations for card actions

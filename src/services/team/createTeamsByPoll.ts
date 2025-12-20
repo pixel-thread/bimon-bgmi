@@ -223,11 +223,9 @@ export async function createTeamsByPolls({
         },
       });
 
-      // Phase 1: Create all teams first
-      const createdTeamData = [];
-      for (let i = 0; i < teams.length; i++) {
-        const t = teams[i];
-        const team = await tx.team.create({
+      // Phase 1: Create all teams in parallel
+      const teamCreatePromises = teams.map((t, i) =>
+        tx.team.create({
           data: {
             name: `Team ${i + 1}`,
             teamNumber: i + 1,
@@ -237,11 +235,19 @@ export async function createTeamsByPolls({
             matches: { connect: { id: match.id } },
           },
           include: { players: true },
-        });
-        createdTeamData.push({ team, originalTeam: t });
-      }
+        })
+      );
+      const createdTeamsArray = await Promise.all(teamCreatePromises);
+      const createdTeamData = createdTeamsArray.map((team, i) => ({
+        team,
+        originalTeam: teams[i],
+      }));
 
-      // Phase 2: Create all TeamStats in batch
+      // Phase 2, 4, 5: Run TeamStats creation, PlayerStats upserts, and UC debits in parallel
+      // These operations are independent of each other
+      const allPlayers = teams.flatMap((t) => t.players);
+
+      // Prepare TeamStats creation promises
       const teamStatPromises = createdTeamData.map(({ team }) =>
         tx.teamStats.create({
           data: {
@@ -252,16 +258,8 @@ export async function createTeamsByPolls({
           },
         })
       );
-      const teamStats = await Promise.all(teamStatPromises);
 
-      // NOTE: TeamPlayerStats is NOT created here. It is only created when
-      // scoreboard stats are submitted via bulk edit, ensuring deaths are
-      // only counted for players who actually appeared in the match.
-
-      // Phase 4: Update player stats and UC in parallel batches per team
-      const allPlayers = teams.flatMap((t) => t.players);
-
-      // Batch upsert PlayerStats
+      // Prepare PlayerStats upsert promises
       const playerStatsPromises = allPlayers.map((player) =>
         tx.playerStats.upsert({
           where: {
@@ -274,48 +272,56 @@ export async function createTeamsByPolls({
             playerId: player.id,
             seasonId: seasonId,
             kills: 0,
-            deaths: 0, // Placeholder - stats counted when scoreboard is submitted
+            deaths: 0,
           },
-          update: {}, // No increment here - deaths counted when player appears in scoreboard
+          update: {},
         })
       );
-      await Promise.all(playerStatsPromises);
 
-      // Phase 5: Debit UC from non-exempt players in batch + record transactions
+      // Prepare UC debit promises (if entry fee exists)
+      const ucPromises: Promise<unknown>[] = [];
       if (entryFee > 0) {
-        // Filter out UC-exempt players
         const playersToCharge = allPlayers.filter((player) => !player.isUCExempt);
-
         if (playersToCharge.length > 0) {
-          // Record transaction history first
-          await tx.transaction.createMany({
-            data: playersToCharge.map((player) => ({
-              amount: entryFee,
-              type: "debit",
-              description: `Entry fee for ${tournamentName}`,
-              playerId: player.id,
-            })),
-          });
-
-          // Then debit UC
-          const ucPromises = playersToCharge.map((player) =>
-            tx.uC.upsert({
-              where: { playerId: player.id },
-              create: {
-                balance: -entryFee,
-                player: { connect: { id: player.id } },
-                user: { connect: { id: player.userId } },
-              },
-              update: {
-                balance: { decrement: entryFee },
-              },
+          // Transaction history - use createMany for bulk insert
+          ucPromises.push(
+            tx.transaction.createMany({
+              data: playersToCharge.map((player) => ({
+                amount: entryFee,
+                type: "debit",
+                description: `Entry fee for ${tournamentName}`,
+                playerId: player.id,
+              })),
             })
           );
-          await Promise.all(ucPromises);
+
+          // UC decrements
+          for (const player of playersToCharge) {
+            ucPromises.push(
+              tx.uC.upsert({
+                where: { playerId: player.id },
+                create: {
+                  balance: -entryFee,
+                  player: { connect: { id: player.id } },
+                  user: { connect: { id: player.userId } },
+                },
+                update: {
+                  balance: { decrement: entryFee },
+                },
+              })
+            );
+          }
         }
       }
 
-      // Phase 6: Create MatchPlayerPlayed entries for ALL players
+      // Execute all phases in parallel
+      const [teamStats] = await Promise.all([
+        Promise.all(teamStatPromises),
+        Promise.all(playerStatsPromises),
+        Promise.all(ucPromises),
+      ]);
+
+      // Phase 6 & 7: Create MatchPlayerPlayed entries AND connect players to match/teamStats in parallel
       const matchPlayerPlayedData: {
         matchId: string;
         playerId: string;
@@ -324,7 +330,13 @@ export async function createTeamsByPolls({
         teamId: string;
       }[] = [];
 
-      for (const { team, originalTeam } of createdTeamData) {
+      const phase7Promises: Promise<unknown>[] = [];
+
+      for (let i = 0; i < createdTeamData.length; i++) {
+        const { team, originalTeam } = createdTeamData[i];
+        const teamStat = teamStats[i];
+
+        // Prepare MatchPlayerPlayed data
         for (const player of originalTeam.players) {
           matchPlayerPlayedData.push({
             matchId: match.id,
@@ -334,35 +346,35 @@ export async function createTeamsByPolls({
             teamId: team.id,
           });
         }
-      }
-
-      await tx.matchPlayerPlayed.createMany({
-        data: matchPlayerPlayedData,
-      });
-
-      // Phase 7: Connect players to match and teamStats
-      for (let i = 0; i < createdTeamData.length; i++) {
-        const { originalTeam } = createdTeamData[i];
-        const teamStat = teamStats[i];
 
         // Connect teamStats to players
-        await tx.teamStats.update({
-          where: { id: teamStat.id },
-          data: {
-            players: { connect: originalTeam.players.map((p) => ({ id: p.id })) },
-          },
-        });
+        phase7Promises.push(
+          tx.teamStats.update({
+            where: { id: teamStat.id },
+            data: {
+              players: { connect: originalTeam.players.map((p) => ({ id: p.id })) },
+            },
+          })
+        );
 
         // Connect each player to the match
         for (const player of originalTeam.players) {
-          await tx.player.update({
-            where: { id: player.id },
-            data: {
-              matches: { connect: { id: match.id } },
-            },
-          });
+          phase7Promises.push(
+            tx.player.update({
+              where: { id: player.id },
+              data: {
+                matches: { connect: { id: match.id } },
+              },
+            })
+          );
         }
       }
+
+      // Execute Phase 6 and 7 together
+      await Promise.all([
+        tx.matchPlayerPlayed.createMany({ data: matchPlayerPlayedData }),
+        ...phase7Promises,
+      ]);
 
       return createdTeamData.map(({ team }) => team);
     },

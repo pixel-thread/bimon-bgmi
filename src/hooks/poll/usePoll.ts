@@ -15,5 +15,6 @@ export function usePoll({ id }: UsePollProps = { id: "" }) {
     queryFn: () => http.get<PollT>(url),
     enabled: !!id,
     select: (data) => data.data,
+    refetchOnWindowFocus: false,
   });
 }
