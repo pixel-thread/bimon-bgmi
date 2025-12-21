@@ -130,6 +130,21 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     const pollId = poll.id;
     const playerId = user?.player?.id || "";
 
+    // Title overflow detection for marquee animation
+    const titleRef = React.useRef<HTMLHeadingElement>(null);
+    const [isTitleOverflowing, setIsTitleOverflowing] = useState(false);
+
+    useEffect(() => {
+      const checkOverflow = () => {
+        if (titleRef.current) {
+          setIsTitleOverflowing(titleRef.current.scrollWidth > titleRef.current.clientWidth + 10);
+        }
+      };
+      checkOverflow();
+      window.addEventListener('resize', checkOverflow);
+      return () => window.removeEventListener('resize', checkOverflow);
+    }, [poll.question]);
+
     // Optimistic vote state - tracks which option user is voting for
     const [optimisticVote, setOptimisticVote] = useState<VoteT | null>(null);
     const [pendingVote, setPendingVote] = useState<VoteT | null>(null); // For loader
@@ -325,7 +340,8 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="overflow-hidden">
                       <h3
-                        className={`font-semibold text-lg whitespace-nowrap animate-marquee ${hasPrizePool ? 'text-white drop-shadow-md' : 'text-gray-900 dark:text-white'}`}
+                        ref={titleRef}
+                        className={`font-semibold text-lg whitespace-nowrap ${isTitleOverflowing ? 'animate-marquee' : ''} ${hasPrizePool ? 'text-white drop-shadow-md' : 'text-gray-900 dark:text-white'}`}
                         title={poll.question}
                       >
                         {poll.question}
