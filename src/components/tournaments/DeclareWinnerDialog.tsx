@@ -13,7 +13,7 @@ import { Button } from "@/src/components/ui/button";
 import { Label } from "@/src/components/ui/label";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
-import { Plus, Trash2, Trophy, Loader2 } from "lucide-react";
+import { Plus, Trash2, Trophy, Loader2, Coins } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
@@ -32,12 +32,19 @@ type TeamRanking = {
     players?: { id: string; name: string; displayName?: string | null }[];
 };
 
+type PrizePoolMeta = {
+    entryFee: number;
+    totalPlayers: number;
+    prizePool: number;
+};
+
 type Props = {
     isOpen: boolean;
     onClose: () => void;
     tournamentId: string;
     tournamentName: string;
     teamRankings: TeamRanking[];
+    prizePoolMeta?: PrizePoolMeta;
     isLoadingRankings?: boolean;
 };
 
@@ -56,16 +63,40 @@ const getMedalEmoji = (position: number) => {
     }
 };
 
+// Prize distribution percentages
+const PRIZE_PERCENTAGES = {
+    1: 0.6, // 60% for 1st
+    2: 0.3, // 30% for 2nd
+};
+
 export function DeclareWinnerDialog({
     isOpen,
     onClose,
     tournamentId,
     tournamentName,
     teamRankings,
+    prizePoolMeta,
     isLoadingRankings = false,
 }: Props) {
     const [placementCount, setPlacementCount] = useState(2);
     const queryClient = useQueryClient();
+
+    const prizePool = prizePoolMeta?.prizePool || 0;
+    const entryFee = prizePoolMeta?.entryFee || 0;
+    const totalPlayers = prizePoolMeta?.totalPlayers || 0;
+
+    // Calculate prize amounts per position
+    const getPrizeForPosition = (position: number) => {
+        const percentage = PRIZE_PERCENTAGES[position as keyof typeof PRIZE_PERCENTAGES] || 0;
+        return Math.floor(prizePool * percentage);
+    };
+
+    // Calculate per-player split for a team
+    const getPerPlayerAmount = (position: number, playerCount: number) => {
+        if (playerCount === 0) return 0;
+        const totalAmount = getPrizeForPosition(position);
+        return Math.floor(totalAmount / playerCount);
+    };
 
     const { isPending, mutate: declareWinners } = useMutation({
         mutationFn: (data: { placements: { position: number; amount: number }[] }) =>
@@ -78,11 +109,12 @@ export function DeclareWinnerDialog({
             ),
         onSuccess: (data) => {
             if (data.success) {
-                toast.success("Tournament winners declared successfully! You can distribute UC from the Winners page.");
+                toast.success("Winners declared and UC distributed successfully!");
                 queryClient.invalidateQueries({
                     queryKey: ["tournament", tournamentId],
                 });
                 queryClient.invalidateQueries({ queryKey: ["tournament-winners"] });
+                queryClient.invalidateQueries({ queryKey: ["tournament-rankings"] });
                 handleClose();
             } else {
                 toast.error(data.message || "Failed to declare winners");
@@ -109,15 +141,18 @@ export function DeclareWinnerDialog({
     };
 
     const handleSubmit = () => {
-        // Declare winners with 0 UC (will be distributed later from Winners page)
+        // Include calculated UC amounts in placements
         const data = {
             placements: Array.from({ length: placementCount }, (_, i) => ({
                 position: i + 1,
-                amount: 0,
+                amount: getPrizeForPosition(i + 1),
             })),
         };
         declareWinners(data);
     };
+
+    const totalToDistribute = getPrizeForPosition(1) + getPrizeForPosition(2);
+    const organizerAmount = prizePool - totalToDistribute;
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -125,15 +160,46 @@ export function DeclareWinnerDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Trophy className="h-5 w-5 text-yellow-500" />
-                        Declare Winners
+                        Declare Winners & Distribute UC
                     </DialogTitle>
                     <DialogDescription>
-                        Declare winners for <span className="font-medium">{tournamentName}</span>.
-                        You can distribute UC later from the Winners page.
+                        Declare winners and distribute UC for <span className="font-medium">{tournamentName}</span>.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
+                    {/* Prize Pool Summary */}
+                    {prizePool > 0 && (
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Coins className="h-5 w-5 text-green-600" />
+                                <span className="font-semibold text-green-800 dark:text-green-200">Prize Pool</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div className="text-muted-foreground">Entry Fee:</div>
+                                <div className="font-medium">₹{entryFee}</div>
+                                <div className="text-muted-foreground">Total Players:</div>
+                                <div className="font-medium">{totalPlayers}</div>
+                                <div className="text-muted-foreground font-semibold">Total Prize Pool:</div>
+                                <div className="font-bold text-green-600 dark:text-green-400">₹{prizePool.toLocaleString()}</div>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-700 space-y-1 text-xs">
+                                <div className="flex justify-between">
+                                    <span>🥇 1st (60%):</span>
+                                    <span className="font-medium">₹{getPrizeForPosition(1).toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>🥈 2nd (30%):</span>
+                                    <span className="font-medium">₹{getPrizeForPosition(2).toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>💼 Organizer (10%):</span>
+                                    <span className="font-medium">₹{organizerAmount.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Team Rankings Preview */}
                     <div>
                         <Label className="text-sm font-medium mb-2 block">
@@ -146,24 +212,39 @@ export function DeclareWinnerDialog({
                             </div>
                         ) : (
                             <div className="space-y-2 max-h-60 overflow-y-auto">
-                                {teamRankings.slice(0, placementCount).map((team, idx) => (
-                                    <Card key={team.teamId} className={`${idx === 0 ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20" : idx === 1 ? "border-gray-400 bg-gray-50 dark:bg-gray-800/50" : idx === 2 ? "border-orange-400 bg-orange-50 dark:bg-orange-900/20" : ""}`}>
-                                        <CardContent className="p-3 flex items-center gap-3">
-                                            <span className="text-xl">{getMedalEmoji(idx + 1)}</span>
-                                            <div className="flex-1">
-                                                <p className="font-medium text-sm">
-                                                    {team.players?.map(p => p.displayName || p.name).join(", ") || "No players"}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {getOrdinal(idx + 1)} Place
-                                                </p>
-                                            </div>
-                                            <Badge variant="outline" className="text-xs">
-                                                {team.total} pts
-                                            </Badge>
-                                        </CardContent>
-                                    </Card>
-                                ))}
+                                {teamRankings.slice(0, placementCount).map((team, idx) => {
+                                    const playerCount = team.players?.length || 0;
+                                    const teamPrize = getPrizeForPosition(idx + 1);
+                                    const perPlayer = getPerPlayerAmount(idx + 1, playerCount);
+
+                                    return (
+                                        <Card key={team.teamId} className={`${idx === 0 ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20" : idx === 1 ? "border-gray-400 bg-gray-50 dark:bg-gray-800/50" : idx === 2 ? "border-orange-400 bg-orange-50 dark:bg-orange-900/20" : ""}`}>
+                                            <CardContent className="p-3">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-xl">{getMedalEmoji(idx + 1)}</span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-sm truncate">
+                                                            {team.players?.map(p => p.displayName || p.name).join(", ") || "No players"}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {getOrdinal(idx + 1)} Place • {team.total} pts
+                                                        </p>
+                                                    </div>
+                                                    {teamPrize > 0 && (
+                                                        <div className="text-right shrink-0">
+                                                            <Badge variant="default" className="bg-green-600 text-xs">
+                                                                ₹{teamPrize.toLocaleString()}
+                                                            </Badge>
+                                                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                                                                ₹{perPlayer}/player
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
@@ -195,9 +276,15 @@ export function DeclareWinnerDialog({
                     </div>
 
                     {/* Info Note */}
-                    <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                        💡 After declaring winners, you can distribute UC prizes from the <strong>Winners page</strong> (/admin/winners).
-                    </p>
+                    {prizePool > 0 ? (
+                        <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                            💰 UC will be distributed immediately: 60% to 1st, 30% to 2nd, split equally among team members.
+                        </p>
+                    ) : (
+                        <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                            ℹ️ No entry fee set. Winners will be declared without UC distribution.
+                        </p>
+                    )}
                 </div>
 
                 <DialogFooter className="gap-2">
@@ -214,7 +301,7 @@ export function DeclareWinnerDialog({
                         ) : (
                             <Trophy className="w-4 h-4 mr-2" />
                         )}
-                        Declare Winners
+                        {prizePool > 0 ? "Declare & Distribute" : "Declare Winners"}
                     </Button>
                 </DialogFooter>
             </DialogContent>

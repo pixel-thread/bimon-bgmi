@@ -107,9 +107,21 @@ export async function GET(
         // Sort using official BGMI tiebreaker rules
         const sortedData = sortTeamsByTiebreaker(mappedData);
 
+        // Calculate total player count across all teams in this tournament
+        const allTeams = await prisma.team.findMany({
+            where: { tournamentId },
+            include: { players: true },
+        });
+        const totalPlayers = allTeams.reduce((sum, team) => sum + team.players.length, 0);
+
         return SuccessResponse({
             message: "Team rankings fetched successfully",
             data: sortedData,
+            meta: {
+                entryFee: tournament.fee || 0,
+                totalPlayers,
+                prizePool: (tournament.fee || 0) * totalPlayers,
+            },
         });
     } catch (error) {
         return handleApiErrors(error);

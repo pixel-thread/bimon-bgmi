@@ -164,6 +164,7 @@ export async function POST(
 
       if (!team) continue;
 
+      // Create winner record 
       const winTeam = await addTournamentWinner({
         data: {
           amount: placement.amount,
@@ -173,15 +174,65 @@ export async function POST(
         },
       });
 
+      // Distribute UC to players if amount > 0
+      if (placement.amount > 0 && team.players && team.players.length > 0) {
+        const perPlayerAmount = Math.floor(placement.amount / team.players.length);
+
+        for (const player of team.players) {
+          // Get player with user info
+          const playerData = await prisma.player.findUnique({
+            where: { id: player.id },
+            include: { user: true },
+          });
+
+          if (!playerData) continue;
+
+          // Update or create UC balance
+          await prisma.uC.upsert({
+            where: { playerId: player.id },
+            create: {
+              player: { connect: { id: player.id } },
+              user: { connect: { id: playerData.user.id } },
+              balance: perPlayerAmount,
+            },
+            update: { balance: { increment: perPlayerAmount } },
+          });
+
+          // Create transaction record
+          await prisma.transaction.create({
+            data: {
+              amount: perPlayerAmount,
+              type: "credit",
+              description: `${getOrdinal(placement.position)} Place Prize: ${tournament.name}`,
+              playerId: player.id,
+            },
+          });
+        }
+
+        // Mark winner as distributed
+        await prisma.tournamentWinner.update({
+          where: { id: winTeam.id },
+          data: { isDistributed: true },
+        });
+      }
+
       winnerTeam.push(winTeam);
     }
 
     return SuccessResponse({
-      message: "Tournament winners declared successfully",
+      message: "Tournament winners declared and UC distributed successfully",
       data: winnerTeam,
     });
   } catch (error) {
     return handleApiErrors(error);
   }
 }
+
+// Helper function for ordinal numbers
+function getOrdinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
 

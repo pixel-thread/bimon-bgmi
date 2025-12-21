@@ -76,11 +76,11 @@ export default function TournamentForm() {
           className="flex flex-col w-full"
           onSubmit={form.handleSubmit(handleUpdate)}
         >
-          <div className="flex w-full p-4 space-x-2">
+          <div className="flex flex-col sm:flex-row w-full p-4 gap-4 sm:gap-2">
             <FormField
               name={"name"}
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full sm:flex-1">
                   <FormLabel>Tournament Name</FormLabel>
                   <FormControl>
                     <Input placeholder="name" {...field} />
@@ -92,7 +92,7 @@ export default function TournamentForm() {
             <FormField
               name={"fee"}
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full sm:w-32">
                   <FormLabel>Entry Fee</FormLabel>
                   <FormControl>
                     <Input type="number" placeholder="entry fee" {...field} />

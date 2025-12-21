@@ -75,14 +75,14 @@ const PrizeBreakdownTooltip = ({ prizePool, theme }: { prizePool: number; theme:
             className={`absolute bottom-full right-0 mb-2 z-50 rounded-lg px-3 py-2 text-sm shadow-xl border ${theme.voterCard} ${theme.dialogBorder}`}
           >
             <div className={`absolute inset-x-0 -bottom-px h-px bg-gradient-to-r ${theme.dialogHeader}`} />
-            <div className="space-y-1 whitespace-nowrap">
+            <div className="space-y-1 whitespace-nowrap text-gray-900 dark:text-white">
               <div className="flex items-center justify-between gap-4">
-                <span className={theme.optionSelected.text}>🥇 1st</span>
-                <span className={`font-semibold ${theme.optionSelected.text}`}>₹{Math.round(prizePool * 0.6).toLocaleString()}</span>
+                <span>🥇 1st</span>
+                <span className="font-semibold">₹{Math.round(prizePool * 0.6).toLocaleString()}</span>
               </div>
               <div className="flex items-center justify-between gap-4">
-                <span className={theme.optionSelected.text}>🥈 2nd</span>
-                <span className={`font-semibold ${theme.optionSelected.text}`}>₹{Math.round(prizePool * 0.3).toLocaleString()}</span>
+                <span>🥈 2nd</span>
+                <span className="font-semibold">₹{Math.round(prizePool * 0.3).toLocaleString()}</span>
               </div>
             </div>
           </motion.div>

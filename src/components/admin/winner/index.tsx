@@ -10,10 +10,8 @@ import {
 } from "@/src/hooks/winner/useTournamentWinner";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { useSeasonStore } from "@/src/store/season";
-import { Trophy, Medal, Users, Coins, Check } from "lucide-react";
-import { Button } from "../../ui/button";
+import { Trophy, Medal, Users, Check, Clock } from "lucide-react";
 import { Badge } from "../../ui/badge";
-import { DistributeUCDialog } from "./DistributeUCDialog";
 import { useAppContext } from "@/src/hooks/context/useAppContext";
 
 type TournamentResult = {
@@ -131,53 +129,25 @@ export const AdminWinnerPage = () => {
     seasonId: seasonId || activeSeason?.id || ""
   });
 
-  const [selectedTournament, setSelectedTournament] = useState<{
-    id: string;
-    name: string;
-    winners: { position: number; teamName: string; teamId: string; amount: number; isDistributed: boolean }[];
-  } | null>(null);
-
   const tournaments = (data?.tournaments || []) as TournamentResult[];
   const playerPlacements = data?.recentStats?.playerPlacements || [];
   const recentTournaments = data?.recentStats?.recentTournaments || [];
 
-  const handleDistributeClick = (tournament: TournamentResult) => {
-    const winners = [];
-    if (tournament.place1) {
-      winners.push({
-        position: 1,
-        teamName: tournament.place1.teamName,
-        teamId: tournament.place1.teamId,
-        amount: tournament.place1.amount,
-        isDistributed: tournament.place1.isDistributed,
-        players: tournament.place1.players,
-      });
-    }
-    if (tournament.place2) {
-      winners.push({
-        position: 2,
-        teamName: tournament.place2.teamName,
-        teamId: tournament.place2.teamId,
-        amount: tournament.place2.amount,
-        isDistributed: tournament.place2.isDistributed,
-        players: tournament.place2.players,
-      });
-    }
-    setSelectedTournament({
-      id: tournament.tournamentId,
-      name: tournament.tournamentName,
-      winners,
-    });
+  // Check if any winner in the tournament has been distributed
+  const isDistributed = (tournament: TournamentResult) => {
+    const place1Distributed = tournament.place1?.isDistributed ?? true;
+    const place2Distributed = tournament.place2?.isDistributed ?? true;
+    return place1Distributed && place2Distributed;
   };
 
-  // Check if any winner in the tournament has not been distributed
-  const needsDistribution = (tournament: TournamentResult) => {
-    const place1NotDistributed = tournament.place1 && !tournament.place1.isDistributed;
-    const place2NotDistributed = tournament.place2 && !tournament.place2.isDistributed;
-    return place1NotDistributed || place2NotDistributed;
+  // Get total amount distributed
+  const getTotalDistributed = (tournament: TournamentResult) => {
+    const amount1 = tournament.place1?.amount || 0;
+    const amount2 = tournament.place2?.amount || 0;
+    return amount1 + amount2;
   };
 
-  // Tournament columns with action button
+  // Tournament columns - now just showing status (no action button)
   const tournamentColumns: ColumnDef<TournamentResult>[] = [
     {
       accessorKey: "tournamentName",
@@ -190,42 +160,53 @@ export const AdminWinnerPage = () => {
       header: "🥇 1st Place",
       accessorKey: "place1.teamName",
       cell: ({ row }) => (
-        <span className="text-yellow-600 dark:text-yellow-400">
-          {row.original.place1?.teamName || "-"}
-        </span>
+        <div>
+          <span className="text-yellow-600 dark:text-yellow-400">
+            {row.original.place1?.teamName || "-"}
+          </span>
+          {row.original.place1?.amount ? (
+            <span className="ml-2 text-xs text-muted-foreground">
+              (₹{row.original.place1.amount})
+            </span>
+          ) : null}
+        </div>
       ),
     },
     {
       header: "🥈 2nd Place",
       accessorKey: "place2.teamName",
       cell: ({ row }) => (
-        <span className="text-gray-500 dark:text-gray-400">
-          {row.original.place2?.teamName || "-"}
-        </span>
+        <div>
+          <span className="text-gray-500 dark:text-gray-400">
+            {row.original.place2?.teamName || "-"}
+          </span>
+          {row.original.place2?.amount ? (
+            <span className="ml-2 text-xs text-muted-foreground">
+              (₹{row.original.place2.amount})
+            </span>
+          ) : null}
+        </div>
       ),
     },
     {
-      id: "actions",
+      id: "status",
       header: "UC Status",
       cell: ({ row }) => {
         const tournament = row.original;
-        if (needsDistribution(tournament)) {
+        const totalAmount = getTotalDistributed(tournament);
+
+        if (isDistributed(tournament)) {
           return (
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1 text-green-600 border-green-300 hover:bg-green-50 dark:hover:bg-green-900/20"
-              onClick={() => handleDistributeClick(tournament)}
-            >
-              <Coins className="h-4 w-4" />
-              Distribute UC
-            </Button>
+            <Badge variant="secondary" className="gap-1">
+              <Check className="h-3 w-3" />
+              {totalAmount > 0 ? `₹${totalAmount} Distributed` : "Distributed"}
+            </Badge>
           );
         }
         return (
-          <Badge variant="secondary" className="gap-1">
-            <Check className="h-3 w-3" />
-            Distributed
+          <Badge variant="outline" className="gap-1 text-amber-600">
+            <Clock className="h-3 w-3" />
+            Pending
           </Badge>
         );
       },
@@ -297,17 +278,6 @@ export const AdminWinnerPage = () => {
           )}
         </CardContent>
       </Card>
-
-      {/* Distribute UC Dialog */}
-      {selectedTournament && (
-        <DistributeUCDialog
-          isOpen={!!selectedTournament}
-          onClose={() => setSelectedTournament(null)}
-          tournamentId={selectedTournament.id}
-          tournamentName={selectedTournament.name}
-          winners={selectedTournament.winners}
-        />
-      )}
     </div>
   );
 };

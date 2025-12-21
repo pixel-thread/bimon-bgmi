@@ -74,6 +74,11 @@ export function TournamentSettings() {
   });
 
   const teamRankings = rankingsData?.data || [];
+  const prizePoolMeta = rankingsData?.meta ? {
+    entryFee: rankingsData.meta.entryFee || 0,
+    totalPlayers: rankingsData.meta.totalPlayers || 0,
+    prizePool: rankingsData.meta.prizePool || 0,
+  } : undefined;
 
   const handleDeclareWinnersClick = () => {
     if (!tournamentId) {
@@ -116,9 +121,9 @@ export function TournamentSettings() {
         </CardHeader>
         <CardContent className="pt-0 space-y-3">
           {/* Season Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Season:</span>
-            <SeasonSelector className="w-48" />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="text-sm text-muted-foreground shrink-0">Season:</span>
+            <SeasonSelector className="w-full sm:w-48" />
           </div>
 
           {/* Tournament Selector */}
@@ -154,10 +159,12 @@ export function TournamentSettings() {
                 onClick={handleDeclareWinnersClick}
                 disabled={tournament?.isWinnerDeclared}
                 variant="outline"
-                className="gap-2"
+                className="gap-2 w-full sm:w-auto"
+                size="sm"
               >
                 <Sparkles className="h-4 w-4" />
-                {tournament?.isWinnerDeclared ? "Winners Declared" : "Declare Winners"}
+                <span className="hidden sm:inline">{tournament?.isWinnerDeclared ? "Winners Declared" : "Declare Winners"}</span>
+                <span className="sm:hidden">{tournament?.isWinnerDeclared ? "Declared" : "Declare"}</span>
               </Button>
             )}
           </div>
@@ -186,6 +193,7 @@ export function TournamentSettings() {
           tournamentId={tournamentId}
           tournamentName={tournaments?.find(t => t.id === tournamentId)?.name || "Tournament"}
           teamRankings={teamRankings}
+          prizePoolMeta={prizePoolMeta}
           isLoadingRankings={isLoadingRankings}
         />
       )}

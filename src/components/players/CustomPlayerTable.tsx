@@ -179,7 +179,7 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                     </div>
                 ) : (
                     data?.flatMap((player, index) => {
-                        const globalIndex = meta ? (meta.page - 1) * meta.pageSize + index + 1 : index + 1;
+                        const globalIndex = meta ? ((meta.page || 1) - 1) * (meta.pageSize || 10) + index + 1 : index + 1;
                         const rankStyle = getRankStyle(globalIndex);
                         const RankIcon = rankStyle.icon;
 
@@ -269,7 +269,7 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
             </div>
 
             {/* Pagination */}
-            {meta && meta.totalPages > 1 && (
+            {meta && (meta.totalPages || 0) > 1 && (
                 <div className="flex items-center justify-between pt-4 border-t border-zinc-200 dark:border-zinc-800">
                     <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
                         Page <span className="font-medium text-zinc-700 dark:text-zinc-300">{meta.page}</span> of{" "}
