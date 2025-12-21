@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { PollT } from "@/src/types/poll";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
@@ -15,7 +14,6 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
@@ -31,7 +29,6 @@ import {
     Users,
     Trash2,
     MoreVertical,
-    ChevronRight,
     Loader2,
 } from "lucide-react";
 import Link from "next/link";
@@ -59,7 +56,6 @@ export function PollCard({
     isTeamsDeleting,
     isPreviewLoading,
 }: PollCardProps) {
-    const [showTeamOptions, setShowTeamOptions] = useState(false);
 
     // Count votes from playersVotes relation
     const playersVotes = poll.playersVotes || [];
@@ -197,45 +193,31 @@ export function PollCard({
                             </Button>
                         </Link>
 
-                        {/* Team creation dropdown */}
-                        <DropdownMenu
-                            open={showTeamOptions}
-                            onOpenChange={setShowTeamOptions}
+                        {/* Team creation button - uses team type from poll settings */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
+                            disabled={isPreviewLoading}
+                            onClick={() => {
+                                // Convert TeamType to team size
+                                const teamSizeMap: Record<string, number> = {
+                                    SOLO: 1,
+                                    DUO: 2,
+                                    TRIO: 3,
+                                    SQUAD: 4,
+                                };
+                                const size = teamSizeMap[poll.teamType || 'DUO'] || 2;
+                                onPreviewTeams(poll.id, size);
+                            }}
                         >
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
-                                    disabled={isPreviewLoading}
-                                >
-                                    {isPreviewLoading ? (
-                                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                                    ) : (
-                                        <Users className="w-3.5 h-3.5 mr-1.5" />
-                                    )}
-                                    Create Teams
-                                    <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuLabel>Select Team Size</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                {[1, 2, 3, 4].map((size) => (
-                                    <DropdownMenuItem
-                                        key={size}
-                                        onClick={() => {
-                                            onPreviewTeams(poll.id, size);
-                                            setShowTeamOptions(false);
-                                        }}
-                                        className="cursor-pointer"
-                                    >
-                                        <Users className="w-4 h-4 mr-2" />
-                                        {size === 1 ? "Solo" : `${size} Players per Team`}
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                            {isPreviewLoading ? (
+                                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                            ) : (
+                                <Users className="w-3.5 h-3.5 mr-1.5" />
+                            )}
+                            Create {poll.teamType || 'DUO'} Teams
+                        </Button>
                     </div>
 
                     {/* Danger actions */}

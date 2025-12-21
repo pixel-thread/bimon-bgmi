@@ -40,7 +40,7 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
   const isPlayer = user?.role === "PLAYER";
   const searchQuery = useSearchParams();
   const pollId = searchQuery.get("view") || "";
-  const { data: polls, isFetching: loading } = usePolls({ forcePublic });
+  const { data: polls, isFetching: loading, isError, refetch } = usePolls({ forcePublic });
 
   const [showVotersDialog, setShowVotersDialog] = useState<PollT | null>(null);
 
@@ -80,6 +80,31 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
         <div className="space-y-4">
           <PollCardSkeleton />
           <PollCardSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  // Error state - API failed
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px] w-full">
+        <div className="bg-white dark:bg-black border border-red-200 dark:border-red-800 rounded-lg shadow-sm p-6 max-w-sm w-full transition-all duration-300">
+          <div className="flex flex-col items-center text-center">
+            <FiClock className="h-10 w-10 text-red-500 dark:text-red-400 mb-3" />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
+              Failed to Load Polls
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
+              Something went wrong. Please try again.
+            </p>
+            <button
+              onClick={() => refetch()}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     );
