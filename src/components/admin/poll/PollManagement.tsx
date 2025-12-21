@@ -363,7 +363,6 @@ const PollManagement: React.FC = () => {
 
         <Button
           onClick={() => setIsCreateModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
         >
           <Plus className="mr-2 h-4 w-4" />
           Create Poll
@@ -386,7 +385,6 @@ const PollManagement: React.FC = () => {
             </p>
             <Button
               onClick={() => setIsCreateModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
             >
               <Plus className="mr-2 h-4 w-4" />
               Create Your First Poll

@@ -76,6 +76,13 @@ enum JobType {
   CREATE_TEAMS_BY_POLL
 }
 
+enum TeamType {
+  SOLO
+  DUO
+  TRIO
+  SQUAD
+}
+
 /**
  * --------------------------
  * MODELS
@@ -263,6 +270,7 @@ model Poll {
   endDate      DateTime?
   question     String
   tournamentId String
+  teamType     TeamType  @default(DUO)
   createdAt    DateTime  @default(now())
 
   // Relations

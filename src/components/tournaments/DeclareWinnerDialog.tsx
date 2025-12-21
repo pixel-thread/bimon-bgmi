@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
     Dialog,
     DialogContent,
@@ -18,6 +18,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
 import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
+import { getPrizeDistribution } from "@/src/utils/prizeDistribution";
 
 type TeamRanking = {
     teamId: string;
@@ -63,11 +64,7 @@ const getMedalEmoji = (position: number) => {
     }
 };
 
-// Prize distribution percentages
-const PRIZE_PERCENTAGES = {
-    1: 0.6, // 60% for 1st
-    2: 0.3, // 30% for 2nd
-};
+
 
 export function DeclareWinnerDialog({
     isOpen,
@@ -85,16 +82,21 @@ export function DeclareWinnerDialog({
     const entryFee = prizePoolMeta?.entryFee || 0;
     const totalPlayers = prizePoolMeta?.totalPlayers || 0;
 
-    // Calculate prize amounts per position
-    const getPrizeForPosition = (position: number) => {
-        const percentage = PRIZE_PERCENTAGES[position as keyof typeof PRIZE_PERCENTAGES] || 0;
-        return Math.floor(prizePool * percentage);
+    // Get dynamic prize distribution based on prize pool tier
+    const distribution = useMemo(
+        () => getPrizeDistribution(prizePool, entryFee),
+        [prizePool, entryFee]
+    );
+
+    // Calculate prize amounts per position from dynamic distribution
+    const getPrizeForPositionAmount = (position: number) => {
+        return distribution.prizes.get(position)?.amount ?? 0;
     };
 
     // Calculate per-player split for a team
     const getPerPlayerAmount = (position: number, playerCount: number) => {
         if (playerCount === 0) return 0;
-        const totalAmount = getPrizeForPosition(position);
+        const totalAmount = getPrizeForPositionAmount(position);
         return Math.floor(totalAmount / playerCount);
     };
 
@@ -145,14 +147,13 @@ export function DeclareWinnerDialog({
         const data = {
             placements: Array.from({ length: placementCount }, (_, i) => ({
                 position: i + 1,
-                amount: getPrizeForPosition(i + 1),
+                amount: getPrizeForPositionAmount(i + 1),
             })),
         };
         declareWinners(data);
     };
 
-    const totalToDistribute = getPrizeForPosition(1) + getPrizeForPosition(2);
-    const organizerAmount = prizePool - totalToDistribute;
+    const organizerAmount = distribution.orgFee;
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -184,16 +185,23 @@ export function DeclareWinnerDialog({
                                 <div className="font-bold text-green-600 dark:text-green-400">₹{prizePool.toLocaleString()}</div>
                             </div>
                             <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-700 space-y-1 text-xs">
-                                <div className="flex justify-between">
-                                    <span>🥇 1st (60%):</span>
-                                    <span className="font-medium">₹{getPrizeForPosition(1).toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>🥈 2nd (30%):</span>
-                                    <span className="font-medium">₹{getPrizeForPosition(2).toLocaleString()}</span>
-                                </div>
+                                {Array.from(distribution.prizes.entries())
+                                    .sort(([a], [b]) => a - b)
+                                    .map(([position, prize]) => {
+                                        const medals = ['🥇', '🥈', '🥉', '🏅', '🎖️'];
+                                        const medal = medals[position - 1] || '🏅';
+                                        const label = prize.isFixed
+                                            ? `${position}${position === 1 ? 'st' : position === 2 ? 'nd' : position === 3 ? 'rd' : 'th'} (refund)`
+                                            : `${position}${position === 1 ? 'st' : position === 2 ? 'nd' : position === 3 ? 'rd' : 'th'} (${prize.percentage}%)`;
+                                        return (
+                                            <div key={position} className="flex justify-between">
+                                                <span>{medal} {label}:</span>
+                                                <span className="font-medium">₹{prize.amount.toLocaleString()}</span>
+                                            </div>
+                                        );
+                                    })}
                                 <div className="flex justify-between text-muted-foreground">
-                                    <span>💼 Organizer (10%):</span>
+                                    <span>💼 Organizer ({distribution.tier.orgFeePercent}%):</span>
                                     <span className="font-medium">₹{organizerAmount.toLocaleString()}</span>
                                 </div>
                             </div>
@@ -214,7 +222,7 @@ export function DeclareWinnerDialog({
                             <div className="space-y-2 max-h-60 overflow-y-auto">
                                 {teamRankings.slice(0, placementCount).map((team, idx) => {
                                     const playerCount = team.players?.length || 0;
-                                    const teamPrize = getPrizeForPosition(idx + 1);
+                                    const teamPrize = getPrizeForPositionAmount(idx + 1);
                                     const perPlayer = getPerPlayerAmount(idx + 1, playerCount);
 
                                     return (
@@ -278,7 +286,7 @@ export function DeclareWinnerDialog({
                     {/* Info Note */}
                     {prizePool > 0 ? (
                         <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                            💰 UC will be distributed immediately: 60% to 1st, 30% to 2nd, split equally among team members.
+                            💰 UC will be distributed immediately: {distribution.summaryText}, split equally among team members.
                         </p>
                     ) : (
                         <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">

@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
-import { Textarea } from "@/src/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -11,8 +10,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/src/components/ui/dialog";
-import TournamentSelector from "@/src/components/tournaments/TournamentSelector";
-import { TrashIcon } from "lucide-react";
+import { TrashIcon, Plus, Calendar, Users, Edit3 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import {
@@ -46,7 +44,6 @@ import { useSeasonStore } from "@/src/store/season";
 import { useTournament } from "@/src/hooks/tournament/useTournament";
 import { usePoll } from "@/src/hooks/poll/usePoll";
 import { useRouter } from "next/navigation";
-import { logger } from "@/src/utils/logger";
 
 type UpdatePollDialogProps = {
   open: boolean;
@@ -69,7 +66,18 @@ const pollDays = [
   "Saturday",
 ];
 
-const VoteOptions = ["IN", "OUT", "SOLO"];
+const VoteOptions = [
+  { value: "IN", label: "IN" },
+  { value: "OUT", label: "OUT" },
+  { value: "SOLO", label: "SOLO" },
+];
+
+const TeamTypes = [
+  { value: "SOLO", label: "Solo", players: 1 },
+  { value: "DUO", label: "Duo", players: 2 },
+  { value: "TRIO", label: "Trio", players: 3 },
+  { value: "SQUAD", label: "Squad", players: 4 },
+];
 
 export const UpdatePollDialog = ({ open, id }: UpdatePollDialogProps) => {
   const { tournamentId } = useTournamentStore();
@@ -79,7 +87,7 @@ export const UpdatePollDialog = ({ open, id }: UpdatePollDialogProps) => {
 
   const { activeSeason } = useAppContext();
 
-  const { data, isFetching } = usePoll({ id });
+  const { data } = usePoll({ id });
 
   const { data: tournament } = useTournament({ id: tournamentId });
 
@@ -140,70 +148,86 @@ export const UpdatePollDialog = ({ open, id }: UpdatePollDialogProps) => {
         tournamentId: data?.tournamentId,
         options: data?.options,
         days: data?.days,
+        teamType: data?.teamType || "DUO",
       });
     }
   }, [data?.id, form]);
+
   const watchDays = useWatch({
     control: form.control,
     name: "days",
   });
+
   useEffect(() => {
     if (watchDays === "" && data?.days !== "") {
       form.setValue("days", data?.days || "Monday");
     }
   }, [watchDays, data?.days, form]);
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-[95vw] sm:max-w-lg md:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
-        <DialogHeader>
-          <DialogTitle className="text-lg sm:text-xl font-semibold">
-            Update Poll
-          </DialogTitle>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            Update a tournament participation poll
-          </p>
+      <DialogContent className="w-full h-[100dvh] inset-0 translate-x-0 translate-y-0 sm:inset-auto sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:h-auto sm:max-w-lg max-w-none p-0 gap-0 overflow-hidden rounded-none sm:rounded-xl flex flex-col bg-white dark:bg-black border border-gray-200 dark:border-gray-800">
+        {/* Header */}
+        <DialogHeader className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-100 dark:bg-gray-900 rounded-lg flex items-center justify-center">
+              <Edit3 className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            </div>
+            <div>
+              <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                Update Poll
+              </DialogTitle>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Modify poll settings and options</p>
+            </div>
+          </div>
         </DialogHeader>
-        {!isFetching && (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="question"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Poll Question</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          placeholder="Enter your poll question..."
-                          className="min-h-[80px] resize-none"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
+            <div className="px-5 py-4 space-y-4 flex-1 overflow-y-auto">
+              {/* Question */}
+              <FormField
+                control={form.control}
+                name="question"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Poll Question
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Enter your poll question..."
+                        className="h-10"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Days & Team Type - Side by Side */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Days Selector */}
                 <FormField
                   control={form.control}
-                  name={"days"}
+                  name="days"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="sr-only">Choose Days</FormLabel>
+                    <FormItem className="space-y-2">
+                      <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        Days
+                      </FormLabel>
                       <FormControl>
                         <Select
                           value={field.value}
                           defaultValue={field.value}
                           onValueChange={field.onChange}
                         >
-                          <SelectTrigger value={field.value} className="w-full">
-                            <SelectValue
-                              {...field}
-                              placeholder="Select a day"
-                            />
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Select days" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="max-h-48 overflow-y-auto">
                             {pollDays.map((day) => (
                               <SelectItem key={day} value={day}>
                                 {day}
@@ -216,29 +240,64 @@ export const UpdatePollDialog = ({ open, id }: UpdatePollDialogProps) => {
                     </FormItem>
                   )}
                 />
-                <FormLabel>Poll Options</FormLabel>
-                <div className="space-y-3">
+
+                {/* Team Type Selector */}
+                <FormField
+                  control={form.control}
+                  name="teamType"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Team Type
+                      </FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value || "DUO"}
+                          defaultValue="DUO"
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TeamTypes.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label} ({type.players}p)
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Poll Options */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Poll Options
+                </label>
+                <div className="space-y-2">
                   {fields.map((field, index) => (
                     <div
                       key={field.id}
-                      className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                      className="flex items-center gap-2 group"
                     >
                       <FormField
                         control={form.control}
                         name={`options.${index}.name`}
                         render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormLabel className="sr-only">
-                              Option {index + 1}
-                            </FormLabel>
+                          <FormItem className="flex-1 space-y-0">
                             <FormControl>
                               <Input
                                 {...field}
                                 placeholder={`Option ${index + 1}`}
-                                className="w-full"
+                                className="h-10"
                               />
                             </FormControl>
-                            <FormMessage />
                           </FormItem>
                         )}
                       />
@@ -247,80 +306,73 @@ export const UpdatePollDialog = ({ open, id }: UpdatePollDialogProps) => {
                         control={form.control}
                         name={`options.${index}.vote`}
                         render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="sr-only">
-                              Choose Days
-                            </FormLabel>
+                          <FormItem className="space-y-0">
                             <FormControl>
                               <Select
                                 value={field.value}
                                 onValueChange={field.onChange}
                               >
-                                <SelectTrigger
-                                  value={field.value}
-                                  className="w-full"
-                                >
-                                  <SelectValue
-                                    {...field}
-                                    placeholder="Select Vote"
-                                  />
+                                <SelectTrigger className="w-[80px] h-10">
+                                  <SelectValue placeholder="Vote" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {VoteOptions.map((day) => (
-                                    <SelectItem key={day} value={day}>
-                                      {day}
+                                  {VoteOptions.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
                             </FormControl>
-                            <FormMessage />
                           </FormItem>
                         )}
                       />
 
                       <Button
                         type="button"
-                        className="text-red-500 hover:text-red-700"
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 text-gray-400 hover:text-red-500 shrink-0"
                         onClick={() => remove(index)}
-                        variant="destructive"
-                        size={"icon-lg"}
-                        aria-label="Remove option"
                       >
-                        <TrashIcon />
+                        <TrashIcon className="h-4 w-4" />
                       </Button>
                     </div>
                   ))}
 
-                  <Button
+                  {/* Add Option Button */}
+                  <button
                     type="button"
-                    variant="outline"
                     onClick={() => append({ name: "", vote: "IN" })}
+                    className="w-full h-10 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 transition-colors flex items-center justify-center gap-2 text-sm"
                   >
+                    <Plus className="h-4 w-4" />
                     Add Option
-                  </Button>
+                  </button>
                 </div>
               </div>
-              <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-2">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => onClose(false)}
-                  className="w-full sm:w-auto"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={form.formState.isSubmitting || isPending}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm"
-                >
-                  Update Poll
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        )}
+            </div>
+
+            {/* Footer */}
+            <DialogFooter className="px-5 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex-row gap-3 sm:gap-3">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => onClose(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={form.formState.isSubmitting || isPending}
+                className="flex-1"
+              >
+                {isPending ? "Updating..." : "Update Poll"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

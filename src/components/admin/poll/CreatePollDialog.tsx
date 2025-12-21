@@ -11,7 +11,7 @@ import {
   DialogFooter,
 } from "@/src/components/ui/dialog";
 import TournamentSelector from "@/src/components/tournaments/TournamentSelector";
-import { TrashIcon, Plus } from "lucide-react";
+import { TrashIcon, Plus, Vote, Calendar, Users, MessageSquare } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { SubmitHandler, useFieldArray, useForm } from "react-hook-form";
@@ -60,7 +60,18 @@ const pollDays = [
   "Saturday",
 ];
 
-const VoteOptions = ["IN", "OUT", "SOLO"];
+const VoteOptions = [
+  { value: "IN", label: "IN" },
+  { value: "OUT", label: "OUT" },
+  { value: "SOLO", label: "SOLO" },
+];
+
+const TeamTypes = [
+  { value: "SOLO", label: "Solo", players: 1 },
+  { value: "DUO", label: "Duo", players: 2 },
+  { value: "TRIO", label: "Trio", players: 3 },
+  { value: "SQUAD", label: "Squad", players: 4 },
+];
 
 export const CreatePollDialog = ({
   open,
@@ -85,6 +96,7 @@ export const CreatePollDialog = ({
         { name: "Nga Leh solo", vote: "SOLO" },
       ],
       days: "Monday",
+      teamType: "DUO",
     },
   });
 
@@ -134,37 +146,48 @@ export const CreatePollDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-full h-[100dvh] inset-0 translate-x-0 translate-y-0 sm:inset-auto sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:h-auto sm:max-w-md max-w-none p-0 gap-0 overflow-hidden rounded-none sm:rounded-lg flex flex-col">
+      <DialogContent className="w-full h-[100dvh] inset-0 translate-x-0 translate-y-0 sm:inset-auto sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:h-auto sm:max-w-lg max-w-none p-0 gap-0 overflow-hidden rounded-none sm:rounded-xl flex flex-col bg-white dark:bg-black border border-gray-200 dark:border-gray-800">
         {/* Header */}
-        <DialogHeader className="px-4 py-3 border-b bg-muted/30">
-          <DialogTitle className="text-base font-medium">
-            Create Poll
-          </DialogTitle>
+        <DialogHeader className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-100 dark:bg-gray-900 rounded-lg flex items-center justify-center">
+              <Vote className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            </div>
+            <div>
+              <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                Create Poll
+              </DialogTitle>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Set up a new tournament poll</p>
+            </div>
+          </div>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
-            <div className="px-4 py-4 space-y-4 flex-1 overflow-y-auto">
-              {/* Tournament Selector - Compact */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Tournament</label>
+            <div className="px-5 py-4 space-y-4 flex-1 overflow-y-auto">
+              {/* Tournament Selector */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Tournament
+                </label>
                 <TournamentSelector className="w-full" />
               </div>
 
-              {/* Question - Minimal */}
+              {/* Question */}
               <FormField
                 control={form.control}
                 name="question"
                 render={({ field }) => (
-                  <FormItem className="space-y-1.5">
-                    <FormLabel className="text-xs font-medium text-muted-foreground">
-                      Question
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Poll Question
                     </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Poll question..."
-                        className="h-9"
+                        placeholder="Enter your poll question..."
+                        className="h-10"
                       />
                     </FormControl>
                     <FormMessage />
@@ -172,58 +195,94 @@ export const CreatePollDialog = ({
                 )}
               />
 
-              {/* Days Selector */}
-              <FormField
-                control={form.control}
-                name="days"
-                render={({ field }) => (
-                  <FormItem className="space-y-1.5">
-                    <FormLabel className="text-xs font-medium text-muted-foreground">
-                      Days
-                    </FormLabel>
-                    <FormControl>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger className="w-full h-9">
-                          <SelectValue placeholder="Select days" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-48 overflow-y-auto">
-                          {pollDays.map((day) => (
-                            <SelectItem key={day} value={day}>
-                              {day}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Days & Team Type - Side by Side */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Days Selector */}
+                <FormField
+                  control={form.control}
+                  name="days"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        Days
+                      </FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Select days" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-48 overflow-y-auto">
+                            {pollDays.map((day) => (
+                              <SelectItem key={day} value={day}>
+                                {day}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* Poll Options - Compact */}
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Options
+                {/* Team Type Selector */}
+                <FormField
+                  control={form.control}
+                  name="teamType"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Team Type
+                      </FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TeamTypes.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label} ({type.players}p)
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Poll Options */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Poll Options
                 </label>
                 <div className="space-y-2">
                   {fields.map((field, index) => (
                     <div
                       key={field.id}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 group"
                     >
                       <FormField
                         control={form.control}
                         name={`options.${index}.name`}
                         render={({ field }) => (
-                          <FormItem className="flex-1">
+                          <FormItem className="flex-1 space-y-0">
                             <FormControl>
                               <Input
                                 {...field}
                                 placeholder={`Option ${index + 1}`}
-                                className="h-8 text-sm"
+                                className="h-10"
                               />
                             </FormControl>
                           </FormItem>
@@ -234,19 +293,19 @@ export const CreatePollDialog = ({
                         control={form.control}
                         name={`options.${index}.vote`}
                         render={({ field }) => (
-                          <FormItem>
+                          <FormItem className="space-y-0">
                             <FormControl>
                               <Select
                                 value={field.value}
                                 onValueChange={field.onChange}
                               >
-                                <SelectTrigger className="w-20 h-8 text-sm">
+                                <SelectTrigger className="w-[80px] h-10">
                                   <SelectValue placeholder="Vote" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {VoteOptions.map((option) => (
-                                    <SelectItem key={option} value={option}>
-                                      {option}
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -260,7 +319,7 @@ export const CreatePollDialog = ({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        className="h-10 w-10 text-gray-400 hover:text-red-500 shrink-0"
                         onClick={() => remove(index)}
                       >
                         <TrashIcon className="h-4 w-4" />
@@ -268,36 +327,35 @@ export const CreatePollDialog = ({
                     </div>
                   ))}
 
-                  <Button
+                  {/* Add Option Button */}
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="sm"
                     onClick={() => append({ name: "", vote: "IN" })}
-                    className="h-8 text-xs text-muted-foreground hover:text-foreground"
+                    className="w-full h-10 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 transition-colors flex items-center justify-center gap-2 text-sm"
                   >
-                    <Plus className="h-3 w-3 mr-1" />
+                    <Plus className="h-4 w-4" />
                     Add Option
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
 
             {/* Footer */}
-            <DialogFooter className="px-4 py-3 border-t bg-muted/30 flex-row gap-2 sm:gap-2">
+            <DialogFooter className="px-5 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex-row gap-3 sm:gap-3">
               <Button
-                variant="ghost"
+                variant="outline"
                 type="button"
                 onClick={() => onValueChange(false)}
-                className="flex-1 h-9"
+                className="flex-1"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={form.formState.isSubmitting || isPending}
-                className="flex-1 h-9"
+                className="flex-1"
               >
-                {isPending ? "Creating..." : "Create"}
+                {isPending ? "Creating..." : "Create Poll"}
               </Button>
             </DialogFooter>
           </form>

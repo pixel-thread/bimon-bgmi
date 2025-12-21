@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { FiCheck, FiUsers } from "react-icons/fi";
 import { Badge } from "@/src/components/ui/badge";
 import { PollOption } from "./PollOption";
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { SlotMachineCounter } from "@/src/components/ui/AnimatedCounter";
 import { getPollTheme, PollTheme } from "./pollTheme";
 import { motion, AnimatePresence } from "motion/react";
+import { getPrizeDistribution, getTeamSize } from "@/src/utils/prizeDistribution";
 
 const bannedStampStyles = {
   position: "absolute" as const,
@@ -44,7 +45,7 @@ const bannedStampStyles = {
 type VoteT = Prisma.PlayerPollVoteCreateInput["vote"];
 
 // Aceternity-style animated tooltip for prize breakdown
-const PrizeBreakdownTooltip = ({ prizePool, theme }: { prizePool: number; theme: PollTheme }) => {
+const PrizeBreakdownTooltip = ({ prizePool, entryFee, teamSize, theme }: { prizePool: number; entryFee: number; teamSize: number; theme: PollTheme }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -72,18 +73,26 @@ const PrizeBreakdownTooltip = ({ prizePool, theme }: { prizePool: number; theme:
               stiffness: 400,
               damping: 25,
             }}
-            className={`absolute bottom-full right-0 mb-2 z-50 rounded-lg px-3 py-2 text-sm shadow-xl border ${theme.voterCard} ${theme.dialogBorder}`}
+            className={`absolute bottom-0 right-full mr-2 z-50 rounded-lg px-4 py-2 text-sm shadow-2xl bg-gradient-to-br ${theme.header} max-h-48 overflow-y-auto`}
           >
-            <div className={`absolute inset-x-0 -bottom-px h-px bg-gradient-to-r ${theme.dialogHeader}`} />
-            <div className="space-y-1 whitespace-nowrap text-gray-900 dark:text-white">
-              <div className="flex items-center justify-between gap-4">
-                <span>🥇 1st</span>
-                <span className="font-semibold">₹{Math.round(prizePool * 0.6).toLocaleString()}</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span>🥈 2nd</span>
-                <span className="font-semibold">₹{Math.round(prizePool * 0.3).toLocaleString()}</span>
-              </div>
+            <div className="absolute inset-0 bg-black/10 rounded-lg" />
+            <div className="relative space-y-0.5 whitespace-nowrap text-white">
+              {(() => {
+                const distribution = getPrizeDistribution(prizePool, entryFee, teamSize);
+                const medals = ['🥇', '🥈', '🥉', '🏅', '🎖️'];
+                return Array.from(distribution.prizes.entries())
+                  .sort(([a], [b]) => a - b)
+                  .map(([position, prize]) => {
+                    const medal = medals[position - 1] || '🏅';
+                    const ordinal = position === 1 ? 'st' : position === 2 ? 'nd' : position === 3 ? 'rd' : 'th';
+                    return (
+                      <div key={position} className="flex items-center justify-between gap-4">
+                        <span>{medal} {position}{ordinal}</span>
+                        <span className="font-semibold">₹{prize.amount.toLocaleString()}</span>
+                      </div>
+                    );
+                  });
+              })()}
             </div>
           </motion.div>
         )}
@@ -264,6 +273,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
 
     const prizePool = entryFee * participantCount;
     const hasPrizePool = prizePool > 0;
+    const teamSize = getTeamSize(poll.teamType || 'DUO');
 
     // Use shared theme utility
     const theme = hasPrizePool ? getPollTheme(participantCount) : null;
@@ -312,37 +322,52 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
               <div className={`relative p-6 ${hasPrizePool ? 'pb-8' : 'border-b border-gray-100 dark:border-gray-700'}`}>
                 {/* Title and Day Row */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0 overflow-hidden group">
-                    <h3
-                      className={`font-semibold text-lg truncate group-hover:animate-[scroll_5s_linear_infinite] ${hasPrizePool ? 'text-white drop-shadow-md' : 'text-gray-900 dark:text-white'}`}
-                      title={poll.question}
-                    >
-                      {poll.question}
-                    </h3>
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="overflow-hidden">
+                      <h3
+                        className={`font-semibold text-lg whitespace-nowrap animate-marquee ${hasPrizePool ? 'text-white drop-shadow-md' : 'text-gray-900 dark:text-white'}`}
+                        title={poll.question}
+                      >
+                        {poll.question}
+                      </h3>
+                    </div>
                     <style jsx>{`
-                      @keyframes scroll {
-                        0%, 30% { transform: translateX(0); }
-                        70%, 100% { transform: translateX(calc(-100% + 200px)); }
+                      @keyframes marquee {
+                        0%, 15% { transform: translateX(0%); }
+                        40%, 60% { transform: translateX(-30%); }
+                        85%, 100% { transform: translateX(0%); }
                       }
-                      .group:hover h3 {
-                        overflow: visible;
-                        white-space: nowrap;
+                      .animate-marquee {
+                        display: inline-block;
+                        animation: marquee 12s ease-in-out infinite;
+                      }
+                      @media (min-width: 640px) {
+                        .animate-marquee {
+                          animation: none;
+                          overflow: hidden;
+                          text-overflow: ellipsis;
+                          display: block;
+                        }
                       }
                     `}</style>
                   </div>
-                  {poll?.days ? (
-                    <Badge className={`flex-shrink-0 font-bold px-3 py-1 text-xs rounded-md ${theme ? theme.badge : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200 animate-pulse'}`}>
-                      {poll.days}
-                    </Badge>
-                  ) : poll?.createdAt ? (
-                    <Badge className={`flex-shrink-0 font-bold px-3 py-1 text-xs rounded-md ${theme ? theme.badge : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 animate-pulse'}`}>
-                      {new Date(poll.createdAt).toLocaleDateString(undefined, {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </Badge>
-                  ) : null}
+                  {/* Badges row */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Days Badge */}
+                    {poll?.days ? (
+                      <Badge className={`font-bold px-3 py-1 text-xs rounded-md ${theme ? theme.badge : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200 animate-pulse'}`}>
+                        {poll.days}
+                      </Badge>
+                    ) : poll?.createdAt ? (
+                      <Badge className={`font-bold px-3 py-1 text-xs rounded-md ${theme ? theme.badge : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 animate-pulse'}`}>
+                        {new Date(poll.createdAt).toLocaleDateString(undefined, {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </Badge>
+                    ) : null}
+                  </div>
                 </div>
 
                 {/* Prize Pool Display */}
@@ -361,7 +386,15 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                       </div>
                     </div>
                     {/* Info icon in bottom right corner - Aceternity style */}
-                    <PrizeBreakdownTooltip prizePool={prizePool} theme={theme} />
+                    <PrizeBreakdownTooltip prizePool={prizePool} entryFee={entryFee} teamSize={teamSize} theme={theme} />
+                    {/* Team Type in bottom left */}
+                    {poll?.teamType && (
+                      <div className="absolute bottom-2 left-3">
+                        <Badge className="font-bold px-2 py-1 text-xs rounded-md bg-white/25 text-white border border-white/30 backdrop-blur-sm">
+                          {poll.teamType}
+                        </Badge>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
