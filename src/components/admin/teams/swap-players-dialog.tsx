@@ -198,22 +198,34 @@ export const SwapPlayersDialog = ({
                             )}
                         </div>
 
-                        {/* Preview */}
-                        {canSwap && teamA && teamB && (
-                            <div className="p-3 rounded-lg bg-muted/50 text-sm">
-                                <p className="font-medium mb-2">Preview:</p>
-                                <p>
-                                    <span className="text-primary">{toBGMIDisplay(teamA.players?.find((p: { id: string; name: string }) => p.id === playerAId)?.name)}</span>
-                                    {" → "}
-                                    <span className="text-muted-foreground">{teamB.name}</span>
-                                </p>
-                                <p>
-                                    <span className="text-primary">{toBGMIDisplay(teamB.players?.find((p: { id: string; name: string }) => p.id === playerBId)?.name)}</span>
-                                    {" → "}
-                                    <span className="text-muted-foreground">{teamA.name}</span>
-                                </p>
-                            </div>
-                        )}
+                        {/* Preview - Show new team compositions */}
+                        {canSwap && teamA && teamB && (() => {
+                            // Compute new team compositions after swap
+                            const playerA = teamA.players?.find((p: { id: string; name: string }) => p.id === playerAId);
+                            const playerB = teamB.players?.find((p: { id: string; name: string }) => p.id === playerBId);
+
+                            // New Team A: replace playerA with playerB
+                            const newTeamAPlayers = (teamA.players?.map((p: { id: string; name: string }) =>
+                                p.id === playerAId ? playerB : p
+                            ) || []).filter((p): p is { id: string; name: string } => p !== undefined);
+
+                            // New Team B: replace playerB with playerA
+                            const newTeamBPlayers = (teamB.players?.map((p: { id: string; name: string }) =>
+                                p.id === playerBId ? playerA : p
+                            ) || []).filter((p): p is { id: string; name: string } => p !== undefined);
+
+                            // Format: playerA_playerB (combined names)
+                            const teamAPreview = newTeamAPlayers.map(p => toBGMIDisplay(p.name)).join('_');
+                            const teamBPreview = newTeamBPlayers.map(p => toBGMIDisplay(p.name)).join('_');
+
+                            return (
+                                <div className="p-3 rounded-lg bg-muted/50 text-sm space-y-1">
+                                    <p className="font-medium text-muted-foreground mb-2">New Teams:</p>
+                                    <p className="font-mono text-primary">{teamAPreview}</p>
+                                    <p className="font-mono text-primary">{teamBPreview}</p>
+                                </div>
+                            );
+                        })()}
                     </div>
                 )}
 
