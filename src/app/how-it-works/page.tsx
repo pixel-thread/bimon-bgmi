@@ -109,12 +109,14 @@ export default function HowItWorksPage() {
                   Example Placement Points:
                 </h4>
                 <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                  <li>• 1st Place (Winner Winner): 15 points</li>
-                  <li>• 2nd Place: 12 points</li>
-                  <li>• 3rd Place: 10 points</li>
-                  <li>• 4th-6th Place: 8 points</li>
-                  <li>• 7th-10th Place: 5 points</li>
-                  <li>• 11th+ Place: 2 points</li>
+                  <li>• 1st Place (Chicken Dinner): 10 points</li>
+                  <li>• 2nd Place: 6 points</li>
+                  <li>• 3rd Place: 5 points</li>
+                  <li>• 4th Place: 4 points</li>
+                  <li>• 5th Place: 3 points</li>
+                  <li>• 6th Place: 2 points</li>
+                  <li>• 7th-8th Place: 1 point</li>
+                  <li>• 9th+ Place: 0 points</li>
                 </ul>
               </div>
             </div>

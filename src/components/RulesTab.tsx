@@ -16,6 +16,7 @@ import { Label } from "@/src/components/ui/label";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2, BookOpen } from "lucide-react";
 import { LoaderFive } from "@/src/components/ui/loader";
+import { useAuth } from "@clerk/nextjs";
 
 interface Rule {
   id: string;
@@ -31,6 +32,7 @@ interface RulesTabProps {
 }
 
 export function RulesTab({ readOnly = false }: RulesTabProps) {
+  const { getToken } = useAuth();
   const [rules, setRules] = useState<Rule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -96,11 +98,16 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
         order: editingRule ? editingRule.order : rules.length + 1,
       };
 
+      const token = await getToken({ template: "jwt" });
+
       if (editingRule) {
         // Update existing rule
         const response = await fetch(`/api/admin/rules/${editingRule.id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify(ruleData),
         });
         const result = await response.json();
@@ -112,7 +119,10 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
         // Create new rule
         const response = await fetch("/api/admin/rules", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify(ruleData),
         });
         const result = await response.json();
@@ -149,8 +159,12 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
     }
 
     try {
+      const token = await getToken({ template: "jwt" });
       const response = await fetch(`/api/admin/rules/${ruleId}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       const result = await response.json();
       if (!response.ok) {
@@ -174,8 +188,12 @@ export function RulesTab({ readOnly = false }: RulesTabProps) {
     }
 
     try {
+      const token = await getToken({ template: "jwt" });
       const response = await fetch("/api/admin/rules", {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       const result = await response.json();
       if (!response.ok) {
