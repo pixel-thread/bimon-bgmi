@@ -34,7 +34,11 @@ export function ProfileSettings() {
             setUserName(user.userName);
         }
         if (user?.displayName) {
-            setDisplayName(user.displayName);
+            // Sanitize BGMI invisible characters when loading
+            const sanitized = user.displayName
+                .replace(/[ĀāĒēĪīŌōŪū]/g, " ")
+                .replace(/\s+/g, " ");
+            setDisplayName(sanitized);
         }
     }, [user?.userName, user?.displayName]);
 
@@ -204,6 +208,17 @@ export function ProfileSettings() {
                                     value={displayName}
                                     onChange={(e) => {
                                         setDisplayName(e.target.value);
+                                        setDisplayNameError("");
+                                    }}
+                                    onPaste={(e) => {
+                                        e.preventDefault();
+                                        const pastedText = e.clipboardData.getData("text");
+                                        // Replace BGMI invisible characters (macron vowels) with spaces
+                                        // These characters are invisible in BGMI: Ā, ā, Ē, ē, Ī, ī, Ō, ō, Ū, ū
+                                        const sanitized = pastedText
+                                            .replace(/[ĀāĒēĪīŌōŪū]/g, " ")
+                                            .replace(/\s+/g, " "); // Collapse multiple spaces
+                                        setDisplayName(sanitized);
                                         setDisplayNameError("");
                                     }}
                                     placeholder="e.g. KŠツMeban"
