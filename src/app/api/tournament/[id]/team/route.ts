@@ -39,8 +39,9 @@ export async function GET(
     if (!isAllMatches) {
       data = teams?.map((team) => {
         const teamStats = team.teamStats.find((val) => val.matchId === matchId);
-        const teamPlayerStats = team.teamPlayerStats.find(
-          (val) => val.seasonId === seasonId || val.matchId === matchId,
+        // Use filter to get ALL player stats for this match, not just one
+        const teamPlayerStats = team.teamPlayerStats.filter(
+          (val) => val.matchId === matchId,
         );
         const teamPlayers = team.players.map((player) => {
           const playerStats = player.playerStats.find(
@@ -58,7 +59,9 @@ export async function GET(
           };
         });
 
-        const kills = teamPlayerStats?.kills || 0;
+        // Sum kills from all players in this match
+        const kills = teamPlayerStats.reduce((a, b) => a + b.kills, 0);
+        const deaths = teamPlayerStats.reduce((a, b) => a + b.deaths, 0);
         const teamPosition = teamStats?.position || 0;
         const pts = calculatePlayerPoints(teamPosition, 0);
         const total = kills + pts;
@@ -71,12 +74,13 @@ export async function GET(
           matches: team.matches,
           size: team.players.length,
           slotNo: team.teamNumber + 1,
-          kills: teamPlayerStats?.kills || 0,
-          deaths: teamPlayerStats?.deaths || 0,
+          kills: kills,
+          deaths: deaths,
           position: teamPosition,
           pts: pts,
           total: total,
           players: teamPlayers,
+          teamPlayerStats: teamPlayerStats, // Include for bulk edit dialog
         };
       });
     } else {
