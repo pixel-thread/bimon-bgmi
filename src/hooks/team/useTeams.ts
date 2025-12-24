@@ -30,7 +30,8 @@ export function useTeams({ page = "1" }: Props = { page: "1" }) {
     enabled: !!tournamentId && !!matchId,
     select: (data) => data,
     placeholderData: keepPreviousData,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
+    staleTime: 60 * 1000, // 1 minute - balance between freshness and performance
   });
   const meta = query?.data?.meta;
 
