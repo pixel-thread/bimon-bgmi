@@ -183,13 +183,23 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Calculate balance aggregates
+    const totalBalance = data.reduce((acc, player) => acc + (player.uc || 0), 0);
+    const negativeBalance = data
+      .filter((player) => (player.uc || 0) < 0)
+      .reduce((acc, player) => acc + (player.uc || 0), 0);
+
     return SuccessResponse({
       data:
         seasonId === "all" && page !== "all"
           ? paginate({ array: data, pageSize: 10, pageNumber: parseInt(page) })
           : data,
       message: "Players fetched successfully",
-      meta: getMeta({ total: total, currentPage: page }),
+      meta: {
+        ...getMeta({ total: total, currentPage: page }),
+        totalBalance,
+        negativeBalance,
+      },
     });
   } catch (error) {
     return handleApiErrors(error);

@@ -3,13 +3,11 @@ import React, { useState } from "react";
 
 import { PlayerFilters } from "./PlayerFilters";
 import { PlayerStatsModal } from "./PlayerStatsModal";
-import { usePlayerData } from "./hooks/usePlayerData";
-import { Button } from "../ui/button";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 import { BalanceHistoryDialog } from "./BalanceHistoryDialog";
 import { BalanceAdjustmentDialog } from "./BalanceAdjustmentDialog";
-import { CreatePlayerDialog } from "./CreatePlayerDialog";
+
 import { CustomPlayerTable } from "./CustomPlayerTable";
 import { PlayerTableSkeleton } from "./PlayerTableSkeleton";
 import { usePlayers } from "@/src/hooks/player/usePlayers";
@@ -25,10 +23,8 @@ export function PlayersTab() {
   const playerId = search.get("player") || "";
   const { seasonId, setSeasonId } = useSeasonStore();
   const { user } = useAuth();
-  const role = user?.role;
-  // States
-  const [isCreatePlayerDialogOpen, setIsCreatePlayerDialogOpen] =
-    useState(false);
+  const isSuperAdmin = user?.role === "SUPER_ADMIN";
+
 
   const [query, setQuery] = useState("");
   const [selectedTier, setSelectedTier] = useState<string>("All");
@@ -74,9 +70,7 @@ export function PlayersTab() {
     sortOrder,
   });
 
-  const handleOpenCreatePlayerDialog = () => {
-    setIsCreatePlayerDialogOpen(true);
-  };
+
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -91,13 +85,25 @@ export function PlayersTab() {
         id={playerId}
       />
 
-      {/* Create Player Dialog */}
-      <CreatePlayerDialog
-        open={isCreatePlayerDialogOpen}
-        onVlaueChange={setIsCreatePlayerDialogOpen}
-      />
-
       <div className="space-y-6">
+        {/* Balance Stats for Super Admin */}
+        {isSuperAdmin && meta && (
+          <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/50 px-2.5 py-1 rounded-md">
+              <span className="text-zinc-500 dark:text-zinc-400">Total:</span>
+              <span className={`font-semibold ${(meta.totalBalance ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                {(meta.totalBalance ?? 0).toLocaleString()} UC
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/50 px-2.5 py-1 rounded-md">
+              <span className="text-zinc-500 dark:text-zinc-400">Negative:</span>
+              <span className="font-semibold text-red-500">
+                {(meta.negativeBalance ?? 0).toLocaleString()} UC
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4">
           <div className="w-full sm:w-auto flex-grow">
             <PlayerFilters
@@ -112,17 +118,6 @@ export function PlayersTab() {
               sortOrder={sortOrder}
               onSortOrderChange={handleSortOrderChange}
             />
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            {role === "SUPER_ADMIN" && (
-              <Button
-                variant="outline"
-                className="h-12 px-8 text-base font-medium w-full sm:w-auto"
-                onClick={handleOpenCreatePlayerDialog}
-              >
-                Add Player
-              </Button>
-            )}
           </div>
         </div>
 

@@ -9,4 +9,7 @@ export type MetaT = {
   entryFee?: number;
   totalPlayers?: number;
   prizePool?: number;
+  // Balance aggregates for admin
+  totalBalance?: number;
+  negativeBalance?: number;
 };
