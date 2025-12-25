@@ -31,6 +31,7 @@ export const AdminUserPage = () => {
 
   const roles = useMemo(
     () => [
+      { label: "All", value: "ALL" },
       { label: "Players", value: "PLAYER" },
       { label: "Super Admin", value: "SUPER_ADMIN" },
       { label: "Admins", value: "ADMIN" },

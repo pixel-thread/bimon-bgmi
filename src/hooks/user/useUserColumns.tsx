@@ -34,8 +34,8 @@ interface UserRole {
   id: string;
   role: string;
   userName: string;
+  displayName?: string;
   email: string;
-  createdBy: string;
 }
 
 type Props = {
@@ -73,12 +73,13 @@ const cols: ColumnDef<UserRole>[] = [
     accessorKey: "userName",
   },
   {
-    header: "Email",
-    accessorKey: "email",
+    header: "Display Name",
+    accessorKey: "displayName",
+    cell: ({ row }) => row.original.displayName || "-",
   },
   {
-    header: "Created By",
-    accessorKey: "createdBy",
+    header: "Email",
+    accessorKey: "email",
   },
 ];
 

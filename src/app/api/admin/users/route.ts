@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const searchParam = req.nextUrl.searchParams.get("search") || "";
 
     const where: any = {};
-    if (roleParam) {
+    if (roleParam && roleParam !== "ALL") {
       where.role = { equals: roleParam as any };
     }
     if (searchParam) {
