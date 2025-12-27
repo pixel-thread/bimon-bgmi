@@ -12,7 +12,7 @@ import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
 import { CategoryBadge } from "@/src/components/ui/category-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
-import { History, Ban, AlertTriangle, CheckCircle, DollarSign, ArrowUpRight, Shield } from "lucide-react";
+import { History, Ban, AlertTriangle, CheckCircle, DollarSign, ArrowUpRight, Shield, Heart } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { usePlayer } from "@/src/hooks/player/usePlayer";
 import { usePlayerStats } from "@/src/hooks/player/usePlayerStats";
@@ -165,6 +165,26 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
     },
   });
 
+  const { mutate: toggleTrusted, isPending: isTrustedPending } = useMutation({
+    mutationFn: (isTrusted: boolean) =>
+      http.patch(
+        ADMIN_PLAYER_ENDPOINTS.PATCH_PLAYER.replace(":id", id),
+        { isTrusted }
+      ),
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message || "Trusted status updated");
+        queryClient.invalidateQueries({ queryKey: ["player", id] });
+        queryClient.invalidateQueries({ queryKey: ["players"] });
+      } else {
+        toast.error(data.message || "Failed to update trusted status");
+      }
+    },
+    onError: () => {
+      toast.error("Failed to update trusted status");
+    },
+  });
+
   const isLoading = isPlayerLoading || isStatsLoading;
 
   const handleBalanceAdjustment = () => {
@@ -241,13 +261,22 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                           BANNED
                         </Badge>
                       )}
-                      {player.isUCExempt && (
+                      {isSuperAdmin && player.isUCExempt && (
                         <Badge
                           variant="secondary"
                           className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 text-xs"
                         >
                           <Shield className="w-3 h-3 mr-0.5 sm:mr-1" />
                           UC EXEMPT
+                        </Badge>
+                      )}
+                      {isSuperAdmin && player.isTrusted && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-100 text-xs"
+                        >
+                          <Heart className="w-3 h-3 mr-0.5 sm:mr-1" />
+                          TRUSTED
                         </Badge>
                       )}
                     </div>
@@ -373,6 +402,16 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     >
                       <Shield className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
                       {player.isUCExempt ? "Remove Exempt" : "UC Exempt"}
+                    </Button>
+                    <Button
+                      variant={player.isTrusted ? "outline" : "secondary"}
+                      onClick={() => toggleTrusted(!player.isTrusted)}
+                      disabled={isTrustedPending}
+                      className={`w-full sm:w-auto text-sm ${player.isTrusted ? "border-pink-600 text-pink-600 hover:bg-pink-50" : ""}`}
+                      size="sm"
+                    >
+                      <Heart className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
+                      {player.isTrusted ? "Remove Trusted" : "Trusted"}
                     </Button>
                   </>
                 )}

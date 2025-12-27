@@ -318,6 +318,7 @@ model Player {
   isBanned          Boolean             @default(false)
   manualUnban       Boolean             @default(false)
   isUCExempt        Boolean             @default(false)
+  isTrusted         Boolean             @default(false)
   userId            String              @unique
   matchPlayerPlayed MatchPlayerPlayed[]
 

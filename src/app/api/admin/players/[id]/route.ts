@@ -75,6 +75,20 @@ export async function PATCH(
       });
     }
 
+    // Toggle trusted status
+    if (typeof body.isTrusted === "boolean") {
+      const updated = await prisma.player.update({
+        where: { id },
+        data: { isTrusted: body.isTrusted },
+        select: { id: true, isTrusted: true, user: { select: { userName: true } } },
+      });
+
+      return SuccessResponse({
+        data: updated,
+        message: `Trusted status ${updated.isTrusted ? "enabled" : "disabled"} for ${updated.user.userName}`,
+      });
+    }
+
     return ErrorResponse({
       message: "Invalid request body",
       status: 400,
