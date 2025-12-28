@@ -111,18 +111,22 @@ export const UpdatePollDialog = ({ open, id }: UpdatePollDialogProps) => {
 
   const onClose = (value: boolean) => {
     form.reset();
-    router.back();
+    router.push('/admin/polls');
     return value;
   };
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data: PollForm) =>
       http.put<{ id: string }>(`/admin/poll/${data?.id}`, data),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (data.success) {
-        toast(data.message);
-        queryClient.invalidateQueries({ queryKey: ["polls"] });
-        onClose(false);
+        toast.success(data.message || "Poll updated successfully");
+        // Wait for query invalidation to complete before closing
+        await queryClient.invalidateQueries({ queryKey: ["polls"] });
+        // Small delay to ensure smooth transition
+        setTimeout(() => {
+          onClose(false);
+        }, 150);
         return data.data;
       }
       toast.error(data.message);
