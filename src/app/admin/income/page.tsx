@@ -1,9 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { FiDollarSign } from "react-icons/fi";
 import { IncomeManagement } from "@/src/components/admin/income/IncomeManagement";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
+import { Building2, Landmark } from "lucide-react";
 
 const AdminIncomePage = () => {
+    const [activeTab, setActiveTab] = useState("org");
+
     return (
         <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
             <div className="max-w-7xl mx-auto space-y-6">
@@ -19,9 +24,28 @@ const AdminIncomePage = () => {
                     </div>
                 </header>
 
-                <div className="space-y-6">
-                    <IncomeManagement />
-                </div>
+                {/* Page-Level Tabs */}
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 max-w-xs">
+                        <TabsTrigger value="org" className="gap-2">
+                            <Building2 className="h-4 w-4" />
+                            Org
+                        </TabsTrigger>
+                        <TabsTrigger value="fund" className="gap-2">
+                            <Landmark className="h-4 w-4" />
+                            Fund
+                        </TabsTrigger>
+                    </TabsList>
+
+                    <div className="mt-6">
+                        <TabsContent value="org" className="mt-0">
+                            <IncomeManagement typeFilter="org" />
+                        </TabsContent>
+                        <TabsContent value="fund" className="mt-0">
+                            <IncomeManagement typeFilter="fund" />
+                        </TabsContent>
+                    </div>
+                </Tabs>
             </div>
         </div>
     );

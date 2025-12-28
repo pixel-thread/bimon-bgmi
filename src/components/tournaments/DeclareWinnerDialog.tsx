@@ -204,6 +204,10 @@ export function DeclareWinnerDialog({
                                     <span>💼 Organizer ({distribution.tier.orgFeePercent}%):</span>
                                     <span className="font-medium">₹{organizerAmount.toLocaleString()}</span>
                                 </div>
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>🏦 Fund ({distribution.tier.fundPercent}%):</span>
+                                    <span className="font-medium">₹{distribution.fundAmount.toLocaleString()}</span>
+                                </div>
                             </div>
                         </div>
                     )}

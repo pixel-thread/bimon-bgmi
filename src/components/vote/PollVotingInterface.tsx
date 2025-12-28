@@ -119,9 +119,15 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
               No Active Polls
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-              Sa check next tournament.
+            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-3">
+              Please refresh later or check back soon.
             </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Refresh
+            </button>
           </div>
         </div>
       </div>

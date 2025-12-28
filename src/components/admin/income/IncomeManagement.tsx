@@ -62,7 +62,11 @@ interface Income {
     updatedAt: string;
 }
 
-export function IncomeManagement() {
+interface IncomeManagementProps {
+    typeFilter?: "all" | "fund" | "org";
+}
+
+export function IncomeManagement({ typeFilter = "all" }: IncomeManagementProps) {
     // Fund Tracker States
     const [fundTransactions, setFundTransactions] = useState<Income[]>([]);
     const [isLoadingFunds, setIsLoadingFunds] = useState(false);
@@ -204,9 +208,16 @@ export function IncomeManagement() {
                 fundFilter.tournament === "all" ||
                 (fundFilter.tournament === "general" && !transaction.tournamentId) ||
                 transaction.tournamentId === fundFilter.tournament;
-            return tournamentMatch;
+
+            // Type filter based on description prefix (uses prop from page)
+            const typeMatch =
+                typeFilter === "all" ||
+                (typeFilter === "fund" && transaction.description.toLowerCase().startsWith("fund")) ||
+                (typeFilter === "org" && transaction.description.toLowerCase().startsWith("org"));
+
+            return tournamentMatch && typeMatch;
         });
-    }, [fundTransactions, fundFilter]);
+    }, [fundTransactions, fundFilter, typeFilter]);
 
     const mainIncomeTransactions = useMemo(() => {
         return filteredFundTransactions.filter(
@@ -370,7 +381,7 @@ export function IncomeManagement() {
                     </div>
                 </CardHeader>
                 <CardContent className="p-4 space-y-4">
-                    {/* Filter */}
+                    {/* Tournament Filter */}
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <div className="flex items-center gap-2">
                             <Filter className="h-4 w-4 text-muted-foreground" />

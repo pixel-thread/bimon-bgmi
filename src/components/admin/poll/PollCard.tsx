@@ -66,6 +66,35 @@ export function PollCard({
         return playersVotes.filter((pv) => pv.vote === optionVote).length;
     };
 
+    // Get IN voters count (excluding OUT votes) for dynamic team size calculation
+    const inVotersCount = playersVotes.filter((pv) => pv.vote !== "OUT").length;
+
+    // Calculate dynamic team size based on IN voters
+    const getDynamicTeamType = (count: number): { type: string; size: number } => {
+        if (count < 50) return { type: "DUO", size: 2 };
+        if (count < 60) return { type: "TRIO", size: 3 };
+        return { type: "SQUAD", size: 4 };
+    };
+
+    // Get effective team type and size
+    const getEffectiveTeamInfo = (): { type: string; size: number } => {
+        if (poll.teamType === "DYNAMIC") {
+            return getDynamicTeamType(inVotersCount);
+        }
+        const teamSizeMap: Record<string, number> = {
+            SOLO: 1,
+            DUO: 2,
+            TRIO: 3,
+            SQUAD: 4,
+        };
+        return {
+            type: poll.teamType || "DUO",
+            size: teamSizeMap[poll.teamType || "DUO"] || 2
+        };
+    };
+
+    const effectiveTeamInfo = getEffectiveTeamInfo();
+
     // Find leading option
     const voteCounts = poll.options.map((opt) => ({
         name: opt.name,
@@ -200,15 +229,7 @@ export function PollCard({
                             className="h-8 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
                             disabled={isPreviewLoading}
                             onClick={() => {
-                                // Convert TeamType to team size
-                                const teamSizeMap: Record<string, number> = {
-                                    SOLO: 1,
-                                    DUO: 2,
-                                    TRIO: 3,
-                                    SQUAD: 4,
-                                };
-                                const size = teamSizeMap[poll.teamType || 'DUO'] || 2;
-                                onPreviewTeams(poll.id, size);
+                                onPreviewTeams(poll.id, effectiveTeamInfo.size);
                             }}
                         >
                             {isPreviewLoading ? (
@@ -216,7 +237,10 @@ export function PollCard({
                             ) : (
                                 <Users className="w-3.5 h-3.5 mr-1.5" />
                             )}
-                            Create {poll.teamType || 'DUO'} Teams
+                            Create {effectiveTeamInfo.type} Teams
+                            {poll.teamType === "DYNAMIC" && (
+                                <span className="ml-1 text-xs opacity-70">({inVotersCount})</span>
+                            )}
                         </Button>
                     </div>
 

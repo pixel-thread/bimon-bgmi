@@ -12,7 +12,7 @@ export const pollSchema = z.object({
   question: z.string(),
   tournamentId: z.string(),
   days: z.string(),
-  teamType: z.enum(["SOLO", "DUO", "TRIO", "SQUAD"]).optional().default("DUO"),
+  teamType: z.enum(["SOLO", "DUO", "TRIO", "SQUAD", "DYNAMIC"]).optional().default("DYNAMIC"),
 });
 
 export const playerVoteSchema = z.object({

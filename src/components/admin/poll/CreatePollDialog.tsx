@@ -67,6 +67,7 @@ const VoteOptions = [
 ];
 
 const TeamTypes = [
+  { value: "DYNAMIC", label: "Dynamic", players: 0, description: "Auto-select" },
   { value: "SOLO", label: "Solo", players: 1 },
   { value: "DUO", label: "Duo", players: 2 },
   { value: "TRIO", label: "Trio", players: 3 },
@@ -96,7 +97,7 @@ export const CreatePollDialog = ({
         { name: "Nga Leh solo", vote: "SOLO" },
       ],
       days: "Monday",
-      teamType: "DUO",
+      teamType: "DYNAMIC",
     },
   });
 
@@ -247,10 +248,17 @@ export const CreatePollDialog = ({
                           <SelectTrigger className="h-10">
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="min-w-[140px]">
                             {TeamTypes.map((type) => (
                               <SelectItem key={type.value} value={type.value}>
-                                {type.label} ({type.players}p)
+                                {type.value === "DYNAMIC" ? (
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="font-medium">Auto</span>
+                                    <span className="text-[10px] text-muted-foreground hidden sm:inline">by votes</span>
+                                  </span>
+                                ) : (
+                                  `${type.label} (${type.players}p)`
+                                )}
                               </SelectItem>
                             ))}
                           </SelectContent>

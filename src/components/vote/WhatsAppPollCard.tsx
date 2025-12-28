@@ -286,9 +286,21 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
 
     const participantCount = inVotesCount + soloVotesCount;
 
+    // Calculate dynamic team type based on participant count
+    const getDynamicTeamType = (count: number): { type: string; size: number } => {
+      if (count < 50) return { type: "DUO", size: 2 };
+      if (count < 60) return { type: "TRIO", size: 3 };
+      return { type: "SQUAD", size: 4 };
+    };
+
+    // Get effective team type and size
+    const effectiveTeamInfo = poll.teamType === "DYNAMIC"
+      ? getDynamicTeamType(participantCount)
+      : { type: poll.teamType || "DUO", size: getTeamSize(poll.teamType || 'DUO') };
+
     const prizePool = entryFee * participantCount;
     const hasPrizePool = prizePool > 0;
-    const teamSize = getTeamSize(poll.teamType || 'DUO');
+    const teamSize = effectiveTeamInfo.size;
 
     // Use shared theme utility
     const theme = hasPrizePool ? getPollTheme(participantCount) : null;
@@ -407,7 +419,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                     {poll?.teamType && (
                       <div className="absolute bottom-2 left-3">
                         <Badge className="font-bold px-2 py-1 text-xs rounded-md bg-white/25 text-white border border-white/30 backdrop-blur-sm">
-                          {poll.teamType}
+                          {effectiveTeamInfo.type}
                         </Badge>
                       </div>
                     )}

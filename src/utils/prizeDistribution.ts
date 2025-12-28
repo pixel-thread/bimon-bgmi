@@ -3,6 +3,13 @@
  * 
  * Dynamic prize distribution based on "Money Milestones" - the total prize pool.
  * Tier thresholds determine the number of winners and distribution percentages.
+ * 
+ * Rules:
+ * 1. Fund = 5%, Org = 9%/9%/8%/7% depending on tier
+ * 2. UC-exempt players count in prize pool, but their entry fee is subtracted from Org
+ * 3. Org minimum = ₹20
+ * 4. Org should always be > Fund (take from Fund if needed)
+ * 5. Odd prize amounts cascade up (lower positions → higher, finally 1st → Fund)
  */
 
 // ============================================================================
@@ -16,6 +23,7 @@ export interface PrizeTierConfig {
     minPool: number;
     maxPool: number | null; // null for unlimited
     orgFeePercent: number;
+    fundPercent: number; // 5% fund for community/future events
     winnerCount: number;
     /** Percentages for positions 1, 2, 3, etc. */
     percentages: number[];
@@ -33,6 +41,7 @@ export interface PrizeDistributionResult {
     tier: PrizeTierConfig;
     totalPool: number;
     orgFee: number;
+    fundAmount: number; // 5% fund amount
     totalWinnerPayout: number;
     prizes: Map<number, PositionPrize>;
     /** Human-readable summary like "Top 3 paid: 50%/25%/15%" */
@@ -41,6 +50,15 @@ export interface PrizeDistributionResult {
     splitText: string;
     /** Refund amount for last place */
     refundAmount: number;
+}
+
+export interface FinalDistributionResult extends PrizeDistributionResult {
+    /** Adjusted org amount after UC-exempt costs and adjustments */
+    finalOrgAmount: number;
+    /** Adjusted fund amount after adjustments */
+    finalFundAmount: number;
+    /** UC-exempt cost that org is covering */
+    ucExemptCost: number;
 }
 
 // ============================================================================
@@ -52,42 +70,49 @@ const TIER_CONFIGS: PrizeTierConfig[] = [
         level: 1,
         minPool: 0,
         maxPool: 1199,
-        orgFeePercent: 10,
+        orgFeePercent: 9, // Reduced from 10%
+        fundPercent: 5,
         winnerCount: 2,
-        percentages: [60, 30],
+        percentages: [57, 29], // Adjusted to account for fund (was 60, 30)
         description: "Top 2 paid",
     },
     {
         level: 2,
         minPool: 1200,
         maxPool: 3000,
-        orgFeePercent: 10,
+        orgFeePercent: 9, // Reduced from 10%
+        fundPercent: 5,
         winnerCount: 3,
         // 3rd place gets fixed refund, remaining split between 1st and 2nd
-        percentages: [65, 35],
+        percentages: [62, 33], // Adjusted for fund (was 65, 35)
         description: "Top 3 paid",
     },
     {
         level: 3,
         minPool: 3001,
         maxPool: 5000,
-        orgFeePercent: 9,
+        orgFeePercent: 8, // Reduced from 9%
+        fundPercent: 5,
         winnerCount: 4,
         // 4th place gets fixed refund, remaining split among top 3
-        percentages: [55, 30, 15],
+        percentages: [52, 28, 14], // Adjusted for fund (was 55, 30, 15)
         description: "Top 4 paid",
     },
     {
         level: 4,
         minPool: 5001,
         maxPool: null,
-        orgFeePercent: 8,
+        orgFeePercent: 7, // Reduced from 8%
+        fundPercent: 5,
         winnerCount: 5,
         // 5th place gets fixed refund, remaining split among top 4
-        percentages: [40, 27, 20, 13],
+        percentages: [38, 26, 19, 12], // Adjusted for fund (was 40, 27, 20, 13)
         description: "Top 5 paid",
     },
 ];
+
+// Constants
+const ORG_MINIMUM = 20;
 
 /**
  * Convert TeamType to team size number.
@@ -98,8 +123,21 @@ export function getTeamSize(teamType: string): number {
         DUO: 2,
         TRIO: 3,
         SQUAD: 4,
+        DYNAMIC: 2, // Default fallback; actual size determined at team creation
     };
     return sizes[teamType] || 2; // Default to duo
+}
+
+/**
+ * Make a number even by rounding down.
+ * Returns the amount to add to the next higher position.
+ */
+function makeEven(amount: number): { evenAmount: number; remainder: number } {
+    const remainder = amount % 2;
+    return {
+        evenAmount: amount - remainder,
+        remainder,
+    };
 }
 
 /**
@@ -124,14 +162,15 @@ export function getPrizeDistribution(
     ) || TIER_CONFIGS[0]; // Fallback to tier 1
 
     const orgFee = Math.floor(totalPool * (tier.orgFeePercent / 100));
+    let fundAmount = Math.floor(totalPool * (tier.fundPercent / 100));
     const prizes = new Map<number, PositionPrize>();
 
     if (tier.level >= 2) {
         // Tiers 2-4: Last position gets entry fee × team size as refund
         const lastPosition = tier.winnerCount;
         const teamRefund = entryFee * teamSize;
-        const refundAmount = Math.min(teamRefund, totalPool - orgFee);
-        const remainingForWinners = totalPool - orgFee - refundAmount;
+        const refundAmount = Math.min(teamRefund, totalPool - orgFee - fundAmount);
+        const remainingForWinners = totalPool - orgFee - fundAmount - refundAmount;
 
         // Distribute by percentage to all positions except last
         tier.percentages.forEach((percent, idx) => {
@@ -166,6 +205,27 @@ export function getPrizeDistribution(
         });
     }
 
+    // Cascade odd amounts: lower positions → higher, finally 1st → Fund
+    // Process from highest position to lowest
+    const positions = Array.from(prizes.keys()).sort((a, b) => b - a);
+    let carryOver = 0;
+
+    for (const position of positions) {
+        const prize = prizes.get(position)!;
+        const adjustedAmount = prize.amount + carryOver;
+        const { evenAmount, remainder } = makeEven(adjustedAmount);
+
+        prizes.set(position, {
+            ...prize,
+            amount: evenAmount,
+        });
+
+        carryOver = remainder;
+    }
+
+    // Any remaining odd amount from 1st position goes to fund
+    fundAmount += carryOver;
+
     // Calculate total winner payout
     let totalWinnerPayout = 0;
     prizes.forEach((prize) => {
@@ -174,7 +234,7 @@ export function getPrizeDistribution(
 
     // Generate summary texts
     const teamRefund = entryFee * teamSize;
-    const actualRefund = tier.level >= 2 ? Math.min(teamRefund, totalPool - orgFee) : 0;
+    const actualRefund = tier.level >= 2 ? Math.min(teamRefund, totalPool - orgFee - fundAmount) : 0;
     const splitText = tier.percentages.join("/");
     const summaryText = tier.level >= 2
         ? `${tier.description}: ${splitText} + ₹${actualRefund} refund`
@@ -184,11 +244,87 @@ export function getPrizeDistribution(
         tier,
         totalPool,
         orgFee,
+        fundAmount,
         totalWinnerPayout,
         prizes,
         summaryText,
         splitText,
         refundAmount: actualRefund,
+    };
+}
+
+/**
+ * Calculate final distribution with UC-exempt adjustments.
+ * 
+ * Rules:
+ * 1. UC-exempt players count in prize pool but their entry fee is subtracted from Org
+ * 2. Org minimum = ₹20
+ * 3. Org should always be > Fund (take from Fund if needed)
+ * 
+ * @param totalPool - Total prize pool amount (includes UC-exempt as if they paid)
+ * @param entryFee - Entry fee per player
+ * @param teamSize - Number of players per team
+ * @param ucExemptCount - Number of UC-exempt players
+ * @returns Final distribution with adjusted org and fund amounts
+ */
+export function getFinalDistribution(
+    totalPool: number,
+    entryFee: number,
+    teamSize: number,
+    ucExemptCount: number
+): FinalDistributionResult {
+    const base = getPrizeDistribution(totalPool, entryFee, teamSize);
+
+    // Calculate UC-exempt cost (entry fee for each exempt player)
+    const ucExemptCost = ucExemptCount * entryFee;
+
+    // Calculate raw org amount after UC-exempt cost
+    let rawOrgAmount = base.orgFee - ucExemptCost;
+    let adjustedFund = base.fundAmount;
+
+    // Rule 1: Org minimum = ₹20
+    if (rawOrgAmount < ORG_MINIMUM) {
+        const neededFromFund = ORG_MINIMUM - rawOrgAmount;
+        const takeFromFund = Math.min(neededFromFund, adjustedFund);
+        adjustedFund -= takeFromFund;
+        rawOrgAmount += takeFromFund;
+    }
+
+    // Rule 2: Org should always be > Fund
+    if (rawOrgAmount <= adjustedFund && adjustedFund > 0) {
+        // We need org > fund, so we need to take from fund
+        // Target: org = fund + 1 (minimum to be greater)
+        // But we also need to respect org minimum
+
+        // Calculate how much we have total
+        const combined = rawOrgAmount + adjustedFund;
+
+        // Split so that org > fund
+        // If combined is X, we want org = ceil(X/2) + 1 and fund = floor(X/2) - 1 (roughly)
+        // Actually simpler: take from fund until org > fund, but ensure org >= ORG_MINIMUM
+
+        const targetOrg = Math.max(ORG_MINIMUM, Math.floor(combined / 2) + 1);
+        const targetFund = combined - targetOrg;
+
+        if (targetFund >= 0) {
+            rawOrgAmount = targetOrg;
+            adjustedFund = targetFund;
+        } else {
+            // Not enough combined, give all to org
+            rawOrgAmount = combined;
+            adjustedFund = 0;
+        }
+    }
+
+    // Ensure org is at least ORG_MINIMUM (final check)
+    const finalOrgAmount = Math.max(rawOrgAmount, Math.min(ORG_MINIMUM, base.orgFee + base.fundAmount));
+    const finalFundAmount = Math.max(0, adjustedFund);
+
+    return {
+        ...base,
+        finalOrgAmount,
+        finalFundAmount,
+        ucExemptCost,
     };
 }
 

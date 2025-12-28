@@ -81,6 +81,7 @@ enum TeamType {
   DUO
   TRIO
   SQUAD
+  DYNAMIC
 }
 
 /**

@@ -219,6 +219,70 @@ export async function POST(
       winnerTeam.push(winTeam);
     }
 
+    // Calculate and record Fund & Org as Income
+    const entryFee = tournament.fee || 0;
+    if (entryFee > 0) {
+      // Count all players in tournament teams
+      const tournamentTeams = await prisma.team.findMany({
+        where: { tournamentId: id },
+        include: {
+          players: {
+            select: { isUCExempt: true },
+          },
+        },
+      });
+
+      // Count total participants and UC-exempt count
+      let totalParticipants = 0;
+      let ucExemptCount = 0;
+      tournamentTeams.forEach(team => {
+        team.players.forEach(player => {
+          totalParticipants++;
+          if (player.isUCExempt) ucExemptCount++;
+        });
+      });
+
+      // Prize pool includes UC-exempt as if they paid
+      const prizePool = entryFee * totalParticipants;
+
+      // Get team type from poll (if exists)
+      const poll = await prisma.poll.findUnique({
+        where: { tournamentId: id },
+        select: { teamType: true },
+      });
+
+      // Import getFinalDistribution dynamically to get adjusted org/fund
+      const { getFinalDistribution, getTeamSize } = await import("@/src/utils/prizeDistribution");
+      const teamSize = getTeamSize(poll?.teamType || "DUO");
+      const distribution = getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount);
+
+      // Create Fund Income record
+      if (distribution.finalFundAmount > 0) {
+        await prisma.income.create({
+          data: {
+            amount: distribution.finalFundAmount,
+            description: `Fund - ${tournament.name}`,
+            tournamentId: id,
+            tournamentName: tournament.name,
+            createdBy: "system",
+          },
+        });
+      }
+
+      // Create Org Income record
+      if (distribution.finalOrgAmount > 0) {
+        await prisma.income.create({
+          data: {
+            amount: distribution.finalOrgAmount,
+            description: `Org - ${tournament.name}`,
+            tournamentId: id,
+            tournamentName: tournament.name,
+            createdBy: "system",
+          },
+        });
+      }
+    }
+
     return SuccessResponse({
       message: "Tournament winners declared and UC distributed successfully",
       data: winnerTeam,

@@ -86,6 +86,7 @@ export async function PUT(
         endDate: body.endDate,
         options: { deleteMany: {}, createMany: { data: body.options } },
         days: body.days,
+        teamType: body.teamType,
       },
     });
     return SuccessResponse({
