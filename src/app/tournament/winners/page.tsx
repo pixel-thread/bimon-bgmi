@@ -1,96 +1,11 @@
 "use client";
 
-import { DataTable } from "@/src/components/data-table";
-import { ColumnDef } from "@tanstack/react-table";
 import {
     useTournamentWinner,
-    PlayerPlacement,
-    RecentTournament,
 } from "@/src/hooks/winner/useTournamentWinner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { useAppContext } from "@/src/hooks/context/useAppContext";
 import { Trophy, Medal, Users, Loader2 } from "lucide-react";
-
-const placementColumns: ColumnDef<PlayerPlacement>[] = [
-    {
-        accessorKey: "playerName",
-        header: "Player",
-        cell: ({ row }) => (
-            <span className="font-medium">{row.original.playerName}</span>
-        ),
-    },
-    {
-        accessorKey: "firstPlaceCount",
-        header: () => (
-            <span className="flex items-center gap-1">
-                🥇 1st Place
-            </span>
-        ),
-        cell: ({ row }) => (
-            <span className="font-bold text-yellow-600 dark:text-yellow-400">
-                {row.original.firstPlaceCount}
-            </span>
-        ),
-    },
-    {
-        accessorKey: "secondPlaceCount",
-        header: () => (
-            <span className="flex items-center gap-1">
-                🥈 2nd Place
-            </span>
-        ),
-        cell: ({ row }) => (
-            <span className="font-bold text-gray-500 dark:text-gray-400">
-                {row.original.secondPlaceCount}
-            </span>
-        ),
-    },
-    {
-        accessorKey: "totalPlacements",
-        header: "Total",
-        cell: ({ row }) => (
-            <span className="font-bold text-primary">
-                {row.original.totalPlacements}
-            </span>
-        ),
-    },
-];
-
-const recentTournamentColumns: ColumnDef<RecentTournament>[] = [
-    {
-        accessorKey: "tournamentName",
-        header: "Tournament",
-        cell: ({ row }) => (
-            <span className="font-medium">{row.original.tournamentName}</span>
-        ),
-    },
-    {
-        accessorKey: "firstPlace",
-        header: () => (
-            <span className="flex items-center gap-1">
-                🥇 1st Place
-            </span>
-        ),
-        cell: ({ row }) => (
-            <span className="text-yellow-600 dark:text-yellow-400">
-                {row.original.firstPlace?.join(", ") || "-"}
-            </span>
-        ),
-    },
-    {
-        accessorKey: "secondPlace",
-        header: () => (
-            <span className="flex items-center gap-1">
-                🥈 2nd Place
-            </span>
-        ),
-        cell: ({ row }) => (
-            <span className="text-gray-500 dark:text-gray-400">
-                {row.original.secondPlace?.join(", ") || "-"}
-            </span>
-        ),
-    },
-];
 
 export default function WinnersPage() {
     // Auto-fetch active season
@@ -123,21 +38,49 @@ export default function WinnersPage() {
     }
 
     return (
-        <div className="space-y-6 p-4 max-w-7xl mx-auto">
+        <div className="space-y-4 p-4 max-w-7xl mx-auto">
             {/* Player Placement Stats - Last 6 Tournaments */}
             <Card className="bg-gradient-to-br from-background to-muted/30 border-border/50">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                        <Users className="h-5 w-5 text-blue-500" />
-                        Player Placement Stats
-                        <span className="text-sm font-normal text-muted-foreground">
-                            (Last 6 Tournaments)
+                <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                        <Users className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                        <span className="truncate">Player Placement Stats</span>
+                        <span className="text-xs sm:text-sm font-normal text-muted-foreground whitespace-nowrap">
+                            (Last 6)
                         </span>
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                     {playerPlacements.length > 0 ? (
-                        <DataTable data={playerPlacements} columns={placementColumns} />
+                        <div className="max-h-[300px] sm:max-h-[350px] overflow-y-auto space-y-2">
+                            {playerPlacements.map((player, idx) => (
+                                <div
+                                    key={idx}
+                                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50"
+                                >
+                                    <span className="font-medium text-sm truncate flex-1 mr-2">
+                                        {player.playerName}
+                                    </span>
+                                    <div className="flex items-center gap-3 text-sm shrink-0">
+                                        <span className="flex items-center gap-1">
+                                            <span>🥇</span>
+                                            <span className="font-bold text-yellow-600 dark:text-yellow-400">
+                                                {player.firstPlaceCount}
+                                            </span>
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <span>🥈</span>
+                                            <span className="font-bold text-gray-500 dark:text-gray-400">
+                                                {player.secondPlaceCount}
+                                            </span>
+                                        </span>
+                                        <span className="font-bold text-primary">
+                                            = {player.totalPlacements}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     ) : (
                         <p className="text-center text-muted-foreground py-4">
                             No placement data available
@@ -148,21 +91,43 @@ export default function WinnersPage() {
 
             {/* Recent Tournament Results */}
             <Card className="bg-gradient-to-br from-background to-muted/30 border-border/50">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                        <Medal className="h-5 w-5 text-purple-500" />
-                        Recent Tournament Winners
-                        <span className="text-sm font-normal text-muted-foreground">
-                            (Last 6 Tournaments)
+                <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                        <Medal className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
+                        <span className="truncate">Recent Winners</span>
+                        <span className="text-xs sm:text-sm font-normal text-muted-foreground whitespace-nowrap">
+                            (Last 6)
                         </span>
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                     {recentTournaments.length > 0 ? (
-                        <DataTable
-                            data={recentTournaments}
-                            columns={recentTournamentColumns}
-                        />
+                        <div className="max-h-[300px] sm:max-h-[350px] overflow-y-auto space-y-3">
+                            {recentTournaments.map((tournament, idx) => (
+                                <div
+                                    key={idx}
+                                    className="p-3 rounded-lg bg-muted/50 border border-border/50 space-y-2"
+                                >
+                                    <div className="font-medium text-sm">
+                                        {tournament.tournamentName}
+                                    </div>
+                                    <div className="flex flex-col gap-1 text-sm">
+                                        <div className="flex items-start gap-2">
+                                            <span className="shrink-0">🥇</span>
+                                            <span className="text-yellow-600 dark:text-yellow-400 break-words">
+                                                {tournament.firstPlace?.join(", ") || "-"}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <span className="shrink-0">🥈</span>
+                                            <span className="text-gray-500 dark:text-gray-400 break-words">
+                                                {tournament.secondPlace?.join(", ") || "-"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     ) : (
                         <p className="text-center text-muted-foreground py-4">
                             No recent tournament data available
