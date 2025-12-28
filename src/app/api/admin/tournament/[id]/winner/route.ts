@@ -3,7 +3,9 @@ import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { addTournamentWinner } from "@/src/services/winner/addTournamentWinner";
 import { getUniqedTournamentWinners } from "@/src/services/winner/getTournamentWinner";
+import { getPlayerRecentWins } from "@/src/services/winner/getPlayerRecentWins";
 import { calculatePlayerPoints } from "@/src/utils/calculatePlayersPoints";
+import { calculateRepeatWinnerTax, aggregateTaxTotals, TaxResult } from "@/src/utils/repeatWinnerTax";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
@@ -157,6 +159,27 @@ export async function POST(
       });
     }
 
+    // Collect all winning player IDs to fetch their recent wins
+    const allWinningPlayerIds: string[] = [];
+    for (let i = 0; i < placementsToUse.length; i++) {
+      const team = sortedData[placementsToUse[i].position - 1];
+      if (team?.players) {
+        for (const player of team.players) {
+          allWinningPlayerIds.push(player.id);
+        }
+      }
+    }
+
+    // Fetch recent wins for all winning players (for repeat winner tax)
+    const playerWinCounts = await getPlayerRecentWins(
+      allWinningPlayerIds,
+      tournament.seasonId || "",
+      6
+    );
+
+    // Track all tax results to calculate fund/org contributions
+    const allTaxResults: TaxResult[] = [];
+
     let winnerTeam = [];
     for (let i = 0; i < placementsToUse.length; i++) {
       const placement = placementsToUse[i];
@@ -176,7 +199,7 @@ export async function POST(
 
       // Distribute UC to players if amount > 0
       if (placement.amount > 0 && team.players && team.players.length > 0) {
-        const perPlayerAmount = Math.floor(placement.amount / team.players.length);
+        const basePerPlayerAmount = Math.floor(placement.amount / team.players.length);
 
         for (const player of team.players) {
           // Get player with user info
@@ -187,21 +210,29 @@ export async function POST(
 
           if (!playerData) continue;
 
+          // Calculate repeat winner tax for this player
+          const winCount = playerWinCounts.get(player.id) || 0;
+          const taxResult = calculateRepeatWinnerTax(player.id, basePerPlayerAmount, winCount);
+          allTaxResults.push(taxResult);
+
+          // Use net amount after tax
+          const finalAmount = taxResult.netAmount;
+
           // Update or create UC balance
           await prisma.uC.upsert({
             where: { playerId: player.id },
             create: {
               player: { connect: { id: player.id } },
               user: { connect: { id: playerData.user.id } },
-              balance: perPlayerAmount,
+              balance: finalAmount,
             },
-            update: { balance: { increment: perPlayerAmount } },
+            update: { balance: { increment: finalAmount } },
           });
 
-          // Create transaction record
+          // Create transaction record (shows net amount player receives)
           await prisma.transaction.create({
             data: {
-              amount: perPlayerAmount,
+              amount: finalAmount,
               type: "credit",
               description: `${getOrdinal(placement.position)} Place Prize: ${tournament.name}`,
               playerId: player.id,
@@ -218,6 +249,9 @@ export async function POST(
 
       winnerTeam.push(winTeam);
     }
+
+    // Calculate total repeat winner tax contributions
+    const taxTotals = aggregateTaxTotals(allTaxResults);
 
     // Calculate and record Fund & Org as Income
     const entryFee = tournament.fee || 0;
@@ -256,12 +290,18 @@ export async function POST(
       const teamSize = getTeamSize(poll?.teamType || "DUO");
       const distribution = getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount);
 
-      // Create Fund Income record
-      if (distribution.finalFundAmount > 0) {
+      // Add repeat winner tax contributions to fund and org
+      const fundWithTax = distribution.finalFundAmount + taxTotals.fundContribution;
+      const orgWithTax = distribution.finalOrgAmount + taxTotals.orgContribution;
+
+      // Create Fund Income record (includes repeat winner tax)
+      if (fundWithTax > 0) {
         await prisma.income.create({
           data: {
-            amount: distribution.finalFundAmount,
-            description: `Fund - ${tournament.name}`,
+            amount: fundWithTax,
+            description: taxTotals.fundContribution > 0
+              ? `Fund - ${tournament.name} (incl. ₹${taxTotals.fundContribution} repeat winner tax)`
+              : `Fund - ${tournament.name}`,
             tournamentId: id,
             tournamentName: tournament.name,
             createdBy: "system",
@@ -269,12 +309,14 @@ export async function POST(
         });
       }
 
-      // Create Org Income record
-      if (distribution.finalOrgAmount > 0) {
+      // Create Org Income record (includes repeat winner tax)
+      if (orgWithTax > 0) {
         await prisma.income.create({
           data: {
-            amount: distribution.finalOrgAmount,
-            description: `Org - ${tournament.name}`,
+            amount: orgWithTax,
+            description: taxTotals.orgContribution > 0
+              ? `Org - ${tournament.name} (incl. ₹${taxTotals.orgContribution} repeat winner tax)`
+              : `Org - ${tournament.name}`,
             tournamentId: id,
             tournamentName: tournament.name,
             createdBy: "system",
