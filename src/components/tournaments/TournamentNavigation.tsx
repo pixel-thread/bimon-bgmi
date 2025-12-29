@@ -83,16 +83,20 @@ const TournamentNavigation = () => {
     }
   }, [pathname]);
 
+  // Clear navigation loading state when pathname changes (navigation complete)
+  useEffect(() => {
+    if (isNavigating && pathname === isNavigating) {
+      setIsNavigating(null);
+    }
+  }, [pathname, isNavigating]);
+
   const handleNavigation = (href: string) => {
     if (href === pathname || isNavigating) return; // Prevent same page navigation and multiple clicks
 
     setIsNavigating(href);
 
-    // Use router.push without await to avoid timing issues
+    // Use router.push - loading state will be cleared when pathname changes
     router.push(href, { scroll: false });
-    setTimeout(() => {
-      setIsNavigating(null);
-    }, 300);
   };
 
   const navItems = [
