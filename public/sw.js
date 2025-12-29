@@ -4,6 +4,7 @@ const CACHE_NAME = 'bimon-bgmi-v1';
 // Assets to cache on install (shell files)
 const STATIC_ASSETS = [
     '/',
+    '/offline.html',
     '/manifest.json',
     '/android-chrome-192x192.png',
     '/android-chrome-512x512.png',
@@ -70,7 +71,7 @@ self.addEventListener('fetch', (event) => {
                     }
                     // If no cache, return offline page for navigation requests
                     if (event.request.mode === 'navigate') {
-                        return caches.match('/');
+                        return caches.match('/offline.html');
                     }
                     return new Response('Offline', { status: 503 });
                 });
