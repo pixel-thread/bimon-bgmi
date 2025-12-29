@@ -1,6 +1,6 @@
 import { ADMIN_USER_ENDPOINTS } from "@/src/lib/endpoints/admin/user";
 import http from "@/src/utils/http";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { DataTable } from "../../data-table";
 import { useUserColumns } from "@/src/hooks/user/useUserColumns";
 import { LoaderFive } from "@/src/components/ui/loader";
@@ -71,7 +71,7 @@ export const AdminUserPage = () => {
     setSearchInput("");
   }, []);
 
-  const { data, isFetching } = useQuery({
+  const { data, isFetching, isLoading } = useQuery({
     queryKey: ["users", page, role, searchQuery],
     queryFn: () => {
       let url = `${ADMIN_USER_ENDPOINTS.GET_ALL_USER.replace(":page", page || "1")}&role=${role}`;
@@ -80,11 +80,13 @@ export const AdminUserPage = () => {
       }
       return http.get(url);
     },
+    placeholderData: keepPreviousData,
   });
   const meta = data?.meta;
   const users = data?.data || [];
 
-  if (isFetching) {
+  // Show full-page loader only on initial load
+  if (isLoading) {
     return (
       <div>
         <LoaderFive text="Loading..." />
@@ -131,7 +133,15 @@ export const AdminUserPage = () => {
           </Select>
         </div>
       </div>
-      <DataTable data={users} meta={meta} columns={columns} />
+      {/* Table with subtle loading overlay during refetch */}
+      <div className="relative">
+        {isFetching && (
+          <div className="absolute inset-0 bg-background/50 z-10 flex items-center justify-center rounded-md">
+            <div className="animate-spin h-5 w-5 border-2 border-indigo-600 border-t-transparent rounded-full" />
+          </div>
+        )}
+        <DataTable data={users} meta={meta} columns={columns} />
+      </div>
     </div>
   );
 };

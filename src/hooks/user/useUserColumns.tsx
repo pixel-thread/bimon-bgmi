@@ -67,22 +67,6 @@ const RoleSelector: React.FC<Props> = ({ value, onChange, isLoading }) => {
   );
 };
 
-const cols: ColumnDef<UserRole>[] = [
-  {
-    header: "Name",
-    accessorKey: "userName",
-  },
-  {
-    header: "Display Name",
-    accessorKey: "displayName",
-    cell: ({ row }) => row.original.displayName || "-",
-  },
-  {
-    header: "Email",
-    accessorKey: "email",
-  },
-];
-
 export function useUserColumns() {
   const queryClient = useQueryClient();
   const { isPending, mutate } = useMutation({
@@ -95,8 +79,17 @@ export function useUserColumns() {
       }
     },
   });
+
   const columns: ColumnDef<UserRole>[] = [
-    ...cols,
+    {
+      header: "Name",
+      accessorKey: "userName",
+    },
+    {
+      header: "Display Name",
+      accessorKey: "displayName",
+      cell: ({ row }) => row.original.displayName || "-",
+    },
     {
       header: "Role",
       cell: ({ row }) => (
@@ -107,7 +100,12 @@ export function useUserColumns() {
         />
       ),
     },
+    {
+      header: "Email",
+      accessorKey: "email",
+    },
   ];
+
   return {
     columns,
   };
