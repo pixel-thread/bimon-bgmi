@@ -125,6 +125,14 @@ export default function RootLayout({
                   });
                 });
               }
+              
+              // Capture PWA install prompt IMMEDIATELY to prevent Chrome's mini-infobar
+              window.deferredPWAPrompt = null;
+              window.addEventListener('beforeinstallprompt', function(e) {
+                e.preventDefault();
+                window.deferredPWAPrompt = e;
+                console.log('PWA install prompt captured');
+              });
             `,
           }}
         />

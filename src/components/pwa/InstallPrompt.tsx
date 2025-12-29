@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/src/components/ui/button";
 import { IconDownload, IconX, IconShare } from "@tabler/icons-react";
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
     userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+// Extend window type
+declare global {
+    interface Window {
+        deferredPWAPrompt: BeforeInstallPromptEvent | null;
+    }
 }
 
 export function InstallPrompt() {
@@ -30,8 +37,8 @@ export function InstallPrompt() {
 
         if (isIOSDevice && isSafari) {
             setIsIOS(true);
-            // Check if user dismissed before
-            const dismissed = localStorage.getItem("pwa-install-dismissed");
+            // Check if user dismissed before (only check for iOS)
+            const dismissed = localStorage.getItem("pwa-ios-dismissed");
             if (dismissed) {
                 const dismissedTime = parseInt(dismissed, 10);
                 if (Date.now() - dismissedTime < 1 * 24 * 60 * 60 * 1000) {
@@ -42,20 +49,42 @@ export function InstallPrompt() {
             return;
         }
 
-        // Check if user dismissed the prompt before
-        const dismissed = localStorage.getItem("pwa-install-dismissed");
-        if (dismissed) {
-            const dismissedTime = parseInt(dismissed, 10);
-            // Show again after 1 day
-            if (Date.now() - dismissedTime < 1 * 24 * 60 * 60 * 1000) {
-                return;
-            }
-        }
+        // Check for globally captured prompt (from inline script in layout.tsx)
+        const checkForPrompt = () => {
+            if (window.deferredPWAPrompt) {
+                setDeferredPrompt(window.deferredPWAPrompt);
 
+                // Check if was dismissed
+                const dismissed = localStorage.getItem("pwa-install-dismissed");
+                if (dismissed) {
+                    const dismissedTime = parseInt(dismissed, 10);
+                    if (Date.now() - dismissedTime < 1 * 24 * 60 * 60 * 1000) {
+                        return;
+                    }
+                }
+
+                setTimeout(() => setShowPrompt(true), 2000);
+            }
+        };
+
+        // Check immediately and also after a delay (in case event fires later)
+        checkForPrompt();
+        const timer = setTimeout(checkForPrompt, 1000);
+
+        // Also listen for new events (backup)
         const handleBeforeInstallPrompt = (e: Event) => {
             e.preventDefault();
+            window.deferredPWAPrompt = e as BeforeInstallPromptEvent;
             setDeferredPrompt(e as BeforeInstallPromptEvent);
-            // Show after a short delay for better UX
+
+            const dismissed = localStorage.getItem("pwa-install-dismissed");
+            if (dismissed) {
+                const dismissedTime = parseInt(dismissed, 10);
+                if (Date.now() - dismissedTime < 1 * 24 * 60 * 60 * 1000) {
+                    return;
+                }
+            }
+
             setTimeout(() => setShowPrompt(true), 2000);
         };
 
@@ -63,12 +92,15 @@ export function InstallPrompt() {
             setIsInstalled(true);
             setShowPrompt(false);
             setDeferredPrompt(null);
+            window.deferredPWAPrompt = null;
+            localStorage.removeItem("pwa-install-dismissed");
         };
 
         window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
         window.addEventListener("appinstalled", handleAppInstalled);
 
         return () => {
+            clearTimeout(timer);
             window.removeEventListener(
                 "beforeinstallprompt",
                 handleBeforeInstallPrompt
@@ -77,24 +109,30 @@ export function InstallPrompt() {
         };
     }, []);
 
-    const handleInstall = async () => {
-        if (!deferredPrompt) return;
+    const handleInstall = useCallback(async () => {
+        const prompt = deferredPrompt || window.deferredPWAPrompt;
+        if (!prompt) return;
 
-        await deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
+        await prompt.prompt();
+        const { outcome } = await prompt.userChoice;
 
         if (outcome === "accepted") {
             setIsInstalled(true);
+            window.deferredPWAPrompt = null;
         }
 
         setDeferredPrompt(null);
         setShowPrompt(false);
-    };
+    }, [deferredPrompt]);
 
-    const handleDismiss = () => {
+    const handleDismiss = useCallback(() => {
         setShowPrompt(false);
-        localStorage.setItem("pwa-install-dismissed", Date.now().toString());
-    };
+        if (isIOS) {
+            localStorage.setItem("pwa-ios-dismissed", Date.now().toString());
+        } else {
+            localStorage.setItem("pwa-install-dismissed", Date.now().toString());
+        }
+    }, [isIOS]);
 
     // Don't show if already installed
     if (isInstalled || !showPrompt) {
@@ -102,7 +140,7 @@ export function InstallPrompt() {
     }
 
     // For non-iOS, also check for deferredPrompt
-    if (!isIOS && !deferredPrompt) {
+    if (!isIOS && !deferredPrompt && !window.deferredPWAPrompt) {
         return null;
     }
 
