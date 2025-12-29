@@ -100,11 +100,33 @@ export default function RootLayout({
             `,
           }}
         />
+        {/* PWA Configuration */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="PUBGMI" />
         <meta name="google-adsense-account" content="ca-pub-2651043074081875" />
         <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2651043074081875"
           crossOrigin="anonymous"
+        />
+        {/* Service Worker Registration */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('SW registered:', registration.scope);
+                  }).catch(function(error) {
+                    console.log('SW registration failed:', error);
+                  });
+                });
+              }
+            `,
+          }}
         />
       </head>
       <body className="bg-background text-foreground">
