@@ -9,6 +9,7 @@ import { ThemeProvider } from "next-themes";
 import { ClerkProvider, ClerkLoaded, ClerkLoading } from "@clerk/nextjs";
 import { LoaderFour, HairPrank, BatteryPrank, LoadingProvider } from "../ui/loader";
 import { InstallPrompt } from "../pwa/InstallPrompt";
+import { RouteRestorer } from "../pwa/RouteRestorer";
 
 type Props = {
   children: React.ReactNode;
@@ -47,6 +48,7 @@ export const Wrapper = ({ children }: Props) => {
                   <RoleBaseRoute>
                     <Layout>{children}</Layout>
                     <InstallPrompt />
+                    <RouteRestorer />
                     <Toaster richColors position="top-right" />
                   </RoleBaseRoute>
                 </AuthProvider>
