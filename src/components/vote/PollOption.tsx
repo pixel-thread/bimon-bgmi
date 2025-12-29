@@ -3,6 +3,7 @@
 import React from "react";
 import { Progress } from "../ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { PlayerAvatar } from "../ui/player-avatar";
 import { User } from "lucide-react";
 
 type RecentVoter = {
@@ -113,18 +114,16 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
                 {recentVoters.length > 0 && (
                   <div className="flex -space-x-2">
                     {recentVoters.slice(0, 2).map((voter, index) => (
-                      <Avatar
+                      <PlayerAvatar
                         key={voter.id}
-                        className={`w-6 h-6 border-2 border-white dark:border-gray-800 ${index === 0 ? 'z-10' : 'z-0'}`}
-                      >
-                        <AvatarImage
-                          src={voter.characterImageUrl || voter.imageUrl || ''}
-                          alt={voter.displayName || voter.userName || 'Voter'}
-                        />
-                        <AvatarFallback className="text-xs">
-                          <User className="w-3 h-3 text-gray-400" />
-                        </AvatarFallback>
-                      </Avatar>
+                        characterImageUrl={voter.characterImageUrl}
+                        imageUrl={voter.imageUrl}
+                        displayName={voter.displayName}
+                        userName={voter.userName}
+                        size="xs"
+                        className={`border-2 border-white dark:border-gray-800 ${index === 0 ? 'z-10' : 'z-0'}`}
+                        showUserIcon
+                      />
                     ))}
                   </div>
                 )}

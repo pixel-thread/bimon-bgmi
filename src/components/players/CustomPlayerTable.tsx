@@ -3,6 +3,7 @@
 import React from "react";
 import { Button } from "@/src/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
+import { PlayerAvatar } from "@/src/components/ui/player-avatar";
 import { Badge } from "@/src/components/ui/badge";
 import { CategoryBadge } from "@/src/components/ui/category-badge";
 import { MetaT } from "@/src/types/meta";
@@ -25,6 +26,7 @@ type PlayerT = {
     kd: number;
     uc?: number;
     imageUrl?: string | null;
+    characterImageUrl?: string | null;
     kills?: number;
 };
 
@@ -211,19 +213,21 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                                     </div>
 
                                     {/* Avatar */}
-                                    <Avatar className={`
-                                        h-10 w-10 sm:h-12 sm:w-12 shrink-0 ring-2 ring-offset-2
-                                        ${globalIndex === 1 ? 'ring-yellow-500 ring-offset-yellow-500/20' :
-                                            globalIndex === 2 ? 'ring-slate-400 ring-offset-slate-400/20' :
-                                                globalIndex === 3 ? 'ring-orange-500 ring-offset-orange-500/20' :
-                                                    'ring-zinc-200 dark:ring-zinc-700 ring-offset-transparent'}
-                                        dark:ring-offset-zinc-900
-                                    `}>
-                                        <AvatarImage src={player.imageUrl || undefined} />
-                                        <AvatarFallback className="text-xs sm:text-sm font-semibold bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                                            {getDisplayName(player.displayName, player.userName).substring(0, 2).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <PlayerAvatar
+                                        characterImageUrl={player.characterImageUrl}
+                                        imageUrl={player.imageUrl}
+                                        displayName={player.displayName}
+                                        userName={player.userName}
+                                        size="lg"
+                                        className={`
+                                            shrink-0 ring-2 ring-offset-2
+                                            ${globalIndex === 1 ? 'ring-yellow-500 ring-offset-yellow-500/20' :
+                                                globalIndex === 2 ? 'ring-slate-400 ring-offset-slate-400/20' :
+                                                    globalIndex === 3 ? 'ring-orange-500 ring-offset-orange-500/20' :
+                                                        'ring-zinc-200 dark:ring-zinc-700 ring-offset-transparent'}
+                                            dark:ring-offset-zinc-900
+                                        `}
+                                    />
 
                                     {/* Player Info */}
                                     <div className="flex-1 min-w-0">

@@ -125,6 +125,9 @@ export async function GET(req: NextRequest) {
             playerStats.reduce((acc, curr) => acc + curr.deaths, 0),
           ),
           imageUrl: clerkInfo?.imageUrl || null,
+          characterImageUrl: player.characterImageId === "none"
+            ? null
+            : player.characterImage?.publicUrl || null,
           email: clerkInfo?.email || null,
           firstName: clerkInfo?.firstName || null,
           lastName: clerkInfo?.lastName || null,
@@ -153,6 +156,9 @@ export async function GET(req: NextRequest) {
             player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0),
           ),
           imageUrl: clerkInfo?.imageUrl || null,
+          characterImageUrl: player.characterImageId === "none"
+            ? null
+            : player.characterImage?.publicUrl || null,
           email: clerkInfo?.email || null,
           firstName: clerkInfo?.firstName || null,
           lastName: clerkInfo?.lastName || null,

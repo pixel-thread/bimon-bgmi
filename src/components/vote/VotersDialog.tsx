@@ -8,6 +8,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/src/components/ui/avatar";
+import { PlayerAvatar } from "@/src/components/ui/player-avatar";
 import {
   Dialog,
   DialogContent,
@@ -171,19 +172,14 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                                         key={vote.id}
                                         className={`flex items-center space-x-3 p-3 rounded-lg ${theme ? theme.voterCard : 'bg-white dark:bg-gray-700'}`}
                                       >
-                                        <Avatar>
-                                          <AvatarImage
-                                            src={
-                                              vote.player?.characterImage?.publicUrl ||
-                                              (vote.player as any)?.imageUrl ||
-                                              ''
-                                            }
-                                            alt={vote.playerId}
-                                          />
-                                          <AvatarFallback>
-                                            <User className="w-5 h-5 text-gray-400" />
-                                          </AvatarFallback>
-                                        </Avatar>
+                                        <PlayerAvatar
+                                          characterImageUrl={vote.player?.characterImage?.publicUrl}
+                                          imageUrl={(vote.player as any)?.imageUrl}
+                                          displayName={vote.player.user.displayName}
+                                          userName={vote.player.user.userName}
+                                          size="md"
+                                          showUserIcon
+                                        />
                                         <div className="flex-1">
                                           <p className="font-medium text-gray-900 dark:text-white">
                                             {getDisplayName(vote.player.user.displayName, vote.player.user.userName)}
@@ -216,15 +212,14 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                                       key={vote.id}
                                       className="flex items-center space-x-2"
                                     >
-                                      <Avatar>
-                                        <AvatarImage
-                                          src={vote.player?.characterImage?.publicUrl || (vote.player as any)?.imageUrl || ''}
-                                          alt={vote.playerId}
-                                        />
-                                        <AvatarFallback>
-                                          <User className="w-5 h-5 text-gray-400" />
-                                        </AvatarFallback>
-                                      </Avatar>
+                                      <PlayerAvatar
+                                        characterImageUrl={vote.player?.characterImage?.publicUrl}
+                                        imageUrl={(vote.player as any)?.imageUrl}
+                                        displayName={vote.player.user.displayName}
+                                        userName={vote.player.user.userName}
+                                        size="md"
+                                        showUserIcon
+                                      />
                                       <span className="text-sm text-gray-700 dark:text-gray-300">
                                         {vote.player.userId}
                                       </span>

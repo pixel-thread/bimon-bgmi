@@ -113,7 +113,8 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
   }, [isImagePreviewOpen]);
 
   const handleAvatarClick = () => {
-    if (player?.clerkImageUrl && avatarRef.current) {
+    const avatarUrl = (player as any)?.characterImage?.publicUrl || player?.clerkImageUrl;
+    if (avatarUrl && avatarRef.current) {
       const rect = avatarRef.current.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
@@ -235,9 +236,9 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     className="h-12 w-12 sm:h-14 sm:w-14 rounded-full border-2 border-zinc-200 dark:border-zinc-700 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={handleAvatarClick}
                   >
-                    {player.clerkImageUrl ? (
+                    {((player as any).characterImage?.publicUrl || player.clerkImageUrl) ? (
                       <img
-                        src={player.clerkImageUrl}
+                        src={(player as any).characterImage?.publicUrl || player.clerkImageUrl}
                         alt={getDisplayName(player.user?.displayName, player.user?.userName) || "Player"}
                         className="w-full h-full object-cover"
                       />
@@ -488,7 +489,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
       {/* Image Preview Overlay - rendered via Portal to document.body to cover everything */}
       {typeof document !== 'undefined' && createPortal(
         <AnimatePresence>
-          {isImagePreviewOpen && player?.clerkImageUrl && (
+          {isImagePreviewOpen && ((player as any)?.characterImage?.publicUrl || player?.clerkImageUrl) && (
             <>
               {/* Backdrop - covers entire page including modal */}
               <motion.div
@@ -507,8 +508,8 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                 className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[10000] w-64 h-64 sm:w-80 sm:h-80 rounded-full border-4 border-white dark:border-zinc-800 shadow-2xl overflow-hidden"
               >
                 <img
-                  src={player.clerkImageUrl}
-                  alt={getDisplayName(player.user?.displayName, player.user?.userName) || "Player"}
+                  src={(player as any)?.characterImage?.publicUrl || player?.clerkImageUrl}
+                  alt={getDisplayName(player?.user?.displayName, player?.user?.userName) || "Player"}
                   className="w-full h-full object-cover"
                 />
               </motion.div>

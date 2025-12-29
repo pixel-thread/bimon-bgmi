@@ -320,7 +320,15 @@ export default function Navigation() {
                                                     className="w-full flex items-center gap-4 px-4 py-3.5 text-left rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all"
                                                 >
                                                     <div className="h-8 w-8 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-zinc-800 relative">
-                                                        {user?.imageUrl ? (
+                                                        {/* Priority: characterImage > user.imageUrl > fallback */}
+                                                        {(playerUser as any)?.player?.characterImage?.publicUrl ? (
+                                                            <Image
+                                                                src={(playerUser as any).player.characterImage.publicUrl}
+                                                                alt="Profile"
+                                                                fill
+                                                                className="object-cover"
+                                                            />
+                                                        ) : user?.imageUrl ? (
                                                             <Image
                                                                 src={user.imageUrl}
                                                                 alt="Profile"
