@@ -61,7 +61,10 @@ export const metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1.0,
-  themeColor: "#ffffff",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f5f5" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
 };
 
 // Inline script to prevent theme flash - runs before any CSS/JS
@@ -72,6 +75,18 @@ const themeScript = `
     var isDark = theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.classList.toggle('dark', isDark);
     document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+    
+    // Update theme-color meta tag for phone status bar
+    var themeColor = isDark ? '#000000' : '#f5f5f5';
+    var metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', themeColor);
+    } else {
+      var meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      meta.content = themeColor;
+      document.head.appendChild(meta);
+    }
   } catch (e) {}
 })();
 `;
