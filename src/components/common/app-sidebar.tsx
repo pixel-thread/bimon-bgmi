@@ -83,6 +83,11 @@ const navItems: NavItem[] = [
     icon: BookOpen,
   },
   {
+    title: "Profile Images",
+    url: "/admin/profile-images",
+    icon: ImageIcon,
+  },
+  {
     title: "Admins",
     url: "/admin/admins",
     icon: Shield,

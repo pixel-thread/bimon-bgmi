@@ -9,7 +9,7 @@ import { cn } from "@/src/lib/utils";
 function Dialog({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />;
+  return <DialogPrimitive.Root data-slot="dialog" modal={true} {...props} />;
 }
 
 function DialogTrigger({

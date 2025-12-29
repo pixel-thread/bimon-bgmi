@@ -598,6 +598,11 @@ link[rel="mask-icon"] {
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Prevent layout shift when dialogs/modals remove scrollbar */
+  html {
+    scrollbar-gutter: stable;
+  }
 }
 
 /* Genie-style modal animations */

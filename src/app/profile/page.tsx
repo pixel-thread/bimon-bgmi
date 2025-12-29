@@ -84,10 +84,21 @@ export default function ProfilePage() {
         enabled: !!playerId,
     });
 
+    // Fetch profile image settings
+    const { data: imageSettingsData } = useQuery({
+        queryKey: ["profile-image-settings"],
+        queryFn: () => http.get<{
+            imageType: "google" | "none" | "custom";
+            customImage: { publicUrl: string } | null
+        }>("/profile/image"),
+        enabled: !!playerId,
+    });
+
     const playerStats = statsData?.data;
     const transfers = transfersData?.data || [];
     const notifications = notificationsData?.data?.notifications || [];
     const unreadCount = notificationsData?.data?.unreadCount || 0;
+    const imageSettings = imageSettingsData?.data;
 
     // Calculate K/D ratio
     const kills = playerStats?.kills || 0;
@@ -239,7 +250,20 @@ export default function ProfilePage() {
         <div className="container mx-auto px-4 py-8 space-y-6">
             {/* Header with User Info */}
             <div className="flex items-center gap-4">
-                {profileImageUrl ? (
+                {/* Profile Image - respects user's image selection */}
+                {imageSettings?.imageType === "none" ? (
+                    <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-2xl font-bold text-primary-foreground">
+                        {user.userName?.charAt(0).toUpperCase()}
+                    </div>
+                ) : imageSettings?.imageType === "custom" && imageSettings.customImage ? (
+                    <Image
+                        src={imageSettings.customImage.publicUrl}
+                        alt={user.userName || "Profile"}
+                        width={64}
+                        height={64}
+                        className="h-16 w-16 rounded-full object-cover"
+                    />
+                ) : profileImageUrl ? (
                     <Image
                         src={profileImageUrl}
                         alt={user.userName || "Profile"}

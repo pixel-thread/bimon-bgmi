@@ -118,7 +118,7 @@ export async function POST(
 
       if (potentialBalance < tournamentFee) {
         return ErrorResponse({
-          message: "dap rat bai rung",
+          message: `dap rat bai rung (${userBalance} UC)`,
           status: 403,
         });
       }
@@ -130,7 +130,7 @@ export async function POST(
       const minBalance = isTrusted ? -100 : -30;
       if (userBalance < minBalance) {
         return ErrorResponse({
-          message: "sen chuwa bai rung",
+          message: `sen chuwa bai rung (${userBalance} UC)`,
           status: 403,
         });
       }

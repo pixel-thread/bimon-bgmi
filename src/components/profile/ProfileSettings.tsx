@@ -13,6 +13,7 @@ import http from "@/src/utils/http";
 import { toast } from "sonner";
 import { Loader2, User, Mail, Shield, AlertCircle, CheckCircle, Edit2, Gamepad2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { ProfileImageSelector } from "@/src/components/profile/ProfileImageSelector";
 
 export function ProfileSettings() {
     const { user, refreshAuth } = useAuth();
@@ -166,6 +167,9 @@ export function ProfileSettings() {
 
     return (
         <div className="space-y-6">
+            {/* Profile Image Selector */}
+            <ProfileImageSelector />
+
             {/* Profile Information Card */}
             <Card>
                 <CardHeader>
@@ -355,12 +359,12 @@ export function ProfileSettings() {
                             <Mail className="w-4 h-4" />
                             Email
                         </Label>
-                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                            <span className={user?.email ? "" : "text-muted-foreground italic"}>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-muted/50 rounded-lg">
+                            <span className={`break-all ${user?.email ? "" : "text-muted-foreground italic"}`}>
                                 {user?.email || "No email linked"}
                             </span>
                             {user?.isEmailLinked && (
-                                <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                                <Badge variant="outline" className="w-fit bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 shrink-0">
                                     <CheckCircle className="w-3 h-3 mr-1" />
                                     Verified
                                 </Badge>
