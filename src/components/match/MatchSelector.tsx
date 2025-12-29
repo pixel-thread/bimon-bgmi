@@ -108,7 +108,7 @@ export default function MatchSelector({
             Creating...
           </span>
         ) : (
-          <SelectValue placeholder="Select Match" />
+          <SelectValue placeholder={isMatchExist ? "Select Match" : "No Matches"} />
         )}
       </SelectTrigger>
       <SelectContent className="max-h-[200px] overflow-y-auto">
