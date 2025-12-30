@@ -12,7 +12,7 @@ import { Separator } from "@/src/components/ui/separator";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
-import { Loader2, User, Mail, Shield, AlertCircle, CheckCircle, Edit2, Gamepad2, HelpCircle, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Loader2, User, Mail, Shield, AlertCircle, CheckCircle, Edit2, Gamepad2, HelpCircle, ChevronLeft, ChevronRight, Check, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ProfileImageSelector } from "@/src/components/profile/ProfileImageSelector";
 
@@ -43,6 +43,11 @@ export function ProfileSettings() {
     const [isEditingDisplayName, setIsEditingDisplayName] = useState(false);
     const [displayName, setDisplayName] = useState("");
     const [displayNameError, setDisplayNameError] = useState("");
+
+    // Date of birth editing state
+    const [isEditingDob, setIsEditingDob] = useState(false);
+    const [dateOfBirth, setDateOfBirth] = useState("");
+    const [dobError, setDobError] = useState("");
 
     // Help modal state
     const [showHelpModal, setShowHelpModal] = useState(false);
@@ -124,7 +129,12 @@ export function ProfileSettings() {
                 .replace(/\s+/g, " ");
             setDisplayName(sanitized);
         }
-    }, [user?.userName, user?.displayName]);
+        if (user?.dateOfBirth) {
+            // Format date for input (YYYY-MM-DD)
+            const date = new Date(user.dateOfBirth);
+            setDateOfBirth(date.toISOString().split('T')[0]);
+        }
+    }, [user?.userName, user?.displayName, user?.dateOfBirth]);
 
     const { mutate: updateUsername, isPending: isUpdatingUsername } = useMutation({
         mutationFn: (data: { userName: string }) => http.patch("/profile", data),
@@ -164,6 +174,27 @@ export function ProfileSettings() {
         onError: (error: any) => {
             const message = error?.response?.data?.message || "Failed to update IGN";
             setDisplayNameError(message);
+            toast.error(message);
+        },
+    });
+
+    const { mutate: updateDob, isPending: isUpdatingDob } = useMutation({
+        mutationFn: (data: { dateOfBirth: string }) => http.patch("/profile", data),
+        onSuccess: (response) => {
+            if (response.success) {
+                toast.success("Date of birth updated successfully!");
+                setIsEditingDob(false);
+                setDobError("");
+                refreshAuth();
+                queryClient.invalidateQueries({ queryKey: ["auth"] });
+            } else {
+                setDobError(response.message || "Failed to update date of birth");
+                toast.error(response.message || "Failed to update date of birth");
+            }
+        },
+        onError: (error: any) => {
+            const message = error?.response?.data?.message || "Failed to update date of birth";
+            setDobError(message);
             toast.error(message);
         },
     });
@@ -233,6 +264,26 @@ export function ProfileSettings() {
         setDisplayName(user?.displayName || "");
         setIsEditingDisplayName(false);
         setDisplayNameError("");
+    };
+
+    const handleSaveDob = () => {
+        if (!dateOfBirth) {
+            setDobError("Please select a date");
+            return;
+        }
+        setDobError("");
+        updateDob({ dateOfBirth });
+    };
+
+    const handleCancelDob = () => {
+        if (user?.dateOfBirth) {
+            const date = new Date(user.dateOfBirth);
+            setDateOfBirth(date.toISOString().split('T')[0]);
+        } else {
+            setDateOfBirth("");
+        }
+        setIsEditingDob(false);
+        setDobError("");
     };
 
     const getRoleBadgeColor = (role: string) => {
@@ -600,6 +651,102 @@ export function ProfileSettings() {
                             ) : (
                                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                                     <span className="font-medium">{user?.userName}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <Separator />
+
+                        {/* Date of Birth Section */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="dateOfBirth" className="text-base font-medium flex items-center gap-2">
+                                    <Calendar className="w-4 h-4" />
+                                    Date of Birth
+                                    <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
+                                </Label>
+                                {!isEditingDob && !user?.dateOfBirth && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setIsEditingDob(true)}
+                                        className="text-primary hover:text-primary/80"
+                                    >
+                                        <Edit2 className="w-4 h-4 mr-1" />
+                                        Add
+                                    </Button>
+                                )}
+                            </div>
+
+                            {isEditingDob ? (
+                                <div className="space-y-3">
+                                    <Input
+                                        id="dateOfBirth"
+                                        type="date"
+                                        value={dateOfBirth}
+                                        onChange={(e) => {
+                                            setDateOfBirth(e.target.value);
+                                            setDobError("");
+                                        }}
+                                        max={new Date().toISOString().split('T')[0]}
+                                        className={dobError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                        disabled={isUpdatingDob}
+                                    />
+                                    {dobError && (
+                                        <div className="flex items-center gap-2 text-sm text-red-600">
+                                            <AlertCircle className="w-4 h-4" />
+                                            {dobError}
+                                        </div>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">
+                                        🎁 Add your birthday for free entry fee for the current tournament!
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            onClick={handleSaveDob}
+                                            disabled={isUpdatingDob || !dateOfBirth}
+                                            size="sm"
+                                        >
+                                            {isUpdatingDob ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                    Saving...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                                    Save
+                                                </>
+                                            )}
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            onClick={handleCancelDob}
+                                            disabled={isUpdatingDob}
+                                            size="sm"
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                        <span className={user?.dateOfBirth ? "font-medium" : "text-muted-foreground italic"}>
+                                            {user?.dateOfBirth
+                                                ? new Date(user.dateOfBirth).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric'
+                                                })
+                                                : "Not set"}
+                                        </span>
+                                    </div>
+                                    {user?.dateOfBirth && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Date of birth cannot be changed once set.
+                                        </p>
+                                    )}
                                 </div>
                             )}
                         </div>

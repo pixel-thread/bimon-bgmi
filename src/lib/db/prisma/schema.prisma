@@ -97,6 +97,7 @@ model User {
   isEmailLinked        Boolean  @default(false)
   userName             String   @unique
   displayName          String?  // BGMI IGN with fancy Unicode characters
+  dateOfBirth          DateTime? // Optional date of birth
   isOnboarded          Boolean  @default(true) // New users set to false, existing users unaffected
   usernameLastChangeAt DateTime @default(now())
   role                 Role     @default(USER)

@@ -21,6 +21,7 @@ const onboardingSchema = z.object({
         .string()
         .min(2, "IGN must be at least 2 characters")
         .max(50, "IGN must be at most 50 characters"),
+    dateOfBirth: z.string().optional().transform((val) => val ? new Date(val) : undefined),
 });
 
 export async function POST(req: Request) {
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { userName, displayName } = onboardingSchema.parse(body);
+        const { userName, displayName, dateOfBirth } = onboardingSchema.parse(body);
 
         // Check if username is already taken
         const existingUser = await prisma.user.findUnique({
@@ -96,6 +97,7 @@ export async function POST(req: Request) {
                     playerId: player.id,
                     userName,
                     displayName,
+                    ...(dateOfBirth && { dateOfBirth }),
                     isOnboarded: true,
                     usernameLastChangeAt: new Date(),
                 },

@@ -35,6 +35,7 @@ export default function OnboardingPage() {
     const router = useRouter();
     const [userName, setUserName] = useState("");
     const [displayName, setDisplayName] = useState("");
+    const [dateOfBirth, setDateOfBirth] = useState("");
     const [userNameError, setUserNameError] = useState("");
     const [displayNameError, setDisplayNameError] = useState("");
     const [showHelpModal, setShowHelpModal] = useState(false);
@@ -146,7 +147,7 @@ export default function OnboardingPage() {
     };
 
     const { mutate: submitUsernames, isPending } = useMutation({
-        mutationFn: (data: { userName: string; displayName: string }) =>
+        mutationFn: (data: { userName: string; displayName: string; dateOfBirth?: string }) =>
             http.post("/onboarding", data),
         onSuccess: () => {
             toast.success("Welcome to PUBGMI Tournament! Your account is ready.");
@@ -180,7 +181,11 @@ export default function OnboardingPage() {
 
         setUserNameError("");
         setDisplayNameError("");
-        submitUsernames({ userName, displayName });
+        submitUsernames({
+            userName,
+            displayName,
+            ...(dateOfBirth && { dateOfBirth }),
+        });
     };
 
     // If user is already onboarded, redirect to home
@@ -508,6 +513,28 @@ export default function OnboardingPage() {
                                 )}
                                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                                     Enter exactly as shown in BGMI. Special characters allowed.
+                                </p>
+                            </div>
+
+                            {/* Date of Birth (Optional) */}
+                            <div>
+                                <label
+                                    htmlFor="dateOfBirth"
+                                    className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                                >
+                                    Date of Birth <span className="text-slate-400">(Optional)</span>
+                                </label>
+                                <Input
+                                    id="dateOfBirth"
+                                    type="date"
+                                    value={dateOfBirth}
+                                    onChange={(e) => setDateOfBirth(e.target.value)}
+                                    max={new Date().toISOString().split('T')[0]}
+                                    className="w-full focus-visible:ring-indigo-500"
+                                    disabled={isPending}
+                                />
+                                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                    🎁 Add your birthday for free entry fee for the current tournament!
                                 </p>
                             </div>
 

@@ -10,6 +10,7 @@ import { z } from "zod";
 const updateProfileSchema = z.object({
     userName: z.string().min(3, "Username must be at least 3 characters").max(30, "Username must be at most 30 characters").regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores").optional(),
     displayName: z.string().min(2, "IGN must be at least 2 characters").max(50, "IGN must be at most 50 characters").optional(),
+    dateOfBirth: z.string().optional().transform((val) => val ? new Date(val) : undefined),
 });
 
 // GET - Get current user profile
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest) {
                 role: user.role,
                 isEmailLinked: user.isEmailLinked,
                 usernameLastChangeAt: user.usernameLastChangeAt,
+                dateOfBirth: user.dateOfBirth,
             },
             message: "Profile fetched successfully",
         });
@@ -86,6 +88,14 @@ export async function PATCH(req: NextRequest) {
             }
         }
 
+        // Check if DOB is being updated and user already has a DOB set
+        if (body.dateOfBirth !== undefined && user.dateOfBirth) {
+            return ErrorResponse({
+                message: "Date of birth cannot be changed once set",
+                status: 400,
+            });
+        }
+
         // Update the user in our database
         const updatedUser = await updateUser({
             where: { id: user.id },
@@ -96,6 +106,9 @@ export async function PATCH(req: NextRequest) {
                 }),
                 ...(body.displayName !== undefined && {
                     displayName: body.displayName,
+                }),
+                ...(body.dateOfBirth !== undefined && !user.dateOfBirth && {
+                    dateOfBirth: body.dateOfBirth,
                 }),
             },
         });
@@ -108,6 +121,7 @@ export async function PATCH(req: NextRequest) {
                 email: updatedUser.email,
                 role: updatedUser.role,
                 usernameLastChangeAt: updatedUser.usernameLastChangeAt,
+                dateOfBirth: updatedUser.dateOfBirth,
             },
             message: "Profile updated successfully",
         });
