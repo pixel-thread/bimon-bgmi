@@ -18,7 +18,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
 import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
-import { getPrizeDistribution } from "@/src/utils/prizeDistribution";
+import { getFinalDistribution, getTeamSize } from "@/src/utils/prizeDistribution";
 
 type TeamRanking = {
     teamId: string;
@@ -37,6 +37,7 @@ type PrizePoolMeta = {
     entryFee: number;
     totalPlayers: number;
     prizePool: number;
+    ucExemptCount: number;
 };
 
 type Props = {
@@ -82,10 +83,12 @@ export function DeclareWinnerDialog({
     const entryFee = prizePoolMeta?.entryFee || 0;
     const totalPlayers = prizePoolMeta?.totalPlayers || 0;
 
-    // Get dynamic prize distribution based on prize pool tier
+    const ucExemptCount = prizePoolMeta?.ucExemptCount || 0;
+
+    // Get dynamic prize distribution based on prize pool tier with UC-exempt adjustments
     const distribution = useMemo(
-        () => getPrizeDistribution(prizePool, entryFee),
-        [prizePool, entryFee]
+        () => getFinalDistribution(prizePool, entryFee, getTeamSize("DUO"), ucExemptCount),
+        [prizePool, entryFee, ucExemptCount]
     );
 
     // Calculate prize amounts per position from dynamic distribution
@@ -153,7 +156,7 @@ export function DeclareWinnerDialog({
         declareWinners(data);
     };
 
-    const organizerAmount = distribution.orgFee;
+    const organizerAmount = distribution.finalOrgAmount;
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -201,13 +204,19 @@ export function DeclareWinnerDialog({
                                         );
                                     })}
                                 <div className="flex justify-between text-muted-foreground">
-                                    <span>💼 Organizer ({distribution.tier.orgFeePercent}%):</span>
+                                    <span>💼 Organizer ({distribution.tier.orgFeePercent}%){ucExemptCount > 0 ? ` - ${ucExemptCount} exempt` : ""}:</span>
                                     <span className="font-medium">₹{organizerAmount.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-muted-foreground">
                                     <span>🏦 Fund ({distribution.tier.fundPercent}%):</span>
-                                    <span className="font-medium">₹{distribution.fundAmount.toLocaleString()}</span>
+                                    <span className="font-medium">₹{distribution.finalFundAmount.toLocaleString()}</span>
                                 </div>
+                                {ucExemptCount > 0 && (
+                                    <div className="flex justify-between text-amber-600 dark:text-amber-400 pt-1 border-t border-green-200 dark:border-green-700">
+                                        <span>⚠️ UC-Exempt cost ({ucExemptCount} × ₹{entryFee}):</span>
+                                        <span className="font-medium">-₹{distribution.ucExemptCost.toLocaleString()}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

@@ -78,6 +78,7 @@ export function TournamentSettings() {
     entryFee: rankingsData.meta.entryFee || 0,
     totalPlayers: rankingsData.meta.totalPlayers || 0,
     prizePool: rankingsData.meta.prizePool || 0,
+    ucExemptCount: rankingsData.meta.ucExemptCount || 0,
   } : undefined;
 
   const handleDeclareWinnersClick = () => {

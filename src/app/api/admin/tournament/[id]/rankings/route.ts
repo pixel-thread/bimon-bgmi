@@ -107,12 +107,19 @@ export async function GET(
         // Sort using official BGMI tiebreaker rules
         const sortedData = sortTeamsByTiebreaker(mappedData);
 
-        // Calculate total player count across all teams in this tournament
+        // Calculate total player count and UC-exempt count across all teams in this tournament
         const allTeams = await prisma.team.findMany({
             where: { tournamentId },
-            include: { players: true },
+            include: { players: { select: { isUCExempt: true } } },
         });
-        const totalPlayers = allTeams.reduce((sum, team) => sum + team.players.length, 0);
+        let totalPlayers = 0;
+        let ucExemptCount = 0;
+        allTeams.forEach(team => {
+            team.players.forEach(player => {
+                totalPlayers++;
+                if (player.isUCExempt) ucExemptCount++;
+            });
+        });
 
         return SuccessResponse({
             message: "Team rankings fetched successfully",
@@ -121,6 +128,7 @@ export async function GET(
                 entryFee: tournament.fee || 0,
                 totalPlayers,
                 prizePool: (tournament.fee || 0) * totalPlayers,
+                ucExemptCount,
             },
         });
     } catch (error) {

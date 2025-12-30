@@ -5,7 +5,7 @@
  * Tier thresholds determine the number of winners and distribution percentages.
  * 
  * Rules:
- * 1. Fund = 5%, Org = 9%/9%/8%/7% depending on tier
+ * 1. Org = 10%, Fund = 4% (fixed across all tiers)
  * 2. UC-exempt players count in prize pool, but their entry fee is subtracted from Org
  * 3. Org minimum = ₹20
  * 4. Org should always be > Fund (take from Fund if needed)
@@ -70,43 +70,43 @@ const TIER_CONFIGS: PrizeTierConfig[] = [
         level: 1,
         minPool: 0,
         maxPool: 1199,
-        orgFeePercent: 9, // Reduced from 10%
-        fundPercent: 5,
+        orgFeePercent: 10,
+        fundPercent: 4,
         winnerCount: 2,
-        percentages: [57, 29], // Adjusted to account for fund (was 60, 30)
+        percentages: [57, 29], // ~86% to winners (remaining after 10% org + 4% fund)
         description: "Top 2 paid",
     },
     {
         level: 2,
         minPool: 1200,
         maxPool: 3000,
-        orgFeePercent: 9, // Reduced from 10%
-        fundPercent: 5,
+        orgFeePercent: 10,
+        fundPercent: 4,
         winnerCount: 3,
         // 3rd place gets fixed refund, remaining split between 1st and 2nd
-        percentages: [62, 33], // Adjusted for fund (was 65, 35)
+        percentages: [62, 33], // ~95% of winner pool
         description: "Top 3 paid",
     },
     {
         level: 3,
         minPool: 3001,
         maxPool: 5000,
-        orgFeePercent: 8, // Reduced from 9%
-        fundPercent: 5,
+        orgFeePercent: 10,
+        fundPercent: 4,
         winnerCount: 4,
         // 4th place gets fixed refund, remaining split among top 3
-        percentages: [52, 28, 14], // Adjusted for fund (was 55, 30, 15)
+        percentages: [52, 28, 14], // ~94% of winner pool
         description: "Top 4 paid",
     },
     {
         level: 4,
         minPool: 5001,
         maxPool: null,
-        orgFeePercent: 7, // Reduced from 8%
-        fundPercent: 5,
+        orgFeePercent: 10,
+        fundPercent: 4,
         winnerCount: 5,
         // 5th place gets fixed refund, remaining split among top 4
-        percentages: [38, 26, 19, 12], // Adjusted for fund (was 40, 27, 20, 13)
+        percentages: [38, 26, 19, 12], // ~95% of winner pool
         description: "Top 5 paid",
     },
 ];
@@ -223,14 +223,19 @@ export function getPrizeDistribution(
         carryOver = remainder;
     }
 
-    // Any remaining odd amount from 1st position goes to fund
-    fundAmount += carryOver;
+    // Any remaining amount from rounding goes to org
+    let adjustedOrgFee = orgFee + carryOver;
 
     // Calculate total winner payout
     let totalWinnerPayout = 0;
     prizes.forEach((prize) => {
         totalWinnerPayout += prize.amount;
     });
+
+    // Ensure total adds up exactly - any remainder from floor() goes to org
+    const totalDistributed = adjustedOrgFee + fundAmount + totalWinnerPayout;
+    const remainder = totalPool - totalDistributed;
+    adjustedOrgFee += remainder;
 
     // Generate summary texts
     const teamRefund = entryFee * teamSize;
@@ -243,7 +248,7 @@ export function getPrizeDistribution(
     return {
         tier,
         totalPool,
-        orgFee,
+        orgFee: adjustedOrgFee,
         fundAmount,
         totalWinnerPayout,
         prizes,
