@@ -45,7 +45,17 @@ self.addEventListener('fetch', (event) => {
     // Skip API requests - always go to network
     if (event.request.url.includes('/api/')) return;
 
-    // Skip external requests
+    // Skip Clerk authentication URLs - never cache these
+    const url = new URL(event.request.url);
+    if (url.searchParams.has('__clerk_handshake') ||
+        url.searchParams.has('__clerk_status') ||
+        url.pathname.startsWith('/auth') ||
+        url.pathname.startsWith('/sso-callback') ||
+        url.pathname.includes('clerk')) {
+        return;
+    }
+
+    // Skip external requests (including Clerk's domains)
     if (!event.request.url.startsWith(self.location.origin)) return;
 
     event.respondWith(

@@ -1,11 +1,14 @@
 "use client";
 
 import { useSignIn } from "@clerk/nextjs";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function AuthPage() {
   const { signIn, isLoaded } = useSignIn();
   const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/";
 
   useEffect(() => {
     if (!isLoaded || !signIn) return;
@@ -14,12 +17,12 @@ export default function AuthPage() {
     signIn.authenticateWithRedirect({
       strategy: "oauth_google",
       redirectUrl: "/auth/sso-callback",
-      redirectUrlComplete: "/",
+      redirectUrlComplete: redirectTo,
     }).catch((err) => {
       console.error("Failed to redirect to Google:", err);
       setError("Failed to start sign-in. Please try again.");
     });
-  }, [isLoaded, signIn]);
+  }, [isLoaded, signIn, redirectTo]);
 
   if (error) {
     return (

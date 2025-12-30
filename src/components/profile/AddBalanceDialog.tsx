@@ -188,9 +188,12 @@ export function AddBalanceDialog() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button size="sm" className="gap-1 shrink-0">
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                >
                     <Plus className="w-4 h-4" />
-                    <span className="hidden sm:inline">Add Balance</span>
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">

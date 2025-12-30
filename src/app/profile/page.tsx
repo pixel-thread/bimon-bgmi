@@ -11,7 +11,7 @@ import { ProfileSettings } from "@/src/components/profile/ProfileSettings";
 import { AddBalanceDialog } from "@/src/components/profile/AddBalanceDialog";
 import {
     Bell, Check, X, ArrowUpRight, ArrowDownLeft, Clock, DollarSign,
-    User, Target, Skull, Swords, TrendingUp, Settings
+    User, Target, Swords, TrendingUp, TrendingDown, Minus, Settings
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
@@ -19,6 +19,8 @@ import { useUser } from "@clerk/nextjs";
 import { formatDistanceToNow } from "date-fns";
 import Image from "next/image";
 import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getKdRank } from "@/src/utils/categoryUtils";
+import { CategoryBadge } from "@/src/components/ui/category-badge";
 
 type UCTransfer = {
     id: string;
@@ -46,7 +48,10 @@ type Notification = {
 type PlayerStats = {
     kills: number;
     deaths: number;
-    matches: Array<{ id: string }>;
+    kd: number;
+    kdTrend: "up" | "down" | "same";
+    kdChange: number;
+    lastMatchKills: number;
 };
 
 export default function ProfilePage() {
@@ -100,11 +105,13 @@ export default function ProfilePage() {
     const unreadCount = notificationsData?.data?.unreadCount || 0;
     const imageSettings = imageSettingsData?.data;
 
-    // Calculate K/D ratio
+    // Extract stats from API response
     const kills = playerStats?.kills || 0;
     const deaths = playerStats?.deaths || 0;
-    const matchesPlayed = playerStats?.matches?.length || 0;
-    const kdRatio = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? kills.toFixed(2) : "0.00";
+    const kd = playerStats?.kd || 0;
+    const kdTrend = playerStats?.kdTrend || "same";
+    const kdChange = playerStats?.kdChange || 0;
+    const lastMatchKills = playerStats?.lastMatchKills || 0;
 
     // Filter pending requests where the current user needs to approve
     const pendingRequests = transfers.filter(
@@ -219,15 +226,18 @@ export default function ProfilePage() {
         );
     }
 
-    // Show login message if no user at all
+    // Show login message if no user at all - redirect to sign in
     if (!user) {
+        // Show skeleton briefly while potential redirect happens
         return (
-            <div className="container mx-auto px-4 py-8">
-                <Card>
-                    <CardContent className="py-12 text-center text-muted-foreground">
-                        Please log in to view your profile.
-                    </CardContent>
-                </Card>
+            <div className="container mx-auto px-4 py-8 space-y-6">
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-16 w-16 rounded-full" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-48" />
+                        <Skeleton className="h-4 w-32" />
+                    </div>
+                </div>
             </div>
         );
     }
@@ -300,259 +310,206 @@ export default function ProfilePage() {
                 </TabsList>
 
                 {/* Overview Tab */}
-                <TabsContent value="overview" className="space-y-6 mt-6">
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
-                            <CardContent className="p-4">
-                                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-1">
-                                    <DollarSign className="w-4 h-4" />
-                                    <span className="text-sm font-medium">UC Balance</span>
-                                </div>
-                                <div className="flex items-center justify-between gap-2 flex-wrap">
-                                    <p className="text-2xl font-bold">{userBalance}</p>
-                                    <AddBalanceDialog />
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
-                            <CardContent className="p-4">
-                                <div className="flex items-center gap-2 text-red-600 dark:text-red-400 mb-1">
-                                    <Target className="w-4 h-4" />
-                                    <span className="text-sm font-medium">Kills</span>
-                                </div>
-                                <p className="text-2xl font-bold">{statsLoading ? "..." : kills}</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-gradient-to-br from-gray-500/10 to-gray-600/5 border-gray-500/20">
-                            <CardContent className="p-4">
-                                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-1">
-                                    <Skull className="w-4 h-4" />
-                                    <span className="text-sm font-medium">Deaths</span>
-                                </div>
-                                <p className="text-2xl font-bold">{statsLoading ? "..." : deaths}</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-                            <CardContent className="p-4">
-                                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-1">
-                                    <TrendingUp className="w-4 h-4" />
-                                    <span className="text-sm font-medium">K/D Ratio</span>
-                                </div>
-                                <p className="text-2xl font-bold">{statsLoading ? "..." : kdRatio}</p>
-                            </CardContent>
-                        </Card>
-                    </div>
+                <TabsContent value="overview" className="space-y-4 mt-6">
+                    {/* Stats Section - Glassmorphism */}
+                    <div className="relative rounded-2xl overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-purple-500/10 to-fuchsia-500/10 dark:from-violet-600/20 dark:via-purple-600/20 dark:to-fuchsia-600/20" />
+                        <div className="absolute inset-0 backdrop-blur-3xl" />
 
-                    {/* Additional Stats Row */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <Card>
-                            <CardContent className="p-4">
-                                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                                    <Swords className="w-4 h-4" />
-                                    <span className="text-sm font-medium">Matches Played</span>
+                        <div className="relative p-4 md:p-6">
+                            {/* K/D Featured Display with Category */}
+                            <div className="text-center mb-4">
+                                <div className="flex items-center justify-center gap-2 mb-1">
+                                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">K/D Ratio</p>
+                                    {!statsLoading && (
+                                        <CategoryBadge category={getKdRank(kills, deaths)} size="xs" />
+                                    )}
                                 </div>
-                                <p className="text-2xl font-bold">{statsLoading ? "..." : matchesPlayed}</p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="p-4">
-                                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                                    <span className="text-sm font-medium">Category</span>
-                                </div>
-                                <Badge variant="secondary" className="text-lg px-3 py-1">
-                                    {user.player?.category || "NOOB"}
-                                </Badge>
-                            </CardContent>
-                        </Card>
-                        <Card className="col-span-2 md:col-span-1">
-                            <CardContent className="p-4">
-                                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                                    <span className="text-sm font-medium">Account Status</span>
-                                </div>
-                                {user.player?.isBanned ? (
-                                    <Badge variant="destructive">Banned</Badge>
-                                ) : (
-                                    <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Pending Requests Section */}
-                    {pendingRequests.length > 0 && (
-                        <Card className="border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
-                                    <Clock className="w-5 h-5" />
-                                    Pending UC Requests ({pendingRequests.length})
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {pendingRequests.map((request) => (
-                                    <div
-                                        key={request.id}
-                                        className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm"
-                                    >
-                                        <div>
-                                            <p className="font-medium">
-                                                <span className="text-blue-600">{getDisplayName(request.fromPlayer.user.displayName, request.fromPlayer.user.userName)}</span>
-                                                {" "}requested{" "}
-                                                <span className="font-bold text-green-600">{request.amount} UC</span>
-                                            </p>
-                                            {request.message && (
-                                                <p className="text-sm text-muted-foreground mt-1">&quot;{request.message}&quot;</p>
-                                            )}
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
-                                            </p>
+                                <div className="flex items-baseline justify-center gap-2">
+                                    <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+                                        {statsLoading ? "..." : kd.toFixed(2)}
+                                    </span>
+                                    {!statsLoading && deaths > 0 && (
+                                        <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-sm font-medium ${kdTrend === "up"
+                                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                            : kdTrend === "down"
+                                                ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                                                : "bg-slate-500/10 text-slate-600 dark:text-slate-400"
+                                            }`}>
+                                            {kdTrend === "up" && <TrendingUp className="w-3.5 h-3.5" />}
+                                            {kdTrend === "down" && <TrendingDown className="w-3.5 h-3.5" />}
+                                            {kdTrend === "same" && <Minus className="w-3.5 h-3.5" />}
+                                            {kdChange > 0 ? "+" : ""}{kdChange.toFixed(2)}
                                         </div>
-                                        <div className="flex gap-2">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="border-green-600 text-green-600 hover:bg-green-50 disabled:opacity-50"
-                                                onClick={() => {
-                                                    if (userBalance < request.amount) {
-                                                        toast.error(`Insufficient balance. You need ${request.amount} UC but have ${userBalance} UC.`);
-                                                        return;
-                                                    }
-                                                    approveTransfer(request.id);
-                                                }}
-                                                disabled={isApproving || isRejecting || userBalance < request.amount}
-                                            >
-                                                <Check className="w-4 h-4 mr-1" /> Approve
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="border-red-600 text-red-600 hover:bg-red-50"
-                                                onClick={() => rejectTransfer(request.id)}
-                                                disabled={isApproving || isRejecting}
-                                            >
-                                                <X className="w-4 h-4 mr-1" /> Reject
-                                            </Button>
+                                    )}
+                                </div>
+                                {!statsLoading && lastMatchKills > 0 && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Last match: <span className="font-semibold text-foreground">{lastMatchKills} kills</span>
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Stats Grid - 2 columns on mobile, 3 on larger */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center flex-shrink-0">
+                                        <Target className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground font-medium uppercase">Kills</p>
+                                        <p className="text-lg font-bold leading-tight">{statsLoading ? "..." : kills}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-400 to-violet-500 flex items-center justify-center flex-shrink-0">
+                                        <Swords className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground font-medium uppercase">Matches</p>
+                                        <p className="text-lg font-bold leading-tight">{statsLoading ? "..." : deaths}</p>
+                                    </div>
+                                </div>
+                                <div className="col-span-2 sm:col-span-1 flex items-center justify-between p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center flex-shrink-0">
+                                            <DollarSign className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-muted-foreground font-medium uppercase">UC Balance</p>
+                                            <p className="text-lg font-bold leading-tight">{userBalance}</p>
                                         </div>
                                     </div>
-                                ))}
-                            </CardContent>
-                        </Card>
+                                    <AddBalanceDialog />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Pending Requests - Glassmorphism */}
+                    {pendingRequests.length > 0 && (
+                        <div className="relative rounded-2xl overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-yellow-500/10 to-orange-500/10 dark:from-amber-600/15 dark:via-yellow-600/15 dark:to-orange-600/15" />
+                            <div className="absolute inset-0 backdrop-blur-3xl" />
+
+                            <div className="relative p-4 md:p-5">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                                        <Clock className="w-4 h-4 text-white" />
+                                    </div>
+                                    <h3 className="font-semibold">Pending Requests ({pendingRequests.length})</h3>
+                                </div>
+                                <div className="space-y-2">
+                                    {pendingRequests.map((request) => (
+                                        <div key={request.id} className="flex items-center justify-between p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
+                                            <div>
+                                                <p className="text-sm font-medium">
+                                                    <span className="text-violet-600 dark:text-violet-400">{getDisplayName(request.fromPlayer.user.displayName, request.fromPlayer.user.userName)}</span>
+                                                    {" "}requested{" "}
+                                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{request.amount} UC</span>
+                                                </p>
+                                                {request.message && <p className="text-xs text-muted-foreground mt-0.5">&quot;{request.message}&quot;</p>}
+                                                <p className="text-[10px] text-muted-foreground mt-1">{formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}</p>
+                                            </div>
+                                            <div className="flex gap-1.5">
+                                                <Button size="sm" variant="outline" className="h-8 px-2.5 border-emerald-500/50 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10" onClick={() => { if (userBalance < request.amount) { toast.error(`Insufficient balance.`); return; } approveTransfer(request.id); }} disabled={isApproving || isRejecting || userBalance < request.amount}>
+                                                    <Check className="w-3.5 h-3.5" />
+                                                </Button>
+                                                <Button size="sm" variant="outline" className="h-8 px-2.5 border-red-500/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10" onClick={() => rejectTransfer(request.id)} disabled={isApproving || isRejecting}>
+                                                    <X className="w-3.5 h-3.5" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     )}
 
-                    {/* Notifications Section */}
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle className="flex items-center gap-2">
-                                <Bell className="w-5 h-5" />
-                                Notifications
+                    {/* Notifications - Glassmorphism */}
+                    <div className="relative rounded-2xl overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-cyan-500/10 to-teal-500/10 dark:from-blue-600/15 dark:via-cyan-600/15 dark:to-teal-600/15" />
+                        <div className="absolute inset-0 backdrop-blur-3xl" />
+
+                        <div className="relative p-4 md:p-5">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center">
+                                        <Bell className="w-4 h-4 text-white" />
+                                    </div>
+                                    <h3 className="font-semibold">Notifications</h3>
+                                    {unreadCount > 0 && <Badge variant="destructive" className="text-xs">{unreadCount}</Badge>}
+                                </div>
                                 {unreadCount > 0 && (
-                                    <Badge variant="destructive" className="ml-2">{unreadCount}</Badge>
+                                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => markAllRead()}>Mark all read</Button>
                                 )}
-                            </CardTitle>
-                            {unreadCount > 0 && (
-                                <Button variant="ghost" size="sm" onClick={() => markAllRead()}>
-                                    Mark all as read
-                                </Button>
-                            )}
-                        </CardHeader>
-                        <CardContent>
+                            </div>
                             {notifications.length === 0 ? (
-                                <p className="text-center text-muted-foreground py-8">No notifications yet</p>
+                                <p className="text-center text-muted-foreground py-6 text-sm">No notifications yet</p>
                             ) : (
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     {notifications.slice(0, 5).map((notification) => (
-                                        <div
-                                            key={notification.id}
-                                            className={`p-4 rounded-lg ${notification.isRead ? "bg-gray-50 dark:bg-gray-800" : "bg-blue-50 dark:bg-blue-900/20"}`}
-                                        >
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="font-medium">{notification.title}</p>
-                                                    <p className="text-sm text-muted-foreground">{notification.message}</p>
+                                        <div key={notification.id} className={`p-3 rounded-xl backdrop-blur-sm border ${notification.isRead ? "bg-white/30 dark:bg-slate-800/30 border-white/10 dark:border-slate-700/30" : "bg-white/60 dark:bg-slate-800/60 border-white/30 dark:border-slate-700/50"}`}>
+                                            <div className="flex justify-between items-start gap-2">
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-medium text-sm truncate">{notification.title}</p>
+                                                    <p className="text-xs text-muted-foreground line-clamp-2">{notification.message}</p>
                                                 </div>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                                                </span>
+                                                <span className="text-[10px] text-muted-foreground whitespace-nowrap">{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
 
-                    {/* Transfer History */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <DollarSign className="w-5 h-5" />
-                                Transfer History
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
+                    {/* Transfer History - Glassmorphism */}
+                    <div className="relative rounded-2xl overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-green-500/10 to-teal-500/10 dark:from-emerald-600/15 dark:via-green-600/15 dark:to-teal-600/15" />
+                        <div className="absolute inset-0 backdrop-blur-3xl" />
+
+                        <div className="relative p-4 md:p-5">
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
+                                    <DollarSign className="w-4 h-4 text-white" />
+                                </div>
+                                <h3 className="font-semibold">Transfer History</h3>
+                            </div>
                             {transfers.length === 0 ? (
-                                <p className="text-center text-muted-foreground py-8">No transfers yet</p>
+                                <p className="text-center text-muted-foreground py-6 text-sm">No transfers yet</p>
                             ) : (
-                                <div className="space-y-3">
-                                    {transfers.slice(0, 10).map((transfer) => (
-                                        <div
-                                            key={transfer.id}
-                                            className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                {/* Determine if current user is losing or gaining UC */}
-                                                {(() => {
-                                                    // For SEND: fromPlayer loses money, toPlayer gains money
-                                                    // For REQUEST (approved): fromPlayer gains money (requester), toPlayer loses money (payer)
-                                                    const isLosingMoney = transfer.type === "SEND"
-                                                        ? transfer.fromPlayerId === playerId  // Sender loses money
-                                                        : transfer.toPlayerId === playerId;   // Payer loses money (when REQUEST is approved)
-
-                                                    return isLosingMoney ? (
-                                                        <ArrowUpRight className="w-5 h-5 text-red-500" />
-                                                    ) : (
-                                                        <ArrowDownLeft className="w-5 h-5 text-green-500" />
-                                                    );
-                                                })()}
-                                                <div>
-                                                    <p className="font-medium">
-                                                        {transfer.fromPlayerId === playerId ? (
-                                                            <>
-                                                                {transfer.type === "SEND" ? "Sent to" : "Requested from"}{" "}
-                                                                <span className="text-blue-600">{getDisplayName(transfer.toPlayer.user.displayName, transfer.toPlayer.user.userName)}</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                {transfer.type === "SEND" ? "Received from" : "Request from"}{" "}
-                                                                <span className="text-blue-600">{getDisplayName(transfer.fromPlayer.user.displayName, transfer.fromPlayer.user.userName)}</span>
-                                                            </>
-                                                        )}
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {formatDistanceToNow(new Date(transfer.createdAt), { addSuffix: true })}
-                                                    </p>
+                                <div className="space-y-2">
+                                    {transfers.slice(0, 10).map((transfer) => {
+                                        const isLosingMoney = transfer.type === "SEND" ? transfer.fromPlayerId === playerId : transfer.toPlayerId === playerId;
+                                        return (
+                                            <div key={transfer.id} className="flex items-center justify-between p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center ${isLosingMoney ? "bg-red-500/10" : "bg-emerald-500/10"}`}>
+                                                        {isLosingMoney ? <ArrowUpRight className="w-4 h-4 text-red-500" /> : <ArrowDownLeft className="w-4 h-4 text-emerald-500" />}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium">
+                                                            {transfer.fromPlayerId === playerId ? (
+                                                                <>{transfer.type === "SEND" ? "Sent to" : "Requested from"} <span className="text-violet-600 dark:text-violet-400">{getDisplayName(transfer.toPlayer.user.displayName, transfer.toPlayer.user.userName)}</span></>
+                                                            ) : (
+                                                                <>{transfer.type === "SEND" ? "Received from" : "Request from"} <span className="text-violet-600 dark:text-violet-400">{getDisplayName(transfer.fromPlayer.user.displayName, transfer.fromPlayer.user.userName)}</span></>
+                                                            )}
+                                                        </p>
+                                                        <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(transfer.createdAt), { addSuffix: true })}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`font-bold text-sm ${isLosingMoney ? "text-red-600" : "text-emerald-600"}`}>{isLosingMoney ? "-" : "+"}{transfer.amount} UC</span>
+                                                    {getStatusBadge(transfer.status)}
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                {(() => {
-                                                    const isLosingMoney = transfer.type === "SEND"
-                                                        ? transfer.fromPlayerId === playerId
-                                                        : transfer.toPlayerId === playerId;
-
-                                                    return (
-                                                        <span className={`font-bold ${isLosingMoney ? "text-red-600" : "text-green-600"}`}>
-                                                            {isLosingMoney ? "-" : "+"}{transfer.amount} UC
-                                                        </span>
-                                                    );
-                                                })()}
-                                                {getStatusBadge(transfer.status)}
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </TabsContent>
 
                 {/* Account Settings Tab */}
