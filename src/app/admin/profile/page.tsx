@@ -101,6 +101,7 @@ export default function AdminProfilePage() {
             if (data.success) {
                 toast.success(data.message || "Transfer approved");
                 queryClient.invalidateQueries({ queryKey: ["uc-transfers"] });
+                queryClient.invalidateQueries({ queryKey: ["uc-transfers-pending-count"] });
                 queryClient.invalidateQueries({ queryKey: ["notifications"] });
                 queryClient.invalidateQueries({ queryKey: ["player"] });
             } else {
@@ -117,6 +118,7 @@ export default function AdminProfilePage() {
             if (data.success) {
                 toast.success(data.message || "Transfer rejected");
                 queryClient.invalidateQueries({ queryKey: ["uc-transfers"] });
+                queryClient.invalidateQueries({ queryKey: ["uc-transfers-pending-count"] });
                 queryClient.invalidateQueries({ queryKey: ["notifications"] });
             } else {
                 toast.error(data.message || "Failed to reject");

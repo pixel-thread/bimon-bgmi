@@ -104,7 +104,7 @@ export default function TournamentForm() {
           </div>
           <div className="col-span-full flex items-center justify-end gap-3 mt-6">
             <Button disabled={isUpdating}>
-              {isLoading ? "Updating..." : "Save Changes"}
+              {isPending ? "Updating..." : "Save Changes"}
             </Button>
             <Button
               type="button"
@@ -112,7 +112,7 @@ export default function TournamentForm() {
               variant="destructive"
               disabled={isUpdating}
             >
-              {isLoading ? "Deleting..." : "Delete"}
+              Delete
             </Button>
           </div>
         </form>

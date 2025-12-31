@@ -21,8 +21,8 @@ export function usePendingUCRequests() {
         queryKey: ["uc-transfers-pending-count", playerId],
         queryFn: () => http.get<PendingCountResponse>("/uc-transfers/pending-count"),
         enabled: !!playerId,
-        refetchInterval: 60000, // Refetch every 60 seconds
-        staleTime: 30000, // Consider data stale after 30 seconds
+        staleTime: Infinity, // Only fetch on page load/refresh
+        refetchOnWindowFocus: false, // Don't refetch when window regains focus
     });
 
     const pendingCount = data?.data?.count ?? 0;

@@ -5,7 +5,132 @@ type Props = {
   seasonId?: string;
 };
 
+// Helper function to get extended stats (seasons, tournaments, best match, podium, ban status, wins, top10)
+async function getExtendedStats(playerId: string) {
+  // Get player with relations for seasons, teams, and ban status
+  const player = await prisma.player.findUnique({
+    where: { id: playerId },
+    select: {
+      isBanned: true,
+      seasons: { select: { id: true } },
+      teams: {
+        select: {
+          tournamentId: true,
+          teamStats: {
+            select: { position: true, matchId: true },
+          },
+        },
+      },
+      playerBanned: {
+        select: {
+          banReason: true,
+          banDuration: true,
+          bannedAt: true,
+        },
+      },
+    },
+  });
+
+  if (!player) {
+    return {
+      seasonsPlayed: 0,
+      totalTournaments: 0,
+      bestMatchKills: 0,
+      podiumFinishes: { first: 0, second: 0, third: 0 },
+      banStatus: { isBanned: false },
+      wins: 0,
+      top10Count: 0,
+      winRate: 0,
+      top10Rate: 0,
+      avgKillsPerMatch: 0,
+    };
+  }
+
+  // Count seasons played
+  const seasonsPlayed = player.seasons.length;
+
+  // Count unique tournaments
+  const uniqueTournaments = new Set(
+    player.teams.map((t) => t.tournamentId).filter(Boolean)
+  );
+  const totalTournaments = uniqueTournaments.size;
+
+  // Get best match (highest kills) and calculate avg kills
+  const allMatchStats = await prisma.teamPlayerStats.findMany({
+    where: { playerId },
+    select: { kills: true },
+    orderBy: { kills: "desc" },
+  });
+  const bestMatchKills = allMatchStats[0]?.kills || 0;
+  const totalKillsFromMatches = allMatchStats.reduce((sum, m) => sum + m.kills, 0);
+  const totalMatchesPlayed = allMatchStats.length;
+  const avgKillsPerMatch = totalMatchesPlayed > 0
+    ? Number((totalKillsFromMatches / totalMatchesPlayed).toFixed(2))
+    : 0;
+
+  // Count podium finishes, wins, and top 10 (from team positions)
+  const podiumFinishes = { first: 0, second: 0, third: 0 };
+  let wins = 0;
+  let top10Count = 0;
+
+  // Use Set to avoid counting same match multiple times
+  const countedMatches = new Set<string>();
+
+  for (const team of player.teams) {
+    for (const stat of team.teamStats) {
+      if (countedMatches.has(stat.matchId)) continue;
+      countedMatches.add(stat.matchId);
+
+      if (stat.position === 1) {
+        podiumFinishes.first++;
+        wins++;
+        top10Count++;
+      } else if (stat.position === 2) {
+        podiumFinishes.second++;
+        top10Count++;
+      } else if (stat.position === 3) {
+        podiumFinishes.third++;
+        top10Count++;
+      } else if (stat.position <= 10 && stat.position > 0) {
+        top10Count++;
+      }
+    }
+  }
+
+  // Calculate rates
+  const winRate = totalMatchesPlayed > 0
+    ? Number(((wins / totalMatchesPlayed) * 100).toFixed(1))
+    : 0;
+  const top10Rate = totalMatchesPlayed > 0
+    ? Number(((top10Count / totalMatchesPlayed) * 100).toFixed(1))
+    : 0;
+
+  // Ban status
+  const banStatus = {
+    isBanned: player.isBanned,
+    reason: player.playerBanned?.banReason || undefined,
+    duration: player.playerBanned?.banDuration || undefined,
+    bannedAt: player.playerBanned?.bannedAt || undefined,
+  };
+
+  return {
+    seasonsPlayed,
+    totalTournaments,
+    bestMatchKills,
+    podiumFinishes,
+    banStatus,
+    wins,
+    top10Count,
+    winRate,
+    top10Rate,
+    avgKillsPerMatch,
+  };
+}
+
 export async function getPlayerStatsByPlayerId({ playerId, seasonId }: Props) {
+  // Get extended stats (runs in parallel with other queries)
+  const extendedStatsPromise = getExtendedStats(playerId);
+
   // Get the player's last match stats to calculate K/D trend
   const lastMatchStats = await prisma.teamPlayerStats.findFirst({
     where: { playerId },
@@ -50,6 +175,9 @@ export async function getPlayerStatsByPlayerId({ playerId, seasonId }: Props) {
       }
     }
 
+    // Wait for extended stats
+    const extendedStats = await extendedStatsPromise;
+
     const aggregated = {
       id: `${playerId}-all`,
       playerId,
@@ -60,6 +188,7 @@ export async function getPlayerStatsByPlayerId({ playerId, seasonId }: Props) {
       kdTrend,
       kdChange,
       lastMatchKills,
+      ...extendedStats,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -102,11 +231,15 @@ export async function getPlayerStatsByPlayerId({ playerId, seasonId }: Props) {
     }
   }
 
+  // Wait for extended stats
+  const extendedStats = await extendedStatsPromise;
+
   return {
     ...stats,
     kd: Number(currentKd.toFixed(2)),
     kdTrend,
     kdChange,
     lastMatchKills,
+    ...extendedStats,
   };
 }

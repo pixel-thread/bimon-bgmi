@@ -40,6 +40,7 @@ export function UCTransferDialog({ isOpen, onClose, toPlayerId, toPlayerName }: 
             if (data.success) {
                 toast.success(data.message);
                 queryClient.invalidateQueries({ queryKey: ["uc-transfers"] });
+                queryClient.invalidateQueries({ queryKey: ["uc-transfers-pending-count"] });
                 queryClient.invalidateQueries({ queryKey: ["player"] });
                 handleClose();
             } else {

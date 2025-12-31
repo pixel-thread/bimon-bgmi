@@ -117,6 +117,7 @@ export async function GET(req: NextRequest) {
           kills: totalKills,
           kd: playerKd.toFixed(2) || 0,
           category: getKdRank(totalKills, totalDeaths),
+          characterImageUrl: player.characterImage?.publicUrl || null,
           imageUrl: player?.user?.clerkId ? clerkUserMap.get(player.user.clerkId) || null : null,
         };
       });
@@ -135,6 +136,7 @@ export async function GET(req: NextRequest) {
           kills: totalKills,
           kd: playerKd.toFixed(2) || 0,
           category: getKdRank(totalKills, totalDeaths),
+          characterImageUrl: player.characterImage?.publicUrl || null,
           imageUrl: player?.user?.clerkId ? clerkUserMap.get(player.user.clerkId) || null : null,
         };
       });

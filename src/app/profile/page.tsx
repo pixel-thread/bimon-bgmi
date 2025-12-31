@@ -11,7 +11,8 @@ import { ProfileSettings } from "@/src/components/profile/ProfileSettings";
 import { AddBalanceDialog } from "@/src/components/profile/AddBalanceDialog";
 import {
     Bell, Check, X, ArrowUpRight, ArrowDownLeft, Clock, DollarSign,
-    User, Target, Swords, TrendingUp, TrendingDown, Minus, Settings
+    User, Target, Swords, TrendingUp, TrendingDown, Minus, Settings,
+    Trophy, Calendar, Star, Medal, ShieldAlert
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
@@ -52,6 +53,16 @@ type PlayerStats = {
     kdTrend: "up" | "down" | "same";
     kdChange: number;
     lastMatchKills: number;
+    seasonsPlayed: number;
+    totalTournaments: number;
+    bestMatchKills: number;
+    podiumFinishes: { first: number; second: number; third: number };
+    banStatus: { isBanned: boolean; reason?: string; duration?: number; bannedAt?: Date };
+    wins: number;
+    top10Count: number;
+    winRate: number;
+    top10Rate: number;
+    avgKillsPerMatch: number;
 };
 
 export default function ProfilePage() {
@@ -112,6 +123,16 @@ export default function ProfilePage() {
     const kdTrend = playerStats?.kdTrend || "same";
     const kdChange = playerStats?.kdChange || 0;
     const lastMatchKills = playerStats?.lastMatchKills || 0;
+    const seasonsPlayed = playerStats?.seasonsPlayed || 0;
+    const totalTournaments = playerStats?.totalTournaments || 0;
+    const bestMatchKills = playerStats?.bestMatchKills || 0;
+    const podiumFinishes = playerStats?.podiumFinishes || { first: 0, second: 0, third: 0 };
+    const banStatus = playerStats?.banStatus || { isBanned: false };
+    const wins = playerStats?.wins || 0;
+    const top10Count = playerStats?.top10Count || 0;
+    const winRate = playerStats?.winRate || 0;
+    const top10Rate = playerStats?.top10Rate || 0;
+    const avgKillsPerMatch = playerStats?.avgKillsPerMatch || 0;
 
     // Filter pending requests where the current user needs to approve
     const pendingRequests = transfers.filter(
@@ -125,6 +146,7 @@ export default function ProfilePage() {
             if (data.success) {
                 toast.success(data.message || "Transfer approved");
                 queryClient.invalidateQueries({ queryKey: ["uc-transfers"] });
+                queryClient.invalidateQueries({ queryKey: ["uc-transfers-pending-count"] });
                 queryClient.invalidateQueries({ queryKey: ["notifications"] });
                 queryClient.invalidateQueries({ queryKey: ["player"] });
             } else {
@@ -141,6 +163,7 @@ export default function ProfilePage() {
             if (data.success) {
                 toast.success(data.message || "Transfer rejected");
                 queryClient.invalidateQueries({ queryKey: ["uc-transfers"] });
+                queryClient.invalidateQueries({ queryKey: ["uc-transfers-pending-count"] });
                 queryClient.invalidateQueries({ queryKey: ["notifications"] });
             } else {
                 toast.error(data.message || "Failed to reject");
@@ -350,41 +373,99 @@ export default function ProfilePage() {
                                 )}
                             </div>
 
-                            {/* Stats Grid - 2 columns on mobile, 3 on larger */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center flex-shrink-0">
-                                        <Target className="w-5 h-5 text-white" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-muted-foreground font-medium uppercase">Kills</p>
-                                        <p className="text-lg font-bold leading-tight">{statsLoading ? "..." : kills}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-400 to-violet-500 flex items-center justify-center flex-shrink-0">
-                                        <Swords className="w-5 h-5 text-white" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-muted-foreground font-medium uppercase">Matches</p>
-                                        <p className="text-lg font-bold leading-tight">{statsLoading ? "..." : deaths}</p>
-                                    </div>
-                                </div>
-                                <div className="col-span-2 sm:col-span-1 flex items-center justify-between p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center flex-shrink-0">
-                                            <DollarSign className="w-5 h-5 text-white" />
+                            {/* Stats List - Enhanced styling */}
+                            <div className="divide-y divide-slate-200/50 dark:divide-slate-600/50">
+                                {/* Primary Stats Header */}
+                                <div className="pb-3">
+                                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Battle Stats</p>
+                                    <div className="grid grid-cols-4 gap-3 text-center">
+                                        <div>
+                                            <p className="text-2xl font-bold text-slate-800 dark:text-white">{statsLoading ? "..." : deaths}</p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Matches</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] text-muted-foreground font-medium uppercase">UC Balance</p>
-                                            <p className="text-lg font-bold leading-tight">{userBalance}</p>
+                                            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{statsLoading ? "..." : wins}</p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Wins</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{statsLoading ? "..." : top10Count}</p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Top 10</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{statsLoading ? "..." : kills}</p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Kills</p>
                                         </div>
                                     </div>
-                                    <AddBalanceDialog />
+                                </div>
+
+                                {/* Performance Rates */}
+                                <div className="py-3">
+                                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Performance</p>
+                                    <div className="grid grid-cols-3 gap-3 text-center">
+                                        <div>
+                                            <p className="text-xl font-bold text-slate-800 dark:text-white">{statsLoading ? "..." : winRate}<span className="text-sm text-slate-500 dark:text-slate-400">%</span></p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Win Rate</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xl font-bold text-slate-800 dark:text-white">{statsLoading ? "..." : top10Rate}<span className="text-sm text-slate-500 dark:text-slate-400">%</span></p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Top 10 Rate</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xl font-bold text-amber-600 dark:text-amber-400">{statsLoading ? "..." : bestMatchKills}</p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Most Kill</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Career & Balance */}
+                                <div className="pt-3">
+                                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Career</p>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div className="text-center">
+                                            <p className="text-xl font-bold text-purple-600 dark:text-purple-400">{statsLoading ? "..." : totalTournaments}</p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Tournaments</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{statsLoading ? "..." : seasonsPlayed}</p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Seasons</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{userBalance}</p>
+                                                <AddBalanceDialog />
+                                            </div>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">UC Balance</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    {/* Ban Status Warning */}
+                    {banStatus.isBanned && (
+                        <div className="relative rounded-2xl overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-red-500/20 via-red-600/15 to-rose-500/20" />
+                            <div className="absolute inset-0 backdrop-blur-3xl" />
+
+                            <div className="relative p-4 md:p-5">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center flex-shrink-0">
+                                        <ShieldAlert className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-red-600 dark:text-red-400">Account Restricted</h3>
+                                        <p className="text-sm text-muted-foreground">
+                                            {banStatus.reason || "Your account has been temporarily restricted."}
+                                            {banStatus.duration && banStatus.duration > 0 && (
+                                                <span className="ml-1">Duration: {banStatus.duration} day{banStatus.duration > 1 ? "s" : ""}</span>
+                                            )}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Pending Requests - Glassmorphism */}
                     {pendingRequests.length > 0 && (

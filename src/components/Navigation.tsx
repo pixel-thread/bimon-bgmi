@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,6 +25,7 @@ import {
     FiBarChart2,
     FiStar,
     FiChevronRight,
+    FiLoader,
 } from "react-icons/fi";
 import { UserButton, useClerk, useUser } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
@@ -66,6 +67,8 @@ export default function Navigation() {
     const [isOpen, setIsOpen] = useState(false);
     const [isSigningOut, setIsSigningOut] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
+    const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const pathname = usePathname();
     const { isSignedIn: isAuthorized, user: playerUser } = useAuth();
@@ -78,6 +81,14 @@ export default function Navigation() {
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    // Close sidebar when navigation completes
+    useEffect(() => {
+        if (navigatingTo && pathname === navigatingTo && !isPending) {
+            setIsOpen(false);
+            setNavigatingTo(null);
+        }
+    }, [pathname, navigatingTo, isPending]);
 
     // Display name guide state - show for old users without displayName
     const [showDisplayNameGuide, setShowDisplayNameGuide] = useState(false);
@@ -130,8 +141,17 @@ export default function Navigation() {
     }, [isOpen]);
 
     const handleNavigation = (href: string) => {
-        setIsOpen(false);
-        router.push(href);
+        // If already on this page, just close the menu
+        if (pathname === href) {
+            setIsOpen(false);
+            return;
+        }
+
+        // Set the navigation target and start the transition
+        setNavigatingTo(href);
+        startTransition(() => {
+            router.push(href);
+        });
     };
 
     const isActive = (href: string) => {
@@ -191,8 +211,21 @@ export default function Navigation() {
                         {theme === "dark" ? <FiSun className="h-4 w-4" /> : <FiMoon className="h-4 w-4" />}
                     </button>
 
-                    {/* User Button - Only show if authenticated */}
-                    {isAuthorized && <UserButton />}
+                    {/* Logout Button - Only show if authenticated */}
+                    {isAuthorized && (
+                        <button
+                            onClick={handleSignOut}
+                            disabled={isSigningOut}
+                            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 disabled:opacity-50"
+                            aria-label="Logout"
+                        >
+                            {isSigningOut ? (
+                                <div className="h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <FiLogOut className="h-4 w-4" />
+                            )}
+                        </button>
+                    )}
 
                     {/* Login Button */}
                     {!isAuthorized && (
@@ -276,6 +309,8 @@ export default function Navigation() {
                                         {navItems.map((item, index) => {
                                             const Icon = item.icon;
                                             const active = isActive(item.href);
+                                            const isNavigating = navigatingTo === item.href;
+                                            const isAnyNavigating = navigatingTo !== null;
                                             return (
                                                 <motion.button
                                                     key={item.href}
@@ -288,14 +323,21 @@ export default function Navigation() {
                                                         damping: 20
                                                     }}
                                                     onClick={() => handleNavigation(item.href)}
+                                                    disabled={isAnyNavigating}
                                                     className={`w-full flex items-center gap-4 px-4 py-3.5 text-left rounded-xl transition-all ${active
                                                         ? "bg-gray-900 dark:bg-white text-white dark:text-black"
-                                                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-900"
-                                                        }`}
+                                                        : isNavigating
+                                                            ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400"
+                                                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-900"
+                                                        } ${isAnyNavigating && !isNavigating ? "opacity-50 cursor-not-allowed" : ""}`}
                                                 >
-                                                    <Icon className={`h-5 w-5 ${active ? "text-white dark:text-black" : "text-gray-400 dark:text-gray-500"}`} />
+                                                    {isNavigating ? (
+                                                        <FiLoader className="h-5 w-5 animate-spin text-indigo-500 dark:text-indigo-400" />
+                                                    ) : (
+                                                        <Icon className={`h-5 w-5 ${active ? "text-white dark:text-black" : "text-gray-400 dark:text-gray-500"}`} />
+                                                    )}
                                                     <span className="text-[15px] font-medium">{item.label}</span>
-                                                    {active && (
+                                                    {active && !isNavigating && (
                                                         <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white dark:bg-black" />
                                                     )}
                                                 </motion.button>
@@ -307,53 +349,70 @@ export default function Navigation() {
                                     {isAuthorized && (
                                         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-zinc-900">
                                             <div className="px-3">
-                                                <motion.button
-                                                    initial={{ opacity: 0, x: 12 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    transition={{
-                                                        delay: 0.15,
-                                                        type: "spring",
-                                                        stiffness: 200,
-                                                        damping: 20
-                                                    }}
-                                                    onClick={() => handleNavigation("/profile")}
-                                                    className="w-full flex items-center gap-4 px-4 py-3.5 text-left rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all"
-                                                >
-                                                    <div className="h-8 w-8 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-zinc-800 relative">
-                                                        {/* Priority: characterImage > user.imageUrl > fallback */}
-                                                        {(playerUser as any)?.player?.characterImage?.publicUrl ? (
-                                                            <Image
-                                                                src={(playerUser as any).player.characterImage.publicUrl}
-                                                                alt="Profile"
-                                                                fill
-                                                                className="object-cover"
-                                                            />
-                                                        ) : user?.imageUrl ? (
-                                                            <Image
-                                                                src={user.imageUrl}
-                                                                alt="Profile"
-                                                                fill
-                                                                className="object-cover"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-full h-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center">
-                                                                <FiUser className="h-4 w-4 text-gray-500" />
+                                                {(() => {
+                                                    const isNavigatingToProfile = navigatingTo === "/profile";
+                                                    const isAnyNavigating = navigatingTo !== null;
+                                                    return (
+                                                        <motion.button
+                                                            initial={{ opacity: 0, x: 12 }}
+                                                            animate={{ opacity: 1, x: 0 }}
+                                                            transition={{
+                                                                delay: 0.15,
+                                                                type: "spring",
+                                                                stiffness: 200,
+                                                                damping: 20
+                                                            }}
+                                                            onClick={() => handleNavigation("/profile")}
+                                                            disabled={isAnyNavigating}
+                                                            className={`w-full flex items-center gap-4 px-4 py-3.5 text-left rounded-xl transition-all ${isNavigatingToProfile
+                                                                ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400"
+                                                                : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-900"
+                                                                } ${isAnyNavigating && !isNavigatingToProfile ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                        >
+                                                            {isNavigatingToProfile ? (
+                                                                <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                                                                    <FiLoader className="h-4 w-4 animate-spin text-indigo-500" />
+                                                                </div>
+                                                            ) : (
+                                                                <div className="h-8 w-8 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-zinc-800 relative">
+                                                                    {/* Priority: characterImage > user.imageUrl > fallback */}
+                                                                    {(playerUser as any)?.player?.characterImage?.publicUrl ? (
+                                                                        <Image
+                                                                            src={(playerUser as any).player.characterImage.publicUrl}
+                                                                            alt="Profile"
+                                                                            fill
+                                                                            className="object-cover"
+                                                                        />
+                                                                    ) : user?.imageUrl ? (
+                                                                        <Image
+                                                                            src={user.imageUrl}
+                                                                            alt="Profile"
+                                                                            fill
+                                                                            className="object-cover"
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="w-full h-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center">
+                                                                            <FiUser className="h-4 w-4 text-gray-500" />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            <div className="flex-1">
+                                                                <span className="text-[15px] font-medium block">Profile</span>
+                                                                {playerUser && (
+                                                                    <span className="text-xs text-gray-500 dark:text-gray-600">{getDisplayName(playerUser.displayName, playerUser.userName)}</span>
+                                                                )}
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <span className="text-[15px] font-medium block">Profile</span>
-                                                        {playerUser && (
-                                                            <span className="text-xs text-gray-500 dark:text-gray-600">{getDisplayName(playerUser.displayName, playerUser.userName)}</span>
-                                                        )}
-                                                    </div>
-                                                    {hasPendingRequests && (
-                                                        <span className="h-2 w-2 bg-red-500 rounded-full animate-pulse"></span>
-                                                    )}
-                                                    {showDisplayNameGuide && !hasPendingRequests && (
-                                                        <span className="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></span>
-                                                    )}
-                                                </motion.button>
+
+                                                            {!isNavigatingToProfile && hasPendingRequests && (
+                                                                <span className="h-2 w-2 bg-red-500 rounded-full animate-pulse"></span>
+                                                            )}
+                                                            {!isNavigatingToProfile && showDisplayNameGuide && !hasPendingRequests && (
+                                                                <span className="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></span>
+                                                            )}
+                                                        </motion.button>
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
                                     )}
