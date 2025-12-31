@@ -17,7 +17,11 @@ export async function GET(req: NextRequest) {
       where.role = { equals: roleParam as any };
     }
     if (searchParam) {
-      where.email = { contains: searchParam, mode: "insensitive" };
+      where.OR = [
+        { email: { contains: searchParam, mode: "insensitive" } },
+        { displayName: { contains: searchParam, mode: "insensitive" } },
+        { userName: { contains: searchParam, mode: "insensitive" } },
+      ];
     }
 
     const [users, total] = await getAllUsers({ page, where: Object.keys(where).length > 0 ? where : undefined });

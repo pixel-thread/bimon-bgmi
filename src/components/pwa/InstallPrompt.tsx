@@ -24,6 +24,11 @@ export function InstallPrompt() {
     const [isIOS, setIsIOS] = useState(false);
 
     useEffect(() => {
+        // Disable on localhost (development)
+        if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+            return;
+        }
+
         // Check if already installed
         if (window.matchMedia("(display-mode: standalone)").matches) {
             setIsInstalled(true);
