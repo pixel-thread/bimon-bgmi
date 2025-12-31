@@ -7,7 +7,7 @@ export async function checkAndApplyAutoBan(
 ) {
     const player = await tx.player.findUnique({
         where: { id: playerId },
-        select: { isBanned: true, manualUnban: true },
+        select: { isBanned: true, manualUnban: true, isTrusted: true },
     });
 
     if (!player) return;
@@ -31,13 +31,14 @@ export async function checkAndApplyAutoBan(
             });
         }
     } else {
-        // Balance is > 30, should be unbanned and manual override reset
-        if (player.isBanned || player.manualUnban) {
+        // Balance is > -30, should be unbanned, manual override reset, and trusted status removed
+        if (player.isBanned || player.manualUnban || player.isTrusted) {
             await tx.player.update({
                 where: { id: playerId },
                 data: {
                     isBanned: false,
-                    manualUnban: false
+                    manualUnban: false,
+                    isTrusted: false
                 },
             });
         }
