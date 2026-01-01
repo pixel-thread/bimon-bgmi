@@ -7,7 +7,7 @@ import { NotificationPromptBanner } from "@/src/components/common/NotificationPr
 
 const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
   return (
-    <div>
+    <div className="min-h-[calc(100vh-200px)]">
       <NotificationPromptBanner />
       <PollVotingInterface
         readOnly={readOnly}

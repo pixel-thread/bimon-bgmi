@@ -19,6 +19,7 @@ import { useMatchStore } from "../../store/match/useMatchStore";
 import { useTournament } from "../../hooks/tournament/useTournament";
 import { useGlobalBackground } from "@/src/hooks/gallery/useGlobalBackground";
 import { MedalIcon } from "lucide-react";
+import { useGetSeasons } from "@/src/hooks/season/useGetSeasons";
 
 export default function TeamsPage() {
   // Auth state for role-based UI
@@ -27,13 +28,16 @@ export default function TeamsPage() {
   const { matchId: selectedMatch } = useMatchStore();
   const { tournamentId: selectedTournament } = useTournamentStore();
 
-  const { data: teams, isFetching: loading } = useTeams({ page: "all" });
+  const { isLoading: seasonLoading } = useGetSeasons();
+  const { data: teams, isLoading: teamsLoading } = useTeams({ page: "all" });
   const { data: tournament } = useTournament({ id: selectedTournament });
   const { data: globalBackground } = useGlobalBackground();
 
+  const loading = seasonLoading || teamsLoading;
+
   return (
     <>
-      <div className="border-none shadow-lg bg-background text-foreground">
+      <div className="border-none shadow-lg bg-background text-foreground min-h-[calc(100vh-200px)]">
         <div className="p-6 bg-background text-foreground">
           <ActionToolbar
             searchTerm={searchTerm}
@@ -63,16 +67,29 @@ export default function TeamsPage() {
             }
           />
           {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2"></div>
-                <p className="text-sm text-muted-foreground">
-                  Hunting for teams...
-                </p>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6 min-h-[calc(100vh-300px)]">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="rounded-xl border bg-card p-4 space-y-4 animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-muted" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-muted rounded w-3/4" />
+                      <div className="h-3 bg-muted rounded w-1/2" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-3 bg-muted rounded w-full" />
+                    <div className="h-3 bg-muted rounded w-2/3" />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="h-6 bg-muted rounded-full w-16" />
+                    <div className="h-6 bg-muted rounded-full w-16" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : teams?.length === 0 ? (
-            <div className="text-center text-gray-500 py-4">
+            <div className="flex flex-col justify-center items-center text-gray-500 py-4 min-h-[calc(100vh-300px)]">
               <div className="w-12 h-12 mx-auto mb-4 opacity-50">
                 <svg
                   className="w-full h-full"
