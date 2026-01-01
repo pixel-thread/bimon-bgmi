@@ -6,6 +6,9 @@ export type PlayerPlacement = {
   playerName: string;
   firstPlaceCount: number;
   secondPlaceCount: number;
+  thirdPlaceCount: number;
+  fourthPlaceCount: number;
+  fifthPlaceCount: number;
   totalPlacements: number;
 };
 
@@ -14,6 +17,9 @@ export type RecentTournament = {
   tournamentName: string;
   firstPlace: string[];
   secondPlace: string[];
+  thirdPlace: string[];
+  fourthPlace: string[];
+  fifthPlace: string[];
 };
 
 export type WinnerData = {

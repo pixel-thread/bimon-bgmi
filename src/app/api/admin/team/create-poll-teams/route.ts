@@ -10,6 +10,7 @@ import { createJob } from "@/src/services/job/createJob";
 import { updateJobProgress } from "@/src/services/job/updateJobProgress";
 import { JobType, JobStatus } from "@/src/lib/db/prisma/generated/prisma";
 import { waitUntil } from "@vercel/functions";
+import { prisma } from "@/src/lib/db/prisma";
 
 export async function POST(req: NextRequest) {
   try {
@@ -81,6 +82,12 @@ export async function POST(req: NextRequest) {
           pollId: poll.id,
           entryFee,
           previewTeams, // Pass preview teams if provided
+        });
+
+        // Set the poll to inactive after teams are created
+        await prisma.poll.update({
+          where: { id: poll.id },
+          data: { isActive: false },
         });
 
         // Update job as completed with result data

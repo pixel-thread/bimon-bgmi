@@ -83,16 +83,15 @@ export async function POST(req: Request) {
             createdAt: winner.createdAt,
             place1: null,
             place2: null,
+            place3: null,
+            place4: null,
+            place5: null,
           };
         }
 
-        if (winner.position === 1 && acc[winner.tournamentId].place1 === null) {
-          acc[winner.tournamentId].place1 = winner;
-        } else if (
-          winner.position === 2 &&
-          acc[winner.tournamentId].place2 === null
-        ) {
-          acc[winner.tournamentId].place2 = winner;
+        const placeKey = `place${winner.position}` as keyof typeof acc[string];
+        if (winner.position >= 1 && winner.position <= 5 && acc[winner.tournamentId][placeKey] === null) {
+          (acc[winner.tournamentId] as Record<string, unknown>)[placeKey] = winner;
         }
 
         return acc;
@@ -105,6 +104,9 @@ export async function POST(req: Request) {
           createdAt: Date;
           place1: (typeof rawData)[0] | null;
           place2: (typeof rawData)[0] | null;
+          place3: (typeof rawData)[0] | null;
+          place4: (typeof rawData)[0] | null;
+          place5: (typeof rawData)[0] | null;
         }
       >,
     );
@@ -121,44 +123,43 @@ export async function POST(req: Request) {
     // Calculate player placement stats for recent 6 tournaments
     const playerPlacementMap: Record<
       string,
-      { playerName: string; firstPlaceCount: number; secondPlaceCount: number }
+      { playerName: string; firstPlaceCount: number; secondPlaceCount: number; thirdPlaceCount: number; fourthPlaceCount: number; fifthPlaceCount: number }
     > = {};
 
     recentTournaments.forEach((tournament) => {
-      // Count 1st place players
-      if (tournament.place1?.players) {
-        tournament.place1.players.forEach((player) => {
-          if (!playerPlacementMap[player.id]) {
-            playerPlacementMap[player.id] = {
-              playerName: player.name,
-              firstPlaceCount: 0,
-              secondPlaceCount: 0,
-            };
-          }
-          playerPlacementMap[player.id].firstPlaceCount += 1;
-        });
-      }
+      // Count placements for all 5 positions
+      const places = [
+        { place: tournament.place1, key: 'firstPlaceCount' as const },
+        { place: tournament.place2, key: 'secondPlaceCount' as const },
+        { place: tournament.place3, key: 'thirdPlaceCount' as const },
+        { place: tournament.place4, key: 'fourthPlaceCount' as const },
+        { place: tournament.place5, key: 'fifthPlaceCount' as const },
+      ];
 
-      // Count 2nd place players
-      if (tournament.place2?.players) {
-        tournament.place2.players.forEach((player) => {
-          if (!playerPlacementMap[player.id]) {
-            playerPlacementMap[player.id] = {
-              playerName: player.name,
-              firstPlaceCount: 0,
-              secondPlaceCount: 0,
-            };
-          }
-          playerPlacementMap[player.id].secondPlaceCount += 1;
-        });
-      }
+      places.forEach(({ place, key }) => {
+        if (place?.players) {
+          place.players.forEach((player) => {
+            if (!playerPlacementMap[player.id]) {
+              playerPlacementMap[player.id] = {
+                playerName: player.name,
+                firstPlaceCount: 0,
+                secondPlaceCount: 0,
+                thirdPlaceCount: 0,
+                fourthPlaceCount: 0,
+                fifthPlaceCount: 0,
+              };
+            }
+            playerPlacementMap[player.id][key] += 1;
+          });
+        }
+      });
     });
 
     // Convert to array and sort by total placements
     const playerPlacements = Object.values(playerPlacementMap)
       .map((p) => ({
         ...p,
-        totalPlacements: p.firstPlaceCount + p.secondPlaceCount,
+        totalPlacements: p.firstPlaceCount + p.secondPlaceCount + p.thirdPlaceCount + p.fourthPlaceCount + p.fifthPlaceCount,
       }))
       .sort((a, b) => b.totalPlacements - a.totalPlacements);
 
@@ -168,6 +169,9 @@ export async function POST(req: Request) {
       tournamentName: t.tournamentName,
       firstPlace: t.place1?.players?.map((p) => p.name) || [],
       secondPlace: t.place2?.players?.map((p) => p.name) || [],
+      thirdPlace: t.place3?.players?.map((p) => p.name) || [],
+      fourthPlace: t.place4?.players?.map((p) => p.name) || [],
+      fifthPlace: t.place5?.players?.map((p) => p.name) || [],
     }));
 
     return SuccessResponse({
