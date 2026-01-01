@@ -7,6 +7,7 @@ import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { pollSchema } from "@/src/utils/validation/poll";
 import { clientClerk } from "@/src/lib/clerk/client";
+import { sendPushToAllPlayers } from "@/src/services/push/sendPushToAll";
 
 export async function GET(req: Request) {
   try {
@@ -112,6 +113,15 @@ export async function POST(req: Request) {
       },
     });
 
+    // Send push notifications to all subscribed players (async, non-blocking)
+    sendPushToAllPlayers({
+      title: "New Poll Available - Vote Now!",
+      body: body.question,
+      url: "/tournament/vote",
+    }).catch((error) => {
+      console.error("Failed to send push notifications:", error);
+    });
+
     return SuccessResponse({
       data: polls,
       status: 200,
@@ -121,3 +131,4 @@ export async function POST(req: Request) {
     return handleApiErrors(error);
   }
 }
+

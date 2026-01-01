@@ -1,5 +1,5 @@
 // Service Worker for Bimon BGMI PWA
-const CACHE_NAME = 'bimon-bgmi-v1';
+const CACHE_NAME = 'bimon-bgmi-v2';
 
 // Assets to cache on install (shell files)
 const STATIC_ASSETS = [
@@ -94,4 +94,61 @@ self.addEventListener('message', (event) => {
     if (event.data === 'skipWaiting') {
         self.skipWaiting();
     }
+});
+
+// Push notification event - display the notification
+self.addEventListener('push', (event) => {
+    const data = event.data?.json() || {};
+
+    const options = {
+        body: data.body || 'New update available',
+        icon: '/android-chrome-192x192.png',
+        badge: '/android-chrome-192x192.png',
+        vibrate: [100, 50, 100],
+        data: {
+            url: data.url || '/vote'
+        },
+        actions: [
+            {
+                action: 'open',
+                title: 'Open'
+            },
+            {
+                action: 'close',
+                title: 'Dismiss'
+            }
+        ]
+    };
+
+    event.waitUntil(
+        self.registration.showNotification(data.title || 'Bimon BGMI', options)
+    );
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    if (event.action === 'close') {
+        return;
+    }
+
+    // Open the app or focus existing window
+    const urlToOpen = event.notification.data?.url || '/';
+
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+            // Check if there's already a window open
+            for (const client of windowClients) {
+                if (client.url.includes(self.location.origin) && 'focus' in client) {
+                    client.navigate(urlToOpen);
+                    return client.focus();
+                }
+            }
+            // Open a new window
+            if (clients.openWindow) {
+                return clients.openWindow(urlToOpen);
+            }
+        })
+    );
 });
