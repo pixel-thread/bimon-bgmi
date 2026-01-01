@@ -16,6 +16,7 @@ export type TeamDataT = TeamT & {
 
 type Props = {
     page?: string;
+    refetchOnWindowFocus?: boolean;
 };
 
 /**
@@ -25,7 +26,7 @@ type Props = {
  * Other hooks like useTeams and useStandings should consume this hook
  * to share the same cached data.
  */
-export function useTeamsData({ page = "1" }: Props = { page: "1" }) {
+export function useTeamsData({ page = "1", refetchOnWindowFocus = true }: Props = { page: "1" }) {
     const { isSuperAdmin } = useAuth();
     const { tournamentId } = useTournamentStore();
     const { matchId } = useMatchStore();
@@ -45,7 +46,7 @@ export function useTeamsData({ page = "1" }: Props = { page: "1" }) {
         enabled: !!tournamentId && !!matchId,
         select: (data) => data,
         placeholderData: keepPreviousData,
-        refetchOnWindowFocus: true,
+        refetchOnWindowFocus,
         staleTime: 60 * 1000, // 1 minute - balance between freshness and performance
     });
 
