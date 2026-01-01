@@ -41,16 +41,9 @@ type EditableTeamStats = {
 
 export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
     const { matchId, matchNumber } = useMatchStore();
-    const { data: teams, isFetching, refetch } = useTeams({ page: "all" });
+    const { data: teams, isFetching } = useTeams({ page: "all" });
     const [editableStats, setEditableStats] = useState<EditableTeamStats[]>([]);
     const queryClient = useQueryClient();
-
-    // Refetch teams data when dialog opens to ensure fresh data
-    useEffect(() => {
-        if (open) {
-            refetch();
-        }
-    }, [open, refetch]);
 
     // Validate positions and return warning messages
     const validationErrors = useMemo(() => {
