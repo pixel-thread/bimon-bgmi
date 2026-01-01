@@ -219,6 +219,23 @@ export function IncomeManagement({ typeFilter = "all" }: IncomeManagementProps) 
         });
     }, [fundTransactions, fundFilter, typeFilter]);
 
+    // Calculate display totals from filtered transactions (respects Org/Fund filter)
+    const displayTotals = useMemo(() => {
+        const total = filteredFundTransactions.reduce((sum, t) => sum + t.amount, 0);
+        const now = new Date();
+        const thisMonth = filteredFundTransactions
+            .filter((t) => {
+                const incomeDate = new Date(t.createdAt);
+                return (
+                    incomeDate.getMonth() === now.getMonth() &&
+                    incomeDate.getFullYear() === now.getFullYear()
+                );
+            })
+            .reduce((sum, t) => sum + t.amount, 0);
+        const count = filteredFundTransactions.filter((t) => !t.isSubIncome).length;
+        return { total, thisMonth, count };
+    }, [filteredFundTransactions]);
+
     const mainIncomeTransactions = useMemo(() => {
         return filteredFundTransactions.filter(
             (transaction) => !transaction.isSubIncome
@@ -293,354 +310,296 @@ export function IncomeManagement({ typeFilter = "all" }: IncomeManagementProps) 
     };
 
     return (
-        <div className="space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-emerald-500/20 rounded-lg">
-                                <TrendingUp className="h-5 w-5 text-emerald-500" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-muted-foreground">Total Income</p>
-                                <p className="text-2xl font-bold text-emerald-500">
-                                    {(totalFunds.total || 0).toFixed(2)} UC
-                                </p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-500/20 rounded-lg">
-                                <DollarSign className="h-5 w-5 text-blue-500" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-muted-foreground">This Month</p>
-                                <p className="text-2xl font-bold text-blue-500">
-                                    {(totalFunds.income || 0).toFixed(2)} UC
-                                </p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-purple-500/20 rounded-lg">
-                                <Calendar className="h-5 w-5 text-purple-500" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-muted-foreground">Entries</p>
-                                <p className="text-2xl font-bold text-purple-500">
-                                    {totalFunds.count}
-                                </p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+        <div className="space-y-4">
+            {/* Compact Header with Stats */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-4 text-sm">
+                    <span className="text-muted-foreground">
+                        Total: <span className="font-semibold text-emerald-500">{displayTotals.total.toFixed(2)} UC</span>
+                    </span>
+                    <span className="text-muted-foreground">
+                        This Month: <span className="font-semibold text-blue-500">{displayTotals.thisMonth.toFixed(2)} UC</span>
+                    </span>
+                    <span className="text-muted-foreground">
+                        Entries: <span className="font-semibold text-purple-500">{displayTotals.count}</span>
+                    </span>
+                </div>
+                <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                        setSelectedParentIncome(null);
+                        setIsEditing(false);
+                        setEditingIncomeId(null);
+                        setFundForm({
+                            amount: "",
+                            description: "",
+                            tournamentId: "",
+                            parentId: "",
+                        });
+                        setShowFundDialog(true);
+                    }}
+                    className="gap-1.5 h-8 px-2 sm:px-3"
+                >
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden sm:inline">Add Income</span>
+                </Button>
             </div>
 
-            {/* Main Income Card */}
-            <Card>
-                <CardHeader className="border-b">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                                <DollarSign className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-lg">Income Management</CardTitle>
-                                <p className="text-xs text-muted-foreground">
-                                    Track and manage income entries
-                                </p>
-                            </div>
-                        </div>
-                        <Button
-                            onClick={() => {
-                                setSelectedParentIncome(null);
-                                setIsEditing(false);
-                                setEditingIncomeId(null);
-                                setFundForm({
-                                    amount: "",
-                                    description: "",
-                                    tournamentId: "",
-                                    parentId: "",
-                                });
-                                setShowFundDialog(true);
-                            }}
-                            className="gap-2"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Add Income
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-4 space-y-4">
-                    {/* Tournament Filter */}
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <div className="flex items-center gap-2">
-                            <Filter className="h-4 w-4 text-muted-foreground" />
-                            <Select
-                                value={fundFilter.tournament}
-                                onValueChange={(value) =>
-                                    setFundFilter((prev) => ({ ...prev, tournament: value }))
-                                }
-                            >
-                                <SelectTrigger className="w-full sm:w-[200px]">
-                                    <SelectValue placeholder="All Tournaments" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Tournaments</SelectItem>
-                                    <SelectItem value="general">
-                                        General (No Tournament)
-                                    </SelectItem>
-                                    {tournaments?.map((tournament) => (
-                                        <SelectItem key={tournament.id} value={tournament.id}>
-                                            {tournament.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
+            {/* Filter */}
+            <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select
+                    value={fundFilter.tournament}
+                    onValueChange={(value) =>
+                        setFundFilter((prev) => ({ ...prev, tournament: value }))
+                    }
+                >
+                    <SelectTrigger className="w-[180px] h-8 text-sm">
+                        <SelectValue placeholder="All Tournaments" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Tournaments</SelectItem>
+                        <SelectItem value="general">General</SelectItem>
+                        {tournaments?.map((tournament) => (
+                            <SelectItem key={tournament.id} value={tournament.id}>
+                                {tournament.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
 
-                    {/* Income List */}
-                    <div className="space-y-3">
-                        {isLoadingFunds ? (
-                            <div className="flex justify-center py-12">
-                                <LoaderFive text="Loading income data..." />
-                            </div>
-                        ) : mainIncomeTransactions.length === 0 ? (
-                            <div className="text-center py-12 text-muted-foreground">
-                                <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                                <p>No income entries found</p>
-                                <p className="text-xs mt-1">Click &quot;Add Income&quot; to get started</p>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="divide-y rounded-lg border">
-                                    {paginatedTransactions.map((transaction) => {
-                                        const subIncomeEntries = filteredFundTransactions.filter(
-                                            (t) => t.isSubIncome && t.parentId === transaction.id
-                                        );
-                                        const hasSubIncome = subIncomeEntries.length > 0;
-                                        return (
-                                            <div
-                                                key={transaction.id}
-                                                className="p-3 sm:p-4 hover:bg-muted/50 transition-colors"
-                                            >
-                                                <div className="flex flex-col gap-2 sm:gap-3">
-                                                    {/* Mobile: Stack everything, Desktop: Side by side */}
-                                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
-                                                        <div className="min-w-0 flex-1">
-                                                            <div className="font-medium text-sm sm:text-base break-words">
-                                                                {transaction.description}
-                                                            </div>
-                                                            <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground">
-                                                                {transaction.tournamentName && (
-                                                                    <Badge variant="secondary" className="text-xs">
-                                                                        {transaction.tournamentName}
-                                                                    </Badge>
-                                                                )}
-                                                                <span className="flex items-center gap-1">
-                                                                    <Calendar className="w-3 h-3" />
-                                                                    {new Date(
-                                                                        transaction.createdAt
-                                                                    ).toLocaleDateString()}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        {/* Amount and Actions */}
-                                                        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 flex-shrink-0">
-                                                            <div className="text-base sm:text-lg font-bold text-emerald-500">
-                                                                {transaction.amount.toFixed(2)} UC
-                                                            </div>
-                                                            <div className="flex items-center gap-0.5 sm:gap-1">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-7 w-7 sm:h-8 sm:w-8"
-                                                                    onClick={() => {
-                                                                        setFundForm({
-                                                                            amount: "",
-                                                                            description: `${transaction.description} - `,
-                                                                            tournamentId:
-                                                                                transaction.tournamentId || "general",
-                                                                            parentId: transaction.id,
-                                                                        });
-                                                                        setSelectedParentIncome(transaction.id);
-                                                                        setIsEditing(false);
-                                                                        setEditingIncomeId(null);
-                                                                        setShowFundDialog(true);
-                                                                    }}
-                                                                    title="Add sub-income"
-                                                                >
-                                                                    <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-7 w-7 sm:h-8 sm:w-8"
-                                                                    onClick={() => handleEditIncome(transaction)}
-                                                                    title="Edit income"
-                                                                >
-                                                                    <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-7 w-7 sm:h-8 sm:w-8 text-destructive hover:text-destructive"
-                                                                    onClick={() =>
-                                                                        handleDeleteIncome(transaction.id, true)
-                                                                    }
-                                                                    disabled={isDeleting === transaction.id}
-                                                                    title="Delete income"
-                                                                >
-                                                                    {isDeleting === transaction.id ? (
-                                                                        <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
-                                                                    ) : (
-                                                                        <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                                                    )}
-                                                                </Button>
-                                                            </div>
-                                                        </div>
+            {/* Income List */}
+            <div className="space-y-2">
+                {isLoadingFunds ? (
+                    <div className="flex justify-center py-12">
+                        <LoaderFive text="Loading income data..." />
+                    </div>
+                ) : mainIncomeTransactions.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                        <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                        <p>No income entries found</p>
+                        <p className="text-xs mt-1">Click &quot;Add Income&quot; to get started</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="divide-y rounded-lg border">
+                            {paginatedTransactions.map((transaction) => {
+                                const subIncomeEntries = filteredFundTransactions.filter(
+                                    (t) => t.isSubIncome && t.parentId === transaction.id
+                                );
+                                const hasSubIncome = subIncomeEntries.length > 0;
+                                return (
+                                    <div
+                                        key={transaction.id}
+                                        className="p-3 sm:p-4 hover:bg-muted/50 transition-colors"
+                                    >
+                                        <div className="flex flex-col gap-2 sm:gap-3">
+                                            {/* Mobile: Stack everything, Desktop: Side by side */}
+                                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="font-medium text-sm sm:text-base break-words">
+                                                        {transaction.description}
                                                     </div>
-
-                                                    {hasSubIncome && (
-                                                        <div className="ml-2 sm:ml-4 pl-2 sm:pl-4 border-l-2 border-muted space-y-2">
-                                                            {subIncomeEntries.map((subIncome) => (
-                                                                <div
-                                                                    key={subIncome.id}
-                                                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 py-2"
-                                                                >
-                                                                    <div className="text-xs sm:text-sm text-muted-foreground break-words">
-                                                                        {subIncome.description}
-                                                                    </div>
-                                                                    <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
-                                                                        <div className="text-xs sm:text-sm font-medium text-emerald-500">
-                                                                            {subIncome.amount.toFixed(2)} UC
-                                                                        </div>
-                                                                        <div className="flex items-center gap-0.5">
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                className="h-6 w-6 sm:h-7 sm:w-7"
-                                                                                onClick={() =>
-                                                                                    handleEditIncome(subIncome)
-                                                                                }
-                                                                                title="Edit sub-income"
-                                                                            >
-                                                                                <Edit className="h-3 w-3" />
-                                                                            </Button>
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                className="h-6 w-6 sm:h-7 sm:w-7 text-destructive hover:text-destructive"
-                                                                                onClick={() =>
-                                                                                    handleDeleteIncome(
-                                                                                        subIncome.id,
-                                                                                        false
-                                                                                    )
-                                                                                }
-                                                                                disabled={isDeleting === subIncome.id}
-                                                                                title="Delete sub-income"
-                                                                            >
-                                                                                {isDeleting === subIncome.id ? (
-                                                                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                                                                ) : (
-                                                                                    <Trash2 className="h-3 w-3" />
-                                                                                )}
-                                                                            </Button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                                    <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground">
+                                                        {transaction.tournamentName && (
+                                                            <Badge variant="secondary" className="text-xs">
+                                                                {transaction.tournamentName}
+                                                            </Badge>
+                                                        )}
+                                                        <span className="flex items-center gap-1">
+                                                            <Calendar className="w-3 h-3" />
+                                                            {new Date(
+                                                                transaction.createdAt
+                                                            ).toLocaleDateString()}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                {/* Amount and Actions */}
+                                                <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 flex-shrink-0">
+                                                    <div className="text-base sm:text-lg font-bold text-emerald-500">
+                                                        {transaction.amount.toFixed(2)} UC
+                                                    </div>
+                                                    <div className="flex items-center gap-0.5 sm:gap-1">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-7 w-7 sm:h-8 sm:w-8"
+                                                            onClick={() => {
+                                                                setFundForm({
+                                                                    amount: "",
+                                                                    description: `${transaction.description} - `,
+                                                                    tournamentId:
+                                                                        transaction.tournamentId || "general",
+                                                                    parentId: transaction.id,
+                                                                });
+                                                                setSelectedParentIncome(transaction.id);
+                                                                setIsEditing(false);
+                                                                setEditingIncomeId(null);
+                                                                setShowFundDialog(true);
+                                                            }}
+                                                            title="Add sub-income"
+                                                        >
+                                                            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-7 w-7 sm:h-8 sm:w-8"
+                                                            onClick={() => handleEditIncome(transaction)}
+                                                            title="Edit income"
+                                                        >
+                                                            <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-7 w-7 sm:h-8 sm:w-8 text-destructive hover:text-destructive"
+                                                            onClick={() =>
+                                                                handleDeleteIncome(transaction.id, true)
+                                                            }
+                                                            disabled={isDeleting === transaction.id}
+                                                            title="Delete income"
+                                                        >
+                                                            {isDeleting === transaction.id ? (
+                                                                <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                                            )}
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        );
-                                    })}
-                                </div>
 
-                                {/* Pagination */}
-                                {totalPages > 1 && (
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4">
-                                        <span className="text-sm text-muted-foreground">
-                                            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                                            {Math.min(
-                                                currentPage * itemsPerPage,
-                                                mainIncomeTransactions.length
-                                            )}{" "}
-                                            of {mainIncomeTransactions.length} entries
-                                        </span>
-                                        <Pagination>
-                                            <PaginationContent>
-                                                <PaginationItem>
-                                                    <PaginationPrevious
-                                                        onClick={() =>
-                                                            setCurrentPage((prev) => Math.max(1, prev - 1))
-                                                        }
-                                                        className={
-                                                            currentPage === 1
-                                                                ? "pointer-events-none opacity-50"
-                                                                : "cursor-pointer"
-                                                        }
-                                                    />
-                                                </PaginationItem>
-                                                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                                    .filter(
-                                                        (page) =>
-                                                            page === 1 ||
-                                                            page === totalPages ||
-                                                            Math.abs(page - currentPage) <= 1
-                                                    )
-                                                    .map((page, index, arr) => (
-                                                        <>
-                                                            {index > 0 && arr[index - 1] !== page - 1 && (
-                                                                <PaginationItem key={`ellipsis-${page}`}>
-                                                                    <span className="px-2">...</span>
-                                                                </PaginationItem>
-                                                            )}
-                                                            <PaginationItem key={page}>
-                                                                <PaginationLink
-                                                                    onClick={() => setCurrentPage(page)}
-                                                                    isActive={currentPage === page}
-                                                                    className="cursor-pointer"
-                                                                >
-                                                                    {page}
-                                                                </PaginationLink>
-                                                            </PaginationItem>
-                                                        </>
+                                            {hasSubIncome && (
+                                                <div className="ml-2 sm:ml-4 pl-2 sm:pl-4 border-l-2 border-muted space-y-2">
+                                                    {subIncomeEntries.map((subIncome) => (
+                                                        <div
+                                                            key={subIncome.id}
+                                                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 py-2"
+                                                        >
+                                                            <div className="text-xs sm:text-sm text-muted-foreground break-words">
+                                                                {subIncome.description}
+                                                            </div>
+                                                            <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
+                                                                <div className="text-xs sm:text-sm font-medium text-emerald-500">
+                                                                    {subIncome.amount.toFixed(2)} UC
+                                                                </div>
+                                                                <div className="flex items-center gap-0.5">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-6 w-6 sm:h-7 sm:w-7"
+                                                                        onClick={() =>
+                                                                            handleEditIncome(subIncome)
+                                                                        }
+                                                                        title="Edit sub-income"
+                                                                    >
+                                                                        <Edit className="h-3 w-3" />
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-6 w-6 sm:h-7 sm:w-7 text-destructive hover:text-destructive"
+                                                                        onClick={() =>
+                                                                            handleDeleteIncome(
+                                                                                subIncome.id,
+                                                                                false
+                                                                            )
+                                                                        }
+                                                                        disabled={isDeleting === subIncome.id}
+                                                                        title="Delete sub-income"
+                                                                    >
+                                                                        {isDeleting === subIncome.id ? (
+                                                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                                                        ) : (
+                                                                            <Trash2 className="h-3 w-3" />
+                                                                        )}
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     ))}
-                                                <PaginationItem>
-                                                    <PaginationNext
-                                                        onClick={() =>
-                                                            setCurrentPage((prev) =>
-                                                                Math.min(totalPages, prev + 1)
-                                                            )
-                                                        }
-                                                        className={
-                                                            currentPage === totalPages
-                                                                ? "pointer-events-none opacity-50"
-                                                                : "cursor-pointer"
-                                                        }
-                                                    />
-                                                </PaginationItem>
-                                            </PaginationContent>
-                                        </Pagination>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                )}
-                            </>
+                                );
+                            })}
+                        </div>
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4">
+                                <span className="text-sm text-muted-foreground">
+                                    Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                                    {Math.min(
+                                        currentPage * itemsPerPage,
+                                        mainIncomeTransactions.length
+                                    )}{" "}
+                                    of {mainIncomeTransactions.length} entries
+                                </span>
+                                <Pagination>
+                                    <PaginationContent>
+                                        <PaginationItem>
+                                            <PaginationPrevious
+                                                onClick={() =>
+                                                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                                                }
+                                                className={
+                                                    currentPage === 1
+                                                        ? "pointer-events-none opacity-50"
+                                                        : "cursor-pointer"
+                                                }
+                                            />
+                                        </PaginationItem>
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                            .filter(
+                                                (page) =>
+                                                    page === 1 ||
+                                                    page === totalPages ||
+                                                    Math.abs(page - currentPage) <= 1
+                                            )
+                                            .map((page, index, arr) => (
+                                                <>
+                                                    {index > 0 && arr[index - 1] !== page - 1 && (
+                                                        <PaginationItem key={`ellipsis-${page}`}>
+                                                            <span className="px-2">...</span>
+                                                        </PaginationItem>
+                                                    )}
+                                                    <PaginationItem key={page}>
+                                                        <PaginationLink
+                                                            onClick={() => setCurrentPage(page)}
+                                                            isActive={currentPage === page}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            {page}
+                                                        </PaginationLink>
+                                                    </PaginationItem>
+                                                </>
+                                            ))}
+                                        <PaginationItem>
+                                            <PaginationNext
+                                                onClick={() =>
+                                                    setCurrentPage((prev) =>
+                                                        Math.min(totalPages, prev + 1)
+                                                    )
+                                                }
+                                                className={
+                                                    currentPage === totalPages
+                                                        ? "pointer-events-none opacity-50"
+                                                        : "cursor-pointer"
+                                                }
+                                            />
+                                        </PaginationItem>
+                                    </PaginationContent>
+                                </Pagination>
+                            </div>
                         )}
-                    </div>
-                </CardContent>
-            </Card>
+                    </>
+                )}
+            </div>
 
             {/* Income Entry Dialog */}
             <Dialog open={showFundDialog} onOpenChange={setShowFundDialog}>

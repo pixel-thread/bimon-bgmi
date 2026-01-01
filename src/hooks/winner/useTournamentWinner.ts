@@ -49,6 +49,8 @@ export function useTournamentWinner({ seasonId }: Props) {
       http.post(WINNER_ENDPOINTS.POST_GET_TOURNAMENT_WINNER_BY_SEASON, {
         seasonId: seasonId,
       }),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 }
 

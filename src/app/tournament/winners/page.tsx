@@ -4,8 +4,12 @@ import {
     useTournamentWinner,
 } from "@/src/hooks/winner/useTournamentWinner";
 import { useAppContext } from "@/src/hooks/context/useAppContext";
-import { Trophy, Medal, Users, Loader2, TrendingUp } from "lucide-react";
+import { Trophy, Medal, TrendingUp } from "lucide-react";
 import { cn } from "@/src/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import http from "@/src/utils/http";
+import { LoaderFive } from "@/src/components/ui/loader";
+import Image from "next/image";
 
 // Position badge component for consistent styling
 function PositionBadge({
@@ -102,15 +106,29 @@ export default function WinnersPage() {
 
     const { data, isFetching } = useTournamentWinner({ seasonId });
 
+    // Fetch fund income data
+    const { data: incomeData } = useQuery({
+        queryKey: ["total-funds"],
+        queryFn: async () => {
+            const result = await http.get<{ totalFunds: number }>("/funds/total");
+            if (result.success && result.data) {
+                return { totalFunds: result.data.totalFunds };
+            }
+            return { totalFunds: 0 };
+        },
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        refetchOnWindowFocus: false,
+    });
+
+    const totalFunds = incomeData?.totalFunds || 0;
     const playerPlacements = data?.recentStats?.playerPlacements || [];
     const recentTournaments = data?.recentStats?.recentTournaments || [];
 
     // Show loading state
     if (isLoadingSeason || (seasonId && isFetching)) {
         return (
-            <div className="flex flex-col items-center justify-center py-16 px-4">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-                <span className="text-sm text-muted-foreground">Loading winners...</span>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+                <LoaderFive text="Loading winners..." />
             </div>
         );
     }
@@ -127,6 +145,20 @@ export default function WinnersPage() {
 
     return (
         <div className="space-y-4 p-3 sm:p-4 max-w-3xl mx-auto">
+            {/* Total Funds Display */}
+            {totalFunds > 0 && (
+                <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-gradient-to-r from-yellow-500/10 to-emerald-500/10 border border-yellow-500/20">
+                    <Image
+                        src="/piggy-bank.svg"
+                        alt="Piggy Bank"
+                        width={48}
+                        height={48}
+                        className="drop-shadow-md"
+                    />
+                    <p className="text-2xl font-bold text-emerald-500">₹{Number.isInteger(totalFunds) ? totalFunds : totalFunds.toFixed(2)}</p>
+                </div>
+            )}
+
             {/* Player Leaderboard */}
             <section className="rounded-xl bg-gradient-to-br from-card to-muted/20 border border-border/50 overflow-hidden">
                 <div className="px-4 py-3 border-b border-border/50 bg-muted/30">
@@ -143,7 +175,7 @@ export default function WinnersPage() {
                     </div>
                 </div>
 
-                <div className="divide-y divide-border/30">
+                <div className="divide-y divide-border/30 max-h-[400px] overflow-y-auto">
                     {playerPlacements.length > 0 ? (
                         playerPlacements.slice(0, 10).map((player, idx) => (
                             <div
