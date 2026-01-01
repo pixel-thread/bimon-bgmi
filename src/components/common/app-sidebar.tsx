@@ -78,6 +78,11 @@ const navItems: NavItem[] = [
     icon: Vote,
   },
   {
+    title: "Vote",
+    url: "/admin/vote",
+    icon: Vote,
+  },
+  {
     title: "Rules",
     url: "/admin/rules",
     icon: BookOpen,
