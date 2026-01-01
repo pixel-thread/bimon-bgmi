@@ -23,6 +23,7 @@ interface BalanceHistory {
   type: "credit" | "debit";
   description: string;
   timestamp: string;
+  source?: "transaction" | "uc_transfer";
 }
 
 interface BalanceHistoryDialogProps {

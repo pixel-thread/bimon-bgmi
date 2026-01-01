@@ -3,6 +3,17 @@ import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
 
+// Combined transaction type for UI
+interface CombinedTransaction {
+    id: string;
+    playerId: string;
+    amount: number;
+    type: "credit" | "debit";
+    description: string;
+    timestamp: Date;
+    source: "transaction" | "uc_transfer";
+}
+
 export async function GET(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -12,22 +23,88 @@ export async function GET(
         const { searchParams } = new URL(req.url);
         const page = parseInt(searchParams.get("page") || "1");
         const limit = parseInt(searchParams.get("limit") || "10");
+
+        // Fetch all transactions and UC transfers for accurate total count
+        const [transactions, ucTransfersReceived, ucTransfersSent] = await Promise.all([
+            prisma.transaction.findMany({
+                where: { playerId },
+                orderBy: { timestamp: "desc" },
+            }),
+            // UC transfers where this player received UC
+            prisma.uCTransfer.findMany({
+                where: {
+                    toPlayerId: playerId,
+                    status: "COMPLETED",
+                },
+                include: {
+                    fromPlayer: {
+                        include: { user: { select: { userName: true, displayName: true } } }
+                    }
+                },
+                orderBy: { createdAt: "desc" },
+            }),
+            // UC transfers where this player sent UC
+            prisma.uCTransfer.findMany({
+                where: {
+                    fromPlayerId: playerId,
+                    status: "COMPLETED",
+                },
+                include: {
+                    toPlayer: {
+                        include: { user: { select: { userName: true, displayName: true } } }
+                    }
+                },
+                orderBy: { createdAt: "desc" },
+            }),
+        ]);
+
+        // Convert regular transactions to combined format
+        const transactionItems: CombinedTransaction[] = transactions.map(t => ({
+            id: t.id,
+            playerId: t.playerId,
+            amount: t.amount,
+            type: t.type as "credit" | "debit",
+            description: t.description,
+            timestamp: t.timestamp,
+            source: "transaction" as const,
+        }));
+
+        // Convert received UC transfers to combined format (credit)
+        const receivedItems: CombinedTransaction[] = ucTransfersReceived.map(t => ({
+            id: `uc-recv-${t.id}`,
+            playerId: playerId,
+            amount: t.amount,
+            type: "credit" as const,
+            description: `UC received from ${t.fromPlayer.user.displayName || t.fromPlayer.user.userName}${t.message ? `: "${t.message}"` : ""}`,
+            timestamp: t.createdAt,
+            source: "uc_transfer" as const,
+        }));
+
+        // Convert sent UC transfers to combined format (debit)
+        const sentItems: CombinedTransaction[] = ucTransfersSent.map(t => ({
+            id: `uc-sent-${t.id}`,
+            playerId: playerId,
+            amount: t.amount,
+            type: "debit" as const,
+            description: `UC sent to ${t.toPlayer.user.displayName || t.toPlayer.user.userName}${t.message ? `: "${t.message}"` : ""}`,
+            timestamp: t.createdAt,
+            source: "uc_transfer" as const,
+        }));
+
+        // Combine all items
+        const allItems = [...transactionItems, ...receivedItems, ...sentItems];
+
+        // Sort by timestamp descending (newest first)
+        allItems.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        // Calculate total and apply pagination
+        const total = allItems.length;
         const skip = (page - 1) * limit;
-
-        const transactions = await prisma.transaction.findMany({
-            where: { playerId },
-            orderBy: { timestamp: "desc" },
-            skip,
-            take: limit,
-        });
-
-        const total = await prisma.transaction.count({
-            where: { playerId },
-        });
+        const paginatedItems = allItems.slice(skip, skip + limit);
 
         return SuccessResponse({
             data: {
-                transactions,
+                transactions: paginatedItems,
                 pagination: {
                     total,
                     pages: Math.ceil(total / limit),
