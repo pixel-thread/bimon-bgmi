@@ -3,7 +3,6 @@
 import { useTransition, useEffect, useState } from "react";
 import { type LucideIcon, Loader2 } from "lucide-react";
 
-import { buttonVariants } from "@/src/components/ui/button";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -31,52 +30,77 @@ export function NavMain({
   const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Close sidebar when navigation completes
+  // Optimistic active state - show navigatingTo as active, otherwise use actual pathname
+  const getActiveUrl = () => {
+    return navigatingTo || pathname;
+  };
+
+  // Check if an item is active (optimistic - shows new item as active immediately)
+  const isItemActive = (itemUrl: string) => {
+    return getActiveUrl() === itemUrl;
+  };
+
+  // Navigation complete or failed - reset navigatingTo
   useEffect(() => {
-    if (navigatingTo && pathname === navigatingTo && !isPending) {
-      setOpenMobile(false);
-      setNavigatingTo(null);
+    if (navigatingTo) {
+      // Navigation succeeded - pathname changed to our target
+      if (pathname === navigatingTo) {
+        setOpenMobile(false);
+        setNavigatingTo(null);
+      }
+      // If isPending becomes false and pathname hasn't changed, navigation may have failed
+      // Give it a moment then reset
+      if (!isPending && pathname !== navigatingTo) {
+        const timeout = setTimeout(() => {
+          // Still not navigated? Revert optimistic state
+          if (pathname !== navigatingTo) {
+            setNavigatingTo(null);
+          }
+        }, 500);
+        return () => clearTimeout(timeout);
+      }
     }
   }, [pathname, navigatingTo, isPending, setOpenMobile]);
 
   const handleNavigation = (url: string) => {
-    // If already on this page, just close the menu
-    if (pathname === url) {
+    // If already on this page or already navigating to it, just close the menu
+    if (pathname === url || navigatingTo === url) {
       if (isMobile) setOpenMobile(false);
       return;
     }
 
-    // On mobile, show loader and keep sidebar open
-    if (isMobile) {
-      setNavigatingTo(url);
-      startTransition(() => {
-        router.push(url);
-      });
-    } else {
-      // On desktop, navigate immediately
+    // Optimistically set the new URL as active immediately
+    setNavigatingTo(url);
+
+    // Start navigation
+    startTransition(() => {
       router.push(url);
-    }
+    });
   };
 
   return (
     <SidebarGroup>
-      <SidebarGroupContent className="flex flex-col gap-2">
+      <SidebarGroupContent className="flex flex-col gap-1">
         <SidebarMenu>
           {items.map((item) => {
+            const isActive = isItemActive(item.url);
             const isNavigating = navigatingTo === item.url;
             const isAnyNavigating = navigatingTo !== null;
+
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
                   onClick={() => handleNavigation(item.url)}
                   disabled={isAnyNavigating && !isNavigating}
                   className={cn(
-                    buttonVariants({
-                      variant: pathname === item.url ? "default" : "ghost",
-                      size: "sm",
-                      className: "w-full justify-start",
-                    }),
-                    isNavigating && "bg-primary/80",
+                    "w-full justify-start transition-all duration-200",
+                    // Active state - prominent highlight (optimistic - shows clicked item)
+                    isActive && "bg-primary text-primary-foreground font-medium shadow-sm",
+                    // Inactive state - subtle with hover
+                    !isActive && "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                    // Navigating state - show loading appearance
+                    isNavigating && "bg-primary/90 text-primary-foreground",
+                    // Disabled during navigation
                     isAnyNavigating && !isNavigating && "opacity-50 cursor-not-allowed"
                   )}
                   tooltip={item.title}
@@ -84,7 +108,7 @@ export function NavMain({
                   {isNavigating ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    item.icon && <item.icon />
+                    item.icon && <item.icon className="h-4 w-4" />
                   )}
                   <span>{item.title}</span>
                 </SidebarMenuButton>

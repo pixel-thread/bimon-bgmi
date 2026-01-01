@@ -27,12 +27,9 @@ export default function TeamsPage() {
   const { matchId: selectedMatch } = useMatchStore();
   const { tournamentId: selectedTournament } = useTournamentStore();
 
-  const { data: sortedTeams } = useTeams({ page: "all" });
+  const { data: teams, isFetching: loading } = useTeams({ page: "all" });
   const { data: tournament } = useTournament({ id: selectedTournament });
   const { data: globalBackground } = useGlobalBackground();
-
-  // Use teams from Firestore
-  const { data: teams, isFetching: loading } = useTeams({ page: "all" });
 
   return (
     <>
@@ -74,7 +71,7 @@ export default function TeamsPage() {
                 </p>
               </div>
             </div>
-          ) : sortedTeams?.length === 0 ? (
+          ) : teams?.length === 0 ? (
             <div className="text-center text-gray-500 py-4">
               <div className="w-12 h-12 mx-auto mb-4 opacity-50">
                 <svg
@@ -101,8 +98,8 @@ export default function TeamsPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
               <AnimatePresence>
-                {sortedTeams &&
-                  sortedTeams?.map((team, index) => (
+                {teams &&
+                  teams?.map((team, index) => (
                     <motion.div
                       key={team.id + index}
                       initial={{ opacity: 0, y: 10 }}

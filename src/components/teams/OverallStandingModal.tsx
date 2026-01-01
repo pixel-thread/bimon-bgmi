@@ -6,11 +6,8 @@ import { Button } from "@/src/components/ui/button";
 import { ShareableContent } from "../ShareableContent";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { TeamT } from "@/src/types/team";
-import { useTeamsStats } from "@/src/hooks/team/useTeamsStats";
+import { useStandings } from "@/src/hooks/team/useStandings";
 import TeamStats from "./TeamStats";
-import { useQuery } from "@tanstack/react-query";
-import http from "@/src/utils/http";
-import { useTournamentStore } from "@/src/store/tournament";
 import { LoaderFive } from "../ui/loader";
 import { Download } from "lucide-react";
 
@@ -32,22 +29,11 @@ export default function OverallStandingModal({
   initialTeams,
 }: OverallStandingModalProps) {
   const { matchId: selectedMatch } = useMatchStore();
-  const { tournamentId } = useTournamentStore();
   const [isSharing, setIsSharing] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
 
-  const { data: teamsStats, isFetching } = useQuery({
-    queryKey: ["out standing", tournamentId, selectedMatch],
-    queryFn: () =>
-      http.get<TeamT[]>(
-        `/tournament/${tournamentId}/standing?match=${selectedMatch}`,
-      ),
-    select: (data) => data.data,
-    enabled: !!selectedMatch && visible && !!tournamentId,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    placeholderData: initialTeams ? { data: initialTeams, success: true, message: "" } as any : undefined,
-  });
+  // Use the derived useStandings hook - shares cache with useTeams, no extra API call
+  const { data: teamsStats, isFetching } = useStandings();
 
   const shareImage = async () => {
     setIsSharing(true);
