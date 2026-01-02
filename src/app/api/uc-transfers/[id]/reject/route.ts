@@ -49,6 +49,21 @@ export async function PATCH(
                 data: { status: "REJECTED" },
             });
 
+            // Update the original uc_request notification to show rejected state
+            // Match by type, playerId (recipient), and message content containing the amount
+            await tx.notification.updateMany({
+                where: {
+                    type: "uc_request",
+                    playerId: transfer.toPlayerId,
+                    message: { contains: `${transfer.amount} UC` },
+                },
+                data: {
+                    type: "uc_request_rejected",
+                    title: "UC Request Rejected",
+                    isRead: true,
+                },
+            });
+
             // Notify the requester
             await tx.notification.create({
                 data: {

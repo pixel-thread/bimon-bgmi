@@ -627,9 +627,9 @@ export default function ProfilePage() {
                                                     /* Regular notification layout */
                                                     <div className="flex items-start gap-2.5">
                                                         {/* Type-specific icons */}
-                                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${notification.type === "uc_received" || notification.type === "uc_approved"
+                                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${notification.type === "uc_received" || notification.type === "uc_approved" || notification.type === "uc_request_approved"
                                                             ? "bg-emerald-500/10"
-                                                            : notification.type === "uc_rejected"
+                                                            : notification.type === "uc_rejected" || notification.type === "uc_request_rejected"
                                                                 ? "bg-red-500/10"
                                                                 : notification.type === "uc_request_sent"
                                                                     ? "bg-purple-500/10"
@@ -637,10 +637,10 @@ export default function ProfilePage() {
                                                             }`}>
                                                             {notification.type === "uc_received" && <ArrowDownLeft className="w-4 h-4 text-emerald-500" />}
                                                             {notification.type === "uc_request" && <Clock className="w-4 h-4 text-amber-500" />}
-                                                            {notification.type === "uc_approved" && <Check className="w-4 h-4 text-emerald-500" />}
-                                                            {notification.type === "uc_rejected" && <X className="w-4 h-4 text-red-500" />}
+                                                            {(notification.type === "uc_approved" || notification.type === "uc_request_approved") && <Check className="w-4 h-4 text-emerald-500" />}
+                                                            {(notification.type === "uc_rejected" || notification.type === "uc_request_rejected") && <X className="w-4 h-4 text-red-500" />}
                                                             {notification.type === "uc_request_sent" && <ArrowUpRight className="w-4 h-4 text-purple-500" />}
-                                                            {!["uc_received", "uc_request", "uc_approved", "uc_rejected", "uc_request_sent"].includes(notification.type) && <Bell className="w-4 h-4 text-blue-500" />}
+                                                            {!["uc_received", "uc_request", "uc_approved", "uc_rejected", "uc_request_sent", "uc_request_approved", "uc_request_rejected"].includes(notification.type) && <Bell className="w-4 h-4 text-blue-500" />}
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-center justify-between gap-2">

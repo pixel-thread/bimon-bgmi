@@ -95,6 +95,21 @@ export async function PATCH(
                 data: { status: "APPROVED" },
             });
 
+            // Update the original uc_request notification to show approved state
+            // Match by type, playerId (recipient), and message content containing the amount
+            await tx.notification.updateMany({
+                where: {
+                    type: "uc_request",
+                    playerId: transfer.toPlayerId,
+                    message: { contains: `${transfer.amount} UC` },
+                },
+                data: {
+                    type: "uc_request_approved",
+                    title: "UC Request Approved",
+                    isRead: true,
+                },
+            });
+
             // Notify the requester
             await tx.notification.create({
                 data: {
