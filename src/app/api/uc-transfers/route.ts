@@ -3,6 +3,7 @@ import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
+import { sendPushToPlayer } from "@/src/services/push/sendPushToPlayer";
 
 // GET - Get user's UC transfers (shows only last 7 days for profile display)
 export async function GET(req: NextRequest) {
@@ -142,6 +143,15 @@ export async function POST(req: NextRequest) {
                     },
                 });
 
+                // Send push notification to recipient (async, non-blocking)
+                sendPushToPlayer(toPlayerId, {
+                    title: "UC Received!",
+                    body: `${fromPlayer.user.userName} sent you ${amount} UC`,
+                    url: "/profile",
+                }).catch((error) => {
+                    console.error("Failed to send push notification:", error);
+                });
+
                 return newTransfer;
             });
 
@@ -174,6 +184,18 @@ export async function POST(req: NextRequest) {
                         playerId: toPlayerId,
                         link: "/profile",
                     },
+                });
+
+                // Send push notification to recipient (async, non-blocking)
+                const pushBody = message
+                    ? `${fromPlayer?.user.userName} requested ${amount} UC: "${message}"`
+                    : `${fromPlayer?.user.userName} requested ${amount} UC from you`;
+                sendPushToPlayer(toPlayerId, {
+                    title: "UC Request",
+                    body: pushBody,
+                    url: "/profile",
+                }).catch((error) => {
+                    console.error("Failed to send push notification:", error);
                 });
 
                 return newTransfer;

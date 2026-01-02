@@ -4,6 +4,7 @@ import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
 import { clearPlayerStatusOnBalanceRecovery } from "@/src/services/player/balanceRecovery";
+import { sendPushToPlayer } from "@/src/services/push/sendPushToPlayer";
 
 // PATCH - Approve a UC transfer request
 export async function PATCH(
@@ -103,6 +104,15 @@ export async function PATCH(
                     playerId: transfer.fromPlayerId,
                     link: "/profile",
                 },
+            });
+
+            // Send push notification to requester (async, non-blocking)
+            sendPushToPlayer(transfer.fromPlayerId, {
+                title: "UC Request Approved! ✅",
+                body: `${transfer.toPlayer.user.userName} approved your request for ${transfer.amount} UC`,
+                url: "/profile",
+            }).catch((error) => {
+                console.error("Failed to send push notification:", error);
             });
 
             // Clear trusted status if balance recovered for both players

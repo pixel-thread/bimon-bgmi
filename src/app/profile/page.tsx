@@ -231,43 +231,93 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Tabs skeleton */}
-                <Skeleton className="h-10 w-full max-w-md" />
+                <Skeleton className="h-10 w-full max-w-md rounded-xl" />
 
-                {/* Stats grid skeleton */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[...Array(4)].map((_, i) => (
-                        <Card key={i}>
-                            <CardContent className="p-4">
-                                <Skeleton className="h-4 w-20 mb-2" />
-                                <Skeleton className="h-8 w-16" />
-                            </CardContent>
-                        </Card>
-                    ))}
+                {/* Stats Section - Glassmorphism skeleton */}
+                <div className="relative rounded-2xl overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-purple-500/10 to-fuchsia-500/10 dark:from-violet-600/20 dark:via-purple-600/20 dark:to-fuchsia-600/20" />
+                    <div className="absolute inset-0 backdrop-blur-3xl" />
+
+                    <div className="relative p-4 md:p-6 space-y-4">
+                        {/* K/D Featured */}
+                        <div className="text-center">
+                            <Skeleton className="h-4 w-20 mx-auto mb-2" />
+                            <Skeleton className="h-12 w-24 mx-auto" />
+                        </div>
+
+                        {/* Battle Stats */}
+                        <div className="grid grid-cols-4 gap-3 text-center">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="space-y-1">
+                                    <Skeleton className="h-8 w-12 mx-auto" />
+                                    <Skeleton className="h-3 w-14 mx-auto" />
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Performance */}
+                        <div className="grid grid-cols-3 gap-3 text-center pt-3 border-t border-slate-200/50 dark:border-slate-600/50">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="space-y-1">
+                                    <Skeleton className="h-6 w-10 mx-auto" />
+                                    <Skeleton className="h-3 w-16 mx-auto" />
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Career */}
+                        <div className="grid grid-cols-3 gap-3 text-center pt-3 border-t border-slate-200/50 dark:border-slate-600/50">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="space-y-1">
+                                    <Skeleton className="h-6 w-10 mx-auto" />
+                                    <Skeleton className="h-3 w-16 mx-auto" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
-                {/* Additional stats skeleton */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {[...Array(3)].map((_, i) => (
-                        <Card key={i}>
-                            <CardContent className="p-4">
-                                <Skeleton className="h-4 w-24 mb-2" />
-                                <Skeleton className="h-8 w-20" />
-                            </CardContent>
-                        </Card>
-                    ))}
+                {/* Notifications skeleton - Glassmorphism */}
+                <div className="relative rounded-2xl overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-cyan-500/10 to-teal-500/10 dark:from-blue-600/15 dark:via-cyan-600/15 dark:to-teal-600/15" />
+                    <div className="absolute inset-0 backdrop-blur-3xl" />
+
+                    <div className="relative p-4 md:p-5">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Skeleton className="h-8 w-8 rounded-lg" />
+                            <Skeleton className="h-5 w-28" />
+                        </div>
+                        <div className="space-y-2">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="p-3 rounded-xl bg-white/30 dark:bg-slate-800/30">
+                                    <div className="flex items-start gap-2.5">
+                                        <Skeleton className="h-7 w-7 rounded-full flex-shrink-0" />
+                                        <div className="flex-1 space-y-1">
+                                            <Skeleton className="h-4 w-32" />
+                                            <Skeleton className="h-3 w-full" />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
-                {/* Notifications skeleton */}
-                <Card>
-                    <CardHeader>
-                        <Skeleton className="h-6 w-32" />
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        {[...Array(3)].map((_, i) => (
-                            <Skeleton key={i} className="h-16 w-full" />
-                        ))}
-                    </CardContent>
-                </Card>
+                {/* UC History skeleton - Glassmorphism */}
+                <div className="relative rounded-2xl overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-violet-500/10 to-indigo-500/10 dark:from-purple-600/15 dark:via-violet-600/15 dark:to-indigo-600/15" />
+                    <div className="absolute inset-0 backdrop-blur-3xl" />
+
+                    <div className="relative p-4 md:p-5">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Skeleton className="h-8 w-8 rounded-lg" />
+                                <Skeleton className="h-5 w-24" />
+                            </div>
+                            <Skeleton className="h-7 w-14 rounded-md" />
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -320,6 +370,7 @@ export default function ProfilePage() {
                         width={64}
                         height={64}
                         className="h-16 w-16 rounded-full object-cover"
+                        loading="lazy"
                     />
                 ) : profileImageUrl ? (
                     <Image
@@ -328,6 +379,7 @@ export default function ProfilePage() {
                         width={64}
                         height={64}
                         className="h-16 w-16 rounded-full object-cover"
+                        loading="lazy"
                     />
                 ) : (
                     <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-2xl font-bold text-primary-foreground">
@@ -375,7 +427,7 @@ export default function ProfilePage() {
                                 </div>
                                 <div className="flex items-baseline justify-center gap-2">
                                     <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-                                        {statsLoading ? "..." : kd.toFixed(2)}
+                                        {statsLoading ? <Skeleton className="h-12 w-20 inline-block" /> : kd.toFixed(2)}
                                     </span>
                                     {!statsLoading && deaths > 0 && (
                                         <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-sm font-medium ${kdTrend === "up"
@@ -405,19 +457,19 @@ export default function ProfilePage() {
                                     <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Battle Stats</p>
                                     <div className="grid grid-cols-4 gap-3 text-center">
                                         <div>
-                                            <p className="text-2xl font-bold text-slate-800 dark:text-white">{statsLoading ? "..." : deaths}</p>
+                                            <div className="text-2xl font-bold text-slate-800 dark:text-white">{statsLoading ? <Skeleton className="h-7 w-10 inline-block" /> : deaths}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Matches</p>
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{statsLoading ? "..." : wins}</p>
+                                            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{statsLoading ? <Skeleton className="h-7 w-10 inline-block" /> : wins}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Wins</p>
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{statsLoading ? "..." : top10Count}</p>
+                                            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{statsLoading ? <Skeleton className="h-7 w-10 inline-block" /> : top10Count}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Top 10</p>
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{statsLoading ? "..." : kills}</p>
+                                            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{statsLoading ? <Skeleton className="h-7 w-10 inline-block" /> : kills}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Kills</p>
                                         </div>
                                     </div>
@@ -428,15 +480,15 @@ export default function ProfilePage() {
                                     <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Performance</p>
                                     <div className="grid grid-cols-3 gap-3 text-center">
                                         <div>
-                                            <p className="text-xl font-bold text-slate-800 dark:text-white">{statsLoading ? "..." : winRate}<span className="text-sm text-slate-500 dark:text-slate-400">%</span></p>
+                                            <div className="text-xl font-bold text-slate-800 dark:text-white">{statsLoading ? <Skeleton className="h-6 w-10 inline-block" /> : <>{winRate}<span className="text-sm text-slate-500 dark:text-slate-400">%</span></>}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Win Rate</p>
                                         </div>
                                         <div>
-                                            <p className="text-xl font-bold text-slate-800 dark:text-white">{statsLoading ? "..." : top10Rate}<span className="text-sm text-slate-500 dark:text-slate-400">%</span></p>
+                                            <div className="text-xl font-bold text-slate-800 dark:text-white">{statsLoading ? <Skeleton className="h-6 w-10 inline-block" /> : <>{top10Rate}<span className="text-sm text-slate-500 dark:text-slate-400">%</span></>}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Top 10 Rate</p>
                                         </div>
                                         <div>
-                                            <p className="text-xl font-bold text-amber-600 dark:text-amber-400">{statsLoading ? "..." : bestMatchKills}</p>
+                                            <div className="text-xl font-bold text-amber-600 dark:text-amber-400">{statsLoading ? <Skeleton className="h-6 w-10 inline-block" /> : bestMatchKills}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Most Kill</p>
                                         </div>
                                     </div>
@@ -447,11 +499,11 @@ export default function ProfilePage() {
                                     <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Career</p>
                                     <div className="grid grid-cols-3 gap-3">
                                         <div className="text-center">
-                                            <p className="text-xl font-bold text-purple-600 dark:text-purple-400">{statsLoading ? "..." : totalTournaments}</p>
+                                            <div className="text-xl font-bold text-purple-600 dark:text-purple-400">{statsLoading ? <Skeleton className="h-6 w-10 inline-block" /> : totalTournaments}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Tournaments</p>
                                         </div>
                                         <div className="text-center">
-                                            <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{statsLoading ? "..." : seasonsPlayed}</p>
+                                            <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{statsLoading ? <Skeleton className="h-6 w-10 inline-block" /> : seasonsPlayed}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Seasons</p>
                                         </div>
                                         <div className="text-center">

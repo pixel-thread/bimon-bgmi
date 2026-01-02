@@ -3,6 +3,7 @@ import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
+import { sendPushToPlayer } from "@/src/services/push/sendPushToPlayer";
 
 // PATCH - Reject a UC transfer request
 export async function PATCH(
@@ -57,6 +58,15 @@ export async function PATCH(
                     playerId: transfer.fromPlayerId,
                     link: "/profile",
                 },
+            });
+
+            // Send push notification to requester (async, non-blocking)
+            sendPushToPlayer(transfer.fromPlayerId, {
+                title: "UC Request Rejected ❌",
+                body: `${transfer.toPlayer.user.userName} rejected your request for ${transfer.amount} UC`,
+                url: "/profile",
+            }).catch((error) => {
+                console.error("Failed to send push notification:", error);
             });
 
             return updated;
