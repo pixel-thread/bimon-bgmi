@@ -18,7 +18,7 @@ import { usePlayer } from "@/src/hooks/player/usePlayer";
 import z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
 import { getDisplayName } from "@/src/utils/bgmiDisplay";
@@ -38,6 +38,7 @@ export function BalanceAdjustmentDialog({
   playerId,
 }: BalanceAdjustmentDialogProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const form = useForm({
     resolver: zodResolver(ucSchema),
   });
@@ -56,6 +57,9 @@ export function BalanceAdjustmentDialog({
       if (data.success) {
         toast.success(data.message);
         form.reset();
+        // Invalidate player queries so components get fresh data
+        queryClient.invalidateQueries({ queryKey: ["player", playerId] });
+        queryClient.invalidateQueries({ queryKey: ["players"] });
         // Small delay to let the user see the success state/toast
         setTimeout(() => {
           router.back();

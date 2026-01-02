@@ -47,6 +47,7 @@ export function AdjustBalanceDialog({
             if (data.success) {
                 toast.success(data.message || "Balance updated successfully");
                 queryClient.invalidateQueries({ queryKey: ["players"] });
+                queryClient.invalidateQueries({ queryKey: ["player", playerId] });
                 onOpenChange(false);
                 setAmount("");
                 setType("credit");
