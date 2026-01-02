@@ -12,7 +12,7 @@ import { AddBalanceDialog } from "@/src/components/profile/AddBalanceDialog";
 import {
     Bell, Check, X, ArrowUpRight, ArrowDownLeft, Clock, DollarSign,
     User, Target, Swords, TrendingUp, TrendingDown, Minus, Settings,
-    Trophy, Calendar, Star, Medal, ShieldAlert, History
+    Trophy, Calendar, Star, Medal, ShieldAlert, History, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
@@ -88,6 +88,8 @@ export default function ProfilePage() {
 
     // UC History expanded state (lazy load)
     const [showUCHistory, setShowUCHistory] = useState(false);
+    const [ucHistoryPage, setUcHistoryPage] = useState(1);
+    const UC_HISTORY_PAGE_SIZE = 10;
 
     // Check if displayName guide should be shown (no displayName set)
     const showDisplayNameGuide = !user?.displayName && !!user;
@@ -115,8 +117,8 @@ export default function ProfilePage() {
 
     // Fetch balance history - only when UC History is expanded
     const { data: balanceHistoryData, isLoading: isBalanceHistoryLoading } = useQuery({
-        queryKey: ["balance-history", playerId],
-        queryFn: () => http.get<{ transactions: BalanceHistoryItem[]; pagination: { total: number } }>(`/players/${playerId}/transactions?page=1&limit=10`),
+        queryKey: ["balance-history", playerId, ucHistoryPage],
+        queryFn: () => http.get<{ transactions: BalanceHistoryItem[]; pagination: { total: number; pages: number; page: number } }>(`/players/${playerId}/transactions?page=${ucHistoryPage}&limit=${UC_HISTORY_PAGE_SIZE}`),
         enabled: !!playerId && showUCHistory, // Only fetch when section is expanded
     });
 
@@ -138,6 +140,7 @@ export default function ProfilePage() {
     const imageSettings = imageSettingsData?.data;
     const balanceHistory = balanceHistoryData?.data?.transactions || [];
     const totalBalanceHistoryCount = balanceHistoryData?.data?.pagination?.total || 0;
+    const ucHistoryTotalPages = balanceHistoryData?.data?.pagination?.pages || 1;
 
     // Extract stats from API response
     const kills = playerStats?.kills || 0;
@@ -744,6 +747,35 @@ export default function ProfilePage() {
                                             </div>
                                         ));
                                     })()}
+
+                                    {/* Pagination Controls */}
+                                    {ucHistoryTotalPages > 1 && (
+                                        <div className="flex items-center justify-between pt-3 mt-2 border-t border-white/20 dark:border-slate-700/50">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 px-3 text-xs"
+                                                onClick={() => setUcHistoryPage(p => Math.max(1, p - 1))}
+                                                disabled={ucHistoryPage <= 1 || isBalanceHistoryLoading}
+                                            >
+                                                <ChevronLeft className="w-4 h-4 mr-1" />
+                                                Prev
+                                            </Button>
+                                            <span className="text-xs text-muted-foreground">
+                                                Page {ucHistoryPage} of {ucHistoryTotalPages}
+                                            </span>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 px-3 text-xs"
+                                                onClick={() => setUcHistoryPage(p => Math.min(ucHistoryTotalPages, p + 1))}
+                                                disabled={ucHistoryPage >= ucHistoryTotalPages || isBalanceHistoryLoading}
+                                            >
+                                                Next
+                                                <ChevronRight className="w-4 h-4 ml-1" />
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
