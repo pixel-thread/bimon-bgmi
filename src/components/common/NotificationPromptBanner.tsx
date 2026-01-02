@@ -23,6 +23,18 @@ export function NotificationPromptBanner() {
     const [showModal, setShowModal] = useState(false);
     const [isPrompting, setIsPrompting] = useState(false);
     const [showNotNow, setShowNotNow] = useState(false);
+    const [isBrave, setIsBrave] = useState(false);
+
+    // Detect Brave browser (has granular permission options)
+    useEffect(() => {
+        const checkBrave = async () => {
+            // @ts-expect-error - Brave exposes this API
+            if (navigator.brave && await navigator.brave.isBrave()) {
+                setIsBrave(true);
+            }
+        };
+        checkBrave();
+    }, []);
 
     // Check localStorage on mount - show again after 24 hours
     useEffect(() => {
@@ -98,6 +110,15 @@ export function NotificationPromptBanner() {
                         Enable notifications to know when new polls are available.
                         You&apos;ll be the first to vote and never miss an opportunity!
                     </DialogDescription>
+                    {isBrave && (
+                        <p className="text-sm text-amber-600 dark:text-amber-400 mt-2 flex items-start gap-2">
+                            <span className="text-base">💡</span>
+                            <span>
+                                <strong>Tip:</strong> When your browser asks for permission, select{" "}
+                                <strong>&quot;forever&quot;</strong> to stay notified permanently.
+                            </span>
+                        </p>
+                    )}
                 </DialogHeader>
 
                 <DialogFooter className="flex-col sm:flex-row gap-2 mt-4">
