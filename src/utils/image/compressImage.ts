@@ -105,6 +105,17 @@ export async function compressGalleryImage(file: File): Promise<File> {
 }
 
 /**
+ * Compresses an image file for profile pictures
+ * Uses smaller dimensions (512x512) and file size (200KB) for fast loading
+ * @param file - The original image file
+ * @returns Promise<File> - The compressed image file
+ */
+export async function compressProfileImage(file: File): Promise<File> {
+    // Profile images should be small for fast loading - 200KB max, 512x512
+    return compressImage(file, 200, 512, 512);
+}
+
+/**
  * Compresses an image if it exceeds the size limit
  * @param file - The original image file
  * @param maxSizeKB - Maximum size in KB before compression kicks in

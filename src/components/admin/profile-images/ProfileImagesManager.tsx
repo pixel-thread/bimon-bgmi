@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { Upload, Trash2, ImageIcon, Loader2, AlertTriangle } from "lucide-react";
 import Image from "next/image";
+import { compressProfileImage } from "@/src/utils/image/compressImage";
 
 type ProfileImage = {
     id: string;
@@ -54,8 +55,10 @@ export function ProfileImagesManager() {
     // Upload mutation
     const { mutate: uploadImage, isPending: isUploading } = useMutation({
         mutationFn: async (file: File) => {
+            // Compress the image before uploading for faster upload and loading
+            const compressedFile = await compressProfileImage(file);
             const formData = new FormData();
-            formData.append("image", file);
+            formData.append("image", compressedFile);
             return http.post("/admin/gallery/profile-images", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
