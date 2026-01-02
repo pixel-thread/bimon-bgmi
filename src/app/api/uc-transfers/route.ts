@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
                 await tx.notification.create({
                     data: {
                         title: "UC Received",
-                        message: `${fromPlayer.user.userName} sent you ${amount} UC`,
+                        message: `${fromPlayer.user.displayName || fromPlayer.user.userName} sent you ${amount} UC`,
                         type: "uc_received",
                         playerId: toPlayerId,
                         link: "/profile",
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
                 // Send push notification to recipient (async, non-blocking)
                 sendPushToPlayer(toPlayerId, {
                     title: "UC Received!",
-                    body: `${fromPlayer.user.userName} sent you ${amount} UC`,
+                    body: `${fromPlayer.user.displayName || fromPlayer.user.userName} sent you ${amount} UC`,
                     url: "/profile",
                 }).catch((error) => {
                     console.error("Failed to send push notification:", error);

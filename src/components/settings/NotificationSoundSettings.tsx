@@ -38,15 +38,11 @@ export function NotificationSoundSettings() {
         mutationFn: async (file: File) => {
             const formData = new FormData();
             formData.append("file", file);
-            const response = await fetch("/api/admin/settings/notification-sound", {
-                method: "POST",
-                body: formData,
+            return http.post("/admin/settings/notification-sound", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
             });
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || "Upload failed");
-            }
-            return response.json();
         },
         onSuccess: () => {
             toast.success("Notification sound uploaded");
