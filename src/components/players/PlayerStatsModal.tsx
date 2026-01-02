@@ -12,7 +12,7 @@ import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
 import { CategoryBadge } from "@/src/components/ui/category-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
-import { History, Ban, AlertTriangle, CheckCircle, DollarSign, ArrowUpRight, Shield, Heart } from "lucide-react";
+import { History, Ban, AlertTriangle, CheckCircle, DollarSign, ArrowUpRight, Shield, Heart, User } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { usePlayer } from "@/src/hooks/player/usePlayer";
 import { usePlayerStats } from "@/src/hooks/player/usePlayerStats";
@@ -55,9 +55,8 @@ function ModalSkeleton() {
       </div>
 
       {/* Action Buttons Skeleton */}
-      <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-2.5 sm:gap-3 pt-1">
-        <div className="h-9 sm:h-10 w-full sm:w-32 bg-zinc-200 dark:bg-zinc-700/50 rounded-lg animate-pulse" />
-        <div className="h-9 sm:h-10 w-full sm:w-32 bg-zinc-200 dark:bg-zinc-700/50 rounded-lg animate-pulse" />
+      <div className="flex justify-center pt-1">
+        <div className="h-9 sm:h-10 w-32 sm:w-36 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700/50 rounded-lg animate-pulse" />
       </div>
     </div>
   );
@@ -439,19 +438,21 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                   </Button>
                 )}
 
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    const params = new URLSearchParams(searchParams.toString());
-                    params.set("history", id);
-                    router.push(`?${params.toString()}`);
-                  }}
-                  className="w-full sm:w-auto text-sm"
-                  size="sm"
-                >
-                  <History className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
-                  History
-                </Button>
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.set("history", id);
+                      router.push(`?${params.toString()}`);
+                    }}
+                    className="w-full sm:w-auto text-sm"
+                    size="sm"
+                  >
+                    <History className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
+                    History
+                  </Button>
+                )}
 
                 {/* UC Transfer - for PLAYER, ADMIN, SUPER_ADMIN roles, not viewing own profile */}
                 {(user?.role === "PLAYER" || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && !isOwnProfile && (
@@ -463,6 +464,19 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                   >
                     <ArrowUpRight className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
                     Send / Request
+                  </Button>
+                )}
+
+                {/* My Profile - for viewing own profile */}
+                {isOwnProfile && (
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto text-sm border-green-600 text-green-600 hover:bg-green-50"
+                    onClick={() => router.push("/profile")}
+                    size="sm"
+                  >
+                    <User className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
+                    My Profile 
                   </Button>
                 )}
               </div>

@@ -182,10 +182,10 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
         setPendingVote(newVote); // Track for loader
       },
       onSuccess: (data, newVote) => {
-        setPendingVote(null);
         if (data.success) {
           toast.success(data.message);
           // Update polls cache so VotersDialog shows correct vote
+          // This also updates playersVotes which propagates to this component
           queryClient.setQueryData(["polls"], (oldData: any) => {
             if (!oldData?.data) return oldData;
             return {
@@ -193,17 +193,35 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
               data: oldData.data.map((p: any) => {
                 if (p.id !== pollId) return p;
                 // Update playersVotes for this poll
-                const updatedVotes = p.playersVotes?.map((v: any) =>
-                  v.playerId === playerId ? { ...v, vote: newVote } : v
-                ) || [];
+                const existingVoteIndex = p.playersVotes?.findIndex((v: any) => v.playerId === playerId);
+                let updatedVotes = [...(p.playersVotes || [])];
+
+                if (existingVoteIndex >= 0) {
+                  // Update existing vote
+                  updatedVotes[existingVoteIndex] = { ...updatedVotes[existingVoteIndex], vote: newVote };
+                } else {
+                  // Add new vote entry (first time voting)
+                  updatedVotes.push({
+                    id: `optimistic-${Date.now()}`,
+                    playerId,
+                    vote: newVote,
+                    createdAt: new Date().toISOString(),
+                    player: {
+                      characterImage: null,
+                      user: { displayName: null, userName: '' }
+                    }
+                  });
+                }
                 return { ...p, playersVotes: updatedVotes };
               }),
             };
           });
-          // Don't clear optimistic state here - let useEffect handle it
-          // when server data catches up to avoid race condition
+          // Clear pending but keep optimistic vote until useEffect detects
+          // that server data has caught up to avoid race condition
+          setPendingVote(null);
         } else {
           // Revert on failure - go back to server state
+          setPendingVote(null);
           setOptimisticVote(null);
           toast.error(data.message);
         }
@@ -455,18 +473,26 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
               showCurrentUserHere = true;
             }
 
-            // Get current user's info from server data (from any option they voted on)
+            // Get current user's info - prefer server data, fall back to auth data for instant avatar
             const currentUserInfo = playersVotes?.find((v) => v.playerId === playerId);
+            const currentUserAvatarData = currentUserInfo ? {
+              id: currentUserInfo.id,
+              imageUrl: (currentUserInfo.player as any)?.imageUrl || null,
+              characterImageUrl: currentUserInfo.player?.characterImage?.publicUrl || null,
+              displayName: currentUserInfo.player?.user?.displayName || null,
+              userName: currentUserInfo.player?.user?.userName || '',
+            } : (user?.player ? {
+              // Fall back to auth data for instant avatar display
+              id: `auth-${playerId}`,
+              imageUrl: null,
+              characterImageUrl: user.player.characterImage?.publicUrl || null,
+              displayName: user.displayName || null,
+              userName: user.userName || '',
+            } : null);
 
             const recentVoters = [
               // Show current user if they voted for this option (optimistically determined)
-              ...(showCurrentUserHere && currentUserInfo ? [{
-                id: currentUserInfo.id,
-                imageUrl: (currentUserInfo.player as any)?.imageUrl || null,
-                characterImageUrl: currentUserInfo.player?.characterImage?.publicUrl || null,
-                displayName: currentUserInfo.player?.user?.displayName || null,
-                userName: currentUserInfo.player?.user?.userName || '',
-              }] : []),
+              ...(showCurrentUserHere && currentUserAvatarData ? [currentUserAvatarData] : []),
               ...otherVoters.slice(0, showCurrentUserHere ? 1 : 2).map((v) => ({
                 id: v.id,
                 imageUrl: (v.player as any)?.imageUrl || null,

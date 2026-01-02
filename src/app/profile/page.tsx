@@ -101,7 +101,7 @@ export default function ProfilePage() {
     });
 
     // Fetch profile image settings
-    const { data: imageSettingsData } = useQuery({
+    const { data: imageSettingsData, isLoading: isImageSettingsLoading } = useQuery({
         queryKey: ["profile-image-settings"],
         queryFn: () => http.get<{
             imageType: "google" | "none" | "custom";
@@ -284,7 +284,9 @@ export default function ProfilePage() {
             {/* Header with User Info */}
             <div className="flex items-center gap-4">
                 {/* Profile Image - respects user's image selection */}
-                {imageSettings?.imageType === "none" ? (
+                {isImageSettingsLoading ? (
+                    <Skeleton className="h-16 w-16 !rounded-full" />
+                ) : imageSettings?.imageType === "none" ? (
                     <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-2xl font-bold text-primary-foreground">
                         {user.userName?.charAt(0).toUpperCase()}
                     </div>
@@ -318,12 +320,12 @@ export default function ProfilePage() {
 
 
             <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 max-w-md">
-                    <TabsTrigger value="overview" className="flex items-center gap-2">
+                <TabsList className="grid w-full grid-cols-2 max-w-md bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl">
+                    <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-violet-600 data-[state=active]:dark:text-violet-400 data-[state=active]:shadow-md rounded-lg font-medium">
                         <User className="w-4 h-4" />
                         Overview
                     </TabsTrigger>
-                    <TabsTrigger value="account" className="relative flex items-center gap-2">
+                    <TabsTrigger value="account" className="relative flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-violet-600 data-[state=active]:dark:text-violet-400 data-[state=active]:shadow-md rounded-lg font-medium">
                         <Settings className="w-4 h-4" />
                         Account Settings
                         {showDisplayNameGuide && (

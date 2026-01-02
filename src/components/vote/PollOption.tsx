@@ -86,7 +86,7 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
                 `}
               >
                 {isSelected && (
-                  <div className="w-2.5 h-2.5 bg-white rounded-full animate-in zoom-in-50 duration-200" />
+                  <div className="w-2.5 h-2.5 bg-white rounded-full transition-transform duration-150 scale-100" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
