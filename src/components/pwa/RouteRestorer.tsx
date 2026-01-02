@@ -43,10 +43,8 @@ export function RouteRestorer() {
         try {
             const savedRoute = localStorage.getItem(LAST_ROUTE_KEY);
             if (savedRoute && savedRoute !== "/" && !EXCLUDED_PATHS.some(p => savedRoute.startsWith(p))) {
-                // Small delay to ensure the app is fully initialized
-                setTimeout(() => {
-                    router.replace(savedRoute);
-                }, 100);
+                // Restore immediately - router is ready when this component mounts
+                router.replace(savedRoute);
             }
         } catch (e) {
             console.error("Failed to restore route:", e);
