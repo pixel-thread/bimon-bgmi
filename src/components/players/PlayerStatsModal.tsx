@@ -308,7 +308,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                     </div>
                     <div className="flex justify-start mt-1">
                       <CategoryBadge
-                        category={stats ? getKdRank(stats.kills || 0, stats.deaths || 0) : displayCategory}
+                        category={(stats && (stats.kills > 0 || stats.deaths > 0)) ? getKdRank(stats.kills, stats.deaths) : displayCategory}
                         size="sm"
                       />
                     </div>
