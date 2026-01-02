@@ -7,7 +7,7 @@ import { TQueryProvider } from "./query";
 import { Layout } from "../common/layout";
 import { ThemeProvider } from "next-themes";
 import { ClerkProvider, ClerkLoaded, ClerkLoading } from "@clerk/nextjs";
-import { LoaderFour, HairPrank, BatteryPrank, LoadingProvider } from "../ui/loader";
+import { LoadingProvider, LoaderFour } from "../ui/loader";
 import { InstallPrompt } from "../pwa/InstallPrompt";
 import { RouteRestorer } from "../pwa/RouteRestorer";
 
@@ -24,14 +24,11 @@ export const Wrapper = ({ children }: Props) => {
       storageKey="theme"
     >
       <LoadingProvider>
-        {/* Pranks rendered at wrapper level to persist through loader transitions */}
-        <HairPrank />
-        <BatteryPrank />
         <ClerkProvider
           publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
           afterSignOutUrl="/"
         >
-          {/* Show loading screen while Clerk initializes */}
+          {/* Show branded loader while Clerk initializes */}
           <ClerkLoading>
             <div className="h-screen w-full flex items-center justify-center bg-background">
               <LoaderFour text="PUBGMI TOURNAMENT" />

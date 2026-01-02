@@ -103,23 +103,8 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
     user.isOnboarded === false &&
     !skipOnboardingPaths.some(path => pathName.startsWith(path));
 
-  // Display loader while auth is loading for protected routes
-  if (needsAuthCheck && isAuthLoading) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
-        <LoaderFour text="PUBGMI TOURNAMENT" />
-      </div>
-    );
-  }
-
-  // Display loader while redirecting to onboarding
-  if (needsOnboarding) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
-        <LoaderFour text="PUBGMI TOURNAMENT" />
-      </div>
-    );
-  }
+  // No full-page loader - pages render immediately with their own skeletons
+  // Auth redirects happen in useEffect once auth resolves
 
   return <>{children}</>;
 };

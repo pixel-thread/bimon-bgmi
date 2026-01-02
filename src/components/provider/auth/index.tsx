@@ -55,14 +55,7 @@ export const AuthProvider = ({ children }: Props) => {
   }, [isSignedIn]);
 
   // remove token when user is logout from clerk if token still exist
-
-  if (isSignedIn && !isTokenSet) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
-        <LoaderFour text="PUBGMI TOURNAMENT" />
-      </div>
-    );
-  }
+  // No full-page loader - components handle their own loading states via isAuthLoading
 
   return (
     <AuthContext.Provider

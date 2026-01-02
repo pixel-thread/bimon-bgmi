@@ -1,61 +1,43 @@
 import { getActiveSeason } from "@/src/services/season/getActiveSeason";
-import { getTournamentBySeasonId } from "@/src/services/tournament/getTournamentBySeasonId";
-import { getAllMatches } from "@/src/services/match/getAllMatches";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { SuccessResponse } from "@/src/utils/next-response";
+import { prisma } from "@/src/lib/db/prisma";
 
 /**
- * Combined context endpoint - returns active season, tournaments, and matches
- * in a single request to eliminate waterfall loading.
+ * Lightweight context endpoint - returns only essential data for app initialization.
  * 
- * Before: 3 sequential API calls (~300-500ms)
- * After: 1 combined call (~100-150ms)
+ * Optimized: Only fetches activeSeason and latestTournamentId for store initialization.
+ * Tournaments and matches are fetched separately by pages that need them.
  */
 export async function GET(req: Request) {
     try {
         await tokenMiddleware(req);
 
-        // Fetch active season first (required for other queries)
+        // Fetch active season
         const activeSeason = await getActiveSeason();
 
         if (!activeSeason) {
             return SuccessResponse({
                 data: {
                     activeSeason: null,
-                    tournaments: [],
-                    latestTournamentMatches: [],
+                    latestTournamentId: null,
                 },
                 message: "No active season found",
             });
         }
 
-        // Fetch tournaments for the active season
-        const tournaments = await getTournamentBySeasonId({
-            seasonId: activeSeason.id,
+        // Get only the latest tournament ID (lightweight query)
+        const latestTournament = await prisma.tournament.findFirst({
+            where: { seasonId: activeSeason.id },
+            orderBy: { createdAt: "desc" },
+            select: { id: true },
         });
-
-        // Sort tournaments by creation date (oldest first, newest last)
-        const sortedTournaments = tournaments.sort((a, b) =>
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
-
-        // Get matches for the latest tournament (if any)
-        let latestTournamentMatches: Awaited<ReturnType<typeof getAllMatches>> = [];
-        const latestTournament = sortedTournaments[sortedTournaments.length - 1];
-
-        if (latestTournament) {
-            latestTournamentMatches = await getAllMatches({
-                where: { tournamentId: latestTournament.id },
-            });
-        }
 
         return SuccessResponse({
             data: {
                 activeSeason,
-                tournaments: sortedTournaments,
                 latestTournamentId: latestTournament?.id || null,
-                latestTournamentMatches,
             },
             message: "Context loaded successfully",
         });

@@ -3,28 +3,25 @@ import { useEffect } from "react";
 import http from "@/src/utils/http";
 import { useSeasonStore } from "@/src/store/season";
 import { useTournamentStore } from "@/src/store/tournament";
-import { TournamentT } from "@/src/types/tournament";
-import { MatchT } from "@/src/types/match";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
+import { useAuth } from "./auth/useAuth";
 
 type SeasonT = Prisma.SeasonGetPayload<{ include: { teams: true } }>;
 
 interface AppContextData {
     activeSeason: SeasonT | null;
-    tournaments: TournamentT[];
     latestTournamentId: string | null;
-    latestTournamentMatches: MatchT[];
 }
 
 /**
- * Combined context hook - fetches active season, tournaments, and matches
- * in a single request to eliminate waterfall loading.
+ * Lightweight context hook - fetches only essential data for app initialization.
  * 
  * Auto-populates season and tournament stores on load.
  */
 export function useAppContext() {
     const { setSeasonId, seasonId } = useSeasonStore();
     const { setTournamentId, tournamentId } = useTournamentStore();
+    const { isSignedIn, isAuthLoading } = useAuth();
 
     const query = useQuery({
         queryKey: ["app-context"],
@@ -32,6 +29,7 @@ export function useAppContext() {
         select: (data) => data.data,
         staleTime: 5 * 60 * 1000, // Cache for 5 minutes
         refetchOnWindowFocus: false,
+        enabled: isSignedIn && !isAuthLoading, // Wait for auth before fetching
     });
 
     // Auto-populate stores when data loads
@@ -52,8 +50,7 @@ export function useAppContext() {
     return {
         ...query,
         activeSeason: query.data?.activeSeason ?? null,
-        tournaments: query.data?.tournaments ?? [],
         latestTournamentId: query.data?.latestTournamentId ?? null,
-        latestTournamentMatches: query.data?.latestTournamentMatches ?? [],
     };
 }
+
