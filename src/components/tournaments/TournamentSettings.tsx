@@ -13,7 +13,6 @@ import { Button } from "@/src/components/ui/button";
 import TournamentForm from "./TournamentForm";
 import TournamentCreateModal from "@/src/components/admin/tournaments/TournamentCreateModal";
 import { SeasonManagement } from "../admin/season/SeasonManagement";
-import { NotificationSoundSettings } from "../settings/NotificationSoundSettings";
 import {
   Upload,
   Image as ImageIcon,
@@ -178,9 +177,6 @@ export function TournamentSettings() {
 
       {/* Background Gallery & Upload */}
       <GallerySection />
-
-      {/* Notification Sound Settings */}
-      <NotificationSoundSettings />
 
       {/* Season Management */}
       <SeasonManagement />
