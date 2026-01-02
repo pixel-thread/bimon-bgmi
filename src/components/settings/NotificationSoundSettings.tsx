@@ -184,7 +184,7 @@ export function NotificationSoundSettings() {
                             <input
                                 ref={fileInputRef}
                                 type="file"
-                                accept=".mp3,.wav,.ogg,audio/mpeg,audio/wav,audio/ogg"
+                                accept=".mp3,.wav,.ogg,.m4a,audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/x-m4a"
                                 onChange={handleFileSelect}
                                 className="hidden"
                             />
@@ -198,7 +198,7 @@ export function NotificationSoundSettings() {
                                 {isUploading ? "Uploading..." : soundData?.hasCustomSound ? "Replace Sound" : "Upload Sound"}
                             </Button>
                             <p className="text-xs text-muted-foreground mt-2">
-                                Supported formats: MP3, WAV, OGG (max 5MB)
+                                Supported formats: MP3, WAV, OGG, M4A (max 5MB)
                             </p>
                         </div>
                     </>

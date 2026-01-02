@@ -7,7 +7,7 @@ import { writeFile, unlink, readdir } from "fs/promises";
 import path from "path";
 
 const SOUND_DIR = path.join(process.cwd(), "public");
-const ALLOWED_EXTENSIONS = [".mp3", ".wav", ".ogg"];
+const ALLOWED_EXTENSIONS = [".mp3", ".wav", ".ogg", ".m4a"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 // Helper to find existing notification sound file
