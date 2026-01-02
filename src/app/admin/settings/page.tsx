@@ -30,7 +30,7 @@ const AdminSettingsPage = () => {
           </div>
         </header>
 
-        {/* Tournament Settings Component */}
+        {/* Tournament Settings Component (includes Notification Sound) */}
         <TournamentSettings />
       </div>
     </div>
@@ -38,3 +38,4 @@ const AdminSettingsPage = () => {
 };
 
 export default AdminSettingsPage;
+

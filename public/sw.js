@@ -100,11 +100,17 @@ self.addEventListener('message', (event) => {
 self.addEventListener('push', (event) => {
     const data = event.data?.json() || {};
 
+    // Try to find custom notification sound (Android only)
+    // Check for common audio formats
+    const soundUrl = data.sound || '/notification-sound.mp3';
+
     const options = {
         body: data.body || 'New update available',
         icon: '/android-chrome-192x192.png',
         badge: '/android-chrome-192x192.png',
         vibrate: [100, 50, 100],
+        // Custom sound (only works on Android)
+        sound: soundUrl,
         data: {
             url: data.url || '/vote'
         },
