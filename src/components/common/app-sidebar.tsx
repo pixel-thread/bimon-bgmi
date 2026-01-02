@@ -14,6 +14,7 @@ import {
   User,
   LogOut,
   ImageIcon,
+  Bell,
 } from "lucide-react";
 
 import { NavMain } from "@/src/components/nav-main";
@@ -102,6 +103,11 @@ const navItems: NavItem[] = [
     title: "Profile",
     url: "/admin/profile",
     icon: User,
+  },
+  {
+    title: "Push Subscribers",
+    url: "/admin/push-subscribers",
+    icon: Bell,
   },
   {
     title: "Settings",
