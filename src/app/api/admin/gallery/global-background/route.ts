@@ -4,10 +4,9 @@ import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 
-// GET - Fetch the global background (public endpoint)
-export async function GET(req: Request) {
+// GET - Fetch the global background (public endpoint - no auth required)
+export async function GET() {
     try {
-        await tokenMiddleware(req);
         const globalBackground = await getGlobalBackground();
         return SuccessResponse({
             data: globalBackground,

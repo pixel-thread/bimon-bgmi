@@ -73,7 +73,8 @@ export const CreateTeamDialog = ({
     currentTeamName: string;
   } | null>(null);
 
-  const { data: tournament } = useTournament({ id: tournamentId });
+  // Only fetch tournament when dialog is open to avoid unnecessary API calls
+  const { data: tournament } = useTournament({ id: tournamentId, enabled: open });
   const entryFee = tournament?.fee || 0;
 
   const { mutate: createTeam, isPending } = useMutation({

@@ -29,12 +29,14 @@ export function usePlayers({
   tier = "All",
   sortBy = "kd",
   sortOrder = "desc",
+  enabled = true,
 }: {
   page?: string | number;
   search?: string;
   tier?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+  enabled?: boolean;
 } = {}) {
   const { user } = useAuth();
   const { seasonId } = useSeasonStore();
@@ -59,7 +61,7 @@ export function usePlayers({
     queryFn: () => http.get<PlayerT[]>(url),
     queryKey: ["player", page, seasonId, search, tier, sortBy, sortOrder],
     select: (data) => data,
-    enabled: !!seasonId,
+    enabled: enabled && !!seasonId,
     placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
     refetchOnMount: false,

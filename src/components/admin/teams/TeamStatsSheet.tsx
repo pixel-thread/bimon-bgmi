@@ -67,7 +67,8 @@ export function TeamStatsSheet({ teamId, open }: Props) {
     name: "players",
   });
 
-  const { data: teams, isFetching: isTeamsFetching } = useTeams();
+  // Only fetch teams when sheet is open to avoid unnecessary API calls
+  const { data: teams, isFetching: isTeamsFetching } = useTeams({ refetchOnWindowFocus: false, enabled: open });
 
   const { data: stats, isFetching } = useQuery({
     queryKey: ["teamStats", teamId, matchId],

@@ -7,14 +7,15 @@ type TournamentT = Prisma.TournamentGetPayload<{ include: { gallery: true } }>;
 
 type Props = {
   id: string;
+  enabled?: boolean;
 };
 
-export function useTournament({ id }: Props = { id: "" }) {
+export function useTournament({ id, enabled = true }: Props = { id: "", enabled: true }) {
   const url = TOURNAMENT_ENDPOINTS.GET_TOURNAMENT_BY_ID.replace(":id", id);
   return useQuery({
     queryKey: ["tournament", id],
     queryFn: () => http.get<TournamentT>(url),
-    enabled: !!id,
+    enabled: enabled && !!id,
     select: (data) => data.data,
   });
 }

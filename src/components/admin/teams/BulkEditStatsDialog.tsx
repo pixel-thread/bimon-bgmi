@@ -42,7 +42,8 @@ type EditableTeamStats = {
 export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
     const { matchId, matchNumber } = useMatchStore();
     // Disable refetchOnWindowFocus to prevent losing edits if user switches tabs
-    const { data: teams, isFetching } = useTeams({ page: "all", refetchOnWindowFocus: false });
+    // Only fetch when dialog is open to avoid unnecessary API calls
+    const { data: teams, isFetching } = useTeams({ page: "all", refetchOnWindowFocus: false, enabled: open });
     const [editableStats, setEditableStats] = useState<EditableTeamStats[]>([]);
     const queryClient = useQueryClient();
 

@@ -30,7 +30,8 @@ export function useStandings() {
             ...team,
             // Add/compute ranking fields
             teamId: team.id,
-            chickenDinners: team.chickenDinners || 0,
+            chickenDinners: team.chickenDinners || team.wins || 0,
+            wins: team.wins || team.chickenDinners || 0,
             placementPoints: team.pts || 0,
             totalKills: team.kills || 0,
             lastMatchPosition: team.lastMatchPosition || team.position || 99,

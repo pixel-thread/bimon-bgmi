@@ -87,10 +87,12 @@ export const AddPlayerToTeamDialog = ({
     enabled: open,
   });
 
-  const { data: players, isFetching: isFetchingPlayers } = usePlayers();
+  // Only fetch players when dialog is open to avoid unnecessary API calls
+  const { data: players, isFetching: isFetchingPlayers } = usePlayers({ enabled: open });
 
   const { tournamentId } = useTournamentStore();
-  const { data: tournament } = useTournament({ id: tournamentId });
+  // Only fetch tournament when dialog is open
+  const { data: tournament } = useTournament({ id: tournamentId, enabled: open });
   const entryFee = tournament?.fee || 0;
 
   const { mutateAsync: addPlayer, isPending: isAdding } = useMutation({

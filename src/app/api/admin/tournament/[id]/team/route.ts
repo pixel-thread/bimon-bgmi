@@ -98,6 +98,9 @@ export async function GET(
 
       const total = kills + pts;
 
+      // Count chicken dinners (1st place finishes)
+      const wins = teamStats.filter((stat) => stat.position === 1).length;
+
       const teamName = team.players
         .map((player) => player.user.displayName || player.user.userName)
         .join("_");
@@ -113,6 +116,7 @@ export async function GET(
         position: teamPosition,
         pts: pts,
         total: total,
+        wins: wins,
         players: teamPlayers,
         teamPlayerStats: teamPlayerStats,
       };
