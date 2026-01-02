@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/src/components/ui/select";
-import { PlusIcon, XIcon, SaveIcon, AlertCircle, ArrowRight } from "lucide-react";
+import { PlusIcon, XIcon, SaveIcon, AlertCircle, ArrowRight, RefreshCw } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { ADMIN_TEAM_ENDPOINTS } from "@/src/lib/endpoints/admin/team";
@@ -77,6 +77,18 @@ export const AddPlayerToTeamDialog = ({
   // Track players that need to be moved from other teams (playerId -> {teamId, teamName})
   const [playersToMoveFrom, setPlayersToMoveFrom] = React.useState<Map<string, { teamId: string; teamName: string }>>(new Map());
 
+  // Replace confirmation state (for replacing original players)
+  const [showReplaceConfirm, setShowReplaceConfirm] = React.useState(false);
+  const [pendingReplacement, setPendingReplacement] = React.useState<{
+    index: number;
+    oldPlayerId: string;
+    oldPlayerName: string;
+    newPlayerId: string;
+    newPlayerName: string;
+  } | null>(null);
+  // Track players that will get refund (original players being replaced)
+  const [playersToRefund, setPlayersToRefund] = React.useState<Set<string>>(new Set());
+
   const { data: team, isFetching } = useQuery({
     queryKey: ["team", teamId],
     queryFn: () =>
@@ -125,6 +137,8 @@ export const AddPlayerToTeamDialog = ({
       setHasChanges(false);
       setPlayersWithUCDeduction(new Set());
       setPlayersToMoveFrom(new Map());
+      setPlayersToRefund(new Set());
+      setPendingReplacement(null);
     }
   }, [team]);
 
@@ -207,6 +221,24 @@ export const AddPlayerToTeamDialog = ({
   /** Replace player in select field (local only) */
   const handleReplacePlayer = (index: number, newPlayerId: string) => {
     const oldPlayerId = playersList[index];
+    const isReplacingOriginal = originalPlayersList.includes(oldPlayerId);
+
+    // If replacing an original player and tournament has entry fee, show replace confirmation
+    if (isReplacingOriginal && entryFee > 0) {
+      const oldPlayer = players?.find(p => p.id === oldPlayerId);
+      const newPlayer = players?.find(p => p.id === newPlayerId);
+      setPendingReplacement({
+        index,
+        oldPlayerId,
+        oldPlayerName: getDisplayName(oldPlayer?.displayName, oldPlayer?.userName) || 'Player',
+        newPlayerId,
+        newPlayerName: getDisplayName(newPlayer?.displayName, newPlayer?.userName) || 'Player',
+      });
+      setShowReplaceConfirm(true);
+      return;
+    }
+
+    // No entry fee or not replacing original - just swap
     const updated = [...playersList];
     updated[index] = newPlayerId;
     setPlayersList(updated);
@@ -220,6 +252,37 @@ export const AddPlayerToTeamDialog = ({
         return next;
       });
     }
+  };
+
+  /** Handle replace confirmation response */
+  const handleReplaceConfirmResponse = (option: 'refund-and-deduct' | 'refund-only' | 'cancel') => {
+    if (pendingReplacement && option !== 'cancel') {
+      const { index, oldPlayerId, newPlayerId } = pendingReplacement;
+
+      // Update players list
+      const updated = [...playersList];
+      updated[index] = newPlayerId;
+      setPlayersList(updated);
+
+      // Track that old player should be refunded
+      setPlayersToRefund(prev => new Set(prev).add(oldPlayerId));
+
+      // Track if new player should be charged
+      if (option === 'refund-and-deduct') {
+        setPlayersWithUCDeduction(prev => new Set(prev).add(newPlayerId));
+      }
+
+      // Clean up old player's UC deduction status if they had it
+      if (playersWithUCDeduction.has(oldPlayerId)) {
+        setPlayersWithUCDeduction(prev => {
+          const next = new Set(prev);
+          next.delete(oldPlayerId);
+          return next;
+        });
+      }
+    }
+    setPendingReplacement(null);
+    setShowReplaceConfirm(false);
   };
 
   /** Save all changes */
@@ -367,6 +430,42 @@ export const AddPlayerToTeamDialog = ({
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* Replace Player Confirmation Dialog */}
+        <AlertDialog open={showReplaceConfirm} onOpenChange={setShowReplaceConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5 text-purple-500" />
+                Replace Player
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Replacing <strong>{pendingReplacement?.oldPlayerName}</strong> with <strong className="text-purple-500">{pendingReplacement?.newPlayerName}</strong>.
+                <br /><br />
+                <strong>{pendingReplacement?.oldPlayerName}</strong> will be refunded <strong className="text-green-500">{entryFee} UC</strong>.
+                <br /><br />
+                Should <strong>{pendingReplacement?.newPlayerName}</strong> pay the entry fee?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <AlertDialogCancel onClick={() => handleReplaceConfirmResponse('cancel')}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => handleReplaceConfirmResponse('refund-only')}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Refund Only
+              </AlertDialogAction>
+              <AlertDialogAction
+                onClick={() => handleReplaceConfirmResponse('refund-and-deduct')}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                Refund + Deduct {entryFee} UC
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <Ternary
           condition={isFetchingPlayers || isFetching}
           trueComponent={
@@ -380,6 +479,7 @@ export const AddPlayerToTeamDialog = ({
                 const isNewWithUC = !originalPlayersList.includes(playerId) && playersWithUCDeduction.has(playerId);
                 const moveFromInfo = playersToMoveFrom.get(playerId);
                 const isBeingMoved = !originalPlayersList.includes(playerId) && !!moveFromInfo;
+                const willBeRefunded = playersToRefund.has(playerId);
                 return (
                   <div key={index} className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -387,6 +487,11 @@ export const AddPlayerToTeamDialog = ({
                       {isNewWithUC && (
                         <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded dark:bg-orange-900 dark:text-orange-300">
                           -{entryFee} UC
+                        </span>
+                      )}
+                      {willBeRefunded && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded dark:bg-green-900 dark:text-green-300">
+                          +{entryFee} UC refund
                         </span>
                       )}
                       {isBeingMoved && (
@@ -452,6 +557,6 @@ export const AddPlayerToTeamDialog = ({
           }
         />
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 };

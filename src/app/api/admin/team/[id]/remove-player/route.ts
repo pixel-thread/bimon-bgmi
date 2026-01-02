@@ -5,6 +5,7 @@ import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { addPlayerSchema } from "@/src/utils/validation/team/add-player";
+import { prisma } from "@/src/lib/db/prisma";
 
 export async function POST(
   req: Request,
@@ -43,16 +44,30 @@ export async function POST(
       });
     }
 
-    const updatedTeam = await removePlayerFromTeam({
-      playerId: body.playerId,
-      teamId,
+    // Get tournament info for potential refund
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: isTeamExist.tournamentId || "" },
+      select: { name: true, fee: true },
     });
 
+    const result = await removePlayerFromTeam({
+      playerId: body.playerId,
+      teamId,
+      tournamentName: tournament?.name,
+      entryFee: tournament?.fee || 0,
+    });
+
+    let message = "Player Removed from a team successfully";
+    if (result.refundIssued) {
+      message += `. ${result.refundAmount} UC refunded`;
+    }
+
     return SuccessResponse({
-      data: updatedTeam,
-      message: "Player Removed from a team successfully",
+      data: result,
+      message,
     });
   } catch (error) {
     return handleApiErrors(error);
   }
 }
+

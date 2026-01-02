@@ -66,9 +66,10 @@ const TeamActions = ({ team, page }: { team: TeamT; page?: string }) => {
   const [showEditPlayers, setShowEditPlayers] = useState(false);
 
   const { mutate: deleteTeam, isPending: isDeletingTeam } = useMutation({
-    mutationFn: (id: string) =>
+    mutationFn: ({ id, refund }: { id: string; refund?: boolean }) =>
       http.delete(
-        ADMIN_TEAM_ENDPOINTS.DELETE_TEAM_BY_ID.replace(":teamId", id),
+        ADMIN_TEAM_ENDPOINTS.DELETE_TEAM_BY_ID.replace(":teamId", id) +
+        (refund ? "?refund=true" : ""),
       ),
     onSuccess: (data) => {
       setShowDeleteConfirm(false);
@@ -122,9 +123,11 @@ const TeamActions = ({ team, page }: { team: TeamT; page?: string }) => {
             <AlertDialogTitle>Delete Team</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete <strong>{team.name}</strong>? This action cannot be undone.
+              <br /><br />
+              If players paid entry fees, you can choose to refund them.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel disabled={isDeletingTeam}>
               Cancel
             </AlertDialogCancel>
@@ -132,7 +135,7 @@ const TeamActions = ({ team, page }: { team: TeamT; page?: string }) => {
               disabled={isDeletingTeam}
               onClick={(e) => {
                 e.preventDefault();
-                deleteTeam(team.id);
+                deleteTeam({ id: team.id, refund: false });
               }}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
@@ -142,7 +145,24 @@ const TeamActions = ({ team, page }: { team: TeamT; page?: string }) => {
                   Deleting...
                 </>
               ) : (
-                "Delete"
+                "Delete (No Refund)"
+              )}
+            </AlertDialogAction>
+            <AlertDialogAction
+              disabled={isDeletingTeam}
+              onClick={(e) => {
+                e.preventDefault();
+                deleteTeam({ id: team.id, refund: true });
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {isDeletingTeam ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete + Refund All"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

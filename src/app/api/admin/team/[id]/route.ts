@@ -3,6 +3,7 @@ import { getTeamById } from "@/src/services/team/getTeamById";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
+import { prisma } from "@/src/lib/db/prisma";
 
 export async function GET(
   req: Request,
@@ -37,6 +38,11 @@ export async function DELETE(
   try {
     await adminMiddleware(req);
     const id = (await params).id;
+
+    // Check for refund query param
+    const url = new URL(req.url);
+    const refund = url.searchParams.get("refund") === "true";
+
     const isTeamExist = await getTeamById({ where: { id } });
 
     if (!isTeamExist) {
@@ -46,13 +52,30 @@ export async function DELETE(
       });
     }
 
-    const deletedTeam = await deleteTeamById({ id });
+    // Get tournament info for refund
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: isTeamExist.tournamentId || "" },
+      select: { name: true, fee: true },
+    });
+
+    const result = await deleteTeamById({
+      id,
+      refund,
+      tournamentName: tournament?.name,
+      entryFee: tournament?.fee || 0,
+    });
+
+    let message = "Team deleted successfully";
+    if (result.refundedCount > 0) {
+      message += `. ${result.refundedAmount} UC refunded to ${result.refundedCount} player(s)`;
+    }
 
     return SuccessResponse({
-      data: deletedTeam,
-      message: "Team deleted successfully",
+      data: result,
+      message,
     });
   } catch (error) {
     return handleApiErrors(error);
   }
 }
+
