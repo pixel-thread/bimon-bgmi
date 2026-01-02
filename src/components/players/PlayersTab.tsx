@@ -92,7 +92,6 @@ export function PlayersTab() {
               userName: selectedPlayer.userName,
               displayName: selectedPlayer.displayName,
               category: selectedPlayer.category,
-              matches: selectedPlayer.matches,
               kd: Number(selectedPlayer.kd),
               kills: selectedPlayer.kills,
               imageUrl: selectedPlayer.characterImageUrl || selectedPlayer.imageUrl,
