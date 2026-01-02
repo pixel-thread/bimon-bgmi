@@ -190,7 +190,7 @@ export default function HomePage() {
   // Block rendering while PWA is restoring to a saved route
   if (isRestoring) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
+      <div className="min-h-[calc(100vh-4rem)] w-full flex items-center justify-center bg-background">
         <LoaderFour text="PUBGMI TOURNAMENT" />
       </div>
     );
