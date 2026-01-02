@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { Button } from "@/src/components/ui/button";
@@ -12,7 +12,7 @@ import { AddBalanceDialog } from "@/src/components/profile/AddBalanceDialog";
 import {
     Bell, Check, X, ArrowUpRight, ArrowDownLeft, Clock, DollarSign,
     User, Target, Swords, TrendingUp, TrendingDown, Minus, Settings,
-    Trophy, Calendar, Star, Medal, ShieldAlert
+    Trophy, Calendar, Star, Medal, ShieldAlert, History
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
@@ -44,6 +44,16 @@ type Notification = {
     type: string;
     link?: string;
     createdAt: string;
+    requestMessage?: string; // Original message from the request
+};
+
+type BalanceHistoryItem = {
+    id: string;
+    playerId: string;
+    amount: number;
+    type: "credit" | "debit";
+    description: string;
+    timestamp: string;
 };
 
 type PlayerStats = {
@@ -76,6 +86,9 @@ export default function ProfilePage() {
     // Loading state
     const isPageLoading = isAuthLoading || !isClerkLoaded;
 
+    // UC History expanded state (lazy load)
+    const [showUCHistory, setShowUCHistory] = useState(false);
+
     // Check if displayName guide should be shown (no displayName set)
     const showDisplayNameGuide = !user?.displayName && !!user;
 
@@ -100,6 +113,13 @@ export default function ProfilePage() {
         enabled: !!playerId,
     });
 
+    // Fetch balance history - only when UC History is expanded
+    const { data: balanceHistoryData, isLoading: isBalanceHistoryLoading } = useQuery({
+        queryKey: ["balance-history", playerId],
+        queryFn: () => http.get<{ transactions: BalanceHistoryItem[]; pagination: { total: number } }>(`/players/${playerId}/transactions?page=1&limit=10`),
+        enabled: !!playerId && showUCHistory, // Only fetch when section is expanded
+    });
+
     // Fetch profile image settings
     const { data: imageSettingsData, isLoading: isImageSettingsLoading } = useQuery({
         queryKey: ["profile-image-settings"],
@@ -112,9 +132,12 @@ export default function ProfilePage() {
 
     const playerStats = statsData?.data;
     const transfers = transfersData?.data || [];
-    const notifications = notificationsData?.data?.notifications || [];
     const unreadCount = notificationsData?.data?.unreadCount || 0;
+
+    const notifications = notificationsData?.data?.notifications || [];
     const imageSettings = imageSettingsData?.data;
+    const balanceHistory = balanceHistoryData?.data?.transactions || [];
+    const totalBalanceHistoryCount = balanceHistoryData?.data?.pagination?.total || 0;
 
     // Extract stats from API response
     const kills = playerStats?.kills || 0;
@@ -469,46 +492,6 @@ export default function ProfilePage() {
                         </div>
                     )}
 
-                    {/* Pending Requests - Glassmorphism */}
-                    {pendingRequests.length > 0 && (
-                        <div className="relative rounded-2xl overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-yellow-500/10 to-orange-500/10 dark:from-amber-600/15 dark:via-yellow-600/15 dark:to-orange-600/15" />
-                            <div className="absolute inset-0 backdrop-blur-3xl" />
-
-                            <div className="relative p-4 md:p-5">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                                        <Clock className="w-4 h-4 text-white" />
-                                    </div>
-                                    <h3 className="font-semibold">Pending Requests ({pendingRequests.length})</h3>
-                                </div>
-                                <div className="space-y-2">
-                                    {pendingRequests.map((request) => (
-                                        <div key={request.id} className="flex items-center justify-between p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
-                                            <div>
-                                                <p className="text-sm font-medium">
-                                                    <span className="text-violet-600 dark:text-violet-400">{getDisplayName(request.fromPlayer.user.displayName, request.fromPlayer.user.userName)}</span>
-                                                    {" "}requested{" "}
-                                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{request.amount} UC</span>
-                                                </p>
-                                                {request.message && <p className="text-xs text-muted-foreground mt-0.5">&quot;{request.message}&quot;</p>}
-                                                <p className="text-[10px] text-muted-foreground mt-1">{formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}</p>
-                                            </div>
-                                            <div className="flex gap-1.5">
-                                                <Button size="sm" variant="outline" className="h-8 px-2.5 border-emerald-500/50 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10" onClick={() => { if (userBalance < request.amount) { toast.error(`Insufficient balance.`); return; } approveTransfer(request.id); }} disabled={isApproving || isRejecting || userBalance < request.amount}>
-                                                    <Check className="w-3.5 h-3.5" />
-                                                </Button>
-                                                <Button size="sm" variant="outline" className="h-8 px-2.5 border-red-500/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10" onClick={() => rejectTransfer(request.id)} disabled={isApproving || isRejecting}>
-                                                    <X className="w-3.5 h-3.5" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     {/* Notifications - Glassmorphism */}
                     <div className="relative rounded-2xl overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-cyan-500/10 to-teal-500/10 dark:from-blue-600/15 dark:via-cyan-600/15 dark:to-teal-600/15" />
@@ -531,64 +514,184 @@ export default function ProfilePage() {
                                 <p className="text-center text-muted-foreground py-6 text-sm">No notifications yet</p>
                             ) : (
                                 <div className="space-y-2">
-                                    {notifications.slice(0, 5).map((notification) => (
-                                        <div key={notification.id} className={`p-3 rounded-xl backdrop-blur-sm border ${notification.isRead ? "bg-white/30 dark:bg-slate-800/30 border-white/10 dark:border-slate-700/30" : "bg-white/60 dark:bg-slate-800/60 border-white/30 dark:border-slate-700/50"}`}>
-                                            <div className="flex justify-between items-start gap-2">
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-medium text-sm truncate">{notification.title}</p>
-                                                    <p className="text-xs text-muted-foreground line-clamp-2">{notification.message}</p>
-                                                </div>
-                                                <span className="text-[10px] text-muted-foreground whitespace-nowrap">{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
+                                    {notifications.slice(0, 5).map((notification) => {
+                                        // Find matching pending request for uc_request type
+                                        const pendingRequest = notification.type === "uc_request"
+                                            ? pendingRequests.find(r => notification.message.includes(r.amount.toString()))
+                                            : null;
+
+                                        return (
+                                            <div key={notification.id} className={`p-3 rounded-xl backdrop-blur-sm border ${notification.isRead ? "bg-white/30 dark:bg-slate-800/30 border-white/10 dark:border-slate-700/30" : "bg-white/60 dark:bg-slate-800/60 border-white/30 dark:border-slate-700/50"}`}>
+                                                {/* For notifications with action buttons, use stacked layout on mobile */}
+                                                {notification.type === "uc_request" && pendingRequest ? (
+                                                    <div className="space-y-2">
+                                                        {/* Top row: icon + content + timestamp */}
+                                                        <div className="flex items-start gap-2.5">
+                                                            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-500/10">
+                                                                <Clock className="w-4 h-4 text-amber-500" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <p className="font-medium text-sm">{notification.title}</p>
+                                                                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
+                                                                </div>
+                                                                <p className="text-xs text-muted-foreground">{notification.message}</p>
+                                                                {pendingRequest.message && (
+                                                                    <p className="text-xs text-violet-600 dark:text-violet-400 mt-0.5 italic">&quot;{pendingRequest.message}&quot;</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        {/* Bottom row: action buttons */}
+                                                        <div className="flex gap-2 pl-9 sm:pl-9">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="h-8 flex-1 sm:flex-initial sm:px-4 border-emerald-500/50 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+                                                                onClick={() => {
+                                                                    if (userBalance < pendingRequest.amount) {
+                                                                        toast.error(`Insufficient balance.`);
+                                                                        return;
+                                                                    }
+                                                                    approveTransfer(pendingRequest.id);
+                                                                }}
+                                                                disabled={isApproving || isRejecting || userBalance < pendingRequest.amount}
+                                                            >
+                                                                <Check className="w-3.5 h-3.5 mr-1" />
+                                                                Accept
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="h-8 flex-1 sm:flex-initial sm:px-4 border-red-500/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+                                                                onClick={() => rejectTransfer(pendingRequest.id)}
+                                                                disabled={isApproving || isRejecting}
+                                                            >
+                                                                <X className="w-3.5 h-3.5 mr-1" />
+                                                                Reject
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    /* Regular notification layout */
+                                                    <div className="flex items-start gap-2.5">
+                                                        {/* Type-specific icons */}
+                                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${notification.type === "uc_received" || notification.type === "uc_approved"
+                                                            ? "bg-emerald-500/10"
+                                                            : notification.type === "uc_rejected"
+                                                                ? "bg-red-500/10"
+                                                                : notification.type === "uc_request_sent"
+                                                                    ? "bg-purple-500/10"
+                                                                    : "bg-amber-500/10"
+                                                            }`}>
+                                                            {notification.type === "uc_received" && <ArrowDownLeft className="w-4 h-4 text-emerald-500" />}
+                                                            {notification.type === "uc_request" && <Clock className="w-4 h-4 text-amber-500" />}
+                                                            {notification.type === "uc_approved" && <Check className="w-4 h-4 text-emerald-500" />}
+                                                            {notification.type === "uc_rejected" && <X className="w-4 h-4 text-red-500" />}
+                                                            {notification.type === "uc_request_sent" && <ArrowUpRight className="w-4 h-4 text-purple-500" />}
+                                                            {!["uc_received", "uc_request", "uc_approved", "uc_rejected", "uc_request_sent"].includes(notification.type) && <Bell className="w-4 h-4 text-blue-500" />}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <p className="font-medium text-sm truncate">{notification.title}</p>
+                                                                <span className="text-[10px] text-muted-foreground whitespace-nowrap">{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
+                                                            </div>
+                                                            <p className="text-xs text-muted-foreground line-clamp-2">{notification.message}</p>
+                                                            {notification.requestMessage && (
+                                                                <p className="text-xs text-violet-600 dark:text-violet-400 mt-0.5 italic">&quot;{notification.requestMessage}&quot;</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Transfer History - Glassmorphism */}
+                    {/* Balance History - Glassmorphism (Collapsible) */}
                     <div className="relative rounded-2xl overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-green-500/10 to-teal-500/10 dark:from-emerald-600/15 dark:via-green-600/15 dark:to-teal-600/15" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-violet-500/10 to-indigo-500/10 dark:from-purple-600/15 dark:via-violet-600/15 dark:to-indigo-600/15" />
                         <div className="absolute inset-0 backdrop-blur-3xl" />
 
                         <div className="relative p-4 md:p-5">
-                            <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
-                                    <DollarSign className="w-4 h-4 text-white" />
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-400 to-violet-500 flex items-center justify-center">
+                                        <History className="w-4 h-4 text-white" />
+                                    </div>
+                                    <h3 className="font-semibold">UC History</h3>
+                                    {showUCHistory && totalBalanceHistoryCount > 0 && (
+                                        <span className="text-xs text-muted-foreground">({totalBalanceHistoryCount} total)</span>
+                                    )}
                                 </div>
-                                <h3 className="font-semibold">Transfer History</h3>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 text-xs"
+                                    onClick={() => setShowUCHistory(!showUCHistory)}
+                                >
+                                    {showUCHistory ? "Hide" : "Show"}
+                                </Button>
                             </div>
-                            {transfers.length === 0 ? (
-                                <p className="text-center text-muted-foreground py-6 text-sm">No transfers yet</p>
+
+                            {!showUCHistory ? (
+                                <p className="text-center text-muted-foreground py-4 text-sm">
+                                    Click &quot;Show&quot; to view your UC transaction history
+                                </p>
+                            ) : isBalanceHistoryLoading ? (
+                                <div className="space-y-2">
+                                    {[...Array(3)].map((_, i) => (
+                                        <div key={i} className="p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
+                                            <Skeleton className="h-4 w-24 mb-2" />
+                                            <Skeleton className="h-3 w-full" />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : balanceHistory.length === 0 ? (
+                                <p className="text-center text-muted-foreground py-6 text-sm">No UC history yet</p>
                             ) : (
                                 <div className="space-y-2">
-                                    {transfers.slice(0, 10).map((transfer) => {
-                                        const isLosingMoney = transfer.type === "SEND" ? transfer.fromPlayerId === playerId : transfer.toPlayerId === playerId;
-                                        return (
-                                            <div key={transfer.id} className="flex items-center justify-between p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
-                                                <div className="flex items-center gap-2.5">
-                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center ${isLosingMoney ? "bg-red-500/10" : "bg-emerald-500/10"}`}>
-                                                        {isLosingMoney ? <ArrowUpRight className="w-4 h-4 text-red-500" /> : <ArrowDownLeft className="w-4 h-4 text-emerald-500" />}
+                                    {(() => {
+                                        // Calculate running balance for each transaction
+                                        let runningBalance = userBalance;
+                                        const transactionsWithBalance = balanceHistory.map((entry) => {
+                                            const balanceAfter = runningBalance;
+                                            if (entry.type === "credit") {
+                                                runningBalance = runningBalance - entry.amount;
+                                            } else {
+                                                runningBalance = runningBalance + Math.abs(entry.amount);
+                                            }
+                                            return { ...entry, balanceAfter };
+                                        });
+                                        return transactionsWithBalance.map((entry) => (
+                                            <div key={entry.id} className="flex items-center justify-between p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
+                                                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${entry.type === "credit" ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
+                                                        {entry.type === "credit" ? <TrendingUp className="w-4 h-4 text-emerald-500" /> : <TrendingDown className="w-4 h-4 text-red-500" />}
                                                     </div>
-                                                    <div>
-                                                        <p className="text-sm font-medium">
-                                                            {transfer.fromPlayerId === playerId ? (
-                                                                <>{transfer.type === "SEND" ? "Sent to" : "Requested from"} <span className="text-violet-600 dark:text-violet-400">{getDisplayName(transfer.toPlayer.user.displayName, transfer.toPlayer.user.userName)}</span></>
-                                                            ) : (
-                                                                <>{transfer.type === "SEND" ? "Received from" : "Request from"} <span className="text-violet-600 dark:text-violet-400">{getDisplayName(transfer.fromPlayer.user.displayName, transfer.fromPlayer.user.userName)}</span></>
-                                                            )}
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-sm font-medium truncate">{entry.description}</p>
+                                                        <p className="text-[10px] text-muted-foreground">
+                                                            {new Date(entry.timestamp).toLocaleDateString("en-IN", {
+                                                                month: "short",
+                                                                day: "numeric",
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                            })}
                                                         </p>
-                                                        <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(transfer.createdAt), { addSuffix: true })}</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`font-bold text-sm ${isLosingMoney ? "text-red-600" : "text-emerald-600"}`}>{isLosingMoney ? "-" : "+"}{transfer.amount} UC</span>
-                                                    {getStatusBadge(transfer.status)}
+                                                <div className="text-right flex-shrink-0 ml-2">
+                                                    <span className={`font-bold text-sm ${entry.type === "credit" ? "text-emerald-600" : "text-red-600"}`}>
+                                                        {entry.type === "credit" ? "+" : "-"}{Math.abs(entry.amount).toFixed(0)} UC
+                                                    </span>
+                                                    <p className="text-[10px] text-muted-foreground">Bal: {entry.balanceAfter} UC</p>
                                                 </div>
                                             </div>
-                                        );
-                                    })}
+                                        ));
+                                    })()}
                                 </div>
                             )}
                         </div>
