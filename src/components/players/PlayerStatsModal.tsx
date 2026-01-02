@@ -83,8 +83,8 @@ type Props = {
 };
 
 export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
-  const { data: player, isLoading: isPlayerLoading } = usePlayer({ id });
-  const { data: stats, isLoading: isStatsLoading } = usePlayerStats({ id });
+  const { data: player, isLoading: isPlayerLoading, isFetching: isPlayerFetching } = usePlayer({ id });
+  const { data: stats, isLoading: isStatsLoading, isFetching: isStatsFetching } = usePlayerStats({ id });
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -98,15 +98,22 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
   const hasInitialData = !!initialData;
   const isLoading = !hasInitialData && (isPlayerLoading || isStatsLoading);
 
-  // Derived display values - use initialData for instant display, fetched data when available
-  const displayName = player?.user?.displayName ?? player?.user?.userName ?? initialData?.displayName ?? initialData?.userName ?? "Player";
-  const displayImageUrl = (player as any)?.characterImage?.publicUrl || player?.clerkImageUrl || initialData?.imageUrl;
-  const displayCategory = player?.category ?? initialData?.category ?? "BRONZE";
-  const displayIsBanned = player?.isBanned ?? initialData?.isBanned ?? false;
-  const displayMatches = stats?.deaths ?? initialData?.matches ?? 0;
-  const displayKills = stats?.kills ?? initialData?.kills ?? 0;
-  const displayKd = stats ? (stats.deaths === 0 ? stats.kills : stats.kills / stats.deaths) : (initialData?.kd ?? 0);
-  const displayBalance = player?.uc?.balance ?? initialData?.balance ?? 0;
+  // Prefer initialData while fetching to avoid stale cached data flash
+  // Only use fetched data when it's fresh (not currently fetching)
+  const useInitialOverStats = hasInitialData && isStatsFetching;
+  const useInitialOverPlayer = hasInitialData && isPlayerFetching;
+
+  // Derived display values - use initialData for instant display, fetched data when available and fresh
+  const displayName = (!useInitialOverPlayer && player?.user?.displayName) || (!useInitialOverPlayer && player?.user?.userName) || initialData?.displayName || initialData?.userName || "Player";
+  const displayImageUrl = (!useInitialOverPlayer && (player as any)?.characterImage?.publicUrl) || (!useInitialOverPlayer && player?.clerkImageUrl) || initialData?.imageUrl;
+  const displayCategory = (!useInitialOverPlayer && player?.category) || initialData?.category || "BRONZE";
+  const displayIsBanned = useInitialOverPlayer ? (initialData?.isBanned ?? false) : (player?.isBanned ?? initialData?.isBanned ?? false);
+  const displayMatches = useInitialOverStats ? (initialData?.matches ?? 0) : (stats?.deaths ?? initialData?.matches ?? 0);
+  const displayKills = useInitialOverStats ? (initialData?.kills ?? 0) : (stats?.kills ?? initialData?.kills ?? 0);
+  const displayKd = useInitialOverStats
+    ? (initialData?.kd ?? 0)
+    : (stats ? (stats.deaths === 0 ? stats.kills : stats.kills / stats.deaths) : (initialData?.kd ?? 0));
+  const displayBalance = useInitialOverPlayer ? (initialData?.balance ?? 0) : (player?.uc?.balance ?? initialData?.balance ?? 0);
 
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
@@ -308,7 +315,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                     </div>
                     <div className="flex justify-start mt-1">
                       <CategoryBadge
-                        category={(stats && (stats.kills > 0 || stats.deaths > 0)) ? getKdRank(stats.kills, stats.deaths) : displayCategory}
+                        category={(!useInitialOverStats && stats && (stats.kills > 0 || stats.deaths > 0)) ? getKdRank(stats.kills, stats.deaths) : displayCategory}
                         size="sm"
                       />
                     </div>
