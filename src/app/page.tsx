@@ -2,9 +2,11 @@
 "use client";
 
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import { useRouteRestorer } from "@/src/components/pwa/RouteRestorer";
 import Link from "next/link";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
+import { LoaderFour } from "../components/ui/loader";
 import { FcGoogle } from "react-icons/fc";
 
 // Feature badges data
@@ -183,6 +185,16 @@ function UserCard({
 
 export default function HomePage() {
   const { user, isSignedIn, isAuthLoading } = useAuth();
+  const { isRestoring } = useRouteRestorer();
+
+  // Block rendering while PWA is restoring to a saved route
+  if (isRestoring) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <LoaderFour text="PUBGMI TOURNAMENT" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

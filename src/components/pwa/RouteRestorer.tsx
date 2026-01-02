@@ -1,67 +1,76 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 const LAST_ROUTE_KEY = "pwa-last-route";
 // Pages that should not be restored (e.g., auth callbacks, error pages)
 const EXCLUDED_PATHS = ["/sign-in", "/sign-up", "/sso-callback", "/error"];
 
+type RouteRestorerContextType = {
+    isRestoring: boolean;
+    isPWA: boolean;
+};
+
+const RouteRestorerContext = createContext<RouteRestorerContextType>({
+    isRestoring: false,
+    isPWA: false,
+});
+
+export const useRouteRestorer = () => useContext(RouteRestorerContext);
+
 /**
- * RouteRestorer - Persists and restores the last visited route for PWA
+ * RouteRestorerProvider - Provides route restoration state to children
  * 
- * When the PWA is reopened, this component checks if there's a saved route
- * and redirects the user to that route instead of always going to "/".
+ * This allows components (especially the home page) to know if a restoration
+ * is in progress and avoid rendering content that would flash.
  */
-export function RouteRestorer() {
+export function RouteRestorerProvider({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
-    const hasRestoredRef = useRef(false);
-    const isInitialLoadRef = useRef(true);
+    const [isRestoring, setIsRestoring] = useState(true); // Start as restoring
+    const [isPWA, setIsPWA] = useState(false);
+    const hasCheckedRef = useRef(false);
 
-    // Restore saved route on initial load (only once)
     useEffect(() => {
-        if (hasRestoredRef.current) return;
-        hasRestoredRef.current = true;
-
-        // Only restore if we're on the root path (PWA start_url)
-        if (pathname !== "/") {
-            isInitialLoadRef.current = false;
-            return;
-        }
+        if (hasCheckedRef.current) return;
+        hasCheckedRef.current = true;
 
         // Check if running as installed PWA
         const isStandalone =
             window.matchMedia("(display-mode: standalone)").matches ||
             (window.navigator as any).standalone === true;
 
-        if (!isStandalone) {
-            isInitialLoadRef.current = false;
+        setIsPWA(isStandalone);
+
+        // If not PWA or not on root path, no restoration needed
+        if (!isStandalone || pathname !== "/") {
+            setIsRestoring(false);
             return;
         }
 
         try {
             const savedRoute = localStorage.getItem(LAST_ROUTE_KEY);
             if (savedRoute && savedRoute !== "/" && !EXCLUDED_PATHS.some(p => savedRoute.startsWith(p))) {
-                // Restore immediately - router is ready when this component mounts
+                // Restore the route
                 router.replace(savedRoute);
+                // Keep isRestoring true - the redirect will unmount this anyway
+            } else {
+                // No route to restore, allow home page to render
+                setIsRestoring(false);
             }
         } catch (e) {
             console.error("Failed to restore route:", e);
+            setIsRestoring(false);
         }
-
-        isInitialLoadRef.current = false;
     }, [pathname, router]);
 
     // Save current route on navigation changes
     useEffect(() => {
-        // Skip saving on initial load to avoid overwriting before restore
-        if (isInitialLoadRef.current) return;
-
         // Don't save excluded paths
         if (EXCLUDED_PATHS.some(p => pathname.startsWith(p))) return;
 
-        // Don't save the root path if we're restoring
+        // Don't save the root path
         if (pathname === "/") return;
 
         try {
@@ -71,5 +80,9 @@ export function RouteRestorer() {
         }
     }, [pathname]);
 
-    return null;
+    return (
+        <RouteRestorerContext.Provider value={{ isRestoring, isPWA }}>
+            {children}
+        </RouteRestorerContext.Provider>
+    );
 }

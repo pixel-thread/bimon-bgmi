@@ -9,7 +9,7 @@ import { ThemeProvider } from "next-themes";
 import { ClerkProvider, ClerkLoaded, ClerkLoading } from "@clerk/nextjs";
 import { LoadingProvider, LoaderFour } from "../ui/loader";
 import { InstallPrompt } from "../pwa/InstallPrompt";
-import { RouteRestorer } from "../pwa/RouteRestorer";
+import { RouteRestorerProvider } from "../pwa/RouteRestorer";
 
 type Props = {
   children: React.ReactNode;
@@ -42,12 +42,13 @@ export const Wrapper = ({ children }: Props) => {
             >
               <TQueryProvider>
                 <AuthProvider>
-                  <RoleBaseRoute>
-                    <Layout>{children}</Layout>
-                    <InstallPrompt />
-                    <RouteRestorer />
-                    <Toaster richColors position="top-right" />
-                  </RoleBaseRoute>
+                  <RouteRestorerProvider>
+                    <RoleBaseRoute>
+                      <Layout>{children}</Layout>
+                      <InstallPrompt />
+                      <Toaster richColors position="top-right" />
+                    </RoleBaseRoute>
+                  </RouteRestorerProvider>
                 </AuthProvider>
               </TQueryProvider>
             </CookiesProvider>
