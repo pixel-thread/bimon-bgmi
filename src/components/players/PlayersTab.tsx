@@ -75,15 +75,32 @@ export function PlayersTab() {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Player Stats Modal */}
-      <PlayerStatsModal
-        isOpen={!!playerId}
-        onClose={() => {
-          const params = new URLSearchParams(search.toString());
-          params.delete("player");
-          router.push(`?${params.toString()}`, { scroll: false });
-        }}
-        id={playerId}
-      />
+      {(() => {
+        const selectedPlayer = players?.find(p => p.id === playerId);
+        return (
+          <PlayerStatsModal
+            isOpen={!!playerId}
+            onClose={() => {
+              const params = new URLSearchParams(search.toString());
+              params.delete("player");
+              router.push(`?${params.toString()}`, { scroll: false });
+            }}
+            id={playerId}
+            initialData={selectedPlayer ? {
+              id: selectedPlayer.id,
+              isBanned: selectedPlayer.isBanned,
+              userName: selectedPlayer.userName,
+              displayName: selectedPlayer.displayName,
+              category: selectedPlayer.category,
+              matches: selectedPlayer.matches,
+              kd: Number(selectedPlayer.kd),
+              kills: selectedPlayer.kills,
+              imageUrl: selectedPlayer.characterImageUrl || selectedPlayer.imageUrl,
+              balance: selectedPlayer.uc,
+            } : undefined}
+          />
+        );
+      })()}
 
       <div className="space-y-6">
         {/* Balance Stats for Super Admin */}

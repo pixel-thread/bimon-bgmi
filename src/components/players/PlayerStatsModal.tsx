@@ -62,13 +62,27 @@ function ModalSkeleton() {
   );
 }
 
+type InitialPlayerData = {
+  id: string;
+  isBanned: boolean;
+  userName: string;
+  displayName?: string | null;
+  category: string;
+  matches: number;
+  kd: number;
+  kills: number;
+  imageUrl?: string | null;
+  balance?: number;
+};
+
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   id: string;
+  initialData?: InitialPlayerData;
 };
 
-export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
+export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
   const { data: player, isLoading: isPlayerLoading } = usePlayer({ id });
   const { data: stats, isLoading: isStatsLoading } = usePlayerStats({ id });
   const router = useRouter();
@@ -79,6 +93,20 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
   const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
   const isOwnProfile = user?.playerId === id;
+
+  // Use initialData if available for instant display, otherwise wait for fetched data
+  const hasInitialData = !!initialData;
+  const isLoading = !hasInitialData && (isPlayerLoading || isStatsLoading);
+
+  // Derived display values - use initialData for instant display, fetched data when available
+  const displayName = player?.user?.displayName ?? player?.user?.userName ?? initialData?.displayName ?? initialData?.userName ?? "Player";
+  const displayImageUrl = (player as any)?.characterImage?.publicUrl || player?.clerkImageUrl || initialData?.imageUrl;
+  const displayCategory = player?.category ?? initialData?.category ?? "BRONZE";
+  const displayIsBanned = player?.isBanned ?? initialData?.isBanned ?? false;
+  const displayMatches = stats?.deaths ?? initialData?.matches ?? 0;
+  const displayKills = stats?.kills ?? initialData?.kills ?? 0;
+  const displayKd = stats ? (stats.deaths === 0 ? stats.kills : stats.kills / stats.deaths) : (initialData?.kd ?? 0);
+  const displayBalance = player?.uc?.balance ?? initialData?.balance ?? 0;
 
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
@@ -185,8 +213,6 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
     },
   });
 
-  const isLoading = isPlayerLoading || isStatsLoading;
-
   const handleBalanceAdjustment = () => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("uc", id);
@@ -225,7 +251,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     <div className="h-5 w-16 sm:w-20 bg-zinc-100 dark:bg-zinc-800 rounded-full animate-pulse" />
                   </div>
                 </div>
-              ) : !player ? (
+              ) : (!player && !initialData) ? (
                 <span>Player Not Found</span>
               ) : (
                 <div className="flex items-center gap-3">
@@ -235,24 +261,24 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     className="h-12 w-12 sm:h-14 sm:w-14 rounded-full border-2 border-zinc-200 dark:border-zinc-700 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={handleAvatarClick}
                   >
-                    {((player as any).characterImage?.publicUrl || player.clerkImageUrl) ? (
+                    {displayImageUrl ? (
                       <img
-                        src={(player as any).characterImage?.publicUrl || player.clerkImageUrl}
-                        alt={getDisplayName(player.user?.displayName, player.user?.userName) || "Player"}
+                        src={displayImageUrl}
+                        alt={displayName}
                         className="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-lg font-semibold bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                        {getDisplayName(player.user?.displayName, player.user?.userName)?.substring(0, 2).toUpperCase()}
+                        {displayName?.substring(0, 2).toUpperCase()}
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                       <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
-                        {getDisplayName(player.user?.displayName, player.user?.userName)}
+                        {displayName}
                       </span>
-                      {player.isBanned && (
+                      {displayIsBanned && (
                         <Badge
                           variant="destructive"
                           className="bg-red-600 hover:bg-red-700 text-xs"
@@ -261,7 +287,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                           BANNED
                         </Badge>
                       )}
-                      {isSuperAdmin && player.isUCExempt && (
+                      {isSuperAdmin && player?.isUCExempt && (
                         <Badge
                           variant="secondary"
                           className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 text-xs"
@@ -270,7 +296,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                           UC EXEMPT
                         </Badge>
                       )}
-                      {isSuperAdmin && player.isTrusted && (
+                      {isSuperAdmin && player?.isTrusted && (
                         <Badge
                           variant="secondary"
                           className="bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-100 text-xs"
@@ -282,7 +308,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     </div>
                     <div className="flex justify-start mt-1">
                       <CategoryBadge
-                        category={stats ? getKdRank(stats.kills || 0, stats.deaths || 0) : player.category}
+                        category={stats ? getKdRank(stats.kills || 0, stats.deaths || 0) : displayCategory}
                         size="sm"
                       />
                     </div>
@@ -294,7 +320,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
 
           {isLoading ? (
             <ModalSkeleton />
-          ) : !player ? (
+          ) : (!player && !initialData) ? (
             <div className="text-center py-8 text-muted-foreground">
               Player data could not be loaded
             </div>
@@ -303,43 +329,36 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
               <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
                 <div className="text-center p-4 sm:p-5 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
                   <p className="text-2xl sm:text-3xl font-bold text-blue-600">
-                    {stats?.deaths || 0}
+                    {displayMatches}
                   </p>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-1">Matches</p>
                 </div>
                 <div className="text-center p-4 sm:p-5 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-900/30">
                   <p className="text-2xl sm:text-3xl font-bold text-green-600">
-                    {stats?.kills || 0}
+                    {displayKills}
                   </p>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-1">Kills</p>
                 </div>
                 <div className="text-center p-4 sm:p-5 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
                   <p className="text-2xl sm:text-3xl font-bold text-yellow-600">
-                    {(() => {
-                      const kills = stats?.kills || 0;
-                      const deaths = stats?.deaths || 0;
-                      const kd = deaths === 0 ? kills : kills / deaths;
-                      return kd.toFixed(2);
-                    })()}
+                    {displayKd.toFixed(2)}
                   </p>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-1">K/D</p>
                 </div>
                 <div className="text-center p-4 sm:p-5 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-900/30">
                   <p
-                    className={`text-2xl sm:text-3xl font-bold ${Number(player.uc?.balance) >= 0
+                    className={`text-2xl sm:text-3xl font-bold ${Number(displayBalance) >= 0
                       ? "text-green-600"
                       : "text-red-600"
                       }`}
                   >
-                    {typeof player.uc?.balance === "number"
-                      ? Math.floor(player.uc?.balance)
-                      : "0"} UC
+                    {Math.floor(Number(displayBalance))} UC
                   </p>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-1">Balance</p>
                 </div>
               </div>
 
-              {player.isBanned && player.playerBanned && (
+              {player?.isBanned && player?.playerBanned && (
                 <div className="bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 rounded-lg p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-2 sm:mb-3">
                     <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-700 dark:text-red-300" />
@@ -348,23 +367,23 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     </h4>
                   </div>
                   <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
-                    {player.playerBanned.banReason && (
+                    {player?.playerBanned?.banReason && (
                       <div>
                         <span className="font-medium text-red-800 dark:text-red-200">
                           Reason:
                         </span>
                         <span className="ml-1.5 sm:ml-2 text-red-700 dark:text-red-100">
-                          {player.playerBanned.banReason}
+                          {player?.playerBanned?.banReason}
                         </span>
                       </div>
                     )}
-                    {player.playerBanned.bannedAt && (
+                    {player?.playerBanned?.bannedAt && (
                       <div>
                         <span className="font-medium text-red-800 dark:text-red-200">
                           Banned On:
                         </span>
                         <span className="ml-1.5 sm:ml-2 text-red-700 dark:text-red-100">
-                          {new Date(player.playerBanned.bannedAt).toLocaleDateString()}
+                          {new Date(player?.playerBanned?.bannedAt).toLocaleDateString()}
                         </span>
                       </div>
                     )}
@@ -373,8 +392,8 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                         Duration:
                       </span>
                       <span className="ml-1.5 sm:ml-2 text-red-700 dark:text-red-100">
-                        {player.playerBanned.banDuration} tournament
-                        {player.playerBanned.banDuration !== 1 ? "s" : ""}
+                        {player?.playerBanned?.banDuration} tournament
+                        {player?.playerBanned?.banDuration !== 1 ? "s" : ""}
                       </span>
                     </div>
                   </div>
@@ -394,37 +413,37 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                       Adjust UC
                     </Button>
                     <Button
-                      variant={player.isUCExempt ? "outline" : "secondary"}
-                      onClick={() => toggleUCExemption(!player.isUCExempt)}
+                      variant={player?.isUCExempt ? "outline" : "secondary"}
+                      onClick={() => toggleUCExemption(!player?.isUCExempt)}
                       disabled={isExemptionPending}
-                      className={`w-full sm:w-auto text-sm ${player.isUCExempt ? "border-amber-600 text-amber-600 hover:bg-amber-50" : ""}`}
+                      className={`w-full sm:w-auto text-sm ${player?.isUCExempt ? "border-amber-600 text-amber-600 hover:bg-amber-50" : ""}`}
                       size="sm"
                     >
                       <Shield className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
-                      {player.isUCExempt ? "Remove Exempt" : "UC Exempt"}
+                      {player?.isUCExempt ? "Remove Exempt" : "UC Exempt"}
                     </Button>
                     <Button
-                      variant={player.isTrusted ? "outline" : "secondary"}
-                      onClick={() => toggleTrusted(!player.isTrusted)}
+                      variant={player?.isTrusted ? "outline" : "secondary"}
+                      onClick={() => toggleTrusted(!player?.isTrusted)}
                       disabled={isTrustedPending}
-                      className={`w-full sm:w-auto text-sm ${player.isTrusted ? "border-pink-600 text-pink-600 hover:bg-pink-50" : ""}`}
+                      className={`w-full sm:w-auto text-sm ${player?.isTrusted ? "border-pink-600 text-pink-600 hover:bg-pink-50" : ""}`}
                       size="sm"
                     >
                       <Heart className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
-                      {player.isTrusted ? "Remove Trusted" : "Trusted"}
+                      {player?.isTrusted ? "Remove Trusted" : "Trusted"}
                     </Button>
                   </>
                 )}
 
                 {isAdmin && (
                   <Button
-                    variant={player.isBanned ? "outline" : "destructive"}
+                    variant={displayIsBanned ? "outline" : "destructive"}
                     onClick={() => toggleBan()}
                     disabled={isBanPending}
-                    className={`w-full sm:w-auto text-sm ${player.isBanned ? "border-green-600 text-green-600 hover:bg-green-50" : ""}`}
+                    className={`w-full sm:w-auto text-sm ${displayIsBanned ? "border-green-600 text-green-600 hover:bg-green-50" : ""}`}
                     size="sm"
                   >
-                    {player.isBanned ? (
+                    {displayIsBanned ? (
                       <>
                         <CheckCircle className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
                         Unban
@@ -476,7 +495,7 @@ export function PlayerStatsModal({ isOpen, onClose, id }: Props) {
                     size="sm"
                   >
                     <User className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
-                    My Profile 
+                    My Profile
                   </Button>
                 )}
               </div>

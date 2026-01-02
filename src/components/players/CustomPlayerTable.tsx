@@ -114,7 +114,7 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
     const handleRowClick = (playerId: string) => {
         const params = new URLSearchParams(search.toString());
         params.set("player", playerId);
-        router.push(`?${params.toString()}`);
+        router.push(`?${params.toString()}`, { scroll: false });
     };
 
     const getRankStyle = (rank: number) => {

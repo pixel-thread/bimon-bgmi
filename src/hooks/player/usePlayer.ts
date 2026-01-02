@@ -19,5 +19,7 @@ export function usePlayer({ id }: UsePlayerT) {
     queryKey: ["player", id],
     select: (data) => data.data,
     enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh, no refetch
+    gcTime: 10 * 60 * 1000,   // 10 minutes - keep in cache longer
   });
 }

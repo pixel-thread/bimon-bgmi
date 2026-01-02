@@ -17,8 +17,10 @@ export function usePlayerStats({ id }: UsePlayerT) {
 
   return useQuery({
     queryFn: () => http.get<PlayerStatsT>(url),
-    queryKey: ["player stats", id],
+    queryKey: ["player stats", id, seasonId],
     select: (data) => data.data,
     enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh, no refetch
+    gcTime: 10 * 60 * 1000,   // 10 minutes - keep in cache longer
   });
 }

@@ -17,7 +17,10 @@ type PlayerT = {
   category: string;
   matches: number;
   kd: number;
+  kills: number;
+  uc: number;
   imageUrl?: string | null;
+  characterImageUrl?: string | null;
 };
 
 export function usePlayers({
