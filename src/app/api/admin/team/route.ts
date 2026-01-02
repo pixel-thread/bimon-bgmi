@@ -6,7 +6,7 @@ import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { createTeamSchema } from "@/src/utils/validation/team/create-team-schema";
 import { NextRequest } from "next/server";
-import { checkAndApplyAutoBan } from "@/src/services/player/autoBan";
+import { clearPlayerStatusOnBalanceRecovery } from "@/src/services/player/balanceRecovery";
 
 export async function POST(req: NextRequest) {
   try {
@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
             update: { balance: newBalance },
           });
 
-          await checkAndApplyAutoBan(playerId, newBalance, tx);
+          await clearPlayerStatusOnBalanceRecovery(playerId, newBalance, tx);
         }
       });
     }

@@ -8,7 +8,7 @@ import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { addPlayerSchema } from "@/src/utils/validation/team/add-player";
 import { prisma } from "@/src/lib/db/prisma";
-import { checkAndApplyAutoBan } from "@/src/services/player/autoBan";
+import { clearPlayerStatusOnBalanceRecovery } from "@/src/services/player/balanceRecovery";
 
 export async function POST(
   req: Request,
@@ -122,8 +122,8 @@ export async function POST(
             update: { balance: newBalance },
           });
 
-          // Check for auto-ban
-          await checkAndApplyAutoBan(body.playerId, newBalance, tx);
+          // Clear trusted status if balance recovered
+          await clearPlayerStatusOnBalanceRecovery(body.playerId, newBalance, tx);
         });
 
         message += `. ${entryFee} UC debited`;

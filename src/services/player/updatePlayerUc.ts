@@ -1,6 +1,6 @@
 import { prisma } from "@/src/lib/db/prisma";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
-import { checkAndApplyAutoBan } from "./autoBan";
+import { clearPlayerStatusOnBalanceRecovery } from "./balanceRecovery";
 
 type Props = {
   where: Prisma.UCWhereUniqueInput;
@@ -61,7 +61,7 @@ export async function updatePlayerUc({
     });
 
     if (where.playerId) {
-      await checkAndApplyAutoBan(where.playerId, updatedUc.balance, tx);
+      await clearPlayerStatusOnBalanceRecovery(where.playerId, updatedUc.balance, tx);
     }
 
     return updatedUc;

@@ -3,7 +3,7 @@ import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
-import { checkAndApplyAutoBan } from "@/src/services/player/autoBan";
+import { clearPlayerStatusOnBalanceRecovery } from "@/src/services/player/balanceRecovery";
 
 // PATCH - Approve a UC transfer request
 export async function PATCH(
@@ -105,21 +105,18 @@ export async function PATCH(
                 },
             });
 
-            // Check for auto-ban for both players
-            // Sender (requester) received UC, so check if they can be unbanned (or banned if somehow balance is low, though unlikely on receive)
-            // Receiver (approver) sent UC, so check if they need to be banned
+            // Clear trusted status if balance recovered for both players
+            // (bans are admin-controlled only, not affected by balance)
 
-            // We need current balances. 
-            // We can fetch them or calculate. 
-            // Let's fetch to be safe and simple inside tx.
+            // Fetch current balances
             const senderUc = await tx.uC.findUnique({ where: { playerId: transfer.fromPlayerId } });
             const receiverUc = await tx.uC.findUnique({ where: { playerId: transfer.toPlayerId } });
 
             if (senderUc) {
-                await checkAndApplyAutoBan(transfer.fromPlayerId, senderUc.balance, tx);
+                await clearPlayerStatusOnBalanceRecovery(transfer.fromPlayerId, senderUc.balance, tx);
             }
             if (receiverUc) {
-                await checkAndApplyAutoBan(transfer.toPlayerId, receiverUc.balance, tx);
+                await clearPlayerStatusOnBalanceRecovery(transfer.toPlayerId, receiverUc.balance, tx);
             }
 
             return updated;
