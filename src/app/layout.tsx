@@ -122,11 +122,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="PUBGMI" />
         <meta name="google-adsense-account" content="ca-pub-2651043074081875" />
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2651043074081875"
-          crossOrigin="anonymous"
-        />
+        {/* AdSense script loaded conditionally via AdSenseScript component */}
         {/* Service Worker Registration */}
         <script
           dangerouslySetInnerHTML={{

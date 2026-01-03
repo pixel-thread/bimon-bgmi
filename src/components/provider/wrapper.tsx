@@ -10,6 +10,7 @@ import { ClerkProvider, ClerkLoaded, ClerkLoading } from "@clerk/nextjs";
 import { LoadingProvider, LoaderFour } from "../ui/loader";
 import { InstallPrompt } from "../pwa/InstallPrompt";
 import { RouteRestorerProvider } from "../pwa/RouteRestorer";
+import { AdSenseScript } from "../common/AdSenseScript";
 
 type Props = {
   children: React.ReactNode;
@@ -46,6 +47,7 @@ export const Wrapper = ({ children }: Props) => {
                     <RoleBaseRoute>
                       <Layout>{children}</Layout>
                       <InstallPrompt />
+                      <AdSenseScript />
                       <Toaster richColors position="top-right" />
                     </RoleBaseRoute>
                   </RouteRestorerProvider>

@@ -1,6 +1,6 @@
 // Service Worker for Bimon BGMI PWA
 // Cache version is based on deploy time - change triggers SW update
-const CACHE_VERSION = '1767447267316'; // Updated automatically or manually on deploy
+const CACHE_VERSION = '1767448019767'; // Updated automatically or manually on deploy
 const CACHE_NAME = `bimon-bgmi-${CACHE_VERSION}`;
 
 // Assets to cache on install (shell files)
