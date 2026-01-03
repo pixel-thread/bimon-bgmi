@@ -1,6 +1,7 @@
 "use client";
 
 import { AdminUserPage } from "@/src/components/admin/users";
+import { CleanupUsersCard } from "@/src/components/admin/users/CleanupUsersCard";
 import { FiUserCheck } from "react-icons/fi";
 // import AdminManagement from "@/src/components/AdminManagement";
 
@@ -21,6 +22,7 @@ const AdminManagementPage = () => {
         </header>
 
         <div className="space-y-6">
+          <CleanupUsersCard />
           <AdminUserPage />
         </div>
       </div>
@@ -29,3 +31,4 @@ const AdminManagementPage = () => {
 };
 
 export default AdminManagementPage;
+
