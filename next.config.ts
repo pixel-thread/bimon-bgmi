@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  generateBuildId: async () => {
+    // Use timestamp for unique build ID on each deploy
+    return `build-${Date.now()}`;
+  },
   // eslint: { ignoreDuringBuilds: true },
   reactStrictMode: true,
   images: {
