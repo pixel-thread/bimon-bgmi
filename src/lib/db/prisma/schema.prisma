@@ -611,3 +611,48 @@ model PushSubscription {
   @@index([playerId])
 }
 
+model DailyMetrics {
+  id                   String   @id @default(uuid())
+  date                 DateTime @unique // One entry per day
+  
+  // User metrics
+  totalUsers           Int      @default(0)
+  totalOnboardedUsers  Int      @default(0)
+  newUsersToday        Int      @default(0)
+  
+  // Player metrics
+  totalPlayers         Int      @default(0)
+  activePlayers        Int      @default(0) // Not banned
+  bannedPlayers        Int      @default(0)
+  
+  // Category breakdown
+  botPlayers           Int      @default(0)
+  ultraNoobPlayers     Int      @default(0)
+  noobPlayers          Int      @default(0)
+  proPlayers           Int      @default(0)
+  ultraProPlayers      Int      @default(0)
+  legendPlayers        Int      @default(0)
+  
+  // Tournament/Match metrics
+  totalTournaments     Int      @default(0)
+  activeTournaments    Int      @default(0)
+  totalMatches         Int      @default(0)
+  totalTeams           Int      @default(0)
+  
+  // UC Economy
+  totalUCInCirculation Int      @default(0)
+  totalTransactions    Int      @default(0)
+  pendingUCTransfers   Int      @default(0)
+  
+  // Engagement
+  pushSubscribers      Int      @default(0)
+  totalNotifications   Int      @default(0)
+  
+  // Income (super admin)
+  totalIncome          Float    @default(0)
+  totalPrizePool       Int      @default(0) // Total prize money distributed
+  
+  createdAt            DateTime @default(now())
+
+  @@index([date])
+}

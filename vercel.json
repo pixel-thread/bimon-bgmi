@@ -3,6 +3,10 @@
         {
             "path": "/api/cron/cleanup-incomplete-users",
             "schedule": "0 3 * * *"
+        },
+        {
+            "path": "/api/cron/record-daily-metrics",
+            "schedule": "30 18 * * *"
         }
     ]
 }

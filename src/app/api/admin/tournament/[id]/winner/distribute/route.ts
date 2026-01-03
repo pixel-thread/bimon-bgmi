@@ -1,4 +1,5 @@
 import { distributeWinnerUC } from "@/src/services/winner/distributeWinnerUC";
+import { prisma } from "@/src/lib/db/prisma";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
@@ -26,8 +27,14 @@ export async function POST(
             playerAmounts,
         });
 
+        // Auto-set tournament to INACTIVE after UC distribution
+        await prisma.tournament.update({
+            where: { id: tournamentId },
+            data: { status: "INACTIVE" },
+        });
+
         return SuccessResponse({
-            message: "UC distributed successfully",
+            message: "UC distributed successfully. Tournament marked as complete.",
             data: result,
         });
     } catch (error) {

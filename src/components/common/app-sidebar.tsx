@@ -15,6 +15,7 @@ import {
   LogOut,
   ImageIcon,
   Bell,
+  BarChart3,
 } from "lucide-react";
 
 import { NavMain } from "@/src/components/nav-main";
@@ -66,6 +67,12 @@ const navItems: NavItem[] = [
     title: "Income",
     url: "/admin/income",
     icon: DollarSign,
+    superAdminOnly: true,
+  },
+  {
+    title: "Analytics",
+    url: "/admin/analytics",
+    icon: BarChart3,
     superAdminOnly: true,
   },
   {
