@@ -47,6 +47,8 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
     const [editableStats, setEditableStats] = useState<EditableTeamStats[]>([]);
     // Track manually toggled player IDs (playerId -> current isAbsent status)
     const [manualToggles, setManualToggles] = useState<Map<string, boolean>>(new Map());
+    // Track unknown players found in scoreboard but not in our list
+    const [unknownPlayers, setUnknownPlayers] = useState<Array<{ name: string; kills: number; position?: number }>>([]);
     const queryClient = useQueryClient();
 
     // Validate positions and return warning messages
@@ -108,8 +110,9 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                 };
             });
             setEditableStats(stats);
-            // Clear manual toggles when data is reset
+            // Clear manual toggles and unknown players when data is reset
             setManualToggles(new Map());
+            setUnknownPlayers([]);
         }
     }, [teams]);
 
@@ -180,11 +183,37 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
 
         try {
             // Parse the JSON input - kills can be number or null (null = absent)
-            const data = JSON.parse(text) as Array<{ name: string; kills: number | null; position?: number | null }>;
+            // isUnknown flag marks players not in our registered list
+            const data = JSON.parse(text) as Array<{ name: string; kills: number | null; position?: number | null; isUnknown?: boolean }>;
 
             if (!Array.isArray(data) || data.length === 0) {
                 throw new Error("Invalid JSON. Expected array like: [{name, kills, position}]");
             }
+
+            // Build a set of all registered player names for matching
+            const registeredNames = new Set<string>();
+            teams.forEach((team: TeamT) => {
+                team.players.forEach((player) => {
+                    registeredNames.add(player.name.toLowerCase());
+                    if (player.displayName) {
+                        registeredNames.add(player.displayName.toLowerCase());
+                    }
+                });
+            });
+
+            // Find unknown players from JSON
+            const newUnknownPlayers: Array<{ name: string; kills: number; position?: number }> = [];
+            data.forEach((d) => {
+                if (d.isUnknown || !registeredNames.has(d.name.toLowerCase())) {
+                    if (d.kills !== null) {
+                        newUnknownPlayers.push({
+                            name: d.name,
+                            kills: d.kills,
+                            position: d.position ?? undefined,
+                        });
+                    }
+                }
+            });
 
             // Map to track team positions from JSON
             const teamPositions: Map<string, number> = new Map();
@@ -238,7 +267,11 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
             });
 
             setEditableStats(newStats);
-            toast.success(`Applied! ${presentCount} present, ${absentCount} absent`);
+            setUnknownPlayers(newUnknownPlayers);
+            setManualToggles(new Map()); // Clear manual toggles on new paste
+
+            const unknownMsg = newUnknownPlayers.length > 0 ? `, ${newUnknownPlayers.length} unknown` : "";
+            toast.success(`Applied! ${presentCount} present, ${absentCount} absent${unknownMsg}`);
         } catch (error: unknown) {
             const err = error as Error;
             toast.error(err.message || "Failed to parse JSON");
@@ -289,17 +322,20 @@ IMPORTANT:
 - Players in the same row belong to the same team
 - If uploading multiple images, combine ALL results into ONE JSON array
 - Flag any player with 10+ kills (unusual, double-check)
+- UNKNOWN PLAYERS: If you find players in the scoreboard who are NOT in my list, add them with "isUnknown": true
 
-Return format (MUST include all ${totalPlayers} players):
+Return format (MUST include all ${totalPlayers} players + any unknown):
 [
   {"name": "present_player", "kills": 5, "position": 1},
   {"name": "absent_player", "kills": null, "position": null},
+  {"name": "unknown_scoreboard_name", "kills": 3, "position": 2, "isUnknown": true},
   ...
 ]
 
 After the JSON (ONLY show sections that have items):
 Players found: X/${totalPlayers}
 Players absent: X (list names)
+🆕 Unknown players: X (list names - players in scoreboard but not in my list)
 ⚠️ High kills (10+): player_name (X kills)
 ⚠️ Uncertain matches: scoreboard_name → matched_name`;
 
@@ -517,16 +553,31 @@ Players absent: X (list names)
                                 );
                             })}
 
-                            {/* Manual Changes Note */}
-                            {manuallyToggledPlayers.length > 0 && (
-                                <div className="mt-4 p-4 rounded-md bg-blue-500/10 border border-blue-500/30 shadow-sm">
-                                    <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-2">
-                                        ✏️ Manual Changes ({manuallyToggledPlayers.length})
-                                    </p>
-                                    <p className="text-sm text-blue-600/90 dark:text-blue-400">
-                                        {manuallyToggledPlayers.slice(0, 10).join(", ")}
-                                        {manuallyToggledPlayers.length > 10 && ` +${manuallyToggledPlayers.length - 10} more`}
-                                    </p>
+                            {/* Notes Section - Manual Changes & Unknown Players */}
+                            {(manuallyToggledPlayers.length > 0 || unknownPlayers.length > 0) && (
+                                <div className="mt-4 p-4 rounded-md bg-blue-500/10 border border-blue-500/30 shadow-sm space-y-2">
+                                    {manuallyToggledPlayers.length > 0 && (
+                                        <div>
+                                            <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                                                ✏️ Manual Changes ({manuallyToggledPlayers.length})
+                                            </p>
+                                            <p className="text-sm text-blue-600/90 dark:text-blue-400">
+                                                {manuallyToggledPlayers.slice(0, 10).join(", ")}
+                                                {manuallyToggledPlayers.length > 10 && ` +${manuallyToggledPlayers.length - 10} more`}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {unknownPlayers.length > 0 && (
+                                        <div>
+                                            <p className="text-sm font-semibold text-orange-600 dark:text-orange-400 flex items-center gap-2">
+                                                🆕 Unknown Players ({unknownPlayers.length})
+                                            </p>
+                                            <p className="text-sm text-orange-600/90 dark:text-orange-400">
+                                                {unknownPlayers.slice(0, 10).map(p => `${p.name} (${p.kills} kills)`).join(", ")}
+                                                {unknownPlayers.length > 10 && ` +${unknownPlayers.length - 10} more`}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

@@ -23,8 +23,6 @@ import {
     FiFileText,
     FiDollarSign,
     FiBarChart2,
-    FiStar,
-    FiChevronRight,
     FiLoader,
 } from "react-icons/fi";
 import { UserButton, useClerk, useUser } from "@clerk/nextjs";
@@ -89,23 +87,6 @@ export default function Navigation() {
             setNavigatingTo(null);
         }
     }, [pathname, navigatingTo, isPending]);
-
-    // Display name guide state - show for old users without displayName
-    const [showDisplayNameGuide, setShowDisplayNameGuide] = useState(false);
-
-    useEffect(() => {
-        if (playerUser && !playerUser.displayName && isAuthorized) {
-            const dismissed = localStorage.getItem('displayNameGuideDismissed');
-            if (!dismissed) {
-                setShowDisplayNameGuide(true);
-            }
-        }
-    }, [playerUser, isAuthorized]);
-
-    const dismissDisplayNameGuide = () => {
-        localStorage.setItem('displayNameGuideDismissed', 'true');
-        setShowDisplayNameGuide(false);
-    };
 
     const onToggleTheme = () => {
         setTheme(theme === "light" ? "dark" : "light");
@@ -190,9 +171,6 @@ export default function Navigation() {
                                 {item.showNotification && hasPendingRequests && (
                                     <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse border-2 border-white dark:border-zinc-900"></span>
                                 )}
-                                {item.showNotification && showDisplayNameGuide && !hasPendingRequests && (
-                                    <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-blue-500 rounded-full animate-pulse border-2 border-white dark:border-zinc-900"></span>
-                                )}
                             </Link>
                         ))}
                 </nav>
@@ -260,9 +238,6 @@ export default function Navigation() {
                 </motion.div>
                 {hasPendingRequests && !isOpen && (
                     <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-                )}
-                {showDisplayNameGuide && !hasPendingRequests && !isOpen && (
-                    <span className="absolute top-1 right-1 h-2 w-2 bg-blue-500 rounded-full"></span>
                 )}
             </motion.button>
 
@@ -407,9 +382,6 @@ export default function Navigation() {
                                                             {!isNavigatingToProfile && hasPendingRequests && (
                                                                 <span className="h-2 w-2 bg-red-500 rounded-full animate-pulse"></span>
                                                             )}
-                                                            {!isNavigatingToProfile && showDisplayNameGuide && !hasPendingRequests && (
-                                                                <span className="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></span>
-                                                            )}
                                                         </motion.button>
                                                     );
                                                 })()}
@@ -470,48 +442,6 @@ export default function Navigation() {
                         </>
                     )}
                 </AnimatePresence>,
-                document.body
-            )}
-
-            {/* Display Name Setup Guide - Floating Banner */}
-            {mounted && showDisplayNameGuide && createPortal(
-                <motion.div
-                    initial={{ y: 100, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: 100, opacity: 0 }}
-                    className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-md z-50"
-                >
-                    <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl p-4 shadow-2xl">
-                        <button
-                            onClick={dismissDisplayNameGuide}
-                            className="absolute top-2 right-2 p-1 rounded-full hover:bg-white/20 transition-colors"
-                            aria-label="Dismiss"
-                        >
-                            <FiX className="w-4 h-4" />
-                        </button>
-                        <div className="flex items-start gap-3 pr-6">
-                            <div className="p-2 rounded-full bg-white/20 shrink-0">
-                                <FiStar className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold text-sm mb-1">Set Your BGMI Display Name!</h3>
-                                <p className="text-xs text-white/80 mb-2">
-                                    Customize how your name appears with special characters. Go to Profile → Account Settings.
-                                </p>
-                                <button
-                                    onClick={() => {
-                                        dismissDisplayNameGuide();
-                                        router.push('/profile');
-                                    }}
-                                    className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
-                                >
-                                    Go to Profile
-                                    <FiChevronRight className="w-3 h-3" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>,
                 document.body
             )}
         </>
