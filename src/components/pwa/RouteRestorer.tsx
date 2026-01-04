@@ -28,7 +28,7 @@ export const useRouteRestorer = () => useContext(RouteRestorerContext);
 export function RouteRestorerProvider({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
-    const [isRestoring, setIsRestoring] = useState(true); // Start as restoring
+    const [isRestoring, setIsRestoring] = useState(false);
     const [isPWA, setIsPWA] = useState(false);
     const hasCheckedRef = useRef(false);
 
@@ -45,20 +45,23 @@ export function RouteRestorerProvider({ children }: { children: React.ReactNode 
 
         // If not PWA or not on root path, no restoration needed
         if (!isStandalone || pathname !== "/") {
-            setIsRestoring(false);
             return;
         }
 
         try {
             const savedRoute = localStorage.getItem(LAST_ROUTE_KEY);
             if (savedRoute && savedRoute !== "/" && !EXCLUDED_PATHS.some(p => savedRoute.startsWith(p))) {
-                // Restore the route
+                // Set restoring state and navigate
+                setIsRestoring(true);
                 router.replace(savedRoute);
-                // Keep isRestoring true - the redirect will unmount this anyway
-            } else {
-                // No route to restore, allow home page to render
-                setIsRestoring(false);
+
+                // Safety timeout - if navigation takes too long (e.g., offline), 
+                // allow the page to render after 2 seconds
+                setTimeout(() => {
+                    setIsRestoring(false);
+                }, 2000);
             }
+            // If no saved route, isRestoring stays false
         } catch (e) {
             console.error("Failed to restore route:", e);
             setIsRestoring(false);
