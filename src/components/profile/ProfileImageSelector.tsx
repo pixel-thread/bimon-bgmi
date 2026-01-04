@@ -178,7 +178,7 @@ export function ProfileImageSelector() {
                                     Change
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-lg">
+                            <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
                                 <DialogHeader>
                                     <DialogTitle>Choose Profile Image</DialogTitle>
                                     <DialogDescription>
@@ -186,7 +186,7 @@ export function ProfileImageSelector() {
                                     </DialogDescription>
                                 </DialogHeader>
 
-                                <div className="space-y-6 py-4">
+                                <div className="space-y-6 py-4 overflow-y-auto flex-1">
                                     <RadioGroup
                                         value={selectedType}
                                         onValueChange={(v) => setSelectedType(v as typeof selectedType)}
@@ -246,46 +246,48 @@ export function ProfileImageSelector() {
                                                 </Label>
                                             </div>
 
-                                            {selectedType === "custom" && (
-                                                <div className="mt-4 pt-4 border-t">
-                                                    {imagesLoading ? (
-                                                        <div className="grid grid-cols-4 gap-2">
-                                                            {[...Array(4)].map((_, i) => (
-                                                                <Skeleton key={i} className="aspect-square rounded-lg" />
-                                                            ))}
-                                                        </div>
-                                                    ) : availableImages.length === 0 ? (
-                                                        <p className="text-sm text-muted-foreground text-center py-4">
-                                                            No custom images available yet
-                                                        </p>
-                                                    ) : (
-                                                        <div className="grid grid-cols-4 gap-2">
-                                                            {availableImages.map((img) => (
-                                                                <button
-                                                                    key={img.id}
-                                                                    onClick={() => setSelectedImageId(img.id)}
-                                                                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${selectedImageId === img.id
-                                                                        ? "border-primary ring-2 ring-primary/20"
-                                                                        : "border-transparent hover:border-muted-foreground/25"
-                                                                        }`}
-                                                                >
-                                                                    <Image
-                                                                        src={img.publicUrl}
-                                                                        alt={img.name}
-                                                                        fill
-                                                                        className="object-cover"
-                                                                    />
-                                                                    {selectedImageId === img.id && (
-                                                                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                                                            <Check className="h-6 w-6 text-primary" />
-                                                                        </div>
-                                                                    )}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
+                                            {/* Always show images - clicking one auto-selects custom */}
+                                            <div className="mt-4 pt-4 border-t">
+                                                {imagesLoading ? (
+                                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                                        {[...Array(4)].map((_, i) => (
+                                                            <Skeleton key={i} className="aspect-square rounded-lg" />
+                                                        ))}
+                                                    </div>
+                                                ) : availableImages.length === 0 ? (
+                                                    <p className="text-sm text-muted-foreground text-center py-4">
+                                                        No custom images available yet
+                                                    </p>
+                                                ) : (
+                                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                                        {availableImages.map((img) => (
+                                                            <button
+                                                                key={img.id}
+                                                                onClick={() => {
+                                                                    setSelectedImageId(img.id);
+                                                                    setSelectedType("custom"); // Auto-select custom when clicking an image
+                                                                }}
+                                                                className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${selectedImageId === img.id && selectedType === "custom"
+                                                                    ? "border-primary ring-2 ring-primary/20"
+                                                                    : "border-transparent hover:border-muted-foreground/25"
+                                                                    }`}
+                                                            >
+                                                                <Image
+                                                                    src={img.publicUrl}
+                                                                    alt={img.name}
+                                                                    fill
+                                                                    className="object-cover"
+                                                                />
+                                                                {selectedImageId === img.id && selectedType === "custom" && (
+                                                                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                                                        <Check className="h-6 w-6 text-primary" />
+                                                                    </div>
+                                                                )}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </RadioGroup>
 
@@ -297,7 +299,14 @@ export function ProfileImageSelector() {
                                         >
                                             Cancel
                                         </Button>
-                                        <Button onClick={handleSave} disabled={isPending}>
+                                        <Button
+                                            onClick={handleSave}
+                                            disabled={
+                                                isPending ||
+                                                (selectedType === settings?.imageType &&
+                                                    (selectedType !== "custom" || selectedImageId === settings?.customImageId))
+                                            }
+                                        >
                                             {isPending ? (
                                                 <>
                                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

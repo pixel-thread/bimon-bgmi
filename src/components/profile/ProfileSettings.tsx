@@ -36,6 +36,7 @@ export function ProfileSettings() {
 
     // Username editing state
     const [isEditingUsername, setIsEditingUsername] = useState(false);
+    const [isUsernameExpanded, setIsUsernameExpanded] = useState(false);
     const [userName, setUserName] = useState("");
     const [userNameError, setUserNameError] = useState("");
 
@@ -461,12 +462,12 @@ export function ProfileSettings() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        {/* Display Name (BGMI IGN) Section */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
+                        {/* Display Name (Game Name) Section */}
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2">
                                 <Label htmlFor="displayName" className="text-base font-medium flex items-center gap-2">
                                     <Gamepad2 className="w-4 h-4" />
-                                    BGMI IGN (Display Name)
+                                    Game Name
                                     <motion.button
                                         ref={helpButtonRef}
                                         type="button"
@@ -493,167 +494,71 @@ export function ProfileSettings() {
                                         <HelpCircle className="w-3 h-3" />
                                     </motion.button>
                                 </Label>
-                                {!isEditingDisplayName && (
+                            </div>
+
+                            <Input
+                                id="displayName"
+                                value={displayName}
+                                onChange={(e) => {
+                                    setDisplayName(e.target.value);
+                                    setDisplayNameError("");
+                                }}
+                                onPaste={(e) => {
+                                    e.preventDefault();
+                                    const pastedText = e.clipboardData.getData("text");
+                                    // Replace BGMI invisible characters (macron vowels) with spaces
+                                    const sanitized = pastedText
+                                        .replace(/[ĀāĒēĪīŌōŪū]/g, " ")
+                                        .replace(/\s+/g, " ");
+                                    setDisplayName(sanitized);
+                                    setDisplayNameError("");
+                                }}
+                                placeholder="e.g. KŠツMeban"
+                                className={displayNameError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                disabled={isUpdatingDisplayName}
+                            />
+
+                            {displayNameError && (
+                                <div className="flex items-center gap-2 text-sm text-red-600">
+                                    <AlertCircle className="w-4 h-4" />
+                                    {displayNameError}
+                                </div>
+                            )}
+
+                            <p className="text-xs text-muted-foreground">
+                                This is shown everywhere in the app. Special characters allowed (2-50 characters)
+                            </p>
+
+                            {/* Show Cancel/Save buttons only when there are changes */}
+                            {displayName !== (user?.displayName || "") && displayName.trim() && (
+                                <div className="flex gap-2">
                                     <Button
-                                        variant="ghost"
+                                        variant="outline"
+                                        onClick={() => setDisplayName(user?.displayName || "")}
+                                        disabled={isUpdatingDisplayName}
                                         size="sm"
-                                        onClick={() => setIsEditingDisplayName(true)}
-                                        className="relative text-primary hover:text-primary/80"
                                     >
-                                        <Edit2 className="w-4 h-4 mr-1" />
-                                        Edit
-                                        {!user?.displayName && (
-                                            <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-blue-500 rounded-full animate-pulse border-2 border-white dark:border-zinc-900"></span>
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handleSaveDisplayName}
+                                        disabled={isUpdatingDisplayName}
+                                        size="sm"
+                                    >
+                                        {isUpdatingDisplayName ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            "Save"
                                         )}
                                     </Button>
-                                )}
-                            </div>
-
-                            {isEditingDisplayName ? (
-                                <div className="space-y-3">
-                                    <Input
-                                        id="displayName"
-                                        value={displayName}
-                                        onChange={(e) => {
-                                            setDisplayName(e.target.value);
-                                            setDisplayNameError("");
-                                        }}
-                                        onPaste={(e) => {
-                                            e.preventDefault();
-                                            const pastedText = e.clipboardData.getData("text");
-                                            // Replace BGMI invisible characters (macron vowels) with spaces
-                                            // These characters are invisible in BGMI: Ā, ā, Ē, ē, Ī, ī, Ō, ō, Ū, ū
-                                            const sanitized = pastedText
-                                                .replace(/[ĀāĒēĪīŌōŪū]/g, " ")
-                                                .replace(/\s+/g, " "); // Collapse multiple spaces
-                                            setDisplayName(sanitized);
-                                            setDisplayNameError("");
-                                        }}
-                                        placeholder="e.g. KŠツMeban"
-                                        className={displayNameError ? "border-red-500 focus-visible:ring-red-500" : ""}
-                                        disabled={isUpdatingDisplayName}
-                                    />
-                                    {displayNameError && (
-                                        <div className="flex items-center gap-2 text-sm text-red-600">
-                                            <AlertCircle className="w-4 h-4" />
-                                            {displayNameError}
-                                        </div>
-                                    )}
-                                    <p className="text-xs text-muted-foreground">
-                                        This is shown everywhere in the app. Special characters allowed (2-50 characters)
-                                    </p>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            onClick={handleSaveDisplayName}
-                                            disabled={isUpdatingDisplayName || !displayName.trim()}
-                                            size="sm"
-                                        >
-                                            {isUpdatingDisplayName ? (
-                                                <>
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                    Saving...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <CheckCircle className="w-4 h-4 mr-2" />
-                                                    Save
-                                                </>
-                                            )}
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            onClick={handleCancelDisplayName}
-                                            disabled={isUpdatingDisplayName}
-                                            size="sm"
-                                        >
-                                            Cancel
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                                    <span className="font-medium">{user?.displayName || <span className="italic text-muted-foreground">Not set</span>}</span>
                                 </div>
                             )}
                         </div>
 
-                        <Separator />
 
-                        {/* Simple Username Section */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="username" className="text-base font-medium">
-                                    System Username
-                                </Label>
-                                {!isEditingUsername && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setIsEditingUsername(true)}
-                                        className="text-primary hover:text-primary/80"
-                                    >
-                                        <Edit2 className="w-4 h-4 mr-1" />
-                                        Edit
-                                    </Button>
-                                )}
-                            </div>
-
-                            {isEditingUsername ? (
-                                <div className="space-y-3">
-                                    <Input
-                                        id="username"
-                                        value={userName}
-                                        onChange={(e) => {
-                                            setUserName(e.target.value);
-                                            setUserNameError("");
-                                        }}
-                                        placeholder="Enter new username"
-                                        className={userNameError ? "border-red-500 focus-visible:ring-red-500" : ""}
-                                        disabled={isUpdatingUsername}
-                                    />
-                                    {userNameError && (
-                                        <div className="flex items-center gap-2 text-sm text-red-600">
-                                            <AlertCircle className="w-4 h-4" />
-                                            {userNameError}
-                                        </div>
-                                    )}
-                                    <p className="text-xs text-muted-foreground">
-                                        Letters, numbers, and underscores only (3-30 characters)
-                                    </p>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            onClick={handleSaveUsername}
-                                            disabled={isUpdatingUsername || !userName.trim()}
-                                            size="sm"
-                                        >
-                                            {isUpdatingUsername ? (
-                                                <>
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                    Saving...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <CheckCircle className="w-4 h-4 mr-2" />
-                                                    Save
-                                                </>
-                                            )}
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            onClick={handleCancelUsername}
-                                            disabled={isUpdatingUsername}
-                                            size="sm"
-                                        >
-                                            Cancel
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                                    <span className="font-medium">{user?.userName}</span>
-                                </div>
-                            )}
-                        </div>
 
                         <Separator />
 
@@ -789,6 +694,107 @@ export function ProfileSettings() {
                                 </Badge>
                             </div>
                         </div>
+
+                        <Separator />
+
+                        {/* Name (System Username) Section - De-emphasized */}
+                        <div className="space-y-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsUsernameExpanded(!isUsernameExpanded)}
+                                className="flex items-center justify-between w-full text-left group"
+                            >
+                                <Label htmlFor="username" className="text-sm text-muted-foreground font-normal cursor-pointer group-hover:text-foreground transition-colors">
+                                    Name
+                                    <span className="text-xs ml-2 opacity-60">(for system use)</span>
+                                </Label>
+                                <motion.div
+                                    animate={{ rotate: isUsernameExpanded ? 180 : 0 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <ChevronRight className="w-4 h-4 text-muted-foreground rotate-90" />
+                                </motion.div>
+                            </button>
+
+                            <AnimatePresence>
+                                {isUsernameExpanded && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="overflow-hidden"
+                                    >
+                                        <div className="pt-2">
+                                            {isEditingUsername ? (
+                                                <div className="space-y-3">
+                                                    <Input
+                                                        id="username"
+                                                        value={userName}
+                                                        onChange={(e) => {
+                                                            setUserName(e.target.value);
+                                                            setUserNameError("");
+                                                        }}
+                                                        placeholder="Enter new username"
+                                                        className={userNameError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                                        disabled={isUpdatingUsername}
+                                                    />
+                                                    {userNameError && (
+                                                        <div className="flex items-center gap-2 text-sm text-red-600">
+                                                            <AlertCircle className="w-4 h-4" />
+                                                            {userNameError}
+                                                        </div>
+                                                    )}
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Letters, numbers, and underscores only (3-30 characters)
+                                                    </p>
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            onClick={handleSaveUsername}
+                                                            disabled={isUpdatingUsername || !userName.trim()}
+                                                            size="sm"
+                                                        >
+                                                            {isUpdatingUsername ? (
+                                                                <>
+                                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                                    Saving...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                                                    Save
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            onClick={handleCancelUsername}
+                                                            disabled={isUpdatingUsername}
+                                                            size="sm"
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                                                    <span className="text-sm text-muted-foreground">{user?.userName}</span>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setIsEditingUsername(true)}
+                                                        className="text-xs text-muted-foreground hover:text-foreground h-7 px-2"
+                                                    >
+                                                        <Edit2 className="w-3 h-3 mr-1" />
+                                                        Edit
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -822,7 +828,7 @@ export function ProfileSettings() {
                         </div>
                     </CardContent>
                 </Card>
-            </div>
+            </div >
         </>
     );
 }
