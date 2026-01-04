@@ -48,6 +48,12 @@ export function RouteRestorerProvider({ children }: { children: React.ReactNode 
             return;
         }
 
+        // If offline, skip restoration - navigating to uncached pages will fail
+        if (!navigator.onLine) {
+            console.log("PWA: Offline - skipping route restoration");
+            return;
+        }
+
         try {
             const savedRoute = localStorage.getItem(LAST_ROUTE_KEY);
             if (savedRoute && savedRoute !== "/" && !EXCLUDED_PATHS.some(p => savedRoute.startsWith(p))) {
