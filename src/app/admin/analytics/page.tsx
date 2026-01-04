@@ -340,11 +340,11 @@ export default function AnalyticsPage() {
                     loading={statsLoading}
                 />
                 <GradientStatCard
-                    title="Seasons"
-                    value={formatNumber(stats?.seasons?.total || 0)}
-                    subtitle={`${stats?.seasons?.active || 0} active`}
+                    title="Prize Pool"
+                    value={`₹${formatNumber(stats?.prizePool || 0)}`}
+                    subtitle="Total distributed"
                     gradient="bg-gradient-to-br from-cyan-400 to-blue-500"
-                    icon={Calendar}
+                    icon={Gift}
                     loading={statsLoading}
                 />
                 <GradientStatCard
@@ -394,10 +394,10 @@ export default function AnalyticsPage() {
                     loading={statsLoading}
                 />
                 <StatCard
-                    title="Prize Pool"
-                    value={`₹${formatNumber(stats?.prizePool || 0)}`}
-                    subtitle="Total distributed"
-                    icon={Gift}
+                    title="Seasons"
+                    value={stats?.seasons?.total || 0}
+                    subtitle={`${stats?.seasons?.active || 0} active`}
+                    icon={Calendar}
                     loading={statsLoading}
                 />
             </div>
