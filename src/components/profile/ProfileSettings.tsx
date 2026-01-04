@@ -129,6 +129,9 @@ export function ProfileSettings() {
                 .replace(/[ĀāĒēĪīŌōŪū]/g, " ")
                 .replace(/\s+/g, " ");
             setDisplayName(sanitized);
+        } else if (user?.userName) {
+            // Pre-fill with username if no display name set
+            setDisplayName(user.userName);
         }
         if (user?.dateOfBirth) {
             // Format date for input (YYYY-MM-DD)
@@ -513,7 +516,7 @@ export function ProfileSettings() {
                                     setDisplayName(sanitized);
                                     setDisplayNameError("");
                                 }}
-                                placeholder="e.g. KŠツMeban"
+                                placeholder="Enter your in-game name"
                                 className={displayNameError ? "border-red-500 focus-visible:ring-red-500" : ""}
                                 disabled={isUpdatingDisplayName}
                             />
@@ -530,11 +533,11 @@ export function ProfileSettings() {
                             </p>
 
                             {/* Show Cancel/Save buttons only when there are changes */}
-                            {displayName !== (user?.displayName || "") && displayName.trim() && (
+                            {displayName !== (user?.displayName || user?.userName || "") && (
                                 <div className="flex gap-2">
                                     <Button
                                         variant="outline"
-                                        onClick={() => setDisplayName(user?.displayName || "")}
+                                        onClick={() => setDisplayName(user?.displayName || user?.userName || "")}
                                         disabled={isUpdatingDisplayName}
                                         size="sm"
                                     >
@@ -542,7 +545,7 @@ export function ProfileSettings() {
                                     </Button>
                                     <Button
                                         onClick={handleSaveDisplayName}
-                                        disabled={isUpdatingDisplayName}
+                                        disabled={isUpdatingDisplayName || !displayName.trim()}
                                         size="sm"
                                     >
                                         {isUpdatingDisplayName ? (
