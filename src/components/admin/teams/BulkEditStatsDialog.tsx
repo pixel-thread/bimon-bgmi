@@ -45,6 +45,8 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
     // Only fetch when dialog is open to avoid unnecessary API calls
     const { data: teams, isFetching } = useTeams({ page: "all", refetchOnWindowFocus: false, enabled: open });
     const [editableStats, setEditableStats] = useState<EditableTeamStats[]>([]);
+    // Track manually toggled player IDs (playerId -> current isAbsent status)
+    const [manualToggles, setManualToggles] = useState<Map<string, boolean>>(new Map());
     const queryClient = useQueryClient();
 
     // Validate positions and return warning messages
@@ -106,6 +108,8 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                 };
             });
             setEditableStats(stats);
+            // Clear manual toggles when data is reset
+            setManualToggles(new Map());
         }
     }, [teams]);
 
@@ -126,6 +130,44 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
         newStats[teamIndex].players[playerIndex].kills = value;
         setEditableStats(newStats);
     };
+
+    // Toggle player absent/present status by clicking their name
+    const handleToggleAbsent = (
+        teamIndex: number,
+        playerIndex: number
+    ) => {
+        const newStats = [...editableStats];
+        const player = newStats[teamIndex].players[playerIndex];
+        player.isAbsent = !player.isAbsent;
+        // Clear kills if marking as absent
+        if (player.isAbsent) {
+            player.kills = "";
+        }
+        setEditableStats(newStats);
+
+        // Track this as a manual toggle
+        setManualToggles((prev) => {
+            const updated = new Map(prev);
+            updated.set(player.playerId, player.isAbsent);
+            return updated;
+        });
+    };
+
+    // Get list of manually toggled player names for the note
+    const manuallyToggledPlayers = useMemo(() => {
+        if (manualToggles.size === 0) return [];
+
+        const toggledNames: string[] = [];
+        editableStats.forEach((team) => {
+            team.players.forEach((player) => {
+                if (manualToggles.has(player.playerId)) {
+                    const status = player.isAbsent ? "absent" : "present";
+                    toggledNames.push(`${player.displayName || player.name} (${status})`);
+                }
+            });
+        });
+        return toggledNames;
+    }, [editableStats, manualToggles]);
 
     // Process JSON text and apply to stats
     const processJsonText = useCallback((text: string) => {
@@ -382,28 +424,40 @@ Players absent: X (list names)
                                         <div className="flex items-center gap-2 sm:gap-3 mb-2">
                                             <span className="font-medium text-sm truncate flex-1">
                                                 {(() => {
-                                                    // Get absent player names (lowercase for matching) - use both displayName and userName
-                                                    const absentNames = team.players
-                                                        .filter(p => p.isAbsent)
-                                                        .flatMap(p => [
-                                                            (p.displayName || '').toLowerCase(),
-                                                            p.name.toLowerCase()
-                                                        ].filter(Boolean));
+                                                    // Get absent player info (for matching and clicking)
+                                                    const playerInfoMap = new Map(team.players.map((p, idx) => [
+                                                        (p.displayName || p.name).toLowerCase(),
+                                                        { player: p, playerIndex: idx }
+                                                    ]));
+                                                    // Also add userName as key
+                                                    team.players.forEach((p, idx) => {
+                                                        playerInfoMap.set(p.name.toLowerCase(), { player: p, playerIndex: idx });
+                                                    });
 
-                                                    if (absentNames.length === 0) {
-                                                        return team.name;
-                                                    }
-
-                                                    // Split team name by underscores and highlight absent names
+                                                    // Split team name by underscores and make each part clickable
                                                     const parts = team.name.split('_');
                                                     return parts.map((part, i) => {
-                                                        const isAbsent = absentNames.some(name =>
-                                                            part.toLowerCase().includes(name) || name.includes(part.toLowerCase())
-                                                        );
+                                                        // Find matching player for this part
+                                                        const partLower = part.toLowerCase();
+                                                        let matchedPlayer: { player: typeof team.players[0]; playerIndex: number } | undefined;
+
+                                                        for (const [name, info] of playerInfoMap.entries()) {
+                                                            if (partLower.includes(name) || name.includes(partLower)) {
+                                                                matchedPlayer = info;
+                                                                break;
+                                                            }
+                                                        }
+
+                                                        const isAbsent = matchedPlayer?.player.isAbsent ?? false;
+
                                                         return (
                                                             <span key={i}>
                                                                 {i > 0 && '_'}
-                                                                <span className={isAbsent ? "text-red-600 dark:text-red-400" : ""}>
+                                                                <span
+                                                                    onClick={matchedPlayer ? () => handleToggleAbsent(teamIndex, matchedPlayer!.playerIndex) : undefined}
+                                                                    className={`${isAbsent ? "text-red-600 dark:text-red-400" : ""} ${matchedPlayer ? "cursor-pointer hover:underline" : ""}`}
+                                                                    title={matchedPlayer ? `Click to ${isAbsent ? "mark present" : "mark absent"}` : undefined}
+                                                                >
                                                                     {part}
                                                                 </span>
                                                             </span>
@@ -435,14 +489,15 @@ Players absent: X (list names)
                                             {team.players.map((player, playerIndex) => (
                                                 <div
                                                     key={player.playerId}
-                                                    className="flex items-center gap-1.5 sm:gap-2 bg-muted/40 rounded-md px-2 py-1"
+                                                    onClick={() => handleToggleAbsent(teamIndex, playerIndex)}
+                                                    className={`flex items-center gap-1.5 sm:gap-2 bg-muted/40 rounded-md px-2 py-1 cursor-pointer hover:bg-muted/60 transition-colors ${player.isAbsent ? "ring-1 ring-red-500/50" : ""}`}
+                                                    title={`Click to ${player.isAbsent ? "mark present" : "mark absent"}`}
                                                 >
                                                     <span
-                                                        className={`text-xs truncate flex-1 min-w-0 ${player.isAbsent
+                                                        className={`text-xs truncate flex-1 min-w-0 select-none ${player.isAbsent
                                                             ? "text-red-600 dark:text-red-400 font-medium"
                                                             : ""
                                                             }`}
-                                                        title={player.displayName || player.name}
                                                     >
                                                         {player.displayName || player.name}
                                                     </span>
@@ -450,6 +505,7 @@ Players absent: X (list names)
                                                         type="number"
                                                         min="0"
                                                         value={player.kills}
+                                                        onClick={(e) => e.stopPropagation()}
                                                         onChange={(e) => handleKillsChange(teamIndex, playerIndex, e.target.value)}
                                                         className="w-10 sm:w-12 h-6 text-center text-xs flex-shrink-0"
                                                         placeholder="0"
@@ -460,6 +516,19 @@ Players absent: X (list names)
                                     </div>
                                 );
                             })}
+
+                            {/* Manual Changes Note */}
+                            {manuallyToggledPlayers.length > 0 && (
+                                <div className="mt-4 p-4 rounded-md bg-blue-500/10 border border-blue-500/30 shadow-sm">
+                                    <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-2">
+                                        ✏️ Manual Changes ({manuallyToggledPlayers.length})
+                                    </p>
+                                    <p className="text-sm text-blue-600/90 dark:text-blue-400">
+                                        {manuallyToggledPlayers.slice(0, 10).join(", ")}
+                                        {manuallyToggledPlayers.length > 10 && ` +${manuallyToggledPlayers.length - 10} more`}
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Validation Warnings */}
                             {validationErrors.length > 0 && (
