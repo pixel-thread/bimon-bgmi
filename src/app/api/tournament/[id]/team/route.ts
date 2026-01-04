@@ -65,6 +65,8 @@ export async function GET(
         const teamPosition = teamStats?.position || 0;
         const pts = calculatePlayerPoints(teamPosition, 0);
         const total = kills + pts;
+        // Count chicken dinners (1st place finishes)
+        const wins = teamPosition === 1 ? 1 : 0;
         const teamName = team.players
           .map((player) => player.user.displayName || player.user.userName)
           .join("_");
@@ -79,6 +81,7 @@ export async function GET(
           position: teamPosition,
           pts: pts,
           total: total,
+          wins: wins,
           players: teamPlayers,
           teamPlayerStats: teamPlayerStats, // Include for bulk edit dialog
         };
@@ -155,7 +158,8 @@ export async function GET(
           return acc + calculatePlayerPoints(stat.position, 0);
         }, 0);
 
-
+        // Count chicken dinners (1st place finishes)
+        const wins = teamStatsList.filter((stat) => stat.position === 1).length;
 
         const total = totalPts + totalKills;
         const teamName = team.players
@@ -172,6 +176,7 @@ export async function GET(
           position: 0,
           pts: totalPts,
           total: total,
+          wins: wins,
           players: teamPlayers,
         };
       });
