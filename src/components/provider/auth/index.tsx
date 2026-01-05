@@ -71,8 +71,9 @@ export const AuthProvider = ({ children }: Props) => {
   useEffect(() => {
     if (user && posthog.__loaded) {
       posthog.identify(user.id, {
-        email: user.email,
-        name: user.displayName || user.userName,
+        // Use $name for PostHog to display in PERSON column (instead of email)
+        $name: user.displayName || user.userName,
+        $email: user.email,
         username: user.userName,
         role: user.role,
       });
