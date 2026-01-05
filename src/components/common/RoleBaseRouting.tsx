@@ -17,7 +17,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
   const redirectTo = searchParams.get("redirect");
   const router = useRouter();
   const pathName = usePathname();
-  const { user, isAuthLoading, isSignedIn } = useAuth();
+  const { user, isAuthLoading, isSignedIn, isLoggingOut } = useAuth();
   const role = user?.role || "USER";
   const userRoles = useMemo(() => role, [role]); // Get the user's roles
   const isAuthenticated = isSignedIn;
@@ -37,6 +37,9 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
 
   // Handle authentication and role-based redirects
   useEffect(() => {
+    // Skip all redirects if user is logging out
+    if (isLoggingOut) return;
+
     // Wait until authentication loading is complete to proceed
     if (isAuthLoading) return;
 
@@ -70,7 +73,7 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
         }
       }
     }
-  }, [isAuthenticated, userRoles, pathName, isAuthLoading, user, router, currentRoute]);
+  }, [isAuthenticated, userRoles, pathName, isAuthLoading, user, router, currentRoute, isLoggingOut]);
 
   // Prevent authenticated users from accessing unauthenticated-only pages
   useEffect(() => {

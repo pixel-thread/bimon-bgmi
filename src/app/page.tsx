@@ -144,31 +144,32 @@ function UserCard({
     </Link>
   );
 
+  // Show a clean loading skeleton
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8">
+        <div className="text-center mb-8">
+          <Skeleton className="h-8 w-56 mx-auto mb-3" />
+          <Skeleton className="h-5 w-40 mx-auto" />
+        </div>
+        <Skeleton className="h-12 w-full rounded-lg" />
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8">
       {/* Welcome message */}
       <div className="text-center mb-8">
         <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-2">
-          {isLoading ? (
-            <span className="flex items-center justify-center gap-2">
-              Welcome back, <Skeleton className="h-7 w-32 inline-block" />
-            </span>
-          ) : (
-            `Welcome back, ${username}!`
-          )}
+          Welcome back, {username}!
         </h2>
-        {isLoading ? (
-          <Skeleton className="h-5 w-48 mx-auto" />
-        ) : (
-          <p className="text-slate-600 dark:text-slate-400">{email}</p>
-        )}
+        <p className="text-slate-600 dark:text-slate-400">{email}</p>
       </div>
 
       {/* Role-based action button */}
       <div className="grid gap-6">
-        {isLoading ? (
-          <Skeleton className="h-12 w-full rounded-lg" />
-        ) : action.showCard ? (
+        {action.showCard ? (
           <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">
               Admin Access

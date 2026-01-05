@@ -12,6 +12,7 @@ type Props = { children: React.ReactNode };
 export const AuthProvider = ({ children }: Props) => {
   const { isSignedIn, getToken, signOut } = useAuth();
   const [isTokenSet, setIsTokenSet] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Inject getToken into axios interceptor for automatic auth
   useEffect(() => {
@@ -45,9 +46,14 @@ export const AuthProvider = ({ children }: Props) => {
 
   // logout
   const onLogout = async () => {
+    // Set logging out state first to prevent RoleBaseRoute redirects
+    setIsLoggingOut(true);
+    // Clear PWA saved route to prevent restoring protected page after logout
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("pwa-last-route");
+    }
     await signOut({
       redirectUrl: "/",
-      sessionId: "",
     }).then(() => {
       axiosInstance.defaults.headers.common["Authorization"] = "";
     });
@@ -69,6 +75,7 @@ export const AuthProvider = ({ children }: Props) => {
         user: user,
         isAuthLoading: (isSignedIn && !isTokenSet) || isFetching,
         isSignedIn: isSignedIn || false,
+        isLoggingOut,
         refreshAuth: () => refetch(),
         logout: () => onLogout(),
         isAdmin: user?.role === "ADMIN" || user?.role === "SUPER_ADMIN",

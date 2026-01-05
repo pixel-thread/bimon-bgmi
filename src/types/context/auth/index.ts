@@ -12,6 +12,7 @@ export interface AuthContextI {
   isSignedIn: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  isLoggingOut: boolean;
   logout: () => Promise<void>;
   refreshAuth: () => void;
 }

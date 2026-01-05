@@ -25,7 +25,8 @@ import {
     FiBarChart2,
     FiLoader,
 } from "react-icons/fi";
-import { UserButton, useClerk, useUser } from "@clerk/nextjs";
+import { FcGoogle } from "react-icons/fc";
+import { UserButton, useUser } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { getDisplayName } from "@/src/utils/bgmiDisplay";
@@ -69,10 +70,9 @@ export default function Navigation() {
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const pathname = usePathname();
-    const { isSignedIn: isAuthorized, user: playerUser } = useAuth();
+    const { isSignedIn: isAuthorized, user: playerUser, logout } = useAuth();
     const { user } = useUser();
     const { hasPendingRequests } = usePendingUCRequests();
-    const { signOut } = useClerk();
     const { theme, setTheme } = useTheme();
 
     // Ensure portal only renders on client
@@ -101,7 +101,8 @@ export default function Navigation() {
         setIsSigningOut(true);
         setIsOpen(false);
         try {
-            await signOut({ redirectUrl: "/" });
+            // Use auth context's logout which sets isLoggingOut flag
+            await logout();
         } catch (error) {
             console.error("Error signing out:", error);
             setIsSigningOut(false);
@@ -208,11 +209,11 @@ export default function Navigation() {
                     {!isAuthorized && (
                         <button
                             onClick={handleLogin}
-                            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
-                            aria-label="Login"
+                            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                            aria-label="Sign in with Google"
                         >
-                            <FiLogIn className="h-4 w-4" />
-                            <span>Login</span>
+                            <FcGoogle className="h-4 w-4" />
+                            <span>Sign in</span>
                         </button>
                     )}
                 </div>
@@ -328,10 +329,10 @@ export default function Navigation() {
                                         <motion.button
                                             whileTap={{ scale: 0.98 }}
                                             onClick={handleLogin}
-                                            className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-black font-medium transition-all hover:opacity-90"
+                                            className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-zinc-700 font-medium transition-all hover:bg-gray-50 dark:hover:bg-zinc-700 shadow-sm"
                                         >
-                                            <FiLogIn className="h-4 w-4" />
-                                            Sign In
+                                            <FcGoogle className="h-5 w-5" />
+                                            Sign in with Google
                                         </motion.button>
                                     )}
 
