@@ -33,29 +33,48 @@ export default function AuthPage() {
   }, [isAuthLoaded, isSignedIn, redirectTo, router]);
 
   useEffect(() => {
-    // Wait for auth to be loaded before starting OAuth
-    if (!isLoaded || !signIn || !isAuthLoaded) return;
+    const startOAuth = async () => {
+      // Wait for auth to be loaded before starting OAuth
+      if (!isLoaded || !signIn || !isAuthLoaded) return;
 
-    // Don't start OAuth if already signed in or already started
-    if (isSignedIn || isOAuthStarted) return;
+      // Don't start OAuth if already signed in or already started
+      if (isSignedIn || isOAuthStarted) return;
 
-    // Mark that we've started OAuth
-    isOAuthStarted = true;
+      // Mark that we've started OAuth
+      isOAuthStarted = true;
 
-    // Automatically start Google OAuth flow
-    signIn.authenticateWithRedirect({
-      strategy: "oauth_google",
-      redirectUrl: "/auth/sso-callback",
-      redirectUrlComplete: redirectTo,
-    }).catch((err) => {
-      // Ignore errors during redirect (cancelled navigation)
-      if (isOAuthStarted) {
-        console.log("OAuth redirect in progress, ignoring error:", err?.message);
-        return;
+      try {
+        // Create a fresh sign-in attempt to avoid stale session issues
+        await signIn.create({
+          strategy: "oauth_google",
+          redirectUrl: "/auth/sso-callback",
+          actionCompleteRedirectUrl: redirectTo,
+        });
+
+        // Get the authorization URL and redirect
+        const authUrl = signIn.firstFactorVerification?.externalVerificationRedirectURL;
+        if (authUrl) {
+          window.location.href = authUrl.href;
+        } else {
+          // Fallback to authenticateWithRedirect
+          await signIn.authenticateWithRedirect({
+            strategy: "oauth_google",
+            redirectUrl: "/auth/sso-callback",
+            redirectUrlComplete: redirectTo,
+          });
+        }
+      } catch (err: any) {
+        // Ignore errors during redirect (cancelled navigation)
+        if (isOAuthStarted) {
+          console.log("OAuth redirect in progress, ignoring error:", err?.message);
+          return;
+        }
+        console.error("Failed to redirect to Google:", err);
+        setError("Failed to start sign-in. Please try again.");
       }
-      console.error("Failed to redirect to Google:", err);
-      setError("Failed to start sign-in. Please try again.");
-    });
+    };
+
+    startOAuth();
   }, [isLoaded, signIn, redirectTo, isAuthLoaded, isSignedIn]);
 
   if (error) {
@@ -76,13 +95,8 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="flex flex-col items-center gap-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900 dark:border-white"></div>
-        <p className="text-slate-600 dark:text-slate-400">
-          {isSignedIn ? "Redirecting..." : "Redirecting to Google..."}
-        </p>
-      </div>
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900 dark:border-white"></div>
     </div>
   );
 }
