@@ -101,8 +101,7 @@ export default function Navigation() {
         setIsSigningOut(true);
         setIsOpen(false);
         try {
-            await signOut();
-            window.location.href = "/";
+            await signOut({ redirectUrl: "/" });
         } catch (error) {
             console.error("Error signing out:", error);
             setIsSigningOut(false);
