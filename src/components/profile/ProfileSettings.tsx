@@ -808,18 +808,12 @@ export function ProfileSettings() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="p-4 bg-muted/30 rounded-lg">
-                                <p className="text-sm text-muted-foreground mb-1">Player Status</p>
-                                {user?.player?.isBanned ? (
+                            {user?.player?.isBanned && (
+                                <div className="p-4 bg-muted/30 rounded-lg">
+                                    <p className="text-sm text-muted-foreground mb-1">Player Status</p>
                                     <Badge variant="destructive">Banned</Badge>
-                                ) : user?.player ? (
-                                    <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400">
-                                        Active Player
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="secondary">Not a Player</Badge>
-                                )}
-                            </div>
+                                </div>
+                            )}
                             <div className="p-4 bg-muted/30 rounded-lg">
                                 <p className="text-sm text-muted-foreground mb-1">Last Username Change</p>
                                 <p className="font-medium text-sm">

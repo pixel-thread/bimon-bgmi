@@ -219,6 +219,7 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                                         displayName={player.displayName}
                                         userName={player.userName}
                                         size="lg"
+                                        isBanned={player.isBanned}
                                         className={`
                                             shrink-0 ring-2 ring-offset-2
                                             ${globalIndex === 1 ? 'ring-yellow-500 ring-offset-yellow-500/20' :

@@ -323,30 +323,7 @@ export default function Navigation() {
                                 </nav>
 
                                 {/* Footer Actions */}
-                                <div className="border-t border-gray-100 dark:border-zinc-900 p-4 space-y-2">
-                                    {/* Theme Toggle Row */}
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={onToggleTheme}
-                                            className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl bg-gray-50 dark:bg-zinc-900 transition-colors"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                {theme === "dark" ? <FiSun className="h-4 w-4 text-gray-600 dark:text-gray-400" /> : <FiMoon className="h-4 w-4 text-gray-600 dark:text-gray-400" />}
-                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                    {theme === "dark" ? "Light" : "Dark"}
-                                                </span>
-                                            </div>
-                                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${theme === "dark" ? "bg-white" : "bg-gray-300"}`}>
-                                                <motion.div
-                                                    layout
-                                                    className={`w-4 h-4 rounded-full shadow-sm ${theme === "dark" ? "bg-black" : "bg-white"}`}
-                                                    animate={{ x: theme === "dark" ? 16 : 0 }}
-                                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                                />
-                                            </div>
-                                        </button>
-                                    </div>
-
+                                <div className="mt-auto border-t border-gray-100 dark:border-zinc-900 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] space-y-3">
                                     {/* Login Button for non-authenticated users */}
                                     {!isAuthorized && (
                                         <motion.button
@@ -359,84 +336,98 @@ export default function Navigation() {
                                         </motion.button>
                                     )}
 
-                                    {/* Profile at the bottom for authenticated users */}
+                                    {/* Top row: Theme toggle and Logout */}
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={onToggleTheme}
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-zinc-800 transition-colors"
+                                        >
+                                            {theme === "dark" ? <FiSun className="h-4 w-4 text-gray-600 dark:text-gray-400" /> : <FiMoon className="h-4 w-4 text-gray-600 dark:text-gray-400" />}
+                                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                {theme === "dark" ? "Light" : "Dark"}
+                                            </span>
+                                        </button>
+                                        {isAuthorized && (
+                                            <button
+                                                onClick={handleSignOut}
+                                                disabled={isSigningOut}
+                                                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
+                                                aria-label="Sign Out"
+                                            >
+                                                {isSigningOut ? (
+                                                    <div className="h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                                                ) : (
+                                                    <FiLogOut className="h-4 w-4" />
+                                                )}
+                                                <span className="text-sm font-medium">Logout</span>
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Profile row for authenticated users */}
                                     {isAuthorized && (() => {
                                         const isNavigatingToProfile = navigatingTo === "/profile";
                                         const isAnyNavigating = navigatingTo !== null;
                                         return (
-                                            <div className="flex items-center gap-2">
-                                                <motion.button
-                                                    initial={{ opacity: 0, x: 12 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    transition={{
-                                                        delay: 0.15,
-                                                        type: "spring",
-                                                        stiffness: 200,
-                                                        damping: 20
-                                                    }}
-                                                    onClick={() => handleNavigation("/profile")}
-                                                    disabled={isAnyNavigating}
-                                                    className={`flex-1 flex items-center gap-4 px-4 py-3.5 text-left rounded-xl transition-all ${isNavigatingToProfile
-                                                        ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400"
-                                                        : "bg-gray-50 dark:bg-zinc-900 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800"
-                                                        } ${isAnyNavigating && !isNavigatingToProfile ? "opacity-50 cursor-not-allowed" : ""}`}
-                                                >
-                                                    {isNavigatingToProfile ? (
-                                                        <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                                                            <FiLoader className="h-4 w-4 animate-spin text-indigo-500" />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="h-10 w-10 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-zinc-800 relative flex-shrink-0">
-                                                            {/* Priority: characterImage > user.imageUrl > fallback */}
-                                                            {(playerUser as any)?.player?.characterImage?.publicUrl ? (
-                                                                <Image
-                                                                    src={(playerUser as any).player.characterImage.publicUrl}
-                                                                    alt="Profile"
-                                                                    fill
-                                                                    className="object-cover"
-                                                                />
-                                                            ) : user?.imageUrl ? (
-                                                                <Image
-                                                                    src={user.imageUrl}
-                                                                    alt="Profile"
-                                                                    fill
-                                                                    className="object-cover"
-                                                                />
-                                                            ) : (
-                                                                <div className="w-full h-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center">
-                                                                    <FiUser className="h-5 w-5 text-gray-500" />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                    <div className="flex-1 min-w-0">
-                                                        {playerUser && (
-                                                            <span className="text-[15px] font-medium block truncate">{getDisplayName(playerUser.displayName, playerUser.userName)}</span>
-                                                        )}
-                                                        {user?.primaryEmailAddress?.emailAddress && (
-                                                            <span className="text-xs text-gray-500 dark:text-gray-600 block truncate">{user.primaryEmailAddress.emailAddress}</span>
+                                            <motion.button
+                                                initial={{ opacity: 0, x: 12 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{
+                                                    delay: 0.15,
+                                                    type: "spring",
+                                                    stiffness: 200,
+                                                    damping: 20
+                                                }}
+                                                onClick={() => handleNavigation("/profile")}
+                                                disabled={isAnyNavigating}
+                                                className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-xl transition-all ${isNavigatingToProfile
+                                                    ? "bg-indigo-50 dark:bg-indigo-900/20"
+                                                    : "bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800"
+                                                    } ${isAnyNavigating && !isNavigatingToProfile ? "opacity-50 cursor-not-allowed" : ""}`}
+                                            >
+                                                {isNavigatingToProfile ? (
+                                                    <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                                                        <FiLoader className="h-4 w-4 animate-spin text-indigo-500" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="h-10 w-10 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-zinc-700 relative flex-shrink-0">
+                                                        {(playerUser as any)?.player?.characterImage?.publicUrl ? (
+                                                            <Image
+                                                                src={(playerUser as any).player.characterImage.publicUrl}
+                                                                alt="Profile"
+                                                                fill
+                                                                className="object-cover"
+                                                            />
+                                                        ) : user?.imageUrl ? (
+                                                            <Image
+                                                                src={user.imageUrl}
+                                                                alt="Profile"
+                                                                fill
+                                                                className="object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center">
+                                                                <FiUser className="h-5 w-5 text-gray-500" />
+                                                            </div>
                                                         )}
                                                     </div>
-
-                                                    {!isNavigatingToProfile && hasPendingRequests && (
-                                                        <span className="h-2 w-2 bg-red-500 rounded-full animate-pulse flex-shrink-0"></span>
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    {playerUser && (
+                                                        <span className="text-sm font-semibold text-gray-900 dark:text-white block truncate">
+                                                            {getDisplayName(playerUser.displayName, playerUser.userName)}
+                                                        </span>
                                                     )}
-                                                </motion.button>
-
-                                                {/* Logout button on the right side */}
-                                                <button
-                                                    onClick={handleSignOut}
-                                                    disabled={isSigningOut}
-                                                    className="flex items-center justify-center p-3.5 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50 flex-shrink-0"
-                                                    aria-label="Sign Out"
-                                                >
-                                                    {isSigningOut ? (
-                                                        <div className="h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-                                                    ) : (
-                                                        <FiLogOut className="h-5 w-5" />
+                                                    {user?.primaryEmailAddress?.emailAddress && (
+                                                        <span className="text-xs text-gray-500 dark:text-gray-400 block truncate">
+                                                            {user.primaryEmailAddress.emailAddress}
+                                                        </span>
                                                     )}
-                                                </button>
-                                            </div>
+                                                </div>
+                                                {!isNavigatingToProfile && hasPendingRequests && (
+                                                    <span className="h-2 w-2 bg-red-500 rounded-full animate-pulse flex-shrink-0"></span>
+                                                )}
+                                            </motion.button>
                                         );
                                     })()}
                                 </div>

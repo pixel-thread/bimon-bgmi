@@ -265,7 +265,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                   {/* Clickable Avatar */}
                   <div
                     ref={avatarRef}
-                    className="h-12 w-12 sm:h-14 sm:w-14 rounded-full border-2 border-zinc-200 dark:border-zinc-700 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                    className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-full border-2 border-zinc-200 dark:border-zinc-700 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={handleAvatarClick}
                   >
                     {displayImageUrl ? (
@@ -277,6 +277,15 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-lg font-semibold bg-gradient-to-br from-purple-500 to-pink-500 text-white">
                         {displayName?.substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    {/* Banned Stamp Overlay */}
+                    {displayIsBanned && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/40 rounded-full" />
+                        <div className="relative rotate-[-20deg] bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded border-2 border-red-800 shadow-lg uppercase tracking-wider">
+                          Banned
+                        </div>
                       </div>
                     )}
                   </div>

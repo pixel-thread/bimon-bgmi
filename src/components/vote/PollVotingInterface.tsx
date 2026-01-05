@@ -136,23 +136,24 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {title}
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">{description}</p>
+      {/* Poll Count - only show if more than 1 poll */}
+      {polls && polls.length > 1 && (
+        <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-3xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">
+              {polls?.length}
+            </span>
+            <div className="flex flex-col">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active</span>
+              <span className="text-sm font-semibold text-foreground">Polls</span>
+            </div>
+          </div>
+          <div className="h-8 w-px bg-border" />
+          <span className="text-xs text-muted-foreground">Vote below</span>
         </div>
-        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 flex-shrink-0 ml-2">
-          <FiUsers className="h-3 w-3 mr-1" />
-          <span className="hidden sm:inline">{polls?.length} Active</span>
-          <span className="sm:hidden">{polls?.length}</span>
-        </Badge>
-      </div>
+      )}
 
-      {/* Banned Player Warning */}
-      {user?.player?.isBanned && !showAdminActions && <BanBanner />}
+
 
       <div className="space-y-4">
         {polls?.map((poll) => (

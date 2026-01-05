@@ -360,35 +360,46 @@ export default function ProfilePage() {
             {/* Header with User Info */}
             <div className="flex items-center gap-4">
                 {/* Profile Image - respects user's image selection */}
-                {isImageSettingsLoading ? (
-                    <Skeleton className="h-16 w-16 !rounded-full" />
-                ) : imageSettings?.imageType === "none" ? (
-                    <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-2xl font-bold text-primary-foreground">
-                        {user.userName?.charAt(0).toUpperCase()}
-                    </div>
-                ) : imageSettings?.imageType === "custom" && imageSettings.customImage ? (
-                    <Image
-                        src={imageSettings.customImage.publicUrl}
-                        alt={user.userName || "Profile"}
-                        width={64}
-                        height={64}
-                        className="h-16 w-16 rounded-full object-cover"
-                        loading="lazy"
-                    />
-                ) : profileImageUrl ? (
-                    <Image
-                        src={profileImageUrl}
-                        alt={user.userName || "Profile"}
-                        width={64}
-                        height={64}
-                        className="h-16 w-16 rounded-full object-cover"
-                        loading="lazy"
-                    />
-                ) : (
-                    <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-2xl font-bold text-primary-foreground">
-                        {user.userName?.charAt(0).toUpperCase()}
-                    </div>
-                )}
+                <div className="relative">
+                    {isImageSettingsLoading ? (
+                        <Skeleton className="h-16 w-16 !rounded-full" />
+                    ) : imageSettings?.imageType === "none" ? (
+                        <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-2xl font-bold text-primary-foreground">
+                            {user.userName?.charAt(0).toUpperCase()}
+                        </div>
+                    ) : imageSettings?.imageType === "custom" && imageSettings.customImage ? (
+                        <Image
+                            src={imageSettings.customImage.publicUrl}
+                            alt={user.userName || "Profile"}
+                            width={64}
+                            height={64}
+                            className="h-16 w-16 rounded-full object-cover"
+                            loading="lazy"
+                        />
+                    ) : profileImageUrl ? (
+                        <Image
+                            src={profileImageUrl}
+                            alt={user.userName || "Profile"}
+                            width={64}
+                            height={64}
+                            className="h-16 w-16 rounded-full object-cover"
+                            loading="lazy"
+                        />
+                    ) : (
+                        <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-2xl font-bold text-primary-foreground">
+                            {user.userName?.charAt(0).toUpperCase()}
+                        </div>
+                    )}
+                    {/* Banned Stamp Overlay */}
+                    {banStatus.isBanned && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-black/40 rounded-full" />
+                            <div className="relative rotate-[-20deg] bg-red-600 text-white text-xs font-bold px-3 py-1 rounded border-2 border-red-800 shadow-lg uppercase tracking-wider">
+                                Banned
+                            </div>
+                        </div>
+                    )}
+                </div>
                 <div>
                     <h1 className="text-3xl font-bold">{getDisplayName(user.displayName, user.userName)}</h1>
                     <p className="text-sm text-muted-foreground">@{user.userName}</p>
