@@ -23,7 +23,32 @@ function PostHogPageViewInner() {
     return null;
 }
 
+// Track PWA sessions (detects existing + new PWA users)
+function usePwaSessionTracking() {
+    useEffect(() => {
+        if (typeof window === "undefined" || !posthog.__loaded) return;
+
+        // Check if running in PWA/standalone mode
+        const isPwa = window.matchMedia("(display-mode: standalone)").matches ||
+            (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+        if (isPwa) {
+            // Only track once per session
+            const sessionKey = "pwa_session_tracked";
+            if (!sessionStorage.getItem(sessionKey)) {
+                sessionStorage.setItem(sessionKey, "true");
+                posthog.capture("pwa_session", {
+                    platform: /iPad|iPhone|iPod/.test(navigator.userAgent) ? "ios" :
+                        /Android/.test(navigator.userAgent) ? "android" : "desktop",
+                });
+            }
+        }
+    }, []);
+}
+
 function PostHogPageView() {
+    usePwaSessionTracking();
+
     return (
         <Suspense fallback={null}>
             <PostHogPageViewInner />

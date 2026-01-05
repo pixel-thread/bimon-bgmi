@@ -6,6 +6,7 @@ import http from "@/src/utils/http";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
+import { posthog } from "@/src/components/provider/PostHogProvider";
 
 type Props = { children: React.ReactNode };
 
@@ -65,6 +66,18 @@ export const AuthProvider = ({ children }: Props) => {
       getUser();
     }
   }, [isSignedIn, getUser]);
+
+  // Identify user in PostHog for proper tracking
+  useEffect(() => {
+    if (user && posthog.__loaded) {
+      posthog.identify(user.id, {
+        email: user.email,
+        name: user.displayName || user.userName,
+        username: user.userName,
+        role: user.role,
+      });
+    }
+  }, [user]);
 
   // remove token when user is logout from clerk if token still exist
   // No full-page loader - components handle their own loading states via isAuthLoading

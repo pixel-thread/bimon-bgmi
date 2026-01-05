@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/src/components/ui/button";
 import { IconDownload, IconX, IconShare } from "@tabler/icons-react";
+import { posthog } from "@/src/components/provider/PostHogProvider";
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
@@ -124,6 +125,12 @@ export function InstallPrompt() {
         if (outcome === "accepted") {
             setIsInstalled(true);
             window.deferredPWAPrompt = null;
+
+            // Track PWA installation in PostHog
+            posthog.capture("pwa_installed", {
+                platform: /Android/.test(navigator.userAgent) ? "android" : "desktop",
+                method: "browser_prompt",
+            });
         }
 
         setDeferredPrompt(null);
