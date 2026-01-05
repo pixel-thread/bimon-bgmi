@@ -14,7 +14,7 @@ import { Label } from "@/src/components/ui/label";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
 import { Plus, Trash2, Trophy, Loader2, Coins } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
 import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
@@ -85,6 +85,33 @@ export function DeclareWinnerDialog({
 
     const ucExemptCount = prizePoolMeta?.ucExemptCount || 0;
 
+    // Get player IDs from top teams for tax preview
+    const topTeamPlayerIds = useMemo(() => {
+        const ids: string[] = [];
+        teamRankings.slice(0, placementCount).forEach(team => {
+            team.players?.forEach(p => ids.push(p.id));
+        });
+        return ids;
+    }, [teamRankings, placementCount]);
+
+    // Fetch tax preview for winning players
+    type TaxPreviewData = Record<string, {
+        previousWins: number;
+        totalWins: number;
+        taxRate: number;
+        taxPercentage: string;
+    }>;
+
+    const { data: taxPreviewData } = useQuery({
+        queryKey: ["tax-preview", tournamentId, topTeamPlayerIds.join(",")],
+        queryFn: () => http.get<TaxPreviewData>(
+            `/admin/tournament/${tournamentId}/tax-preview?playerIds=${topTeamPlayerIds.join(",")}`
+        ),
+        enabled: isOpen && topTeamPlayerIds.length > 0,
+    });
+
+    const taxPreview = taxPreviewData?.data || {};
+
     // Get dynamic prize distribution based on prize pool tier with UC-exempt adjustments
     const distribution = useMemo(
         () => getFinalDistribution(prizePool, entryFee, getTeamSize("DUO"), ucExemptCount),
@@ -96,12 +123,40 @@ export function DeclareWinnerDialog({
         return distribution.prizes.get(position)?.amount ?? 0;
     };
 
-    // Calculate per-player split for a team
+    // Calculate per-player split for a team (with optional tax)
     const getPerPlayerAmount = (position: number, playerCount: number) => {
         if (playerCount === 0) return 0;
         const totalAmount = getPrizeForPositionAmount(position);
         return Math.floor(totalAmount / playerCount);
     };
+
+    // Get tax-adjusted amount for a player
+    const getTaxedAmount = (playerId: string, baseAmount: number) => {
+        const tax = taxPreview[playerId];
+        if (!tax || tax.taxRate === 0) return baseAmount;
+        return Math.floor(baseAmount * (1 - tax.taxRate));
+    };
+
+    // Calculate total tax from all winning players
+    const taxTotals = useMemo(() => {
+        let totalTax = 0;
+        teamRankings.slice(0, placementCount).forEach((team, idx) => {
+            const playerCount = team.players?.length || 0;
+            if (playerCount === 0) return;
+            const perPlayer = getPerPlayerAmount(idx + 1, playerCount);
+            team.players?.forEach(p => {
+                const tax = taxPreview[p.id];
+                if (tax && tax.taxRate > 0) {
+                    totalTax += Math.floor(perPlayer * tax.taxRate);
+                }
+            });
+        });
+        return {
+            total: totalTax,
+            fundContribution: Math.floor(totalTax * 0.60),
+            orgContribution: Math.ceil(totalTax * 0.40),
+        };
+    }, [taxPreview, teamRankings, placementCount]);
 
     const { isPending, mutate: declareWinners } = useMutation({
         mutationFn: (data: { placements: { position: number; amount: number }[] }) =>
@@ -205,12 +260,38 @@ export function DeclareWinnerDialog({
                                     })}
                                 <div className="flex justify-between text-muted-foreground">
                                     <span>💼 Organizer ({distribution.tier.orgFeePercent}%){ucExemptCount > 0 ? ` - ${ucExemptCount} exempt` : ""}:</span>
-                                    <span className="font-medium">₹{organizerAmount.toLocaleString()}</span>
+                                    <span className="font-medium">
+                                        {taxTotals.orgContribution > 0 ? (
+                                            <>
+                                                ₹{organizerAmount.toLocaleString()}
+                                                <span className="text-amber-600 dark:text-amber-400"> +₹{taxTotals.orgContribution}</span>
+                                                <span className="text-green-600 dark:text-green-400"> = ₹{(organizerAmount + taxTotals.orgContribution).toLocaleString()}</span>
+                                            </>
+                                        ) : (
+                                            <>₹{organizerAmount.toLocaleString()}</>
+                                        )}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between text-muted-foreground">
                                     <span>🏦 Fund ({distribution.tier.fundPercent}%):</span>
-                                    <span className="font-medium">₹{distribution.finalFundAmount.toLocaleString()}</span>
+                                    <span className="font-medium">
+                                        {taxTotals.fundContribution > 0 ? (
+                                            <>
+                                                ₹{distribution.finalFundAmount.toLocaleString()}
+                                                <span className="text-amber-600 dark:text-amber-400"> +₹{taxTotals.fundContribution}</span>
+                                                <span className="text-green-600 dark:text-green-400"> = ₹{(distribution.finalFundAmount + taxTotals.fundContribution).toLocaleString()}</span>
+                                            </>
+                                        ) : (
+                                            <>₹{distribution.finalFundAmount.toLocaleString()}</>
+                                        )}
+                                    </span>
                                 </div>
+                                {taxTotals.total > 0 && (
+                                    <div className="flex justify-between text-amber-600 dark:text-amber-400 pt-1 border-t border-green-200 dark:border-green-700">
+                                        <span>🔄 Repeat Winner Tax:</span>
+                                        <span className="font-medium">₹{taxTotals.total.toLocaleString()}</span>
+                                    </div>
+                                )}
                                 {ucExemptCount > 0 && (
                                     <div className="flex justify-between text-amber-600 dark:text-amber-400 pt-1 border-t border-green-200 dark:border-green-700">
                                         <span>⚠️ UC-Exempt cost ({ucExemptCount} × ₹{entryFee}):</span>
@@ -238,6 +319,13 @@ export function DeclareWinnerDialog({
                                     const teamPrize = getPrizeForPositionAmount(idx + 1);
                                     const perPlayer = getPerPlayerAmount(idx + 1, playerCount);
 
+                                    // Check if any player on this team has tax
+                                    const playersWithTax = team.players?.filter(p => {
+                                        const tax = taxPreview[p.id];
+                                        return tax && tax.taxRate > 0;
+                                    }) || [];
+                                    const hasTax = playersWithTax.length > 0;
+
                                     return (
                                         <Card key={team.teamId} className={`${idx === 0 ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20" : idx === 1 ? "border-gray-400 bg-gray-50 dark:bg-gray-800/50" : idx === 2 ? "border-orange-400 bg-orange-50 dark:bg-orange-900/20" : ""}`}>
                                             <CardContent className="p-3">
@@ -262,6 +350,26 @@ export function DeclareWinnerDialog({
                                                         </div>
                                                     )}
                                                 </div>
+                                                {/* Tax info for players */}
+                                                {hasTax && (
+                                                    <div className="mt-2 pt-2 border-t border-dashed space-y-1">
+                                                        {team.players?.map(p => {
+                                                            const tax = taxPreview[p.id];
+                                                            if (!tax || tax.taxRate === 0) return null;
+                                                            const taxedAmount = getTaxedAmount(p.id, perPlayer);
+                                                            return (
+                                                                <div key={p.id} className="flex items-center justify-between text-xs">
+                                                                    <span className="text-amber-600 dark:text-amber-400">
+                                                                        🔄 {p.displayName || p.name} ({tax.totalWins} wins)
+                                                                    </span>
+                                                                    <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                                                        ₹{perPlayer} → ₹{taxedAmount} <span className="text-[10px]">(-{tax.taxPercentage})</span>
+                                                                    </span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
                                             </CardContent>
                                         </Card>
                                     );
@@ -326,6 +434,6 @@ export function DeclareWinnerDialog({
                     </Button>
                 </DialogFooter>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     );
 }

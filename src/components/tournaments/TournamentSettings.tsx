@@ -25,6 +25,7 @@ import {
   Loader2,
   ImagePlus,
   Globe,
+  Undo2,
 } from "lucide-react";
 import { Ternary } from "../common/Ternary";
 import { useTournamentStore } from "../../store/tournament";
@@ -93,6 +94,31 @@ export function TournamentSettings() {
     setShowDeclareWinnerModal(true);
   };
 
+  // Undo winner declaration mutation
+  const { isPending: isUndoing, mutate: undoWinner } = useMutation({
+    mutationFn: () => http.post(`/admin/tournament/${tournamentId}/undo-winner`),
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success("Winner declaration undone! UC transactions have been reversed.");
+        queryClient.invalidateQueries({ queryKey: ["tournament", tournamentId] });
+        queryClient.invalidateQueries({ queryKey: ["tournaments"] });
+      } else {
+        toast.error(data.message || "Failed to undo winner declaration");
+      }
+    },
+    onError: () => {
+      toast.error("Failed to undo winner declaration");
+    },
+  });
+
+  const handleUndoWinner = () => {
+    if (!tournamentId || !tournament?.isWinnerDeclared) return;
+
+    if (confirm("Are you sure you want to undo the winner declaration? This will:\n\n• Reverse all UC transactions\n• Delete winner records\n• Delete income records\n\nThis action cannot be easily undone!")) {
+      undoWinner();
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Tournament Selector & Actions */}
@@ -136,7 +162,7 @@ export function TournamentSettings() {
               <SelectTrigger className="flex-1 bg-background/50">
                 <SelectValue placeholder="Select a tournament to configure..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-60 overflow-auto">
                 {isLoadingTournaments ? (
                   <SelectItem value="loading" disabled>Loading...</SelectItem>
                 ) : tournaments && tournaments.length > 0 ? (
@@ -156,17 +182,36 @@ export function TournamentSettings() {
               </SelectContent>
             </Select>
             {tournamentId && (
-              <Button
-                onClick={handleDeclareWinnersClick}
-                disabled={tournament?.isWinnerDeclared}
-                variant="outline"
-                className="gap-2 w-full sm:w-auto"
-                size="sm"
-              >
-                <Sparkles className="h-4 w-4" />
-                <span className="hidden sm:inline">{tournament?.isWinnerDeclared ? "Winners Declared" : "Declare Winners"}</span>
-                <span className="sm:hidden">{tournament?.isWinnerDeclared ? "Declared" : "Declare"}</span>
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                {!tournament?.isWinnerDeclared ? (
+                  <Button
+                    onClick={handleDeclareWinnersClick}
+                    variant="outline"
+                    className="gap-2 flex-1 sm:flex-none"
+                    size="sm"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <span className="hidden sm:inline">Declare Winners</span>
+                    <span className="sm:hidden">Declare</span>
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleUndoWinner}
+                    disabled={isUndoing}
+                    variant="destructive"
+                    className="gap-2 flex-1 sm:flex-none"
+                    size="sm"
+                  >
+                    {isUndoing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Undo2 className="h-4 w-4" />
+                    )}
+                    <span className="hidden sm:inline">{isUndoing ? "Undoing..." : "Undo Winners"}</span>
+                    <span className="sm:hidden">{isUndoing ? "..." : "Undo"}</span>
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </CardContent>

@@ -71,19 +71,19 @@ const AdminPushSubscribersPage = () => {
                     <div className="absolute -top-4 -left-4 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full blur-3xl" />
                     <div className="absolute top-0 right-20 w-24 h-24 bg-gradient-to-br from-teal-500/10 to-transparent rounded-full blur-2xl" />
 
-                    <div className="relative flex items-center justify-between gap-4 p-5 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-sm border rounded-2xl shadow-lg">
-                        <div className="flex items-center gap-4">
-                            <div className="relative">
+                    <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-sm border rounded-2xl shadow-lg">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="relative shrink-0">
                                 <div className="absolute -inset-1 bg-gradient-to-br from-emerald-500/40 to-teal-500/40 rounded-xl blur opacity-60" />
-                                <div className="relative p-3 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-xl">
-                                    <FiBell className="h-6 w-6 text-white" />
+                                <div className="relative p-2.5 sm:p-3 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-xl">
+                                    <FiBell className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                                 </div>
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-foreground">
+                                <h1 className="text-xl sm:text-2xl font-bold text-foreground">
                                     Push Subscribers
                                 </h1>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-xs sm:text-sm text-muted-foreground">
                                     View who has enabled push notifications
                                 </p>
                             </div>
@@ -93,7 +93,7 @@ const AdminPushSubscribersPage = () => {
                             size="sm"
                             onClick={fetchSubscribers}
                             disabled={loading}
-                            className="gap-2"
+                            className="gap-2 w-full sm:w-auto"
                         >
                             <FiRefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                             Refresh
@@ -153,47 +153,66 @@ const AdminPushSubscribersPage = () => {
                         </div>
                     ) : (
                         <div className="divide-y divide-border">
-                            {subscribers.map((sub, index) => {
-                                const deviceCount = groupedByPlayer[sub.playerId]?.length || 1;
+                            {Object.entries(groupedByPlayer).map(([playerId, playerSubs], index) => {
+                                // Sort by createdAt desc to get most recent first
+                                const sortedSubs = [...playerSubs].sort(
+                                    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                                );
+                                const firstSub = sortedSubs[0];
+                                const deviceCount = playerSubs.length;
                                 const isMultiDevice = deviceCount > 1;
 
                                 return (
                                     <div
-                                        key={sub.id}
-                                        className="p-4 flex items-center gap-4 hover:bg-muted/50 transition-colors"
+                                        key={playerId}
+                                        className="p-3 sm:p-4 hover:bg-muted/50 transition-colors"
                                     >
-                                        <div className="flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-600 font-semibold">
-                                            {index + 1}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <FiUser className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                                <span className="font-medium text-foreground truncate">
-                                                    {sub.userName}
-                                                </span>
-                                                {isMultiDevice && (
-                                                    <span className="flex items-center gap-1 text-xs bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full">
-                                                        <FiSmartphone className="h-3 w-3" />
-                                                        {deviceCount} devices
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {sub.displayName && (
-                                                <div className="text-sm text-muted-foreground truncate">
-                                                    {sub.displayName}
+                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
+                                            <div className="flex items-center gap-3 sm:gap-4">
+                                                <div className="flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-600 font-semibold text-sm shrink-0">
+                                                    {index + 1}
                                                 </div>
-                                            )}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <FiUser className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                        <span className="font-medium text-foreground truncate">
+                                                            {firstSub.displayName || firstSub.userName}
+                                                        </span>
+                                                        {isMultiDevice && (
+                                                            <span className="flex items-center gap-1 text-xs bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full">
+                                                                <FiSmartphone className="h-3 w-3" />
+                                                                {deviceCount} devices
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {firstSub.displayName && (
+                                                        <div className="text-sm text-muted-foreground truncate">
+                                                            @{firstSub.userName}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground flex-shrink-0">
-                                            <FiClock className="h-4 w-4" />
-                                            {new Date(sub.createdAt).toLocaleString("en-IN", {
-                                                timeZone: "Asia/Kolkata",
-                                                day: "2-digit",
-                                                month: "short",
-                                                year: "numeric",
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            })}
+                                        {/* Device subscription timestamps */}
+                                        <div className="mt-2 ml-11 sm:ml-14 space-y-1">
+                                            {sortedSubs.map((sub, subIdx) => (
+                                                <div
+                                                    key={sub.id}
+                                                    className="flex items-center gap-2 text-xs text-muted-foreground"
+                                                >
+                                                    <FiSmartphone className="h-3 w-3 shrink-0" />
+                                                    <span className="text-muted-foreground/70">Device {subIdx + 1}:</span>
+                                                    <FiClock className="h-3 w-3" />
+                                                    {new Date(sub.createdAt).toLocaleString("en-IN", {
+                                                        timeZone: "Asia/Kolkata",
+                                                        day: "2-digit",
+                                                        month: "short",
+                                                        year: "numeric",
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })}
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 );

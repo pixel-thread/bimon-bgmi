@@ -16,16 +16,25 @@ export async function getPlayerRecentWins(
     seasonId: string,
     limit: number = 6
 ): Promise<Map<string, number>> {
-    if (!seasonId || playerIds.length === 0) {
+    if (playerIds.length === 0) {
         return new Map();
     }
 
-    // Get last N tournaments in the season that have declared winners
+    // Build where clause - if seasonId is provided, filter by it; otherwise count across all tournaments
+    const whereClause: {
+        isWinnerDeclared: boolean;
+        seasonId?: string;
+    } = {
+        isWinnerDeclared: true,
+    };
+
+    if (seasonId) {
+        whereClause.seasonId = seasonId;
+    }
+
+    // Get last N tournaments that have declared winners
     const recentTournaments = await prisma.tournament.findMany({
-        where: {
-            seasonId,
-            isWinnerDeclared: true,
-        },
+        where: whereClause,
         orderBy: { createdAt: "desc" },
         take: limit,
         select: {

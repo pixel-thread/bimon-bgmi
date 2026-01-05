@@ -211,8 +211,10 @@ export async function POST(
           if (!playerData) continue;
 
           // Calculate repeat winner tax for this player
-          const winCount = playerWinCounts.get(player.id) || 0;
-          const taxResult = calculateRepeatWinnerTax(player.id, basePerPlayerAmount, winCount);
+          // Add +1 to include the CURRENT win they're receiving now
+          const previousWins = playerWinCounts.get(player.id) || 0;
+          const totalWinsIncludingCurrent = previousWins + 1;
+          const taxResult = calculateRepeatWinnerTax(player.id, basePerPlayerAmount, totalWinsIncludingCurrent);
           allTaxResults.push(taxResult);
 
           // Use net amount after tax
