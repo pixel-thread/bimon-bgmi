@@ -9,6 +9,7 @@ import {
 } from "@/src/utils/teamBalancer";
 import { computeWeightedScore, PlayerWithWins } from "@/src/utils/scoreUtil";
 import { PlayerWithWeightT } from "@/src/types/player";
+import { getPreviousTournamentTeammates } from "@/src/utils/previousTeammates";
 
 type PreviewTeamInput = {
   teamNumber: number;
@@ -197,12 +198,20 @@ export async function createTeamsByPolls({
     }
 
     if (teamCount > 0) {
+      // Get previous teammates to avoid back-to-back pairing (lookback 1 tournament)
+      const previousTeammates = await getPreviousTournamentTeammates(
+        seasonId,
+        tournamentId,
+        playersForTeams.map(p => p.id),
+        1 // Look back 1 tournament for back-to-back prevention
+      );
+
       if (groupSize === 2) {
-        teams = createBalancedDuos(playersForTeams, seasonId);
+        teams = createBalancedDuos(playersForTeams, seasonId, previousTeammates);
       } else if (groupSize === 3) {
-        teams = createBalancedTrios(playersForTeams, seasonId);
+        teams = createBalancedTrios(playersForTeams, seasonId, previousTeammates);
       } else if (groupSize === 4) {
-        teams = createBalancedQuads(playersForTeams, seasonId);
+        teams = createBalancedQuads(playersForTeams, seasonId, previousTeammates);
       }
     }
 

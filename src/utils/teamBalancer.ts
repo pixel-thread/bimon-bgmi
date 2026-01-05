@@ -62,10 +62,12 @@ export function assignPlayersToTeamsBalanced(
 /**
  * Creates balanced duo teams by pairing players from the stronger half with the weaker half.
  * Both halves are shuffled to produce varied pairings on each call while maintaining balance.
+ * If previousTeammates is provided, tries to avoid pairing players who were teammates recently.
  */
 export function createBalancedDuos(
   players: PlayerWithStatsT[],
   seasonId?: string,
+  previousTeammates?: Map<string, Set<string>>,
 ): TeamStats[] {
   // Sort by weighted score descending
   const sorted = [...players].sort((a, b) => {
@@ -85,11 +87,27 @@ export function createBalancedDuos(
   const shuffledWeak = shuffle(weakHalf);
 
   const teams: TeamStats[] = [];
+  const usedWeakIndices = new Set<number>();
 
-  // Pair shuffled strong with shuffled weak
+  // Pair shuffled strong with shuffled weak, avoiding previous teammates when possible
   for (let i = 0; i < half; i++) {
     const strong = shuffledStrong[i];
-    const weak = shuffledWeak[i];
+    let weak = shuffledWeak[i];
+    let weakIdx = i;
+
+    // If we have previousTeammates info, try to find a non-previous-teammate partner
+    if (previousTeammates && previousTeammates.get(strong.id)?.has(weak.id)) {
+      // Try to find an alternative weak player who wasn't a previous teammate
+      for (let j = 0; j < half; j++) {
+        if (usedWeakIndices.has(j)) continue;
+        if (!previousTeammates.get(strong.id)?.has(shuffledWeak[j].id)) {
+          weak = shuffledWeak[j];
+          weakIdx = j;
+          break;
+        }
+      }
+    }
+    usedWeakIndices.add(weakIdx);
 
     const strongStats = strong.playerStats.find((p) => p.seasonId === seasonId);
     const weakStats = weak.playerStats.find((p) => p.seasonId === seasonId);
@@ -110,10 +128,12 @@ export function createBalancedDuos(
 /**
  * Creates balanced trio teams by combining one player from each skill tier (top, middle, bottom).
  * Each tier is shuffled independently to produce varied groupings while maintaining balance.
+ * If previousTeammates is provided, tries to avoid grouping players who were teammates recently.
  */
 export function createBalancedTrios(
   players: PlayerWithStatsT[],
   seasonId?: string,
+  previousTeammates?: Map<string, Set<string>>,
 ): TeamStats[] {
   // Sort by weighted score descending
   const sorted = [...players].sort((a, b) => {
@@ -134,12 +154,50 @@ export function createBalancedTrios(
   const shuffledWeak = shuffle(weakTier);
 
   const teams: TeamStats[] = [];
+  const usedMediumIndices = new Set<number>();
+  const usedWeakIndices = new Set<number>();
+
+  // Helper to check if any pair in the proposed team were previous teammates
+  const hasPreviousTeammate = (playerIds: string[]): boolean => {
+    if (!previousTeammates) return false;
+    for (let i = 0; i < playerIds.length; i++) {
+      for (let j = i + 1; j < playerIds.length; j++) {
+        if (previousTeammates.get(playerIds[i])?.has(playerIds[j])) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
 
   // Combine one from each tier per team
   for (let i = 0; i < third; i++) {
     const strong = shuffledStrong[i];
-    const medium = shuffledMedium[i];
-    const weak = shuffledWeak[i];
+    let medium = shuffledMedium[i];
+    let weak = shuffledWeak[i];
+    let mediumIdx = i;
+    let weakIdx = i;
+
+    // Try to find a combination without previous teammates
+    if (previousTeammates && hasPreviousTeammate([strong.id, medium.id, weak.id])) {
+      // Try different medium players
+      for (let m = 0; m < third; m++) {
+        if (usedMediumIndices.has(m)) continue;
+        for (let w = 0; w < third; w++) {
+          if (usedWeakIndices.has(w)) continue;
+          if (!hasPreviousTeammate([strong.id, shuffledMedium[m].id, shuffledWeak[w].id])) {
+            medium = shuffledMedium[m];
+            weak = shuffledWeak[w];
+            mediumIdx = m;
+            weakIdx = w;
+            break;
+          }
+        }
+        if (mediumIdx !== i || weakIdx !== i) break;
+      }
+    }
+    usedMediumIndices.add(mediumIdx);
+    usedWeakIndices.add(weakIdx);
 
     const strongStats = strong.playerStats.find((p) => p.seasonId === seasonId);
     const mediumStats = medium.playerStats.find((p) => p.seasonId === seasonId);
@@ -161,10 +219,12 @@ export function createBalancedTrios(
 /**
  * Creates balanced quad teams by combining one player from each skill tier (top, upper-middle, lower-middle, bottom).
  * Each tier is shuffled independently to produce varied groupings while maintaining balance.
+ * If previousTeammates is provided, tries to avoid grouping players who were teammates recently.
  */
 export function createBalancedQuads(
   players: PlayerWithStatsT[],
   seasonId?: string,
+  previousTeammates?: Map<string, Set<string>>,
 ): TeamStats[] {
   // Sort by weighted score descending
   const sorted = [...players].sort((a, b) => {
@@ -187,13 +247,58 @@ export function createBalancedQuads(
   const shuffled4 = shuffle(tier4);
 
   const teams: TeamStats[] = [];
+  const usedIdx2 = new Set<number>();
+  const usedIdx3 = new Set<number>();
+  const usedIdx4 = new Set<number>();
+
+  // Helper to check if any pair in the proposed team were previous teammates
+  const hasPreviousTeammate = (playerIds: string[]): boolean => {
+    if (!previousTeammates) return false;
+    for (let i = 0; i < playerIds.length; i++) {
+      for (let j = i + 1; j < playerIds.length; j++) {
+        if (previousTeammates.get(playerIds[i])?.has(playerIds[j])) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
 
   // Combine one from each tier per team
   for (let i = 0; i < quarter; i++) {
     const p1 = shuffled1[i];
-    const p2 = shuffled2[i];
-    const p3 = shuffled3[i];
-    const p4 = shuffled4[i];
+    let p2 = shuffled2[i];
+    let p3 = shuffled3[i];
+    let p4 = shuffled4[i];
+    let idx2 = i, idx3 = i, idx4 = i;
+
+    // Try to find a combination without previous teammates
+    if (previousTeammates && hasPreviousTeammate([p1.id, p2.id, p3.id, p4.id])) {
+      let found = false;
+      outerLoop:
+      for (let a = 0; a < quarter && !found; a++) {
+        if (usedIdx2.has(a)) continue;
+        for (let b = 0; b < quarter && !found; b++) {
+          if (usedIdx3.has(b)) continue;
+          for (let c = 0; c < quarter && !found; c++) {
+            if (usedIdx4.has(c)) continue;
+            if (!hasPreviousTeammate([p1.id, shuffled2[a].id, shuffled3[b].id, shuffled4[c].id])) {
+              p2 = shuffled2[a];
+              p3 = shuffled3[b];
+              p4 = shuffled4[c];
+              idx2 = a;
+              idx3 = b;
+              idx4 = c;
+              found = true;
+              break outerLoop;
+            }
+          }
+        }
+      }
+    }
+    usedIdx2.add(idx2);
+    usedIdx3.add(idx3);
+    usedIdx4.add(idx4);
 
     const stats1 = p1.playerStats.find((p) => p.seasonId === seasonId);
     const stats2 = p2.playerStats.find((p) => p.seasonId === seasonId);

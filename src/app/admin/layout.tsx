@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/src/components/ui/tooltip";
 export default function layout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <AppSidebar variant="inset" side="right" />
+      <AppSidebar variant="inset" side="left" />
       <SidebarInset>
         <SiteHeader />
         <TooltipProvider>
