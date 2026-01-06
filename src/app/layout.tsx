@@ -2,13 +2,13 @@ import "./globals.css";
 import { Wrapper } from "../components/provider/wrapper";
 
 export const metadata = {
-  metadataBase: new URL("https://bgmi-tournament.vercel.app"),
-  title: "PUBGMI Tournament Management System",
+  metadataBase: new URL("https://bimon-bgmi.vercel.app"),
+  title: "PUBGMI BIMON - BGMI Tournament Platform",
   description:
-    "Professional tournament management platform for PUBG Mobile and BGMI esports competitions. Track teams, manage players, calculate K/D statistics, and run competitive gaming events with comprehensive analytics and real-time scoring.",
+    "Join competitive BGMI tournaments, track your stats, and compete with the best players!",
   keywords:
     "PUBG Mobile, BGMI, tournament, esports, gaming, competition, leaderboard, statistics, K/D ratio, team management",
-  author: "PUBGMI Tournament Platform",
+  author: "PUBGMI BIMON",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -42,18 +42,19 @@ export const metadata = {
     ],
   },
   openGraph: {
-    title: "PUBGMI Tournament Management System",
+    title: "PUBGMI BIMON",
     description:
-      "Professional tournament management platform for PUBG Mobile and BGMI esports competitions. Track teams, manage players, calculate K/D statistics, and run competitive gaming events with comprehensive analytics and real-time scoring.",
+      "Join competitive BGMI tournaments, track your stats, and compete with the best!",
     images: ["/og-image.png"],
     type: "website",
-    url: "https://bgmi-tournament.vercel.app/",
+    url: "https://bimon-bgmi.vercel.app/",
+    siteName: "PUBGMI BIMON",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PUBGMI Tournament Management System",
+    title: "PUBGMI BIMON",
     description:
-      "Professional tournament management platform for PUBG Mobile and BGMI esports competitions.",
+      "Join competitive BGMI tournaments and compete with the best!",
     images: ["/og-image.png"],
   },
 };

@@ -205,8 +205,8 @@ export function InstallPrompt() {
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
                 <div className="mx-4 w-full max-w-sm rounded-2xl border border-border/50 bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-300">
                     <div className="text-center">
-                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
-                            <IconDownload className="h-7 w-7 text-primary" />
+                        <div className="mx-auto h-16 w-16 overflow-hidden rounded-xl shadow-lg">
+                            <img src="/android-chrome-192x192.png" alt="PUBGMI" className="h-full w-full object-cover" />
                         </div>
                         <h3 className="mt-4 text-xl font-semibold text-foreground">Install App</h3>
                         <p className="mt-2 text-sm text-muted-foreground">
@@ -234,8 +234,8 @@ export function InstallPrompt() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="mx-4 w-full max-w-sm rounded-2xl border border-border/50 bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-300">
                 <div className="text-center">
-                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
-                        <IconDownload className="h-7 w-7 text-primary" />
+                    <div className="mx-auto h-16 w-16 overflow-hidden rounded-xl shadow-lg">
+                        <img src="/android-chrome-192x192.png" alt="PUBGMI" className="h-full w-full object-cover" />
                     </div>
                     <h3 className="mt-4 text-xl font-semibold text-foreground">Install App</h3>
                     <p className="mt-2 text-sm text-muted-foreground">
