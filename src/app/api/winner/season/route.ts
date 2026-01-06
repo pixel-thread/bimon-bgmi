@@ -141,7 +141,7 @@ export async function POST(req: Request) {
           place.players.forEach((player) => {
             if (!playerPlacementMap[player.id]) {
               playerPlacementMap[player.id] = {
-                playerName: player.name,
+                playerName: player.displayName || player.name,
                 firstPlaceCount: 0,
                 secondPlaceCount: 0,
                 thirdPlaceCount: 0,
@@ -167,11 +167,11 @@ export async function POST(req: Request) {
     const recentTournamentResults = recentTournaments.map((t) => ({
       tournamentId: t.tournamentId,
       tournamentName: t.tournamentName,
-      firstPlace: t.place1?.players?.map((p) => p.name) || [],
-      secondPlace: t.place2?.players?.map((p) => p.name) || [],
-      thirdPlace: t.place3?.players?.map((p) => p.name) || [],
-      fourthPlace: t.place4?.players?.map((p) => p.name) || [],
-      fifthPlace: t.place5?.players?.map((p) => p.name) || [],
+      firstPlace: t.place1?.players?.map((p) => p.displayName || p.name) || [],
+      secondPlace: t.place2?.players?.map((p) => p.displayName || p.name) || [],
+      thirdPlace: t.place3?.players?.map((p) => p.displayName || p.name) || [],
+      fourthPlace: t.place4?.players?.map((p) => p.displayName || p.name) || [],
+      fifthPlace: t.place5?.players?.map((p) => p.displayName || p.name) || [],
     }));
 
     return SuccessResponse({

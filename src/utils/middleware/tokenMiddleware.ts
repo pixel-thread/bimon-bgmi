@@ -86,5 +86,6 @@ export async function tokenMiddleware(req: NextRequest | Request) {
       },
     });
   }
-  return user;
+  // User is guaranteed to be non-null at this point
+  return user!;
 }

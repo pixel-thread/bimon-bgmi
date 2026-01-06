@@ -15,6 +15,8 @@ import { SlotMachineCounter } from "@/src/components/ui/AnimatedCounter";
 import { getPollTheme, PollTheme } from "./pollTheme";
 import { motion, AnimatePresence } from "motion/react";
 import { getPrizeDistribution, getTeamSize } from "@/src/utils/prizeDistribution";
+import { PollCardSkeleton } from "./PollCardSkeleton";
+
 
 const bannedStampStyles = {
   position: "absolute" as const,
@@ -45,8 +47,21 @@ const bannedStampStyles = {
 type VoteT = Prisma.PlayerPollVoteCreateInput["vote"];
 
 // Aceternity-style animated tooltip for prize breakdown
-const PrizeBreakdownTooltip = ({ prizePool, entryFee, teamSize, theme }: { prizePool: number; entryFee: number; teamSize: number; theme: PollTheme }) => {
+const PrizeBreakdownTooltip = ({ prizePool, entryFee, teamSize, theme, onDoubleTap }: { prizePool: number; entryFee: number; teamSize: number; theme: PollTheme; onDoubleTap?: () => void }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const lastTapRef = React.useRef<number>(0);
+
+  const handleTap = () => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      // Double tap detected
+      onDoubleTap?.();
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+      setIsOpen(!isOpen);
+    }
+  };
 
   return (
     <div
@@ -100,8 +115,8 @@ const PrizeBreakdownTooltip = ({ prizePool, entryFee, teamSize, theme }: { prize
       <button
         type="button"
         className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/25 hover:bg-white/40 active:bg-white/50 text-white text-xs font-bold cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110 backdrop-blur-sm border border-white/30"
-        aria-label="View prize breakdown"
-        onClick={() => setIsOpen(!isOpen)}
+        aria-label="View prize breakdown (double-tap to refresh)"
+        onClick={handleTap}
       >
         ?
       </button>
@@ -114,6 +129,8 @@ type WhatAppPollCardProps = {
   readOnly: boolean;
   showAvatars?: boolean;
   onShowVoters: (poll: PollT) => void;
+  isRefetching?: boolean;
+  onRefetch?: () => void;
 };
 
 export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
@@ -122,6 +139,8 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     onShowVoters,
     readOnly,
     showAvatars = false,
+    isRefetching = false,
+    onRefetch,
   }) => {
     const { user } = useAuth();
     const queryClient = useQueryClient();
@@ -323,6 +342,11 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     // Use shared theme utility
     const theme = hasPrizePool ? getPollTheme(participantCount) : null;
 
+    // Show skeleton when refetching
+    if (isRefetching) {
+      return <PollCardSkeleton />;
+    }
+
     return (
       <div className={`relative rounded-xl overflow-hidden max-w-2xl mx-auto transition-all duration-700 ease-in-out ${theme
         ? theme.card
@@ -432,7 +456,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                       </div>
                     </div>
                     {/* Info icon in bottom right corner - Aceternity style */}
-                    <PrizeBreakdownTooltip prizePool={prizePool} entryFee={entryFee} teamSize={teamSize} theme={theme} />
+                    <PrizeBreakdownTooltip prizePool={prizePool} entryFee={entryFee} teamSize={teamSize} theme={theme} onDoubleTap={onRefetch} />
                     {/* Team Type in bottom left */}
                     {poll?.teamType && (
                       <div className="absolute bottom-2 left-3">
@@ -553,11 +577,11 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                 type="button"
                 onClick={() => onShowVoters(poll)}
                 disabled={isLoadingVotes}
-                className={`w-full text-center font-medium py-2 px-4 rounded-lg transition-colors ${isLoadingVotes
-                  ? "text-gray-400 dark:text-gray-500 cursor-not-allowed bg-gray-100 dark:bg-gray-800"
+                className={`w-full text-center font-medium py-2.5 px-4 rounded-xl transition-all border shadow-sm ${isLoadingVotes
+                  ? "text-gray-400 dark:text-gray-500 cursor-not-allowed bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                   : theme
-                    ? theme.button
-                    : "text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    ? `${theme.button} border-current/20`
+                    : "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:shadow-md"
                   }`}
               >
                 {isLoadingVotes ? (
@@ -566,7 +590,10 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                     <span>Loading votes...</span>
                   </span>
                 ) : (
-                  "View all votes"
+                  <span className="flex items-center justify-center gap-2">
+                    <FiUsers className="w-4 h-4" />
+                    View all votes
+                  </span>
                 )}
               </button>
             )}

@@ -12,7 +12,7 @@ import { AddBalanceDialog } from "@/src/components/profile/AddBalanceDialog";
 import {
     Bell, Check, X, ArrowUpRight, ArrowDownLeft, Clock, DollarSign,
     User, Target, Swords, TrendingUp, TrendingDown, Minus, Settings,
-    Trophy, Calendar, Star, Medal, ShieldAlert, History, ChevronLeft, ChevronRight
+    Trophy, Calendar, Star, Medal, ShieldAlert, History, ChevronLeft, ChevronRight, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
@@ -142,18 +142,26 @@ export default function ProfilePage() {
     const totalBalanceHistoryCount = balanceHistoryData?.data?.pagination?.total || 0;
     const ucHistoryTotalPages = balanceHistoryData?.data?.pagination?.pages || 1;
 
-    // Extract stats from API response
-    const kills = playerStats?.kills || 0;
-    const deaths = playerStats?.deaths || 0;
-    const kd = playerStats?.kd || 0;
+    // Compute basic stats from preloaded auth data (instant) or fallback to API data
+    const preloadedStats = user?.player?.playerStats || [];
+    const preloadedKills = preloadedStats.reduce((sum, s) => sum + s.kills, 0);
+    const preloadedDeaths = preloadedStats.reduce((sum, s) => sum + s.deaths, 0);
+    const preloadedKd = preloadedDeaths > 0 ? preloadedKills / preloadedDeaths : preloadedKills;
+
+    // Use preloaded data for instant display, API data once loaded for accuracy
+    const kills = playerStats?.kills ?? preloadedKills;
+    const deaths = playerStats?.deaths ?? preloadedDeaths;
+    const kd = playerStats?.kd ?? Number(preloadedKd.toFixed(2));
+
+    // Extended stats only from API (require complex aggregations)
     const kdTrend = playerStats?.kdTrend || "same";
     const kdChange = playerStats?.kdChange || 0;
     const lastMatchKills = playerStats?.lastMatchKills || 0;
-    const seasonsPlayed = playerStats?.seasonsPlayed || 0;
+    const seasonsPlayed = playerStats?.seasonsPlayed || preloadedStats.length;
     const totalTournaments = playerStats?.totalTournaments || 0;
     const bestMatchKills = playerStats?.bestMatchKills || 0;
     const podiumFinishes = playerStats?.podiumFinishes || { first: 0, second: 0, third: 0 };
-    const banStatus = playerStats?.banStatus || { isBanned: false };
+    const banStatus = playerStats?.banStatus || { isBanned: user?.player?.isBanned || false };
     const wins = playerStats?.wins || 0;
     const top10Count = playerStats?.top10Count || 0;
     const winRate = playerStats?.winRate || 0;
@@ -199,7 +207,7 @@ export default function ProfilePage() {
     });
 
     // Mark all as read
-    const { mutate: markAllRead } = useMutation({
+    const { mutate: markAllRead, isPending: isMarkingAllRead } = useMutation({
         mutationFn: () => http.post("/notifications/read-all", {}),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -441,7 +449,7 @@ export default function ProfilePage() {
                                 </div>
                                 <div className="flex items-baseline justify-center gap-2">
                                     <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-                                        {statsLoading ? <Skeleton className="h-12 w-20 inline-block" /> : kd.toFixed(2)}
+                                        {kd.toFixed(2)}
                                     </span>
                                     {!statsLoading && deaths > 0 && (
                                         <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-sm font-medium ${kdTrend === "up"
@@ -471,7 +479,7 @@ export default function ProfilePage() {
                                     <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Battle Stats</p>
                                     <div className="grid grid-cols-4 gap-3 text-center">
                                         <div>
-                                            <div className="text-2xl font-bold text-slate-800 dark:text-white">{statsLoading ? <Skeleton className="h-7 w-10 inline-block" /> : deaths}</div>
+                                            <div className="text-2xl font-bold text-slate-800 dark:text-white">{deaths}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Matches</p>
                                         </div>
                                         <div>
@@ -483,7 +491,7 @@ export default function ProfilePage() {
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Top 10</p>
                                         </div>
                                         <div>
-                                            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{statsLoading ? <Skeleton className="h-7 w-10 inline-block" /> : kills}</div>
+                                            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{kills}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Kills</p>
                                         </div>
                                     </div>
@@ -522,7 +530,7 @@ export default function ProfilePage() {
                                         </div>
                                         <div className="text-center">
                                             <div className="flex items-center justify-center gap-1">
-                                                <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{userBalance}</p>
+                                                <p className={`text-xl font-bold ${userBalance <= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>{userBalance}</p>
                                                 <AddBalanceDialog />
                                             </div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">UC Balance</p>
@@ -573,14 +581,19 @@ export default function ProfilePage() {
                                     {unreadCount > 0 && <Badge variant="destructive" className="text-xs">{unreadCount}</Badge>}
                                 </div>
                                 {unreadCount > 0 && (
-                                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => markAllRead()}>Mark all read</Button>
+                                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => markAllRead()} disabled={isMarkingAllRead}>
+                                        {isMarkingAllRead ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                                        Mark all read
+                                    </Button>
                                 )}
                             </div>
                             {notifications.length === 0 ? (
                                 <p className="text-center text-muted-foreground py-6 text-sm">No notifications yet</p>
+                            ) : notifications.filter(n => !n.isRead).length === 0 ? (
+                                <p className="text-center text-muted-foreground py-6 text-sm">All caught up! 🎉</p>
                             ) : (
                                 <div className="space-y-2">
-                                    {notifications.slice(0, 5).map((notification) => {
+                                    {notifications.filter(n => !n.isRead).slice(0, 5).map((notification) => {
                                         // Find matching pending request for uc_request type
                                         const pendingRequest = notification.type === "uc_request"
                                             ? pendingRequests.find(r => notification.message.includes(r.amount.toString()))
@@ -738,7 +751,7 @@ export default function ProfilePage() {
                                                         {entry.type === "credit" ? <TrendingUp className="w-4 h-4 text-emerald-500" /> : <TrendingDown className="w-4 h-4 text-red-500" />}
                                                     </div>
                                                     <div className="min-w-0 flex-1">
-                                                        <p className="text-sm font-medium truncate">{entry.description}</p>
+                                                        <p className="text-sm font-medium break-words">{entry.description}</p>
                                                         <p className="text-[10px] text-muted-foreground">
                                                             {new Date(entry.timestamp).toLocaleDateString("en-IN", {
                                                                 month: "short",

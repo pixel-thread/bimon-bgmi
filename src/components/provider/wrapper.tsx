@@ -20,34 +20,27 @@ type Props = {
 
 /**
  * ClerkLoadingGate - Shows loader while Clerk initializes, with timeout for offline
- * After 1 second, shows app content anyway (as guest if offline)
+ * After 3 seconds, shows app content anyway (as guest if offline)
  */
 function ClerkLoadingGate({ children }: { children: React.ReactNode }) {
   const { isLoaded } = useClerkAuth();
   const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
-    console.log("ClerkLoadingGate: isLoaded =", isLoaded, "timedOut =", timedOut);
-
-    // After 1 second, show content regardless of Clerk state
+    // After 3 seconds, show content regardless of Clerk state
     const timeout = setTimeout(() => {
-      console.log("ClerkLoadingGate: Timeout triggered, isLoaded =", isLoaded);
       setTimedOut(true);
-    }, 1000);
+    }, 3000);
 
     return () => clearTimeout(timeout);
-  }, [isLoaded, timedOut]);
-
-  console.log("ClerkLoadingGate render: isLoaded =", isLoaded, "timedOut =", timedOut);
+  }, []);
 
   // Show content if Clerk is loaded OR we've timed out
   if (isLoaded || timedOut) {
-    console.log("ClerkLoadingGate: Rendering children");
     return <>{children}</>;
   }
 
   // Show loader while waiting
-  console.log("ClerkLoadingGate: Rendering loader");
   return (
     <div className="h-screen w-full flex items-center justify-center bg-background">
       <LoaderFour text="PUBGMI TOURNAMENT" />

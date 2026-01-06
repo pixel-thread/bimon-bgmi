@@ -50,7 +50,6 @@ export function RouteRestorerProvider({ children }: { children: React.ReactNode 
 
         // If offline, skip restoration - navigating to uncached pages will fail
         if (!navigator.onLine) {
-            console.log("PWA: Offline - skipping route restoration");
             return;
         }
 

@@ -8,6 +8,10 @@ const withPWA = withPWAInit({
   // Custom service worker with our push notification handlers
   customWorkerSrc: "worker",
   customWorkerDest: "worker",
+  // Fallback pages for offline
+  fallbacks: {
+    document: "/offline.html",
+  },
   // Workbox options for caching
   workboxOptions: {
     // Skip waiting for new service worker
@@ -67,7 +71,6 @@ const withPWA = withPWAInit({
       },
     ],
   },
-  // No fallback - cached pages will be shown instead
 });
 
 const nextConfig: NextConfig = {

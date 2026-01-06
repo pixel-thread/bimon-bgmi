@@ -51,10 +51,10 @@ export function PlayerFilters({
         <Input
           type="search"
           enterKeyHint="search"
-          placeholder="Search by IGN, username, email..."
+          placeholder="Search by name..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="h-11 pl-4 pr-10 w-full"
+          className="h-11 pl-4 pr-10 w-full border border-zinc-800 dark:border-white/80 focus:border-primary rounded-xl"
         />
         <button
           type="submit"
