@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
 
             return SuccessResponse({
                 data: transfer,
-                message: `UC request sent to ${toPlayer.user.userName}`,
+                message: `Requested ${amount} UC from ${toPlayer.user.userName}`,
             });
         }
 

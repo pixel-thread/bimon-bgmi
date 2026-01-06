@@ -28,7 +28,7 @@ type Props = {
 export function UCTransferDialog({ isOpen, onClose, toPlayerId, toPlayerName }: Props) {
     const [amount, setAmount] = useState("");
     const [message, setMessage] = useState("");
-    const [activeTab, setActiveTab] = useState<"send" | "request">("send");
+    const [activeTab, setActiveTab] = useState<"send" | "request">("request");
     const queryClient = useQueryClient();
     const { user } = useAuth();
     const userBalance = user?.player?.uc?.balance || 0;
@@ -53,7 +53,7 @@ export function UCTransferDialog({ isOpen, onClose, toPlayerId, toPlayerName }: 
     const handleClose = () => {
         setAmount("");
         setMessage("");
-        setActiveTab("send");
+        setActiveTab("request");
         onClose();
     };
 
@@ -86,13 +86,13 @@ export function UCTransferDialog({ isOpen, onClose, toPlayerId, toPlayerName }: 
 
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "send" | "request")}>
                     <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="send" className="flex items-center gap-2">
-                            <ArrowUpRight className="w-4 h-4" />
-                            Send UC
-                        </TabsTrigger>
                         <TabsTrigger value="request" className="flex items-center gap-2">
                             <ArrowDownLeft className="w-4 h-4" />
                             Request UC
+                        </TabsTrigger>
+                        <TabsTrigger value="send" className="flex items-center gap-2">
+                            <ArrowUpRight className="w-4 h-4" />
+                            Send UC
                         </TabsTrigger>
                     </TabsList>
 
