@@ -6,7 +6,6 @@ import { removePlayerChracterImage } from "@/src/services/player/removePlayerChr
 import { updatePlayerChracterImage } from "@/src/services/player/updatePlayerChracterImage";
 import { uploadImage } from "@/src/services/upload/uploadImage";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { logger } from "@/src/utils/logger";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 
@@ -67,7 +66,6 @@ export async function DELETE(
 
     const isPlayerExist = await getPlayerById({ id: playerId });
 
-    logger.log("1");
     if (!isPlayerExist?.id) {
       return ErrorResponse({
         message: "Player does not exist",
@@ -75,7 +73,6 @@ export async function DELETE(
       });
     }
 
-    logger.log("2");
     if (!isPlayerExist.characterImage?.id) {
       return ErrorResponse({
         message: "Player does not have a character image",
@@ -88,7 +85,6 @@ export async function DELETE(
       isCharacterImg: true,
     });
 
-    logger.log("3");
     if (!image?.id) {
       return ErrorResponse({
         message: "Image does not exist",
@@ -101,7 +97,6 @@ export async function DELETE(
       bucketName: "characters",
     });
 
-    logger.log("4");
     const removeCharacter = await removePlayerChracterImage({
       id: playerId,
       galleryId: removeGallary.id,

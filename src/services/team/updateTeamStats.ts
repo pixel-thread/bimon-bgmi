@@ -1,5 +1,4 @@
 import { prisma } from "@/src/lib/db/prisma";
-import { logger } from "@/src/utils/logger";
 import {
   TeamsStatsSchemaT,
   teamStatsSchema,
@@ -125,8 +124,6 @@ export async function updateTeamStats({
       })
     );
 
-    logger.log("TeamPlayerStats updated");
-
     return { success: true };
   });
 }
@@ -238,7 +235,5 @@ export async function updateManyTeamsStats({
         });
       })
     );
-
-    logger.log("Bulk TeamPlayerStats updated");
   });
 }

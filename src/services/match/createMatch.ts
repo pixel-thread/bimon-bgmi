@@ -1,5 +1,4 @@
 import { prisma } from "@/src/lib/db/prisma";
-import { logger } from "@/src/utils/logger";
 
 type Props = {
   data: {
@@ -32,8 +31,6 @@ export async function createMatch({ data }: Props): Promise<CreateMatchResult> {
       seasonId: data.seasonId,
     },
   });
-
-  logger.log(`Match created: ${match.id}`);
 
   // Fetch all teams for this tournament
   const teams = await prisma.team.findMany({
@@ -118,7 +115,7 @@ export async function createMatch({ data }: Props): Promise<CreateMatchResult> {
             }
           );
         } catch (error) {
-          logger.error(`Failed to process team ${team.id}: ${error}`);
+          console.error(`Failed to process team ${team.id}: ${error}`);
           // Continue processing other teams even if one fails
         }
       })
@@ -126,7 +123,6 @@ export async function createMatch({ data }: Props): Promise<CreateMatchResult> {
   }
 
   const duration = Date.now() - startTime;
-  logger.log(`Match creation completed in ${duration}ms. Teams: ${teamsProcessed}, Players: ${playersProcessed}`);
 
   return {
     id: match.id,

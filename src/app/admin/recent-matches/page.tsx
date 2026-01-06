@@ -321,7 +321,7 @@ const AdminRecentMatchesPage = () => {
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Select Tournament</label>
                                     <Select
-                                        value={selectedTournament}
+                                        value={selectedTournament || undefined}
                                         onValueChange={handleTournamentChange}
                                     >
                                         <SelectTrigger>

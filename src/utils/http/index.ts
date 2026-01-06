@@ -1,7 +1,5 @@
 import { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
-import { logger } from "../logger";
-
 import axiosInstance from "../api";
 import { MetaT } from "@/src/types/meta";
 
@@ -62,7 +60,6 @@ const http = {
     config?: AxiosRequestConfig,
   ): Promise<ApiResponse<T>> => {
     try {
-      logger.log({ method: "GET =>", path: url });
       const response = await axiosInstance.get(url, config);
       return handleResponse<T>(response);
     } catch (error) {
@@ -76,7 +73,6 @@ const http = {
     config?: AxiosRequestConfig,
   ): Promise<ApiResponse<T>> => {
     try {
-      logger.log({ method: "POST =>", path: url, data });
       const response = await axiosInstance.post(url, data, config);
       return handleResponse<T>(response);
     } catch (error) {
@@ -90,7 +86,6 @@ const http = {
     config?: AxiosRequestConfig,
   ): Promise<ApiResponse<T>> => {
     try {
-      logger.log({ method: "PUT =>", path: url });
       const response = await axiosInstance.put(url, data, config);
       return handleResponse<T>(response);
     } catch (error) {
@@ -103,7 +98,6 @@ const http = {
     config?: AxiosRequestConfig,
   ): Promise<ApiResponse<T>> => {
     try {
-      logger.log({ method: "DELETE =>", path: url });
       const response = await axiosInstance.delete(url, config);
       return handleResponse<T>(response);
     } catch (error) {
@@ -117,7 +111,6 @@ const http = {
     config?: AxiosRequestConfig,
   ): Promise<ApiResponse<T>> => {
     try {
-      logger.log({ method: "PATCH =>", path: url });
       const response = await axiosInstance.patch(url, data, config);
       return handleResponse<T>(response);
     } catch (error) {
