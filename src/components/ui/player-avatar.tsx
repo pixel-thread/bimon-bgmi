@@ -3,7 +3,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { User } from "lucide-react";
 import { cn } from "@/src/lib/utils";
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
 
 type PlayerAvatarProps = {
     /** Custom image URL from character gallery - highest priority */
@@ -18,7 +17,7 @@ type PlayerAvatarProps = {
     size?: "xs" | "sm" | "md" | "lg" | "xl";
     /** Additional className for the avatar */
     className?: string;
-    /** Whether to show user icon as fallback instead of initials */
+    /** Whether to show user icon as fallback instead of skeleton */
     showUserIcon?: boolean;
     /** Whether the player is banned - shows banned stamp overlay */
     isBanned?: boolean;
@@ -30,14 +29,6 @@ const sizeClasses = {
     md: "h-10 w-10",
     lg: "h-12 w-12",
     xl: "h-14 w-14",
-};
-
-const textSizeClasses = {
-    xs: "text-[10px]",
-    sm: "text-xs",
-    md: "text-sm",
-    lg: "text-base",
-    xl: "text-lg",
 };
 
 const iconSizeClasses = {
@@ -59,8 +50,8 @@ const bannedStampSizeClasses = {
 /**
  * Reusable player avatar component that handles image priority:
  * 1. Custom character image (if set)
- * 2. Google/Clerk image (default)
- * 3. Initials fallback
+ * 2. Google/Clerk image (fallback - now disabled, shows skeleton instead)
+ * 3. Skeleton/loading fallback
  */
 export function PlayerAvatar({
     characterImageUrl,
@@ -72,25 +63,24 @@ export function PlayerAvatar({
     showUserIcon = false,
     isBanned = false,
 }: PlayerAvatarProps) {
-    // Priority: characterImage > imageUrl > fallback
+    // Priority: characterImage > imageUrl (if explicitly set) > skeleton fallback
+    // Only use imageUrl if characterImageUrl isn't set
     const imageSrc = characterImageUrl || imageUrl || undefined;
-    const name = getDisplayName(displayName, userName);
-    const initials = name?.substring(0, 2).toUpperCase() || "??";
 
     return (
         <div className="relative">
             <Avatar className={cn(sizeClasses[size], className)}>
-                <AvatarImage src={imageSrc} alt={name || "Player"} />
+                <AvatarImage src={imageSrc} alt={displayName || userName || "Player"} />
                 <AvatarFallback
                     className={cn(
-                        "bg-gradient-to-br from-purple-500 to-pink-500 text-white font-semibold",
-                        textSizeClasses[size]
+                        "bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-700 dark:to-zinc-600"
                     )}
                 >
                     {showUserIcon ? (
                         <User className={cn("text-gray-400", iconSizeClasses[size])} />
                     ) : (
-                        initials
+                        // Skeleton shimmer effect
+                        <div className="w-full h-full animate-pulse bg-gradient-to-r from-zinc-300 via-zinc-200 to-zinc-300 dark:from-zinc-600 dark:via-zinc-500 dark:to-zinc-600 rounded-full" />
                     )}
                 </AvatarFallback>
             </Avatar>
@@ -109,4 +99,5 @@ export function PlayerAvatar({
         </div>
     );
 }
+
 

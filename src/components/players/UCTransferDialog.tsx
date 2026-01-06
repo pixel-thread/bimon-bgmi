@@ -85,12 +85,18 @@ export function UCTransferDialog({ isOpen, onClose, toPlayerId, toPlayerName }: 
                 </DialogHeader>
 
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "send" | "request")}>
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="request" className="flex items-center gap-2">
+                    <TabsList className="grid w-full grid-cols-2 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl">
+                        <TabsTrigger
+                            value="request"
+                            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-blue-600 data-[state=active]:dark:text-blue-400 data-[state=active]:shadow-md rounded-lg font-medium"
+                        >
                             <ArrowDownLeft className="w-4 h-4" />
                             Request UC
                         </TabsTrigger>
-                        <TabsTrigger value="send" className="flex items-center gap-2">
+                        <TabsTrigger
+                            value="send"
+                            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-green-600 data-[state=active]:dark:text-green-400 data-[state=active]:shadow-md rounded-lg font-medium"
+                        >
                             <ArrowUpRight className="w-4 h-4" />
                             Send UC
                         </TabsTrigger>
@@ -140,7 +146,7 @@ export function UCTransferDialog({ isOpen, onClose, toPlayerId, toPlayerName }: 
                     </div>
                 </div>
 
-                <DialogFooter className="gap-2">
+                <DialogFooter className="gap-2 mt-6 pt-4 border-t">
                     <Button variant="outline" onClick={handleClose} disabled={isPending}>
                         Cancel
                     </Button>

@@ -9,17 +9,19 @@ type PlayerT = Prisma.PlayerGetPayload<{
 
 type UsePlayerT = {
   id: string;
+  enabled?: boolean;
 };
 
-export function usePlayer({ id }: UsePlayerT) {
+export function usePlayer({ id, enabled = true }: UsePlayerT) {
   const url = PLAYER_ENDPOINTS.GET_PLAYER_BY_ID.replace(":id", id);
 
   return useQuery({
     queryFn: () => http.get<PlayerT>(url),
     queryKey: ["player", id],
     select: (data) => data.data,
-    enabled: !!id,
+    enabled: !!id && enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh, no refetch
     gcTime: 10 * 60 * 1000,   // 10 minutes - keep in cache longer
   });
 }
+

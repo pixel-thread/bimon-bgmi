@@ -19,10 +19,10 @@ import {
     FiHelpCircle,
     FiAward,
     FiUser,
+    FiUsers,
     FiShield,
     FiFileText,
-    FiDollarSign,
-    FiBarChart2,
+    FiCheckSquare,
     FiLoader,
 } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
@@ -36,8 +36,8 @@ const navItems = [
     { href: "/", label: "Home", icon: FiHome },
     { href: "/about", label: "About", icon: FiInfo },
     { href: "/how-it-works", label: "How It Works", icon: FiHelpCircle },
-    { href: "/tournament/players", label: "Balance", icon: FiDollarSign },
-    { href: "/tournament/vote", label: "Vote", icon: FiBarChart2 },
+    { href: "/tournament/players", label: "Players", icon: FiUsers },
+    { href: "/tournament/vote", label: "Vote", icon: FiCheckSquare },
     { href: "/tournament/rules", label: "Rules", icon: FiFileText },
 ];
 
@@ -394,13 +394,6 @@ export default function Navigation() {
                                                         {(playerUser as any)?.player?.characterImage?.publicUrl ? (
                                                             <Image
                                                                 src={(playerUser as any).player.characterImage.publicUrl}
-                                                                alt="Profile"
-                                                                fill
-                                                                className="object-cover"
-                                                            />
-                                                        ) : user?.imageUrl ? (
-                                                            <Image
-                                                                src={user.imageUrl}
                                                                 alt="Profile"
                                                                 fill
                                                                 className="object-cover"

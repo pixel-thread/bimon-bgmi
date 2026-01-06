@@ -82,8 +82,6 @@ type Props = {
 };
 
 export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
-  const { data: player, isLoading: isPlayerLoading } = usePlayer({ id });
-  const { data: stats, isLoading: isStatsLoading } = usePlayerStats({ id });
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -93,9 +91,20 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
   const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
   const isOwnProfile = user?.playerId === id;
 
+  // Only fetch additional data for admins (they need isUCExempt, isTrusted, playerBanned details)
+  // Regular users can use initialData which already has all needed info
+  const { data: player, isLoading: isPlayerLoading } = usePlayer({
+    id,
+    enabled: isAdmin && isOpen // Only fetch for admins when modal is open
+  });
+  const { data: stats, isLoading: isStatsLoading } = usePlayerStats({
+    id,
+    enabled: isAdmin && isOpen // Only fetch for admins when modal is open
+  });
+
   // Use initialData if available for instant display, otherwise wait for fetched data
   const hasInitialData = !!initialData;
-  const isLoading = !hasInitialData && (isPlayerLoading || isStatsLoading);
+  const isLoading = isAdmin ? (!hasInitialData && (isPlayerLoading || isStatsLoading)) : !hasInitialData;
 
   // Derived display values
   const displayName = player?.user?.displayName || player?.user?.userName || initialData?.displayName || initialData?.userName || "Player";
@@ -526,12 +535,16 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
         </DialogContent>
       </Dialog>
 
-      {player && (
+      {(player || initialData) && (
         <UCTransferDialog
           isOpen={isTransferDialogOpen}
           onClose={() => setIsTransferDialogOpen(false)}
           toPlayerId={id}
-          toPlayerName={getDisplayName(player.user?.displayName, player.user?.userName) || "Player"}
+          toPlayerName={
+            player
+              ? getDisplayName(player.user?.displayName, player.user?.userName) || "Player"
+              : getDisplayName(initialData?.displayName, initialData?.userName) || "Player"
+          }
         />
       )}
 

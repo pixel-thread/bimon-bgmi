@@ -6,9 +6,10 @@ import { useQuery } from "@tanstack/react-query";
 
 type UsePlayerT = {
   id: string;
+  enabled?: boolean;
 };
 
-export function usePlayerStats({ id }: UsePlayerT) {
+export function usePlayerStats({ id, enabled = true }: UsePlayerT) {
   const { seasonId } = useSeasonStore();
   const url = PLAYER_ENDPOINTS.GET_PLAYER_STATS_BY_ID.replace(
     ":id",
@@ -19,8 +20,9 @@ export function usePlayerStats({ id }: UsePlayerT) {
     queryFn: () => http.get<PlayerStatsT>(url),
     queryKey: ["player stats", id, seasonId],
     select: (data) => data.data,
-    enabled: !!id,
+    enabled: !!id && enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh, no refetch
     gcTime: 10 * 60 * 1000,   // 10 minutes - keep in cache longer
   });
 }
+

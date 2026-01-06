@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   FiUsers,
-  FiSmartphone,
+  FiHash,
   FiFileText,
   FiAward,
-  FiBarChart,
+  FiCheckSquare,
   FiImage,
 } from "react-icons/fi";
 import { GamepadIcon } from "lucide-react";
@@ -100,10 +100,10 @@ const TournamentNavigation = () => {
   };
 
   const navItems = [
-    { href: "/tournament", label: "Positions", icon: FiSmartphone }, // Changed from /tournament/teams to /tournament
-    { href: "/tournament/vote", label: "Vote", icon: FiBarChart },
+    { href: "/tournament", label: "Positions", icon: FiHash },
+    { href: "/tournament/vote", label: "Vote", icon: FiCheckSquare },
     // Scoreboards hidden from public nav - still accessible via admin
-    { href: "/tournament/players", label: "Balance", icon: FiUsers },
+    { href: "/tournament/players", label: "Players", icon: FiUsers },
     {
       href: "/tournament/games",
       label: "Games",
