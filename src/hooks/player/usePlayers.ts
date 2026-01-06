@@ -1,6 +1,5 @@
 import http from "@/src/utils/http";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { MetaT } from "@/src/types/meta";
 import { useEffect, useState } from "react";
 import { useSeasonStore } from "@/src/store/season";
@@ -39,7 +38,6 @@ export function usePlayers({
   sortOrder?: "asc" | "desc";
   enabled?: boolean;
 } = {}) {
-  const { user } = useAuth();
   const { seasonId } = useSeasonStore();
 
   const queryParams = new URLSearchParams({
@@ -51,10 +49,8 @@ export function usePlayers({
     sortOrder,
   });
 
-  const url =
-    user?.role === "SUPER_ADMIN" || user?.role === "ADMIN"
-      ? `/admin/players?${queryParams.toString()}`
-      : `/players?${queryParams.toString()}`;
+  // Always use public endpoint for immediate data fetch (no auth blocking)
+  const url = `/players?${queryParams.toString()}`;
 
   const [meta, setMeta] = useState<MetaT | undefined>(undefined);
 

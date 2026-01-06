@@ -1,7 +1,6 @@
 import { PollT } from "@/src/types/poll";
 import http from "@/src/utils/http";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
 type Props = {
   page?: string | null;
@@ -9,15 +8,9 @@ type Props = {
 };
 
 export function usePolls({ page, forcePublic }: Props = { page: "1" }) {
-  const { user } = useAuth();
-
-  const isAdmin =
-    user?.role === "SUPER_ADMIN" ? true : user?.role === "ADMIN" ? true : false;
-
+  // Always use public endpoint for immediate data fetch (no auth blocking)
   // Fetch with Clerk images in initial request so everything loads together
-  const baseUrl = isAdmin && !forcePublic
-    ? `/admin/poll?page=${page}`
-    : `/poll?page=${page}&withImages=true`;
+  const baseUrl = `/poll?page=${page}&withImages=true`;
 
   const query = useQuery({
     queryKey: ["polls"],
