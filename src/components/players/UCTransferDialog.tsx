@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import Link from "next/link";
 import {
     Dialog,
     DialogContent,
@@ -79,9 +80,9 @@ export function UCTransferDialog({ isOpen, onClose, toPlayerId, toPlayerName }: 
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Transfer UC with {toPlayerName}</DialogTitle>
+            <DialogContent className="max-w-md pt-8">
+                <DialogHeader className="pb-2">
+                    <DialogTitle className="text-center">{toPlayerName}</DialogTitle>
                 </DialogHeader>
 
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "send" | "request")}>
@@ -104,24 +105,18 @@ export function UCTransferDialog({ isOpen, onClose, toPlayerId, toPlayerName }: 
 
                     <TabsContent value="send" className="space-y-4 pt-4">
                         <p className="text-sm text-muted-foreground">
-                            Send UC directly to <span className="font-medium text-foreground">{toPlayerName}</span>.
-                            The UC will be transferred immediately from your balance.
-                            <br />
-                            <span className="text-xs mt-1 block">
-                                Your Balance: <span className={userBalance > 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}>{userBalance} UC</span>
-                            </span>
+                            Your Balance: <span className={userBalance > 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}>{userBalance} UC</span>
                         </p>
                     </TabsContent>
 
                     <TabsContent value="request" className="space-y-4 pt-4">
                         <p className="text-sm text-muted-foreground">
-                            Request UC from <span className="font-medium text-foreground">{toPlayerName}</span>.
-                            They will need to approve your request from their profile page.
+                            Go to <Link href="/profile" className="text-blue-600 underline">profile page</Link> to approve.
                         </p>
                     </TabsContent>
                 </Tabs>
 
-                <div className="space-y-4 pt-2">
+                <div className="space-y-5 pt-4">
                     <div className="space-y-2">
                         <Label htmlFor="amount">Amount (UC)</Label>
                         <Input
@@ -146,7 +141,7 @@ export function UCTransferDialog({ isOpen, onClose, toPlayerId, toPlayerName }: 
                     </div>
                 </div>
 
-                <DialogFooter className="gap-2 mt-6 pt-4 border-t">
+                <DialogFooter className="flex flex-col gap-3 mt-8 pt-0 border-0">
                     <Button variant="outline" onClick={handleClose} disabled={isPending}>
                         Cancel
                     </Button>
