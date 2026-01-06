@@ -79,6 +79,7 @@ export function PlayersTab() {
         const selectedPlayer = players?.find(p => p.id === playerId);
         return (
           <PlayerStatsModal
+            key={playerId}
             isOpen={!!playerId}
             onClose={() => {
               const params = new URLSearchParams(search.toString());
