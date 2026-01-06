@@ -118,6 +118,7 @@ export async function GET(req: NextRequest) {
           displayName: player?.user?.displayName,
           uc: player.uc?.balance || 0,
           matches: matches,
+          deaths: totalDeaths,
           kills: totalKills,
           kd: playerKd.toFixed(2) || 0,
           category: getKdRank(
@@ -149,6 +150,7 @@ export async function GET(req: NextRequest) {
           userName: player?.user?.userName,
           displayName: player?.user?.displayName,
           matches: player?.matchPlayerPlayed.length,
+          deaths: totalDeaths,
           kills: totalKills,
           kd: playerKd.toFixed(2) || 0,
           category: getKdRank(

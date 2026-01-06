@@ -70,6 +70,8 @@ type InitialPlayerData = {
   category: string;
   kd: number;
   kills: number;
+  matches: number;
+  deaths: number;
   imageUrl?: string | null;
   balance?: number;
 };
@@ -92,32 +94,24 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
   const isOwnProfile = user?.playerId === id;
 
   // Only fetch additional data for admins (they need isUCExempt, isTrusted, playerBanned details)
-  // Regular users can use initialData which already has all needed info
+  // Regular users can use initialData which already has all needed info (including matches)
   const { data: player, isLoading: isPlayerLoading } = usePlayer({
     id,
     enabled: isAdmin && isOpen // Only fetch for admins when modal is open
   });
-  const { data: stats, isLoading: isStatsLoading } = usePlayerStats({
-    id,
-    enabled: isAdmin && isOpen // Only fetch for admins when modal is open
-  });
 
-  // Use initialData if available for instant display, otherwise wait for fetched data
+  // Use initialData if available for instant display (it includes accurate matches from players list)
   const hasInitialData = !!initialData;
-  const isLoading = isAdmin ? (!hasInitialData && (isPlayerLoading || isStatsLoading)) : !hasInitialData;
+  const isLoading = isAdmin ? (!hasInitialData && isPlayerLoading) : !hasInitialData;
 
-  // Derived display values
+  // Derived display values - use initialData for instant AND accurate display
   const displayName = player?.user?.displayName || player?.user?.userName || initialData?.displayName || initialData?.userName || "Player";
   const displayImageUrl = (player as any)?.characterImage?.publicUrl || player?.clerkImageUrl || initialData?.imageUrl;
 
-  // For deaths - use stats.deaths (no initialData fallback since players list doesn't have deaths)
-  // Calculate from kills/kd as fallback if stats not loaded yet
-  const calculatedDeaths = initialData ? (initialData.kd > 0 ? Math.round(initialData.kills / initialData.kd) : 0) : 0;
-  const displayDeaths = stats?.deaths ?? calculatedDeaths;
-
-  // For other stats - prefer initialData when available (it's already season-correct from the list)
-  const displayKills = initialData?.kills ?? stats?.kills ?? 0;
-  const displayKd = initialData?.kd ?? (stats ? (stats.deaths === 0 ? stats.kills : stats.kills / stats.deaths) : 0);
+  // Stats from initialData (already accurate from players list API)
+  const displayDeaths = initialData?.deaths ?? 0;
+  const displayKills = initialData?.kills ?? 0;
+  const displayKd = initialData?.kd ?? 0;
   const displayCategory = initialData?.category || player?.category || "BRONZE";
 
   // For player data - can use fetched as it has more details

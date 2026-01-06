@@ -95,6 +95,8 @@ export function PlayersTab() {
               category: selectedPlayer.category,
               kd: Number(selectedPlayer.kd),
               kills: selectedPlayer.kills,
+              matches: selectedPlayer.matches,
+              deaths: selectedPlayer.deaths,
               imageUrl: selectedPlayer.characterImageUrl || selectedPlayer.imageUrl,
               balance: selectedPlayer.uc,
             } : undefined}

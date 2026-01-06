@@ -16,6 +16,7 @@ type PlayerT = {
   displayName?: string | null;
   category: string;
   matches: number;
+  deaths: number;
   kd: number;
   kills: number;
   uc: number;
