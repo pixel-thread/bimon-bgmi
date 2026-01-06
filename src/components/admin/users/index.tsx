@@ -19,10 +19,11 @@ import { Input } from "@/src/components/ui/input";
 import { FiSearch, FiX } from "react-icons/fi";
 
 export const AdminUserPage = () => {
-  const { columns } = useUserColumns();
+  const pathname = usePathname();
+  const isAdminsPage = pathname === "/admin/admins";
+  const { columns } = useUserColumns({ showDeleteButton: isAdminsPage });
   const searchParams = useSearchParams();
   const router = useRouter();
-  const pathname = usePathname();
   const page = searchParams.get("page") || "1";
   const role = searchParams.get("role") || "USER";
   const searchQuery = searchParams.get("search") || "";
