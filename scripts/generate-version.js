@@ -1,18 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+// Build script - previously updated SW cache version
+// Now handled automatically by next-pwa during build
+// This file is kept for backwards compatibility with npm scripts
 
-// Generate version based on current timestamp
-const version = Date.now().toString();
-
-// Update SW cache version
-const swPath = path.join(__dirname, '../public/sw.js');
-let swContent = fs.readFileSync(swPath, 'utf8');
-
-// Replace the CACHE_VERSION line
-swContent = swContent.replace(
-    /const CACHE_VERSION = '[^']+'/,
-    `const CACHE_VERSION = '${version}'`
-);
-
-fs.writeFileSync(swPath, swContent);
-console.log(`✅ Updated SW cache version to: ${version}`);
+console.log('✅ PWA service worker versioning handled by next-pwa');

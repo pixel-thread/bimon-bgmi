@@ -123,20 +123,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="PUBGMI" />
         <meta name="google-adsense-account" content="ca-pub-2651043074081875" />
         {/* AdSense script loaded conditionally via AdSenseScript component */}
-        {/* Service Worker Registration */}
+        {/* PWA Install Prompt Capture - SW registration handled by next-pwa */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                    console.log('SW registered:', registration.scope);
-                  }).catch(function(error) {
-                    console.log('SW registration failed:', error);
-                  });
-                });
-              }
-              
               // Capture PWA install prompt IMMEDIATELY to prevent Chrome's mini-infobar
               window.deferredPWAPrompt = null;
               window.addEventListener('beforeinstallprompt', function(e) {
