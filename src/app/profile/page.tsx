@@ -491,7 +491,7 @@ export default function ProfilePage() {
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Top 10</p>
                                         </div>
                                         <div>
-                                            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{kills}</div>
+                                            <div className={`text-2xl font-bold ${kills > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500"}`}>{kills}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Kills</p>
                                         </div>
                                     </div>

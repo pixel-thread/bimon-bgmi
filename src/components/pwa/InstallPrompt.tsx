@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { Button } from "@/src/components/ui/button";
-import { IconDownload, IconX, IconShare } from "@tabler/icons-react";
+import { IconDownload, IconShare } from "@tabler/icons-react";
 import { posthog } from "@/src/components/provider/PostHogProvider";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -17,16 +18,30 @@ declare global {
     }
 }
 
+// DEMO MODE: Set to true to always show on homepage (for testing)
+const DEMO_MODE = false;
+
 export function InstallPrompt() {
+    const pathname = usePathname();
     const [deferredPrompt, setDeferredPrompt] =
         useState<BeforeInstallPromptEvent | null>(null);
     const [showPrompt, setShowPrompt] = useState(false);
     const [isInstalled, setIsInstalled] = useState(false);
     const [isIOS, setIsIOS] = useState(false);
+    const [showNotNow, setShowNotNow] = useState(false);
+
+    // Only show on homepage
+    const isHomePage = pathname === "/";
 
     useEffect(() => {
-        // Disable on localhost (development)
-        if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+        // Only show on homepage
+        if (!isHomePage) {
+            setShowPrompt(false);
+            return;
+        }
+
+        // Disable on localhost (development) - unless demo mode
+        if (!DEMO_MODE && typeof window !== "undefined" && window.location.hostname === "localhost") {
             return;
         }
 
@@ -43,20 +58,31 @@ export function InstallPrompt() {
 
         if (isIOSDevice && isSafari) {
             setIsIOS(true);
-            // Check if user dismissed before (only check for iOS)
-            const dismissed = localStorage.getItem("pwa-ios-dismissed");
-            if (dismissed) {
-                const dismissedTime = parseInt(dismissed, 10);
-                if (Date.now() - dismissedTime < 1 * 24 * 60 * 60 * 1000) {
-                    return;
+            // DEMO MODE: Skip dismissal check
+            if (!DEMO_MODE) {
+                const dismissed = localStorage.getItem("pwa-ios-dismissed");
+                if (dismissed) {
+                    const dismissedTime = parseInt(dismissed, 10);
+                    if (Date.now() - dismissedTime < 1 * 24 * 60 * 60 * 1000) {
+                        return;
+                    }
                 }
             }
-            setTimeout(() => setShowPrompt(true), 2000);
+            // Show prompt immediately, but "Not now" after 5 seconds
+            setShowPrompt(true);
+            setTimeout(() => setShowNotNow(true), 5000);
             return;
         }
 
         // Check for globally captured prompt (from inline script in layout.tsx)
         const checkForPrompt = () => {
+            // DEMO MODE: Always show even without browser prompt
+            if (DEMO_MODE) {
+                setShowPrompt(true);
+                setTimeout(() => setShowNotNow(true), 5000);
+                return;
+            }
+
             if (window.deferredPWAPrompt) {
                 setDeferredPrompt(window.deferredPWAPrompt);
 
@@ -69,7 +95,9 @@ export function InstallPrompt() {
                     }
                 }
 
-                setTimeout(() => setShowPrompt(true), 2000);
+                // Show prompt immediately, but "Not now" after 5 seconds
+                setShowPrompt(true);
+                setTimeout(() => setShowNotNow(true), 5000);
             }
         };
 
@@ -83,15 +111,19 @@ export function InstallPrompt() {
             window.deferredPWAPrompt = e as BeforeInstallPromptEvent;
             setDeferredPrompt(e as BeforeInstallPromptEvent);
 
-            const dismissed = localStorage.getItem("pwa-install-dismissed");
-            if (dismissed) {
-                const dismissedTime = parseInt(dismissed, 10);
-                if (Date.now() - dismissedTime < 1 * 24 * 60 * 60 * 1000) {
-                    return;
+            if (!DEMO_MODE) {
+                const dismissed = localStorage.getItem("pwa-install-dismissed");
+                if (dismissed) {
+                    const dismissedTime = parseInt(dismissed, 10);
+                    if (Date.now() - dismissedTime < 1 * 24 * 60 * 60 * 1000) {
+                        return;
+                    }
                 }
             }
 
-            setTimeout(() => setShowPrompt(true), 2000);
+            // Show prompt immediately, but "Not now" after 5 seconds
+            setShowPrompt(true);
+            setTimeout(() => setShowNotNow(true), 5000);
         };
 
         const handleAppInstalled = () => {
@@ -113,11 +145,15 @@ export function InstallPrompt() {
             );
             window.removeEventListener("appinstalled", handleAppInstalled);
         };
-    }, []);
+    }, [isHomePage]);
 
     const handleInstall = useCallback(async () => {
         const prompt = deferredPrompt || window.deferredPWAPrompt;
-        if (!prompt) return;
+        if (!prompt) {
+            // DEMO MODE: Just hide the prompt if no actual install available
+            setShowPrompt(false);
+            return;
+        }
 
         await prompt.prompt();
         const { outcome } = await prompt.userChoice;
@@ -139,86 +175,87 @@ export function InstallPrompt() {
 
     const handleDismiss = useCallback(() => {
         setShowPrompt(false);
-        if (isIOS) {
-            localStorage.setItem("pwa-ios-dismissed", Date.now().toString());
-        } else {
-            localStorage.setItem("pwa-install-dismissed", Date.now().toString());
+        if (!DEMO_MODE) {
+            if (isIOS) {
+                localStorage.setItem("pwa-ios-dismissed", Date.now().toString());
+            } else {
+                localStorage.setItem("pwa-install-dismissed", Date.now().toString());
+            }
         }
     }, [isIOS]);
 
-    // Don't show if already installed
+    // Don't show if not on homepage
+    if (!isHomePage) {
+        return null;
+    }
+
+    // Don't show if already installed or prompt not ready
     if (isInstalled || !showPrompt) {
         return null;
     }
 
-    // For non-iOS, also check for deferredPrompt
-    if (!isIOS && !deferredPrompt && !window.deferredPWAPrompt) {
+    // For non-iOS, also check for deferredPrompt (skip in demo mode)
+    if (!DEMO_MODE && !isIOS && !deferredPrompt && !window.deferredPWAPrompt) {
         return null;
     }
 
-    // iOS Safari - show instruction banner
+    // iOS Safari - show instruction modal
     if (isIOS) {
         return (
-            <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300">
-                <div className="rounded-xl border border-border/50 bg-card/95 p-4 shadow-2xl backdrop-blur-lg">
-                    <div className="flex items-start gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                            <IconDownload className="h-5 w-5 text-primary" />
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                <div className="mx-4 w-full max-w-sm rounded-2xl border border-border/50 bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-300">
+                    <div className="text-center">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
+                            <IconDownload className="h-7 w-7 text-primary" />
                         </div>
-                        <div className="flex-1">
-                            <h3 className="font-semibold text-foreground">Install App</h3>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                Tap <IconShare className="inline h-4 w-4 mx-0.5 -mt-0.5" /> Share, then <span className="font-medium">&quot;Add to Home Screen&quot;</span>
-                            </p>
-                        </div>
-                        <button
-                            onClick={handleDismiss}
-                            className="text-muted-foreground hover:text-foreground"
-                            aria-label="Dismiss"
-                        >
-                            <IconX className="h-4 w-4" />
-                        </button>
+                        <h3 className="mt-4 text-xl font-semibold text-foreground">Install App</h3>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            Tap <IconShare className="inline h-4 w-4 mx-0.5 -mt-0.5" /> Share, then <span className="font-medium">&quot;Add to Home Screen&quot;</span>
+                        </p>
                     </div>
+                    {showNotNow && (
+                        <div className="mt-6">
+                            <Button
+                                variant="outline"
+                                className="w-full"
+                                onClick={handleDismiss}
+                            >
+                                Not now
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
         );
     }
 
-    // Android/Desktop - show install button
+    // Android/Desktop - show install modal
     return (
-        <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300 md:left-auto md:right-4 md:w-80">
-            <div className="rounded-xl border border-border/50 bg-card/95 p-4 shadow-2xl backdrop-blur-lg">
-                <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                        <IconDownload className="h-5 w-5 text-primary" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="mx-4 w-full max-w-sm rounded-2xl border border-border/50 bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-300">
+                <div className="text-center">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
+                        <IconDownload className="h-7 w-7 text-primary" />
                     </div>
-                    <div className="flex-1">
-                        <h3 className="font-semibold text-foreground">Install App</h3>
-                        <p className="mt-0.5 text-sm text-muted-foreground">
-                            Install PUBGMI for quick access & offline support
-                        </p>
-                    </div>
-                    <button
-                        onClick={handleDismiss}
-                        className="text-muted-foreground hover:text-foreground"
-                        aria-label="Dismiss"
-                    >
-                        <IconX className="h-4 w-4" />
-                    </button>
+                    <h3 className="mt-4 text-xl font-semibold text-foreground">Install App</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        Install PUBGMI for quick access
+                    </p>
                 </div>
-                <div className="mt-3 flex gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={handleDismiss}
-                    >
-                        Not now
-                    </Button>
-                    <Button size="sm" className="flex-1" onClick={handleInstall}>
-                        <IconDownload className="mr-1.5 h-4 w-4" />
+                <div className="mt-6 space-y-3">
+                    <Button className="w-full" onClick={handleInstall}>
+                        <IconDownload className="mr-2 h-4 w-4" />
                         Install
                     </Button>
+                    {showNotNow && (
+                        <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={handleDismiss}
+                        >
+                            Not now
+                        </Button>
+                    )}
                 </div>
             </div>
         </div>

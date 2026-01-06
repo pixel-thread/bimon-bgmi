@@ -45,7 +45,7 @@ const getActionConfig = (isSuperAdmin: boolean, isAdmin: boolean) => {
     };
   }
   return {
-    href: "/tournament",
+    href: "/tournament/vote",
     label: "View Tournament",
     className: "bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 dark:text-slate-900",
     showCard: false,
