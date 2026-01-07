@@ -43,6 +43,7 @@ export type TeamPreview = {
 export type PreviewTeamsByPollsResult = {
     teams: TeamPreview[];
     playersWithInsufficientBalance: { id: string; userName: string; balance: number }[];
+    soloPlayers: { id: string; userName: string }[];
     entryFee: number;
     tournamentName: string;
     totalPlayersEligible: number;
@@ -306,6 +307,7 @@ export async function previewTeamsByPolls({
     return {
         teams: teamPreviews,
         playersWithInsufficientBalance,
+        soloPlayers: soloPlayers.map(p => ({ id: p.id, userName: p.user.userName })),
         entryFee,
         tournamentName: tournament?.name ?? "Unknown Tournament",
         totalPlayersEligible: players.length,

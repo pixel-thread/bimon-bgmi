@@ -60,8 +60,8 @@ export function assignPlayersToTeamsBalanced(
 }
 
 /**
- * Creates balanced duo teams by pairing players from the stronger half with the weaker half.
- * Both halves are shuffled to produce varied pairings on each call while maintaining balance.
+ * Creates balanced duo teams by pairing the strongest player with the weakest, 
+ * 2nd strongest with 2nd weakest, etc. This ensures all teams have similar total scores.
  * If previousTeammates is provided, tries to avoid pairing players who were teammates recently.
  */
 export function createBalancedDuos(
@@ -75,40 +75,108 @@ export function createBalancedDuos(
     return (b.weightedScore ?? 0) - (a.weightedScore ?? 0);
   });
 
-  const half = Math.floor(sorted.length / 2);
-
-  // Split into strong (top half) and weak (bottom half)
-  const strongHalf = sorted.slice(0, half);
-  const weakHalf = sorted.slice(half);
-
-  // Shuffle both halves independently to create varied pairings
-  // This maintains balance (strong paired with weak) but randomizes which specific players are paired
-  const shuffledStrong = shuffle(strongHalf);
-  const shuffledWeak = shuffle(weakHalf);
-
+  const numTeams = Math.floor(sorted.length / 2);
   const teams: TeamStats[] = [];
-  const usedWeakIndices = new Set<number>();
 
-  // Pair shuffled strong with shuffled weak, avoiding previous teammates when possible
-  for (let i = 0; i < half; i++) {
-    const strong = shuffledStrong[i];
-    let weak = shuffledWeak[i];
-    let weakIdx = i;
+  // Create pairings with some randomness:
+  // Instead of always pairing 1st with last, each strong player pairs with
+  // a random weak player from a range (allowing variety for top players)
+  const pairings: Array<{ strong: PlayerWithStatsT; weak: PlayerWithStatsT }> = [];
 
-    // If we have previousTeammates info, try to find a non-previous-teammate partner
-    if (previousTeammates && previousTeammates.get(strong.id)?.has(weak.id)) {
-      // Try to find an alternative weak player who wasn't a previous teammate
-      for (let j = 0; j < half; j++) {
-        if (usedWeakIndices.has(j)) continue;
-        if (!previousTeammates.get(strong.id)?.has(shuffledWeak[j].id)) {
-          weak = shuffledWeak[j];
-          weakIdx = j;
-          break;
+  // Split into strong half and weak half
+  const strongHalf = sorted.slice(0, numTeams);
+  const weakHalf = sorted.slice(numTeams);
+
+  // Shuffle the weak half to create random pairings while maintaining balance
+  // (all weak players are roughly the same tier, so any pairing is balanced)
+  const shuffledWeak = shuffle([...weakHalf]);
+
+  for (let i = 0; i < numTeams; i++) {
+    pairings.push({
+      strong: strongHalf[i],
+      weak: shuffledWeak[i],
+    });
+  }
+
+  // Add variety by randomly swapping players with similar scores
+  // This creates different compositions on each reshuffle while maintaining balance
+  const SCORE_THRESHOLD = 5; // Players within 5 points can be swapped
+
+  for (let i = 0; i < pairings.length - 1; i++) {
+    // Randomly decide whether to attempt a swap (50% chance)
+    if (Math.random() < 0.5) continue;
+
+    // Find adjacent pairings with similar strong player scores
+    for (let j = i + 1; j < Math.min(i + 3, pairings.length); j++) {
+      // @ts-expect-error weightedScore is added at runtime
+      const scoreDiffStrong = Math.abs(pairings[i].strong.weightedScore - pairings[j].strong.weightedScore);
+      // @ts-expect-error weightedScore is added at runtime
+      const scoreDiffWeak = Math.abs(pairings[i].weak.weightedScore - pairings[j].weak.weightedScore);
+
+      // If both strong and weak players have similar scores, consider swapping
+      if (scoreDiffStrong <= SCORE_THRESHOLD && scoreDiffWeak <= SCORE_THRESHOLD) {
+        // 50% chance to swap the weak players
+        if (Math.random() < 0.5) {
+          const temp = pairings[i].weak;
+          pairings[i].weak = pairings[j].weak;
+          pairings[j].weak = temp;
+        }
+        break;
+      }
+    }
+  }
+
+  // If we have previousTeammates info, try to swap weak players to avoid previous teammates
+  // while keeping score balance as good as possible
+  if (previousTeammates) {
+    for (let i = 0; i < pairings.length; i++) {
+      const { strong, weak } = pairings[i];
+
+      // Check if this pair were previous teammates
+      if (previousTeammates.get(strong.id)?.has(weak.id)) {
+        // Try to find another pairing to swap weak players with
+        // Prefer swaps that keep similar team totals
+        let bestSwapIdx = -1;
+        let bestScoreDiff = Infinity;
+
+        for (let j = i + 1; j < pairings.length; j++) {
+          const otherStrong = pairings[j].strong;
+          const otherWeak = pairings[j].weak;
+
+          // Check if swapping would create valid pairs (no previous teammates)
+          const wouldStrongPairWithOtherWeak = !previousTeammates.get(strong.id)?.has(otherWeak.id);
+          const wouldOtherStrongPairWithWeak = !previousTeammates.get(otherStrong.id)?.has(weak.id);
+
+          if (wouldStrongPairWithOtherWeak && wouldOtherStrongPairWithWeak) {
+            // Calculate how much this swap would affect score balance
+            // @ts-expect-error weightedScore is added at runtime
+            const currentDiff = Math.abs((strong.weightedScore + weak.weightedScore) - (otherStrong.weightedScore + otherWeak.weightedScore));
+            // @ts-expect-error weightedScore is added at runtime
+            const swappedDiff = Math.abs((strong.weightedScore + otherWeak.weightedScore) - (otherStrong.weightedScore + weak.weightedScore));
+
+            // Only consider swaps that don't make balance significantly worse
+            if (swappedDiff <= currentDiff + 10 && swappedDiff < bestScoreDiff) {
+              bestSwapIdx = j;
+              bestScoreDiff = swappedDiff;
+            }
+          }
+        }
+
+        // Perform the swap if we found a valid one
+        if (bestSwapIdx !== -1) {
+          const temp = pairings[i].weak;
+          pairings[i].weak = pairings[bestSwapIdx].weak;
+          pairings[bestSwapIdx].weak = temp;
         }
       }
     }
-    usedWeakIndices.add(weakIdx);
+  }
 
+  // Shuffle the order of teams (not the pairings themselves) for variety
+  const shuffledPairings = shuffle(pairings);
+
+  // Build team stats from pairings
+  for (const { strong, weak } of shuffledPairings) {
     const strongStats = strong.playerStats.find((p) => p.seasonId === seasonId);
     const weakStats = weak.playerStats.find((p) => p.seasonId === seasonId);
 

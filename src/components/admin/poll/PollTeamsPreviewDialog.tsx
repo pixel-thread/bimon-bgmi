@@ -143,18 +143,18 @@ export function PollTeamsPreviewDialog({
                                 )}
                             </div>
 
-                            {/* Low UC Warning */}
-                            {previewData.playersWithInsufficientBalance.length > 0 && (
-                                <div className="flex items-start gap-2 p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                                    <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                                    <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-                                        <span className="font-medium">Low UC: </span>
-                                        {previewData.playersWithInsufficientBalance
+                            {/* Solo Players Info */}
+                            {previewData.soloPlayers && previewData.soloPlayers.length > 0 && (
+                                <div className="flex items-start gap-2 p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                    <Users className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                                    <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                                        <span className="font-medium">Solo Players: </span>
+                                        {previewData.soloPlayers
                                             .slice(0, 5)
                                             .map((p) => p.userName)
                                             .join(", ")}
-                                        {previewData.playersWithInsufficientBalance.length > 5 &&
-                                            ` +${previewData.playersWithInsufficientBalance.length - 5} more`}
+                                        {previewData.soloPlayers.length > 5 &&
+                                            ` +${previewData.soloPlayers.length - 5} more`}
                                     </p>
                                 </div>
                             )}
