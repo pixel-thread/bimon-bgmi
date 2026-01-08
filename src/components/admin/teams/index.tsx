@@ -35,6 +35,7 @@ import { useGlobalBackground } from "@/src/hooks/gallery/useGlobalBackground";
 import { SwapPlayersDialog } from "./swap-players-dialog";
 import { ArrowLeftRight, Loader2, Pencil, Trash2 } from "lucide-react";
 import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { usePendingRefetch } from "@/src/store/match/usePendingRefetch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,13 +63,27 @@ export const AdminTeamsManagement: React.FC = () => {
   const updateId = search.get("update") || "";
   const teamStatId = search.get("teamStats") || "";
   const queryClient = useQueryClient();
-  const { matchId, setMatchId } = useMatchStore();
+  const { matchId, matchNumber, setMatchId } = useMatchStore();
   const { data: teams, isFetching, refetch, meta } = useTeams({ page });
   const { isLoading: isMatchesLoading } = useMatches();
   const { data: globalBackground } = useGlobalBackground();
+  const { isPendingRefetch, setPendingRefetch } = usePendingRefetch();
 
   // Combined loading state for teams and matches
   const isLoading = isFetching || isMatchesLoading;
+
+  // Auto-clear pending refetch when switching to "All Match" (prefetch already loaded it)
+  React.useEffect(() => {
+    if (matchId === "all" && isPendingRefetch) {
+      setPendingRefetch(false);
+    }
+  }, [matchId, isPendingRefetch, setPendingRefetch]);
+
+  // Handle refetch and clear pending flag
+  const handleRefetch = () => {
+    refetch();
+    setPendingRefetch(false);
+  };
 
   // Export to Excel with merged cells and centered text
   const exportToExcel = React.useCallback(async () => {
@@ -221,10 +236,14 @@ export const AdminTeamsManagement: React.FC = () => {
             size="sm"
             variant="outline"
             disabled={isLoading}
-            onClick={() => refetch()}
-            title="Refresh"
+            onClick={handleRefetch}
+            title={isPendingRefetch ? "Refetch needed!" : "Refresh"}
+            className="relative"
           >
             <IconReload className="h-4 w-4" />
+            {isPendingRefetch && (
+              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-background" />
+            )}
           </Button>
 
           <Button
@@ -322,6 +341,12 @@ export const AdminTeamsManagement: React.FC = () => {
         }
         falseComponent={
           <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 space-y-6 py-4 sm:py-6">
+            {isPendingRefetch && (
+              <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400">
+                <span className="h-2 w-2 rounded-full bg-green-500" />
+                <span className="text-sm font-medium">Stats saved! Click refetch to update Match {matchNumber}.</span>
+              </div>
+            )}
             {teams && teams?.length > 0 && (
               <DataTable data={teams || []} columns={columns} meta={meta} />
             )}

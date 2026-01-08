@@ -48,7 +48,7 @@ export function useTeamsData({ page = "1", refetchOnWindowFocus = true, enabled 
         select: (data) => data,
         placeholderData: keepPreviousData,
         refetchOnWindowFocus,
-        staleTime: 60 * 1000, // 1 minute - balance between freshness and performance
+        staleTime: 5 * 60 * 1000, // 5 minutes - reduces refetches when switching matches
     });
 
     const meta = query?.data?.meta;

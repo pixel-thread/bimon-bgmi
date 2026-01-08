@@ -12,6 +12,8 @@ import { useTeams } from "@/src/hooks/team/useTeams";
 import { Loader2 } from "lucide-react";
 import { ADMIN_MATCH_ENDPOINTS } from "@/src/lib/endpoints/admin/match";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
+import { useTournamentStore } from "@/src/store/tournament";
+import { usePendingRefetch } from "@/src/store/match/usePendingRefetch";
 import { TeamT } from "@/src/types/team";
 import http from "@/src/utils/http";
 import { TeamStatsForm } from "@/src/utils/validation/team/team-stats";
@@ -41,10 +43,13 @@ type EditableTeamStats = {
 
 export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
     const { matchId, matchNumber } = useMatchStore();
+    const { tournamentId } = useTournamentStore();
     // Disable refetchOnWindowFocus to prevent losing edits if user switches tabs
     // Only fetch when dialog is open to avoid unnecessary API calls
     const { data: teams, isFetching } = useTeams({ page: "all", refetchOnWindowFocus: false, enabled: open });
     const [editableStats, setEditableStats] = useState<EditableTeamStats[]>([]);
+    // Track if we've initialized the form to prevent resetting on subsequent renders
+    const [hasInitialized, setHasInitialized] = useState(false);
     // Track manually toggled player IDs (playerId -> current isAbsent status)
     const [manualToggles, setManualToggles] = useState<Map<string, boolean>>(new Map());
     // Track unknown players found in scoreboard but not in our list
@@ -79,8 +84,16 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
 
     const hasValidationErrors = validationErrors.length > 0;
 
+    // Reset initialization flag when dialog closes (so next open gets fresh data)
     useEffect(() => {
-        if (teams) {
+        if (!open) {
+            setHasInitialized(false);
+        }
+    }, [open]);
+
+    useEffect(() => {
+        // Only initialize once per dialog open - don't reset when switching tabs
+        if (teams && !hasInitialized) {
             // Check if ANY team has stats submitted (meaning scoreboard was saved for this match)
             const matchHasStats = teams.some((team: TeamT) =>
                 team.teamPlayerStats && team.teamPlayerStats.length > 0
@@ -110,11 +123,12 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                 };
             });
             setEditableStats(stats);
+            setHasInitialized(true);
             // Clear manual toggles and unknown players when data is reset
             setManualToggles(new Map());
             setUnknownPlayers([]);
         }
-    }, [teams]);
+    }, [teams, hasInitialized]);
 
     // Teams data is reset on dialog open/close via editableStats initialization
 
@@ -343,6 +357,8 @@ Players absent: X (list names)
         toast.success("Prompt copied to clipboard!");
     }, [teams]);
 
+    const { setPendingRefetch } = usePendingRefetch();
+
     const { mutate, isPending } = useMutation({
         mutationFn: (data: { stats: TeamStatsForm[] }) =>
             http.put(
@@ -350,9 +366,9 @@ Players absent: X (list names)
                 data
             ),
         onSuccess: () => {
-            toast.success("Stats saved successfully!");
-            queryClient.invalidateQueries({ queryKey: ["match"] });
-            queryClient.invalidateQueries({ queryKey: ["teams"] });
+            // Set pending refetch flag - refetch button will change color
+            setPendingRefetch(true);
+            toast.success("Stats saved! Click Refetch when ready.");
             onOpenChange(false);
         },
         onError: (error: Error & { message?: string }) => {

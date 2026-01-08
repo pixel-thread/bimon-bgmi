@@ -87,24 +87,15 @@ export async function GET(
         };
       });
     } else {
-      // For "all" matches, fetch data the same way as standing API
+      // OPTIMIZED: For "all" matches - use data already fetched by getTeamByTournamentId
+      // Removed redundant prisma.teamStats.findMany() call
+
       const { prisma } = await import("@/src/lib/db/prisma");
 
-      // Get all team stats for this tournament (same as standing API)
-      const allTeamStats = await prisma.teamStats.findMany({
-        where: { tournamentId: id },
-        include: {
-          teamPlayerStats: true,
-          team: {
-            include: { matches: true, players: { include: { user: true } } },
-          },
-        },
-      });
-
-
-
-      // Aggregate kills per team using groupBy (same as standing API)
+      // Get all team IDs for the groupBy query
       const teamIds = teams?.map((t) => t.id) || [];
+
+      // Single aggregation query for kills - this is the only additional query needed
       const groupedKills = await prisma.teamPlayerStats.groupBy({
         where: {
           teamId: { in: teamIds },
@@ -115,22 +106,10 @@ export async function GET(
         },
       });
 
-
-
-      // Create a map of teamId -> kills
+      // Create a map of teamId -> kills for O(1) lookup
       const killsMap = new Map(
         groupedKills.map((g) => [g.teamId, g._sum?.kills || 0])
       );
-
-      // Group teamStats by teamId for pts calculation
-      const teamStatsMap = new Map<string, typeof allTeamStats>();
-      for (const stat of allTeamStats) {
-        const existing = teamStatsMap.get(stat.teamId) || [];
-        existing.push(stat);
-        teamStatsMap.set(stat.teamId, existing);
-      }
-
-
 
       data = teams?.map((team) => {
         const teamPlayers = team.players.map((player) => {
@@ -149,11 +128,12 @@ export async function GET(
           };
         });
 
-        // Get kills from the groupBy map
+        // Get kills from the groupBy map (O(1) lookup)
         const totalKills = killsMap.get(team.id) || 0;
 
-        // Get team stats for this team and calculate pts
-        const teamStatsList = teamStatsMap.get(team.id) || [];
+        // Use already-fetched teamStats from getTeamByTournamentId
+        // No need for separate prisma.teamStats.findMany query!
+        const teamStatsList = team.teamStats || [];
         const totalPts = teamStatsList.reduce((acc, stat) => {
           return acc + calculatePlayerPoints(stat.position, 0);
         }, 0);
