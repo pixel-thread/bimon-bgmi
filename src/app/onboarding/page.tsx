@@ -152,7 +152,7 @@ export default function OnboardingPage() {
         onSuccess: () => {
             toast.success("Welcome to PUBGMI Tournament! Your account is ready.");
             refreshAuth();
-            router.push("/");
+            router.push("/?welcome=1");
         },
         onError: (err: { response?: { data?: { message?: string } } }) => {
             const message =

@@ -4,6 +4,7 @@
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { useRouteRestorer } from "@/src/components/pwa/RouteRestorer";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { LoaderFour } from "../components/ui/loader";
@@ -95,10 +96,11 @@ function HeroSection() {
   );
 }
 
-// WhatsApp groups section - hides individual buttons when clicked
-function WhatsAppGroups() {
+// WhatsApp button with dialog - can auto-open for new users
+function WhatsAppButton({ autoOpen = false }: { autoOpen?: boolean }) {
   const [joinedGroups, setJoinedGroups] = useState<Set<string>>(new Set());
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Load joined groups from localStorage on mount
   useEffect(() => {
@@ -112,6 +114,21 @@ function WhatsAppGroups() {
     }
     setIsHydrated(true);
   }, []);
+
+  // Auto-open dialog for new users from onboarding
+  useEffect(() => {
+    if (autoOpen && isHydrated) {
+      // Check if there are groups to show
+      const stored = localStorage.getItem("whatsapp_joined_groups");
+      const joined = stored ? new Set(JSON.parse(stored)) : new Set();
+      const hasGroupsToShow = WHATSAPP_GROUPS.some(g => !joined.has(g.id));
+      if (hasGroupsToShow) {
+        // Small delay for better UX
+        const timer = setTimeout(() => setIsOpen(true), 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [autoOpen, isHydrated]);
 
   const handleJoinGroup = (groupId: string, link: string) => {
     // Open WhatsApp link in new tab
@@ -138,27 +155,85 @@ function WhatsAppGroups() {
   if (availableGroups.length === 0) return null;
 
   return (
-    <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-      <div className="flex items-center gap-2 mb-3">
-        <FaWhatsapp className="w-5 h-5 text-green-600 dark:text-green-400" />
-        <h3 className="font-semibold text-green-800 dark:text-green-300 text-sm">
-          Join our WhatsApp Groups
-        </h3>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {availableGroups.map((group) => (
-          <Button
-            key={group.id}
-            onClick={() => handleJoinGroup(group.id, group.link)}
-            size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+    <>
+      {/* WhatsApp Button - inline style to match neighboring buttons */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className="w-12 h-12 bg-green-500 hover:bg-green-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-105 flex-shrink-0"
+        aria-label="Join WhatsApp Groups"
+      >
+        <FaWhatsapp className="w-6 h-6" />
+      </button>
+
+      {/* Dialog Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setIsOpen(false)}
+        >
+          <div
+            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 mx-4 max-w-sm w-full animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
           >
-            <FaWhatsapp className="w-4 h-4" />
-            {group.name}
-          </Button>
-        ))}
-      </div>
-    </div>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                  <FaWhatsapp className="w-6 h-6 text-white" />
+                </div>
+                <h2 className="text-lg font-bold text-slate-800 dark:text-white">
+                  Join WhatsApp
+                </h2>
+              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Description */}
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              Join our WhatsApp groups to get <span className="text-red-500 font-semibold">Room ID, passwords</span>, and other important updates.
+            </p>
+
+            {/* Group Buttons */}
+            <div className="space-y-3">
+              {availableGroups.map((group) => (
+                <button
+                  key={group.id}
+                  onClick={() => handleJoinGroup(group.id, group.link)}
+                  className="w-full flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-xl transition-colors group"
+                >
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <FaWhatsapp className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="text-left flex-1">
+                    <p className="font-semibold text-slate-800 dark:text-white">
+                      {group.name}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Tap to join
+                    </p>
+                  </div>
+                  <svg className="w-5 h-5 text-green-500 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+
+            {/* Footer note */}
+            <p className="text-xs text-center text-slate-400 mt-4">
+              Buttons will disappear after you join
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -166,7 +241,6 @@ function WhatsAppGroups() {
 function GuestCard() {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-5 sm:p-8 text-center">
-      <WhatsAppGroups />
       <h2 className="text-xl sm:text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-3 sm:mb-4">
         Welcome
       </h2>
@@ -176,15 +250,17 @@ function GuestCard() {
         statistics, and join the competitive gaming community.
       </p>
       <div className="space-y-4">
-        <Link href="/auth">
-          <Button
-            size="lg"
-            className="w-full sm:w-auto min-w-[220px] bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-base sm:text-lg py-4 px-6 shadow-lg transition-all duration-200 flex items-center gap-2"
-          >
-            <FcGoogle className="w-5 h-5" />
-            Sign in with Google
-          </Button>
-        </Link>
+        <div className="flex items-center justify-center gap-3">
+          <Link href="/auth">
+            <Button
+              size="lg"
+              className="w-full sm:w-auto min-w-[220px] bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-base sm:text-lg py-4 px-6 shadow-lg transition-all duration-200 flex items-center gap-2"
+            >
+              <FcGoogle className="w-5 h-5" />
+              Sign in with Google
+            </Button>
+          </Link>
+        </div>
         <div className="text-sm text-slate-500 dark:text-slate-400 pt-2">
           <div className="flex flex-wrap justify-center gap-3 sm:gap-4 text-xs">
             {FOOTER_LINKS.map(({ href, label }) => (
@@ -210,12 +286,14 @@ function UserCard({
   isSuperAdmin,
   isAdmin,
   isLoading,
+  isNewUser = false,
 }: {
   username?: string;
   email?: string | null;
   isSuperAdmin: boolean;
   isAdmin: boolean;
   isLoading: boolean;
+  isNewUser?: boolean;
 }) {
   const action = getActionConfig(isSuperAdmin, isAdmin);
 
@@ -243,7 +321,6 @@ function UserCard({
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8">
-      <WhatsAppGroups />
       {/* Welcome message */}
       <div className="text-center mb-8">
         <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-2">
@@ -252,18 +329,10 @@ function UserCard({
         <p className="text-slate-600 dark:text-slate-400">{email}</p>
       </div>
 
-      {/* Role-based action button */}
-      <div className="grid gap-6">
-        {action.showCard ? (
-          <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">
-              Admin Access
-            </h3>
-            {ActionButton}
-          </div>
-        ) : (
-          ActionButton
-        )}
+      {/* Action button with WhatsApp (only for new users) */}
+      <div className="flex items-center justify-center gap-3">
+        {ActionButton}
+        {isNewUser && <WhatsAppButton autoOpen />}
       </div>
     </div>
   );
@@ -272,6 +341,20 @@ function UserCard({
 export default function HomePage() {
   const { user, isSignedIn, isAuthLoading } = useAuth();
   const { isRestoring } = useRouteRestorer();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Detect and preserve new user status (from onboarding redirect)
+  const [isNewUser, setIsNewUser] = useState(false);
+
+  useEffect(() => {
+    const welcomeParam = searchParams.get("welcome") === "1";
+    if (welcomeParam) {
+      setIsNewUser(true);
+      // Clean up URL without losing the state
+      router.replace("/", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   // Block rendering while PWA is restoring to a saved route
   if (isRestoring) {
@@ -295,6 +378,7 @@ export default function HomePage() {
               isSuperAdmin={user?.role === "SUPER_ADMIN"}
               isAdmin={user?.role === "ADMIN"}
               isLoading={isAuthLoading}
+              isNewUser={isNewUser}
             />
           ) : (
             <GuestCard />
