@@ -87,7 +87,7 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
 
     return (
       <Dialog open={isOpen} onOpenChange={() => onClose()}>
-        <DialogContent className={`sm:max-w-lg mx-2 sm:mx-0 ${theme ? `border-2 ${theme.dialogBorder}` : ''}`}>
+        <DialogContent className={`sm:max-w-lg ${theme ? `border-2 ${theme.dialogBorder}` : ''}`}>
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${theme ? theme.dialogIcon : 'bg-blue-500'}`}>
@@ -100,7 +100,7 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4 max-h-[60vh] space-x-2 space-y-2 overflow-y-auto">
+          <div className="py-4 max-h-[60vh] space-y-2 overflow-y-auto">
             {isLoading ? (
               <VotersSkeleton />
             ) : (
