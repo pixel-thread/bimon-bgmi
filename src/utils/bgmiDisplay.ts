@@ -1,17 +1,11 @@
 /**
- * Characters that are invisible in BGMI (they render as spaces in-game)
- * Macron vowels: Ā Ē Ī Ō Ū (and lowercase)
- * These characters should be replaced with spaces to match BGMI display
- */
-const BGMI_INVISIBLE_CHARS = /[ĀāĒēĪīŌōŪū]/g;
-
-/**
- * Converts a displayName to how it appears in BGMI
- * Characters that are invisible in BGMI are replaced with spaces
+ * Converts a displayName for display
+ * Previously replaced macron vowels (Ā, Ē, etc.) with spaces to match BGMI,
+ * but now displays them as-is for better readability in the app
  */
 export function toBGMIDisplay(name: string | null | undefined): string {
     if (!name) return "";
-    return name.replace(BGMI_INVISIBLE_CHARS, " ");
+    return name; // Keep name as-is, including macron characters like Ā
 }
 
 /**
