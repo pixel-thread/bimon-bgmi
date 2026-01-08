@@ -8,6 +8,22 @@ import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { LoaderFour } from "../components/ui/loader";
 import { FcGoogle } from "react-icons/fc";
+import { FaWhatsapp } from "react-icons/fa";
+import { useState, useEffect } from "react";
+
+// WhatsApp group configuration
+const WHATSAPP_GROUPS = [
+  {
+    id: "group1",
+    name: "Group 1",
+    link: "https://chat.whatsapp.com/DV9xBTjp7Q30VU1ITzFpMM",
+  },
+  {
+    id: "group2",
+    name: "Group 2",
+    link: "https://chat.whatsapp.com/CNuujmMWQNpCdKGze69k0j",
+  },
+] as const;
 
 // Feature badges data
 const FEATURES = [
@@ -79,10 +95,78 @@ function HeroSection() {
   );
 }
 
+// WhatsApp groups section - hides individual buttons when clicked
+function WhatsAppGroups() {
+  const [joinedGroups, setJoinedGroups] = useState<Set<string>>(new Set());
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Load joined groups from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("whatsapp_joined_groups");
+    if (stored) {
+      try {
+        setJoinedGroups(new Set(JSON.parse(stored)));
+      } catch {
+        // Invalid data, ignore
+      }
+    }
+    setIsHydrated(true);
+  }, []);
+
+  const handleJoinGroup = (groupId: string, link: string) => {
+    // Open WhatsApp link in new tab
+    window.open(link, "_blank", "noopener,noreferrer");
+
+    // Mark group as joined
+    const newJoined = new Set(joinedGroups);
+    newJoined.add(groupId);
+    setJoinedGroups(newJoined);
+
+    // Persist to localStorage
+    localStorage.setItem("whatsapp_joined_groups", JSON.stringify([...newJoined]));
+  };
+
+  // Don't render until hydrated to avoid hydration mismatch
+  if (!isHydrated) return null;
+
+  // Filter out joined groups
+  const availableGroups = WHATSAPP_GROUPS.filter(
+    (group) => !joinedGroups.has(group.id)
+  );
+
+  // Don't show anything if all groups are joined
+  if (availableGroups.length === 0) return null;
+
+  return (
+    <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+      <div className="flex items-center gap-2 mb-3">
+        <FaWhatsapp className="w-5 h-5 text-green-600 dark:text-green-400" />
+        <h3 className="font-semibold text-green-800 dark:text-green-300 text-sm">
+          Join our WhatsApp Groups
+        </h3>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {availableGroups.map((group) => (
+          <Button
+            key={group.id}
+            onClick={() => handleJoinGroup(group.id, group.link)}
+            size="sm"
+            className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+          >
+            <FaWhatsapp className="w-4 h-4" />
+            {group.name}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Guest welcome card with sign-in button
 function GuestCard() {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-5 sm:p-8 text-center">
+      <WhatsAppGroups />
       <h2 className="text-xl sm:text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-3 sm:mb-4">
         Welcome
       </h2>
@@ -159,6 +243,7 @@ function UserCard({
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8">
+      <WhatsAppGroups />
       {/* Welcome message */}
       <div className="text-center mb-8">
         <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-2">
