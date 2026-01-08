@@ -209,8 +209,8 @@ export default function ProfilePage() {
     // Mark all as read
     const { mutate: markAllRead, isPending: isMarkingAllRead } = useMutation({
         mutationFn: () => http.post("/notifications/read-all", {}),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ["notifications"] });
         },
     });
 
