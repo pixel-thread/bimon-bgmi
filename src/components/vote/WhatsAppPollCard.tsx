@@ -325,7 +325,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
 
     // Calculate dynamic team type based on participant count
     const getDynamicTeamType = (count: number): { type: string; size: number } => {
-      if (count < 50) return { type: "DUO", size: 2 };
+      if (count < 48) return { type: "DUO", size: 2 };
       if (count < 60) return { type: "TRIO", size: 3 };
       return { type: "SQUAD", size: 4 };
     };
