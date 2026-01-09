@@ -417,7 +417,7 @@ export default function OnboardingPage() {
                                     htmlFor="username"
                                     className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                                 >
-                                    Simple Username (for system)
+                                    Name
                                 </label>
                                 <Input
                                     id="username"
@@ -452,7 +452,7 @@ export default function OnboardingPage() {
                                     htmlFor="displayName"
                                     className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                                 >
-                                    BGMI IGN (shown everywhere)
+                                    Game Name
                                     <motion.button
                                         ref={helpButtonRef}
                                         type="button"
