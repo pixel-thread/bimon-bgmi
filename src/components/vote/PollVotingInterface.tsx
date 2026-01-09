@@ -111,7 +111,7 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
 
   if (!polls?.length) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-200px)] w-full">
+      <div className="flex items-center justify-center py-12 w-full">
         <div className="bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm p-6 max-w-sm w-full transition-all duration-300 hover:shadow-md">
           <div className="flex flex-col items-center text-center">
             <FiClock className="h-10 w-10 text-gray-500 dark:text-gray-400 mb-3 animate-pulse" />

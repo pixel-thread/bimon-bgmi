@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/ta
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { ProfileSettings } from "@/src/components/profile/ProfileSettings";
 import { AddBalanceDialog } from "@/src/components/profile/AddBalanceDialog";
+import { JobListingManager } from "@/src/components/profile/JobListingManager";
 import {
     Bell, Check, X, ArrowUpRight, ArrowDownLeft, Clock, DollarSign,
     User, Target, Swords, TrendingUp, TrendingDown, Minus, Settings,
@@ -565,6 +566,9 @@ export default function ProfilePage() {
                             </div>
                         </div>
                     )}
+
+                    {/* Job Listings Manager */}
+                    <JobListingManager />
 
                     {/* Notifications - Glassmorphism */}
                     <div className="relative rounded-2xl overflow-hidden">

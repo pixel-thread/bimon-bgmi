@@ -351,6 +351,7 @@ model Player {
   ucTransfersTo      UCTransfer[]   @relation("UCTransferTo")
   transactions       Transaction[]
   pushSubscriptions  PushSubscription[]
+  jobListings        PlayerJobListing[]
 
   @@index([userId])
   @@index([pollId])
@@ -655,4 +656,56 @@ model DailyMetrics {
   createdAt            DateTime @default(now())
 
   @@index([date])
+}
+
+model PlayerJobListing {
+  id             String   @id @default(uuid())
+  playerId       String   @unique  // Only 1 listing per player
+  player         Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  category       String   // Primary category
+  category2      String?  // Optional second category
+  customCategory String?  // If category is "Other"
+  title          String   @db.VarChar(50)  // Max 50 chars
+  description    String?  @db.VarChar(150) // Max 150 chars
+  phoneNumber    String   // Mandatory
+  experience     String?  // 1_MONTH, 6_MONTHS, 1_YEAR, 2_YEARS, 3_YEARS_PLUS
+  isActive       Boolean  @default(true)
+  
+  // Reaction tracking
+  likeCount      Int      @default(0)
+  dislikeCount   Int      @default(0)
+  isJobBanned    Boolean  @default(false)  // Banned from posting if 5+ dislikes
+  
+  reactions      JobListingReaction[]
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@index([isActive])
+  @@index([category])
+}
+
+// Track who reacted to which listing (prevents duplicate votes)
+model JobListingReaction {
+  id           String   @id @default(uuid())
+  listingId    String
+  listing      PlayerJobListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  playerId     String
+  reactionType String   // "like" or "dislike"
+  
+  createdAt    DateTime @default(now())
+  
+  @@unique([listingId, playerId])  // One reaction per player per listing
+  @@index([listingId])
+  @@index([playerId])
+}
+
+// Custom job categories added by users (shared across all users)
+model JobCategory {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  
+  @@index([name])
 }
