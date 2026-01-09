@@ -96,29 +96,6 @@ function HeroSection() {
   );
 }
 
-// Demo error trigger for testing ErrorBoundary (ONLY in development with ?demo_error=1)
-function DemoErrorTrigger() {
-  const searchParams = useSearchParams();
-  const [shouldError, setShouldError] = useState(false);
-
-  // Only available in development mode
-  if (process.env.NODE_ENV !== "development") return null;
-  if (searchParams.get("demo_error") !== "1") return null;
-
-  if (shouldError) {
-    throw new Error("Demo error triggered for testing ErrorBoundary!");
-  }
-
-  return (
-    <button
-      onClick={() => setShouldError(true)}
-      className="fixed bottom-4 right-4 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-lg z-50"
-    >
-      🧪 Trigger Error (Demo)
-    </button>
-  );
-}
-
 // WhatsApp button with dialog - can auto-open for new users
 function WhatsAppButton({ autoOpen = false }: { autoOpen?: boolean }) {
   const [joinedGroups, setJoinedGroups] = useState<Set<string>>(new Set());
@@ -390,7 +367,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <DemoErrorTrigger />
       <div className="container h-full mx-auto px-4 py-8 sm:py-16">
         <HeroSection />
 
