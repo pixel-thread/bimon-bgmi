@@ -20,13 +20,25 @@ const withPWA = withPWAInit({
     // Runtime caching for dynamic content
     runtimeCaching: [
       {
-        // Cache static assets (JS, CSS, fonts)
-        urlPattern: /^https?:\/\/.*\.(js|css|woff|woff2|ttf|otf|eot)$/i,
+        // Cache JS files - StaleWhileRevalidate to always update in background
+        urlPattern: /^https?:\/\/.*\.js$/i,
+        handler: "StaleWhileRevalidate",
+        options: {
+          cacheName: "js-assets",
+          expiration: {
+            maxEntries: 100,
+            maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+          },
+        },
+      },
+      {
+        // Cache CSS and fonts - CacheFirst is fine for these
+        urlPattern: /^https?:\/\/.*\.(css|woff|woff2|ttf|otf|eot)$/i,
         handler: "CacheFirst",
         options: {
           cacheName: "static-assets",
           expiration: {
-            maxEntries: 200,
+            maxEntries: 100,
             maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
           },
         },

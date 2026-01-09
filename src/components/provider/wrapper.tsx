@@ -12,6 +12,7 @@ import { InstallPrompt } from "../pwa/InstallPrompt";
 import { RouteRestorerProvider } from "../pwa/RouteRestorer";
 import { AdSenseScript } from "../common/AdSenseScript";
 import { PostHogProvider } from "./PostHogProvider";
+import { ErrorBoundary } from "../common/ErrorBoundary";
 import { useEffect, useState } from "react";
 
 type Props = {
@@ -60,7 +61,9 @@ function ClerkContent({ children }: { children: React.ReactNode }) {
           <AuthProvider>
             <RouteRestorerProvider>
               <RoleBaseRoute>
-                <Layout>{children}</Layout>
+                <Layout>
+                  <ErrorBoundary>{children}</ErrorBoundary>
+                </Layout>
                 <InstallPrompt />
                 <AdSenseScript />
                 <Toaster richColors position="top-right" />
