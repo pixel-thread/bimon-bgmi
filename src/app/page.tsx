@@ -96,11 +96,13 @@ function HeroSection() {
   );
 }
 
-// Demo error trigger for testing ErrorBoundary (only shows with ?demo_error=1)
+// Demo error trigger for testing ErrorBoundary (ONLY in development with ?demo_error=1)
 function DemoErrorTrigger() {
   const searchParams = useSearchParams();
   const [shouldError, setShouldError] = useState(false);
 
+  // Only available in development mode
+  if (process.env.NODE_ENV !== "development") return null;
   if (searchParams.get("demo_error") !== "1") return null;
 
   if (shouldError) {
