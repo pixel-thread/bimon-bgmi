@@ -19,6 +19,7 @@ import {
   Megaphone,
   Settings2,
   Loader2,
+  Briefcase,
 } from "lucide-react";
 
 import { NavUser } from "@/src/components/nav-user";
@@ -79,6 +80,7 @@ const navGroups: NavGroup[] = [
       { title: "Games", url: "/admin/games", icon: Gamepad2 },
       { title: "Polls", url: "/admin/polls", icon: Vote },
       { title: "Vote", url: "/admin/vote", icon: Megaphone },
+      { title: "Job Listings", url: "/admin/job-listings", icon: Briefcase },
       { title: "Rules", url: "/admin/rules", icon: BookOpen },
     ],
   },
