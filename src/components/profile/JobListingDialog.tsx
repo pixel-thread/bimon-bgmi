@@ -29,6 +29,7 @@ import {
     JOB_CATEGORIES,
     EXPERIENCE_OPTIONS,
 } from "@/src/hooks/jobListing/useJobListings";
+import { useDialogBackHandler } from "@/src/hooks/useDialogBackHandler";
 
 interface JobListingDialogProps {
     open: boolean;
@@ -87,6 +88,9 @@ export function JobListingDialog({
 
     const isEditing = !!editListing;
     const isPending = isCreating || isUpdating;
+
+    // Use the back button handler hook
+    const handleOpenChange = useDialogBackHandler(open, onOpenChange, "jobListing");
 
     const STORAGE_KEY = "jobListingDraft";
     const STORAGE_EXPIRY = 5 * 60 * 1000; // 5 minutes
@@ -219,7 +223,7 @@ export function JobListingDialog({
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent
                 className="sm:max-w-md"
                 onInteractOutside={(e) => e.preventDefault()}
@@ -446,7 +450,7 @@ export function JobListingDialog({
                 <DialogFooter>
                     <Button
                         variant="outline"
-                        onClick={() => onOpenChange(false)}
+                        onClick={() => handleOpenChange(false)}
                         disabled={isPending}
                     >
                         Cancel

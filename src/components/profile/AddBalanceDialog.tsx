@@ -17,6 +17,7 @@ import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
 import { toast } from "sonner";
 import { Plus, Loader2, CreditCard, Wallet } from "lucide-react";
+import { useDialogBackHandler } from "@/src/hooks/useDialogBackHandler";
 
 declare global {
     interface Window {
@@ -92,6 +93,9 @@ export function AddBalanceDialog() {
 
     // Calculate the rupee amount needed for the desired UC
     const rupeeAmount = calculateRupees(desiredUC);
+
+    // Use the back button handler hook
+    const handleOpenChange = useDialogBackHandler(open, setOpen, "addBalance");
 
     // Load Razorpay script
     const loadRazorpayScript = (): Promise<boolean> => {
@@ -186,7 +190,7 @@ export function AddBalanceDialog() {
     const isValidAmount = desiredUC >= 10 && rupeeAmount <= 10000;
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
                 <Button
                     size="icon"

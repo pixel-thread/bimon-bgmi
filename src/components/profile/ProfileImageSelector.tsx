@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/src/components/ui/card";
@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
 import { Camera, Check, Loader2, User } from "lucide-react";
 import Image from "next/image";
+import { useDialogBackHandler } from "@/src/hooks/useDialogBackHandler";
 
 type ProfileImage = {
     id: string;
@@ -39,6 +40,9 @@ export function ProfileImageSelector() {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedType, setSelectedType] = useState<"google" | "none" | "custom">("google");
     const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+
+    // Use the back button handler hook
+    const handleOpenChangeWithBack = useDialogBackHandler(isOpen, setIsOpen, "profileImage");
 
     // Fetch current settings
     const { data: settingsData, isLoading: settingsLoading } = useQuery({
@@ -73,13 +77,13 @@ export function ProfileImageSelector() {
     });
 
     // Sync local state with settings when dialog opens
-    const handleOpenChange = (open: boolean) => {
+    const handleOpenChange = useCallback((open: boolean) => {
         if (open && settings) {
             setSelectedType(settings.imageType);
             setSelectedImageId(settings.customImageId);
         }
-        setIsOpen(open);
-    };
+        handleOpenChangeWithBack(open);
+    }, [settings, handleOpenChangeWithBack]);
 
     const handleSave = () => {
         if (selectedType === "custom" && !selectedImageId) {

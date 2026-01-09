@@ -27,6 +27,7 @@ import { VotersListSkeleton, VotersSkeleton } from "./VotersSkeleton";
 import { PollT } from "@/src/types/poll";
 import { getDisplayName } from "@/src/utils/bgmiDisplay";
 import { getPollTheme, calculateParticipantCount } from "./pollTheme";
+import { useDialogBackHandler } from "@/src/hooks/useDialogBackHandler";
 
 type VotersDialogsProps = {
   isOpen: boolean;
@@ -85,8 +86,11 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
     const participantCount = calculateParticipantCount(pollVoters as { vote: string }[] | undefined);
     const theme = getPollTheme(participantCount);
 
+    // Use the back button handler hook
+    const handleOpenChange = useDialogBackHandler(isOpen, (open) => { if (!open) onClose(); }, "votersDialog");
+
     return (
-      <Dialog open={isOpen} onOpenChange={() => onClose()}>
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent className={`sm:max-w-lg ${theme ? `border-2 ${theme.dialogBorder}` : ''}`}>
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
