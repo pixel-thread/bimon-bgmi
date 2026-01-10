@@ -4,8 +4,10 @@ import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { addTournamentWinner } from "@/src/services/winner/addTournamentWinner";
 import { getUniqedTournamentWinners } from "@/src/services/winner/getTournamentWinner";
 import { getPlayerRecentWins } from "@/src/services/winner/getPlayerRecentWins";
+import { getPlayerLosses, isPlayerSolo, addToSoloTaxPool } from "@/src/services/winner/getPlayerLosses";
 import { calculatePlayerPoints } from "@/src/utils/calculatePlayersPoints";
 import { calculateRepeatWinnerTax, aggregateTaxTotals, TaxResult } from "@/src/utils/repeatWinnerTax";
+import { calculateSoloTax, getTaxDistribution, calculateTierDistribution, getLoserSupportMessage, getSoloTaxDebitMessage, SoloTaxResult } from "@/src/utils/soloTax";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
@@ -180,6 +182,9 @@ export async function POST(
     // Track all tax results to calculate fund/org contributions
     const allTaxResults: TaxResult[] = [];
 
+    // Track solo tax results for loser distribution
+    const allSoloTaxResults: SoloTaxResult[] = [];
+
     let winnerTeam = [];
     for (let i = 0; i < placementsToUse.length; i++) {
       const placement = placementsToUse[i];
@@ -210,6 +215,9 @@ export async function POST(
 
           if (!playerData) continue;
 
+          // Check if player voted SOLO
+          const isSolo = await isPlayerSolo(player.id, id);
+
           // Calculate repeat winner tax for this player
           // Add +1 to include the CURRENT win they're receiving now
           const previousWins = playerWinCounts.get(player.id) || 0;
@@ -217,8 +225,14 @@ export async function POST(
           const taxResult = calculateRepeatWinnerTax(player.id, basePerPlayerAmount, totalWinsIncludingCurrent);
           allTaxResults.push(taxResult);
 
-          // Use net amount after tax
-          const finalAmount = taxResult.netAmount;
+          // Calculate solo tax on top of repeat winner tax
+          const soloTaxResult = calculateSoloTax(player.id, taxResult.netAmount, isSolo);
+          if (soloTaxResult.isSolo) {
+            allSoloTaxResults.push(soloTaxResult);
+          }
+
+          // Use net amount after both taxes
+          const finalAmount = soloTaxResult.netAmount;
 
           // Update or create UC balance
           await prisma.uC.upsert({
@@ -231,12 +245,14 @@ export async function POST(
             update: { balance: { increment: finalAmount } },
           });
 
-          // Create transaction record (shows net amount player receives)
+          // Create single transaction record (shows net amount player receives)
+          const prizeDescription = `${getOrdinal(placement.position)} Place Prize: ${tournament.name}`;
+
           await prisma.transaction.create({
             data: {
               amount: finalAmount,
               type: "credit",
-              description: `${getOrdinal(placement.position)} Place Prize: ${tournament.name}`,
+              description: prizeDescription,
               playerId: player.id,
             },
           });
@@ -324,6 +340,74 @@ export async function POST(
             createdBy: "system",
           },
         });
+      }
+    }
+
+    // Process solo tax distribution (60% to losers, 40% to bonus pool)
+    const totalSoloTax = allSoloTaxResults.reduce((sum, r) => sum + r.taxAmount, 0);
+
+    if (totalSoloTax > 0 && tournament.seasonId) {
+      const taxDist = getTaxDistribution(totalSoloTax);
+
+      // Get top 3 loser tiers from the season
+      const loserTiers = await getPlayerLosses(tournament.seasonId);
+
+      if (loserTiers.length > 0 && taxDist.loserAmount > 0) {
+        // Calculate tier-based distribution
+        const tierDistribution = calculateTierDistribution(taxDist.loserAmount, loserTiers);
+
+        // Get winner names for transaction message
+        const soloWinnerNames = await Promise.all(
+          allSoloTaxResults.map(async (r) => {
+            const player = await prisma.player.findUnique({
+              where: { id: r.playerId },
+              include: { user: { select: { userName: true } } },
+            });
+            return player?.user.userName || "Unknown";
+          })
+        );
+        const winnerNamesStr = soloWinnerNames.join(", ");
+
+        // Distribute to each tier
+        for (const tier of tierDistribution) {
+          if (tier.perPlayer > 0) {
+            for (const loserId of tier.playerIds) {
+              // Get loser's user info
+              const loser = await prisma.player.findUnique({
+                where: { id: loserId },
+                include: { user: true },
+              });
+
+              if (!loser) continue;
+
+              // Update UC balance
+              await prisma.uC.upsert({
+                where: { playerId: loserId },
+                create: {
+                  player: { connect: { id: loserId } },
+                  user: { connect: { id: loser.user.id } },
+                  balance: tier.perPlayer,
+                },
+                update: { balance: { increment: tier.perPlayer } },
+              });
+
+              // Create support transaction
+              await prisma.transaction.create({
+                data: {
+                  amount: tier.perPlayer,
+                  type: "credit",
+                  description: getLoserSupportMessage(winnerNamesStr, tournament.name),
+                  playerId: loserId,
+                },
+              });
+            }
+          }
+        }
+      }
+
+      // Add 40% to solo tax pool for next tournament
+      if (taxDist.poolAmount > 0) {
+        await addToSoloTaxPool(tournament.seasonId, taxDist.poolAmount);
       }
     }
 

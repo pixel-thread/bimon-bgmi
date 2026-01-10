@@ -18,6 +18,7 @@ import { usePolls } from "@/src/hooks/poll/usePolls";
 import { PollT } from "@/src/types/poll";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { useSearchParams } from "next/navigation";
+import { SoloTaxBonusBanner } from "./SoloTaxBonusBanner";
 
 export interface PollVotingInterfaceProps {
   readOnly?: boolean;
@@ -153,6 +154,11 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
       )}
 
 
+
+      {/* Solo Tax Bonus Pool Banner */}
+      {polls && polls.length > 0 && polls[0]?.tournament?.seasonId && (
+        <SoloTaxBonusBanner seasonId={polls[0].tournament.seasonId} />
+      )}
 
       <div className="space-y-4">
         {polls?.map((poll) => (

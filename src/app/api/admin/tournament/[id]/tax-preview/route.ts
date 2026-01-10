@@ -2,6 +2,7 @@ import { prisma } from "@/src/lib/db/prisma";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { getPlayerRecentWins } from "@/src/services/winner/getPlayerRecentWins";
 import { getTaxRate } from "@/src/utils/repeatWinnerTax";
+import { getSoloTaxRate } from "@/src/utils/soloTax";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
@@ -42,24 +43,54 @@ export async function GET(
             6
         );
 
+        // Get poll to check for solo voters
+        const poll = await prisma.poll.findUnique({
+            where: { tournamentId },
+            include: {
+                playersVotes: {
+                    where: { playerId: { in: playerIds } },
+                },
+            },
+        });
+
+        // Build a set of solo player IDs
+        const soloPlayerIds = new Set(
+            poll?.playersVotes
+                .filter((v) => v.vote === "SOLO")
+                .map((v) => v.playerId) || []
+        );
+
+        const soloTaxRate = getSoloTaxRate();
+
         // Calculate tax info for each player
         const taxPreview: Record<string, {
             previousWins: number;
-            totalWins: number; // including current
-            taxRate: number;
+            totalWins: number;
+            taxRate: number; // Combined rate (repeat + solo)
             taxPercentage: string;
+            repeatWinnerTaxRate: number;
+            soloTaxRate: number;
+            isSolo: boolean;
         }> = {};
 
         for (const playerId of playerIds) {
             const previousWins = playerWinCounts.get(playerId) || 0;
-            const totalWins = previousWins + 1; // +1 for current win
-            const taxRate = getTaxRate(totalWins);
+            const totalWins = previousWins + 1;
+            const repeatTaxRate = getTaxRate(totalWins);
+            const isSolo = soloPlayerIds.has(playerId);
+            const playerSoloTax = isSolo ? soloTaxRate : 0;
+
+            // Combined tax rate (both taxes stack)
+            const combinedTaxRate = repeatTaxRate + playerSoloTax;
 
             taxPreview[playerId] = {
                 previousWins,
                 totalWins,
-                taxRate,
-                taxPercentage: `${Math.round(taxRate * 100)}%`,
+                taxRate: combinedTaxRate,
+                taxPercentage: combinedTaxRate > 0 ? `${Math.round(combinedTaxRate * 100)}%` : "0%",
+                repeatWinnerTaxRate: repeatTaxRate,
+                soloTaxRate: playerSoloTax,
+                isSolo,
             };
         }
 

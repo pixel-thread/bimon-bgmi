@@ -122,15 +122,16 @@ export function NotificationPromptBanner() {
                 </DialogHeader>
 
                 <DialogFooter className="flex-col-reverse sm:flex-row gap-2 mt-4">
-                    <Button
-                        variant="outline"
-                        onClick={handleNotNow}
-                        disabled={isPrompting || !showNotNow}
-                        className={`w-full sm:w-auto border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-opacity duration-300 ${showNotNow ? "opacity-100" : "opacity-0 pointer-events-none"
-                            }`}
-                    >
-                        Not Now
-                    </Button>
+                    {showNotNow && (
+                        <Button
+                            variant="outline"
+                            onClick={handleNotNow}
+                            disabled={isPrompting}
+                            className="w-full sm:w-auto border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        >
+                            Not Now
+                        </Button>
+                    )}
                     <Button
                         onClick={handleEnable}
                         disabled={isPrompting}

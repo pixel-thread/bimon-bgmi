@@ -100,6 +100,9 @@ export function DeclareWinnerDialog({
         totalWins: number;
         taxRate: number;
         taxPercentage: string;
+        repeatWinnerTaxRate: number;
+        soloTaxRate: number;
+        isSolo: boolean;
     }>;
 
     const { data: taxPreviewData } = useQuery({
@@ -139,22 +142,35 @@ export function DeclareWinnerDialog({
 
     // Calculate total tax from all winning players
     const taxTotals = useMemo(() => {
-        let totalTax = 0;
+        let totalRepeatTax = 0;
+        let totalSoloTax = 0;
         teamRankings.slice(0, placementCount).forEach((team, idx) => {
             const playerCount = team.players?.length || 0;
             if (playerCount === 0) return;
             const perPlayer = getPerPlayerAmount(idx + 1, playerCount);
             team.players?.forEach(p => {
                 const tax = taxPreview[p.id];
-                if (tax && tax.taxRate > 0) {
-                    totalTax += Math.floor(perPlayer * tax.taxRate);
+                if (tax) {
+                    if (tax.repeatWinnerTaxRate > 0) {
+                        totalRepeatTax += Math.floor(perPlayer * tax.repeatWinnerTaxRate);
+                    }
+                    if (tax.soloTaxRate > 0) {
+                        totalSoloTax += Math.floor(perPlayer * tax.soloTaxRate);
+                    }
                 }
             });
         });
+        const totalTax = totalRepeatTax + totalSoloTax;
         return {
             total: totalTax,
-            fundContribution: Math.floor(totalTax * 0.60),
-            orgContribution: Math.ceil(totalTax * 0.40),
+            repeatTax: totalRepeatTax,
+            soloTax: totalSoloTax,
+            // Only REPEAT winner tax goes to Org/Fund (not solo tax)
+            fundContribution: Math.floor(totalRepeatTax * 0.60),
+            orgContribution: Math.ceil(totalRepeatTax * 0.40),
+            // Solo tax goes to losers (60%) and next tournament pool (40%)
+            soloToLosers: Math.floor(totalSoloTax * 0.60),
+            soloToPool: Math.ceil(totalSoloTax * 0.40),
         };
     }, [taxPreview, teamRankings, placementCount]);
 
@@ -286,10 +302,16 @@ export function DeclareWinnerDialog({
                                         )}
                                     </span>
                                 </div>
-                                {taxTotals.total > 0 && (
+                                {taxTotals.repeatTax > 0 && (
                                     <div className="flex justify-between text-amber-600 dark:text-amber-400 pt-1 border-t border-green-200 dark:border-green-700">
                                         <span>🔄 Repeat Winner Tax:</span>
-                                        <span className="font-medium">₹{taxTotals.total.toLocaleString()}</span>
+                                        <span className="font-medium">₹{taxTotals.repeatTax.toLocaleString()}</span>
+                                    </div>
+                                )}
+                                {taxTotals.soloTax > 0 && (
+                                    <div className="flex justify-between text-purple-600 dark:text-purple-400">
+                                        <span>👤 Solo Tax (→ losers + next pool):</span>
+                                        <span className="font-medium">₹{taxTotals.soloTax.toLocaleString()}</span>
                                     </div>
                                 )}
                                 {ucExemptCount > 0 && (
@@ -350,7 +372,7 @@ export function DeclareWinnerDialog({
                                                         </div>
                                                     )}
                                                 </div>
-                                                {/* Tax info for players */}
+                                                {/* Tax info for players (repeat winner + solo) */}
                                                 {hasTax && (
                                                     <div className="mt-2 pt-2 border-t border-dashed space-y-1">
                                                         {team.players?.map(p => {
@@ -359,8 +381,20 @@ export function DeclareWinnerDialog({
                                                             const taxedAmount = getTaxedAmount(p.id, perPlayer);
                                                             return (
                                                                 <div key={p.id} className="flex items-center justify-between text-xs">
-                                                                    <span className="text-amber-600 dark:text-amber-400">
-                                                                        🔄 {p.displayName || p.name} ({tax.totalWins} wins)
+                                                                    <span className="flex items-center gap-1">
+                                                                        {tax.isSolo && (
+                                                                            <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                                                                                SOLO
+                                                                            </span>
+                                                                        )}
+                                                                        {tax.repeatWinnerTaxRate > 0 && (
+                                                                            <span className="text-amber-600 dark:text-amber-400">
+                                                                                🔄 {tax.totalWins} wins
+                                                                            </span>
+                                                                        )}
+                                                                        <span className="text-muted-foreground">
+                                                                            {p.displayName || p.name}
+                                                                        </span>
                                                                     </span>
                                                                     <span className="text-amber-600 dark:text-amber-400 font-medium">
                                                                         ₹{perPlayer} → ₹{taxedAmount} <span className="text-[10px]">(-{tax.taxPercentage})</span>

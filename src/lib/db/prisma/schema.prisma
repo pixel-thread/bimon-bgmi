@@ -709,3 +709,14 @@ model JobCategory {
   
   @@index([name])
 }
+
+// Track accumulated solo tax for next tournament bonus pool
+model SoloTaxPool {
+  id        String   @id @default(uuid())
+  amount    Int      @default(0)  // Accumulated 40% from solo taxes
+  seasonId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([seasonId])
+}

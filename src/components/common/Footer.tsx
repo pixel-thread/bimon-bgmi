@@ -13,8 +13,8 @@ const Footer = () => {
               PUBGMI Tournament
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Professional tournament management platform for PUBG Mobile and
-              BGMI esports competitions.
+              Community tournament platform for PUBG Mobile and BGMI players.
+              Fair teams, UC prizes, and friendly competition.
             </p>
           </div>
 

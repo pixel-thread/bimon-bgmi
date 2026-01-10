@@ -77,6 +77,22 @@ export async function DELETE(
             where: { id },
         });
 
+        // Auto-reorder remaining rules to be sequential (1, 2, 3, ...)
+        const remainingRules = await prisma.rule.findMany({
+            orderBy: { order: "asc" },
+            select: { id: true, order: true },
+        });
+
+        for (let i = 0; i < remainingRules.length; i++) {
+            const newOrder = i + 1;
+            if (remainingRules[i].order !== newOrder) {
+                await prisma.rule.update({
+                    where: { id: remainingRules[i].id },
+                    data: { order: newOrder },
+                });
+            }
+        }
+
         return SuccessResponse({
             message: "Rule deleted successfully",
         });

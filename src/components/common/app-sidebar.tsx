@@ -20,6 +20,7 @@ import {
   Settings2,
   Loader2,
   Briefcase,
+  TrendingDown,
 } from "lucide-react";
 
 import { NavUser } from "@/src/components/nav-user";
@@ -90,6 +91,7 @@ const navGroups: NavGroup[] = [
     superAdminOnly: true,
     items: [
       { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
+      { title: "Player Insights", url: "/admin/insights", icon: TrendingDown },
       { title: "Income", url: "/admin/income", icon: DollarSign },
       { title: "Push Subscribers", url: "/admin/push-subscribers", icon: Bell },
     ],

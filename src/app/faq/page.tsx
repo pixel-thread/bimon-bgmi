@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 export default function FAQPage() {
   const [openItems, setOpenItems] = useState<number[]>([]);
@@ -16,105 +17,109 @@ export default function FAQPage() {
       category: "Getting Started",
       questions: [
         {
-          question: "How do I create a tournament on the PUBGMI platform?",
+          question: "How do I join a tournament?",
           answer:
-            "To create a tournament, you need admin access to the platform. Contact our support team to set up your tournament with custom rules, team limits, and scoring systems.",
+            "Create an account, add UC balance, then vote 'IN' on upcoming tournaments. Once voting closes, teams are formed and you're ready to play!",
         },
         {
-          question: "What are the system requirements for participants?",
+          question: "What do I need to participate?",
           answer:
-            "Participants need a stable internet connection, PUBG Mobile or BGMI installed, and access to our web platform. It works on all modern browsers and devices.",
+            "You need a PUBG Mobile or BGMI account, UC balance for entry fees, and access to our WhatsApp group for room details.",
         },
         {
-          question: "How many players can participate in a tournament?",
+          question: "How much does it cost to join?",
           answer:
-            "Our platform supports tournaments from 16 teams (64 players) up to 100+ teams (400+ players), depending on your configuration.",
-        },
-      ],
-    },
-    {
-      category: "Tournament Rules & Scoring",
-      questions: [
-        {
-          question: "How is the K/D ratio calculated?",
-          answer:
-            "K/D ratio = total kills ÷ total deaths. Stats are tracked per player and updated in real time during matches.",
-        },
-        {
-          question: "What happens if a player disconnects during a match?",
-          answer:
-            "If a player disconnects, they can rejoin if the game allows. Missed eliminations still count. Organizers may review cases individually.",
-        },
-        {
-          question: "How are team rankings determined?",
-          answer:
-            "Team rankings use placement points + elimination points. The scoring system can be customized per tournament.",
-        },
-        {
-          question: "Can tournament rules be customized?",
-          answer:
-            "Yes, organizers can customize match duration, zone settings, weapons, team sizes, and scoring systems.",
+            "Entry fees vary per tournament (typically ₹30-50). The fee is deducted from your UC balance when you participate.",
         },
       ],
     },
     {
-      category: "Team Management",
+      category: "Teams & Voting",
       questions: [
         {
-          question: "How do I register my team for a tournament?",
+          question: "How are teams formed?",
           answer:
-            "Team captains register through the platform by entering team details and confirming all members. Substitutes can also be added if allowed.",
+            "Teams are formed randomly to balance skill levels. Pros get paired with newer players for fair matches. You can also form your own team with friends.",
         },
         {
-          question: "Can I change team members after registration?",
+          question: "What are the voting options (IN, OUT, SOLO)?",
           answer:
-            "Roster changes are allowed before the tournament starts (depending on rules). After it begins, changes are usually restricted.",
+            "IN = Join with a random team. SOLO = Play solo (20% tax on winnings). OUT = Skip this tournament.",
         },
         {
-          question: "What info is required for registration?",
+          question: "Can I pick my own teammates?",
           answer:
-            "You’ll need team name, captain contact, IGN for each player, and any IDs/screenshots requested by the organizer.",
+            "Yes! You can form custom teams with friends instead of random pairing. Contact admins to set this up.",
+        },
+        {
+          question: "What team modes are available?",
+          answer:
+            "Solo (1 player), Duo (2 players), Trio (3 players), or Squad (4 players) depending on the tournament.",
         },
       ],
     },
     {
-      category: "Technical Support",
+      category: "UC & Prizes",
       questions: [
         {
-          question:
-            "What should I do if I encounter technical issues during a tournament?",
+          question: "How do I add UC balance?",
           answer:
-            "Contact support immediately and provide screenshots if possible. Organizers can review match data and apply adjustments.",
+            "Contact admins to add UC balance to your account. Balance is used for entry fees and you receive winnings as UC.",
         },
         {
-          question: "How do I report cheating or rule violations?",
+          question: "How are prizes distributed?",
           answer:
-            "Use the reporting system or contact organizers directly with evidence. Reports are reviewed and acted on promptly.",
+            "Entry fees form the prize pool. 1st, 2nd, and 3rd place teams win UC prizes based on the pool size.",
         },
         {
-          question: "Is my personal data secure?",
+          question: "What is Solo Tax?",
           answer:
-            "Yes. All personal data is encrypted, securely stored, and only used for tournament participation. It is never shared without consent.",
+            "If you vote SOLO, 20% of your winnings is taxed. 60% goes to players who lost the most this season, 40% goes to the next tournament's bonus pool.",
+        },
+        {
+          question: "What is Repeat Winner Tax?",
+          answer:
+            "If you win multiple tournaments in a row (2+ wins in last 6 tournaments), you pay 10-30% tax to ensure fair distribution.",
         },
       ],
     },
     {
-      category: "Platform Features",
+      category: "Matches & Rules",
       questions: [
         {
-          question: "Can I view live tournament statistics?",
+          question: "How do I get room ID and password?",
           answer:
-            "Yes, live stats include kills, rankings, and match results. They’re updated automatically for players and spectators.",
+            "Room details are shared in our WhatsApp groups before each match. Make sure you're in the group!",
         },
         {
-          question: "How do I access my tournament history?",
+          question: "What happens if I disconnect during a match?",
           answer:
-            "Your full tournament history is available in your player profile, including stats, teams, and past performances.",
+            "Rejoin if possible. Your stats (kills) still count. Contact admins if you have connection issues.",
         },
         {
-          question: "Can spectators follow the tournament?",
+          question: "How are scores calculated?",
           answer:
-            "Yes. Public tournaments allow spectators to follow live scores, and many include live streaming integration.",
+            "Scores are based on team placement and individual kills. Check the leaderboard for real-time standings.",
+        },
+      ],
+    },
+    {
+      category: "Account & Support",
+      questions: [
+        {
+          question: "How do I check my stats?",
+          answer:
+            "Go to your profile to see your K/D ratio, wins, tournament history, and UC balance.",
+        },
+        {
+          question: "How do I report an issue?",
+          answer:
+            "Contact admins through WhatsApp or use the Contact page. Include screenshots if possible.",
+        },
+        {
+          question: "Is my data secure?",
+          answer:
+            "Yes. Your personal data is encrypted and only used for tournament participation. We never share it without consent.",
         },
       ],
     },
@@ -129,8 +134,7 @@ export default function FAQPage() {
             Frequently Asked Questions
           </h1>
           <p className="text-xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto leading-relaxed">
-            Find answers to common questions about our PUBG Mobile and BGMI
-            tournament management platform.
+            Find answers about joining tournaments, teams, UC prizes, and more.
           </p>
         </div>
 
@@ -197,23 +201,21 @@ export default function FAQPage() {
             Still Have Questions?
           </h2>
           <p className="text-slate-600 dark:text-slate-400 mb-6">
-            Can't find the answer you're looking for? Our support team is here
-            to help with tournament management, technical issues, or platform
-            features.
+            Can&apos;t find what you&apos;re looking for? Reach out to us!
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
+            <Link
               href="/contact"
               className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
             >
-              Contact Support
-            </a>
-            <a
-              href="/community"
+              Contact Us
+            </Link>
+            <Link
+              href="/tournament/rules"
               className="border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 px-6 py-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium"
             >
-              Join Community
-            </a>
+              View Rules
+            </Link>
           </div>
         </div>
       </div>
