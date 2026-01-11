@@ -11,7 +11,7 @@ import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { LoaderFive } from "@/src/components/ui/loader";
-import { FiUser, FiCheck, FiAlertCircle, FiHelpCircle, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiUser, FiCheck, FiAlertCircle, FiHelpCircle, FiChevronLeft, FiChevronRight, FiClipboard, FiX } from "react-icons/fi";
 
 
 
@@ -20,12 +20,12 @@ const TUTORIAL_STEPS = [
     {
         image: "/images/ign-step-1.png",
         title: "Step 1: Open Profile",
-        description: "Click ha avatar/profile icon ha top left corner",
+        description: "Click the avatar/profile icon on top left corner",
     },
     {
         image: "/images/ign-step-2.png",
-        title: "Step 2: Copy IGN",
-        description: "Click ha kyrteng bad copy ia u",
+        title: "Step 2: Copy Game Name",
+        description: "Click the 📋 icon to copy your game name",
     },
 ];
 
@@ -35,9 +35,10 @@ export default function OnboardingPage() {
     const router = useRouter();
     const [userName, setUserName] = useState("");
     const [displayName, setDisplayName] = useState("");
-    const [dateOfBirth, setDateOfBirth] = useState("");
+
     const [userNameError, setUserNameError] = useState("");
     const [displayNameError, setDisplayNameError] = useState("");
+    const [isUserNameAutoFilled, setIsUserNameAutoFilled] = useState(false);
     const [showHelpModal, setShowHelpModal] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
@@ -48,11 +49,19 @@ export default function OnboardingPage() {
     useEffect(() => {
         if (clerkUser?.firstName && !userName) {
             // Sanitize: only allow alphanumeric and underscore, convert to lowercase
-            const sanitized = clerkUser.firstName
+            let sanitized = clerkUser.firstName
                 .toLowerCase()
                 .replace(/[^a-z0-9_]/g, "");
+
+            // If name is too short, append random numbers to reach minimum length
+            if (sanitized.length > 0 && sanitized.length < 3) {
+                const randomNum = Math.floor(Math.random() * 900) + 100; // 100-999
+                sanitized = sanitized + randomNum;
+            }
+
             if (sanitized.length >= 3) {
                 setUserName(sanitized);
+                setIsUserNameAutoFilled(true);
             }
         }
     }, [clerkUser?.firstName, userName]);
@@ -184,9 +193,9 @@ export default function OnboardingPage() {
         submitUsernames({
             userName,
             displayName,
-            ...(dateOfBirth && { dateOfBirth }),
         });
     };
+
 
     // If user is already onboarded, redirect to home
     if (user?.isOnboarded) {
@@ -262,7 +271,7 @@ export default function OnboardingPage() {
                                             <FiHelpCircle className="w-4 h-4 text-white" />
                                         </motion.div>
                                         <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-                                            Kumno ban copy IGN
+                                            How to copy game name
                                         </h2>
                                     </div>
                                 </div>
@@ -329,13 +338,13 @@ export default function OnboardingPage() {
                                                 <>
                                                     <Button
                                                         onClick={prevStep}
-                                                        className="flex-1 bg-gradient-to-l from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 py-3 text-base font-medium"
+                                                        className="flex-1 bg-gradient-to-l from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 py-3 text-base font-medium text-white"
                                                     >
                                                         <FiChevronLeft className="w-5 h-5" />
                                                     </Button>
                                                     <Button
                                                         onClick={closeHelpModal}
-                                                        className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 py-3 text-base font-medium"
+                                                        className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 py-3 text-base font-medium text-white"
                                                     >
                                                         <FiCheck className="w-5 h-5 mr-1" />
                                                         Got it!
@@ -344,7 +353,7 @@ export default function OnboardingPage() {
                                             ) : (
                                                 <Button
                                                     onClick={nextStep}
-                                                    className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 py-3 text-base font-medium"
+                                                    className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 py-3 text-base font-medium text-white"
                                                 >
                                                     Next
                                                     <FiChevronRight className="w-5 h-5 ml-1" />
@@ -365,31 +374,23 @@ export default function OnboardingPage() {
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-700">
                         {/* Icon */}
                         <div className="flex justify-center mb-6">
-                            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-                                <FiUser className="w-8 h-8 text-white" />
-                            </div>
+                            <img
+                                src="/android-chrome-192x192.png"
+                                alt="App Logo"
+                                className="w-20 h-20 rounded-2xl shadow-lg"
+                            />
                         </div>
 
                         {/* Title */}
                         <h1 className="text-2xl font-bold text-center text-slate-800 dark:text-slate-200 mb-2">
-                            Set Your Usernames
+                            Welcome to PUBGMI
                         </h1>
 
                         {/* Description */}
                         <p className="text-center text-slate-600 dark:text-slate-400 mb-6">
-                            Thoh kyrteng <span className="font-semibold text-indigo-600 dark:text-indigo-400">kumjuh ha BGMI (IGN)</span>.
+                            Copy bad paste ia <span className="font-semibold text-indigo-600 dark:text-indigo-400">ka kyrteng ba na BGMI</span>.
                         </p>
 
-                        {/* Important notice */}
-                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4 mb-6">
-                            <div className="flex gap-3">
-                                <FiAlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                                <div className="text-sm text-amber-700 dark:text-amber-300">
-                                    <p className="font-medium mb-1">Balei ban thoh da kyrteng kumjuh na bgmi?</p>
-                                    <p>Ban suk ban thoh points bad ban ym shah kick ha room</p>
-                                </div>
-                            </div>
-                        </div>
 
                         {/* Form */}
                         <form onSubmit={handleSubmit} className="space-y-5">
@@ -408,7 +409,6 @@ export default function OnboardingPage() {
                                         title="How to find your IGN"
                                         animate={isClosing ? {
                                             scale: [1, 1.5, 1.2],
-                                            rotate: [0, 180],
                                             boxShadow: [
                                                 "0 0 0 0 rgba(99, 102, 241, 0)",
                                                 "0 0 20px 10px rgba(99, 102, 241, 0.6)",
@@ -416,7 +416,6 @@ export default function OnboardingPage() {
                                             ]
                                         } : {
                                             scale: [1, 1.1, 1],
-                                            rotate: 0,
                                             boxShadow: [
                                                 "0 0 0 0 rgba(99, 102, 241, 0.4)",
                                                 "0 0 0 8px rgba(99, 102, 241, 0)",
@@ -437,22 +436,57 @@ export default function OnboardingPage() {
                                         <FiHelpCircle className="w-3.5 h-3.5" />
                                     </motion.button>
                                 </label>
-                                <Input
-                                    id="displayName"
-                                    type="text"
-                                    value={displayName}
-                                    onChange={(e) => {
-                                        setDisplayName(e.target.value);
-                                        setDisplayNameError("");
-                                    }}
-                                    placeholder="e.g. KŠツMeban"
-                                    className={`w-full ${displayNameError
-                                        ? "border-red-500 focus-visible:ring-red-500"
-                                        : "focus-visible:ring-indigo-500"
-                                        }`}
-                                    disabled={isPending}
-                                    autoFocus
-                                />
+                                <div className="flex gap-2">
+                                    <Input
+                                        id="displayName"
+                                        type="text"
+                                        value={displayName}
+                                        readOnly
+                                        placeholder="Paste your IGN here"
+                                        className={`w-full bg-slate-50 dark:bg-slate-700/50 cursor-default ${displayNameError
+                                            ? "border-red-500 focus-visible:ring-red-500"
+                                            : "focus-visible:ring-indigo-500"
+                                            }`}
+                                        disabled={isPending}
+                                    />
+                                    {displayName ? (
+                                        <Button
+                                            type="button"
+                                            onClick={() => {
+                                                setDisplayName("");
+                                                setDisplayNameError("");
+                                            }}
+                                            disabled={isPending}
+                                            className="bg-red-500 hover:bg-red-600 text-white px-4"
+                                        >
+                                            <FiX className="w-4 h-4 mr-1" />
+                                            Clear
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            type="button"
+                                            onClick={async () => {
+                                                try {
+                                                    const text = await navigator.clipboard.readText();
+                                                    if (text.trim()) {
+                                                        setDisplayName(text.trim());
+                                                        setDisplayNameError("");
+                                                        toast.success("IGN pasted!");
+                                                    } else {
+                                                        toast.error("Clipboard is empty");
+                                                    }
+                                                } catch {
+                                                    toast.error("Cannot access clipboard. Please allow clipboard permission.");
+                                                }
+                                            }}
+                                            disabled={isPending}
+                                            className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4"
+                                        >
+                                            <FiClipboard className="w-4 h-4 mr-1" />
+                                            Paste
+                                        </Button>
+                                    )}
+                                </div>
                                 {displayNameError && (
                                     <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
                                         <FiAlertCircle className="w-4 h-4" />
@@ -460,7 +494,21 @@ export default function OnboardingPage() {
                                     </p>
                                 )}
                                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                                    Enter exactly as shown in BGMI. Special characters allowed.
+                                    <button
+                                        type="button"
+                                        onClick={openHelpModal}
+                                        className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                                    >
+                                        Kumno ban copy?
+                                    </button>
+                                    {" / "}
+                                    <button
+                                        type="button"
+                                        onClick={openHelpModal}
+                                        className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                                    >
+                                        Need help?
+                                    </button>
                                 </p>
                             </div>
 
@@ -477,15 +525,18 @@ export default function OnboardingPage() {
                                     type="text"
                                     value={userName}
                                     onChange={(e) => {
-                                        setUserName(e.target.value);
-                                        setUserNameError("");
+                                        if (!isUserNameAutoFilled) {
+                                            setUserName(e.target.value);
+                                            setUserNameError("");
+                                        }
                                     }}
                                     placeholder="e.g. meban_ks"
                                     className={`w-full text-sm ${userNameError
                                         ? "border-red-500 focus-visible:ring-red-500"
                                         : "focus-visible:ring-indigo-500"
-                                        }`}
+                                        } ${isUserNameAutoFilled ? "bg-slate-100 dark:bg-slate-700 cursor-not-allowed" : ""}`}
                                     disabled={isPending}
+                                    readOnly={isUserNameAutoFilled}
                                 />
                                 {userNameError && (
                                     <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
@@ -494,31 +545,12 @@ export default function OnboardingPage() {
                                     </p>
                                 )}
                                 <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-500">
-                                    Letters, numbers, and underscores only.
+                                    {isUserNameAutoFilled
+                                        ? "Use this to search for your stats."
+                                        : "Letters, numbers, and underscores only."}
                                 </p>
                             </div>
 
-                            {/* Date of Birth (Optional) */}
-                            <div>
-                                <label
-                                    htmlFor="dateOfBirth"
-                                    className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-                                >
-                                    Date of Birth <span className="text-slate-400">(Optional)</span>
-                                </label>
-                                <Input
-                                    id="dateOfBirth"
-                                    type="date"
-                                    value={dateOfBirth}
-                                    onChange={(e) => setDateOfBirth(e.target.value)}
-                                    max={new Date().toISOString().split('T')[0]}
-                                    className="w-full focus-visible:ring-indigo-500"
-                                    disabled={isPending}
-                                />
-                                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                                    🎁 Add your birthday for free entry fee for the current tournament!
-                                </p>
-                            </div>
 
                             <Button
                                 type="submit"
