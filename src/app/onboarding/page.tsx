@@ -220,7 +220,7 @@ export default function OnboardingPage() {
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.3, ease: "easeOut" }}
                             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                            onClick={closeHelpModal}
+                            onClick={isLastStep ? closeHelpModal : undefined}
                         />
 
                         {/* Modal with genie animation from button position */}
@@ -265,12 +265,6 @@ export default function OnboardingPage() {
                                             Kumno ban copy IGN
                                         </h2>
                                     </div>
-                                    <button
-                                        onClick={closeHelpModal}
-                                        className="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center transition-colors"
-                                    >
-                                        <span className="text-xl text-slate-500">×</span>
-                                    </button>
                                 </div>
 
                                 {/* Content */}
@@ -293,83 +287,71 @@ export default function OnboardingPage() {
                                             </AnimatePresence>
                                         </div>
 
-                                        {/* Navigation Arrows */}
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={prevStep}
-                                            disabled={currentStep === 0}
-                                            className={`absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${currentStep === 0
-                                                ? "bg-slate-200/50 dark:bg-slate-700/50 text-slate-400 cursor-not-allowed"
-                                                : "bg-white dark:bg-slate-700 shadow-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/50 text-slate-700 dark:text-slate-200"
-                                                }`}
-                                        >
-                                            <FiChevronLeft className="w-5 h-5" />
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={nextStep}
-                                            disabled={isLastStep}
-                                            className={`absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isLastStep
-                                                ? "bg-slate-200/50 dark:bg-slate-700/50 text-slate-400 cursor-not-allowed"
-                                                : "bg-white dark:bg-slate-700 shadow-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/50 text-slate-700 dark:text-slate-200"
-                                                }`}
-                                        >
-                                            <FiChevronRight className="w-5 h-5" />
-                                        </motion.button>
+                                        {/* Step Info */}
+                                        <AnimatePresence mode="wait">
+                                            <motion.div
+                                                key={currentStep}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                transition={{ duration: 0.2 }}
+                                                className="mt-4 text-center"
+                                            >
+                                                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+                                                    {currentTutorial.title}
+                                                </h3>
+                                                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                                                    {currentTutorial.description}
+                                                </p>
+                                            </motion.div>
+                                        </AnimatePresence>
+
+                                        {/* Step Indicators */}
+                                        <div className="flex justify-center gap-3 mt-4">
+                                            {TUTORIAL_STEPS.map((_, index) => (
+                                                <motion.div
+                                                    key={index}
+                                                    animate={{
+                                                        width: index === currentStep ? 32 : 8,
+                                                    }}
+                                                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                                    className={`h-2 rounded-full ${index === currentStep
+                                                        ? "bg-gradient-to-r from-indigo-500 to-purple-600"
+                                                        : "bg-slate-300 dark:bg-slate-600"
+                                                        }`}
+                                                />
+                                            ))}
+                                        </div>
+
+                                        {/* Navigation Buttons */}
+                                        <div className="flex gap-3 mt-5">
+                                            {isLastStep ? (
+                                                <>
+                                                    <Button
+                                                        onClick={prevStep}
+                                                        className="flex-1 bg-gradient-to-l from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 py-3 text-base font-medium"
+                                                    >
+                                                        <FiChevronLeft className="w-5 h-5" />
+                                                    </Button>
+                                                    <Button
+                                                        onClick={closeHelpModal}
+                                                        className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 py-3 text-base font-medium"
+                                                    >
+                                                        <FiCheck className="w-5 h-5 mr-1" />
+                                                        Got it!
+                                                    </Button>
+                                                </>
+                                            ) : (
+                                                <Button
+                                                    onClick={nextStep}
+                                                    className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 py-3 text-base font-medium"
+                                                >
+                                                    Next
+                                                    <FiChevronRight className="w-5 h-5 ml-1" />
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
-
-                                    {/* Step Info */}
-                                    <AnimatePresence mode="wait">
-                                        <motion.div
-                                            key={currentStep}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -10 }}
-                                            transition={{ duration: 0.2 }}
-                                            className="mt-4 text-center"
-                                        >
-                                            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-                                                {currentTutorial.title}
-                                            </h3>
-                                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                                                {currentTutorial.description}
-                                            </p>
-                                        </motion.div>
-                                    </AnimatePresence>
-
-                                    {/* Step Indicators */}
-                                    <div className="flex justify-center gap-3 mt-4">
-                                        {TUTORIAL_STEPS.map((_, index) => (
-                                            <motion.button
-                                                key={index}
-                                                onClick={() => setCurrentStep(index)}
-                                                animate={{
-                                                    width: index === currentStep ? 32 : 8,
-                                                }}
-                                                transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                                                className={`h-2 rounded-full ${index === currentStep
-                                                    ? "bg-gradient-to-r from-indigo-500 to-purple-600"
-                                                    : "bg-slate-300 dark:bg-slate-600 hover:bg-slate-400"
-                                                    }`}
-                                            />
-                                        ))}
-                                    </div>
-
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.3 }}
-                                    >
-                                        <Button
-                                            onClick={closeHelpModal}
-                                            className="w-full mt-5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 py-3 text-base font-medium"
-                                        >
-                                            <FiCheck className="w-5 h-5 mr-2" />
-                                            Got it!
-                                        </Button>
-                                    </motion.div>
                                 </div>
                             </motion.div>
                         </div>
@@ -377,7 +359,7 @@ export default function OnboardingPage() {
                 )}
             </AnimatePresence>
 
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 px-4">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 px-4 py-8">
                 <div className="w-full max-w-md">
                     {/* Header Card */}
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-700">
@@ -411,42 +393,7 @@ export default function OnboardingPage() {
 
                         {/* Form */}
                         <form onSubmit={handleSubmit} className="space-y-5">
-                            {/* Simple Username */}
-                            <div>
-                                <label
-                                    htmlFor="username"
-                                    className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-                                >
-                                    Name
-                                </label>
-                                <Input
-                                    id="username"
-                                    type="text"
-                                    value={userName}
-                                    onChange={(e) => {
-                                        setUserName(e.target.value);
-                                        setUserNameError("");
-                                    }}
-                                    placeholder="e.g. meban_ks"
-                                    className={`w-full ${userNameError
-                                        ? "border-red-500 focus-visible:ring-red-500"
-                                        : "focus-visible:ring-indigo-500"
-                                        }`}
-                                    disabled={isPending}
-                                    autoFocus
-                                />
-                                {userNameError && (
-                                    <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                                        <FiAlertCircle className="w-4 h-4" />
-                                        {userNameError}
-                                    </p>
-                                )}
-                                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                                    3-30 characters. Letters, numbers, and underscores only.
-                                </p>
-                            </div>
-
-                            {/* Display Name (BGMI IGN) */}
+                            {/* Display Name (BGMI IGN) - Primary field */}
                             <div>
                                 <label
                                     htmlFor="displayName"
@@ -504,6 +451,7 @@ export default function OnboardingPage() {
                                         : "focus-visible:ring-indigo-500"
                                         }`}
                                     disabled={isPending}
+                                    autoFocus
                                 />
                                 {displayNameError && (
                                     <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
@@ -513,6 +461,40 @@ export default function OnboardingPage() {
                                 )}
                                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                                     Enter exactly as shown in BGMI. Special characters allowed.
+                                </p>
+                            </div>
+
+                            {/* Simple Username - Secondary field (less prominent) */}
+                            <div className="opacity-80">
+                                <label
+                                    htmlFor="username"
+                                    className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5"
+                                >
+                                    Name
+                                </label>
+                                <Input
+                                    id="username"
+                                    type="text"
+                                    value={userName}
+                                    onChange={(e) => {
+                                        setUserName(e.target.value);
+                                        setUserNameError("");
+                                    }}
+                                    placeholder="e.g. meban_ks"
+                                    className={`w-full text-sm ${userNameError
+                                        ? "border-red-500 focus-visible:ring-red-500"
+                                        : "focus-visible:ring-indigo-500"
+                                        }`}
+                                    disabled={isPending}
+                                />
+                                {userNameError && (
+                                    <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                                        <FiAlertCircle className="w-3.5 h-3.5" />
+                                        {userNameError}
+                                    </p>
+                                )}
+                                <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-500">
+                                    Letters, numbers, and underscores only.
                                 </p>
                             </div>
 
