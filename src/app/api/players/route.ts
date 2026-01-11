@@ -232,13 +232,23 @@ export async function GET(req: NextRequest) {
     // Remove sensitive fields before sending to client (keep for search but don't expose)
     const sanitizedData = data.map(({ email, firstName, lastName, clerkId, ...rest }) => rest);
 
+    // Calculate balance aggregates
+    const totalBalance = data.reduce((acc, player) => acc + (player.uc || 0), 0);
+    const negativeBalance = data
+      .filter((player) => (player.uc || 0) < 0)
+      .reduce((acc, player) => acc + (player.uc || 0), 0);
+
     // Apply pagination to the sanitized data
     const paginatedData = paginate({ array: sanitizedData, pageSize: 10, pageNumber: parseInt(page) });
 
     return SuccessResponse({
       data: paginatedData,
       message: "Players fetched successfully",
-      meta: getMeta({ total: data.length, currentPage: page }),
+      meta: {
+        ...getMeta({ total: data.length, currentPage: page }),
+        totalBalance,
+        negativeBalance,
+      },
     });
   } catch (error) {
     return handleApiErrors(error);
