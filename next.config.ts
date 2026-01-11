@@ -69,17 +69,9 @@ const withPWA = withPWAInit({
         },
       },
       {
-        // Cache API responses with network-first strategy
+        // Never cache API responses - prevents stale data issues after deployments
         urlPattern: /^https?:\/\/.*\/api\/.*/i,
-        handler: "NetworkFirst",
-        options: {
-          cacheName: "api-cache",
-          networkTimeoutSeconds: 5,
-          expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 60 * 5, // 5 minutes
-          },
-        },
+        handler: "NetworkOnly",
       },
     ],
   },

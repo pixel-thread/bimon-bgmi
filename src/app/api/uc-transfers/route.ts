@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
 
             return SuccessResponse({
                 data: transfer,
-                message: `Successfully sent ${amount} UC to ${toPlayer.user.userName}`,
+                message: `Successfully sent ${amount} UC to ${toPlayer.user.displayName || toPlayer.user.userName}`,
             });
         }
 
@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
 
             return SuccessResponse({
                 data: transfer,
-                message: `Requested ${amount} UC from ${toPlayer.user.userName}`,
+                message: `Requested ${amount} UC from ${toPlayer.user.displayName || toPlayer.user.userName}`,
             });
         }
 
