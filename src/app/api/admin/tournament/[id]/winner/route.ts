@@ -268,6 +268,15 @@ export async function POST(
       winnerTeam.push(winTeam);
     }
 
+    // Mark tournament as completed with winners declared and set to INACTIVE
+    await prisma.tournament.update({
+      where: { id: id },
+      data: {
+        isWinnerDeclared: true,
+        status: "INACTIVE",
+      },
+    });
+
     // Calculate total repeat winner tax contributions
     const taxTotals = aggregateTaxTotals(allTaxResults);
 
