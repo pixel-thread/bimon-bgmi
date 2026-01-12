@@ -108,15 +108,15 @@ export function MeritRatingModal({
                     </h2>
                     <p className="text-sm text-zinc-400 mb-6">Good teammate?</p>
 
-                    {/* Emoji buttons - responsive */}
-                    <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+                    {/* Emoji buttons - single row */}
+                    <div className="flex justify-center gap-1.5 sm:gap-3">
                         {MERIT_EMOJIS.map(({ value, emoji, color }) => (
                             <button
                                 key={value}
                                 onClick={() => handleRating(value)}
                                 disabled={isSubmitting}
                                 className={cn(
-                                    "text-2xl sm:text-3xl p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-200",
+                                    "text-xl sm:text-3xl p-2.5 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-200",
                                     "hover:scale-110 active:scale-100 focus:outline-none",
                                     "disabled:opacity-50 disabled:cursor-not-allowed",
                                     selectedEmoji === value
