@@ -36,51 +36,40 @@ export function MeritRatingModal({
     onComplete,
 }: MeritRatingModalProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedEmoji, setSelectedEmoji] = useState<number | null>(null);
     const { getToken } = useAuth();
 
     const currentPlayer = pendingRatings[currentIndex];
     const isLastPlayer = currentIndex >= pendingRatings.length - 1;
 
     const handleRating = async (rating: number) => {
-        if (isSubmitting) return;
+        const playerToRate = currentPlayer;
 
-        setSelectedEmoji(rating);
-        setIsSubmitting(true);
+        // Immediately move to next or close modal
+        if (isLastPlayer) {
+            onComplete();
+        } else {
+            setCurrentIndex((prev) => prev + 1);
+        }
 
+        // Save in background - fire and forget
         try {
             const token = await getToken({ template: "jwt" });
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/player/merit`, {
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/player/merit`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    toPlayerId: currentPlayer.playerId,
+                    toPlayerId: playerToRate.playerId,
                     rating,
                     tournamentId,
                 }),
+            }).catch(() => {
+                // Silently fail - will show again on next visit if still pending
             });
-
-            if (!res.ok) {
-                throw new Error("Failed to submit rating");
-            }
-
-            // Brief delay to show selection
-            await new Promise((r) => setTimeout(r, 350));
-
-            if (isLastPlayer) {
-                onComplete();
-            } else {
-                setCurrentIndex((prev) => prev + 1);
-                setSelectedEmoji(null);
-            }
-        } catch (error) {
-            console.error("Rating error:", error);
-        } finally {
-            setIsSubmitting(false);
+        } catch {
+            // Silently fail
         }
     };
 
@@ -114,27 +103,16 @@ export function MeritRatingModal({
                             <button
                                 key={value}
                                 onClick={() => handleRating(value)}
-                                disabled={isSubmitting}
                                 className={cn(
                                     "text-xl sm:text-3xl p-2.5 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-200",
-                                    "hover:scale-110 active:scale-100 focus:outline-none",
-                                    "disabled:opacity-50 disabled:cursor-not-allowed",
-                                    selectedEmoji === value
-                                        ? `scale-110 bg-gradient-to-br ${color} shadow-lg`
-                                        : "bg-zinc-800/60 hover:bg-zinc-700/60"
+                                    "hover:scale-110 active:scale-95 focus:outline-none",
+                                    "bg-zinc-800/60 hover:bg-zinc-700/60"
                                 )}
                             >
                                 {emoji}
                             </button>
                         ))}
                     </div>
-
-                    {isSubmitting && (
-                        <div className="flex items-center gap-2 mt-5 text-zinc-400">
-                            <div className="h-4 w-4 border-2 border-zinc-500 border-t-white rounded-full animate-spin" />
-                            <span className="text-sm">Saving...</span>
-                        </div>
-                    )}
                 </div>
             </DialogContent>
         </Dialog>
