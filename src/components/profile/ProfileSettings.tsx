@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
@@ -12,23 +12,10 @@ import { Separator } from "@/src/components/ui/separator";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
-import { Loader2, User, Mail, Shield, AlertCircle, CheckCircle, Edit2, Gamepad2, HelpCircle, ChevronLeft, ChevronRight, Check, Calendar } from "lucide-react";
+import { Loader2, User, Mail, Shield, AlertCircle, CheckCircle, Edit2, ChevronRight, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ProfileImageSelector } from "@/src/components/profile/ProfileImageSelector";
-
-// Tutorial steps with images (same as onboarding)
-const TUTORIAL_STEPS = [
-    {
-        image: "/images/ign-step-1.png",
-        title: "Step 1: Open Profile",
-        description: "Click ha avatar/profile icon ha top left corner",
-    },
-    {
-        image: "/images/ign-step-2.png",
-        title: "Step 2: Copy IGN",
-        description: "Click ha kyrteng bad copy ia u",
-    },
-];
+import { GameNameInput, validateDisplayName } from "@/src/components/common/GameNameInput";
 
 export function ProfileSettings() {
     const { user, refreshAuth } = useAuth();
@@ -50,73 +37,6 @@ export function ProfileSettings() {
     const [dateOfBirth, setDateOfBirth] = useState("");
     const [dobError, setDobError] = useState("");
 
-    // Help modal state
-    const [showHelpModal, setShowHelpModal] = useState(false);
-    const [isClosing, setIsClosing] = useState(false);
-    const [currentStep, setCurrentStep] = useState(0);
-    const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0 });
-    const helpButtonRef = useRef<HTMLButtonElement>(null);
-
-    // Function to open modal and capture button position
-    const openHelpModal = () => {
-        if (helpButtonRef.current) {
-            const rect = helpButtonRef.current.getBoundingClientRect();
-            setButtonPosition({
-                x: rect.left + rect.width / 2,
-                y: rect.top + rect.height / 2,
-            });
-        }
-        setIsClosing(false);
-        setShowHelpModal(true);
-    };
-
-    // Function to close modal with animation
-    const closeHelpModal = () => {
-        if (helpButtonRef.current) {
-            const rect = helpButtonRef.current.getBoundingClientRect();
-            setButtonPosition({
-                x: rect.left + rect.width / 2,
-                y: rect.top + rect.height / 2,
-            });
-        }
-        setIsClosing(true);
-        setTimeout(() => {
-            setShowHelpModal(false);
-            setIsClosing(false);
-        }, 400);
-    };
-
-    // Reset to step 0 when modal opens
-    useEffect(() => {
-        if (showHelpModal) {
-            setCurrentStep(0);
-        }
-    }, [showHelpModal]);
-
-    const nextStep = () => {
-        if (currentStep < TUTORIAL_STEPS.length - 1) {
-            setCurrentStep(currentStep + 1);
-        }
-    };
-
-    const prevStep = () => {
-        if (currentStep > 0) {
-            setCurrentStep(currentStep - 1);
-        }
-    };
-
-    const currentTutorial = TUTORIAL_STEPS[currentStep];
-    const isLastStep = currentStep === TUTORIAL_STEPS.length - 1;
-
-    // Calculate the origin transform for the genie effect
-    const getTransformOrigin = () => {
-        if (typeof window === 'undefined') return 'center center';
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
-        const offsetX = buttonPosition.x - centerX;
-        const offsetY = buttonPosition.y - centerY;
-        return `calc(50% + ${offsetX}px) calc(50% + ${offsetY}px)`;
-    };
 
     // Update local state when user changes
     useEffect(() => {
@@ -216,16 +136,6 @@ export function ProfileSettings() {
         return "";
     };
 
-    const validateDisplayName = (value: string) => {
-        if (value.length < 2) {
-            return "IGN must be at least 2 characters";
-        }
-        if (value.length > 50) {
-            return "IGN must be at most 50 characters";
-        }
-        return "";
-    };
-
     const handleSaveUsername = () => {
         const validationError = validateUsername(userName);
         if (validationError) {
@@ -305,150 +215,6 @@ export function ProfileSettings() {
 
     return (
         <>
-            {/* IGN Help Modal */}
-            <AnimatePresence>
-                {showHelpModal && (
-                    <div className="fixed inset-0 z-50">
-                        {/* Backdrop */}
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: isClosing ? 0 : 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.3, ease: "easeOut" }}
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                            onClick={closeHelpModal}
-                        />
-
-                        {/* Modal */}
-                        <div className="absolute inset-0 flex items-end sm:items-center justify-center p-4 pointer-events-none">
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0 }}
-                                animate={{
-                                    opacity: isClosing ? 0 : 1,
-                                    scale: isClosing ? 0 : 1,
-                                    transition: isClosing
-                                        ? { duration: 0.4, ease: [0.32, 0, 0.67, 0] }
-                                        : { type: "spring", damping: 20, stiffness: 300, mass: 0.5 }
-                                }}
-                                exit={{ opacity: 0, scale: 0 }}
-                                style={{ transformOrigin: getTransformOrigin() }}
-                                className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md pointer-events-auto overflow-hidden"
-                            >
-                                {/* Header */}
-                                <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                                            <HelpCircle className="w-4 h-4 text-white" />
-                                        </div>
-                                        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-                                            Kumno ban copy IGN
-                                        </h2>
-                                    </div>
-                                    <button
-                                        onClick={closeHelpModal}
-                                        className="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center transition-colors"
-                                    >
-                                        <span className="text-xl text-slate-500">×</span>
-                                    </button>
-                                </div>
-
-                                {/* Content */}
-                                <div className="p-4">
-                                    {/* Image Carousel */}
-                                    <div className="relative">
-                                        <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                            <AnimatePresence mode="wait">
-                                                <motion.img
-                                                    key={currentStep}
-                                                    src={currentTutorial.image}
-                                                    alt={currentTutorial.title}
-                                                    initial={{ opacity: 0, x: 20 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    exit={{ opacity: 0, x: -20 }}
-                                                    transition={{ duration: 0.2 }}
-                                                    className="w-full h-full object-contain"
-                                                />
-                                            </AnimatePresence>
-                                        </div>
-
-                                        {/* Navigation Arrows */}
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={prevStep}
-                                            disabled={currentStep === 0}
-                                            className={`absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${currentStep === 0
-                                                ? "bg-slate-200/50 dark:bg-slate-700/50 text-slate-400 cursor-not-allowed"
-                                                : "bg-white dark:bg-slate-700 shadow-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/50 text-slate-700 dark:text-slate-200"
-                                                }`}
-                                        >
-                                            <ChevronLeft className="w-5 h-5" />
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={nextStep}
-                                            disabled={isLastStep}
-                                            className={`absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isLastStep
-                                                ? "bg-slate-200/50 dark:bg-slate-700/50 text-slate-400 cursor-not-allowed"
-                                                : "bg-white dark:bg-slate-700 shadow-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/50 text-slate-700 dark:text-slate-200"
-                                                }`}
-                                        >
-                                            <ChevronRight className="w-5 h-5" />
-                                        </motion.button>
-                                    </div>
-
-                                    {/* Step Info */}
-                                    <AnimatePresence mode="wait">
-                                        <motion.div
-                                            key={currentStep}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -10 }}
-                                            transition={{ duration: 0.2 }}
-                                            className="mt-4 text-center"
-                                        >
-                                            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-                                                {currentTutorial.title}
-                                            </h3>
-                                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                                                {currentTutorial.description}
-                                            </p>
-                                        </motion.div>
-                                    </AnimatePresence>
-
-                                    {/* Step Indicators */}
-                                    <div className="flex justify-center gap-3 mt-4">
-                                        {TUTORIAL_STEPS.map((_, index) => (
-                                            <motion.button
-                                                key={index}
-                                                onClick={() => setCurrentStep(index)}
-                                                animate={{
-                                                    width: index === currentStep ? 32 : 8,
-                                                }}
-                                                transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                                                className={`h-2 rounded-full ${index === currentStep
-                                                    ? "bg-gradient-to-r from-indigo-500 to-purple-600"
-                                                    : "bg-slate-300 dark:bg-slate-600 hover:bg-slate-400"
-                                                    }`}
-                                            />
-                                        ))}
-                                    </div>
-
-                                    <Button
-                                        onClick={closeHelpModal}
-                                        className="w-full mt-5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 py-3 text-base font-medium"
-                                    >
-                                        <Check className="w-5 h-5 mr-2" />
-                                        Got it!
-                                    </Button>
-                                </div>
-                            </motion.div>
-                        </div>
-                    </div>
-                )}
-            </AnimatePresence>
-
             <div className="space-y-6">
                 {/* Profile Image Selector */}
                 <ProfileImageSelector />
@@ -467,70 +233,16 @@ export function ProfileSettings() {
                     <CardContent className="space-y-6">
                         {/* Display Name (Game Name) Section */}
                         <div className="space-y-3">
-                            <div className="flex items-center gap-2">
-                                <Label htmlFor="displayName" className="text-base font-medium flex items-center gap-2">
-                                    <Gamepad2 className="w-4 h-4" />
-                                    Game Name
-                                    <motion.button
-                                        ref={helpButtonRef}
-                                        type="button"
-                                        onClick={openHelpModal}
-                                        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md hover:shadow-indigo-500/50 transition-shadow"
-                                        title="How to find your IGN"
-                                        animate={isClosing ? {
-                                            scale: [1, 1.5, 1.2],
-                                            rotate: [0, 180],
-                                        } : {
-                                            scale: [1, 1.05, 1],
-                                        }}
-                                        transition={isClosing ? {
-                                            duration: 0.5,
-                                            ease: "easeOut"
-                                        } : {
-                                            duration: 2,
-                                            repeat: Infinity,
-                                            repeatDelay: 2
-                                        }}
-                                        whileHover={{ scale: 1.15 }}
-                                        whileTap={{ scale: 0.9 }}
-                                    >
-                                        <HelpCircle className="w-3 h-3" />
-                                    </motion.button>
-                                </Label>
-                            </div>
-
-                            <Input
-                                id="displayName"
+                            <GameNameInput
                                 value={displayName}
-                                onChange={(e) => {
-                                    setDisplayName(e.target.value);
-                                    setDisplayNameError("");
-                                }}
-                                onPaste={(e) => {
-                                    e.preventDefault();
-                                    const pastedText = e.clipboardData.getData("text");
-                                    // Replace BGMI invisible characters (macron vowels) with spaces
-                                    const sanitized = pastedText
-                                        .replace(/[ĀāĒēĪīŌōŪū]/g, " ")
-                                        .replace(/\s+/g, " ");
-                                    setDisplayName(sanitized);
-                                    setDisplayNameError("");
-                                }}
-                                placeholder="Enter your in-game name"
-                                className={displayNameError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                onChange={setDisplayName}
+                                error={displayNameError}
+                                onErrorChange={setDisplayNameError}
                                 disabled={isUpdatingDisplayName}
+                                autoOpenTutorial={false}
+                                tutorialButtonSize="sm"
+                                readOnly={true}
                             />
-
-                            {displayNameError && (
-                                <div className="flex items-center gap-2 text-sm text-red-600">
-                                    <AlertCircle className="w-4 h-4" />
-                                    {displayNameError}
-                                </div>
-                            )}
-
-                            <p className="text-xs text-muted-foreground">
-                                This is shown everywhere in the app. Special characters allowed (2-50 characters)
-                            </p>
 
                             {/* Show Cancel/Save buttons only when there are changes */}
                             {displayName !== (user?.displayName || user?.userName || "") && (
@@ -545,7 +257,7 @@ export function ProfileSettings() {
                                     </Button>
                                     <Button
                                         onClick={handleSaveDisplayName}
-                                        disabled={isUpdatingDisplayName || !displayName.trim()}
+                                        disabled={isUpdatingDisplayName || !displayName.trim() || !!displayNameError}
                                         size="sm"
                                     >
                                         {isUpdatingDisplayName ? (
