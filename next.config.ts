@@ -14,20 +14,23 @@ const withPWA = withPWAInit({
   },
   // Workbox options for caching
   workboxOptions: {
-    // Skip waiting for new service worker
-    skipWaiting: true,
+    // Don't skipWaiting automatically - we handle this via postMessage
+    // This prevents the "stale JS + new chunks" bug that causes freezes
+    skipWaiting: false,
     clientsClaim: true,
     // Runtime caching for dynamic content
     runtimeCaching: [
       {
-        // Cache JS files - StaleWhileRevalidate to always update in background
+        // Cache JS files - NetworkFirst to always prefer fresh code
+        // Falls back to cache only when offline (3 second timeout)
         urlPattern: /^https?:\/\/.*\.js$/i,
-        handler: "StaleWhileRevalidate",
+        handler: "NetworkFirst",
         options: {
           cacheName: "js-assets",
+          networkTimeoutSeconds: 3,
           expiration: {
             maxEntries: 100,
-            maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+            maxAgeSeconds: 60 * 60 * 24, // 1 day (shorter since we prefer network)
           },
         },
       },

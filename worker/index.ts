@@ -1,10 +1,18 @@
 /// <reference lib="webworker" />
 
-// Custom service worker extensions for push notifications
+// Custom service worker extensions for push notifications and update handling
 // This file is injected into the generated service worker by next-pwa
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sw = self as unknown as ServiceWorkerGlobalScope;
+
+// Handle SKIP_WAITING message from the client
+// This allows manual control over when the new service worker activates
+sw.addEventListener("message", (event) => {
+    if (event.data && event.data.type === "SKIP_WAITING") {
+        sw.skipWaiting();
+    }
+});
 
 // Extended notification options for service workers
 interface ExtendedNotificationOptions extends NotificationOptions {

@@ -14,6 +14,7 @@ import { AdSenseScript } from "../common/AdSenseScript";
 import { PostHogProvider } from "./PostHogProvider";
 import { ErrorBoundary } from "../common/ErrorBoundary";
 import { useEffect, useState } from "react";
+import { useServiceWorkerUpdate, setupChunkErrorHandler } from "@/src/hooks/useServiceWorkerUpdate";
 
 type Props = {
   children: React.ReactNode;
@@ -50,6 +51,15 @@ function ClerkLoadingGate({ children }: { children: React.ReactNode }) {
 }
 
 function ClerkContent({ children }: { children: React.ReactNode }) {
+  // Detect service worker updates and auto-reload when new version is available
+  useServiceWorkerUpdate();
+
+  // Setup global error handler for chunk loading failures
+  useEffect(() => {
+    const cleanup = setupChunkErrorHandler();
+    return cleanup;
+  }, []);
+
   return (
     <ClerkLoadingGate>
       <CookiesProvider
