@@ -344,6 +344,11 @@ model Player {
   teamStats       TeamStats[]
   teamPlayerStats TeamPlayerStats[]
   playerBannedId  String?
+  
+  // Merit system
+  meritScore        Int      @default(100)  // 0-100 scale
+  isSoloRestricted  Boolean  @default(false)
+  soloMatchesNeeded Int      @default(0)
 
   playerBanned       PlayerBanned?
   notifications      Notification[]
@@ -352,6 +357,8 @@ model Player {
   transactions       Transaction[]
   pushSubscriptions  PushSubscription[]
   jobListings        PlayerJobListing[]
+  meritRatingsGiven    PlayerMeritRating[] @relation("MeritGiven")
+  meritRatingsReceived PlayerMeritRating[] @relation("MeritReceived")
 
   @@index([userId])
   @@index([pollId])
@@ -719,4 +726,21 @@ model SoloTaxPool {
   updatedAt DateTime @updatedAt
   
   @@index([seasonId])
+}
+
+// Track merit ratings between players after tournaments
+model PlayerMeritRating {
+  id           String   @id @default(uuid())
+  fromPlayerId String
+  toPlayerId   String
+  rating       Int      // 1=🤡, 2=😠, 3=😐, 4=😊, 5=🔥
+  tournamentId String
+  createdAt    DateTime @default(now())
+
+  fromPlayer   Player   @relation("MeritGiven", fields: [fromPlayerId], references: [id], onDelete: Cascade)
+  toPlayer     Player   @relation("MeritReceived", fields: [toPlayerId], references: [id], onDelete: Cascade)
+
+  @@unique([fromPlayerId, toPlayerId, tournamentId])
+  @@index([toPlayerId])
+  @@index([tournamentId])
 }

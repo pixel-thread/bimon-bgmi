@@ -373,7 +373,7 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto">
           {isSignedIn ? (
             <UserCard
-              username={user?.userName}
+              username={user?.displayName || user?.userName}
               email={user?.email}
               isSuperAdmin={user?.role === "SUPER_ADMIN"}
               isAdmin={user?.role === "ADMIN"}

@@ -165,8 +165,12 @@ export async function createTeamsByPolls({
     let playersForTeams: PlayerWithWeightT[] = [];
 
     // All SOLO voters go to solo teams
+    // Also, players with isSoloRestricted=true (low merit) must play solo
     for (const p of playersWithScore) {
-      if (playersWhoVotedSolo.some((solo) => solo.id === p.id)) {
+      const isSoloVoter = playersWhoVotedSolo.some((solo) => solo.id === p.id);
+      const isSoloRestricted = (p as any).isSoloRestricted === true;
+
+      if (isSoloVoter || isSoloRestricted) {
         soloPlayers.push(p);
       } else {
         playersForTeams.push(p);

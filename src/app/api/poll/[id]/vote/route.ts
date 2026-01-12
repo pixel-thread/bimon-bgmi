@@ -136,6 +136,18 @@ export async function POST(
       }
     }
 
+    // Solo-restricted players (low merit) can only vote OUT or SOLO
+    if (body.vote === "IN") {
+      const isSoloRestricted = isPlayerExist.isSoloRestricted === true;
+      const soloMatchesNeeded = isPlayerExist.soloMatchesNeeded ?? 0;
+      if (isSoloRestricted) {
+        return ErrorResponse({
+          message: `Low merit! Play ${soloMatchesNeeded} solo match${soloMatchesNeeded > 1 ? "es" : ""} to team up again`,
+          status: 403,
+        });
+      }
+    }
+
     const isPlayerVoted = await getPlayerVoteByPollId({
       playerId,
       pollId,
