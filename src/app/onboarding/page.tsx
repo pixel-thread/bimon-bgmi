@@ -518,7 +518,7 @@ export default function OnboardingPage() {
                                     htmlFor="username"
                                     className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5"
                                 >
-                                    Name
+                                    Name {isUserNameAutoFilled && <span className="text-slate-400 dark:text-slate-500">(from Google)</span>}
                                 </label>
                                 <Input
                                     id="username"
