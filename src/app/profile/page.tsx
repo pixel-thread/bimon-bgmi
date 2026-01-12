@@ -133,6 +133,13 @@ export default function ProfilePage() {
         enabled: !!playerId,
     });
 
+    // Fetch merit data
+    const { data: meritData } = useQuery({
+        queryKey: ["player-merit"],
+        queryFn: () => http.get<{ merit: { score: number; isSoloRestricted: boolean } }>("/player/merit"),
+        enabled: !!playerId,
+    });
+
     const playerStats = statsData?.data;
     const transfers = transfersData?.data || [];
     const unreadCount = notificationsData?.data?.unreadCount || 0;
@@ -520,7 +527,7 @@ export default function ProfilePage() {
                                 {/* Career & Balance */}
                                 <div className="pt-3">
                                     <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Career</p>
-                                    <div className="grid grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-4 gap-3">
                                         <div className="text-center">
                                             <div className="text-xl font-bold text-purple-600 dark:text-purple-400">{statsLoading ? <Skeleton className="h-6 w-10 inline-block" /> : totalTournaments}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Tournaments</p>
@@ -528,6 +535,12 @@ export default function ProfilePage() {
                                         <div className="text-center">
                                             <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{statsLoading ? <Skeleton className="h-6 w-10 inline-block" /> : seasonsPlayed}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Seasons</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className={`text-xl font-bold ${(meritData?.data?.merit?.score ?? 100) < 50 ? "text-red-600 dark:text-red-400" : (meritData?.data?.merit?.score ?? 100) >= 80 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
+                                                {meritData?.data?.merit?.score ?? 100}%
+                                            </div>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Merit</p>
                                         </div>
                                         <div className="text-center">
                                             <div className="flex items-center justify-center gap-1">
