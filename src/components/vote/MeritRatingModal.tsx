@@ -9,7 +9,6 @@ import {
     DialogDescription,
 } from "@/src/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { cn } from "@/src/lib/utils";
 
 interface PendingRating {
     playerId: string;
@@ -22,13 +21,11 @@ interface MeritRatingModalProps {
     onComplete: () => void;
 }
 
-const MERIT_EMOJIS = [
-    { value: 1, emoji: "🤡", color: "from-red-600 to-red-800" },
-    { value: 2, emoji: "😠", color: "from-orange-500 to-orange-700" },
-    { value: 3, emoji: "😐", color: "from-yellow-500 to-yellow-600" },
-    { value: 4, emoji: "😊", color: "from-green-500 to-green-600" },
-    { value: 5, emoji: "🔥", color: "from-blue-500 to-purple-600" },
-];
+const STAR_LABELS: Record<number, string> = {
+    1: "sngewbang rei",
+    3: "chu bieng",
+    5: "sngew bang bha",
+};
 
 export function MeritRatingModal({
     pendingRatings,
@@ -36,6 +33,7 @@ export function MeritRatingModal({
     onComplete,
 }: MeritRatingModalProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [hoverRating, setHoverRating] = useState(0);
     const { getToken } = useAuth();
 
     const currentPlayer = pendingRatings[currentIndex];
@@ -49,6 +47,7 @@ export function MeritRatingModal({
             onComplete();
         } else {
             setCurrentIndex((prev) => prev + 1);
+            setHoverRating(0);
         }
 
         // Save in background - fire and forget
@@ -87,7 +86,7 @@ export function MeritRatingModal({
             >
                 <VisuallyHidden>
                     <DialogTitle>Rate your teammate</DialogTitle>
-                    <DialogDescription>Select an emoji to rate your teammate</DialogDescription>
+                    <DialogDescription>Select stars to rate your teammate</DialogDescription>
                 </VisuallyHidden>
 
                 <div className="flex flex-col items-center py-6 px-4">
@@ -97,21 +96,30 @@ export function MeritRatingModal({
                     </h2>
                     <p className="text-sm text-zinc-400 mb-6">Good teammate?</p>
 
-                    {/* Emoji buttons - single row */}
-                    <div className="flex justify-center gap-1.5 sm:gap-3">
-                        {MERIT_EMOJIS.map(({ value, emoji, color }) => (
-                            <button
-                                key={value}
-                                onClick={() => handleRating(value)}
-                                className={cn(
-                                    "text-xl sm:text-3xl p-2.5 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-200",
-                                    "hover:scale-110 active:scale-95 focus:outline-none",
-                                    "bg-zinc-800/60 hover:bg-zinc-700/60"
-                                )}
-                            >
-                                {emoji}
-                            </button>
-                        ))}
+                    {/* 5 Star Rating */}
+                    <div className="flex flex-col items-center w-full">
+                        <div
+                            className="flex gap-3 sm:gap-4"
+                            onMouseLeave={() => setHoverRating(0)}
+                        >
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                    key={star}
+                                    onClick={() => handleRating(star)}
+                                    onMouseEnter={() => setHoverRating(star)}
+                                    className="text-3xl sm:text-4xl p-1 transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none"
+                                >
+                                    ⭐
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Labels */}
+                        <div className="flex justify-between w-full mt-3">
+                            <span className="text-[10px] sm:text-xs text-zinc-500">{STAR_LABELS[1]}</span>
+                            <span className="text-[10px] sm:text-xs text-zinc-500">{STAR_LABELS[3]}</span>
+                            <span className="text-[10px] sm:text-xs text-zinc-500">{STAR_LABELS[5]}</span>
+                        </div>
                     </div>
                 </div>
             </DialogContent>
