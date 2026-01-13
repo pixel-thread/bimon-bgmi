@@ -10,6 +10,7 @@ import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { playerVoteSchema } from "@/src/utils/validation/poll";
+import { isMeritBanEnabled } from "@/src/services/settings/getAppSetting";
 
 export async function GET(
   req: Request,
@@ -137,10 +138,12 @@ export async function POST(
     }
 
     // Solo-restricted players (low merit) can only vote OUT or SOLO
+    // But only if merit ban system is enabled
     if (body.vote === "IN") {
+      const meritBanEnabled = await isMeritBanEnabled();
       const isSoloRestricted = isPlayerExist.isSoloRestricted === true;
       const soloMatchesNeeded = isPlayerExist.soloMatchesNeeded ?? 0;
-      if (isSoloRestricted) {
+      if (meritBanEnabled && isSoloRestricted) {
         return ErrorResponse({
           message: `Low merit! Play ${soloMatchesNeeded} solo match${soloMatchesNeeded > 1 ? "es" : ""} to team up again`,
           status: 403,

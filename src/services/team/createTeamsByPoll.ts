@@ -10,6 +10,7 @@ import {
 import { computeWeightedScore, PlayerWithWins, SeasonScoringConfig } from "@/src/utils/scoreUtil";
 import { PlayerWithWeightT } from "@/src/types/player";
 import { getPreviousTournamentTeammates } from "@/src/utils/previousTeammates";
+import { isMeritBanEnabled } from "@/src/services/settings/getAppSetting";
 
 type PreviewTeamInput = {
   teamNumber: number;
@@ -195,11 +196,14 @@ export async function createTeamsByPolls({
     const soloPlayers: PlayerWithWeightT[] = [];
     let playersForTeams: PlayerWithWeightT[] = [];
 
+    // Check if merit ban system is enabled
+    const meritBanEnabled = await isMeritBanEnabled();
+
     // All SOLO voters go to solo teams
-    // Also, players with isSoloRestricted=true (low merit) must play solo
+    // Also, players with isSoloRestricted=true (low merit) must play solo (if ban enabled)
     for (const p of playersWithScore) {
       const isSoloVoter = playersWhoVotedSolo.some((solo) => solo.id === p.id);
-      const isSoloRestricted = (p as any).isSoloRestricted === true;
+      const isSoloRestricted = meritBanEnabled && (p as any).isSoloRestricted === true;
 
       if (isSoloVoter || isSoloRestricted) {
         soloPlayers.push(p);

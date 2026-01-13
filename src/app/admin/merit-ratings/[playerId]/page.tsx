@@ -36,7 +36,7 @@ type PlayerDetailResponse = {
     };
 };
 
-// Star rating display - uses opacity for unfilled stars
+// Star rating display - uses grayscale for unfilled stars (visible on both themes)
 const StarRating = ({ rating }: { rating: number }) => {
     return (
         <div className="flex gap-0.5">
@@ -44,8 +44,8 @@ const StarRating = ({ rating }: { rating: number }) => {
                 <span
                     key={star}
                     className={cn(
-                        "text-lg transition-opacity",
-                        star <= rating ? "opacity-100" : "opacity-20"
+                        "text-lg transition-all",
+                        star <= rating ? "" : "grayscale opacity-40"
                     )}
                 >
                     ⭐
@@ -65,7 +65,7 @@ const MeritBadge = ({ score, isRestricted }: { score: number; isRestricted: bool
     };
 
     return (
-        <div className={cn("px-4 py-2 rounded-full border text-xl font-bold", getColor())}>
+        <div className={cn("px-4 py-2 rounded-full border text-xl font-bold w-fit", getColor())}>
             {score}%
         </div>
     );
@@ -104,12 +104,12 @@ const RaterRow = ({ group }: { group: RaterGroup }) => {
     const hasMultiple = group.ratings.length > 1;
 
     return (
-        <div className="rounded-xl bg-zinc-800/50 border border-zinc-700 overflow-hidden">
+        <div className="rounded-xl bg-card border border-border overflow-hidden">
             <button
                 onClick={() => hasMultiple && setIsExpanded(!isExpanded)}
                 className={cn(
                     "w-full p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors",
-                    hasMultiple && "hover:bg-zinc-800 cursor-pointer"
+                    hasMultiple && "hover:bg-accent cursor-pointer"
                 )}
             >
                 <div className="flex items-center gap-4">
@@ -118,7 +118,7 @@ const RaterRow = ({ group }: { group: RaterGroup }) => {
                         <div className="flex items-center gap-2">
                             <p className="font-medium">{group.rater.displayName}</p>
                             {hasMultiple && (
-                                <span className="px-2 py-0.5 text-xs rounded-full bg-blue-500/20 text-blue-400">
+                                <span className="px-2 py-0.5 text-xs rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400">
                                     {group.ratings.length}x
                                 </span>
                             )}
@@ -146,9 +146,9 @@ const RaterRow = ({ group }: { group: RaterGroup }) => {
             </button>
 
             {isExpanded && hasMultiple && (
-                <div className="border-t border-zinc-700 bg-zinc-900/50 p-3 space-y-2">
+                <div className="border-t border-border bg-muted/50 p-3 space-y-2">
                     {group.ratings.map((rating) => (
-                        <div key={rating.id} className="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50">
+                        <div key={rating.id} className="flex items-center justify-between p-3 rounded-lg bg-background/50">
                             <div className="flex items-center gap-3">
                                 <StarRating rating={rating.rating} />
                                 <div className="flex items-center gap-1 text-sm">
@@ -204,22 +204,88 @@ export default function PlayerMeritDetailPage() {
 
     if (isLoading) {
         return (
-            <div className="space-y-6 max-w-3xl mx-auto px-2 sm:px-4">
-                <Skeleton className="h-10 w-40" />
-                <Skeleton className="h-32 w-full rounded-2xl" />
-                <div className="space-y-3">
-                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
+            <div className="space-y-4 max-w-3xl mx-auto px-2 sm:px-4">
+                <Skeleton className="h-5 w-36" />
+                {/* Header card skeleton */}
+                <div className="rounded-2xl p-4 bg-card border border-border">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <Skeleton className="h-10 w-14 rounded-full" />
+                            <div className="space-y-2">
+                                <Skeleton className="h-5 w-24" />
+                                <Skeleton className="h-3 w-16" />
+                            </div>
+                        </div>
+                        <div className="text-right space-y-2">
+                            <Skeleton className="h-4 w-16 ml-auto" />
+                            <Skeleton className="h-3 w-12 ml-auto" />
+                        </div>
+                    </div>
+                </div>
+                {/* Section title */}
+                <Skeleton className="h-5 w-40" />
+                {/* Ratings list skeleton */}
+                <div className="space-y-2">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="rounded-xl p-4 bg-card border border-border">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Skeleton className="h-5 w-24" />
+                                    <Skeleton className="h-4 w-20" />
+                                </div>
+                                <Skeleton className="h-3 w-24" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         );
     }
 
-    if (!player) {
+    if (!player && !isLoading && data !== undefined) {
         return (
             <div className="space-y-6 max-w-3xl mx-auto px-2 sm:px-4 text-center py-12">
                 <Star className="h-12 w-12 mx-auto opacity-50" />
                 <p className="text-muted-foreground">Player not found</p>
                 <Link href="/admin/merit-ratings" className="text-primary hover:underline">← Back to Merit Ratings</Link>
+            </div>
+        );
+    }
+
+    if (!player) {
+        // Still loading or waiting for auth
+        return (
+            <div className="space-y-4 max-w-3xl mx-auto px-2 sm:px-4">
+                <Skeleton className="h-5 w-36" />
+                <div className="rounded-2xl p-4 bg-card border border-border">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <Skeleton className="h-10 w-14 rounded-full" />
+                            <div className="space-y-2">
+                                <Skeleton className="h-5 w-24" />
+                                <Skeleton className="h-3 w-16" />
+                            </div>
+                        </div>
+                        <div className="text-right space-y-2">
+                            <Skeleton className="h-4 w-16 ml-auto" />
+                            <Skeleton className="h-3 w-12 ml-auto" />
+                        </div>
+                    </div>
+                </div>
+                <Skeleton className="h-5 w-40" />
+                <div className="space-y-2">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="rounded-xl p-4 bg-card border border-border">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Skeleton className="h-5 w-24" />
+                                    <Skeleton className="h-4 w-20" />
+                                </div>
+                                <Skeleton className="h-3 w-24" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
@@ -231,24 +297,23 @@ export default function PlayerMeritDetailPage() {
                 Back to Merit Ratings
             </Link>
 
-            <div className="rounded-2xl p-6 bg-zinc-900 border border-zinc-800">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-                    <MeritBadge score={player.meritScore} isRestricted={player.isSoloRestricted} />
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-2xl font-bold">{player.displayName}</h1>
-                            {player.isSoloRestricted && (
-                                <span className="px-2 py-0.5 text-xs rounded-full bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1">
-                                    <AlertTriangle className="h-3 w-3" />
-                                    Solo Restricted
-                                </span>
-                            )}
+            <div className="rounded-2xl p-4 bg-card border border-border">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        <MeritBadge score={player.meritScore} isRestricted={player.isSoloRestricted} />
+                        <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <h1 className="text-xl font-bold">{player.displayName}</h1>
+                                {player.isSoloRestricted && (
+                                    <AlertTriangle className="h-4 w-4 text-red-400" />
+                                )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">@{player.userName}</p>
                         </div>
-                        <p className="text-muted-foreground">@{player.userName}</p>
                     </div>
-                    <div className="text-right">
-                        <p className="text-lg font-semibold">{player.totalRatings} ratings</p>
-                        <p className="text-muted-foreground">Avg: {player.averageRating} ⭐</p>
+                    <div className="text-right shrink-0">
+                        <p className="font-semibold">{player.totalRatings} ratings</p>
+                        <p className="text-sm text-muted-foreground">Avg: {player.averageRating} ⭐</p>
                     </div>
                 </div>
             </div>
@@ -258,7 +323,7 @@ export default function PlayerMeritDetailPage() {
                     <span>📊</span> All Ratings Received
                 </h2>
                 {player.ratings.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground rounded-xl bg-zinc-800/50 border border-zinc-700">
+                    <div className="text-center py-8 text-muted-foreground rounded-xl bg-card border border-border">
                         <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
                         <p>No ratings received yet</p>
                     </div>

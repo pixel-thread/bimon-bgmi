@@ -746,3 +746,12 @@ model PlayerMeritRating {
   @@index([tournamentId])
   @@index([seasonId])
 }
+
+// Global app settings (super admin only)
+model AppSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
