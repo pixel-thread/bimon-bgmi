@@ -22,28 +22,48 @@ export type SeasonScoringConfig = {
  * Weights: 70% KD + 30% Recent Wins
  * 
  * For new seasons (first 5 tournaments), uses previous season stats if available.
+ * Falls back to current season stats if player has no previous season data.
  */
 export function computeWeightedScore(
   p: PlayerWithWins,
   seasonIdOrConfig?: string | SeasonScoringConfig
 ): number {
-  // Determine which season to use for stats
-  let statsSeasonId: string;
+  let stats;
 
   if (typeof seasonIdOrConfig === 'object') {
     const { currentSeasonId, previousSeasonId, tournamentCountInSeason = 0 } = seasonIdOrConfig;
 
     // Use previous season stats for first 5 tournaments of a new season
     if (tournamentCountInSeason < 5 && previousSeasonId) {
-      statsSeasonId = previousSeasonId;
+      // Try previous season first
+      stats = p.playerStats.find((s) => s.seasonId === previousSeasonId);
+
+      // If no stats in previous season, find most recent season with actual data
+      if (!stats || (stats.kills === 0 && stats.deaths === 0)) {
+        // Find the most recent season where player has actual stats (non-zero)
+        const seasonWithStats = p.playerStats
+          .filter((s) => s.seasonId !== currentSeasonId && (s.kills > 0 || s.deaths > 0))
+          .sort((a, b) => {
+            // Sort by kills+deaths descending as a proxy for recency/activity
+            // (since we don't have season dates in playerStats)
+            return (b.kills + b.deaths) - (a.kills + a.deaths);
+          })[0];
+
+        if (seasonWithStats) {
+          stats = seasonWithStats;
+        } else {
+          // No historical stats at all, use current season
+          stats = p.playerStats.find((s) => s.seasonId === currentSeasonId);
+        }
+      }
     } else {
-      statsSeasonId = currentSeasonId;
+      stats = p.playerStats.find((s) => s.seasonId === currentSeasonId);
     }
   } else {
-    statsSeasonId = seasonIdOrConfig || "";
+    const id = seasonIdOrConfig || "";
+    stats = p.playerStats.find((s) => s.seasonId === id);
   }
 
-  const stats = p.playerStats.find((s) => s.seasonId === statsSeasonId);
   const kills = stats?.kills ?? 0;
   const deaths = stats?.deaths ?? 0;
 
