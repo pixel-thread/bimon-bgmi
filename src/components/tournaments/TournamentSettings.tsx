@@ -26,7 +26,14 @@ import {
   ImagePlus,
   Globe,
   Undo2,
+  ChevronDown,
+  Trophy,
 } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../ui/collapsible";
 import { Ternary } from "../common/Ternary";
 import { useTournamentStore } from "../../store/tournament";
 import { useTournament } from "../../hooks/tournament/useTournament";
@@ -120,107 +127,107 @@ export function TournamentSettings() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Tournament Selector & Actions */}
-      <Card className="bg-gradient-to-br from-card to-muted/20 border-primary/10">
-
-        <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-xl">
-                <Gamepad2 className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">Tournament Manager</CardTitle>
-                <CardDescription className="text-xs">
-                  Select and configure tournaments
-                </CardDescription>
-              </div>
+    <div className="space-y-4">
+      {/* Tournament Manager - Merged with Configuration */}
+      <Card className="border">
+        <CardHeader className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Gamepad2 className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Tournaments</CardTitle>
             </div>
             <Button
               onClick={() => setShowCreateModal(true)}
-              className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
+              size="sm"
+              className="gap-1.5 h-8 text-xs"
             >
-              <Plus className="h-4 w-4" />
-              New Tournament
+              <Plus className="h-3.5 w-3.5" />
+              New
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="pt-0 space-y-3">
+        <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0 space-y-3">
           {/* Season Selector */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <span className="text-sm text-muted-foreground shrink-0">Season:</span>
-            <SeasonSelector className="w-full sm:w-48" />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground shrink-0">Season:</span>
+            <SeasonSelector className="flex-1" />
           </div>
 
           {/* Tournament Selector */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Select
-              value={tournamentId || ""}
-              onValueChange={(value) => setTournamentId(value)}
-            >
-              <SelectTrigger className="flex-1 bg-background/50">
-                <SelectValue placeholder="Select a tournament to configure..." />
-              </SelectTrigger>
-              <SelectContent className="max-h-60 overflow-auto">
-                {isLoadingTournaments ? (
-                  <SelectItem value="loading" disabled>Loading...</SelectItem>
-                ) : tournaments && tournaments.length > 0 ? (
-                  tournaments.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      <div className="flex items-center gap-2">
-                        <Gamepad2 className="h-3 w-3" />
-                        {t.name}
-                      </div>
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="none" disabled>
-                    {seasonId ? "No tournaments in this season" : "Select a season first"}
+          <Select
+            value={tournamentId || ""}
+            onValueChange={(value) => setTournamentId(value)}
+          >
+            <SelectTrigger className="w-full h-9 text-sm">
+              <SelectValue placeholder="Select tournament..." />
+            </SelectTrigger>
+            <SelectContent className="max-h-60">
+              {isLoadingTournaments ? (
+                <SelectItem value="loading" disabled>Loading...</SelectItem>
+              ) : tournaments && tournaments.length > 0 ? (
+                tournaments.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    <div className="flex items-center gap-2">
+                      <Gamepad2 className="h-3 w-3" />
+                      {t.name}
+                    </div>
                   </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-            {tournamentId && (
-              <div className="flex gap-2 w-full sm:w-auto">
-                {!tournament?.isWinnerDeclared ? (
-                  <Button
-                    onClick={handleDeclareWinnersClick}
-                    variant="outline"
-                    className="gap-2 flex-1 sm:flex-none"
-                    size="sm"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    <span className="hidden sm:inline">Declare Winners</span>
-                    <span className="sm:hidden">Declare</span>
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleUndoWinner}
-                    disabled={isUndoing}
-                    variant="destructive"
-                    className="gap-2 flex-1 sm:flex-none"
-                    size="sm"
-                  >
-                    {isUndoing ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Undo2 className="h-4 w-4" />
-                    )}
-                    <span className="hidden sm:inline">{isUndoing ? "Undoing..." : "Undo Winners"}</span>
-                    <span className="sm:hidden">{isUndoing ? "..." : "Undo"}</span>
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  {seasonId ? "No tournaments" : "Select season first"}
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+
+          {/* Actions - only show when tournament selected */}
+          {tournamentId && (
+            <div className="flex gap-2">
+              {!tournament?.isWinnerDeclared ? (
+                <Button
+                  onClick={handleDeclareWinnersClick}
+                  variant="outline"
+                  className="flex-1 gap-1.5 h-8 text-xs"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Declare Winners
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleUndoWinner}
+                  disabled={isUndoing}
+                  variant="destructive"
+                  className="flex-1 gap-1.5 h-8 text-xs"
+                >
+                  {isUndoing ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Undo2 className="h-3.5 w-3.5" />
+                  )}
+                  {isUndoing ? "Undoing..." : "Undo Winners"}
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Tournament Configuration - Inline */}
+          {tournamentId ? (
+            <div className="pt-2 border-t">
+              <TournamentForm />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <Gamepad2 className="h-6 w-6 text-muted-foreground/40 mb-2" />
+              <p className="text-xs text-muted-foreground">
+                Select a tournament to configure
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Tournament Configuration */}
-      <TournamentConfiguration />
-
-      {/* Background Gallery & Upload */}
+      {/* Background Gallery */}
       <GallerySection />
 
       {/* Season Management */}
@@ -247,46 +254,6 @@ export function TournamentSettings() {
   );
 }
 
-const TournamentConfiguration = () => {
-  const { tournamentId: selectedTournament } = useTournamentStore();
-
-  return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-amber-500/10 to-orange-500/5 border-b">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-amber-500/20 rounded-lg">
-            <Gamepad2 className="h-4 w-4 text-amber-600" />
-          </div>
-          <div>
-            <CardTitle className="text-base">Tournament Configuration</CardTitle>
-            <CardDescription className="text-xs">
-              Edit tournament details and settings
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="p-5">
-        <Ternary
-          condition={!!selectedTournament}
-          trueComponent={<TournamentForm />}
-          falseComponent={
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="p-4 bg-muted/50 rounded-full mb-4">
-                <Gamepad2 className="h-8 w-8 text-muted-foreground/50" />
-              </div>
-              <h3 className="font-medium text-muted-foreground">
-                No Tournament Selected
-              </h3>
-              <p className="text-xs text-muted-foreground/70 mt-1">
-                Select a tournament from above to configure it
-              </p>
-            </div>
-          }
-        />
-      </CardContent>
-    </Card>
-  );
-};
 
 const GallerySection = () => {
   const { data: backgroundGallery, isLoading: isLoadingGallery } = useGallery();
@@ -373,42 +340,35 @@ const GallerySection = () => {
   );
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-blue-500/10 to-cyan-500/5 border-b">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-500/20 rounded-lg">
-            <ImageIcon className="h-4 w-4 text-blue-600" />
-          </div>
-          <div>
-            <CardTitle className="text-base">Background Gallery</CardTitle>
-            <CardDescription className="text-xs">
-              Manage tournament background images
-            </CardDescription>
-          </div>
+    <Card className="border">
+      <CardHeader className="p-3 sm:p-4">
+        <div className="flex items-center gap-2">
+          <ImageIcon className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">Gallery</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="p-0">
         <Tabs defaultValue="gallery" className="w-full">
-          <div className="border-b px-4">
-            <TabsList className="bg-transparent h-12">
+          <div className="border-b px-3">
+            <TabsList className="bg-transparent h-9">
               <TabsTrigger
                 value="gallery"
-                className="data-[state=active]:bg-muted gap-2"
+                className="data-[state=active]:bg-muted gap-1.5 text-xs"
               >
-                <ImageIcon className="h-4 w-4" />
-                Gallery
+                <ImageIcon className="h-3.5 w-3.5" />
+                Images
                 {backgroundGallery && (
-                  <Badge variant="secondary" className="ml-1">
+                  <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0">
                     {backgroundGallery.length}
                   </Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger
                 value="upload"
-                className="data-[state=active]:bg-muted gap-2"
+                className="data-[state=active]:bg-muted gap-1.5 text-xs"
               >
-                <ImagePlus className="h-4 w-4" />
-                Upload New
+                <ImagePlus className="h-3.5 w-3.5" />
+                Upload
               </TabsTrigger>
             </TabsList>
           </div>

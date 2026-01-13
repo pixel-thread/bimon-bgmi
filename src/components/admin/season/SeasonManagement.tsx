@@ -39,30 +39,24 @@ export function SeasonManagement() {
   };
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-purple-500/10 to-pink-500/5 border-b">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500/20 rounded-lg">
-              <Trophy className="h-4 w-4 text-purple-600" />
-            </div>
-            <div>
-              <CardTitle className="text-base">Season Management</CardTitle>
-              <CardDescription className="text-xs">
-                Create and manage tournament seasons
-              </CardDescription>
-            </div>
+    <Card className="border">
+      <CardHeader className="p-3 sm:p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Seasons</CardTitle>
           </div>
           <Button
             onClick={() => setIsDialogOpen(true)}
-            className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-600/90 hover:to-pink-600/90"
+            size="sm"
+            className="gap-1.5 h-8 text-xs"
           >
-            <PlusCircle className="w-4 h-4" />
-            New Season
+            <PlusCircle className="w-3.5 h-3.5" />
+            New
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="p-4">
+      <CardContent className="p-3 sm:p-4 pt-0">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -84,28 +78,28 @@ export function SeasonManagement() {
             {data.map((season, index) => (
               <div
                 key={season.id}
-                className={`relative p-4 rounded-xl transition-all ${season.status === "ACTIVE"
-                    ? "bg-gradient-to-r from-green-500/10 to-emerald-500/5 border border-green-500/20"
-                    : "bg-muted/30 border border-transparent hover:border-muted-foreground/20"
+                className={`relative p-4 rounded-lg transition-all ${season.status === "ACTIVE"
+                  ? "bg-green-500/5 border border-green-500/30"
+                  : "bg-muted/30 border border-transparent hover:border-muted-foreground/20"
                   }`}
               >
                 {/* Active indicator line */}
                 {season.status === "ACTIVE" && (
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-green-500 to-emerald-500 rounded-l-xl" />
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-lg" />
                 )}
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-start gap-3">
                     <div
                       className={`p-2 rounded-lg ${season.status === "ACTIVE"
-                          ? "bg-green-500/20"
-                          : "bg-muted"
+                        ? "bg-green-500/20"
+                        : "bg-muted"
                         }`}
                     >
                       <Trophy
                         className={`h-4 w-4 ${season.status === "ACTIVE"
-                            ? "text-green-600"
-                            : "text-muted-foreground"
+                          ? "text-green-600"
+                          : "text-muted-foreground"
                           }`}
                       />
                     </div>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import {
@@ -22,19 +22,59 @@ import { seasonSchema, SeasonSchemaType } from "@/src/utils/validation/seasons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
+import { useGetSeasons } from "@/src/hooks/season/useGetSeasons";
+
+// Helper to parse and increment season version
+function getNextSeasonVersion(currentName: string | undefined): string {
+  if (!currentName) return "Season 1";
+
+  // Try to extract version from name like "Season 4", "Season 4.2", etc.
+  const match = currentName.match(/Season\s*(\d+)(?:\.(\d+))?/i);
+  if (!match) return "Season 1";
+
+  const major = parseInt(match[1], 10);
+  const hasExplicitMinor = match[2] !== undefined; // Check if .X was present in name
+  const minor = hasExplicitMinor ? parseInt(match[2], 10) : 0;
+
+  // If no minor version in name (e.g., "Season 4"), start with .2
+  // If has explicit minor (e.g., "Season 5.0" or "Season 5.1"), increment it
+  const nextMinor = hasExplicitMinor ? minor + 1 : 2;
+
+  return `Season ${major}.${nextMinor}`;
+}
+
 type Props = {
   open: boolean;
   onOpenChange: React.Dispatch<React.SetStateAction<boolean>>;
 };
 export const CreateSeasonDialog = ({ open, onOpenChange }: Props) => {
+  const { data: seasons } = useGetSeasons();
+
+  // Get the current active season or the latest season
+  const currentSeason = useMemo(() => {
+    if (!seasons || seasons.length === 0) return undefined;
+    return seasons.find((s) => s.status === "ACTIVE") || seasons[0];
+  }, [seasons]);
+
+  const suggestedName = useMemo(() => {
+    return getNextSeasonVersion(currentSeason?.name);
+  }, [currentSeason]);
+
   const form = useForm({
     resolver: zodResolver(seasonSchema),
     defaultValues: {
       startDate: new Date().toISOString().split("T")[0],
       description: "",
-      name: "Season",
+      name: suggestedName,
     },
   });
+
+  // Update form when suggested name changes
+  useEffect(() => {
+    if (suggestedName && open) {
+      form.setValue("name", suggestedName);
+    }
+  }, [suggestedName, open, form]);
 
   const queryClient = useQueryClient();
 
@@ -85,6 +125,19 @@ export const CreateSeasonDialog = ({ open, onOpenChange }: Props) => {
                     <FormControl>
                       {/* @ts-ignore */}
                       <Input type="date" placeholder="shadcn" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Anniversary Update" {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
