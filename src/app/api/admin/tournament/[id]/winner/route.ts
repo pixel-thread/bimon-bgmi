@@ -7,12 +7,13 @@ import { getPlayerRecentWins } from "@/src/services/winner/getPlayerRecentWins";
 import { getPlayerLosses, isPlayerSolo, addToSoloTaxPool } from "@/src/services/winner/getPlayerLosses";
 import { calculatePlayerPoints } from "@/src/utils/calculatePlayersPoints";
 import { calculateRepeatWinnerTax, aggregateTaxTotals, TaxResult } from "@/src/utils/repeatWinnerTax";
-import { calculateSoloTax, getTaxDistribution, calculateTierDistribution, getLoserSupportMessage, getSoloTaxDebitMessage, SoloTaxResult } from "@/src/utils/soloTax";
+import { calculateSoloTax, getTaxDistribution, calculateTierDistribution, getLoserSupportMessage, SoloTaxResult } from "@/src/utils/soloTax";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
+import { resetMeritAfterSolo } from "@/src/services/merit/calculateMerit";
 
 export async function GET(
   req: NextRequest,
@@ -276,6 +277,37 @@ export async function POST(
         status: "INACTIVE",
       },
     });
+
+    // Reset merit for solo-restricted players who completed this tournament
+    // Find all players who participated in this tournament and are solo-restricted
+    const tournamentPlayers = await prisma.matchPlayerPlayed.findMany({
+      where: { tournamentId: id },
+      select: { playerId: true },
+      distinct: ["playerId"],
+    });
+
+    for (const { playerId } of tournamentPlayers) {
+      const player = await prisma.player.findUnique({
+        where: { id: playerId },
+        select: { isSoloRestricted: true, soloMatchesNeeded: true },
+      });
+
+      if (player?.isSoloRestricted) {
+        // Decrement solo matches needed
+        const newSoloMatchesNeeded = (player.soloMatchesNeeded || 1) - 1;
+
+        if (newSoloMatchesNeeded <= 0) {
+          // Player completed their solo requirement - reset merit to 100%
+          await resetMeritAfterSolo(playerId);
+        } else {
+          // Player still needs more solo matches
+          await prisma.player.update({
+            where: { id: playerId },
+            data: { soloMatchesNeeded: newSoloMatchesNeeded },
+          });
+        }
+      }
+    }
 
     // Calculate total repeat winner tax contributions
     const taxTotals = aggregateTaxTotals(allTaxResults);
