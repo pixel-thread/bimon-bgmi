@@ -9,15 +9,41 @@ export type PlayerWithWins = PlayerWithStatsT & {
 };
 
 /**
+ * Configuration for season transition scoring
+ */
+export type SeasonScoringConfig = {
+  currentSeasonId: string;
+  previousSeasonId?: string;
+  tournamentCountInSeason?: number; // How many tournaments have been played in current season
+};
+
+/**
  * Computes a weighted score for a player based on KD and recent wins.
  * Weights: 70% KD + 30% Recent Wins
+ * 
+ * For new seasons (first 5 tournaments), uses previous season stats if available.
  */
 export function computeWeightedScore(
   p: PlayerWithWins,
-  seasonId?: string
+  seasonIdOrConfig?: string | SeasonScoringConfig
 ): number {
-  const id = seasonId || "";
-  const stats = p.playerStats.find((s) => s.seasonId === id);
+  // Determine which season to use for stats
+  let statsSeasonId: string;
+
+  if (typeof seasonIdOrConfig === 'object') {
+    const { currentSeasonId, previousSeasonId, tournamentCountInSeason = 0 } = seasonIdOrConfig;
+
+    // Use previous season stats for first 5 tournaments of a new season
+    if (tournamentCountInSeason < 5 && previousSeasonId) {
+      statsSeasonId = previousSeasonId;
+    } else {
+      statsSeasonId = currentSeasonId;
+    }
+  } else {
+    statsSeasonId = seasonIdOrConfig || "";
+  }
+
+  const stats = p.playerStats.find((s) => s.seasonId === statsSeasonId);
   const kills = stats?.kills ?? 0;
   const deaths = stats?.deaths ?? 0;
 

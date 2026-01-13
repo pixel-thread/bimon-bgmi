@@ -7,7 +7,7 @@ import {
     analyzeTeamBalance,
     TeamStats,
 } from "@/src/utils/teamBalancer";
-import { computeWeightedScore, PlayerWithWins } from "@/src/utils/scoreUtil";
+import { computeWeightedScore, PlayerWithWins, SeasonScoringConfig } from "@/src/utils/scoreUtil";
 import { PlayerWithWeightT } from "@/src/types/player";
 import { getPreviousTournamentTeammates } from "@/src/utils/previousTeammates";
 
@@ -119,6 +119,36 @@ export async function previewTeamsByPolls({
         select: { name: true },
     });
 
+    // Count tournaments in current season (for season transition logic)
+    const tournamentCountInSeason = await prisma.tournament.count({
+        where: { seasonId },
+    });
+
+    // Get previous season for team balancing (first 5 tournaments use previous season stats)
+    const currentSeason = await prisma.season.findUnique({
+        where: { id: seasonId },
+        select: { startDate: true },
+    });
+
+    let previousSeasonId: string | undefined;
+    if (currentSeason) {
+        const previousSeason = await prisma.season.findFirst({
+            where: {
+                startDate: { lt: currentSeason.startDate },
+            },
+            orderBy: { startDate: 'desc' },
+            select: { id: true },
+        });
+        previousSeasonId = previousSeason?.id;
+    }
+
+    // Build season scoring config for team balancing
+    const seasonScoringConfig: SeasonScoringConfig = {
+        currentSeasonId: seasonId,
+        previousSeasonId,
+        tournamentCountInSeason,
+    };
+
     let players = await prisma.player.findMany({
         where: {
             isBanned: false,
@@ -180,14 +210,15 @@ export async function previewTeamsByPolls({
         p.playerPollVote.some((vote) => vote.pollId === pollId && vote.vote === "SOLO"),
     );
 
-    // Compute weighted scores with recent wins
+    // Compute weighted scores with recent wins using season transition config
+    // For first 5 tournaments of a new season, this uses previous season stats
     const playersWithScore: (PlayerWithWeightT & { recentWins: number })[] = players.map((p) => {
         const recentWins = recentWinsMap.get(p.id) ?? 0;
         const playerWithWins: PlayerWithWins = { ...p, recentWins };
         return {
             ...p,
             recentWins,
-            weightedScore: computeWeightedScore(playerWithWins, seasonId),
+            weightedScore: computeWeightedScore(playerWithWins, seasonScoringConfig),
         };
     });
 
