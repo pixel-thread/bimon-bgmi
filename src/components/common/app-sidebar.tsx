@@ -21,6 +21,7 @@ import {
   Loader2,
   Briefcase,
   TrendingDown,
+  Star,
 } from "lucide-react";
 
 import { NavUser } from "@/src/components/nav-user";
@@ -92,6 +93,7 @@ const navGroups: NavGroup[] = [
     items: [
       { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
       { title: "Player Insights", url: "/admin/insights", icon: TrendingDown },
+      { title: "Merit Ratings", url: "/admin/merit-ratings", icon: Star },
       { title: "Income", url: "/admin/income", icon: DollarSign },
       { title: "Push Subscribers", url: "/admin/push-subscribers", icon: Bell },
     ],

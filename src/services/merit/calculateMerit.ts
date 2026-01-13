@@ -1,6 +1,6 @@
 import { prisma } from "@/src/lib/db/prisma";
 
-const SOLO_THRESHOLD = 50; // Below 50% = solo restricted
+const SOLO_THRESHOLD = 40; // Below 40% = solo restricted (more lenient)
 const SOLO_MATCHES_REQUIRED = 1; // Must play 1 solo match to restore
 const MIN_RATINGS_FOR_RESTRICTION = 3; // Need at least 3 ratings before restrictions apply
 
@@ -11,7 +11,7 @@ const MIN_RATINGS_FOR_RESTRICTION = 3; // Need at least 3 ratings before restric
  * Rules:
  * - New players start at 100%
  * - Need at least 3 ratings before restrictions can apply
- * - Below 50% = must play solo
+ * - Below 40% = must play solo
  * - After 1 solo match, merit resets to 100%
  */
 export async function calculateMerit(playerId: string) {

@@ -735,6 +735,7 @@ model PlayerMeritRating {
   toPlayerId   String
   rating       Int      // 1=🤡, 2=😠, 3=😐, 4=😊, 5=🔥
   tournamentId String
+  seasonId     String?  // Season when rating was given
   createdAt    DateTime @default(now())
 
   fromPlayer   Player   @relation("MeritGiven", fields: [fromPlayerId], references: [id], onDelete: Cascade)
@@ -743,4 +744,5 @@ model PlayerMeritRating {
   @@unique([fromPlayerId, toPlayerId, tournamentId])
   @@index([toPlayerId])
   @@index([tournamentId])
+  @@index([seasonId])
 }
