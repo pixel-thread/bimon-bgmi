@@ -58,7 +58,7 @@ export function SeasonSelector({
   return (
     <>
       <Select
-        value={selectedSeason || activeSeason?.id || undefined}
+        value={selectedSeason || activeSeason?.id || ""}
         disabled={isFetching || isLoading}
         onValueChange={onValueChange}
       >

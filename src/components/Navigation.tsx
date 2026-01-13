@@ -396,6 +396,7 @@ export default function Navigation() {
                                                                 src={(playerUser as any).player.characterImage.publicUrl}
                                                                 alt="Profile"
                                                                 fill
+                                                                sizes="40px"
                                                                 className="object-cover"
                                                             />
                                                         ) : (
