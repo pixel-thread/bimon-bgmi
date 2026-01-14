@@ -145,6 +145,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const isBanned = user?.player?.isBanned || false;
+    const isOnboarded = user?.isOnboarded || false;
     const options = poll.options || [];
     const pollId = poll.id;
     const playerId = user?.player?.id || "";
@@ -298,7 +299,8 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     const handleVote = (optionVote: VoteT) => {
       // Don't do anything if clicking the same option that's already voted
       if (optionVote === userVotedOption) return;
-      if (!pendingVote && !readOnly && !isBanned && poll.isActive) {
+      // Block voting for non-onboarded users, banned users, or inactive polls
+      if (!pendingVote && !readOnly && !isBanned && isOnboarded && poll.isActive) {
         submitVote(optionVote);
       }
     };
@@ -536,7 +538,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                 key={optionKey}
                 option={option.name}
                 isSelected={isSelected}
-                isDisabled={!poll.isActive || !!readOnly || isBanned}
+                isDisabled={!poll.isActive || !!readOnly || isBanned || !isOnboarded}
                 isLoading={isOptionLoading}
                 showResults={showResults}
                 recentVoters={recentVoters}

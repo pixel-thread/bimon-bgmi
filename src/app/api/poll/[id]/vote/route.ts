@@ -50,6 +50,14 @@ export async function POST(
       });
     }
 
+    // Block voting for non-onboarded users
+    if (!user.isOnboarded) {
+      return ErrorResponse({
+        message: "Please complete onboarding first to vote",
+        status: 403,
+      });
+    }
+
     const body = playerVoteSchema.parse(await req.json());
 
     const isPollExist = await getPollById({
