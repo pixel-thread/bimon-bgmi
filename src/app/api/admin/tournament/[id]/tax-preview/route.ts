@@ -43,22 +43,28 @@ export async function GET(
             6
         );
 
-        // Get poll to check for solo voters
-        const poll = await prisma.poll.findUnique({
-            where: { tournamentId },
+        // Get teams to check actual solo status (team with only 1 player)
+        const teams = await prisma.team.findMany({
+            where: {
+                tournamentId,
+                players: {
+                    some: { id: { in: playerIds } },
+                },
+            },
             include: {
-                playersVotes: {
-                    where: { playerId: { in: playerIds } },
+                players: {
+                    select: { id: true },
                 },
             },
         });
 
-        // Build a set of solo player IDs
-        const soloPlayerIds = new Set(
-            poll?.playersVotes
-                .filter((v) => v.vote === "SOLO")
-                .map((v) => v.playerId) || []
-        );
+        // Build a set of solo player IDs (players who are the only one in their team)
+        const soloPlayerIds = new Set<string>();
+        for (const team of teams) {
+            if (team.players.length === 1) {
+                soloPlayerIds.add(team.players[0].id);
+            }
+        }
 
         const soloTaxRate = getSoloTaxRate();
 

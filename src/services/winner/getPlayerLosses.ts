@@ -175,24 +175,32 @@ export async function consumeSoloTaxPool(seasonId: string): Promise<number> {
 }
 
 /**
- * Check if a player voted SOLO in a tournament's poll
+ * Check if a player is actually playing solo in a tournament.
+ * A player is solo if their team has only 1 player, regardless of poll vote.
  */
 export async function isPlayerSolo(
     playerId: string,
     tournamentId: string
 ): Promise<boolean> {
-    const poll = await prisma.poll.findUnique({
-        where: { tournamentId },
+    // Find the team this player is in for this tournament
+    const team = await prisma.team.findFirst({
+        where: {
+            tournamentId,
+            players: {
+                some: { id: playerId },
+            },
+        },
         include: {
-            playersVotes: {
-                where: { playerId },
+            players: {
+                select: { id: true },
             },
         },
     });
 
-    if (!poll || poll.playersVotes.length === 0) {
+    if (!team) {
         return false;
     }
 
-    return poll.playersVotes[0].vote === "SOLO";
+    // Player is solo if they're the only one on the team
+    return team.players.length === 1;
 }
