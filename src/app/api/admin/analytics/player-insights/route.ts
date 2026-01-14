@@ -14,10 +14,13 @@ interface PlayerFinancials {
 interface PlayerInsightData {
     rank: number;
     player: string;
+    playerId?: string;
     tournaments: number;
     entryFees: number;
     prizes: number;
     amount: number; // profit or loss
+    supportReceived?: { from: string; amount: number; tournament: string }[];
+    totalSupport?: number;
 }
 
 export async function GET(req: Request) {
@@ -147,7 +150,7 @@ export async function GET(req: Request) {
         let totalLosses = 0;
         let totalProfits = 0;
 
-        for (const [, data] of playerMap) {
+        for (const [playerId, data] of playerMap) {
             const netResult = data.prizes - data.entryFees;
 
             if (netResult < 0) {
@@ -155,6 +158,7 @@ export async function GET(req: Request) {
                 losers.push({
                     rank: 0,
                     player: data.userName,
+                    playerId: playerId,
                     tournaments: data.tournaments,
                     entryFees: data.entryFees,
                     prizes: data.prizes,
@@ -179,6 +183,34 @@ export async function GET(req: Request) {
 
         losers.forEach((l, i) => (l.rank = i + 1));
         winners.forEach((w, i) => (w.rank = i + 1));
+
+        // Get support transactions for top 10 losers (solo tax redistributions)
+        const top10LoserIds = losers.slice(0, 10).map(l => l.playerId).filter(Boolean) as string[];
+        const supportTransactions = await prisma.transaction.findMany({
+            where: {
+                playerId: { in: top10LoserIds },
+                description: { startsWith: "Support from" },
+            },
+            orderBy: { timestamp: "desc" },
+        });
+
+        // Parse support transactions and attach to losers
+        // Format: "Support from PlayerName: TournamentName"
+        for (const loser of losers.slice(0, 10)) {
+            if (!loser.playerId) continue;
+            const supports = supportTransactions
+                .filter(tx => tx.playerId === loser.playerId)
+                .map(tx => {
+                    const match = tx.description.match(/^Support from (.+): (.+)$/);
+                    return {
+                        from: match?.[1] || "Unknown",
+                        amount: tx.amount,
+                        tournament: match?.[2] || "Unknown",
+                    };
+                });
+            loser.supportReceived = supports;
+            loser.totalSupport = supports.reduce((sum, s) => sum + s.amount, 0);
+        }
 
         // Generate key insight - find players who played all tournaments but won nothing
         const totalTournaments = tournaments.length;

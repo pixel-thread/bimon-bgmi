@@ -32,10 +32,13 @@ import { useAuth as useAuthContext } from "@/src/hooks/context/auth/useAuth";
 type PlayerInsight = {
     rank: number;
     player: string;
+    playerId?: string;
     tournaments: number;
     entryFees: number;
     prizes: number;
     amount: number;
+    supportReceived?: { from: string; amount: number; tournament: string }[];
+    totalSupport?: number;
 };
 
 type Season = {
@@ -161,7 +164,7 @@ export default function PlayerInsightsPage() {
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
-                            <div className="min-w-[550px]">
+                            <div className="min-w-[650px]">
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="border-zinc-800">
@@ -171,6 +174,7 @@ export default function PlayerInsightsPage() {
                                             <TableHead className="text-right">Entry Fees</TableHead>
                                             <TableHead className="text-right">Prizes</TableHead>
                                             <TableHead className="text-right">Loss</TableHead>
+                                            <TableHead className="text-right">Support</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -189,6 +193,29 @@ export default function PlayerInsightsPage() {
                                                 </TableCell>
                                                 <TableCell className="text-right font-bold text-red-500">
                                                     -{formatCurrency(player.amount)}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    {player.totalSupport && player.totalSupport > 0 ? (
+                                                        <div className="group relative inline-block">
+                                                            <span className="font-bold text-green-500 cursor-help">
+                                                                +{formatCurrency(player.totalSupport)}
+                                                            </span>
+                                                            <div className="absolute right-0 bottom-full mb-2 hidden group-hover:block z-50 w-64 p-3 rounded-lg bg-zinc-800 border border-zinc-700 shadow-xl text-left">
+                                                                <p className="text-xs font-semibold text-zinc-400 mb-2">Support from solo winners:</p>
+                                                                <div className="space-y-1 max-h-32 overflow-y-auto">
+                                                                    {player.supportReceived?.map((s, i) => (
+                                                                        <div key={i} className="text-xs">
+                                                                            <span className="text-green-400">₹{s.amount}</span>
+                                                                            <span className="text-zinc-400"> from </span>
+                                                                            <span className="text-white font-medium">{s.from}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-zinc-600">-</span>
+                                                    )}
                                                 </TableCell>
                                             </TableRow>
                                         ))}
