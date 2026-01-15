@@ -107,8 +107,8 @@ export default function OnboardingPage() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col bg-white dark:bg-black px-4 py-6 sm:py-8">
-            <div className="w-full max-w-md mx-auto flex-1 flex flex-col justify-center">
+        <div className="min-h-screen bg-white dark:bg-black px-4 pt-4 pb-6">
+            <div className="w-full max-w-md mx-auto">
                 {/* Header Card */}
                 <div className="bg-gradient-to-br from-amber-50 via-orange-50/50 to-yellow-50 dark:from-stone-900 dark:via-amber-950/30 dark:to-stone-800 rounded-2xl shadow-xl p-6 border border-amber-200/50 dark:border-stone-700">
                     {/* Icon */}

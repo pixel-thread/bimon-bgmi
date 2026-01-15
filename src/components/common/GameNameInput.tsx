@@ -189,21 +189,22 @@ export function GameNameInput({
                         />
                         {/* Visible display layer with inline clear */}
                         <div
-                            className={`px-3 py-2 flex items-center justify-between ${!value ? "text-slate-400 dark:text-slate-500" : "text-slate-800 dark:text-slate-200"}`}
+                            className={`relative z-10 px-3 py-2 flex items-center justify-between ${!value ? "text-slate-400 dark:text-slate-500" : "text-slate-800 dark:text-slate-200"}`}
                             style={{
                                 WebkitUserSelect: 'none',
                                 userSelect: 'none'
                             }}
                         >
-                            <span className="truncate">{value || "Tap to paste"}</span>
+                            <span className="truncate pointer-events-none">{value || "Tap to paste"}</span>
                             {value && !disabled && (
                                 <button
                                     type="button"
                                     onClick={(e) => {
                                         e.stopPropagation();
+                                        e.preventDefault();
                                         handleClear();
                                     }}
-                                    className="ml-2 p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-400 hover:text-red-500 transition-colors"
+                                    className="ml-2 p-1.5 rounded-full bg-slate-200 dark:bg-slate-600 hover:bg-red-100 dark:hover:bg-red-900/50 text-slate-500 hover:text-red-500 transition-colors pointer-events-auto"
                                     title="Clear"
                                 >
                                     <FiX className="w-4 h-4" />
