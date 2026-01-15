@@ -41,8 +41,9 @@ export async function POST(req: Request) {
         const { userName, displayName, dateOfBirth, referralCode } = onboardingSchema.parse(body);
 
         // Validate referral code if provided
+        // Also block referral for users who already have a player (legacy users without isOnboarded)
         let promoterUser = null;
-        if (referralCode) {
+        if (referralCode && !user.playerId) {
             promoterUser = await prisma.user.findUnique({
                 where: { referralCode },
                 select: { id: true, clerkId: true },
