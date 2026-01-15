@@ -17,6 +17,11 @@ const TUTORIAL_STEPS = [
         title: "Step 2: Copy Game Name",
         description: "Click the 📋 icon to copy your game name",
     },
+    {
+        image: "/images/ign-step-3.png",
+        title: "Step 3: Paste Here",
+        description: "Tap the Paste button, or long-press the input field and select 'Paste'",
+    },
 ];
 
 interface IGNTutorialModalProps {

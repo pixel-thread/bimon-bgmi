@@ -7,7 +7,7 @@ import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { IGNTutorial } from "@/src/components/common/IGNTutorialModal";
 
-const MAX_IGN_LENGTH = 14;
+const MAX_IGN_LENGTH = 20;
 
 interface GameNameInputProps {
     value: string;
@@ -49,24 +49,33 @@ export function GameNameInput({
         try {
             const text = await navigator.clipboard.readText();
             if (text.trim()) {
-                const trimmed = text.trim();
-                // Reject if longer than max chars (BGMI max IGN length)
-                if (trimmed.length > MAX_IGN_LENGTH) {
-                    toast.error("Name too long! Please copy your actual IGN from BGMI.");
-                    return;
-                }
-                onChange(trimmed);
-                // Validate min length and show error if too short
-                if (trimmed.length < 2) {
-                    onErrorChange?.("Game Name must be at least 2 characters");
-                } else {
-                    toast.success("Game Name pasted!");
-                }
+                processPastedText(text);
             } else {
                 toast.error("Clipboard is empty");
             }
         } catch {
-            toast.error("Cannot access clipboard. Please allow clipboard permission.");
+            toast.error("Paste button failed. Try long-pressing the input field and select 'Paste'.");
+        }
+    };
+
+    // Shared paste processing logic for both button and native paste
+    const processPastedText = (text: string) => {
+        // Replace BGMI invisible characters (macron vowels) with spaces
+        const sanitized = text
+            .replace(/[ĀāĒēĪīŌōŪū]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+        // Reject if longer than max chars (BGMI max IGN length)
+        if (sanitized.length > MAX_IGN_LENGTH) {
+            toast.error("Name too long! Please copy your actual IGN from BGMI.");
+            return;
+        }
+        onChange(sanitized);
+        // Validate min length and show error if too short
+        if (sanitized.length < 2) {
+            onErrorChange?.("Game Name must be at least 2 characters");
+        } else {
+            toast.success("Game Name pasted!");
         }
     };
 
@@ -83,6 +92,16 @@ export function GameNameInput({
             const newValue = e.target.value;
             onChange(newValue);
             onErrorChange?.("");
+        }
+    };
+
+    // Handle native paste (long-press paste) for readOnly mode
+    const handleNativePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+        e.preventDefault();
+        setTouched(true);
+        const pastedText = e.clipboardData.getData("text");
+        if (pastedText.trim()) {
+            processPastedText(pastedText);
         }
     };
 
@@ -106,6 +125,16 @@ export function GameNameInput({
         }
     };
 
+    // Block keyboard input but allow paste shortcuts
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        // Allow Ctrl+V / Cmd+V for paste
+        if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+            return;
+        }
+        // Block all other input
+        e.preventDefault();
+    };
+
     // Only show error if touched or forced (on form submit)
     const showError = error && (touched || forceShowError);
 
@@ -124,15 +153,17 @@ export function GameNameInput({
                 </label>
 
                 {readOnly ? (
-                    // Onboarding style: read-only with paste/clear buttons
+                    // Onboarding style: paste-only with buttons (allows native paste, blocks typing)
                     <div className="flex gap-2">
                         <Input
                             id="gameName"
                             type="text"
                             value={value}
-                            readOnly
-                            placeholder="Paste here"
-                            className={`w-full bg-slate-50 dark:bg-slate-700/50 cursor-default ${showError
+                            onChange={() => { }} // Required but we block input via onKeyDown
+                            onKeyDown={handleKeyDown}
+                            onPaste={handleNativePaste}
+                            placeholder="Paste here (or long-press)"
+                            className={`w-full bg-slate-50 dark:bg-slate-700/50 ${showError
                                 ? "border-red-500 focus-visible:ring-red-500"
                                 : "focus-visible:ring-indigo-500"
                                 }`}
