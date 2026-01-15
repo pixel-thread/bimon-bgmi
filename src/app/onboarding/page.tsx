@@ -107,31 +107,31 @@ export default function OnboardingPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black px-4 py-8">
-            <div className="w-full max-w-md">
+        <div className="min-h-screen flex flex-col bg-white dark:bg-black px-4 py-6 sm:py-8">
+            <div className="w-full max-w-md mx-auto flex-1 flex flex-col justify-center">
                 {/* Header Card */}
-                <div className="bg-gradient-to-br from-amber-50 via-orange-50/50 to-yellow-50 dark:from-stone-900 dark:via-amber-950/30 dark:to-stone-800 rounded-2xl shadow-xl p-8 border border-amber-200/50 dark:border-stone-700">
+                <div className="bg-gradient-to-br from-amber-50 via-orange-50/50 to-yellow-50 dark:from-stone-900 dark:via-amber-950/30 dark:to-stone-800 rounded-2xl shadow-xl p-6 border border-amber-200/50 dark:border-stone-700">
                     {/* Icon */}
-                    <div className="flex justify-center mb-6">
+                    <div className="flex justify-center mb-4">
                         <img
                             src="/android-chrome-192x192.png"
                             alt="App Logo"
-                            className="w-20 h-20 rounded-2xl shadow-lg"
+                            className="w-16 h-16 rounded-xl shadow-lg"
                         />
                     </div>
 
                     {/* Title */}
-                    <h1 className="text-2xl font-bold text-center text-slate-800 dark:text-slate-200 mb-2">
+                    <h1 className="text-xl font-bold text-center text-slate-800 dark:text-slate-200 mb-1">
                         Welcome to PUBGMI
                     </h1>
 
                     {/* Description */}
-                    <p className="text-center text-slate-600 dark:text-slate-400 mb-6">
+                    <p className="text-center text-sm text-slate-600 dark:text-slate-400 mb-4">
                         Copy bad paste ia <span className="font-semibold text-indigo-600 dark:text-indigo-400">ka kyrteng ba na BGMI</span>.
                     </p>
 
                     {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    <form onSubmit={handleSubmit} className="space-y-4">
                         {/* Display Name (BGMI IGN) - Primary field */}
                         <GameNameInput
                             value={displayName}

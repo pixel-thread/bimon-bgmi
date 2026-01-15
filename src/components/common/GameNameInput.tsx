@@ -153,73 +153,63 @@ export function GameNameInput({
                 </label>
 
                 {readOnly ? (
-                    // Onboarding style: paste-only with buttons (tap to paste automatically)
-                    <div className="flex gap-2">
+                    // Onboarding style: tap to paste with inline clear (clean, minimal)
+                    <div
+                        onClick={!disabled && !value ? handlePaste : undefined}
+                        className={`relative min-h-[40px] rounded-md border bg-slate-50 dark:bg-slate-700/50 cursor-pointer active:scale-[0.99] transition-transform ${showError
+                            ? "border-red-500 ring-1 ring-red-500"
+                            : "border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500"
+                            } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                        {/* Hidden contentEditable that captures long-press paste */}
                         <div
-                            onClick={!disabled && !value ? handlePaste : undefined}
-                            className={`relative flex-1 min-h-[40px] rounded-md border bg-slate-50 dark:bg-slate-700/50 cursor-pointer active:scale-[0.98] transition-transform ${showError
-                                ? "border-red-500 ring-1 ring-red-500"
-                                : "border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500"
-                                } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                            id="gameName"
+                            contentEditable
+                            suppressContentEditableWarning
+                            inputMode="none"
+                            onPaste={(e) => {
+                                e.preventDefault();
+                                setTouched(true);
+                                const pastedText = e.clipboardData.getData("text");
+                                if (pastedText.trim()) {
+                                    processPastedText(pastedText);
+                                }
+                                (e.target as HTMLElement).blur();
+                            }}
+                            onKeyDown={(e) => e.preventDefault()}
+                            onInput={(e) => {
+                                (e.target as HTMLElement).textContent = '';
+                            }}
+                            className="absolute inset-0 px-3 py-2 opacity-0"
+                            style={{
+                                caretColor: 'transparent',
+                                WebkitUserSelect: 'none',
+                                userSelect: 'none'
+                            }}
+                        />
+                        {/* Visible display layer with inline clear */}
+                        <div
+                            className={`px-3 py-2 flex items-center justify-between ${!value ? "text-slate-400 dark:text-slate-500" : "text-slate-800 dark:text-slate-200"}`}
+                            style={{
+                                WebkitUserSelect: 'none',
+                                userSelect: 'none'
+                            }}
                         >
-                            {/* Hidden contentEditable that captures long-press paste */}
-                            <div
-                                id="gameName"
-                                contentEditable
-                                suppressContentEditableWarning
-                                inputMode="none"
-                                onPaste={(e) => {
-                                    e.preventDefault();
-                                    setTouched(true);
-                                    const pastedText = e.clipboardData.getData("text");
-                                    if (pastedText.trim()) {
-                                        processPastedText(pastedText);
-                                    }
-                                    (e.target as HTMLElement).blur();
-                                }}
-                                onKeyDown={(e) => e.preventDefault()}
-                                onInput={(e) => {
-                                    (e.target as HTMLElement).textContent = '';
-                                }}
-                                className="absolute inset-0 px-3 py-2 opacity-0"
-                                style={{
-                                    caretColor: 'transparent',
-                                    WebkitUserSelect: 'none',
-                                    userSelect: 'none'
-                                }}
-                            />
-                            {/* Visible display layer */}
-                            <div
-                                className={`px-3 py-2 flex items-center pointer-events-none ${!value ? "text-slate-400 dark:text-slate-500" : "text-slate-800 dark:text-slate-200"}`}
-                                style={{
-                                    WebkitUserSelect: 'none',
-                                    userSelect: 'none'
-                                }}
-                            >
-                                {value || "Tap to paste"}
-                            </div>
+                            <span className="truncate">{value || "Tap to paste"}</span>
+                            {value && !disabled && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleClear();
+                                    }}
+                                    className="ml-2 p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-400 hover:text-red-500 transition-colors"
+                                    title="Clear"
+                                >
+                                    <FiX className="w-4 h-4" />
+                                </button>
+                            )}
                         </div>
-                        {value ? (
-                            <Button
-                                type="button"
-                                onClick={handleClear}
-                                disabled={disabled}
-                                className="bg-red-500 hover:bg-red-600 text-white px-4"
-                            >
-                                <FiX className="w-4 h-4 mr-1" />
-                                Clear
-                            </Button>
-                        ) : (
-                            <Button
-                                type="button"
-                                onClick={handlePaste}
-                                disabled={disabled}
-                                className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4"
-                            >
-                                <FiClipboard className="w-4 h-4 mr-1" />
-                                Paste
-                            </Button>
-                        )}
                     </div>
                 ) : (
                     // Profile style: editable input
