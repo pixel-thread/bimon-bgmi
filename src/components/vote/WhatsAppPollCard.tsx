@@ -131,6 +131,8 @@ type WhatAppPollCardProps = {
   onShowVoters: (poll: PollT) => void;
   isRefetching?: boolean;
   onRefetch?: () => void;
+  bonusPool?: number; // Solo tax bonus pool amount
+  bonusDonorName?: string | null; // Name of the donor(s) who contributed
 };
 
 export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
@@ -141,6 +143,8 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     showAvatars = false,
     isRefetching = false,
     onRefetch,
+    bonusPool = 0,
+    bonusDonorName = null,
   }) => {
     const { user } = useAuth();
     const queryClient = useQueryClient();
@@ -350,60 +354,69 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     }
 
     return (
-      <div className={`relative rounded-xl overflow-hidden max-w-2xl mx-auto transition-all duration-700 ease-in-out ${theme
-        ? theme.card
-        : 'bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700'
-        }`}>
-        {/* Banned Stamp Overlay */}
-        {isBanned && (
-          <div className="absolute inset-0 bg-black/5 dark:bg-white/5 z-10 pointer-events-none">
-            <div style={bannedStampStyles}>Banned</div>
+      <div className="max-w-2xl mx-auto">
+        {/* Bonus Pool Tag - Outside but attached to poll */}
+        {bonusPool > 0 && theme && (
+          <div className="flex justify-center mb-[-8px] relative z-10">
+            <div className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r ${theme.header} text-white text-sm font-semibold shadow-lg`}>
+              <span>{bonusDonorName || "Community"} donated ₹{bonusPool.toLocaleString()}</span>
+            </div>
           </div>
         )}
-        {/* Combined Header with Prize Pool */}
-        {(() => {
-          return (
-            <div className={hasPrizePool ? "relative overflow-hidden" : ""}>
-              {/* Prize Pool Background - only when there's a prize pool */}
-              {theme && (
-                <>
-                  <div className={`absolute inset-0 bg-gradient-to-br ${theme.header}`} />
-                  {/* Wave effect */}
-                  <div className="absolute bottom-0 left-0 right-0 h-12 overflow-hidden">
-                    <svg className="absolute bottom-0 w-[200%] h-12 animate-[wave_3s_ease-in-out_infinite]" viewBox="0 0 1200 120" preserveAspectRatio="none">
-                      <path d="M0,60 C200,100 400,20 600,60 C800,100 1000,20 1200,60 L1200,120 L0,120 Z" fill={theme.wave1} />
-                    </svg>
-                    <svg className="absolute bottom-0 w-[200%] h-10 animate-[wave_4s_ease-in-out_infinite_reverse]" viewBox="0 0 1200 120" preserveAspectRatio="none">
-                      <path d="M0,60 C200,20 400,100 600,60 C800,20 1000,100 1200,60 L1200,120 L0,120 Z" fill={theme.wave2} />
-                    </svg>
-                  </div>
-                  {/* Sparkles */}
-                  <div className="absolute top-3 left-6 w-1 h-1 bg-white rounded-full animate-ping opacity-75" />
-                  <div className={`absolute top-4 right-8 w-1.5 h-1.5 ${theme.sparkle} rounded-full animate-ping opacity-60`} style={{ animationDelay: '0.5s' }} />
-                  <style jsx>{`
+        <div className={`relative rounded-xl overflow-hidden transition-all duration-700 ease-in-out ${theme
+          ? theme.card
+          : 'bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700'
+          }`}>
+          {/* Banned Stamp Overlay */}
+          {isBanned && (
+            <div className="absolute inset-0 bg-black/5 dark:bg-white/5 z-10 pointer-events-none">
+              <div style={bannedStampStyles}>Banned</div>
+            </div>
+          )}
+          {/* Combined Header with Prize Pool */}
+          {(() => {
+            return (
+              <div className={hasPrizePool ? "relative overflow-hidden" : ""}>
+                {/* Prize Pool Background - only when there's a prize pool */}
+                {theme && (
+                  <>
+                    <div className={`absolute inset-0 bg-gradient-to-br ${theme.header}`} />
+                    {/* Wave effect */}
+                    <div className="absolute bottom-0 left-0 right-0 h-12 overflow-hidden">
+                      <svg className="absolute bottom-0 w-[200%] h-12 animate-[wave_3s_ease-in-out_infinite]" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                        <path d="M0,60 C200,100 400,20 600,60 C800,100 1000,20 1200,60 L1200,120 L0,120 Z" fill={theme.wave1} />
+                      </svg>
+                      <svg className="absolute bottom-0 w-[200%] h-10 animate-[wave_4s_ease-in-out_infinite_reverse]" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                        <path d="M0,60 C200,20 400,100 600,60 C800,20 1000,100 1200,60 L1200,120 L0,120 Z" fill={theme.wave2} />
+                      </svg>
+                    </div>
+                    {/* Sparkles */}
+                    <div className="absolute top-3 left-6 w-1 h-1 bg-white rounded-full animate-ping opacity-75" />
+                    <div className={`absolute top-4 right-8 w-1.5 h-1.5 ${theme.sparkle} rounded-full animate-ping opacity-60`} style={{ animationDelay: '0.5s' }} />
+                    <style jsx>{`
                     @keyframes wave {
                       0%, 100% { transform: translateX(0); }
                       50% { transform: translateX(-25%); }
                     }
                   `}</style>
-                </>
-              )}
+                  </>
+                )}
 
-              {/* Content */}
-              <div className={`relative p-6 ${hasPrizePool ? 'pb-8' : 'border-b border-gray-100 dark:border-gray-700'}`}>
-                {/* Title and Day Row */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0 overflow-hidden">
-                    <div className="overflow-hidden">
-                      <h3
-                        ref={titleRef}
-                        className={`font-semibold text-lg whitespace-nowrap ${isTitleOverflowing ? 'animate-marquee' : ''} ${hasPrizePool ? 'text-white drop-shadow-md' : 'text-gray-900 dark:text-white'}`}
-                        title={poll.question}
-                      >
-                        {poll.question}
-                      </h3>
-                    </div>
-                    <style jsx>{`
+                {/* Content */}
+                <div className={`relative p-6 ${hasPrizePool ? 'pb-8' : 'border-b border-gray-100 dark:border-gray-700'}`}>
+                  {/* Title and Day Row */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <div className="overflow-hidden">
+                        <h3
+                          ref={titleRef}
+                          className={`font-semibold text-lg whitespace-nowrap ${isTitleOverflowing ? 'animate-marquee' : ''} ${hasPrizePool ? 'text-white drop-shadow-md' : 'text-gray-900 dark:text-white'}`}
+                          title={poll.question}
+                        >
+                          {poll.question}
+                        </h3>
+                      </div>
+                      <style jsx>{`
                       @keyframes marquee {
                         0%, 15% { transform: translateX(0%); }
                         40%, 60% { transform: translateX(-30%); }
@@ -422,185 +435,187 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                         }
                       }
                     `}</style>
-                  </div>
-                  {/* Badges row */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* Days Badge */}
-                    {poll?.days ? (
-                      <Badge className={`font-bold px-3 py-1 text-xs rounded-md ${theme ? theme.badge : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200 animate-pulse'}`}>
-                        {poll.days}
-                      </Badge>
-                    ) : poll?.createdAt ? (
-                      <Badge className={`font-bold px-3 py-1 text-xs rounded-md ${theme ? theme.badge : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 animate-pulse'}`}>
-                        {new Date(poll.createdAt).toLocaleDateString(undefined, {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </Badge>
-                    ) : null}
-                  </div>
-                </div>
-
-                {/* Prize Pool Display */}
-                {theme && (
-                  <>
-                    <div className="mt-4 flex items-center justify-center gap-3">
-                      <span className="text-3xl">🏆</span>
-                      <div className="text-center">
-                        <p className="text-xs font-medium text-white/80 uppercase tracking-widest">Prize Pool</p>
-                        <p className="text-2xl font-black text-white drop-shadow-lg">
-                          <SlotMachineCounter
-                            value={prizePool}
-                            prefix="₹"
-                          />
-                        </p>
-                      </div>
                     </div>
-                    {/* Info icon in bottom right corner - Aceternity style */}
-                    <PrizeBreakdownTooltip prizePool={prizePool} entryFee={entryFee} teamSize={teamSize} theme={theme} onDoubleTap={onRefetch} />
-                    {/* Team Type in bottom left */}
-                    {poll?.teamType && (
-                      <div className="absolute bottom-2 left-3">
-                        <Badge className="font-bold px-2 py-1 text-xs rounded-md bg-white/25 text-white border border-white/30 backdrop-blur-sm">
-                          {effectiveTeamInfo.type}
+                    {/* Badges row */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {/* Days Badge */}
+                      {poll?.days ? (
+                        <Badge className={`font-bold px-3 py-1 text-xs rounded-md ${theme ? theme.badge : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200 animate-pulse'}`}>
+                          {poll.days}
                         </Badge>
+                      ) : poll?.createdAt ? (
+                        <Badge className={`font-bold px-3 py-1 text-xs rounded-md ${theme ? theme.badge : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 animate-pulse'}`}>
+                          {new Date(poll.createdAt).toLocaleDateString(undefined, {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </Badge>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {/* Prize Pool Display */}
+                  {theme && (
+                    <>
+
+                      <div className="mt-4 flex items-center justify-center gap-3">
+                        <span className="text-3xl">🏆</span>
+                        <div className="text-center">
+                          <p className="text-xs font-medium text-white/80 uppercase tracking-widest">Prize Pool</p>
+                          <p className="text-2xl font-black text-white drop-shadow-lg">
+                            <SlotMachineCounter
+                              value={prizePool + bonusPool}
+                              prefix="₹"
+                            />
+                          </p>
+                        </div>
                       </div>
-                    )}
-                  </>
-                )}
+                      {/* Info icon in bottom right corner - Aceternity style */}
+                      <PrizeBreakdownTooltip prizePool={prizePool} entryFee={entryFee} teamSize={teamSize} theme={theme} onDoubleTap={onRefetch} />
+                      {/* Team Type in bottom left */}
+                      {poll?.teamType && (
+                        <div className="absolute bottom-2 left-3">
+                          <Badge className="font-bold px-2 py-1 text-xs rounded-md bg-white/25 text-white border border-white/30 backdrop-blur-sm">
+                            {effectiveTeamInfo.type}
+                          </Badge>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })()}
-
-        {/* Poll Options */}
-        <div className={`p-6 space-y-3 transition-all duration-700 ease-in-out ${theme ? theme.options : ''}`}>
-          {options.map((option, index) => {
-            const optionKey =
-              typeof option === "string" ? option : `${option.name}-${index}`;
-
-            // Get voters for this option, sorted by most recent
-            const optionVoters = filterPollVote(option.vote)
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-            // Build recent voters list with optimistic updates
-            // When user optimistically switches vote, move their avatar accordingly
-            const currentUserServerVote = optionVoters.find((v) => v.playerId === playerId);
-            const otherVoters = optionVoters.filter((v) => v.playerId !== playerId);
-
-            // Determine if current user should appear in this option's avatars (optimistically)
-            let showCurrentUserHere = false;
-            if (optimisticVote) {
-              // User has an optimistic vote - show avatar on the optimistic option
-              showCurrentUserHere = option.vote === optimisticVote;
-            } else if (currentUserServerVote) {
-              // No optimistic vote, use server data
-              showCurrentUserHere = true;
-            }
-
-            // Get current user's info - prefer server data, fall back to auth data for instant avatar
-            const currentUserInfo = playersVotes?.find((v) => v.playerId === playerId);
-            const currentUserAvatarData = currentUserInfo ? {
-              id: currentUserInfo.id,
-              imageUrl: (currentUserInfo.player as any)?.imageUrl || null,
-              characterImageUrl: currentUserInfo.player?.characterImage?.publicUrl || null,
-              displayName: currentUserInfo.player?.user?.displayName || null,
-              userName: currentUserInfo.player?.user?.userName || '',
-            } : (user?.player ? {
-              // Fall back to auth data for instant avatar display
-              id: `auth-${playerId}`,
-              imageUrl: null,
-              characterImageUrl: user.player.characterImage?.publicUrl || null,
-              displayName: user.displayName || null,
-              userName: user.userName || '',
-            } : null);
-
-            const recentVoters = [
-              // Show current user if they voted for this option (optimistically determined)
-              ...(showCurrentUserHere && currentUserAvatarData ? [currentUserAvatarData] : []),
-              ...otherVoters.slice(0, showCurrentUserHere ? 1 : 2).map((v) => ({
-                id: v.id,
-                imageUrl: (v.player as any)?.imageUrl || null,
-                characterImageUrl: v.player?.characterImage?.publicUrl || null,
-                displayName: v.player?.user?.displayName || null,
-                userName: v.player?.user?.userName || '',
-              })),
-            ].slice(0, 2);
-
-            // This option is selected if it matches the current vote (optimistic or server)
-            const isSelected = userVotedOption === option.vote;
-            // Show loading spinner only on the option being voted for
-            const isOptionLoading = pendingVote === option.vote;
-
-            return (
-              <PollOption
-                key={optionKey}
-                option={option.name}
-                isSelected={isSelected}
-                isDisabled={!poll.isActive || !!readOnly || isBanned || !isOnboarded}
-                isLoading={isOptionLoading}
-                showResults={showResults}
-                recentVoters={recentVoters}
-                totalVoters={
-                  votePercentages.find((val) => val.vote === option.vote)?.count || 0
-                }
-                totalVotes={
-                  votePercentages.find((val) => val.vote === option.vote)?.percentage || 0
-                }
-                showAvatars={showAvatars}
-                hasPrizePool={hasPrizePool}
-                theme={theme}
-                onClick={() => handleVote(option.vote)}
-              />
             );
-          })}
-        </div>
+          })()}
 
-        {/* Poll Footer */}
-        {totalVotes > 0 && (showViewAllVotes ?? true) && (
-          <div className={`px-6 pb-6 transition-all duration-700 ease-in-out ${theme ? theme.footer : ''}`}>
-            <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
-              <span className="flex items-center space-x-1">
-                <FiUsers className="w-4 h-4" />
-                <span>
-                  {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
-                </span>
-              </span>
-              <span className="text-xs">
-                {entryFee > 0 ? `Entry: ₹${entryFee}` : 'Free Entry'}
-              </span>
-            </div>
+          {/* Poll Options */}
+          <div className={`p-6 space-y-3 transition-all duration-700 ease-in-out ${theme ? theme.options : ''}`}>
+            {options.map((option, index) => {
+              const optionKey =
+                typeof option === "string" ? option : `${option.name}-${index}`;
 
+              // Get voters for this option, sorted by most recent
+              const optionVoters = filterPollVote(option.vote)
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+              // Build recent voters list with optimistic updates
+              // When user optimistically switches vote, move their avatar accordingly
+              const currentUserServerVote = optionVoters.find((v) => v.playerId === playerId);
+              const otherVoters = optionVoters.filter((v) => v.playerId !== playerId);
 
-            {onShowVoters && (
-              <button
-                type="button"
-                onClick={() => onShowVoters(poll)}
-                disabled={isLoadingVotes}
-                className={`w-full text-center font-medium py-2.5 px-4 rounded-xl transition-all border shadow-sm ${isLoadingVotes
-                  ? "text-gray-400 dark:text-gray-500 cursor-not-allowed bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                  : theme
-                    ? `${theme.button} border-current/20`
-                    : "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:shadow-md"
-                  }`}
-              >
-                {isLoadingVotes ? (
-                  <span className="flex items-center justify-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                    <span>Loading votes...</span>
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center gap-2">
-                    <FiUsers className="w-4 h-4" />
-                    View all votes
-                  </span>
-                )}
-              </button>
-            )}
+              // Determine if current user should appear in this option's avatars (optimistically)
+              let showCurrentUserHere = false;
+              if (optimisticVote) {
+                // User has an optimistic vote - show avatar on the optimistic option
+                showCurrentUserHere = option.vote === optimisticVote;
+              } else if (currentUserServerVote) {
+                // No optimistic vote, use server data
+                showCurrentUserHere = true;
+              }
+
+              // Get current user's info - prefer server data, fall back to auth data for instant avatar
+              const currentUserInfo = playersVotes?.find((v) => v.playerId === playerId);
+              const currentUserAvatarData = currentUserInfo ? {
+                id: currentUserInfo.id,
+                imageUrl: (currentUserInfo.player as any)?.imageUrl || null,
+                characterImageUrl: currentUserInfo.player?.characterImage?.publicUrl || null,
+                displayName: currentUserInfo.player?.user?.displayName || null,
+                userName: currentUserInfo.player?.user?.userName || '',
+              } : (user?.player ? {
+                // Fall back to auth data for instant avatar display
+                id: `auth-${playerId}`,
+                imageUrl: null,
+                characterImageUrl: user.player.characterImage?.publicUrl || null,
+                displayName: user.displayName || null,
+                userName: user.userName || '',
+              } : null);
+
+              const recentVoters = [
+                // Show current user if they voted for this option (optimistically determined)
+                ...(showCurrentUserHere && currentUserAvatarData ? [currentUserAvatarData] : []),
+                ...otherVoters.slice(0, showCurrentUserHere ? 1 : 2).map((v) => ({
+                  id: v.id,
+                  imageUrl: (v.player as any)?.imageUrl || null,
+                  characterImageUrl: v.player?.characterImage?.publicUrl || null,
+                  displayName: v.player?.user?.displayName || null,
+                  userName: v.player?.user?.userName || '',
+                })),
+              ].slice(0, 2);
+
+              // This option is selected if it matches the current vote (optimistic or server)
+              const isSelected = userVotedOption === option.vote;
+              // Show loading spinner only on the option being voted for
+              const isOptionLoading = pendingVote === option.vote;
+
+              return (
+                <PollOption
+                  key={optionKey}
+                  option={option.name}
+                  isSelected={isSelected}
+                  isDisabled={!poll.isActive || !!readOnly || isBanned || !isOnboarded}
+                  isLoading={isOptionLoading}
+                  showResults={showResults}
+                  recentVoters={recentVoters}
+                  totalVoters={
+                    votePercentages.find((val) => val.vote === option.vote)?.count || 0
+                  }
+                  totalVotes={
+                    votePercentages.find((val) => val.vote === option.vote)?.percentage || 0
+                  }
+                  showAvatars={showAvatars}
+                  hasPrizePool={hasPrizePool}
+                  theme={theme}
+                  onClick={() => handleVote(option.vote)}
+                />
+              );
+            })}
           </div>
-        )}
+
+          {/* Poll Footer */}
+          {totalVotes > 0 && (showViewAllVotes ?? true) && (
+            <div className={`px-6 pb-6 transition-all duration-700 ease-in-out ${theme ? theme.footer : ''}`}>
+              <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
+                <span className="flex items-center space-x-1">
+                  <FiUsers className="w-4 h-4" />
+                  <span>
+                    {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
+                  </span>
+                </span>
+                <span className="text-xs">
+                  {entryFee > 0 ? `Entry: ₹${entryFee}` : 'Free Entry'}
+                </span>
+              </div>
+
+
+
+              {onShowVoters && (
+                <button
+                  type="button"
+                  onClick={() => onShowVoters(poll)}
+                  disabled={isLoadingVotes}
+                  className={`w-full text-center font-medium py-2.5 px-4 rounded-xl transition-all border shadow-sm ${isLoadingVotes
+                    ? "text-gray-400 dark:text-gray-500 cursor-not-allowed bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                    : theme
+                      ? `${theme.button} border-current/20`
+                      : "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:shadow-md"
+                    }`}
+                >
+                  {isLoadingVotes ? (
+                    <span className="flex items-center justify-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                      <span>Loading votes...</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <FiUsers className="w-4 h-4" />
+                      View all votes
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     );
   },

@@ -129,22 +129,41 @@ export async function getSoloTaxPool(seasonId: string): Promise<number> {
  */
 export async function addToSoloTaxPool(
     seasonId: string,
-    amount: number
+    amount: number,
+    donorName?: string
 ): Promise<void> {
     const existingPool = await prisma.soloTaxPool.findFirst({
         where: { seasonId },
     });
 
     if (existingPool) {
+        // Append new donor name if provided (don't duplicate)
+        let updatedDonorName = existingPool.donorName;
+        if (donorName && donorName.trim()) {
+            if (existingPool.donorName) {
+                // Check if this donor is already listed
+                const existingDonors = existingPool.donorName.split(", ");
+                if (!existingDonors.includes(donorName.trim())) {
+                    updatedDonorName = `${existingPool.donorName}, ${donorName.trim()}`;
+                }
+            } else {
+                updatedDonorName = donorName.trim();
+            }
+        }
+
         await prisma.soloTaxPool.update({
             where: { id: existingPool.id },
-            data: { amount: { increment: amount } },
+            data: {
+                amount: { increment: amount },
+                donorName: updatedDonorName,
+            },
         });
     } else {
         await prisma.soloTaxPool.create({
             data: {
                 seasonId,
                 amount,
+                donorName: donorName?.trim() || null,
             },
         });
     }

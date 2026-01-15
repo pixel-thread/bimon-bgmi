@@ -448,7 +448,18 @@ export async function POST(
 
       // Add 40% to solo tax pool for next tournament
       if (taxDist.poolAmount > 0) {
-        await addToSoloTaxPool(tournament.seasonId, taxDist.poolAmount);
+        // Get solo winner names for donor display (use displayName for prettier display)
+        const soloWinnerDisplayNames = await Promise.all(
+          allSoloTaxResults.map(async (r) => {
+            const player = await prisma.player.findUnique({
+              where: { id: r.playerId },
+              include: { user: { select: { displayName: true, userName: true } } },
+            });
+            return player?.user.displayName || player?.user.userName || "Unknown";
+          })
+        );
+        const donorName = soloWinnerDisplayNames.join(", ");
+        await addToSoloTaxPool(tournament.seasonId, taxDist.poolAmount, donorName);
       }
     }
 

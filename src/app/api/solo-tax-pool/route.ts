@@ -5,7 +5,7 @@ import { NextRequest } from "next/server";
 
 /**
  * GET /api/solo-tax-pool?seasonId=xxx
- * Returns the current solo tax pool amount for a season
+ * Returns the current solo tax pool amount and donor name for a season
  */
 export async function GET(req: NextRequest) {
     try {
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
         if (!seasonId) {
             return SuccessResponse({
                 message: "Solo tax pool",
-                data: { amount: 0 },
+                data: { amount: 0, donorName: null },
             });
         }
 
@@ -25,7 +25,10 @@ export async function GET(req: NextRequest) {
 
         return SuccessResponse({
             message: "Solo tax pool",
-            data: { amount: pool?.amount || 0 },
+            data: {
+                amount: pool?.amount || 0,
+                donorName: pool?.donorName || null,
+            },
         });
     } catch (error) {
         return handleApiErrors(error);

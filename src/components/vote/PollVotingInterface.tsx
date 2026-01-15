@@ -18,7 +18,8 @@ import { usePolls } from "@/src/hooks/poll/usePolls";
 import { PollT } from "@/src/types/poll";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { useSearchParams } from "next/navigation";
-import { SoloTaxBonusBanner } from "./SoloTaxBonusBanner";
+import { useQuery } from "@tanstack/react-query";
+import http from "@/src/utils/http";
 
 export interface PollVotingInterfaceProps {
   readOnly?: boolean;
@@ -57,6 +58,21 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
     await refetch();
     setRefetchingPollId(null);
   }, [refetch]);
+
+  // Fetch solo tax bonus pool for the current season
+  const seasonId = polls?.[0]?.tournament?.seasonId;
+  const { data: bonusPoolData } = useQuery({
+    queryKey: ["solo-tax-pool", seasonId],
+    queryFn: async (): Promise<{ amount: number; donorName: string | null }> => {
+      if (!seasonId) return { amount: 0, donorName: null };
+      const response = await http.get(`/solo-tax-pool?seasonId=${seasonId}`);
+      return (response.data as { amount: number; donorName: string | null }) || { amount: 0, donorName: null };
+    },
+    enabled: !!seasonId,
+    staleTime: 60000, // Cache for 1 minute
+  });
+  const bonusPool = bonusPoolData?.amount || 0;
+  const bonusDonorName = bonusPoolData?.donorName || null;
 
   // Render content based on state - all hooks must be called before any returns
   // Only require player login for voting, not for viewing
@@ -155,11 +171,6 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
 
 
 
-      {/* Solo Tax Bonus Pool Banner */}
-      {polls && polls.length > 0 && polls[0]?.tournament?.seasonId && (
-        <SoloTaxBonusBanner seasonId={polls[0].tournament.seasonId} />
-      )}
-
       <div className="space-y-4">
         {polls?.map((poll) => (
           <WhatsAppPollCard
@@ -169,6 +180,8 @@ const PollVotingInterface: React.FC<PollVotingInterfaceProps> = ({
             readOnly={false}
             isRefetching={refetchingPollId === poll.id}
             onRefetch={() => handlePollRefetch(poll.id)}
+            bonusPool={bonusPool}
+            bonusDonorName={bonusDonorName}
           />
         ))}
       </div>
