@@ -155,67 +155,65 @@ export function GameNameInput({
                 </label>
 
                 {readOnly ? (
-                    // Onboarding style: tap to paste with inline clear (clean, minimal)
-                    <div
-                        onClick={!disabled && !value && !clipboardDenied ? handlePaste : undefined}
-                        className={`relative min-h-[40px] rounded-md border bg-slate-50 dark:bg-slate-700/50 cursor-pointer active:scale-[0.99] transition-transform ${showError
-                            ? "border-red-500 ring-1 ring-red-500"
-                            : "border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500"
-                            } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                    >
-                        {/* Visible text layer (bottom, no pointer events) */}
+                    // Onboarding style: tap to paste with external clear button
+                    <div className="flex gap-2 items-center">
                         <div
-                            className={`px-3 py-2 pr-12 ${!value ? "text-slate-400 dark:text-slate-500" : "text-slate-800 dark:text-slate-200"}`}
-                            style={{
-                                WebkitUserSelect: 'none',
-                                userSelect: 'none'
-                            }}
+                            onClick={!disabled && !value ? handlePaste : undefined}
+                            className={`relative flex-1 min-h-[40px] rounded-md border bg-slate-50 dark:bg-slate-700/50 cursor-pointer active:scale-[0.99] transition-transform ${showError
+                                ? "border-red-500 ring-1 ring-red-500"
+                                : "border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500"
+                                } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
-                            <span className="truncate block">{value || (clipboardDenied ? "Long press to paste" : "Tap to paste")}</span>
+                            {/* Visible text layer */}
+                            <div
+                                className={`px-3 py-2 ${!value ? "text-slate-400 dark:text-slate-500" : "text-slate-800 dark:text-slate-200"}`}
+                                style={{
+                                    WebkitUserSelect: 'none',
+                                    userSelect: 'none'
+                                }}
+                            >
+                                <span className="truncate block">{value || (clipboardDenied ? "Long press to paste" : "Tap to paste")}</span>
+                            </div>
+
+                            {/* ContentEditable layer (captures long-press paste) */}
+                            <div
+                                id="gameName"
+                                contentEditable
+                                suppressContentEditableWarning
+                                inputMode="none"
+                                onPaste={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setTouched(true);
+                                    const pastedText = e.clipboardData.getData("text");
+                                    if (pastedText.trim()) {
+                                        processPastedText(pastedText);
+                                    }
+                                    (e.target as HTMLElement).blur();
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => e.preventDefault()}
+                                onInput={(e) => {
+                                    (e.target as HTMLElement).textContent = '';
+                                }}
+                                className="absolute inset-0 z-10 px-3 py-2 opacity-0"
+                                style={{
+                                    caretColor: 'transparent',
+                                    WebkitUserSelect: 'text',
+                                    userSelect: 'text'
+                                }}
+                            />
                         </div>
 
-                        {/* ContentEditable layer (middle, captures long-press paste) */}
-                        <div
-                            id="gameName"
-                            contentEditable
-                            suppressContentEditableWarning
-                            inputMode="none"
-                            onPaste={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setTouched(true);
-                                const pastedText = e.clipboardData.getData("text");
-                                if (pastedText.trim()) {
-                                    processPastedText(pastedText);
-                                }
-                                (e.target as HTMLElement).blur();
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => e.preventDefault()}
-                            onInput={(e) => {
-                                (e.target as HTMLElement).textContent = '';
-                            }}
-                            className="absolute inset-0 z-10 px-3 py-2 opacity-0"
-                            style={{
-                                caretColor: 'transparent',
-                                WebkitUserSelect: 'text',
-                                userSelect: 'text'
-                            }}
-                        />
-
-                        {/* Clear button (top, highest z-index) */}
+                        {/* Clear button - outside input, only visible when has value */}
                         {value && !disabled && (
                             <button
                                 type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    handleClear();
-                                }}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-1.5 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"
+                                onClick={handleClear}
+                                className="p-2 rounded-md bg-red-500 hover:bg-red-600 text-white transition-colors shrink-0"
                                 title="Clear"
                             >
-                                <FiX className="w-4 h-4" />
+                                <FiX className="w-5 h-5" />
                             </button>
                         )}
                     </div>
