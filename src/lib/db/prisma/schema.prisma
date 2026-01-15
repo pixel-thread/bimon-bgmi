@@ -84,6 +84,12 @@ enum TeamType {
   DYNAMIC
 }
 
+enum ReferralStatus {
+  PENDING    // Signed up, < 5 tournaments completed
+  QUALIFIED  // Completed 5 tournaments
+  PAID       // Commission credited to promoter
+}
+
 /**
  * --------------------------
  * MODELS
@@ -107,11 +113,19 @@ model User {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
+  // Promoter fields
+  isPromoter       Boolean  @default(false)
+  referralCode     String?  @unique  // Unique code for referral links, e.g., "bimon123"
+  promoterEarnings Int      @default(0)  // Total UC earned from referrals
+
   playerId  String? @unique
   ucId      String?
   uc        UC?
   player    Player?
   createdBy String?
+  
+  // Referrals given by this user as a promoter
+  referralsGiven Referral[] @relation("PromoterReferrals")
 }
 
 model Notification {
@@ -359,6 +373,9 @@ model Player {
   jobListings        PlayerJobListing[]
   meritRatingsGiven    PlayerMeritRating[] @relation("MeritGiven")
   meritRatingsReceived PlayerMeritRating[] @relation("MeritReceived")
+  
+  // Referral tracking - if this player was referred
+  referral             Referral?
 
   @@index([userId])
   @@index([pollId])
@@ -755,4 +772,22 @@ model AppSetting {
   value     String
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+}
+
+// Track referrals from promoters to new players
+model Referral {
+  id                    String         @id @default(uuid())
+  promoterId            String         // User.id who referred (the promoter)
+  promoter              User           @relation("PromoterReferrals", fields: [promoterId], references: [id], onDelete: Cascade)
+  referredPlayerId      String         @unique  // Player.id who was referred (unique = 1 referral per player)
+  referredPlayer        Player         @relation(fields: [referredPlayerId], references: [id], onDelete: Cascade)
+  status                ReferralStatus @default(PENDING) // PENDING -> QUALIFIED -> PAID
+  tournamentsCompleted  Int            @default(0)  // Track progress toward 5 tournaments
+  qualifiedAt           DateTime?      // When they hit 5 tournaments
+  paidAt                DateTime?      // When commission was credited to promoter
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@index([promoterId])
+  @@index([status])
 }

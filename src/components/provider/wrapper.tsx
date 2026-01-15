@@ -13,8 +13,9 @@ import { RouteRestorerProvider } from "../pwa/RouteRestorer";
 import { AdSenseScript } from "../common/AdSenseScript";
 import { PostHogProvider } from "./PostHogProvider";
 import { ErrorBoundary } from "../common/ErrorBoundary";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useServiceWorkerUpdate, setupChunkErrorHandler } from "@/src/hooks/useServiceWorkerUpdate";
+import { ReferralCapture } from "../common/ReferralCapture";
 
 type Props = {
   children: React.ReactNode;
@@ -62,6 +63,10 @@ function ClerkContent({ children }: { children: React.ReactNode }) {
 
   return (
     <ClerkLoadingGate>
+      {/* Capture referral codes from URL - must be in Suspense due to useSearchParams */}
+      <Suspense fallback={null}>
+        <ReferralCapture />
+      </Suspense>
       <CookiesProvider
         defaultSetOptions={{
           path: "/",

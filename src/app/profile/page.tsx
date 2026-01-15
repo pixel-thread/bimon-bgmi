@@ -10,10 +10,11 @@ import { Skeleton } from "@/src/components/ui/skeleton";
 import { ProfileSettings } from "@/src/components/profile/ProfileSettings";
 import { AddBalanceDialog } from "@/src/components/profile/AddBalanceDialog";
 import { JobListingManager } from "@/src/components/profile/JobListingManager";
+import { PromoterTab } from "@/src/components/profile/PromoterTab";
 import {
     Bell, Check, X, ArrowUpRight, ArrowDownLeft, Clock, DollarSign,
     User, Target, Swords, TrendingUp, TrendingDown, Minus, Settings,
-    Trophy, Calendar, Star, Medal, ShieldAlert, History, ChevronLeft, ChevronRight, Loader2
+    Trophy, Calendar, Star, Medal, ShieldAlert, History, ChevronLeft, ChevronRight, Loader2, Gift
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
@@ -425,17 +426,21 @@ export default function ProfilePage() {
 
 
             <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 max-w-md bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl">
+                <TabsList className="grid w-full grid-cols-3 max-w-lg bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl">
                     <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-violet-600 data-[state=active]:dark:text-violet-400 data-[state=active]:shadow-md rounded-lg font-medium">
                         <User className="w-4 h-4" />
                         Overview
                     </TabsTrigger>
                     <TabsTrigger value="account" className="relative flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-violet-600 data-[state=active]:dark:text-violet-400 data-[state=active]:shadow-md rounded-lg font-medium">
                         <Settings className="w-4 h-4" />
-                        Account Settings
+                        Settings
                         {showDisplayNameGuide && (
                             <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-blue-500 rounded-full animate-pulse border-2 border-white dark:border-zinc-900"></span>
                         )}
+                    </TabsTrigger>
+                    <TabsTrigger value="promoter" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-amber-600 data-[state=active]:dark:text-amber-400 data-[state=active]:shadow-md rounded-lg font-medium">
+                        <Gift className="w-4 h-4" />
+                        Promoter
                     </TabsTrigger>
                 </TabsList>
 
@@ -826,6 +831,11 @@ export default function ProfilePage() {
                 {/* Account Settings Tab */}
                 <TabsContent value="account" className="mt-6">
                     <ProfileSettings />
+                </TabsContent>
+
+                {/* Promoter Tab */}
+                <TabsContent value="promoter" className="mt-6">
+                    <PromoterTab />
                 </TabsContent>
             </Tabs>
         </div>

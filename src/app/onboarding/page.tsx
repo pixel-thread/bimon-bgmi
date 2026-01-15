@@ -12,6 +12,7 @@ import { Input } from "@/src/components/ui/input";
 import { LoaderFive } from "@/src/components/ui/loader";
 import { FiCheck, FiAlertCircle } from "react-icons/fi";
 import { GameNameInput, validateDisplayName } from "@/src/components/common/GameNameInput";
+import { getStoredReferralCode, clearStoredReferralCode } from "@/src/components/common/ReferralCapture";
 
 export default function OnboardingPage() {
     const { user, refreshAuth } = useAuth();
@@ -60,9 +61,11 @@ export default function OnboardingPage() {
     };
 
     const { mutate: submitUsernames, isPending } = useMutation({
-        mutationFn: (data: { userName: string; displayName: string; dateOfBirth?: string }) =>
+        mutationFn: (data: { userName: string; displayName: string; dateOfBirth?: string; referralCode?: string }) =>
             http.post("/onboarding", data),
         onSuccess: () => {
+            // Clear stored referral code after successful signup
+            clearStoredReferralCode();
             toast.success("Welcome to PUBGMI Tournament! Your account is ready.");
             refreshAuth();
             router.push("/?welcome=1");
@@ -94,9 +97,14 @@ export default function OnboardingPage() {
 
         setUserNameError("");
         setDisplayNameError("");
+
+        // Get referral code from localStorage (if any)
+        const referralCode = getStoredReferralCode() || undefined;
+
         submitUsernames({
             userName,
             displayName,
+            referralCode,
         });
     };
 

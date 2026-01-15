@@ -22,6 +22,7 @@ const onboardingSchema = z.object({
         .min(2, "IGN must be at least 2 characters")
         .max(50, "IGN must be at most 50 characters"),
     dateOfBirth: z.string().optional().transform((val) => val ? new Date(val) : undefined),
+    referralCode: z.string().optional(),  // Optional referral code from promoter
 });
 
 export async function POST(req: Request) {
@@ -37,7 +38,20 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { userName, displayName, dateOfBirth } = onboardingSchema.parse(body);
+        const { userName, displayName, dateOfBirth, referralCode } = onboardingSchema.parse(body);
+
+        // Validate referral code if provided
+        let promoterUser = null;
+        if (referralCode) {
+            promoterUser = await prisma.user.findUnique({
+                where: { referralCode },
+                select: { id: true, clerkId: true },
+            });
+            // Block self-referral: if promoter's clerkId matches current user's clerkId, ignore
+            if (promoterUser && promoterUser.clerkId === user.clerkId) {
+                promoterUser = null; // Ignore self-referral
+            }
+        }
 
         // Check if username is already taken
         const existingUser = await prisma.user.findUnique({
@@ -111,6 +125,18 @@ export async function POST(req: Request) {
                     },
                 },
             });
+
+            // 5. Create Referral record if valid promoter exists
+            if (promoterUser) {
+                await tx.referral.create({
+                    data: {
+                        promoterId: promoterUser.id,
+                        referredPlayerId: player.id,
+                        status: "PENDING",
+                        tournamentsCompleted: 0,
+                    },
+                });
+            }
 
             return updated;
         });

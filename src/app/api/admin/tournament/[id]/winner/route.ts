@@ -14,6 +14,7 @@ import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
 import { resetMeritAfterSolo } from "@/src/services/merit/calculateMerit";
+import { processReferralCommission } from "@/src/services/referral/processReferralCommission";
 
 export async function GET(
   req: NextRequest,
@@ -307,6 +308,10 @@ export async function POST(
           });
         }
       }
+
+      // Process referral commission for each tournament participant
+      // Increments their tournament count and credits promoter if they hit 5
+      await processReferralCommission(playerId);
     }
 
     // Calculate total repeat winner tax contributions
