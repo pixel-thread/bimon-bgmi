@@ -157,7 +157,7 @@ export function GameNameInput({
                 {readOnly ? (
                     // Onboarding style: tap to paste with inline clear (clean, minimal)
                     <div
-                        onClick={!disabled && !value ? handlePaste : undefined}
+                        onClick={!disabled && !value && !clipboardDenied ? handlePaste : undefined}
                         className={`relative min-h-[40px] rounded-md border bg-slate-50 dark:bg-slate-700/50 cursor-pointer active:scale-[0.99] transition-transform ${showError
                             ? "border-red-500 ring-1 ring-red-500"
                             : "border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500"
@@ -182,6 +182,7 @@ export function GameNameInput({
                             inputMode="none"
                             onPaste={(e) => {
                                 e.preventDefault();
+                                e.stopPropagation();
                                 setTouched(true);
                                 const pastedText = e.clipboardData.getData("text");
                                 if (pastedText.trim()) {
@@ -189,6 +190,7 @@ export function GameNameInput({
                                 }
                                 (e.target as HTMLElement).blur();
                             }}
+                            onClick={(e) => e.stopPropagation()}
                             onKeyDown={(e) => e.preventDefault()}
                             onInput={(e) => {
                                 (e.target as HTMLElement).textContent = '';
@@ -210,7 +212,7 @@ export function GameNameInput({
                                     e.preventDefault();
                                     handleClear();
                                 }}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-1.5 rounded-full bg-slate-200 dark:bg-slate-600 hover:bg-red-100 dark:hover:bg-red-900/50 text-slate-500 hover:text-red-500 transition-colors"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-1.5 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"
                                 title="Clear"
                             >
                                 <FiX className="w-4 h-4" />
