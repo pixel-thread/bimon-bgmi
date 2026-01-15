@@ -358,8 +358,10 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
         {/* Bonus Pool Tag - Outside but attached to poll */}
         {bonusPool > 0 && theme && (
           <div className="flex justify-center mb-[-8px] relative z-10">
-            <div className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r ${theme.header} text-white text-sm font-semibold shadow-lg`}>
-              <span>{bonusDonorName || "Community"} donated ₹{bonusPool.toLocaleString()}</span>
+            <div className={`inline-flex items-center px-4 py-1.5 rounded-lg bg-gradient-to-r ${theme.header} text-white text-sm font-semibold shadow-lg`}>
+              <span>{bonusDonorName || "Community"} donated&nbsp;</span>
+              <SlotMachineCounter value={bonusPool} animateFromZero />
+              <span>&nbsp;UC</span>
             </div>
           </div>
         )}
@@ -463,11 +465,12 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                         <span className="text-3xl">🏆</span>
                         <div className="text-center">
                           <p className="text-xs font-medium text-white/80 uppercase tracking-widest">Prize Pool</p>
-                          <p className="text-2xl font-black text-white drop-shadow-lg">
+                          <p className="text-2xl font-black text-white drop-shadow-lg inline-flex items-center">
                             <SlotMachineCounter
                               value={prizePool + bonusPool}
-                              prefix="₹"
+                              animateFromZero
                             />
+                            <span className="ml-1">UC</span>
                           </p>
                         </div>
                       </div>

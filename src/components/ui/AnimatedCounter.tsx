@@ -7,6 +7,7 @@ interface SlotMachineCounterProps {
     className?: string;
     prefix?: string;
     suffix?: string;
+    animateFromZero?: boolean; // If true, always animate from 0 on mount
 }
 
 // Create a reel with numbers for smooth scrolling (0-9 repeated for wrap-around)
@@ -16,20 +17,37 @@ const REEL = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '
 const SlotDigit: React.FC<{
     digit: string;
     shouldAnimate: boolean;
-}> = ({ digit, shouldAnimate }) => {
+    animateFromZero?: boolean;
+}> = ({ digit, shouldAnimate, animateFromZero = false }) => {
     const digitNum = parseInt(digit) || 0;
-    const [position, setPosition] = useState(digitNum);
+    // Start at 0 if animateFromZero, otherwise start at target
+    const [position, setPosition] = useState(animateFromZero ? 0 : digitNum);
     const [isAnimating, setIsAnimating] = useState(false);
-    const prevDigitRef = useRef(digit);
+    const prevDigitRef = useRef(animateFromZero ? '0' : digit);
     const isFirstRender = useRef(true);
 
     useEffect(() => {
-        // On first render, just set position without animation
+        // On first render
         if (isFirstRender.current) {
             isFirstRender.current = false;
-            setPosition(digitNum);
-            prevDigitRef.current = digit;
-            return;
+
+            // If animateFromZero is true, animate from 0 to the digit
+            if (animateFromZero && digitNum > 0) {
+                // Start animation after a small delay to ensure render is complete
+                const timer = setTimeout(() => {
+                    setIsAnimating(true);
+                    setPosition(digitNum);
+                    setTimeout(() => {
+                        setIsAnimating(false);
+                        prevDigitRef.current = digit;
+                    }, 1200);
+                }, 50);
+                return () => clearTimeout(timer);
+            } else {
+                setPosition(digitNum);
+                prevDigitRef.current = digit;
+                return;
+            }
         }
 
         if (digit === prevDigitRef.current) return;
@@ -76,7 +94,7 @@ const SlotDigit: React.FC<{
             setPosition(targetDigit);
             prevDigitRef.current = digit;
         }
-    }, [digit, digitNum, shouldAnimate]);
+    }, [digit, digitNum, shouldAnimate, animateFromZero]);
 
     // For non-numeric characters (comma, space)
     if (isNaN(parseInt(digit))) {
@@ -89,7 +107,7 @@ const SlotDigit: React.FC<{
         <span
             className="inline-block relative overflow-hidden"
             style={{
-                width: '0.65em',
+                width: '0.55em',
                 height: `${itemHeight}em`,
                 verticalAlign: 'middle'
             }}
@@ -122,6 +140,7 @@ export const SlotMachineCounter: React.FC<SlotMachineCounterProps> = ({
     className = "",
     prefix = "",
     suffix = "",
+    animateFromZero = false,
 }) => {
     const [displayValue, setDisplayValue] = useState(value.toLocaleString());
     const [shouldAnimate, setShouldAnimate] = useState(true);
@@ -141,6 +160,7 @@ export const SlotMachineCounter: React.FC<SlotMachineCounterProps> = ({
                         key={`${index}-${digits.length}`}
                         digit={digit}
                         shouldAnimate={shouldAnimate}
+                        animateFromZero={animateFromZero}
                     />
                 ))}
             </span>
