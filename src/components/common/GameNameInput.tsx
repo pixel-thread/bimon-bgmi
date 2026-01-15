@@ -153,13 +153,14 @@ export function GameNameInput({
                 </label>
 
                 {readOnly ? (
-                    // Onboarding style: paste-only with buttons (allows native paste, no keyboard)
+                    // Onboarding style: paste-only with buttons (editable for paste popup, but blocks typing)
                     <div className="flex gap-2">
                         <Input
                             id="gameName"
                             type="text"
                             value={value}
-                            readOnly
+                            onChange={() => { }} // Block typing - only paste works
+                            onKeyDown={handleKeyDown}
                             inputMode="none"
                             onPaste={handleNativePaste}
                             placeholder="Long press to paste"
