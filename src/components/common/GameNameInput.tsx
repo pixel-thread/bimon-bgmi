@@ -153,23 +153,46 @@ export function GameNameInput({
                 </label>
 
                 {readOnly ? (
-                    // Onboarding style: paste-only with buttons (editable for paste popup, but blocks typing)
+                    // Onboarding style: paste-only with buttons (uses contentEditable for paste popup, no keyboard)
                     <div className="flex gap-2">
-                        <Input
+                        <div
                             id="gameName"
-                            type="text"
-                            value={value}
-                            onChange={() => { }} // Block typing - only paste works
-                            onKeyDown={handleKeyDown}
+                            contentEditable
+                            suppressContentEditableWarning
                             inputMode="none"
-                            onPaste={handleNativePaste}
-                            placeholder="Long press to paste"
-                            className={`w-full bg-slate-50 dark:bg-slate-700/50 ${showError
-                                ? "border-red-500 focus-visible:ring-red-500"
-                                : "focus-visible:ring-indigo-500"
-                                }`}
-                            disabled={disabled}
-                        />
+                            onPaste={(e) => {
+                                e.preventDefault();
+                                setTouched(true);
+                                const pastedText = e.clipboardData.getData("text");
+                                if (pastedText.trim()) {
+                                    processPastedText(pastedText);
+                                }
+                                // Blur to close any popups
+                                (e.target as HTMLElement).blur();
+                            }}
+                            onKeyDown={(e) => e.preventDefault()} // Block all keyboard input
+                            onInput={(e) => {
+                                // Reset content if somehow changed (safety)
+                                (e.target as HTMLElement).textContent = value || '';
+                            }}
+                            onFocus={(e) => {
+                                // Blur quickly to prevent keyboard, but allow paste popup to appear
+                                setTimeout(() => {
+                                    // Don't blur if there's text selected or paste menu is open
+                                    const selection = window.getSelection();
+                                    if (!selection || selection.toString().length === 0) {
+                                        // Blur after slight delay to allow paste popup
+                                    }
+                                }, 300);
+                            }}
+                            className={`flex-1 px-3 py-2 rounded-md border bg-slate-50 dark:bg-slate-700/50 text-slate-800 dark:text-slate-200 min-h-[40px] flex items-center ${showError
+                                ? "border-red-500 ring-1 ring-red-500"
+                                : "border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                } ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${!value ? "text-slate-400 dark:text-slate-500" : ""}`}
+                            style={{ outline: 'none', WebkitUserSelect: 'text', userSelect: 'text' }}
+                        >
+                            {value || "Long press to paste"}
+                        </div>
                         {value ? (
                             <Button
                                 type="button"
