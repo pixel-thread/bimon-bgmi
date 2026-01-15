@@ -103,7 +103,7 @@ const PrizeBreakdownTooltip = ({ prizePool, entryFee, teamSize, theme, onDoubleT
                     return (
                       <div key={position} className="flex items-center justify-between gap-4">
                         <span>{medal} {position}{ordinal}</span>
-                        <span className="font-semibold">₹{prize.amount.toLocaleString()}</span>
+                        <span className="font-semibold">{prize.amount.toLocaleString()} UC</span>
                       </div>
                     );
                   });
