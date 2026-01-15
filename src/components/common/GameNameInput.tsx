@@ -185,13 +185,19 @@ export function GameNameInput({
                                     e.preventDefault();
                                     e.stopPropagation();
                                     setTouched(true);
-                                    const pastedText = e.clipboardData.getData("text");
-                                    if (pastedText.trim()) {
+                                    const pastedText = e.clipboardData.getData("text").trim();
+                                    if (pastedText) {
                                         processPastedText(pastedText);
                                     }
                                     (e.target as HTMLElement).blur();
                                 }}
-                                onClick={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                    // Only trigger paste via click if not already has value
+                                    if (!disabled && !value) {
+                                        e.stopPropagation();
+                                        handlePaste();
+                                    }
+                                }}
                                 onKeyDown={(e) => e.preventDefault()}
                                 onInput={(e) => {
                                     (e.target as HTMLElement).textContent = '';
