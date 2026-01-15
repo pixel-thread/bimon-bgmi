@@ -153,15 +153,16 @@ export function GameNameInput({
                 </label>
 
                 {readOnly ? (
-                    // Onboarding style: paste-only with buttons (tap to paste, no keyboard)
+                    // Onboarding style: paste-only with buttons (tap to paste automatically)
                     <div className="flex gap-2">
                         <div
-                            className={`relative flex-1 min-h-[40px] rounded-md border bg-slate-50 dark:bg-slate-700/50 ${showError
+                            onClick={!disabled && !value ? handlePaste : undefined}
+                            className={`relative flex-1 min-h-[40px] rounded-md border bg-slate-50 dark:bg-slate-700/50 cursor-pointer active:scale-[0.98] transition-transform ${showError
                                 ? "border-red-500 ring-1 ring-red-500"
-                                : "border-slate-300 dark:border-slate-600 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500"
+                                : "border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500"
                                 } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
-                            {/* Hidden contentEditable that captures paste */}
+                            {/* Hidden contentEditable that captures long-press paste */}
                             <div
                                 id="gameName"
                                 contentEditable
