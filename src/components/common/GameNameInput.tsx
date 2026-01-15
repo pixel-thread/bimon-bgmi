@@ -153,45 +153,50 @@ export function GameNameInput({
                 </label>
 
                 {readOnly ? (
-                    // Onboarding style: paste-only with buttons (uses contentEditable for paste popup, no keyboard)
+                    // Onboarding style: paste-only with buttons (tap to paste, no keyboard)
                     <div className="flex gap-2">
                         <div
-                            id="gameName"
-                            contentEditable
-                            suppressContentEditableWarning
-                            inputMode="none"
-                            onPaste={(e) => {
-                                e.preventDefault();
-                                setTouched(true);
-                                const pastedText = e.clipboardData.getData("text");
-                                if (pastedText.trim()) {
-                                    processPastedText(pastedText);
-                                }
-                                // Blur to close any popups
-                                (e.target as HTMLElement).blur();
-                            }}
-                            onKeyDown={(e) => e.preventDefault()} // Block all keyboard input
-                            onInput={(e) => {
-                                // Reset content if somehow changed (safety)
-                                (e.target as HTMLElement).textContent = value || '';
-                            }}
-                            onFocus={(e) => {
-                                // Blur quickly to prevent keyboard, but allow paste popup to appear
-                                setTimeout(() => {
-                                    // Don't blur if there's text selected or paste menu is open
-                                    const selection = window.getSelection();
-                                    if (!selection || selection.toString().length === 0) {
-                                        // Blur after slight delay to allow paste popup
-                                    }
-                                }, 300);
-                            }}
-                            className={`flex-1 px-3 py-2 rounded-md border bg-slate-50 dark:bg-slate-700/50 text-slate-800 dark:text-slate-200 min-h-[40px] flex items-center ${showError
+                            className={`relative flex-1 min-h-[40px] rounded-md border bg-slate-50 dark:bg-slate-700/50 ${showError
                                 ? "border-red-500 ring-1 ring-red-500"
-                                : "border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                } ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${!value ? "text-slate-400 dark:text-slate-500" : ""}`}
-                            style={{ outline: 'none', WebkitUserSelect: 'text', userSelect: 'text' }}
+                                : "border-slate-300 dark:border-slate-600 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500"
+                                } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
-                            {value || "Long press to paste"}
+                            {/* Hidden contentEditable that captures paste */}
+                            <div
+                                id="gameName"
+                                contentEditable
+                                suppressContentEditableWarning
+                                inputMode="none"
+                                onPaste={(e) => {
+                                    e.preventDefault();
+                                    setTouched(true);
+                                    const pastedText = e.clipboardData.getData("text");
+                                    if (pastedText.trim()) {
+                                        processPastedText(pastedText);
+                                    }
+                                    (e.target as HTMLElement).blur();
+                                }}
+                                onKeyDown={(e) => e.preventDefault()}
+                                onInput={(e) => {
+                                    (e.target as HTMLElement).textContent = '';
+                                }}
+                                className="absolute inset-0 px-3 py-2 opacity-0"
+                                style={{
+                                    caretColor: 'transparent',
+                                    WebkitUserSelect: 'none',
+                                    userSelect: 'none'
+                                }}
+                            />
+                            {/* Visible display layer */}
+                            <div
+                                className={`px-3 py-2 flex items-center pointer-events-none ${!value ? "text-slate-400 dark:text-slate-500" : "text-slate-800 dark:text-slate-200"}`}
+                                style={{
+                                    WebkitUserSelect: 'none',
+                                    userSelect: 'none'
+                                }}
+                            >
+                                {value || "Tap to paste"}
+                            </div>
                         </div>
                         {value ? (
                             <Button
