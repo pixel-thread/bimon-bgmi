@@ -8,12 +8,12 @@ import { Button } from "@/src/components/ui/button";
 // Tutorial steps with images
 const TUTORIAL_STEPS = [
     {
-        image: "/images/ign-step-1.png",
+        image: "/images/ign-step-1.webp",
         title: "Step 1: Open Profile",
         description: "Click the avatar/profile icon on top left corner",
     },
     {
-        image: "/images/ign-step-2.png",
+        image: "/images/ign-step-2.webp",
         title: "Step 2: Copy Game Name",
         description: "Click the 📋 icon to copy your game name",
     },

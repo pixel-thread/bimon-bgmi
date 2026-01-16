@@ -1,7 +1,7 @@
 import { getActiveSeason } from "@/src/services/season/getActiveSeason";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
-import { SuccessResponse } from "@/src/utils/next-response";
+import { SuccessResponse, CACHE_HEADERS } from "@/src/utils/next-response";
 import { prisma } from "@/src/lib/db/prisma";
 
 /**
@@ -24,6 +24,7 @@ export async function GET(req: Request) {
                     latestTournamentId: null,
                 },
                 message: "No active season found",
+                headers: CACHE_HEADERS.MEDIUM,
             });
         }
 
@@ -40,8 +41,10 @@ export async function GET(req: Request) {
                 latestTournamentId: latestTournament?.id || null,
             },
             message: "Context loaded successfully",
+            headers: CACHE_HEADERS.MEDIUM,
         });
     } catch (error) {
         return handleApiErrors(error);
     }
 }
+

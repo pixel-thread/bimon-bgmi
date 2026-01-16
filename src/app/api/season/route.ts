@@ -1,7 +1,7 @@
 import { getAllSeasons } from "@/src/services/season/getAllSeason";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
-import { SuccessResponse } from "@/src/utils/next-response";
+import { SuccessResponse, CACHE_HEADERS } from "@/src/utils/next-response";
 
 export async function GET(req: Request) {
   try {
@@ -10,8 +10,10 @@ export async function GET(req: Request) {
     return SuccessResponse({
       data: season,
       message: "Seasons fetched successfully",
+      headers: CACHE_HEADERS.MEDIUM,
     });
   } catch (error) {
     return handleApiErrors(error);
   }
 }
+

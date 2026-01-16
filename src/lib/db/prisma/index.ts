@@ -7,10 +7,10 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    // BUG: Should remove when deploy on vps
+    // Reasonable timeouts for serverless (Vercel)
     transactionOptions: {
-      maxWait: 600000, // 10 minutes
-      timeout: 600000, // 10 minutes
+      maxWait: 5000,  // 5 seconds max wait for transaction slot
+      timeout: 10000, // 10 seconds max transaction duration
     },
     log:
       process.env.NODE_ENV === "production"
@@ -19,6 +19,8 @@ export const prisma =
     errorFormat: "colorless",
   });
 
+// Cache prisma instance in production too (reduces cold start overhead)
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
+

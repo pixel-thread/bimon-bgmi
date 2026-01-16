@@ -8,6 +8,7 @@ interface Props<T> {
   meta?: MetaT;
   status?: HttpStatusCode;
   token?: string;
+  headers?: Record<string, string>;
 }
 
 export const SuccessResponse = <T>({
@@ -16,6 +17,7 @@ export const SuccessResponse = <T>({
   status = 200,
   meta,
   token,
+  headers,
 }: Props<T>) => {
   return NextResponse.json(
     {
@@ -26,6 +28,19 @@ export const SuccessResponse = <T>({
       meta: meta,
       timeStamp: new Date().toISOString(),
     },
-    { status: status },
+    { status: status, headers: headers },
   );
+};
+
+/**
+ * Cache header presets for Vercel edge caching
+ * s-maxage = CDN cache time, stale-while-revalidate = serve stale while fetching fresh
+ */
+export const CACHE_HEADERS = {
+  /** Short cache: 1 min CDN, 5 min stale-while-revalidate */
+  SHORT: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+  /** Medium cache: 5 min CDN, 10 min stale-while-revalidate */
+  MEDIUM: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },
+  /** No cache: for user-specific or frequently changing data */
+  NONE: { "Cache-Control": "no-store, no-cache, must-revalidate" },
 };

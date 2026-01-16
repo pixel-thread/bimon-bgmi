@@ -23,7 +23,7 @@ interface OverallStandingModalProps {
 export default function OverallStandingModal({
   visible,
   onClose,
-  backgroundImage = "/images/image.png",
+  backgroundImage = "/images/image.webp",
   tournamentTitle,
   maxMatchNumber,
   initialTeams,

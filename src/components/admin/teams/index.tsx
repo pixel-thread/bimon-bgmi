@@ -364,7 +364,7 @@ export const AdminTeamsManagement: React.FC = () => {
       <OverallStandingModal
         visible={showStandingsModal}
         onClose={() => setShowStandingsModal(false)}
-        backgroundImage={globalBackground?.publicUrl || "/images/image.png"}
+        backgroundImage={globalBackground?.publicUrl || "/images/image.webp"}
         tournamentTitle={tournament?.name || "Tournament"}
         maxMatchNumber={1}
         initialTeams={teams as any}
