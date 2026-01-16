@@ -75,9 +75,37 @@ export default function Navigation() {
     const { hasPendingRequests } = usePendingUCRequests();
     const { theme, setTheme } = useTheme();
 
+    // Track if promoter tab has been visited (to show "New" indicator)
+    const [hasVisitedPromoter, setHasVisitedPromoter] = useState(() => {
+        if (typeof window !== "undefined") {
+            return localStorage.getItem("bimon_promoter_tab_visited") === "true";
+        }
+        return false;
+    });
+
+    // Show new promoter indicator only for authenticated users who haven't visited
+    const showPromoterNew = isAuthorized && !hasVisitedPromoter;
+
     // Ensure portal only renders on client
     useEffect(() => {
         setMounted(true);
+    }, []);
+
+    // Listen for storage changes (when profile page marks promoter as visited)
+    useEffect(() => {
+        const handleStorageChange = () => {
+            const visited = localStorage.getItem("bimon_promoter_tab_visited") === "true";
+            setHasVisitedPromoter(visited);
+        };
+
+        // Listen for storage events (cross-tab) and custom events (same-tab)
+        window.addEventListener("storage", handleStorageChange);
+        window.addEventListener("promoter-visited", handleStorageChange);
+
+        return () => {
+            window.removeEventListener("storage", handleStorageChange);
+            window.removeEventListener("promoter-visited", handleStorageChange);
+        };
     }, []);
 
     // Close sidebar when navigation completes
@@ -222,7 +250,7 @@ export default function Navigation() {
             {/* Mobile Hamburger Button - Inline in header */}
             <motion.button
                 whileTap={{ scale: 0.95 }}
-                className="md:hidden p-2"
+                className="md:hidden p-2 relative"
                 onClick={() => setIsOpen(!isOpen)}
                 aria-label="Toggle menu"
             >
@@ -236,8 +264,8 @@ export default function Navigation() {
                         <FiMenu className="h-6 w-6 text-gray-900 dark:text-white" />
                     )}
                 </motion.div>
-                {hasPendingRequests && !isOpen && (
-                    <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+                {(hasPendingRequests || showPromoterNew) && !isOpen && (
+                    <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-red-500"></span>
                 )}
             </motion.button>
 
@@ -418,8 +446,8 @@ export default function Navigation() {
                                                         </span>
                                                     )}
                                                 </div>
-                                                {!isNavigatingToProfile && hasPendingRequests && (
-                                                    <span className="h-2 w-2 bg-red-500 rounded-full animate-pulse flex-shrink-0"></span>
+                                                {!isNavigatingToProfile && (hasPendingRequests || showPromoterNew) && (
+                                                    <span className="h-2 w-2 rounded-full animate-pulse flex-shrink-0 bg-red-500"></span>
                                                 )}
                                             </motion.button>
                                         );

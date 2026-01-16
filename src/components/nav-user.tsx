@@ -22,7 +22,7 @@ export function NavUser() {
   const pathname = usePathname();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const isProfileActive = pathname === "/admin/profile";
+  const isProfileActive = pathname === "/profile";
 
   // Get profile image: custom characterImage > Clerk image > fallback
   const profileImage = user?.player?.characterImage?.publicUrl || clerkUser?.imageUrl;
@@ -46,7 +46,7 @@ export function NavUser() {
       <SidebarMenuItem>
         <SidebarMenuButton
           size="lg"
-          onClick={() => router.push("/admin/profile")}
+          onClick={() => router.push("/profile")}
           className={cn(
             "data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer transition-all",
             isProfileActive && "bg-primary/10 border border-primary/20"

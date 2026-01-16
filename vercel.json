@@ -1,8 +1,3 @@
 {
-    "crons": [
-        {
-            "path": "/api/cron/record-daily-metrics",
-            "schedule": "30 18 * * *"
-        }
-    ]
+    "crons": []
 }

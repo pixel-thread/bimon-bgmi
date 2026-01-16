@@ -14,7 +14,7 @@ import { PromoterTab } from "@/src/components/profile/PromoterTab";
 import {
     Bell, Check, X, ArrowUpRight, ArrowDownLeft, Clock, DollarSign,
     User, Target, Swords, TrendingUp, TrendingDown, Minus, Settings,
-    Trophy, Calendar, Star, Medal, ShieldAlert, History, ChevronLeft, ChevronRight, Loader2, Gift
+    Trophy, Calendar, Star, Medal, ShieldAlert, History, ChevronLeft, ChevronRight, Loader2, Gift, ArrowLeft
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
@@ -24,6 +24,7 @@ import Image from "next/image";
 import { getDisplayName } from "@/src/utils/bgmiDisplay";
 import { getKdRank } from "@/src/utils/categoryUtils";
 import { CategoryBadge } from "@/src/components/ui/category-badge";
+import Link from "next/link";
 
 type UCTransfer = {
     id: string;
@@ -92,6 +93,23 @@ export default function ProfilePage() {
     const [showUCHistory, setShowUCHistory] = useState(false);
     const [ucHistoryPage, setUcHistoryPage] = useState(1);
     const UC_HISTORY_PAGE_SIZE = 10;
+
+    // Track if promoter tab has been visited (to show "New" badge)
+    const [hasVisitedPromoter, setHasVisitedPromoter] = useState(() => {
+        if (typeof window !== "undefined") {
+            return localStorage.getItem("bimon_promoter_tab_visited") === "true";
+        }
+        return false;
+    });
+
+    const handlePromoterTabClick = () => {
+        if (!hasVisitedPromoter) {
+            setHasVisitedPromoter(true);
+            localStorage.setItem("bimon_promoter_tab_visited", "true");
+            // Dispatch custom event to notify Navigation component
+            window.dispatchEvent(new Event("promoter-visited"));
+        }
+    };
 
     // Check if displayName guide should be shown (no displayName set)
     const showDisplayNameGuide = !user?.displayName && !!user;
@@ -374,6 +392,17 @@ export default function ProfilePage() {
 
     return (
         <div className="container mx-auto px-4 py-8 space-y-6">
+            {/* Back to Admin link for admin users */}
+            {(user.role === "ADMIN" || user.role === "SUPER_ADMIN") && (
+                <button
+                    onClick={() => window.history.back()}
+                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                </button>
+            )}
+
             {/* Header with User Info */}
             <div className="flex items-center gap-4">
                 {/* Profile Image - respects user's image selection */}
@@ -431,16 +460,18 @@ export default function ProfilePage() {
                         <User className="w-4 h-4" />
                         Overview
                     </TabsTrigger>
-                    <TabsTrigger value="account" className="relative flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-violet-600 data-[state=active]:dark:text-violet-400 data-[state=active]:shadow-md rounded-lg font-medium">
+                    <TabsTrigger value="account" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-violet-600 data-[state=active]:dark:text-violet-400 data-[state=active]:shadow-md rounded-lg font-medium">
                         <Settings className="w-4 h-4" />
                         Settings
-                        {showDisplayNameGuide && (
-                            <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-blue-500 rounded-full animate-pulse border-2 border-white dark:border-zinc-900"></span>
-                        )}
                     </TabsTrigger>
-                    <TabsTrigger value="promoter" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-amber-600 data-[state=active]:dark:text-amber-400 data-[state=active]:shadow-md rounded-lg font-medium">
+                    <TabsTrigger value="promoter" onClick={handlePromoterTabClick} className="relative flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-amber-600 data-[state=active]:dark:text-amber-400 data-[state=active]:shadow-md rounded-lg font-medium">
                         <Gift className="w-4 h-4" />
                         Promoter
+                        {!hasVisitedPromoter && (
+                            <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[9px] font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full shadow-sm">
+                                New
+                            </span>
+                        )}
                     </TabsTrigger>
                 </TabsList>
 
