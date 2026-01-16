@@ -106,8 +106,14 @@ export const RoleBaseRoute = ({ children }: PropsT) => {
     user.isOnboarded === false &&
     !skipOnboardingPaths.some(path => pathName.startsWith(path));
 
-  // No full-page loader - pages render immediately with their own skeletons
-  // Auth redirects happen in useEffect once auth resolves
+  // Block rendering if user needs onboarding - prevent them from seeing/clicking page content
+  if (needsOnboarding) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] w-full flex items-center justify-center bg-background">
+        <LoaderFour text="Setting up your account..." />
+      </div>
+    );
+  }
 
   return <>{children}</>;
 };
