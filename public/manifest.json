@@ -1,6 +1,6 @@
 {
   "version": "1.0.1",
-  "name": "PUBGMI Tournament",
+  "name": "PUBGMI",
   "short_name": "PUBGMI",
   "description": "Professional tournament management platform for BGMI esports competitions",
   "start_url": "/",

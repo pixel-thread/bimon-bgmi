@@ -78,3 +78,45 @@ sw.addEventListener("notificationclick", (event) => {
             })
     );
 });
+
+// Handle Share Target - intercept POST to /api/share-target
+sw.addEventListener("fetch", (event) => {
+    const url = new URL(event.request.url);
+
+    // Only handle share target POST requests
+    if (url.pathname === "/api/share-target" && event.request.method === "POST") {
+        event.respondWith(
+            (async () => {
+                try {
+                    const formData = await event.request.formData();
+                    const images = formData.getAll("images") as File[];
+
+                    if (images.length > 0) {
+                        // Store images in cache for the client page to retrieve
+                        const cache = await caches.open("share-target-cache");
+
+                        // Store each image individually
+                        const cacheFormData = new FormData();
+                        images.forEach((img) => cacheFormData.append("images", img));
+
+                        await cache.put(
+                            "/shared-images",
+                            new Response(cacheFormData)
+                        );
+
+                        // Redirect to recent-matches with flag
+                        return Response.redirect(
+                            `${url.origin}/admin/recent-matches?shared=${images.length}`,
+                            303
+                        );
+                    }
+                } catch (err) {
+                    console.error("Share target error:", err);
+                }
+
+                // Fallback redirect
+                return Response.redirect(`${url.origin}/admin/recent-matches`, 303);
+            })()
+        );
+    }
+});
