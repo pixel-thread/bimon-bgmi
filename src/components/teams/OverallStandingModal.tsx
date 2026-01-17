@@ -9,7 +9,7 @@ import { TeamT } from "@/src/types/team";
 import { useStandings } from "@/src/hooks/team/useStandings";
 import TeamStats from "./TeamStats";
 import { LoaderFive } from "../ui/loader";
-import { Download } from "lucide-react";
+import { Copy } from "lucide-react";
 
 interface OverallStandingModalProps {
   visible: boolean;
@@ -34,8 +34,20 @@ export default function OverallStandingModal({
 
   // Use the derived useStandings hook - shares cache with useTeams, no extra API call
   const { data: teamsStats, isFetching } = useStandings();
+  // Fallback for devices without clipboard support
+  const downloadFallback = (canvas: HTMLCanvasElement) => {
+    const downloadLink = document.createElement("a");
+    downloadLink.download = `${tournamentTitle.replace(
+      /\s+/g,
+      "-",
+    )}-standings.png`;
+    downloadLink.href = canvas.toDataURL("image/png");
+    downloadLink.click();
+    setShareSuccess(true);
+    setTimeout(() => setShareSuccess(false), 2000);
+  };
 
-  const shareImage = async () => {
+  const copyToClipboard = async () => {
     setIsSharing(true);
     setShareSuccess(false);
 
@@ -93,29 +105,32 @@ export default function OverallStandingModal({
         ignoreElements: (el) => el.classList.contains("floating-button-group"),
       });
 
-      const downloadLink = document.createElement("a");
-      downloadLink.download = `${tournamentTitle.replace(
-        /\s+/g,
-        "-",
-      )}-standings-match-${selectedMatch}.png`;
-      downloadLink.href = canvas.toDataURL("image/png");
-      downloadLink.click();
+      // Copy to Clipboard with download fallback for unsupported devices
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/png")
+      );
 
-      // Auto Copy to Clipboard
+      if (!blob) {
+        console.error("Failed to create blob");
+        return;
+      }
+
+      // Try clipboard first (modern browsers)
       if (navigator.clipboard && window.ClipboardItem) {
-        canvas.toBlob(async (blob) => {
-          if (blob) {
-            try {
-              await navigator.clipboard.write([
-                new window.ClipboardItem({ "image/png": blob }),
-              ]);
-              setShareSuccess(true);
-              setTimeout(() => setShareSuccess(false), 2000);
-            } catch (e) {
-              console.warn("Could not copy image to clipboard:", e);
-            }
-          }
-        }, "image/png");
+        try {
+          await navigator.clipboard.write([
+            new window.ClipboardItem({ "image/png": blob }),
+          ]);
+          setShareSuccess(true);
+          setTimeout(() => setShareSuccess(false), 2000);
+        } catch (e) {
+          // Clipboard failed, fall back to download
+          console.warn("Clipboard failed, falling back to download:", e);
+          downloadFallback(canvas);
+        }
+      } else {
+        // No clipboard support, use download fallback
+        downloadFallback(canvas);
       }
     } catch (error) {
       console.error("Screenshot error:", error);
@@ -168,9 +183,9 @@ export default function OverallStandingModal({
       <div className="fixed inset-0 flex items-center justify-center z-50">
         {/* Floating Control Buttons */}
         <div className="floating-button-group absolute top-4 right-4 z-30 flex gap-2">
-          {/* Download Button */}
+          {/* Copy to Clipboard Button */}
           <Button
-            onClick={shareImage}
+            onClick={copyToClipboard}
             disabled={isSharing}
             variant="ghost"
             className={`
@@ -190,7 +205,7 @@ export default function OverallStandingModal({
             ) : shareSuccess ? (
               <FiCheck className="h-5 w-5 text-green-400" />
             ) : (
-              <Download className="h-5 w-5" />
+              <Copy className="h-5 w-5" />
             )}
           </Button>
 
