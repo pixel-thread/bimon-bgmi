@@ -26,6 +26,7 @@ import { getKdRank } from "@/src/utils/categoryUtils";
 import { CategoryBadge } from "@/src/components/ui/category-badge";
 import Link from "next/link";
 import { useRoyalPass } from "@/src/hooks/royal-pass/useRoyalPass";
+import { useAppContext } from "@/src/hooks/context/useAppContext";
 
 type UCTransfer = {
     id: string;
@@ -93,6 +94,10 @@ export default function ProfilePage() {
     // Royal Pass status for Crown badge
     const { hasRoyalPass } = useRoyalPass();
 
+    // Get active season for filtered stats (always show current season stats)
+    const { activeSeason } = useAppContext();
+    const activeSeasonId = activeSeason?.id || "";
+
     // UC History expanded state (lazy load)
     const [showUCHistory, setShowUCHistory] = useState(false);
     const [ucHistoryPage, setUcHistoryPage] = useState(1);
@@ -118,11 +123,11 @@ export default function ProfilePage() {
     // Check if displayName guide should be shown (no displayName set)
     const showDisplayNameGuide = !user?.displayName && !!user;
 
-    // Fetch player stats
+    // Fetch player stats - filtered by active season
     const { data: statsData, isLoading: statsLoading } = useQuery({
-        queryKey: ["player-stats", playerId],
-        queryFn: () => http.get<PlayerStats>(`/players/${playerId}/stats`),
-        enabled: !!playerId,
+        queryKey: ["player-stats", playerId, activeSeasonId],
+        queryFn: () => http.get<PlayerStats>(`/players/${playerId}/stats?season=${activeSeasonId}`),
+        enabled: !!playerId && !!activeSeasonId,
     });
 
     // Fetch transfers
@@ -174,15 +179,22 @@ export default function ProfilePage() {
     const ucHistoryTotalPages = balanceHistoryData?.data?.pagination?.pages || 1;
 
     // Compute basic stats from preloaded auth data (instant) or fallback to API data
+    // Note: preloadedStats aggregates ALL seasons, so only use as fallback when no season is selected
     const preloadedStats = user?.player?.playerStats || [];
     const preloadedKills = preloadedStats.reduce((sum, s) => sum + s.kills, 0);
     const preloadedDeaths = preloadedStats.reduce((sum, s) => sum + s.deaths, 0);
     const preloadedKd = preloadedDeaths > 0 ? preloadedKills / preloadedDeaths : preloadedKills;
 
-    // Use preloaded data for instant display, API data once loaded for accuracy
-    const kills = playerStats?.kills ?? preloadedKills;
-    const deaths = playerStats?.deaths ?? preloadedDeaths;
-    const kd = playerStats?.kd ?? Number(preloadedKd.toFixed(2));
+    // When a specific season is selected but has no stats yet, show zeros (not all-time stats)
+    // playerStats will be null/undefined for new seasons - that's expected
+    const hasSeasonSelected = !!activeSeasonId && activeSeasonId !== "all";
+    const seasonHasNoStats = hasSeasonSelected && !playerStats;
+
+    // Use preloaded data for instant display ONLY when viewing all seasons, 
+    // otherwise use API data (which may be null for new seasons = show zeros)
+    const kills = seasonHasNoStats ? 0 : (playerStats?.kills ?? preloadedKills);
+    const deaths = seasonHasNoStats ? 0 : (playerStats?.deaths ?? preloadedDeaths);
+    const kd = seasonHasNoStats ? 0 : (playerStats?.kd ?? Number(preloadedKd.toFixed(2)));
 
     // Extended stats only from API (require complex aggregations)
     const kdTrend = playerStats?.kdTrend || "same";

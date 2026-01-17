@@ -66,6 +66,16 @@ export async function createSeason({ data }: Props) {
           seasonId: season.id,
         })),
       });
+
+      // Reset merit for all players at the start of a new season
+      // Everyone gets a fresh start with 100% merit
+      await tx.player.updateMany({
+        data: {
+          meritScore: 100,
+          isSoloRestricted: false,
+          soloMatchesNeeded: 0,
+        },
+      });
     }
 
     return season;

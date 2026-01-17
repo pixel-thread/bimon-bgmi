@@ -1,4 +1,5 @@
 import { prisma } from "@/src/lib/db/prisma";
+import { getActiveSeason } from "@/src/services/season/getActiveSeason";
 
 const SOLO_THRESHOLD = 40; // Below 40% = solo restricted (more lenient)
 const SOLO_MATCHES_REQUIRED = 1; // Must play 1 solo match to restore
@@ -6,7 +7,7 @@ const MIN_RATINGS_FOR_RESTRICTION = 3; // Need at least 3 ratings before restric
 
 /**
  * Calculate and update a player's merit score based on ratings received.
- * Uses average of all ratings (1-5 scale converted to 0-100).
+ * Uses average of all ratings from the CURRENT SEASON only (1-5 scale converted to 0-100).
  * 
  * Rules:
  * - New players start at 100%
@@ -15,9 +16,14 @@ const MIN_RATINGS_FOR_RESTRICTION = 3; // Need at least 3 ratings before restric
  * - After 1 solo match, merit resets to 100%
  */
 export async function calculateMerit(playerId: string) {
+    // Get active season - only consider ratings from current season
+    const activeSeason = await getActiveSeason();
+
     const ratings = await prisma.playerMeritRating.findMany({
         where: {
             toPlayerId: playerId,
+            // Only count ratings from the active season
+            ...(activeSeason?.id && { seasonId: activeSeason.id }),
         },
         select: {
             rating: true,
@@ -29,7 +35,15 @@ export async function calculateMerit(playerId: string) {
     });
 
     if (ratings.length === 0) {
-        // No ratings yet, keep default 100
+        // No ratings this season, reset to default 100
+        await prisma.player.update({
+            where: { id: playerId },
+            data: {
+                meritScore: 100,
+                isSoloRestricted: false,
+                soloMatchesNeeded: 0,
+            },
+        });
         return { meritScore: 100, isSoloRestricted: false };
     }
 
@@ -60,10 +74,18 @@ export async function calculateMerit(playerId: string) {
  * Called when a restricted player completes a solo tournament.
  */
 export async function resetMeritAfterSolo(playerId: string) {
-    // Delete all previous ratings to give a fresh start
-    await prisma.playerMeritRating.deleteMany({
-        where: { toPlayerId: playerId },
-    });
+    // Get active season to only delete ratings from current season
+    const activeSeason = await getActiveSeason();
+
+    // Delete ratings from current season only (give a fresh start for this season)
+    if (activeSeason?.id) {
+        await prisma.playerMeritRating.deleteMany({
+            where: {
+                toPlayerId: playerId,
+                seasonId: activeSeason.id,
+            },
+        });
+    }
 
     // Reset player to 100%
     await prisma.player.update({
@@ -95,6 +117,9 @@ export async function submitMeritRating(
         throw new Error("Cannot rate yourself");
     }
 
+    // Get active season to tag the rating
+    const activeSeason = await getActiveSeason();
+
     // Upsert the rating (in case they somehow submit twice)
     await prisma.playerMeritRating.upsert({
         where: {
@@ -108,6 +133,7 @@ export async function submitMeritRating(
             fromPlayerId,
             toPlayerId,
             tournamentId,
+            seasonId: activeSeason?.id, // Tag with current season
             rating,
         },
         update: {
@@ -136,3 +162,4 @@ export async function getPlayerMerit(playerId: string) {
 
     return player;
 }
+
