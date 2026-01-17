@@ -7,7 +7,7 @@
  */
 
 // Tax configuration
-const SOLO_TAX_RATE = 0.20; // 20% solo tax
+const SOLO_TAX_RATE = 0.22; // 22% solo tax
 const LOSER_SPLIT = 0.60;   // 60% goes to losers
 const POOL_SPLIT = 0.40;    // 40% goes to bonus pool
 
