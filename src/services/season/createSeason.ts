@@ -30,14 +30,12 @@ export async function createSeason({ data }: Props) {
     });
 
     if (players.length > 0) {
-      for (const player of players) {
-        await tx.playerStats.create({
-          data: {
-            playerId: player.id,
-            seasonId: season.id,
-          },
-        });
-      }
+      await tx.playerStats.createMany({
+        data: players.map((player) => ({
+          playerId: player.id,
+          seasonId: season.id,
+        })),
+      });
     }
 
     return season;

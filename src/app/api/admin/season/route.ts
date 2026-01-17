@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       data: {
         createdBy: user.id,
         name: body.name,
-        startDate: body.startDate,
+        startDate: new Date(),
         description: body.description,
       },
     });

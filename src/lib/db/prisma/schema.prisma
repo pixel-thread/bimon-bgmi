@@ -178,7 +178,7 @@ model Season {
   name        String
   description String?
   startDate   DateTime
-  endDate     DateTime     @default(now())
+  endDate     DateTime?
   status      SeasonStatus @default(ACTIVE)
   createdBy   String
   createdAt   DateTime     @default(now())
@@ -805,7 +805,7 @@ model RoyalPass {
   season    Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-  expiresAt DateTime
+  expiresAt DateTime?  // Null for active seasons (no end date yet)
 
   @@unique([playerId, seasonId]) // One RP per player per season
   @@index([playerId])

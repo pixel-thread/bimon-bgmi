@@ -155,12 +155,13 @@ export async function POST(req: NextRequest) {
                 },
             }),
             // Create Royal Pass subscription
+            // expiresAt is null for active seasons (no end date yet)
             prisma.royalPass.create({
                 data: {
                     playerId: player.id,
                     seasonId: activeSeason.id,
                     isActive: true,
-                    expiresAt: activeSeason.endDate,
+                    expiresAt: activeSeason.endDate ?? undefined,
                 },
             }),
         ]);

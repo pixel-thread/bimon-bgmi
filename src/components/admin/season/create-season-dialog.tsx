@@ -60,10 +60,9 @@ export const CreateSeasonDialog = ({ open, onOpenChange }: Props) => {
     return getNextSeasonVersion(currentSeason?.name);
   }, [currentSeason]);
 
-  const form = useForm({
+  const form = useForm<SeasonSchemaType>({
     resolver: zodResolver(seasonSchema),
     defaultValues: {
-      startDate: new Date().toISOString().split("T")[0],
       description: "",
       name: suggestedName,
     },
@@ -116,20 +115,7 @@ export const CreateSeasonDialog = ({ open, onOpenChange }: Props) => {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field: { onChange, ...field } }) => (
-                  <FormItem>
-                    <FormLabel>Start Date</FormLabel>
-                    <FormControl>
-                      {/* @ts-ignore */}
-                      <Input type="date" placeholder="shadcn" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
               <FormField
                 control={form.control}
                 name="description"
