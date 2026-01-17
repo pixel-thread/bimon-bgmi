@@ -8,7 +8,7 @@ import { useAuth as useAuthContext } from "@/src/hooks/context/auth/useAuth";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/src/lib/utils";
 import Link from "next/link";
-import { useSearchParams, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 
 type RatingGiven = {
     id: string;
@@ -33,40 +33,7 @@ type RaterDetailResponse = {
     };
 };
 
-// Demo data for testing
-const createDemoRater = (id: string): RaterDetail => {
-    const demoPlayers = [
-        { id: "p1", displayName: "enbok", userName: "enbok" },
-        { id: "p2", displayName: "loverson", userName: "loverson" },
-        { id: "p3", displayName: "ToxicPlayer123", userName: "toxic123" },
-        { id: "p4", displayName: "ProSniper", userName: "sniper_pro" },
-        { id: "p5", displayName: "NightHawk", userName: "nighthawk" },
-    ];
 
-    const demoTournaments = [
-        { id: "t1", name: "Lehkai sngewtynnad 18" },
-        { id: "t2", name: "Lehkai sngewtynnad 17" },
-        { id: "t3", name: "Lehkai sngewtynnad 16" },
-    ];
-
-    const numRatings = Math.floor(Math.random() * 5) + 2; // 2-6 ratings
-    const ratingsGiven: RatingGiven[] = Array.from({ length: numRatings }, (_, i) => ({
-        id: `rating-${i}`,
-        ratedPlayer: demoPlayers[i % demoPlayers.length],
-        rating: Math.floor(Math.random() * 5) + 1,
-        tournament: demoTournaments[i % demoTournaments.length],
-        createdAt: new Date(Date.now() - (i + 1) * 86400000 * (Math.random() * 3 + 1)).toISOString(),
-    }));
-
-    return {
-        id,
-        displayName: "Zpeep",
-        userName: "zgyokeres",
-        totalRatingsGiven: ratingsGiven.length,
-        averageRatingGiven: Math.round((ratingsGiven.reduce((sum, r) => sum + r.rating, 0) / ratingsGiven.length) * 10) / 10,
-        ratingsGiven,
-    };
-};
 
 // Star rating display - uses opacity for unfilled stars
 const StarRating = ({ rating }: { rating: number }) => {
@@ -90,8 +57,6 @@ const StarRating = ({ rating }: { rating: number }) => {
 export default function RaterDetailPage() {
     const params = useParams();
     const raterId = params.raterId as string;
-    const searchParams = useSearchParams();
-    const isDemo = searchParams.has("demo");
 
     const { getToken, isSignedIn } = useAuth();
     const { user } = useAuthContext();
@@ -109,14 +74,13 @@ export default function RaterDetailPage() {
     const { data, isLoading } = useQuery({
         queryKey: ["rater-detail", raterId],
         queryFn: () => fetchWithAuth<RaterDetailResponse>(`/admin/merit-ratings/rater/${raterId}`),
-        enabled: isSignedIn && !!user && !isDemo,
+        enabled: isSignedIn && !!user,
     });
 
-    // Use demo data if ?demo is in URL
-    const rater = isDemo ? createDemoRater(raterId) : data?.data?.rater;
-    const backUrl = isDemo ? "/admin/merit-ratings?demo" : "/admin/merit-ratings";
+    const rater = data?.data?.rater;
+    const backUrl = "/admin/merit-ratings";
 
-    if (isLoading && !isDemo) {
+    if (isLoading) {
         return (
             <div className="space-y-6 max-w-3xl mx-auto px-2 sm:px-4">
                 <Skeleton className="h-10 w-40" />
@@ -160,14 +124,7 @@ export default function RaterDetailPage() {
                         👤
                     </div>
                     <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-2xl font-bold">{rater.displayName}</h1>
-                            {isDemo && (
-                                <span className="px-2 py-0.5 text-xs rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                                    Demo
-                                </span>
-                            )}
-                        </div>
+                        <h1 className="text-2xl font-bold">{rater.displayName}</h1>
                         <p className="text-muted-foreground">@{rater.userName}</p>
                     </div>
                     <div className="text-right">
@@ -193,7 +150,7 @@ export default function RaterDetailPage() {
                         {rater.ratingsGiven.map((rating) => (
                             <Link
                                 key={rating.id}
-                                href={isDemo ? `/admin/merit-ratings/${rating.ratedPlayer.id}?demo` : `/admin/merit-ratings/${rating.ratedPlayer.id}`}
+                                href={`/admin/merit-ratings/${rating.ratedPlayer.id}`}
                             >
                                 <div className="rounded-xl bg-zinc-800/50 border border-zinc-700 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-zinc-800 hover:border-zinc-600 transition-all cursor-pointer">
                                     <div className="flex items-center gap-4">

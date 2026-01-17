@@ -96,7 +96,7 @@ export const Wrapper = ({ children }: Props) => {
     <PostHogProvider>
       <ThemeProvider
         attribute="class"
-        defaultTheme="system"
+        defaultTheme="light"
         enableSystem
         disableTransitionOnChange
         storageKey="theme"

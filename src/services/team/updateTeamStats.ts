@@ -135,6 +135,7 @@ export async function updateManyTeamsStats({
   seasonId,
 }: TeamsStatsSchemaT & { seasonId: string | null }) {
   // Use a single transaction for all updates - MUCH faster than individual transactions
+  // Increase timeout from default 10s to 60s for large bulk updates
   await prisma.$transaction(async (tx) => {
     // Collect all unique player IDs for batch recalculation at the end
     const allPlayerIds = new Set<string>();
@@ -235,5 +236,8 @@ export async function updateManyTeamsStats({
         });
       })
     );
+  }, {
+    timeout: 60000, // 60 seconds for large bulk updates
+    maxWait: 5000,  // 5 seconds max wait to acquire connection
   });
 }

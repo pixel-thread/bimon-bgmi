@@ -205,12 +205,21 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
             }
 
             // Build a set of all registered player names for matching
+            // Use NFKC normalization + whitespace normalization to handle different unicode representations
+            const normalizeName = (name: string) =>
+                name.normalize('NFKC')
+                    .toLowerCase()
+                    // Remove zero-width characters (U+200B, U+200C, U+200D, U+FEFF)
+                    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+                    // Replace all unicode whitespace variants with regular space
+                    .replace(/[\s\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]+/g, ' ')
+                    .trim();
             const registeredNames = new Set<string>();
             teams.forEach((team: TeamT) => {
                 team.players.forEach((player) => {
-                    registeredNames.add(player.name.toLowerCase());
+                    registeredNames.add(normalizeName(player.name));
                     if (player.displayName) {
-                        registeredNames.add(player.displayName.toLowerCase());
+                        registeredNames.add(normalizeName(player.displayName));
                     }
                 });
             });
@@ -218,7 +227,7 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
             // Find unknown players from JSON
             const newUnknownPlayers: Array<{ name: string; kills: number; position?: number }> = [];
             data.forEach((d) => {
-                if (d.isUnknown || !registeredNames.has(d.name.toLowerCase())) {
+                if (d.isUnknown || !registeredNames.has(normalizeName(d.name))) {
                     if (d.kills !== null) {
                         newUnknownPlayers.push({
                             name: d.name,
@@ -242,11 +251,12 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                 position: "" as string | number,
                 players: team.players.map((player) => {
                     // Find matching player in JSON data - try displayName first, then userName
-                    const displayNameLower = (player.displayName || "").toLowerCase();
-                    const nameLower = player.name.toLowerCase();
+                    // Use NFKC normalization for consistent unicode comparison
+                    const displayNameNorm = normalizeName(player.displayName || "");
+                    const nameNorm = normalizeName(player.name);
                     const match = data.find(d => {
-                        const jsonNameLower = d.name.toLowerCase();
-                        return jsonNameLower === displayNameLower || jsonNameLower === nameLower;
+                        const jsonNameNorm = normalizeName(d.name);
+                        return jsonNameNorm === displayNameNorm || jsonNameNorm === nameNorm;
                     });
 
                     // Determine if player is absent (not in JSON or kills is null)
@@ -371,15 +381,24 @@ Players absent: X (list names)
             toast.success("Stats saved! Click Refetch when ready.");
             onOpenChange(false);
         },
-        onError: (error: Error & { message?: string }) => {
-            toast.error(error.message || "Failed to update stats");
+        onError: (error: Error & { message?: string; response?: { data?: { message?: string }; status?: number } }) => {
+            // Build a user-friendly error message
+            let errorMsg = error.response?.data?.message || error.message || "Failed to update stats";
+
+            // Handle specific error cases with clearer messages
+            if (errorMsg.toLowerCase().includes("timeout") || errorMsg.toLowerCase().includes("expired transaction")) {
+                errorMsg = "Save timed out - too many players. Try again or contact support.";
+            } else if (error.response?.status === 500) {
+                errorMsg = "Server error - please try again. If this persists, contact support.";
+            }
+
+            toast.error(errorMsg);
         },
     });
 
     const handleSave = () => {
         const payload = editableStats.map((stat) => ({
             teamId: stat.teamId,
-            matchId,
             position: stat.position === "" ? 0 : Number(stat.position),
             // Only include players who are NOT absent (were found in JSON/scoreboard)
             // Absent players (not in JSON) don't count as having played
@@ -388,7 +407,7 @@ Players absent: X (list names)
                 .map((p) => ({
                     playerId: p.playerId,
                     kills: p.kills === "" ? 0 : Number(p.kills),
-                    deaths: 0,
+                    deaths: 1,
                 })),
         }));
 

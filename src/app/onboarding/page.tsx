@@ -63,11 +63,13 @@ export default function OnboardingPage() {
     const { mutate: submitUsernames, isPending } = useMutation({
         mutationFn: (data: { userName: string; displayName: string; dateOfBirth?: string; referralCode?: string }) =>
             http.post("/onboarding", data),
-        onSuccess: () => {
+        onSuccess: async () => {
             // Clear stored referral code after successful signup
             clearStoredReferralCode();
             toast.success("Welcome to PUBGMI Tournament! Your account is ready.");
-            refreshAuth();
+            // IMPORTANT: Wait for auth cache to update with isOnboarded: true
+            // before navigating, otherwise RoleBaseRouting may redirect back here
+            await refreshAuth();
             router.push("/?welcome=1");
         },
         onError: (err: { response?: { data?: { message?: string } } }) => {

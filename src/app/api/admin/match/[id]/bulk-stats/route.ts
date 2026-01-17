@@ -35,7 +35,19 @@ export async function PUT(
             });
         }
 
-        const body = bulkStatsSchema.parse(await req.json());
+        const rawBody = await req.json();
+
+        const parseResult = bulkStatsSchema.safeParse(rawBody);
+        if (!parseResult.success) {
+            const errorDetails = parseResult.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
+            logger.log(`[BULK] Validation failed: ${errorDetails}`);
+            return ErrorResponse({
+                message: `Validation failed: ${errorDetails}`,
+                status: 400,
+            });
+        }
+
+        const body = parseResult.data;
         const teamCount = body.stats.length;
         const totalPlayers = body.stats.reduce((acc, s) => acc + s.players.length, 0);
 
@@ -58,6 +70,17 @@ export async function PUT(
             message: `Stats saved successfully (${duration}ms)`,
         });
     } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.log(`[BULK] Error: ${errorMessage}`);
+
+        // Check for transaction timeout errors and return a user-friendly message
+        if (errorMessage.includes("timeout") || errorMessage.includes("expired transaction") || errorMessage.includes("Transaction already closed")) {
+            return ErrorResponse({
+                message: "Database operation timed out - too many operations. Please try again.",
+                status: 500,
+            });
+        }
+
         return handleApiErrors(error);
     }
 }

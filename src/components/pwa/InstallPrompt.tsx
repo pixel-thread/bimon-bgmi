@@ -209,9 +209,26 @@ export function InstallPrompt() {
                             <img src="/android-chrome-192x192.png" alt="PUBGMI" className="h-full w-full object-cover" />
                         </div>
                         <h3 className="mt-4 text-xl font-semibold text-foreground">Install App</h3>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            Tap <IconShare className="inline h-4 w-4 mx-0.5 -mt-0.5" /> Share, then <span className="font-medium">&quot;Add to Home Screen&quot;</span>
-                        </p>
+                        <div className="mt-4 text-left space-y-3">
+                            <div className="flex items-start gap-3">
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">1</span>
+                                <p className="text-sm text-muted-foreground">
+                                    Tap the <IconShare className="inline h-5 w-5 mx-0.5 -mt-0.5 text-primary" /> <span className="font-semibold text-foreground">Share</span> button at the bottom of Safari
+                                </p>
+                            </div>
+                            <div className="flex items-start gap-3">
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">2</span>
+                                <p className="text-sm text-muted-foreground">
+                                    Scroll down and tap <span className="font-semibold text-foreground">&quot;Add to Home Screen&quot;</span>
+                                </p>
+                            </div>
+                            <div className="flex items-start gap-3">
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">3</span>
+                                <p className="text-sm text-muted-foreground">
+                                    Tap <span className="font-semibold text-foreground">Add</span> in the top right corner
+                                </p>
+                            </div>
+                        </div>
                     </div>
                     {showNotNow && (
                         <div className="mt-6">
