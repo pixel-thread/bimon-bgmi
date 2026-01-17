@@ -155,7 +155,10 @@ export default function WinnersPage() {
                         height={48}
                         className="drop-shadow-md"
                     />
-                    <p className="text-2xl font-bold text-emerald-500">₹{Number.isInteger(totalFunds) ? totalFunds : totalFunds.toFixed(2)}</p>
+                    <div className="text-right">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Bai picnic</p>
+                        <p className="text-2xl font-bold text-emerald-500">₹{Number.isInteger(totalFunds) ? totalFunds : totalFunds.toFixed(2)}</p>
+                    </div>
                 </div>
             )}
 
