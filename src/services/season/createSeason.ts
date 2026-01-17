@@ -76,6 +76,9 @@ export async function createSeason({ data }: Props) {
           soloMatchesNeeded: 0,
         },
       });
+
+      // Delete all old merit ratings - clean slate for the new season
+      await tx.playerMeritRating.deleteMany({});
     }
 
     return season;

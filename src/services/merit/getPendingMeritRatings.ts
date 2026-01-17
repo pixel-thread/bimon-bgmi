@@ -1,17 +1,28 @@
 import { prisma } from "@/src/lib/db/prisma";
+import { getActiveSeason } from "@/src/services/season/getActiveSeason";
 
 /**
  * Get teammates from the most recent DECLARED tournament that haven't been rated yet.
  * A tournament is considered DECLARED when isWinnerDeclared = true.
+ * Only considers tournaments from the CURRENT ACTIVE season.
  */
 export async function getPendingMeritRatings(playerId: string) {
+    // Get active season - only show ratings for current season tournaments
+    const activeSeason = await getActiveSeason();
+
+    if (!activeSeason) {
+        return { pendingRatings: [], tournament: null };
+    }
+
     // Find the most recent tournament where:
     // 1. This player participated (has MatchPlayerPlayed record)
     // 2. Winners have been declared (isWinnerDeclared = true)
     // 3. Player was NOT solo (team had more than 1 player)
+    // 4. Tournament is from the current active season
     const recentMatch = await prisma.matchPlayerPlayed.findFirst({
         where: {
             playerId,
+            seasonId: activeSeason.id, // Only current season
             tournament: {
                 isWinnerDeclared: true,
             },
@@ -84,3 +95,4 @@ export async function getPendingMeritRatings(playerId: string) {
         tournament: recentMatch.tournament,
     };
 }
+

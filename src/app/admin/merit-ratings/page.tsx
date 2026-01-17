@@ -1,14 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Star, Users, Filter, ChevronRight, AlertTriangle, Shield, ShieldOff } from "lucide-react";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/src/components/ui/select";
+import { Star, Users, ChevronRight, AlertTriangle, Shield, ShieldOff, Calendar } from "lucide-react";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { Switch } from "@/src/components/ui/switch";
 import { Button } from "@/src/components/ui/button";
@@ -29,15 +22,10 @@ type Player = {
     averageRating: number;
 };
 
-type Tournament = {
-    id: string;
-    name: string;
-};
-
 type MeritRatingsResponse = {
     data: {
         players: Player[];
-        tournaments: Tournament[];
+        seasonName: string | null;
         summary: {
             totalPlayers: number;
             restrictedPlayers: number;
@@ -113,7 +101,6 @@ const PlayerCard = ({
 };
 
 export default function MeritRatingsPage() {
-    const [tournamentId, setTournamentId] = useState<string>("all");
     const [meritBanEnabled, setMeritBanEnabled] = useState<boolean>(true);
     const { getToken, isSignedIn } = useAuth();
     const { user } = useAuthContext();
@@ -132,11 +119,8 @@ export default function MeritRatingsPage() {
     };
 
     const { data, isLoading } = useQuery({
-        queryKey: ["merit-ratings", tournamentId],
-        queryFn: () =>
-            fetchWithAuth<MeritRatingsResponse>(
-                `/admin/merit-ratings${tournamentId !== "all" ? `?tournamentId=${tournamentId}` : ""}`
-            ),
+        queryKey: ["merit-ratings"],
+        queryFn: () => fetchWithAuth<MeritRatingsResponse>(`/admin/merit-ratings`),
         enabled: isSignedIn && !!user,
     });
 
@@ -197,7 +181,7 @@ export default function MeritRatingsPage() {
     };
 
     const players = data?.data?.players || [];
-    const tournaments = data?.data?.tournaments || [];
+    const seasonName = data?.data?.seasonName;
     const summary = data?.data?.summary;
 
     return (
@@ -215,20 +199,12 @@ export default function MeritRatingsPage() {
                         Players sorted by merit (lowest first)
                     </p>
                 </div>
-                <Select value={tournamentId} onValueChange={setTournamentId}>
-                    <SelectTrigger className="w-[250px] rounded-xl">
-                        <Filter className="h-4 w-4 mr-2" />
-                        <SelectValue placeholder="Filter by Tournament" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60 overflow-y-auto">
-                        <SelectItem value="all">All Tournaments</SelectItem>
-                        {tournaments.map((tournament) => (
-                            <SelectItem key={tournament.id} value={tournament.id}>
-                                {tournament.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                {seasonName && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border">
+                        <Calendar className="h-4 w-4 text-violet-500" />
+                        <span className="text-sm font-medium">{seasonName}</span>
+                    </div>
+                )}
             </div>
 
             {/* Ban System Toggle (Super Admin Only) */}
