@@ -184,10 +184,10 @@ export async function consumeSoloTaxPool(seasonId: string): Promise<number> {
 
     const amount = pool.amount;
 
-    // Reset the pool
+    // Reset the pool (both amount AND donorName)
     await prisma.soloTaxPool.update({
         where: { id: pool.id },
-        data: { amount: 0 },
+        data: { amount: 0, donorName: null },
     });
 
     return amount;
