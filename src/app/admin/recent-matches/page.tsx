@@ -66,6 +66,7 @@ const AdminRecentMatchesPage = () => {
     const [previewTitle, setPreviewTitle] = useState(""); // Dynamic title for preview modal
     const [isCopying, setIsCopying] = useState(false); // Loading state for copy button
     const [expandedTournament, setExpandedTournament] = useState<string | null>(null); // For viewing matches
+    const [isShareMode, setIsShareMode] = useState(false); // Track if we're handling shared images
 
     const searchParams = useSearchParams();
     const sharedCount = searchParams.get("shared");
@@ -120,21 +121,22 @@ const AdminRecentMatchesPage = () => {
         const loadSharedImages = async () => {
             if (!sharedCount) return;
 
+            console.log("[Share Target] Loading shared images, count:", sharedCount);
+
             try {
                 const cache = await caches.open("share-target-cache");
                 const cachedResponse = await cache.match("/shared-images");
+
+                console.log("[Share Target] Cache response:", cachedResponse ? "found" : "not found");
 
                 if (cachedResponse) {
                     const formData = await cachedResponse.formData();
                     const files = formData.getAll("images") as File[];
 
+                    console.log("[Share Target] Files from cache:", files.length);
+
                     if (files.length > 0) {
                         setUploadFiles(files);
-
-                        // Auto-select most recent tournament
-                        if (tournaments && tournaments.length > 0 && !selectedTournament) {
-                            setSelectedTournament(tournaments[0].id);
-                        }
 
                         // Generate cropped previews
                         if (cropRightHalf) {
@@ -148,16 +150,19 @@ const AdminRecentMatchesPage = () => {
                             setCroppedFiles(files);
                         }
 
-                        // Open upload modal
-                        setShowUploadModal(true);
+                        // Set share mode - show at bottom of page instead of modal
+                        setIsShareMode(true);
                         toast.success(`${files.length} image(s) received from share`);
                     }
 
                     // Clear cache after processing
                     await cache.delete("/shared-images");
+                } else {
+                    toast.error("No shared images found in cache");
                 }
             } catch (err) {
-                console.error("Error loading shared images:", err);
+                console.error("[Share Target] Error:", err);
+                toast.error("Failed to load shared images");
             }
 
             // Clear URL param
@@ -165,7 +170,14 @@ const AdminRecentMatchesPage = () => {
         };
 
         loadSharedImages();
-    }, [sharedCount, tournaments, selectedTournament, cropRightHalf]);
+    }, [sharedCount, cropRightHalf]);
+
+    // Auto-select tournament when tournaments load and we have shared images
+    useEffect(() => {
+        if (uploadFiles.length > 0 && tournaments && tournaments.length > 0 && !selectedTournament) {
+            setSelectedTournament(tournaments[0].id);
+        }
+    }, [uploadFiles, tournaments, selectedTournament]);
 
     // Upload mutation
     const uploadMutation = useMutation({
@@ -213,6 +225,7 @@ const AdminRecentMatchesPage = () => {
             setCroppedFiles([]);
             setDragIndex(null);
             setShowUploadModal(false);
+            setIsShareMode(false);
         },
         onError: () => {
             toast.error("Failed to upload scoreboards");
@@ -261,6 +274,7 @@ const AdminRecentMatchesPage = () => {
         setCroppedPreviews([]);
         setCroppedFiles([]);
         setDragIndex(null);
+        setIsShareMode(false);
     };
 
     // Open edit modal for a group
@@ -495,10 +509,21 @@ const AdminRecentMatchesPage = () => {
                                                                         onClick={() => {
                                                                             setSelectedTournament(tournament.id);
                                                                             setSelectedMatchNumber(matchNum);
-                                                                            setShowUploadModal(true);
+                                                                            // If share mode with files ready, upload directly
+                                                                            if (isShareMode && croppedFiles.length > 0) {
+                                                                                // Upload will use the already-loaded files
+                                                                                setTimeout(() => uploadMutation.mutate(), 100);
+                                                                            } else {
+                                                                                setShowUploadModal(true);
+                                                                            }
                                                                         }}
+                                                                        disabled={uploadMutation.isPending}
                                                                     >
-                                                                        <FiUpload className="h-4 w-4" />
+                                                                        {uploadMutation.isPending ? (
+                                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                                        ) : (
+                                                                            <FiUpload className="h-4 w-4" />
+                                                                        )}
                                                                     </Button>
                                                                 </div>
                                                             </div>
@@ -513,6 +538,54 @@ const AdminRecentMatchesPage = () => {
                         })
                     )}
                 </div>
+
+                {/* Share Mode - Shown at bottom when images are shared from Photos app */}
+                {isShareMode && croppedPreviews.length > 0 && (
+                    <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg p-4 z-50">
+                        <div className="max-w-7xl mx-auto space-y-3">
+                            {/* Header with close button */}
+                            <div className="flex items-center justify-between">
+                                <h3 className="font-semibold text-lg flex items-center gap-2">
+                                    <FiUpload className="h-5 w-5 text-indigo-600" />
+                                    {croppedPreviews.length} Image(s) Ready
+                                </h3>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        setIsShareMode(false);
+                                        resetForm();
+                                    }}
+                                >
+                                    <FiX className="h-4 w-4" />
+                                </Button>
+                            </div>
+
+                            {/* Image preview - single thumbnail with count */}
+                            <div className="flex items-center gap-2">
+                                <div className="relative flex-shrink-0">
+                                    <Image
+                                        src={croppedPreviews[0]}
+                                        alt="Shared image"
+                                        width={50}
+                                        height={50}
+                                        className="rounded-lg object-cover border"
+                                    />
+                                    {croppedPreviews.length > 1 && (
+                                        <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                            +{croppedPreviews.length - 1}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Guide text */}
+                            <p className="text-sm text-amber-600">
+                                👆 Select a tournament above, then tap Upload on a match to use these images
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Upload Modal */}
                 <Dialog open={showUploadModal} onOpenChange={(open) => {
