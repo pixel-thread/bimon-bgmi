@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { FiUpload, FiTrash2, FiImage, FiX, FiEdit, FiScissors, FiEye } from "react-icons/fi";
@@ -64,8 +65,10 @@ const AdminRecentMatchesPage = () => {
     const [previewImages, setPreviewImages] = useState<string[]>([]); // For post-upload preview
     const [previewTitle, setPreviewTitle] = useState(""); // Dynamic title for preview modal
     const [isCopying, setIsCopying] = useState(false); // Loading state for copy button
-    const [copyingMatchKey, setCopyingMatchKey] = useState<string | null>(null); // Track which match is being copied
     const [expandedTournament, setExpandedTournament] = useState<string | null>(null); // For viewing matches
+
+    const searchParams = useSearchParams();
+    const sharedCount = searchParams.get("shared");
 
     // Auto-select latest match number when tournament changes
     const handleTournamentChange = (tournamentId: string) => {
@@ -111,6 +114,58 @@ const AdminRecentMatchesPage = () => {
         queryFn: () => http.get<RecentMatchGroup[]>("/admin/recent-matches"),
         select: (data) => data.data,
     });
+
+    // Check for shared images from PWA share target
+    useEffect(() => {
+        const loadSharedImages = async () => {
+            if (!sharedCount) return;
+
+            try {
+                const cache = await caches.open("share-target-cache");
+                const cachedResponse = await cache.match("/shared-images");
+
+                if (cachedResponse) {
+                    const formData = await cachedResponse.formData();
+                    const files = formData.getAll("images") as File[];
+
+                    if (files.length > 0) {
+                        setUploadFiles(files);
+
+                        // Auto-select most recent tournament
+                        if (tournaments && tournaments.length > 0 && !selectedTournament) {
+                            setSelectedTournament(tournaments[0].id);
+                        }
+
+                        // Generate cropped previews
+                        if (cropRightHalf) {
+                            const croppedF = await cropImagesRightHalf(files);
+                            const previews = croppedF.map(f => URL.createObjectURL(f));
+                            setCroppedPreviews(previews);
+                            setCroppedFiles(croppedF);
+                        } else {
+                            const previews = files.map(f => URL.createObjectURL(f));
+                            setCroppedPreviews(previews);
+                            setCroppedFiles(files);
+                        }
+
+                        // Open upload modal
+                        setShowUploadModal(true);
+                        toast.success(`${files.length} image(s) received from share`);
+                    }
+
+                    // Clear cache after processing
+                    await cache.delete("/shared-images");
+                }
+            } catch (err) {
+                console.error("Error loading shared images:", err);
+            }
+
+            // Clear URL param
+            window.history.replaceState({}, "", "/admin/recent-matches");
+        };
+
+        loadSharedImages();
+    }, [sharedCount, tournaments, selectedTournament, cropRightHalf]);
 
     // Upload mutation
     const uploadMutation = useMutation({
@@ -225,127 +280,6 @@ const AdminRecentMatchesPage = () => {
             return [1, 2, 3, 4]; // Default if no matches yet
         }
         return Array.from({ length: matchCount }, (_, i) => i + 1);
-    };
-
-    // Copy match images directly without opening preview
-    const copyMatchImages = async (imageUrls: string[], title: string, matchKey: string) => {
-        setCopyingMatchKey(matchKey);
-        try {
-            // Create a temporary container for the screenshot
-            const container = document.createElement('div');
-            container.style.cssText = `
-                position: absolute;
-                left: -9999px;
-                background: #1a1a1a;
-                padding: 8px;
-                border-radius: 12px;
-            `;
-            document.body.appendChild(container);
-
-            // Add images grid
-            const grid = document.createElement('div');
-            grid.style.cssText = `
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 6px;
-            `;
-            container.appendChild(grid);
-
-            // Load all images and crop edges
-            await Promise.all(imageUrls.map((url, idx) => {
-                return new Promise<void>((resolve) => {
-                    const img = document.createElement('img');
-                    img.crossOrigin = 'anonymous';
-                    img.src = url;
-                    img.onload = () => {
-                        // Crop percentages: top 15%, bottom 18% (removes Continue), right 8%
-                        const cropTop = 0.15;
-                        const cropBottom = 0.18;
-                        const cropRight = 0.08;
-
-                        const srcX = 0;
-                        const srcY = img.naturalHeight * cropTop;
-                        const srcWidth = img.naturalWidth * (1 - cropRight);
-                        const srcHeight = img.naturalHeight * (1 - cropTop - cropBottom);
-
-                        // Create canvas to crop
-                        const canvas = document.createElement('canvas');
-                        canvas.width = srcWidth;
-                        canvas.height = srcHeight;
-                        const ctx = canvas.getContext('2d');
-                        if (ctx) {
-                            ctx.drawImage(img, srcX, srcY, srcWidth, srcHeight, 0, 0, srcWidth, srcHeight);
-                        }
-
-                        const imgWrapper = document.createElement('div');
-                        imgWrapper.style.cssText = `
-                            position: relative;
-                            width: 200px;
-                            aspect-ratio: ${srcWidth}/${srcHeight};
-                            background: black;
-                            border-radius: 8px;
-                            overflow: hidden;
-                        `;
-                        const croppedImg = document.createElement('img');
-                        croppedImg.src = canvas.toDataURL('image/png');
-                        croppedImg.style.cssText = `
-                            width: 100%;
-                            height: 100%;
-                            object-fit: contain;
-                        `;
-                        imgWrapper.appendChild(croppedImg);
-                        grid.appendChild(imgWrapper);
-                        resolve();
-                    };
-                    img.onerror = () => resolve();
-                });
-            }));
-
-            // Add footer
-            const footer = document.createElement('div');
-            footer.style.cssText = `
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 8px;
-                margin-top: 8px;
-                border-top: 1px solid rgba(245, 158, 11, 0.3);
-                font-size: 12px;
-            `;
-            footer.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <img src="/favicon-32x32.png" width="16" height="16" style="border-radius: 4px;" />
-                    <span style="color: #f59e0b; font-weight: 600;">${title.split(' - ')[0] || 'Tournament'}</span>
-                </div>
-                <span style="color: white; font-weight: 500;">${title.includes('Match') ? title.split(' - ')[1] : 'Match'}</span>
-            `;
-            container.appendChild(footer);
-
-            // Wait for layout
-            await new Promise(r => setTimeout(r, 100));
-
-            // Capture screenshot
-            const canvas = await html2canvas(container, {
-                backgroundColor: '#1a1a1a',
-                useCORS: true,
-                scale: Math.max(window.devicePixelRatio || 1, 2),
-            });
-
-            // Copy to clipboard
-            canvas.toBlob(async (blob) => {
-                if (blob) {
-                    await navigator.clipboard.write([
-                        new ClipboardItem({ 'image/png': blob })
-                    ]);
-                    toast.success('Copied to clipboard!');
-                }
-                document.body.removeChild(container);
-                setCopyingMatchKey(null);
-            }, 'image/png');
-        } catch (err) {
-            toast.error('Failed to copy');
-            setCopyingMatchKey(null);
-        }
     };
 
     const handleFileChange = async (files: FileList | null) => {
@@ -541,22 +475,6 @@ const AdminRecentMatchesPage = () => {
                                                                                 }}
                                                                             >
                                                                                 <FiEye className="h-4 w-4" />
-                                                                            </Button>
-                                                                            <Button
-                                                                                variant="outline"
-                                                                                size="sm"
-                                                                                disabled={copyingMatchKey === `${tournament.id}-${matchNum}`}
-                                                                                onClick={() => copyMatchImages(
-                                                                                    matchImages.map(img => img.imageUrl),
-                                                                                    `${tournament.name} - Match ${matchNum}`,
-                                                                                    `${tournament.id}-${matchNum}`
-                                                                                )}
-                                                                            >
-                                                                                {copyingMatchKey === `${tournament.id}-${matchNum}` ? (
-                                                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                                                ) : (
-                                                                                    <Copy className="h-4 w-4" />
-                                                                                )}
                                                                             </Button>
                                                                             <Button
                                                                                 variant="destructive"
