@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { FiUpload, FiTrash2, FiImage, FiX, FiEdit, FiScissors, FiEye } from "react-icons/fi";
+import { Copy } from "lucide-react";
+import html2canvas from "html2canvas-pro";
 import { cropImagesRightHalf } from "@/src/utils/image/cropImage";
 import { Button } from "@/src/components/ui/button";
 import {
@@ -61,6 +63,7 @@ const AdminRecentMatchesPage = () => {
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [previewImages, setPreviewImages] = useState<string[]>([]); // For post-upload preview
     const [previewTitle, setPreviewTitle] = useState(""); // Dynamic title for preview modal
+    const [isCopying, setIsCopying] = useState(false); // Loading state for copy button
     const [expandedTournament, setExpandedTournament] = useState<string | null>(null); // For viewing matches
 
     // Auto-select latest match number when tournament changes
@@ -750,30 +753,91 @@ const AdminRecentMatchesPage = () => {
                             <DialogTitle className="text-white text-sm">{previewTitle || "Preview"}</DialogTitle>
                         </DialogHeader>
 
-                        {/* Stacked images - 2 per row for easy screenshotting */}
-                        <div className="grid grid-cols-2 gap-1 p-2">
-                            {previewImages.map((url, idx) => (
-                                <div key={idx} className="relative w-full">
-                                    <Image
-                                        src={url}
-                                        alt={`Image ${idx + 1}`}
-                                        width={200}
-                                        height={100}
-                                        className="w-full h-auto object-contain"
-                                        unoptimized
-                                    />
+                        {/* Screenshot container - includes title for clean capture */}
+                        <div id="preview-images-container" className="bg-[#1a1a1a] p-2 rounded-xl overflow-hidden">
+                            {/* Images grid */}
+                            <div className="grid grid-cols-2 gap-1.5">
+                                {previewImages.map((url, idx) => (
+                                    <div key={idx} className="relative w-full aspect-[4/5] overflow-hidden bg-black rounded-lg">
+                                        <Image
+                                            src={url}
+                                            alt={`Image ${idx + 1}`}
+                                            fill
+                                            className="object-contain"
+                                            unoptimized
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Shared footer with title */}
+                            <div className="bg-[#1a1a1a] px-2 py-2 mt-2 border-t border-amber-500/30">
+                                <div className="flex items-center justify-between text-xs">
+                                    <div className="flex items-center gap-1.5">
+                                        <Image
+                                            src="/favicon-32x32.png"
+                                            alt="Logo"
+                                            width={16}
+                                            height={16}
+                                            className="rounded"
+                                        />
+                                        <span className="text-amber-400 font-medium">
+                                            {previewTitle?.includes('Match')
+                                                ? previewTitle.split(' - ')[1]
+                                                : 'Match'}
+                                        </span>
+                                    </div>
+                                    <span className="font-semibold text-white">
+                                        {previewTitle?.split(' - ')[0] || 'Tournament'}
+                                    </span>
                                 </div>
-                            ))}
+                            </div>
                         </div>
 
-                        <DialogFooter className="p-4 pt-2">
+                        <DialogFooter className="p-4 pt-2 flex gap-2">
+                            <Button
+                                variant="outline"
+                                disabled={isCopying}
+                                onClick={async () => {
+                                    const container = document.getElementById('preview-images-container');
+                                    if (!container) return;
+                                    setIsCopying(true);
+                                    try {
+                                        const canvas = await html2canvas(container, {
+                                            backgroundColor: '#1a1a1a',
+                                            useCORS: true,
+                                            scale: Math.max(window.devicePixelRatio || 1, 2), // Best quality for device
+                                        });
+                                        canvas.toBlob(async (blob) => {
+                                            if (blob) {
+                                                await navigator.clipboard.write([
+                                                    new ClipboardItem({ 'image/png': blob })
+                                                ]);
+                                                toast.success('Copied to clipboard!');
+                                            }
+                                            setIsCopying(false);
+                                        }, 'image/png');
+                                    } catch (err) {
+                                        toast.error('Failed to copy');
+                                        setIsCopying(false);
+                                    }
+                                }}
+                                className="flex-1"
+                            >
+                                {isCopying ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Copy className="mr-2 h-4 w-4" />
+                                )}
+                                {isCopying ? 'Copying...' : 'Copy'}
+                            </Button>
                             <Button
                                 onClick={() => {
                                     previewImages.forEach(url => URL.revokeObjectURL(url));
                                     setPreviewImages([]);
                                     setShowPreviewModal(false);
                                 }}
-                                className="w-full"
+                                className="flex-1"
                             >
                                 Done
                             </Button>
