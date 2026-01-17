@@ -1,40 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// This route receives images from PWA Share Target
-// It stores them in a cookie/session and redirects to recent-matches
+// This route is a fallback if the service worker doesn't intercept
+// Just redirect to recent-matches - the SW should have handled the images
 export async function POST(request: NextRequest) {
+    // Count images for the URL param
     try {
         const formData = await request.formData();
         const images = formData.getAll("images") as File[];
+        const count = images.length;
 
-        if (images.length === 0) {
-            return NextResponse.redirect(new URL("/admin/recent-matches", request.url));
-        }
-
-        // Convert images to base64 and store in a temporary way
-        // We'll use URL params to signal that images are incoming
-        const imageCount = images.length;
-
-        // Store images in cache for the client to retrieve
-        // Since we can't directly pass files, we'll use a cache approach
-        const cache = await caches.open("share-target-cache");
-
-        // Create a new FormData to store
-        const cacheFormData = new FormData();
-        images.forEach((img) => cacheFormData.append("images", img));
-
-        // Store as a Response
-        await cache.put(
-            "/shared-images",
-            new Response(cacheFormData)
-        );
-
-        // Redirect to recent-matches with a flag
+        // Redirect - the service worker should have already cached the images
         return NextResponse.redirect(
-            new URL(`/admin/recent-matches?shared=${imageCount}`, request.url)
+            new URL(`/admin/recent-matches?shared=${count}`, request.url)
         );
-    } catch (error) {
-        console.error("Share target error:", error);
-        return NextResponse.redirect(new URL("/admin/recent-matches", request.url));
+    } catch {
+        return NextResponse.redirect(
+            new URL("/admin/recent-matches", request.url)
+        );
     }
+}
+
+// Also handle GET in case of issues
+export async function GET(request: NextRequest) {
+    return NextResponse.redirect(
+        new URL("/admin/recent-matches", request.url)
+    );
 }
