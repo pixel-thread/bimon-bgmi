@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { FiUpload, FiTrash2, FiImage, FiX, FiEdit } from "react-icons/fi";
+import { FiUpload, FiTrash2, FiImage, FiX, FiEdit, FiScissors, FiEye } from "react-icons/fi";
+import { cropImagesRightHalf } from "@/src/utils/image/cropImage";
 import { Button } from "@/src/components/ui/button";
 import {
     Select,
@@ -27,7 +28,8 @@ import Image from "next/image";
 type Tournament = {
     id: string;
     name: string;
-    matches?: { id: string }[];
+    createdAt: string;
+    _count?: { matches: number };
 };
 
 type RecentMatchImage = {
@@ -52,6 +54,14 @@ const AdminRecentMatchesPage = () => {
     const [editingGroup, setEditingGroup] = useState<RecentMatchGroup | null>(null);
     const [selectedMatchNumber, setSelectedMatchNumber] = useState<number>(1);
     const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+    const [cropRightHalf, setCropRightHalf] = useState(true); // Default ON for scoreboards
+    const [croppedPreviews, setCroppedPreviews] = useState<string[]>([]); // For preview of cropped images
+    const [croppedFiles, setCroppedFiles] = useState<File[]>([]); // The actual cropped files for upload
+    const [dragIndex, setDragIndex] = useState<number | null>(null);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [previewImages, setPreviewImages] = useState<string[]>([]); // For post-upload preview
+    const [previewTitle, setPreviewTitle] = useState(""); // Dynamic title for preview modal
+    const [expandedTournament, setExpandedTournament] = useState<string | null>(null); // For viewing matches
 
     // Auto-select latest match number when tournament changes
     const handleTournamentChange = (tournamentId: string) => {
@@ -72,7 +82,13 @@ const AdminRecentMatchesPage = () => {
     const { data: tournaments, isLoading: tournamentsLoading } = useQuery({
         queryKey: ["tournaments-with-matches"],
         queryFn: () => http.get<Tournament[]>("/admin/tournament"),
-        select: (data) => data.data,
+        select: (data) => {
+            if (!data.data) return [];
+            // Filter to only show tournaments from the last week
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            return data.data.filter(t => new Date(t.createdAt) >= oneWeekAgo);
+        },
     });
 
     // Fetch matches for selected tournament
@@ -98,7 +114,20 @@ const AdminRecentMatchesPage = () => {
             const formData = new FormData();
             formData.append("tournamentId", selectedTournament);
 
-            uploadFiles.forEach((file, idx) => {
+            // Use pre-cropped files if available (already reordered by user)
+            // Otherwise use original files
+            let filesToUpload = uploadFiles;
+            if (cropRightHalf && croppedFiles.length > 0) {
+                filesToUpload = croppedFiles;
+            } else if (cropRightHalf) {
+                try {
+                    filesToUpload = await cropImagesRightHalf(uploadFiles);
+                } catch (error) {
+                    console.error("Crop failed, using original images:", error);
+                }
+            }
+
+            filesToUpload.forEach((file, idx) => {
                 formData.append(`match_${selectedMatchNumber}_${idx}`, file);
             });
 
@@ -109,7 +138,21 @@ const AdminRecentMatchesPage = () => {
         onSuccess: () => {
             toast.success("Scoreboards uploaded successfully!");
             queryClient.invalidateQueries({ queryKey: ["recent-matches"] });
-            resetForm();
+
+            // Save preview URLs before resetting (don't revoke them yet)
+            if (croppedPreviews.length > 0) {
+                setPreviewImages([...croppedPreviews]);
+                setShowPreviewModal(true);
+            }
+
+            // Reset form but don't revoke preview URLs yet
+            setSelectedTournament("");
+            setEditingGroup(null);
+            setSelectedMatchNumber(1);
+            setUploadFiles([]);
+            setCroppedPreviews([]);
+            setCroppedFiles([]);
+            setDragIndex(null);
             setShowUploadModal(false);
         },
         onError: () => {
@@ -154,6 +197,11 @@ const AdminRecentMatchesPage = () => {
         setEditingGroup(null);
         setSelectedMatchNumber(1);
         setUploadFiles([]);
+        // Cleanup cropped preview URLs and files
+        croppedPreviews.forEach(url => URL.revokeObjectURL(url));
+        setCroppedPreviews([]);
+        setCroppedFiles([]);
+        setDragIndex(null);
     };
 
     // Open edit modal for a group
@@ -175,13 +223,58 @@ const AdminRecentMatchesPage = () => {
         return Array.from({ length: matchCount }, (_, i) => i + 1);
     };
 
-    const handleFileChange = (files: FileList | null) => {
+    const handleFileChange = async (files: FileList | null) => {
         if (!files) return;
-        setUploadFiles([...uploadFiles, ...Array.from(files)]);
+        const newFiles = Array.from(files);
+        const allFiles = [...uploadFiles, ...newFiles];
+        setUploadFiles(allFiles);
+
+        // Generate cropped previews if crop mode is enabled
+        // This generates all previews from scratch since cropping produces N+1 images
+        if (cropRightHalf && allFiles.length > 0) {
+            try {
+                // Clear old previews first
+                croppedPreviews.forEach(url => URL.revokeObjectURL(url));
+
+                const cropped = await cropImagesRightHalf(allFiles);
+                const urls = cropped.map(f => URL.createObjectURL(f));
+                setCroppedPreviews(urls);
+                setCroppedFiles(cropped); // Store cropped files for upload
+            } catch {
+                // If crop fails, just use original previews
+                setCroppedPreviews([]);
+                setCroppedFiles([]);
+            }
+        }
+    };
+
+    // Drag-and-drop reorder handler
+    const handleDrop = (dropIndex: number) => {
+        if (dragIndex === null || dragIndex === dropIndex) return;
+
+        // Reorder both previews and files
+        const newPreviews = [...croppedPreviews];
+        const newFiles = [...croppedFiles];
+
+        // Remove dragged item and insert at drop position
+        const [draggedPreview] = newPreviews.splice(dragIndex, 1);
+        const [draggedFile] = newFiles.splice(dragIndex, 1);
+
+        newPreviews.splice(dropIndex, 0, draggedPreview);
+        newFiles.splice(dropIndex, 0, draggedFile);
+
+        setCroppedPreviews(newPreviews);
+        setCroppedFiles(newFiles);
+        setDragIndex(null);
     };
 
     const removeFile = (fileIndex: number) => {
         setUploadFiles(uploadFiles.filter((_, i) => i !== fileIndex));
+        // Also remove cropped preview
+        if (croppedPreviews[fileIndex]) {
+            URL.revokeObjectURL(croppedPreviews[fileIndex]);
+            setCroppedPreviews(prev => prev.filter((_, i) => i !== fileIndex));
+        }
     };
 
     const canSubmit = selectedTournament && uploadFiles.length > 0;
@@ -229,74 +322,133 @@ const AdminRecentMatchesPage = () => {
                             Upload scoreboard screenshots for users to view. Auto-deleted after 1 week.
                         </p>
                     </div>
-
-                    <Button onClick={openUploadModal}>
-                        <FiUpload className="mr-2 h-4 w-4" />
-                        Upload Scoreboards
-                    </Button>
                 </header>
 
-                {/* Existing Groups */}
+                {/* Tournament List with Expandable Matches */}
                 <div className="space-y-4">
-                    {groupsLoading ? (
+                    {tournamentsLoading ? (
                         <div className="flex items-center justify-center py-12">
                             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                         </div>
-                    ) : !groups || groups.length === 0 ? (
+                    ) : !tournaments || tournaments.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed rounded-lg">
                             <FiImage className="h-12 w-12 text-muted-foreground/50 mb-4" />
                             <h3 className="font-medium text-muted-foreground">
-                                No scoreboards uploaded yet
+                                No tournaments found
                             </h3>
-                            <p className="text-sm text-muted-foreground/70 mt-1">
-                                Click "Upload Scoreboards" to add match screenshots.
-                            </p>
                         </div>
                     ) : (
-                        groups.map((group) => {
-                            const matchCount = new Set(group.images.map(img => img.matchNumber)).size;
+                        tournaments.map((tournament) => {
+                            const group = groups?.find(g => g.tournamentId === tournament.id);
+                            const matchCount = tournament._count?.matches || 0;
+                            const uploadedImageCount = group?.images.length || 0;
+                            const isExpanded = expandedTournament === tournament.id;
+
                             return (
-                                <div
-                                    key={group.id}
-                                    className="bg-card border rounded-lg p-4 hover:border-primary/50 transition-colors cursor-pointer"
-                                    onClick={() => openEditModal(group)}
-                                >
-                                    <div className="flex justify-between items-center">
+                                <div key={tournament.id} className="bg-card border rounded-lg overflow-hidden">
+                                    {/* Tournament Header */}
+                                    <div
+                                        className="p-4 flex justify-between items-center cursor-pointer hover:bg-muted/30 transition-colors"
+                                        onClick={() => setExpandedTournament(isExpanded ? null : tournament.id)}
+                                    >
                                         <div>
                                             <h3 className="font-semibold text-lg">
-                                                {group.tournamentTitle}
+                                                {tournament.name}
                                             </h3>
                                             <p className="text-sm text-muted-foreground">
-                                                {matchCount} match{matchCount !== 1 ? 'es' : ''} • {group.images.length} image{group.images.length !== 1 ? 's' : ''}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground/70 mt-1">
-                                                Uploaded {new Date(group.createdAt).toLocaleDateString()}
+                                                {matchCount} match{matchCount !== 1 ? 'es' : ''}
+                                                {uploadedImageCount > 0 && ` • ${uploadedImageCount} image${uploadedImageCount !== 1 ? 's' : ''} uploaded`}
                                             </p>
                                         </div>
-                                        <div className="flex gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    openEditModal(group);
-                                                }}
-                                            >
-                                                <FiEdit className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    deleteMutation.mutate(group.id);
-                                                }}
-                                                disabled={deleteMutation.isPending}
-                                            >
-                                                <FiTrash2 className="h-4 w-4" />
-                                            </Button>
+                                        <div className="flex items-center gap-2">
+                                            {group && (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        deleteMutation.mutate(group.id);
+                                                    }}
+                                                    disabled={deleteMutation.isPending}
+                                                >
+                                                    <FiTrash2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                            <span className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                                                ▼
+                                            </span>
                                         </div>
                                     </div>
+
+                                    {/* Expanded Matches List */}
+                                    {isExpanded && (
+                                        <div className="border-t bg-muted/20">
+                                            {matchCount === 0 ? (
+                                                <p className="p-4 text-sm text-muted-foreground text-center">
+                                                    No matches in this tournament yet
+                                                </p>
+                                            ) : (
+                                                <div className="divide-y">
+                                                    {Array.from({ length: matchCount }, (_, i) => i + 1).map((matchNum) => {
+                                                        const matchImages = group?.images.filter(img => img.matchNumber === matchNum) || [];
+                                                        return (
+                                                            <div key={matchNum} className="p-3 flex items-center justify-between gap-2">
+                                                                {/* Match info */}
+                                                                <div className="flex-1 flex items-center gap-2">
+                                                                    <span className="font-medium">Match {matchNum}</span>
+                                                                    {matchImages.length > 0 && (
+                                                                        <span className="text-xs text-muted-foreground">
+                                                                            ({matchImages.length} image{matchImages.length !== 1 ? 's' : ''})
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                {/* Action buttons on right */}
+                                                                <div className="flex gap-1">
+                                                                    {matchImages.length > 0 && (
+                                                                        <>
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                onClick={() => {
+                                                                                    setPreviewImages(matchImages.map(img => img.imageUrl));
+                                                                                    setPreviewTitle(`${tournament.name} - Match ${matchNum}`);
+                                                                                    setShowPreviewModal(true);
+                                                                                }}
+                                                                            >
+                                                                                <FiEye className="h-4 w-4" />
+                                                                            </Button>
+                                                                            <Button
+                                                                                variant="destructive"
+                                                                                size="sm"
+                                                                                onClick={() => {
+                                                                                    if (group) {
+                                                                                        matchImages.forEach(img => deleteImageMutation.mutate({ groupId: group.id, imageId: img.id }));
+                                                                                    }
+                                                                                }}
+                                                                                disabled={deleteImageMutation.isPending}
+                                                                            >
+                                                                                <FiTrash2 className="h-4 w-4" />
+                                                                            </Button>
+                                                                        </>
+                                                                    )}
+                                                                    <Button
+                                                                        size="sm"
+                                                                        onClick={() => {
+                                                                            setSelectedTournament(tournament.id);
+                                                                            setSelectedMatchNumber(matchNum);
+                                                                            setShowUploadModal(true);
+                                                                        }}
+                                                                    >
+                                                                        <FiUpload className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })
@@ -311,13 +463,24 @@ const AdminRecentMatchesPage = () => {
                     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>
-                                {editingGroup ? `Edit: ${editingGroup.tournamentTitle}` : "Upload Scoreboards"}
+                                {editingGroup
+                                    ? `Edit: ${editingGroup.tournamentTitle}`
+                                    : selectedTournament && selectedMatchNumber
+                                        ? `Upload to Match ${selectedMatchNumber}`
+                                        : "Add Tournament Scoreboards"
+                                }
                             </DialogTitle>
+                            {selectedTournament && (
+                                <p className="text-sm text-muted-foreground">
+                                    {tournaments?.find(t => t.id === selectedTournament)?.name}
+                                    {selectedMatchNumber > 0 && ` • Match ${selectedMatchNumber}`}
+                                </p>
+                            )}
                         </DialogHeader>
 
                         <div className="space-y-6 py-4">
-                            {/* Tournament Selection - disabled in edit mode */}
-                            {!editingGroup && (
+                            {/* Tournament Selection - only show when not pre-selected and not editing */}
+                            {!editingGroup && !selectedTournament && (
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Select Tournament</label>
                                     <Select
@@ -388,40 +551,84 @@ const AdminRecentMatchesPage = () => {
                                 );
                             })()}
 
-                            {/* Match Number Selection */}
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">
-                                        {editingGroup ? "Add Images To" : "Match Number"}
-                                    </label>
-                                    <Select
-                                        value={selectedMatchNumber.toString()}
-                                        onValueChange={(v) => setSelectedMatchNumber(parseInt(v))}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select match" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {getMatchOptions().map((num) => {
-                                                const existingCount = editingGroup
-                                                    ? editingGroup.images.filter(img => img.matchNumber === num).length
-                                                    : 0;
-                                                return (
-                                                    <SelectItem key={num} value={num.toString()}>
-                                                        Match {num} {existingCount > 0 && `(${existingCount} existing)`}
-                                                    </SelectItem>
-                                                );
-                                            })}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {/* File previews */}
-                                {uploadFiles.length > 0 && (
+                            {/* Match Number Selection - hide when pre-selected from main view */}
+                            {(editingGroup || !selectedTournament) && (
+                                <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium">Selected Files</label>
-                                        <div className="flex gap-2 flex-wrap">
-                                            {uploadFiles.map((file, idx) => (
+                                        <label className="text-sm font-medium">
+                                            {editingGroup ? "Add Images To" : "Match Number"}
+                                        </label>
+                                        <Select
+                                            value={selectedMatchNumber.toString()}
+                                            onValueChange={(v) => setSelectedMatchNumber(parseInt(v))}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select match" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {getMatchOptions().map((num) => {
+                                                    const existingCount = editingGroup
+                                                        ? editingGroup.images.filter(img => img.matchNumber === num).length
+                                                        : 0;
+                                                    return (
+                                                        <SelectItem key={num} value={num.toString()}>
+                                                            Match {num} {existingCount > 0 && `(${existingCount} existing)`}
+                                                        </SelectItem>
+                                                    );
+                                                })}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* File previews */}
+                            {uploadFiles.length > 0 && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm font-medium">
+                                            {cropRightHalf && croppedPreviews.length > 0
+                                                ? `Cropped Output (${croppedPreviews.length} images)`
+                                                : `Selected Files (${uploadFiles.length})`}
+                                        </label>
+                                        {cropRightHalf && croppedPreviews.length > 0 && (
+                                            <span className="text-xs text-muted-foreground">
+                                                Drag to reorder
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex gap-2 flex-wrap">
+                                        {cropRightHalf && croppedPreviews.length > 0 ? (
+                                            // Show cropped previews (N+1 images) with drag-to-reorder
+                                            croppedPreviews.map((url, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    draggable
+                                                    onDragStart={() => setDragIndex(idx)}
+                                                    onDragOver={(e) => e.preventDefault()}
+                                                    onDrop={() => handleDrop(idx)}
+                                                    onDragEnd={() => setDragIndex(null)}
+                                                    className={`relative w-24 h-20 rounded-md overflow-hidden border cursor-grab active:cursor-grabbing transition-all ${dragIndex === idx
+                                                        ? "opacity-50 scale-95 border-indigo-500"
+                                                        : dragIndex !== null
+                                                            ? "border-dashed border-indigo-300"
+                                                            : ""
+                                                        }`}
+                                                >
+                                                    <Image
+                                                        src={url}
+                                                        alt={idx === 0 ? "Left half (1-3)" : `Right half ${idx}`}
+                                                        fill
+                                                        className="object-cover pointer-events-none"
+                                                    />
+                                                    <span className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[10px] px-1 py-0.5 text-center">
+                                                        {idx + 1}
+                                                    </span>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            // Show original files with remove button
+                                            uploadFiles.map((file, idx) => (
                                                 <div
                                                     key={idx}
                                                     className="relative w-20 h-16 rounded-md overflow-hidden border group"
@@ -439,30 +646,64 @@ const AdminRecentMatchesPage = () => {
                                                         <FiX className="h-3 w-3 text-white" />
                                                     </button>
                                                 </div>
-                                            ))}
-                                        </div>
+                                            ))
+                                        )}
                                     </div>
-                                )}
+                                    {cropRightHalf && croppedPreviews.length > 0 && (
+                                        <button
+                                            onClick={() => {
+                                                setUploadFiles([]);
+                                                croppedPreviews.forEach(url => URL.revokeObjectURL(url));
+                                                setCroppedPreviews([]);
+                                            }}
+                                            className="text-xs text-red-500 hover:underline"
+                                        >
+                                            Clear all files
+                                        </button>
+                                    )}
+                                </div>
+                            )}
 
-                                {/* Upload input */}
-                                <label className="block">
-                                    <div className="flex items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                                        <div className="text-center">
-                                            <FiUpload className="h-5 w-5 mx-auto text-muted-foreground" />
-                                            <span className="text-sm text-muted-foreground">
-                                                Click to upload images
-                                            </span>
-                                        </div>
-                                    </div>
+                            {/* Crop toggle */}
+                            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                                <label className="flex items-center gap-2 cursor-pointer">
                                     <input
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        className="hidden"
-                                        onChange={(e) => handleFileChange(e.target.files)}
+                                        type="checkbox"
+                                        checked={cropRightHalf}
+                                        onChange={(e) => {
+                                            setCropRightHalf(e.target.checked);
+                                            // Clear cropped previews when toggle changes
+                                            croppedPreviews.forEach(url => URL.revokeObjectURL(url));
+                                            setCroppedPreviews([]);
+                                        }}
+                                        className="w-4 h-4 rounded"
                                     />
+                                    <FiScissors className="h-4 w-4 text-indigo-500" />
+                                    <span className="text-sm font-medium">Auto-Crop Scoreboard</span>
                                 </label>
+                                <span className="text-xs text-muted-foreground">
+                                    (1 left panel + {uploadFiles.length} right halves = {uploadFiles.length + 1} images)
+                                </span>
                             </div>
+
+                            {/* Upload input */}
+                            <label className="block">
+                                <div className="flex items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                                    <div className="text-center">
+                                        <FiUpload className="h-5 w-5 mx-auto text-muted-foreground" />
+                                        <span className="text-sm text-muted-foreground">
+                                            Click to upload images
+                                        </span>
+                                    </div>
+                                </div>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    className="hidden"
+                                    onChange={(e) => handleFileChange(e.target.files)}
+                                />
+                            </label>
                         </div>
 
                         <DialogFooter>
@@ -494,8 +735,53 @@ const AdminRecentMatchesPage = () => {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                {/* Preview Modal - Shows uploaded images for screenshotting */}
+                <Dialog open={showPreviewModal} onOpenChange={(open) => {
+                    setShowPreviewModal(open);
+                    if (!open) {
+                        // Cleanup preview URLs when closing
+                        previewImages.forEach(url => URL.revokeObjectURL(url));
+                        setPreviewImages([]);
+                    }
+                }}>
+                    <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto p-0 bg-[#1a1a1a]">
+                        <DialogHeader className="p-3 pb-1">
+                            <DialogTitle className="text-white text-sm">{previewTitle || "Preview"}</DialogTitle>
+                        </DialogHeader>
+
+                        {/* Stacked images - 2 per row for easy screenshotting */}
+                        <div className="grid grid-cols-2 gap-1 p-2">
+                            {previewImages.map((url, idx) => (
+                                <div key={idx} className="relative w-full">
+                                    <Image
+                                        src={url}
+                                        alt={`Image ${idx + 1}`}
+                                        width={200}
+                                        height={100}
+                                        className="w-full h-auto object-contain"
+                                        unoptimized
+                                    />
+                                </div>
+                            ))}
+                        </div>
+
+                        <DialogFooter className="p-4 pt-2">
+                            <Button
+                                onClick={() => {
+                                    previewImages.forEach(url => URL.revokeObjectURL(url));
+                                    setPreviewImages([]);
+                                    setShowPreviewModal(false);
+                                }}
+                                className="w-full"
+                            >
+                                Done
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
-        </div>
+        </div >
     );
 };
 
