@@ -12,7 +12,7 @@ import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
 import { CategoryBadge } from "@/src/components/ui/category-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
-import { History, Ban, AlertTriangle, CheckCircle, DollarSign, ArrowUpRight, Shield, Heart, User } from "lucide-react";
+import { History, Ban, AlertTriangle, CheckCircle, DollarSign, ArrowUpRight, Shield, Heart, User, Crown } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { usePlayer } from "@/src/hooks/player/usePlayer";
 import { usePlayerStats } from "@/src/hooks/player/usePlayerStats";
@@ -305,6 +305,9 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                           <Ban className="w-3 h-3 mr-0.5 sm:mr-1" />
                           BANNED
                         </Badge>
+                      )}
+                      {(player as any)?.hasRoyalPass && (
+                        <Crown className="w-4 h-4 text-amber-500 crown-glow flex-shrink-0" />
                       )}
                       {isSuperAdmin && player?.isUCExempt && (
                         <Badge

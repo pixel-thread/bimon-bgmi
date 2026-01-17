@@ -17,7 +17,6 @@ import {
     FiHome,
     FiInfo,
     FiHelpCircle,
-    FiAward,
     FiUser,
     FiUsers,
     FiShield,
@@ -26,6 +25,7 @@ import {
     FiLoader,
 } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
+import { Crown } from "lucide-react";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
 import Link from "next/link";
@@ -208,6 +208,22 @@ export default function Navigation() {
 
                 {/* User Actions */}
                 <div className="flex items-center space-x-2">
+                    {/* Royal Pass Button - Desktop */}
+                    {isAuthorized && (
+                        <button
+                            onClick={() => router.push('/royal-pass')}
+                            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all duration-200"
+                            aria-label="Royal Pass"
+                        >
+                            <span className="relative inline-flex">
+                                <Crown className="h-4 w-4" />
+                                <span className="absolute inset-0 overflow-hidden pointer-events-none">
+                                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/80 to-transparent w-[200%] -translate-x-full animate-[iconShine_1.5s_ease-in-out_1] [animation-delay:1s] mix-blend-overlay" />
+                                </span>
+                            </span>
+                        </button>
+                    )}
+
                     {/* Theme Toggle */}
                     <button
                         onClick={onToggleTheme}
@@ -247,27 +263,47 @@ export default function Navigation() {
                 </div>
             </div>
 
-            {/* Mobile Hamburger Button - Inline in header */}
-            <motion.button
-                whileTap={{ scale: 0.95 }}
-                className="md:hidden p-2 relative"
-                onClick={() => setIsOpen(!isOpen)}
-                aria-label="Toggle menu"
-            >
-                <motion.div
-                    animate={{ rotate: isOpen ? 90 : 0 }}
-                    transition={{ duration: 0.2 }}
-                >
-                    {isOpen ? (
-                        <FiX className="h-6 w-6 text-gray-900 dark:text-white" />
-                    ) : (
-                        <FiMenu className="h-6 w-6 text-gray-900 dark:text-white" />
-                    )}
-                </motion.div>
-                {(hasPendingRequests || showPromoterNew) && !isOpen && (
-                    <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-red-500"></span>
+            {/* Mobile: Royal Pass Button + Hamburger - Inline in header */}
+            <div className="md:hidden flex items-center gap-1">
+                {/* Royal Pass Button - subtle crown icon */}
+                {isAuthorized && (
+                    <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        className="p-2 text-amber-500 dark:text-amber-400"
+                        onClick={() => router.push('/royal-pass')}
+                        aria-label="Royal Pass"
+                    >
+                        <span className="relative inline-flex">
+                            <Crown className="h-5 w-5" />
+                            <span className="absolute inset-0 overflow-hidden pointer-events-none">
+                                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/80 to-transparent w-[200%] -translate-x-full animate-[iconShine_1.5s_ease-in-out_1] [animation-delay:0.5s] mix-blend-overlay" />
+                            </span>
+                        </span>
+                    </motion.button>
                 )}
-            </motion.button>
+
+                {/* Hamburger Button */}
+                <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    className="p-2 relative"
+                    onClick={() => setIsOpen(!isOpen)}
+                    aria-label="Toggle menu"
+                >
+                    <motion.div
+                        animate={{ rotate: isOpen ? 90 : 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        {isOpen ? (
+                            <FiX className="h-6 w-6 text-gray-900 dark:text-white" />
+                        ) : (
+                            <FiMenu className="h-6 w-6 text-gray-900 dark:text-white" />
+                        )}
+                    </motion.div>
+                    {(hasPendingRequests || showPromoterNew) && !isOpen && (
+                        <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                    )}
+                </motion.button>
+            </div>
 
             {/* Mobile Menu Overlay */}
             {mounted && createPortal(

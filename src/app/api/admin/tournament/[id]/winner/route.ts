@@ -236,6 +236,8 @@ export async function POST(
           // Use net amount after both taxes
           const finalAmount = soloTaxResult.netAmount;
 
+          // Prize winners don't get RP benefit - RP benefit goes to first non-prize position (Safety Net model)
+
           // Update or create UC balance
           await prisma.uC.upsert({
             where: { playerId: player.id },
@@ -247,7 +249,7 @@ export async function POST(
             update: { balance: { increment: finalAmount } },
           });
 
-          // Create single transaction record (shows net amount player receives)
+          // Create transaction record for prize
           const prizeDescription = `${getOrdinal(placement.position)} Place Prize: ${tournament.name}`;
 
           await prisma.transaction.create({
@@ -268,6 +270,57 @@ export async function POST(
       }
 
       winnerTeam.push(winTeam);
+    }
+
+    // Royal Pass Safety Net: Refund entry fee to first non-prize position (e.g., 3rd place)
+    // This is the "consolation prize" for RP holders who just missed winning
+    if (tournament.seasonId && placements && placements.length > 0) {
+      const entryFee = tournament.fee || 0;
+      const safetyNetPosition = placements.length + 1; // First position that doesn't get prize
+
+      // Find the team at safety net position from sorted team rankings
+      const safetyNetTeamData = sortedData[safetyNetPosition - 1]; // 0-indexed
+
+      if (safetyNetTeamData && entryFee > 0) {
+        // Get full team data with player.user relation
+        const safetyNetTeam = teamsStats.find(ts => ts.team.id === safetyNetTeamData.teamId);
+
+        if (safetyNetTeam) {
+          for (const player of safetyNetTeam.team.players) {
+            // Check if player has Royal Pass
+            const royalPass = await prisma.royalPass.findFirst({
+              where: {
+                playerId: player.id,
+                seasonId: tournament.seasonId,
+                isActive: true,
+              },
+            });
+
+            if (royalPass) {
+              // Refund entry fee to RP holder
+              await prisma.uC.upsert({
+                where: { playerId: player.id },
+                create: {
+                  player: { connect: { id: player.id } },
+                  user: { connect: { id: player.user.id } },
+                  balance: entryFee,
+                },
+                update: { balance: { increment: entryFee } },
+              });
+
+              // Create transaction record
+              await prisma.transaction.create({
+                data: {
+                  amount: entryFee,
+                  type: "credit",
+                  description: `👑 RP Safety Net (${getOrdinal(safetyNetPosition)}): ${tournament.name}`,
+                  playerId: player.id,
+                },
+              });
+            }
+          }
+        }
+      }
     }
 
     // Mark tournament as completed with winners declared and set to INACTIVE

@@ -14,7 +14,7 @@ import { PromoterTab } from "@/src/components/profile/PromoterTab";
 import {
     Bell, Check, X, ArrowUpRight, ArrowDownLeft, Clock, DollarSign,
     User, Target, Swords, TrendingUp, TrendingDown, Minus, Settings,
-    Trophy, Calendar, Star, Medal, ShieldAlert, History, ChevronLeft, ChevronRight, Loader2, Gift, ArrowLeft
+    Trophy, Calendar, Star, Medal, ShieldAlert, History, ChevronLeft, ChevronRight, Loader2, Gift, ArrowLeft, Crown
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
@@ -25,6 +25,7 @@ import { getDisplayName } from "@/src/utils/bgmiDisplay";
 import { getKdRank } from "@/src/utils/categoryUtils";
 import { CategoryBadge } from "@/src/components/ui/category-badge";
 import Link from "next/link";
+import { useRoyalPass } from "@/src/hooks/royal-pass/useRoyalPass";
 
 type UCTransfer = {
     id: string;
@@ -88,6 +89,9 @@ export default function ProfilePage() {
 
     // Loading state
     const isPageLoading = isAuthLoading || !isClerkLoaded;
+
+    // Royal Pass status for Crown badge
+    const { hasRoyalPass } = useRoyalPass();
 
     // UC History expanded state (lazy load)
     const [showUCHistory, setShowUCHistory] = useState(false);
@@ -447,7 +451,12 @@ export default function ProfilePage() {
                     )}
                 </div>
                 <div>
-                    <h1 className="text-3xl font-bold">{getDisplayName(user.displayName, user.userName)}</h1>
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-3xl font-bold">{getDisplayName(user.displayName, user.userName)}</h1>
+                        {hasRoyalPass && (
+                            <Crown className="w-6 h-6 text-amber-500 crown-glow flex-shrink-0" />
+                        )}
+                    </div>
                     <p className="text-sm text-muted-foreground">@{user.userName}</p>
                     <p className="text-muted-foreground">{user.email || "No email linked"}</p>
                 </div>

@@ -18,7 +18,15 @@ export async function GET(req: NextRequest) {
         options: true,
         tournament: true,
         playersVotes: {
-          include: { player: { include: { user: true, characterImage: true } } },
+          include: {
+            player: {
+              include: {
+                user: true,
+                characterImage: true,
+                royalPasses: { where: { isActive: true }, take: 1 },
+              }
+            }
+          },
         },
       },
       page,
@@ -52,7 +60,7 @@ export async function GET(req: NextRequest) {
         console.error("Failed to fetch Clerk user images:", error);
       }
 
-      // Add imageUrl to each vote's player
+      // Add imageUrl and hasRoyalPass to each vote's player
       const pollsWithImages = polls.map((poll: any) => ({
         ...poll,
         playersVotes: poll.playersVotes?.map((vote: any) => ({
@@ -62,6 +70,7 @@ export async function GET(req: NextRequest) {
             imageUrl: vote.player?.user?.clerkId
               ? clerkUserMap.get(vote.player.user.clerkId) || null
               : null,
+            hasRoyalPass: vote.player?.royalPasses?.length > 0,
           }
         }))
       }));
@@ -73,8 +82,20 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Add hasRoyalPass to players even without images
+    const pollsWithRoyalPass = polls.map((poll: any) => ({
+      ...poll,
+      playersVotes: poll.playersVotes?.map((vote: any) => ({
+        ...vote,
+        player: {
+          ...vote.player,
+          hasRoyalPass: vote.player?.royalPasses?.length > 0,
+        }
+      }))
+    }));
+
     return SuccessResponse({
-      data: polls,
+      data: pollsWithRoyalPass,
       status: 200,
       message: "Polls fetched successfully",
     });

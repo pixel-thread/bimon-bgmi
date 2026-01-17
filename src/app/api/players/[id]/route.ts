@@ -29,6 +29,7 @@ export async function GET(
       data: {
         ...player,
         clerkImageUrl,
+        hasRoyalPass: (player as any)?.royalPasses?.length > 0,
       }
     });
   } catch (error) {

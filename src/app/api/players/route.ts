@@ -132,6 +132,7 @@ export async function GET(req: NextRequest) {
           email: clerkInfo?.email || null,
           firstName: clerkInfo?.firstName || null,
           lastName: clerkInfo?.lastName || null,
+          hasRoyalPass: (player as any).royalPasses?.length > 0,
         };
       });
     } else {
@@ -164,6 +165,7 @@ export async function GET(req: NextRequest) {
           email: clerkInfo?.email || null,
           firstName: clerkInfo?.firstName || null,
           lastName: clerkInfo?.lastName || null,
+          hasRoyalPass: (player as any).royalPasses?.length > 0,
         };
       });
     }

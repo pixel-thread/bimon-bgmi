@@ -192,6 +192,7 @@ model Season {
   teamStats         TeamStats[]
   teamPlayerStats   TeamPlayerStats[]
   matchPlayerPlayed MatchPlayerPlayed[]
+  royalPasses       RoyalPass[]
 
   @@unique([id, status]) // only one active season
   @@index([id])
@@ -376,6 +377,9 @@ model Player {
   
   // Referral tracking - if this player was referred
   referral             Referral?
+  
+  // Royal Pass subscriptions
+  royalPasses          RoyalPass[]
 
   @@index([userId])
   @@index([pollId])
@@ -790,4 +794,21 @@ model Referral {
 
   @@index([promoterId])
   @@index([status])
+}
+
+// Royal Pass subscription for seasonal +10% win bonus
+model RoyalPass {
+  id        String   @id @default(uuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  seasonId  String
+  season    Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@unique([playerId, seasonId]) // One RP per player per season
+  @@index([playerId])
+  @@index([seasonId])
+  @@index([isActive])
 }

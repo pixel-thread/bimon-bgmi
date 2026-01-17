@@ -557,6 +557,41 @@ link[rel="mask-icon"] {
   }
 }
 
+/* Shimmer slide animation for Royal Pass crown icon */
+@keyframes shimmerSlide {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+/* Crown icon glow animation - clean drop-shadow pulse */
+@keyframes crownGlow {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0px transparent);
+  }
+
+  50% {
+    filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8)) drop-shadow(0 0 16px rgba(251, 191, 36, 0.4));
+  }
+}
+
+/* Icon shine sweep - white glint from left to right */
+@keyframes iconShine {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 /* Smooth horizontal scrolling for podium */
 .scrollbar-hide {
   -ms-overflow-style: none;

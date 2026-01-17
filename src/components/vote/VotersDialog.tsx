@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { FiUsers } from "react-icons/fi";
-import { User } from "lucide-react";
+import { User, Crown } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -185,8 +185,11 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                                           showUserIcon
                                         />
                                         <div className="flex-1">
-                                          <p className="font-medium text-gray-900 dark:text-white">
+                                          <p className="font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
                                             {getDisplayName(vote.player.user.displayName, vote.player.user.userName)}
+                                            {(vote.player as any)?.hasRoyalPass && (
+                                              <Crown className="w-4 h-4 text-amber-500 crown-glow flex-shrink-0" />
+                                            )}
                                           </p>
                                           <p className="text-xs text-gray-500 dark:text-gray-400">
                                             {new Date(

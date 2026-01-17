@@ -13,7 +13,7 @@ import http from "@/src/utils/http";
 import { ADMIN_PLAYER_ENDPOINTS } from "@/src/lib/endpoints/admin/player";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Crown, Medal, Award, TrendingUp, Target, Gamepad2, Coins } from "lucide-react";
+import { ChevronLeft, ChevronRight, Crown, Medal, Award, TrendingUp, Target, Gamepad2, Coins, Star } from "lucide-react";
 import { getDisplayName } from "@/src/utils/bgmiDisplay";
 
 type PlayerT = {
@@ -28,6 +28,7 @@ type PlayerT = {
     imageUrl?: string | null;
     characterImageUrl?: string | null;
     kills?: number;
+    hasRoyalPass?: boolean;
 };
 
 interface CustomPlayerTableProps {
@@ -122,7 +123,7 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
             bg: "bg-gradient-to-r from-yellow-500/20 via-amber-500/10 to-yellow-500/20 dark:from-yellow-500/30 dark:via-amber-500/20 dark:to-yellow-500/30",
             border: "border-yellow-500/50",
             badge: "bg-gradient-to-br from-yellow-400 to-amber-500",
-            icon: Crown,
+            icon: Star,
             glow: "shadow-[0_0_20px_rgba(234,179,8,0.3)]"
         };
         if (rank === 2) return {
@@ -236,6 +237,9 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                                             <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate text-sm sm:text-base">
                                                 {getDisplayName(player.displayName, player.userName)}
                                             </span>
+                                            {player.hasRoyalPass && (
+                                                <Crown className="w-4 h-4 text-amber-500 shrink-0" />
+                                            )}
                                             {player.isBanned && (
                                                 <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
                                                     Banned

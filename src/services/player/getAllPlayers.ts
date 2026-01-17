@@ -23,6 +23,7 @@ export async function getAllPlayers({ where, page = "1", orderBy }: Props) {
           matchPlayerPlayed: true,
           uc: true,
           characterImage: true,
+          royalPasses: { where: { isActive: true } },
         },
         orderBy: { [orderBy || "createdAt"]: "desc" },
       }),
@@ -40,6 +41,7 @@ export async function getAllPlayers({ where, page = "1", orderBy }: Props) {
           matchPlayerPlayed: true,
           uc: true,
           characterImage: true,
+          royalPasses: { where: { isActive: true } },
         },
         take,
         skip,
@@ -50,3 +52,4 @@ export async function getAllPlayers({ where, page = "1", orderBy }: Props) {
     ]);
   }
 }
+
