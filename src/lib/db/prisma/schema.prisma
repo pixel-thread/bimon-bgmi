@@ -701,6 +701,10 @@ model PlayerJobListing {
   description    String?  @db.VarChar(150) // Max 150 chars
   phoneNumber    String   // Mandatory
   experience     String?  // 1_MONTH, 6_MONTHS, 1_YEAR, 2_YEARS, 3_YEARS_PLUS
+  location       String?  @db.VarChar(50)  // City/Region, e.g., "Mumbai", "Delhi NCR"
+  availability   String?  // Time range e.g., "9AM-6PM"
+  workingHours   Json?    // {"mon": "9AM-6PM", "tue": "9AM-6PM", "sun": "CLOSED", ...}
+  imageUrls      String[] // External image URLs (max 3)
   isActive       Boolean  @default(true)
   
   // Reaction tracking

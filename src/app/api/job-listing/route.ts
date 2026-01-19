@@ -16,6 +16,10 @@ const createJobListingSchema = z.object({
     description: z.string().max(150, "Description must be 150 characters or less").optional(),
     phoneNumber: z.string().min(1, "Phone number is required"),
     experience: z.string().optional(),
+    location: z.string().max(50, "Location must be 50 characters or less").optional(),
+    availability: z.string().optional(),
+    workingHours: z.record(z.string(), z.string()).optional(),
+    imageUrls: z.array(z.string()).max(3).optional(),
 });
 
 // GET - Get all active job listings for banner
@@ -125,6 +129,10 @@ export async function POST(req: NextRequest) {
             description: body.description,
             phoneNumber: body.phoneNumber,
             experience: body.experience,
+            location: body.location,
+            availability: body.availability,
+            workingHours: body.workingHours,
+            imageUrls: body.imageUrls,
         });
 
         // Predefined categories

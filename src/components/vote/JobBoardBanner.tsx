@@ -1,13 +1,16 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Phone, ChevronLeft, ChevronRight, X, ThumbsUp, ThumbsDown, CheckCircle } from "lucide-react";
-import { useJobListings, useReactToListing, JobListing, EXPERIENCE_OPTIONS } from "@/src/hooks/jobListing/useJobListings";
+import { Phone, ChevronLeft, ChevronRight, X, ThumbsUp, ThumbsDown, CheckCircle, MapPin, Clock, ExternalLink } from "lucide-react";
+import { useJobListings, useReactToListing, JobListing, EXPERIENCE_OPTIONS, TIME_OPTIONS } from "@/src/hooks/jobListing/useJobListings";
 import { PlayerAvatar } from "@/src/components/ui/player-avatar";
 import { getDisplayName } from "@/src/utils/bgmiDisplay";
 import { Skeleton } from "@/src/components/ui/skeleton";
+import Link from "next/link";
 
 const AUTO_SCROLL_INTERVAL = 3000; // 3 seconds
+const BANNER_HIDDEN_KEY = "jobBannerHiddenUntil";
+const HIDE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // Type for optimistic reaction state per listing
 type OptimisticReaction = {
@@ -21,7 +24,19 @@ export function JobBoardBanner() {
     const { mutate: reactToListing } = useReactToListing();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
-    const [isClosed, setIsClosed] = useState(false);
+    const [isClosed, setIsClosed] = useState(() => {
+        if (typeof window === "undefined") return false;
+        try {
+            const hiddenUntil = localStorage.getItem(BANNER_HIDDEN_KEY);
+            if (hiddenUntil && Date.now() < parseInt(hiddenUntil)) {
+                return true;
+            }
+            localStorage.removeItem(BANNER_HIDDEN_KEY);
+            return false;
+        } catch {
+            return false;
+        }
+    });
 
     // Local optimistic state for reactions (keyed by listing ID)
     const [optimisticReactions, setOptimisticReactions] = useState<Record<string, OptimisticReaction>>({});
@@ -249,16 +264,37 @@ export function JobBoardBanner() {
                         {currentListing.experience && (
                             <span className="text-[10px] text-amber-600 dark:text-amber-400">
                                 {EXPERIENCE_OPTIONS.find(o => o.value === currentListing.experience)?.label || currentListing.experience} exp
+                                {currentListing.availability && currentListing.availability.includes("-") && (
+                                    <span className="ml-1.5">
+                                        • {currentListing.availability.split("-").map(t => TIME_OPTIONS.find(o => o.value === t)?.label || t).join(" - ")}
+                                    </span>
+                                )}
+                            </span>
+                        )}
+                        {!currentListing.experience && currentListing.availability && currentListing.availability.includes("-") && (
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
+                                <Clock className="h-2.5 w-2.5" />
+                                {currentListing.availability.split("-").map(t => TIME_OPTIONS.find(o => o.value === t)?.label || t).join(" - ")}
                             </span>
                         )}
                     </div>
                     <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 shrink-0">
                         {displayCategory1}{displayCategory2 && ` • ${displayCategory2}`}
                     </span>
+                    {/* Location badge */}
+                    {currentListing.location && (
+                        <span className="flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-medium rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 shrink-0">
+                            <MapPin className="h-2.5 w-2.5" />
+                            {currentListing.location}
+                        </span>
+                    )}
                 </div>
                 {/* Close Button */}
                 <button
-                    onClick={() => setIsClosed(true)}
+                    onClick={() => {
+                        localStorage.setItem(BANNER_HIDDEN_KEY, String(Date.now() + HIDE_DURATION_MS));
+                        setIsClosed(true);
+                    }}
                     className="p-1 rounded-full hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
                     aria-label="Close banner"
                 >
@@ -303,7 +339,7 @@ export function JobBoardBanner() {
                     </div>
 
                     {/* Action Row - Like/Dislike & Phone */}
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                         {/* Like/Dislike Buttons */}
                         <div className="flex items-center gap-2">
                             <button
@@ -322,14 +358,25 @@ export function JobBoardBanner() {
                             </button>
                         </div>
 
-                        {/* Phone Number */}
-                        <a
-                            href={`tel:${currentListing.phoneNumber}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800/50 transition-colors"
-                        >
-                            <Phone className="h-3 w-3" />
-                            {currentListing.phoneNumber}
-                        </a>
+                        <div className="flex items-center gap-2 ml-auto">
+                            {/* Phone Number */}
+                            <a
+                                href={`tel:${currentListing.phoneNumber}`}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-full bg-green-500 text-white hover:bg-green-600 transition-colors"
+                            >
+                                <Phone className="h-3 w-3" />
+                                Call
+                            </a>
+
+                            {/* View Details Link */}
+                            <Link
+                                href={`/jobs/${currentListing.id}`}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-full bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+                            >
+                                <ExternalLink className="h-3 w-3" />
+                                More
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>

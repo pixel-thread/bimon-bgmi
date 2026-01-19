@@ -9,6 +9,10 @@ export interface UpdateJobListingInput {
     description?: string;
     phoneNumber?: string;
     isActive?: boolean;
+    location?: string;
+    availability?: string;
+    workingHours?: Record<string, string>;
+    imageUrls?: string[];
 }
 
 /**
@@ -52,6 +56,10 @@ export async function updateJobListing(data: UpdateJobListingInput) {
             }),
             ...(data.phoneNumber && { phoneNumber: data.phoneNumber.trim() }),
             ...(data.isActive !== undefined && { isActive: data.isActive }),
+            ...(data.location !== undefined && { location: data.location?.trim() || null }),
+            ...(data.availability !== undefined && { availability: data.availability || null }),
+            ...(data.workingHours !== undefined && { workingHours: data.workingHours || null }),
+            ...(data.imageUrls !== undefined && { imageUrls: data.imageUrls?.slice(0, 3) || [] }),
         },
     });
 }

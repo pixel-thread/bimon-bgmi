@@ -13,6 +13,10 @@ export interface JobListing {
     description: string | null;
     phoneNumber: string;
     experience: string | null;
+    location: string | null;
+    availability: string | null;
+    workingHours: Record<string, string> | null;
+    imageUrls: string[];
     isActive: boolean;
     likeCount: number;
     dislikeCount: number;
@@ -28,9 +32,9 @@ export interface JobListing {
         characterImage?: {
             publicUrl: string;
         } | null;
-        imageUrl?: string | null; // Clerk profile image as fallback
+        imageUrl?: string | null;
     };
-    userReaction?: "like" | "dislike" | null;  // Current user's reaction
+    userReaction?: "like" | "dislike" | null;
 }
 
 export interface CreateJobListingInput {
@@ -41,6 +45,10 @@ export interface CreateJobListingInput {
     description?: string;
     phoneNumber: string;
     experience?: string;
+    location?: string;
+    availability?: string;
+    workingHours?: Record<string, string>;
+    imageUrls?: string[];
 }
 
 export interface UpdateJobListingInput extends Partial<CreateJobListingInput> {
@@ -55,6 +63,34 @@ export const EXPERIENCE_OPTIONS = [
     { value: "1_YEAR", label: "1 Year" },
     { value: "2_YEARS", label: "2 Years" },
     { value: "3_YEARS_PLUS", label: "3+ Years" },
+] as const;
+
+// Availability time options (for start/end time range)
+export const TIME_OPTIONS = [
+    { value: "12AM", label: "12 AM" },
+    { value: "1AM", label: "1 AM" },
+    { value: "2AM", label: "2 AM" },
+    { value: "3AM", label: "3 AM" },
+    { value: "4AM", label: "4 AM" },
+    { value: "5AM", label: "5 AM" },
+    { value: "6AM", label: "6 AM" },
+    { value: "7AM", label: "7 AM" },
+    { value: "8AM", label: "8 AM" },
+    { value: "9AM", label: "9 AM" },
+    { value: "10AM", label: "10 AM" },
+    { value: "11AM", label: "11 AM" },
+    { value: "12PM", label: "12 PM" },
+    { value: "1PM", label: "1 PM" },
+    { value: "2PM", label: "2 PM" },
+    { value: "3PM", label: "3 PM" },
+    { value: "4PM", label: "4 PM" },
+    { value: "5PM", label: "5 PM" },
+    { value: "6PM", label: "6 PM" },
+    { value: "7PM", label: "7 PM" },
+    { value: "8PM", label: "8 PM" },
+    { value: "9PM", label: "9 PM" },
+    { value: "10PM", label: "10 PM" },
+    { value: "11PM", label: "11 PM" },
 ] as const;
 
 // Predefined job categories

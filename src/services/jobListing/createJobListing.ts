@@ -9,6 +9,10 @@ export interface CreateJobListingInput {
     description?: string;
     phoneNumber: string;
     experience?: string;
+    location?: string;
+    availability?: string;
+    workingHours?: Record<string, string>; // {"mon": "9AM-6PM", "sun": "CLOSED", ...}
+    imageUrls?: string[];
 }
 
 /**
@@ -40,6 +44,10 @@ export async function createJobListing(data: CreateJobListingInput) {
             description: data.description?.trim() || null,
             phoneNumber: data.phoneNumber.trim(),
             experience: data.experience || null,
+            location: data.location?.trim() || null,
+            availability: data.availability || null,
+            workingHours: data.workingHours ?? undefined,
+            imageUrls: data.imageUrls?.slice(0, 3) || [],
             isActive: true,
         },
     });

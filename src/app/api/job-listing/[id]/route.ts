@@ -14,6 +14,8 @@ const updateJobListingSchema = z.object({
     description: z.string().max(150).optional(),
     phoneNumber: z.string().min(1).optional(),
     isActive: z.boolean().optional(),
+    location: z.string().max(50).optional(),
+    availability: z.string().optional(),
 });
 
 // PUT - Update a job listing

@@ -14,7 +14,7 @@ import http from "@/src/utils/http";
 
 const RP_PRICE = 5; // 5 UC (50% off from 10 UC)
 
-export default function RewardsPage() {
+export default function RoyalPassPage() {
     const router = useRouter();
     const { user, isAuthLoading } = useAuth();
     const {
@@ -100,10 +100,12 @@ export default function RewardsPage() {
                 Back
             </button>
 
-            {/* Promo Banner */}
-            <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-center py-2 px-4 rounded-lg text-sm font-medium">
-                🎉 <span className="line-through opacity-75">10 UC</span> → {freeOffer.isActive ? "FREE" : "5 UC only"}! Limited time offer
-            </div>
+            {/* Promo Banner - only show if user doesn't have Royal Pass */}
+            {!hasRoyalPass && (
+                <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-center py-2 px-4 rounded-lg text-sm font-medium">
+                    🎉 <span className="line-through opacity-75">10 UC</span> → {freeOffer.isActive ? "FREE" : "5 UC only"}! Limited time offer
+                </div>
+            )}
 
             {/* Header */}
             <div className="text-center">
@@ -167,8 +169,8 @@ export default function RewardsPage() {
                 <div className="space-y-2">
                     <Button
                         className={`w-full h-14 text-lg font-bold shadow-lg relative overflow-hidden disabled:opacity-50 ${freeOffer.isActive
-                                ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600'
-                                : 'bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 hover:from-yellow-600 hover:via-amber-600 hover:to-orange-600'
+                            ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600'
+                            : 'bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 hover:from-yellow-600 hover:via-amber-600 hover:to-orange-600'
                             } text-white`}
                         onClick={handleBuyRP}
                         disabled={isPurchasing || !canAfford}

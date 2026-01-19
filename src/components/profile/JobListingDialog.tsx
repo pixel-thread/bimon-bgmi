@@ -28,6 +28,7 @@ import {
     JobListing,
     JOB_CATEGORIES,
     EXPERIENCE_OPTIONS,
+    TIME_OPTIONS,
 } from "@/src/hooks/jobListing/useJobListings";
 import { useDialogBackHandler } from "@/src/hooks/useDialogBackHandler";
 
@@ -39,6 +40,7 @@ interface JobListingDialogProps {
 
 const TITLE_MAX_LENGTH = 50;
 const DESCRIPTION_MAX_LENGTH = 150;
+const LOCATION_MAX_LENGTH = 50;
 
 export function JobListingDialog({
     open,
@@ -79,6 +81,10 @@ export function JobListingDialog({
     const [description, setDescription] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [experience, setExperience] = useState("");
+    const [location, setLocation] = useState("");
+    const [availability, setAvailability] = useState("");
+    const [workingHours, setWorkingHours] = useState<Record<string, string>>({});
+    const [imageUrls, setImageUrls] = useState<string[]>(["", "", ""]);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     // Load local custom categories on mount
@@ -109,6 +115,8 @@ export function JobListingDialog({
                         setTitle(data.title || "");
                         setDescription(data.description || "");
                         setPhoneNumber(data.phoneNumber || "");
+                        setLocation(data.location || "");
+                        setAvailability(data.availability || "");
                         return;
                     } else {
                         localStorage.removeItem(STORAGE_KEY);
@@ -122,14 +130,14 @@ export function JobListingDialog({
 
     // Save draft to localStorage when form changes
     useEffect(() => {
-        if (!editListing && (category || category2 || title || description || phoneNumber || customCategory)) {
+        if (!editListing && (category || category2 || title || description || phoneNumber || customCategory || location || availability)) {
             const draft = {
-                data: { category, category2, customCategory, title, description, phoneNumber },
+                data: { category, category2, customCategory, title, description, phoneNumber, location, availability },
                 timestamp: Date.now(),
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
         }
-    }, [category, category2, customCategory, title, description, phoneNumber, editListing]);
+    }, [category, category2, customCategory, title, description, phoneNumber, location, availability, editListing]);
 
     // Clear draft on successful submission
     const clearDraft = () => {
@@ -144,6 +152,12 @@ export function JobListingDialog({
             setTitle(editListing.title);
             setDescription(editListing.description || "");
             setPhoneNumber(editListing.phoneNumber);
+            setExperience(editListing.experience || "");
+            setLocation(editListing.location || "");
+            setAvailability(editListing.availability || "");
+            setWorkingHours(editListing.workingHours || {});
+            const existingUrls = editListing.imageUrls || [];
+            setImageUrls([existingUrls[0] || "", existingUrls[1] || "", existingUrls[2] || ""]);
             setErrors({});
         } else if (open && !editListing) {
             setErrors({});
@@ -190,6 +204,10 @@ export function JobListingDialog({
             description: description.trim() || undefined,
             phoneNumber: phoneNumber.trim(),
             experience: experience || undefined,
+            location: location.trim() || undefined,
+            availability: availability || undefined,
+            workingHours: Object.keys(workingHours).length > 0 ? workingHours : undefined,
+            imageUrls: imageUrls.filter(url => url.trim()).length > 0 ? imageUrls.filter(url => url.trim()) : undefined,
         };
 
         if (isEditing && editListing) {
@@ -225,7 +243,7 @@ export function JobListingDialog({
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent
-                className="sm:max-w-md"
+                className="sm:max-w-md max-h-[90vh] flex flex-col"
                 onInteractOutside={(e) => e.preventDefault()}
                 onEscapeKeyDown={(e) => e.preventDefault()}
             >
@@ -240,7 +258,7 @@ export function JobListingDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-4">
+                <div className="space-y-4 py-4 overflow-y-auto flex-1">
                     {/* Categories */}
                     <div className="space-y-2">
                         <Label htmlFor="category">
@@ -444,6 +462,146 @@ export function JobListingDialog({
                                 ))}
                             </SelectContent>
                         </Select>
+                    </div>
+
+                    {/* Location */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between">
+                            <Label htmlFor="location">
+                                Location <span className="text-muted-foreground text-xs">(optional)</span>
+                            </Label>
+                            <span className="text-xs text-muted-foreground">
+                                {location.length}/{LOCATION_MAX_LENGTH}
+                            </span>
+                        </div>
+                        <Input
+                            id="location"
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                            placeholder="e.g., Mumbai, Delhi NCR, Bangalore"
+                            maxLength={LOCATION_MAX_LENGTH}
+                        />
+                    </div>
+
+                    {/* Availability - Time Range */}
+                    <div className="space-y-2">
+                        <Label>
+                            Availability <span className="text-muted-foreground text-xs">(optional)</span>
+                        </Label>
+                        <div className="flex items-center gap-2">
+                            <Select
+                                value={availability.split("-")[0] || ""}
+                                onValueChange={(val) => {
+                                    const endTime = availability.split("-")[1] || "";
+                                    setAvailability(endTime ? `${val}-${endTime}` : val);
+                                }}
+                            >
+                                <SelectTrigger className="flex-1">
+                                    <SelectValue placeholder="From" />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-60">
+                                    {TIME_OPTIONS.map((opt) => (
+                                        <SelectItem key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <span className="text-muted-foreground text-sm">to</span>
+                            <Select
+                                value={availability.split("-")[1] || ""}
+                                onValueChange={(val) => {
+                                    const startTime = availability.split("-")[0] || "";
+                                    setAvailability(startTime ? `${startTime}-${val}` : `-${val}`);
+                                }}
+                            >
+                                <SelectTrigger className="flex-1">
+                                    <SelectValue placeholder="To" />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-60">
+                                    {TIME_OPTIONS.map((opt) => (
+                                        <SelectItem key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    {/* Working Hours - Compact */}
+                    <div className="space-y-2">
+                        <Label>
+                            Working Days <span className="text-muted-foreground text-xs">(optional)</span>
+                        </Label>
+                        <div className="grid grid-cols-7 gap-1">
+                            {[
+                                { key: "mon", label: "M" },
+                                { key: "tue", label: "T" },
+                                { key: "wed", label: "W" },
+                                { key: "thu", label: "T" },
+                                { key: "fri", label: "F" },
+                                { key: "sat", label: "S" },
+                                { key: "sun", label: "S" },
+                            ].map(({ key, label }) => {
+                                const isClosed = workingHours[key] === "CLOSED";
+                                const isOpen = workingHours[key] && workingHours[key] !== "CLOSED";
+                                return (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => {
+                                            const newHours = { ...workingHours };
+                                            if (isClosed) {
+                                                // CLOSED -> Remove (not set)
+                                                delete newHours[key];
+                                            } else if (isOpen) {
+                                                // Open -> CLOSED
+                                                newHours[key] = "CLOSED";
+                                            } else {
+                                                // Not set -> Open (use availability time range)
+                                                newHours[key] = availability || "Available";
+                                            }
+                                            setWorkingHours(newHours);
+                                        }}
+                                        className={`w-full aspect-square rounded text-xs font-medium transition-colors ${isClosed
+                                                ? "bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700"
+                                                : isOpen
+                                                    ? "bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400 border border-green-300 dark:border-green-700"
+                                                    : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500 border border-gray-200 dark:border-gray-700"
+                                            }`}
+                                        title={isClosed ? `${key}: Closed` : isOpen ? `${key}: ${workingHours[key]}` : `${key}: Not set`}
+                                    >
+                                        {label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                            Tap: Gray → Green (Open) → Red (Closed) → Gray
+                        </p>
+                    </div>
+
+                    {/* Image URLs */}
+                    <div className="space-y-2">
+                        <Label>
+                            Work Samples <span className="text-muted-foreground text-xs">(optional - external URLs)</span>
+                        </Label>
+                        <p className="text-xs text-muted-foreground mb-2">
+                            Paste image links from Google Drive, Imgur, etc.
+                        </p>
+                        {imageUrls.map((url, index) => (
+                            <Input
+                                key={index}
+                                value={url}
+                                onChange={(e) => {
+                                    const newUrls = [...imageUrls];
+                                    newUrls[index] = e.target.value;
+                                    setImageUrls(newUrls);
+                                }}
+                                placeholder={`Image URL ${index + 1}`}
+                                className="text-sm"
+                            />
+                        ))}
                     </div>
                 </div>
 
