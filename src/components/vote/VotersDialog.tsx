@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { FiUsers } from "react-icons/fi";
-import { User, Crown } from "lucide-react";
+import { User, Crown, ArrowLeft } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -87,11 +87,16 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
     const theme = getPollTheme(participantCount);
 
     // Use the back button handler hook
-    const handleOpenChange = useDialogBackHandler(isOpen, (open) => { if (!open) onClose(); }, "votersDialog");
+    const handleOpenChange = useDialogBackHandler(isOpen, (open) => {
+      if (!open) {
+        setSelectedGroup(null);
+        onClose();
+      }
+    }, "votersDialog");
 
     return (
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className={`sm:max-w-lg ${theme ? `border-2 ${theme.dialogBorder}` : ''}`}>
+        <DialogContent className={`sm:max-w-lg ${theme ? `border-2 ${theme.dialogBorder}` : ''}`} hideCloseButton>
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${theme ? theme.dialogIcon : 'bg-blue-500'}`}>
@@ -155,16 +160,10 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                             condition={selectedGroup === option.vote}
                             trueComponent={
                               <div className={`border rounded-lg p-4 ${theme ? theme.dialogBorder : 'border-gray-200 dark:border-gray-700'}`}>
-                                <div className="flex items-center justify-between mb-4">
+                                <div className="mb-4">
                                   <h4 className="font-medium text-gray-900 dark:text-white">
                                     Voters for &quot;{option.name}&quot;
                                   </h4>
-                                  <button
-                                    onClick={() => setSelectedGroup(null)}
-                                    className={`text-sm ${theme ? theme.button : 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300'}`}
-                                  >
-                                    ← Back
-                                  </button>
                                 </div>
 
                                 <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -175,8 +174,8 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                                       <div
                                         key={vote.id}
                                         className={`flex items-center space-x-3 p-3 rounded-lg ${(vote.player as any)?.hasRoyalPass
-                                            ? 'bg-gradient-to-r from-amber-400/30 via-yellow-300/25 to-amber-400/30 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
-                                            : theme ? theme.voterCard : 'bg-white dark:bg-gray-700'
+                                          ? 'bg-gradient-to-r from-amber-400/30 via-yellow-300/25 to-amber-400/30 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+                                          : theme ? theme.voterCard : 'bg-white dark:bg-gray-700'
                                           }`}
                                       >
                                         <PlayerAvatar
@@ -246,12 +245,22 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
           </div>
 
           <DialogFooter>
-            <Button
-              onClick={() => onClose()}
-              className={theme ? `${theme.dialogIcon} hover:opacity-90` : ''}
-            >
-              Close
-            </Button>
+            {selectedGroup ? (
+              <Button
+                onClick={() => setSelectedGroup(null)}
+                className={`w-full flex items-center justify-center gap-2 ${theme ? `${theme.dialogIcon} hover:opacity-90` : ''}`}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+            ) : (
+              <Button
+                onClick={() => onClose()}
+                className={`w-full ${theme ? `${theme.dialogIcon} hover:opacity-90` : ''}`}
+              >
+                Close
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
