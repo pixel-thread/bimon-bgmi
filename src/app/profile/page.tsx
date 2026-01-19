@@ -27,6 +27,8 @@ import { CategoryBadge } from "@/src/components/ui/category-badge";
 import Link from "next/link";
 import { useRoyalPass } from "@/src/hooks/royal-pass/useRoyalPass";
 import { useAppContext } from "@/src/hooks/context/useAppContext";
+import { SeasonSelector } from "@/src/components/SeasonSelector";
+import { useSeasonStore } from "@/src/store/season";
 
 type UCTransfer = {
     id: string;
@@ -97,7 +99,9 @@ export default function ProfilePage() {
 
     // Get active season for filtered stats (always show current season stats)
     const { activeSeason } = useAppContext();
-    const activeSeasonId = activeSeason?.id || "";
+    const { seasonId: selectedSeasonFromStore } = useSeasonStore();
+    // Use selected season from store if available, otherwise use active season
+    const selectedSeasonId = selectedSeasonFromStore || activeSeason?.id || "";
 
     // UC History expanded state (lazy load)
     const [showUCHistory, setShowUCHistory] = useState(false);
@@ -125,11 +129,11 @@ export default function ProfilePage() {
     // Check if displayName guide should be shown (no displayName set)
     const showDisplayNameGuide = !user?.displayName && !!user;
 
-    // Fetch player stats - filtered by active season
+    // Fetch player stats - filtered by selected season
     const { data: statsData, isLoading: statsLoading } = useQuery({
-        queryKey: ["player-stats", playerId, activeSeasonId],
-        queryFn: () => http.get<PlayerStats>(`/players/${playerId}/stats?season=${activeSeasonId}`),
-        enabled: !!playerId && !!activeSeasonId,
+        queryKey: ["player-stats", playerId, selectedSeasonId],
+        queryFn: () => http.get<PlayerStats>(`/players/${playerId}/stats?season=${selectedSeasonId}`),
+        enabled: !!playerId && !!selectedSeasonId,
     });
 
     // Fetch transfers
@@ -189,7 +193,7 @@ export default function ProfilePage() {
 
     // When a specific season is selected but has no stats yet, show zeros (not all-time stats)
     // playerStats will be null/undefined for new seasons - that's expected
-    const hasSeasonSelected = !!activeSeasonId && activeSeasonId !== "all";
+    const hasSeasonSelected = !!selectedSeasonId && selectedSeasonId !== "all";
     const seasonHasNoStats = hasSeasonSelected && !playerStats;
 
     // Use preloaded data for instant display ONLY when viewing all seasons, 
@@ -499,15 +503,24 @@ export default function ProfilePage() {
                     </TabsTrigger>
                 </TabsList>
 
+                {/* Season Filter - Subtle row below tabs */}
+                <div className="flex items-center justify-center gap-2 mt-3 mb-2">
+                    <span className="text-xs text-muted-foreground">Stats for:</span>
+                    <SeasonSelector
+                        className="w-auto min-w-[100px] h-7 text-xs border-0 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors [&>button]:border-0 [&>button]:bg-transparent [&>button]:font-medium [&>button]:text-violet-600 [&>button]:dark:text-violet-400"
+                        placeholder="Season"
+                    />
+                </div>
+
                 {/* Overview Tab */}
-                <TabsContent value="overview" className="space-y-4 mt-6">
+                <TabsContent value="overview" className="space-y-4 mt-4">
                     {/* Stats Section - Glassmorphism */}
                     <div className="relative rounded-2xl overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-purple-500/10 to-fuchsia-500/10 dark:from-violet-600/20 dark:via-purple-600/20 dark:to-fuchsia-600/20" />
                         <div className="absolute inset-0 backdrop-blur-3xl" />
 
                         <div className="relative p-4 md:p-6">
-                            {/* K/D Featured Display with Category */}
+                            {/* K/D Featured Display with Category - Centered */}
                             <div className="text-center mb-4">
                                 <div className="flex items-center justify-center gap-2 mb-1">
                                     <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">K/D Ratio</p>

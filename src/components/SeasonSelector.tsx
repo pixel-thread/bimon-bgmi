@@ -68,7 +68,7 @@ export function SeasonSelector({
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-h-60 overflow-y-auto">
           <Ternary
             condition={data?.length && data?.length > 0 ? true : false}
             trueComponent={
