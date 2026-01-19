@@ -9,12 +9,22 @@ import { Skeleton } from "@/src/components/ui/skeleton";
 
 const AUTO_SCROLL_INTERVAL = 3000; // 3 seconds
 
+// Type for optimistic reaction state per listing
+type OptimisticReaction = {
+    likeCount: number;
+    dislikeCount: number;
+    userReaction: "like" | "dislike" | null;
+};
+
 export function JobBoardBanner() {
     const { data: listings, isLoading } = useJobListings();
-    const { mutate: reactToListing, isPending: isReacting } = useReactToListing();
+    const { mutate: reactToListing } = useReactToListing();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
     const [isClosed, setIsClosed] = useState(false);
+
+    // Local optimistic state for reactions (keyed by listing ID)
+    const [optimisticReactions, setOptimisticReactions] = useState<Record<string, OptimisticReaction>>({});
 
     // Get active listings only
     const baseListings = listings?.filter((l) => l.isActive) || [];
@@ -118,12 +128,58 @@ export function JobBoardBanner() {
         setCurrentIndex((prev) => (prev + 1) % activeListings.length);
     }, [activeListings.length]);
 
-    // Handle like/dislike reaction
-    const handleReact = (reactionType: "like" | "dislike") => {
-        if (activeListings.length > 0 && currentIndex < activeListings.length) {
-            const listingId = activeListings[currentIndex].id;
-            reactToListing({ listingId, reactionType });
+    // Get current reaction state (optimistic or from server)
+    const getReactionState = (listing: JobListing): OptimisticReaction => {
+        if (optimisticReactions[listing.id]) {
+            return optimisticReactions[listing.id];
         }
+        return {
+            likeCount: listing.likeCount,
+            dislikeCount: listing.dislikeCount,
+            userReaction: listing.userReaction || null,
+        };
+    };
+
+    // Handle like/dislike reaction with optimistic update
+    const handleReact = (reactionType: "like" | "dislike") => {
+        if (activeListings.length === 0 || currentIndex >= activeListings.length) return;
+
+        const listing = activeListings[currentIndex];
+        const listingId = listing.id;
+        const current = getReactionState(listing);
+
+        // Calculate optimistic new state
+        let newLikeCount = current.likeCount;
+        let newDislikeCount = current.dislikeCount;
+        let newUserReaction: "like" | "dislike" | null = reactionType;
+
+        // If clicking the same reaction, toggle it off
+        if (current.userReaction === reactionType) {
+            newUserReaction = null;
+            if (reactionType === "like") newLikeCount--;
+            else newDislikeCount--;
+        } else {
+            // Remove previous reaction if exists
+            if (current.userReaction === "like") newLikeCount--;
+            else if (current.userReaction === "dislike") newDislikeCount--;
+
+            // Add new reaction
+            if (reactionType === "like") newLikeCount++;
+            else newDislikeCount++;
+        }
+
+        // Apply optimistic update immediately
+        setOptimisticReactions(prev => ({
+            ...prev,
+            [listingId]: {
+                likeCount: Math.max(0, newLikeCount),
+                dislikeCount: Math.max(0, newDislikeCount),
+                userReaction: newUserReaction,
+            },
+        }));
+
+        // Call API (will sync on success, revert handled by clearing optimistic state on error)
+        reactToListing({ listingId, reactionType });
     };
 
     // Hidden if closed
@@ -152,6 +208,7 @@ export function JobBoardBanner() {
     }
 
     const currentListing = activeListings[currentIndex];
+    const reactionState = getReactionState(currentListing);
     const displayCategory1 =
         currentListing.category === "Other"
             ? currentListing.customCategory || "Other"
@@ -171,9 +228,11 @@ export function JobBoardBanner() {
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                     <PlayerAvatar
                         characterImageUrl={currentListing.player?.characterImage?.publicUrl}
+                        imageUrl={currentListing.player?.imageUrl}
                         displayName={currentListing.player?.user.displayName || ""}
                         userName={currentListing.player?.user.userName || "User"}
                         size="sm"
+                        showUserIcon
                     />
                     <div className="flex flex-col min-w-0">
                         <span className="text-sm font-semibold text-amber-800 dark:text-amber-200 truncate flex items-center gap-1">
@@ -181,7 +240,7 @@ export function JobBoardBanner() {
                                 currentListing.player?.user.displayName || null,
                                 currentListing.player?.user.userName || "User"
                             )}
-                            {currentListing.likeCount >= 10 && (
+                            {reactionState.likeCount >= 10 && (
                                 <span title="Verified - 10+ likes">
                                     <CheckCircle className="h-3.5 w-3.5 text-blue-500" />
                                 </span>
@@ -249,19 +308,17 @@ export function JobBoardBanner() {
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => handleReact("like")}
-                                disabled={isReacting}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${currentListing.userReaction === 'like' ? 'bg-green-200 dark:bg-green-800 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-green-100 dark:hover:bg-green-900'}`}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${reactionState.userReaction === 'like' ? 'bg-green-200 dark:bg-green-800 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-green-100 dark:hover:bg-green-900'}`}
                             >
-                                <ThumbsUp className="h-3.5 w-3.5" />
-                                {currentListing.likeCount > 0 && currentListing.likeCount}
+                                <ThumbsUp className="h-3.5 w-3.5" fill={reactionState.userReaction === 'like' ? 'currentColor' : 'none'} />
+                                {reactionState.likeCount}
                             </button>
                             <button
                                 onClick={() => handleReact("dislike")}
-                                disabled={isReacting}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${currentListing.userReaction === 'dislike' ? 'bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900'}`}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${reactionState.userReaction === 'dislike' ? 'bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900'}`}
                             >
-                                <ThumbsDown className="h-3.5 w-3.5" />
-                                {currentListing.dislikeCount > 0 && currentListing.dislikeCount}
+                                <ThumbsDown className="h-3.5 w-3.5" fill={reactionState.userReaction === 'dislike' ? 'currentColor' : 'none'} />
+                                {reactionState.dislikeCount}
                             </button>
                         </div>
 

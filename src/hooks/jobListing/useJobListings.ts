@@ -28,6 +28,7 @@ export interface JobListing {
         characterImage?: {
             publicUrl: string;
         } | null;
+        imageUrl?: string | null; // Clerk profile image as fallback
     };
     userReaction?: "like" | "dislike" | null;  // Current user's reaction
 }
@@ -169,22 +170,89 @@ export function useDeleteJobListing() {
     });
 }
 
-// Hook to like/dislike a job listing
+// Hook to like/dislike a job listing with optimistic updates
 export function useReactToListing() {
     const queryClient = useQueryClient();
 
+    // Type for the cached API response
+    type CachedResponse = { success: boolean; message: string; data: JobListing[] | null };
+
     return useMutation({
         mutationFn: ({ listingId, reactionType }: { listingId: string; reactionType: "like" | "dislike" }) =>
-            http.post<{ likeCount: number; dislikeCount: number; isJobBanned: boolean }>(`/job-listing/${listingId}/react`, { reactionType }),
-        onSuccess: (response) => {
-            if (response.success) {
-                queryClient.invalidateQueries({ queryKey: ["jobListings"] });
-            } else {
-                toast.error(response.message || "Failed to react");
+            http.post<{ likeCount: number; dislikeCount: number; isJobBanned: boolean; userReaction: "like" | "dislike" | null }>(`/job-listing/${listingId}/react`, { reactionType }),
+        onMutate: async ({ listingId, reactionType }) => {
+            // Cancel any outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ["jobListings"] });
+
+            // Snapshot the previous value
+            const previousListings = queryClient.getQueryData<CachedResponse>(["jobListings"]);
+
+            // Optimistically update the cache
+            queryClient.setQueryData<CachedResponse>(["jobListings"], (old) => {
+                if (!old?.data) return old;
+                return {
+                    ...old,
+                    data: old.data.map((listing) => {
+                        if (listing.id !== listingId) return listing;
+
+                        const previousReaction = listing.userReaction;
+                        let newLikeCount = listing.likeCount;
+                        let newDislikeCount = listing.dislikeCount;
+                        let newUserReaction: "like" | "dislike" | null = reactionType;
+
+                        // If clicking the same reaction, toggle it off
+                        if (previousReaction === reactionType) {
+                            newUserReaction = null;
+                            if (reactionType === "like") newLikeCount--;
+                            else newDislikeCount--;
+                        } else {
+                            // Remove previous reaction if exists
+                            if (previousReaction === "like") newLikeCount--;
+                            else if (previousReaction === "dislike") newDislikeCount--;
+
+                            // Add new reaction
+                            if (reactionType === "like") newLikeCount++;
+                            else newDislikeCount++;
+                        }
+
+                        return {
+                            ...listing,
+                            likeCount: Math.max(0, newLikeCount),
+                            dislikeCount: Math.max(0, newDislikeCount),
+                            userReaction: newUserReaction,
+                        };
+                    }),
+                };
+            });
+
+            return { previousListings };
+        },
+        onError: (_err, _variables, context) => {
+            // Silently revert on error - no toast
+            if (context?.previousListings) {
+                queryClient.setQueryData(["jobListings"], context.previousListings);
             }
         },
-        onError: () => {
-            toast.error("Failed to react to listing");
+        onSuccess: (response, { listingId }) => {
+            // Update with actual server values after success
+            if (response.success && response.data) {
+                queryClient.setQueryData<CachedResponse>(["jobListings"], (old) => {
+                    if (!old?.data) return old;
+                    return {
+                        ...old,
+                        data: old.data.map((listing) => {
+                            if (listing.id !== listingId) return listing;
+                            return {
+                                ...listing,
+                                likeCount: response.data!.likeCount,
+                                dislikeCount: response.data!.dislikeCount,
+                                isJobBanned: response.data!.isJobBanned,
+                                userReaction: response.data!.userReaction,
+                            };
+                        }),
+                    };
+                });
+            }
         },
     });
 }

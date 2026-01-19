@@ -16,6 +16,7 @@ export async function getJobListings() {
                         select: {
                             displayName: true,
                             userName: true,
+                            clerkId: true,
                         },
                     },
                     characterImage: {

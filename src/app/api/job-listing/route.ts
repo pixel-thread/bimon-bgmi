@@ -6,6 +6,7 @@ import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/src/lib/db/prisma";
+import { clerkClient } from "@clerk/nextjs/server";
 
 const createJobListingSchema = z.object({
     category: z.string().min(1, "Category is required"),
@@ -18,12 +19,76 @@ const createJobListingSchema = z.object({
 });
 
 // GET - Get all active job listings for banner
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
         const listings = await getJobListings();
 
+        // Try to get current user (optional - may be unauthenticated)
+        let currentPlayerId: string | null = null;
+        try {
+            const user = await tokenMiddleware(req);
+            if (user) {
+                const player = await prisma.player.findUnique({
+                    where: { userId: user.id },
+                    select: { id: true },
+                });
+                currentPlayerId = player?.id || null;
+            }
+        } catch {
+            // Not authenticated, continue without user reactions
+        }
+
+        // Fetch current user's reactions
+        const userReactionsMap = new Map<string, "like" | "dislike">();
+        if (currentPlayerId) {
+            const reactions = await prisma.jobListingReaction.findMany({
+                where: { playerId: currentPlayerId },
+                select: { listingId: true, reactionType: true },
+            });
+            reactions.forEach((r) => {
+                userReactionsMap.set(r.listingId, r.reactionType as "like" | "dislike");
+            });
+        }
+
+        // Collect clerkIds from users without character images
+        const clerkIdsToFetch = new Set<string>();
+        listings.forEach((listing) => {
+            if (!listing.player?.characterImage?.publicUrl && listing.player?.user?.clerkId) {
+                clerkIdsToFetch.add(listing.player.user.clerkId);
+            }
+        });
+
+        // Fetch Clerk user images in batch
+        const clerkImageMap = new Map<string, string | null>();
+        if (clerkIdsToFetch.size > 0) {
+            try {
+                const client = await clerkClient();
+                const clerkUsers = await client.users.getUserList({
+                    userId: Array.from(clerkIdsToFetch),
+                    limit: 100,
+                });
+                clerkUsers.data.forEach((user) => {
+                    clerkImageMap.set(user.id, user.imageUrl || null);
+                });
+            } catch (error) {
+                console.error("Failed to fetch Clerk user images:", error);
+            }
+        }
+
+        // Add imageUrl and userReaction to each listing
+        const listingsWithData = listings.map((listing) => ({
+            ...listing,
+            userReaction: userReactionsMap.get(listing.id) || null,
+            player: listing.player ? {
+                ...listing.player,
+                imageUrl: listing.player.characterImage?.publicUrl ||
+                    (listing.player.user?.clerkId ? clerkImageMap.get(listing.player.user.clerkId) : null) ||
+                    null,
+            } : null,
+        }));
+
         return SuccessResponse({
-            data: listings,
+            data: listingsWithData,
             message: "Job listings fetched successfully",
         });
     } catch (error) {
