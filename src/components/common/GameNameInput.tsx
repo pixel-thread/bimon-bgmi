@@ -77,6 +77,7 @@ export function GameNameInput({
         if (sanitized.length < 2) {
             onErrorChange?.("Game Name must be at least 2 characters");
         } else {
+            onErrorChange?.(""); // Clear error when valid
             toast.success("Game Name pasted!");
         }
     };
