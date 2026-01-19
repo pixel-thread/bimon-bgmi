@@ -15,7 +15,6 @@ export async function getPlayerById({ id }: Props) {
       matchPlayerPlayed: true,
       playerBanned: true,
       royalPasses: {
-        where: { isActive: true },
         take: 1,
       },
     },

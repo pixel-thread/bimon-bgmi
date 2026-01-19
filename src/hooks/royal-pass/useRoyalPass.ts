@@ -5,16 +5,27 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
+interface StreakInfo {
+    current: number;
+    progress: number;
+    tournamentsUntilReward: number;
+    rewardThreshold: number;
+    rewardAmount: number;
+    lastRewardAt: string | null;
+}
+
+interface FreeOfferInfo {
+    isActive: boolean;
+    claimed: number;
+    total: number;
+    remaining: number;
+}
+
 interface RoyalPassData {
     hasRoyalPass: boolean;
-    isActive: boolean;
-    rpPrice: number;
-    bonusPercentage: number;
-    seasonName: string | null;
-    seasonEndDate: string | null;
-    expiresAt: string | null;
-    totalBonusEarned: number;
     currentBalance: number;
+    freeOffer?: FreeOfferInfo;
+    streak?: StreakInfo;
     message?: string;
 }
 
@@ -53,16 +64,28 @@ export function useRoyalPass() {
         }
     }, [queryClient]);
 
+    const streakData = data?.data?.streak;
+    const freeOfferData = data?.data?.freeOffer;
+
     return {
         hasRoyalPass: data?.data?.hasRoyalPass ?? false,
-        isActive: data?.data?.isActive ?? false,
-        rpPrice: data?.data?.rpPrice ?? 35,
-        bonusPercentage: data?.data?.bonusPercentage ?? 10,
-        seasonName: data?.data?.seasonName ?? null,
-        seasonEndDate: data?.data?.seasonEndDate ?? null,
-        expiresAt: data?.data?.expiresAt ?? null,
-        totalBonusEarned: data?.data?.totalBonusEarned ?? 0,
         currentBalance: data?.data?.currentBalance ?? 0,
+        // Free offer info
+        freeOffer: {
+            isActive: freeOfferData?.isActive ?? false,
+            claimed: freeOfferData?.claimed ?? 0,
+            total: freeOfferData?.total ?? 5,
+            remaining: freeOfferData?.remaining ?? 0,
+        },
+        // Streak info
+        streak: {
+            current: streakData?.current ?? 0,
+            progress: streakData?.progress ?? 0,
+            tournamentsUntilReward: streakData?.tournamentsUntilReward ?? 8,
+            rewardThreshold: streakData?.rewardThreshold ?? 8,
+            rewardAmount: streakData?.rewardAmount ?? 30,
+            lastRewardAt: streakData?.lastRewardAt ?? null,
+        },
         isLoading: !!user?.playerId && isLoading,
         isSubscribing,
         error,

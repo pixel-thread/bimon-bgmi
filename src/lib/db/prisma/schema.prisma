@@ -192,7 +192,6 @@ model Season {
   teamStats         TeamStats[]
   teamPlayerStats   TeamPlayerStats[]
   matchPlayerPlayed MatchPlayerPlayed[]
-  royalPasses       RoyalPass[]
 
   @@unique([id, status]) // only one active season
   @@index([id])
@@ -378,7 +377,11 @@ model Player {
   // Referral tracking - if this player was referred
   referral             Referral?
   
-  // Royal Pass subscriptions
+  // Tournament streak tracking (resets each season)
+  tournamentStreak     Int       @default(0)  // Current consecutive tournament count
+  streakSeasonId       String?   // Season this streak belongs to (resets when season changes)
+  lastTournamentSeqId  Int?      // Sequence ID of last participated tournament
+  lastStreakRewardAt   DateTime? // When last streak reward was given
   royalPasses          RoyalPass[]
 
   @@index([userId])
@@ -796,19 +799,27 @@ model Referral {
   @@index([status])
 }
 
-// Royal Pass subscription for seasonal +10% win bonus
+// Royal Pass - tracks UC purchases
 model RoyalPass {
-  id        String   @id @default(uuid())
-  playerId  String
-  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  seasonId  String
-  season    Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  expiresAt DateTime?  // Null for active seasons (no end date yet)
+  id           String   @id @default(uuid())
+  playerId     String
+  player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  amount       Int      // UC amount purchased
+  displayValue Int      // Displayed value (e.g., 10 when actually 5 UC)
+  pricePaid    Int      // Price in paisa (₹1 = 100 paisa)
+  promoCode    String?  // Optional promo code used
+  createdAt    DateTime @default(now())
 
-  @@unique([playerId, seasonId]) // One RP per player per season
   @@index([playerId])
-  @@index([seasonId])
-  @@index([isActive])
+  @@index([createdAt])
+}
+
+// Track tournament sequence for streak calculation
+model TournamentSequence {
+  id           String   @id @default(uuid())
+  tournamentId String   @unique
+  sequenceId   Int      @unique @default(autoincrement())  // Auto-incrementing sequence
+  createdAt    DateTime @default(now())
+
+  @@index([sequenceId])
 }

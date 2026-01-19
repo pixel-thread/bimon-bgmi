@@ -120,11 +120,11 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
 
     const getRankStyle = (rank: number) => {
         if (rank === 1) return {
-            bg: "bg-gradient-to-r from-yellow-500/20 via-amber-500/10 to-yellow-500/20 dark:from-yellow-500/30 dark:via-amber-500/20 dark:to-yellow-500/30",
-            border: "border-yellow-500/50",
-            badge: "bg-gradient-to-br from-yellow-400 to-amber-500",
+            bg: "bg-gradient-to-r from-purple-500/20 via-violet-500/10 to-purple-500/20 dark:from-purple-500/30 dark:via-violet-500/20 dark:to-purple-500/30",
+            border: "border-purple-500/50",
+            badge: "bg-gradient-to-br from-purple-400 to-violet-500",
             icon: Star,
-            glow: "shadow-[0_0_20px_rgba(234,179,8,0.3)]"
+            glow: "shadow-[0_0_20px_rgba(139,92,246,0.3)]"
         };
         if (rank === 2) return {
             bg: "bg-gradient-to-r from-sky-200/30 via-slate-200/20 to-sky-200/30 dark:from-sky-400/20 dark:via-slate-400/10 dark:to-sky-400/20",
@@ -195,7 +195,10 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                                     transition-all duration-200 ease-out
                                     hover:scale-[1.01] hover:shadow-lg
                                     active:scale-[0.99]
-                                    ${rankStyle.bg} ${rankStyle.border} ${rankStyle.glow}
+                                    ${player.hasRoyalPass
+                                        ? 'bg-gradient-to-r from-amber-400/25 via-yellow-300/20 to-amber-400/25 border-amber-500/60 dark:from-amber-500/35 dark:via-yellow-500/25 dark:to-amber-500/35 dark:border-amber-400/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                                        : `${rankStyle.bg} ${rankStyle.border} ${rankStyle.glow}`
+                                    }
                                     ${player.isBanned ? 'opacity-50 grayscale' : ''}
                                 `}
                             >
@@ -223,7 +226,7 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                                         isBanned={player.isBanned}
                                         className={`
                                             shrink-0 ring-2 ring-offset-2
-                                            ${globalIndex === 1 ? 'ring-yellow-500 ring-offset-yellow-500/20' :
+                                            ${globalIndex === 1 ? 'ring-purple-500 ring-offset-purple-500/20' :
                                                 globalIndex === 2 ? 'ring-slate-400 ring-offset-slate-400/20' :
                                                     globalIndex === 3 ? 'ring-orange-500 ring-offset-orange-500/20' :
                                                         'ring-zinc-200 dark:ring-zinc-700 ring-offset-transparent'}

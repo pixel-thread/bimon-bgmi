@@ -13,7 +13,7 @@ import { Button } from "@/src/components/ui/button";
 import { Label } from "@/src/components/ui/label";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
-import { Plus, Trash2, Trophy, Loader2, Coins, Crown } from "lucide-react";
+import { Plus, Trash2, Trophy, Loader2, Coins } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
@@ -103,7 +103,6 @@ export function DeclareWinnerDialog({
         repeatWinnerTaxRate: number;
         soloTaxRate: number;
         isSolo: boolean;
-        hasRoyalPass: boolean;
     }>;
 
     const { data: taxPreviewData } = useQuery({
@@ -163,25 +162,10 @@ export function DeclareWinnerDialog({
         });
         const totalTax = totalRepeatTax + totalSoloTax;
 
-        // Calculate total RP Safety Net refund that org will pay out (only first non-prize position)
-        let totalRpBonus = 0;
-        const safetyNetPosition = placementCount; // Index of first non-prize team (0-indexed)
-        const safetyNetTeam = teamRankings[safetyNetPosition];
-        if (safetyNetTeam) {
-            safetyNetTeam.players?.forEach(p => {
-                const tax = taxPreview[p.id];
-                if (tax?.hasRoyalPass) {
-                    // RP Safety Net: Refund entry fee to 3rd place RP holders
-                    totalRpBonus += entryFee;
-                }
-            });
-        }
-
         return {
             total: totalTax,
             repeatTax: totalRepeatTax,
             soloTax: totalSoloTax,
-            rpBonus: totalRpBonus,
             // Only REPEAT winner tax goes to Org/Fund (not solo tax)
             fundContribution: Math.floor(totalRepeatTax * 0.60),
             orgContribution: Math.ceil(totalRepeatTax * 0.40),
@@ -331,12 +315,6 @@ export function DeclareWinnerDialog({
                                         <span className="font-medium">₹{taxTotals.soloTax.toLocaleString()}</span>
                                     </div>
                                 )}
-                                {taxTotals.rpBonus > 0 && (
-                                    <div className="flex justify-between text-amber-500 dark:text-amber-400">
-                                        <span>👑 RP Safety Net (3rd place):</span>
-                                        <span className="font-medium">-₹{taxTotals.rpBonus.toLocaleString()}</span>
-                                    </div>
-                                )}
                                 {ucExemptCount > 0 && (
                                     <div className="flex justify-between text-amber-600 dark:text-amber-400 pt-1 border-t border-green-200 dark:border-green-700">
                                         <span>⚠️ UC-Exempt cost ({ucExemptCount} × ₹{entryFee}):</span>
@@ -427,7 +405,6 @@ export function DeclareWinnerDialog({
                                                         })}
                                                     </div>
                                                 )}
-                                                {/* RP Safety Net only applies to 3rd place, not shown in prize cards */}
                                             </CardContent>
                                         </Card>
                                     );

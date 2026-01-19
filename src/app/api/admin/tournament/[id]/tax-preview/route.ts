@@ -10,7 +10,7 @@ import { NextRequest } from "next/server";
 
 /**
  * Get tax preview for tournament winners before declaring.
- * Returns player win counts, calculated tax rates, and Royal Pass status.
+ * Returns player win counts and calculated tax rates.
  */
 export async function GET(
     req: NextRequest,
@@ -66,30 +66,17 @@ export async function GET(
             }
         }
 
-        // Get Royal Pass status for all players in this season
-        const royalPasses = tournament.seasonId ? await prisma.royalPass.findMany({
-            where: {
-                playerId: { in: playerIds },
-                seasonId: tournament.seasonId,
-                isActive: true,
-            },
-            select: { playerId: true },
-        }) : [];
-
-        const rpPlayerIds = new Set(royalPasses.map(rp => rp.playerId));
-
         const soloTaxRate = getSoloTaxRate();
 
         // Calculate tax info for each player
         const taxPreview: Record<string, {
             previousWins: number;
             totalWins: number;
-            taxRate: number; // Combined rate (repeat + solo)
+            taxRate: number;
             taxPercentage: string;
             repeatWinnerTaxRate: number;
             soloTaxRate: number;
             isSolo: boolean;
-            hasRoyalPass: boolean;
         }> = {};
 
         for (const playerId of playerIds) {
@@ -98,7 +85,6 @@ export async function GET(
             const repeatTaxRate = getTaxRate(totalWins);
             const isSolo = soloPlayerIds.has(playerId);
             const playerSoloTax = isSolo ? soloTaxRate : 0;
-            const hasRoyalPass = rpPlayerIds.has(playerId);
 
             // Combined tax rate (both taxes stack)
             const combinedTaxRate = repeatTaxRate + playerSoloTax;
@@ -111,8 +97,6 @@ export async function GET(
                 repeatWinnerTaxRate: repeatTaxRate,
                 soloTaxRate: playerSoloTax,
                 isSolo,
-                hasRoyalPass,
-                // Safety Net model: entry fee refund, no percentage bonus
             };
         }
 
@@ -124,4 +108,3 @@ export async function GET(
         return handleApiErrors(error);
     }
 }
-

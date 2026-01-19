@@ -69,7 +69,9 @@ export function NotificationPromptBanner() {
     // - Already subscribed
     // - Permission already denied (can't ask again)
     // - Still loading
-    const shouldShow = isSupported && !isSubscribed && permission !== "denied" && !isLoading && showModal;
+    // - On localhost (development)
+    const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const shouldShow = isSupported && !isSubscribed && permission !== "denied" && !isLoading && showModal && !isLocalhost;
 
     const handleEnable = async () => {
         setIsPrompting(true);

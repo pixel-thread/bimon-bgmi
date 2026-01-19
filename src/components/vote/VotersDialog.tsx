@@ -174,7 +174,10 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                                     filterPollVote(option.vote)?.map((vote) => (
                                       <div
                                         key={vote.id}
-                                        className={`flex items-center space-x-3 p-3 rounded-lg ${theme ? theme.voterCard : 'bg-white dark:bg-gray-700'}`}
+                                        className={`flex items-center space-x-3 p-3 rounded-lg ${(vote.player as any)?.hasRoyalPass
+                                            ? 'bg-gradient-to-r from-amber-400/30 via-yellow-300/25 to-amber-400/30 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+                                            : theme ? theme.voterCard : 'bg-white dark:bg-gray-700'
+                                          }`}
                                       >
                                         <PlayerAvatar
                                           characterImageUrl={vote.player?.characterImage?.publicUrl}

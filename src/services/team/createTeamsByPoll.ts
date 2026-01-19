@@ -11,6 +11,7 @@ import { computeWeightedScore, PlayerWithWins, SeasonScoringConfig } from "@/src
 import { PlayerWithWeightT } from "@/src/types/player";
 import { getPreviousTournamentTeammates } from "@/src/utils/previousTeammates";
 import { isMeritBanEnabled } from "@/src/services/settings/getAppSetting";
+import { recordTournamentParticipation, resetStreaksForNonParticipants } from "@/src/services/player/tournamentStreak";
 
 type PreviewTeamInput = {
   teamNumber: number;
@@ -452,6 +453,35 @@ export async function createTeamsByPolls({
       timeout: 600000, // Transaction timeout (10 minutes - match global config)
     },
   );
+
+  // After transaction: Update tournament streaks for all participants (outside transaction for reliability)
+  // This awards 30 UC if a player hits 8 consecutive tournaments
+  const participantPlayerIds: string[] = [];
+  for (const team of createdTeams) {
+    const teamWithPlayers = await prisma.team.findUnique({
+      where: { id: team.id },
+      include: { players: { select: { id: true } } },
+    });
+    if (teamWithPlayers) {
+      participantPlayerIds.push(...teamWithPlayers.players.map(p => p.id));
+    }
+  }
+
+  // Record participation for each player (this also awards streak rewards)
+  for (const playerId of participantPlayerIds) {
+    try {
+      await recordTournamentParticipation(playerId, tournamentId);
+    } catch (error) {
+      console.error(`Failed to update streak for player ${playerId}:`, error);
+    }
+  }
+
+  // Reset streaks for players who missed this tournament
+  try {
+    await resetStreaksForNonParticipants(tournamentId, participantPlayerIds);
+  } catch (error) {
+    console.error("Failed to reset streaks for non-participants:", error);
+  }
 
   return {
     teams: createdTeams,

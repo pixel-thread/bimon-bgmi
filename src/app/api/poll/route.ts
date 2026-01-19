@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
               include: {
                 user: true,
                 characterImage: true,
-                royalPasses: { where: { isActive: true }, take: 1 },
+                royalPasses: { take: 1 },
               }
             }
           },
