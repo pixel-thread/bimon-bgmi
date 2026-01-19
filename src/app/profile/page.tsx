@@ -14,7 +14,7 @@ import { PromoterTab } from "@/src/components/profile/PromoterTab";
 import {
     Bell, Check, X, ArrowUpRight, ArrowDownLeft, Clock, DollarSign,
     User, Target, Swords, TrendingUp, TrendingDown, Minus, Settings,
-    Trophy, Calendar, Star, Medal, ShieldAlert, History, ChevronLeft, ChevronRight, Loader2, Gift, ArrowLeft, Crown
+    Trophy, Calendar, Star, Medal, ShieldAlert, History, ChevronLeft, ChevronRight, ChevronDown, Loader2, Gift, ArrowLeft, Crown
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
@@ -72,6 +72,7 @@ type PlayerStats = {
     totalTournaments: number;
     bestMatchKills: number;
     podiumFinishes: { first: number; second: number; third: number };
+    ucPlacements: { first: number; second: number; third: number; fourth: number; fifth: number };
     banStatus: { isBanned: boolean; reason?: string; duration?: number; bannedAt?: Date };
     wins: number;
     top10Count: number;
@@ -100,6 +101,7 @@ export default function ProfilePage() {
 
     // UC History expanded state (lazy load)
     const [showUCHistory, setShowUCHistory] = useState(false);
+    const [showUCWinsBreakdown, setShowUCWinsBreakdown] = useState(false);
     const [ucHistoryPage, setUcHistoryPage] = useState(1);
     const UC_HISTORY_PAGE_SIZE = 10;
 
@@ -204,6 +206,7 @@ export default function ProfilePage() {
     const totalTournaments = playerStats?.totalTournaments || 0;
     const bestMatchKills = playerStats?.bestMatchKills || 0;
     const podiumFinishes = playerStats?.podiumFinishes || { first: 0, second: 0, third: 0 };
+    const ucPlacements = playerStats?.ucPlacements || { first: 0, second: 0, third: 0, fourth: 0, fifth: 0 };
     const banStatus = playerStats?.banStatus || { isBanned: user?.player?.isBanned || false };
     const wins = playerStats?.wins || 0;
     const top10Count = playerStats?.top10Count || 0;
@@ -547,9 +550,16 @@ export default function ProfilePage() {
                                             <div className="text-2xl font-bold text-slate-800 dark:text-white">{deaths}</div>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Matches</p>
                                         </div>
-                                        <div>
-                                            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{statsLoading ? <Skeleton className="h-7 w-10 inline-block" /> : wins}</div>
-                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Wins</p>
+                                        <div
+                                            className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg py-1 transition-colors"
+                                            onClick={() => setShowUCWinsBreakdown(!showUCWinsBreakdown)}
+                                        >
+                                            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                                                {statsLoading ? <Skeleton className="h-7 w-10 inline-block" /> : ucPlacements.first}
+                                            </div>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase flex items-center justify-center gap-0.5">
+                                                Wins <ChevronDown className={`w-3 h-3 transition-transform ${showUCWinsBreakdown ? 'rotate-180' : ''}`} />
+                                            </p>
                                         </div>
                                         <div>
                                             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{statsLoading ? <Skeleton className="h-7 w-10 inline-block" /> : top10Count}</div>
@@ -560,6 +570,60 @@ export default function ProfilePage() {
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Kills</p>
                                         </div>
                                     </div>
+
+                                    {/* Expandable UC Wins Breakdown */}
+                                    {showUCWinsBreakdown && (
+                                        <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-600/50">
+                                            {(ucPlacements.first + ucPlacements.second + ucPlacements.third + ucPlacements.fourth + ucPlacements.fifth) === 0 ? (
+                                                <p className="text-center text-sm text-muted-foreground py-2">No UC wins yet</p>
+                                            ) : (
+                                                <div className="overflow-x-auto -mx-2 px-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                                                    <div className="flex gap-4 min-w-max justify-center">
+                                                        {ucPlacements.first > 0 && (
+                                                            <div className="text-center min-w-[50px]">
+                                                                <div className="text-lg font-bold text-yellow-500">
+                                                                    <span className="text-base">🥇</span>{ucPlacements.first}
+                                                                </div>
+                                                                <p className="text-[9px] text-slate-500 dark:text-slate-400 uppercase">1st</p>
+                                                            </div>
+                                                        )}
+                                                        {ucPlacements.second > 0 && (
+                                                            <div className="text-center min-w-[50px]">
+                                                                <div className="text-lg font-bold text-gray-400">
+                                                                    <span className="text-base">🥈</span>{ucPlacements.second}
+                                                                </div>
+                                                                <p className="text-[9px] text-slate-500 dark:text-slate-400 uppercase">2nd</p>
+                                                            </div>
+                                                        )}
+                                                        {ucPlacements.third > 0 && (
+                                                            <div className="text-center min-w-[50px]">
+                                                                <div className="text-lg font-bold text-orange-400">
+                                                                    <span className="text-base">🥉</span>{ucPlacements.third}
+                                                                </div>
+                                                                <p className="text-[9px] text-slate-500 dark:text-slate-400 uppercase">3rd</p>
+                                                            </div>
+                                                        )}
+                                                        {ucPlacements.fourth > 0 && (
+                                                            <div className="text-center min-w-[50px]">
+                                                                <div className="text-lg font-bold text-slate-500 dark:text-slate-400">
+                                                                    <span className="text-[10px] font-bold">4th </span>{ucPlacements.fourth}
+                                                                </div>
+                                                                <p className="text-[9px] text-slate-500 dark:text-slate-400 uppercase">4th</p>
+                                                            </div>
+                                                        )}
+                                                        {ucPlacements.fifth > 0 && (
+                                                            <div className="text-center min-w-[50px]">
+                                                                <div className="text-lg font-bold text-slate-500 dark:text-slate-400">
+                                                                    <span className="text-[10px] font-bold">5th </span>{ucPlacements.fifth}
+                                                                </div>
+                                                                <p className="text-[9px] text-slate-500 dark:text-slate-400 uppercase">5th</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Performance Rates */}

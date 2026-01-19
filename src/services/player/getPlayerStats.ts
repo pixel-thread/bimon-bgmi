@@ -5,9 +5,9 @@ type Props = {
   seasonId?: string;
 };
 
-// Helper function to get extended stats (seasons, tournaments, best match, podium, ban status, wins, top10)
+// Helper function to get extended stats (seasons, tournaments, best match, podium, ban status, wins, top10, UC placements)
 async function getExtendedStats(playerId: string) {
-  // Get player with relations for seasons, teams, and ban status
+  // Get player with relations for seasons, teams, ban status, and UC distribution placements
   const player = await prisma.player.findUnique({
     where: { id: playerId },
     select: {
@@ -15,9 +15,13 @@ async function getExtendedStats(playerId: string) {
       seasons: { select: { id: true } },
       teams: {
         select: {
+          id: true,
           tournamentId: true,
           teamStats: {
             select: { position: true, matchId: true },
+          },
+          tournamentWinner: {
+            select: { position: true },
           },
         },
       },
@@ -37,6 +41,7 @@ async function getExtendedStats(playerId: string) {
       totalTournaments: 0,
       bestMatchKills: 0,
       podiumFinishes: { first: 0, second: 0, third: 0 },
+      ucPlacements: { first: 0, second: 0, third: 0, fourth: 0, fifth: 0 },
       banStatus: { isBanned: false },
       wins: 0,
       top10Count: 0,
@@ -97,6 +102,25 @@ async function getExtendedStats(playerId: string) {
     }
   }
 
+  // Count UC distribution placements from tournament winners (1st, 2nd, 3rd, 4th, 5th in tournament standings)
+  const ucPlacements = { first: 0, second: 0, third: 0, fourth: 0, fifth: 0 };
+  for (const team of player.teams) {
+    // Each team can have at most one tournamentWinner entry
+    for (const winner of team.tournamentWinner) {
+      if (winner.position === 1) {
+        ucPlacements.first++;
+      } else if (winner.position === 2) {
+        ucPlacements.second++;
+      } else if (winner.position === 3) {
+        ucPlacements.third++;
+      } else if (winner.position === 4) {
+        ucPlacements.fourth++;
+      } else if (winner.position === 5) {
+        ucPlacements.fifth++;
+      }
+    }
+  }
+
   // Calculate rates
   const winRate = totalMatchesPlayed > 0
     ? Number(((wins / totalMatchesPlayed) * 100).toFixed(1))
@@ -118,6 +142,7 @@ async function getExtendedStats(playerId: string) {
     totalTournaments,
     bestMatchKills,
     podiumFinishes,
+    ucPlacements,
     banStatus,
     wins,
     top10Count,
