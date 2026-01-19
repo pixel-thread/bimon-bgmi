@@ -27,7 +27,7 @@ import { useTournamentStore } from "@/src/store/tournament";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { useQuery } from "@tanstack/react-query";
 import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
-import { toBGMIDisplay } from "@/src/utils/bgmiDisplay";
+import { toBGMIDisplay, getDisplayName } from "@/src/utils/bgmiDisplay";
 
 type SwapPlayersDialogProps = {
     open: boolean;
@@ -149,9 +149,9 @@ export const SwapPlayersDialog = ({
                                         <SelectValue placeholder="Select player" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {teamA.players?.map((player: { id: string; name: string }) => (
+                                        {teamA.players?.map((player: { id: string; name: string; displayName?: string | null }) => (
                                             <SelectItem key={player.id} value={player.id}>
-                                                {toBGMIDisplay(player.name)}
+                                                {getDisplayName(player.displayName, player.name)}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -188,9 +188,9 @@ export const SwapPlayersDialog = ({
                                         <SelectValue placeholder="Select player" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {teamB.players?.map((player: { id: string; name: string }) => (
+                                        {teamB.players?.map((player: { id: string; name: string; displayName?: string | null }) => (
                                             <SelectItem key={player.id} value={player.id}>
-                                                {toBGMIDisplay(player.name)}
+                                                {getDisplayName(player.displayName, player.name)}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -201,22 +201,22 @@ export const SwapPlayersDialog = ({
                         {/* Preview - Show new team compositions */}
                         {canSwap && teamA && teamB && (() => {
                             // Compute new team compositions after swap
-                            const playerA = teamA.players?.find((p: { id: string; name: string }) => p.id === playerAId);
-                            const playerB = teamB.players?.find((p: { id: string; name: string }) => p.id === playerBId);
+                            const playerA = teamA.players?.find((p: { id: string; name: string; displayName?: string | null }) => p.id === playerAId);
+                            const playerB = teamB.players?.find((p: { id: string; name: string; displayName?: string | null }) => p.id === playerBId);
 
                             // New Team A: replace playerA with playerB
-                            const newTeamAPlayers = (teamA.players?.map((p: { id: string; name: string }) =>
+                            const newTeamAPlayers = (teamA.players?.map((p: { id: string; name: string; displayName?: string | null }) =>
                                 p.id === playerAId ? playerB : p
-                            ) || []).filter((p): p is { id: string; name: string } => p !== undefined);
+                            ) || []).filter((p): p is { id: string; name: string; displayName?: string | null } => p !== undefined);
 
                             // New Team B: replace playerB with playerA
-                            const newTeamBPlayers = (teamB.players?.map((p: { id: string; name: string }) =>
+                            const newTeamBPlayers = (teamB.players?.map((p: { id: string; name: string; displayName?: string | null }) =>
                                 p.id === playerBId ? playerA : p
-                            ) || []).filter((p): p is { id: string; name: string } => p !== undefined);
+                            ) || []).filter((p): p is { id: string; name: string; displayName?: string | null } => p !== undefined);
 
                             // Format: playerA_playerB (combined names)
-                            const teamAPreview = newTeamAPlayers.map(p => toBGMIDisplay(p.name)).join('_');
-                            const teamBPreview = newTeamBPlayers.map(p => toBGMIDisplay(p.name)).join('_');
+                            const teamAPreview = newTeamAPlayers.map(p => getDisplayName(p.displayName, p.name)).join('_');
+                            const teamBPreview = newTeamBPlayers.map(p => getDisplayName(p.displayName, p.name)).join('_');
 
                             return (
                                 <div className="p-3 rounded-lg bg-muted/50 text-sm space-y-1">

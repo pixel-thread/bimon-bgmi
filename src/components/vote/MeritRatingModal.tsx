@@ -9,6 +9,8 @@ import {
     DialogDescription,
 } from "@/src/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { Popover, PopoverContent, PopoverTrigger } from "@/src/components/ui/popover";
+import { HelpCircle } from "lucide-react";
 
 interface PendingRating {
     playerId: string;
@@ -120,9 +122,34 @@ export function MeritRatingModal({
                             <span className="text-[10px] sm:text-xs text-zinc-500">{STAR_LABELS[3]}</span>
                             <span className="text-[10px] sm:text-xs text-zinc-500">{STAR_LABELS[5]}</span>
                         </div>
+
+                        {/* Voting Guidelines */}
+                        <div className="mt-5 flex items-center justify-center">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <button className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+                                        <HelpCircle className="w-4 h-4" />
+                                        <span>Nuksa bin vote?</span>
+                                    </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-72 p-3 bg-zinc-800 border-zinc-700 text-xs">
+                                    <div className="space-y-3">
+                                        <div>
+                                            <p className="font-semibold text-red-400 mb-1">⭐ Sngewbang bha rei:</p>
+                                            <p className="text-zinc-300">Mar ia iap, ialade exit noh, ym ju kren, um da join bha ki match baroh, kiwei²</p>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-green-400 mb-1">⭐⭐⭐⭐⭐ Sngewtynnad bha:</p>
+                                            <p className="text-zinc-300">I iakren sngewtynnad bha, sngewthuh jingmut bha da noob ruh, da ym bha kren ruh i pyntip, kiwei²</p>
+                                        </div>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
                     </div>
                 </div>
             </DialogContent>
         </Dialog>
     );
 }
+
