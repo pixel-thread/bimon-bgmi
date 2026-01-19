@@ -200,58 +200,76 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     // Vote mutation
     const { mutate: submitVote } = useMutation({
       mutationFn: (vote: VoteT) => http.post(`/poll/${pollId}/vote`, { vote }),
-      onMutate: (newVote) => {
-        // Optimistically update - old selection disappears, new one appears
+      onMutate: async (newVote) => {
+        // Optimistically update local state
         setOptimisticVote(newVote);
         setPendingVote(newVote); // Track for loader
+
+        // Cancel any outgoing refetches to prevent overwriting optimistic update
+        await queryClient.cancelQueries({ queryKey: ["polls"] });
+
+        // Snapshot the previous value for rollback
+        const previousPolls = queryClient.getQueryData(["polls"]);
+
+        // Optimistically update the cache immediately
+        queryClient.setQueryData(["polls"], (oldData: any) => {
+          if (!oldData?.data) return oldData;
+          return {
+            ...oldData,
+            data: oldData.data.map((p: any) => {
+              if (p.id !== pollId) return p;
+              // Update playersVotes for this poll
+              const existingVoteIndex = p.playersVotes?.findIndex((v: any) => v.playerId === playerId);
+              let updatedVotes = [...(p.playersVotes || [])];
+
+              if (existingVoteIndex >= 0) {
+                // Update existing vote - move player to new option
+                updatedVotes[existingVoteIndex] = { ...updatedVotes[existingVoteIndex], vote: newVote };
+              } else {
+                // Add new vote entry (first time voting)
+                // Use current user's data from auth context for complete display
+                updatedVotes.push({
+                  id: `optimistic-${Date.now()}`,
+                  playerId,
+                  vote: newVote,
+                  createdAt: new Date().toISOString(),
+                  player: {
+                    characterImage: user?.player?.characterImage || null,
+                    user: {
+                      displayName: user?.displayName || null,
+                      userName: user?.userName || ''
+                    },
+                    hasRoyalPass: false, // Not available in auth context, will update on refetch
+                  }
+                });
+              }
+              return { ...p, playersVotes: updatedVotes };
+            }),
+          };
+        });
+
+        // Return context with previous data for rollback
+        return { previousPolls };
       },
-      onSuccess: (data, newVote) => {
+      onSuccess: (data) => {
         if (data.success) {
           toast.success(data.message);
-          // Update polls cache so VotersDialog shows correct vote
-          // This also updates playersVotes which propagates to this component
-          queryClient.setQueryData(["polls"], (oldData: any) => {
-            if (!oldData?.data) return oldData;
-            return {
-              ...oldData,
-              data: oldData.data.map((p: any) => {
-                if (p.id !== pollId) return p;
-                // Update playersVotes for this poll
-                const existingVoteIndex = p.playersVotes?.findIndex((v: any) => v.playerId === playerId);
-                let updatedVotes = [...(p.playersVotes || [])];
-
-                if (existingVoteIndex >= 0) {
-                  // Update existing vote
-                  updatedVotes[existingVoteIndex] = { ...updatedVotes[existingVoteIndex], vote: newVote };
-                } else {
-                  // Add new vote entry (first time voting)
-                  updatedVotes.push({
-                    id: `optimistic-${Date.now()}`,
-                    playerId,
-                    vote: newVote,
-                    createdAt: new Date().toISOString(),
-                    player: {
-                      characterImage: null,
-                      user: { displayName: null, userName: '' }
-                    }
-                  });
-                }
-                return { ...p, playersVotes: updatedVotes };
-              }),
-            };
-          });
-          // Clear pending but keep optimistic vote until useEffect detects
-          // that server data has caught up to avoid race condition
+          // Clear pending state - cache already updated in onMutate
           setPendingVote(null);
         } else {
           // Revert on failure - go back to server state
           setPendingVote(null);
           setOptimisticVote(null);
+          // Invalidate to refetch correct data
+          queryClient.invalidateQueries({ queryKey: ["polls"] });
           toast.error(data.message);
         }
       },
-      onError: () => {
-        // Revert on error
+      onError: (_error, _newVote, context) => {
+        // Revert to previous state on error
+        if (context?.previousPolls) {
+          queryClient.setQueryData(["polls"], context.previousPolls);
+        }
         setPendingVote(null);
         setOptimisticVote(null);
         toast.error("Failed to vote. Please try again.");

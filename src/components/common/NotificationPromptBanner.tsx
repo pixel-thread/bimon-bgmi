@@ -38,6 +38,12 @@ export function NotificationPromptBanner() {
 
     // Check localStorage on mount - show again after 24 hours
     useEffect(() => {
+        // Wait for subscription check to complete
+        if (isLoading) return;
+
+        // Don't show if already subscribed
+        if (isSubscribed) return;
+
         const dismissedAt = localStorage.getItem(DISMISSED_KEY);
         if (dismissedAt) {
             const dismissedTime = parseInt(dismissedAt, 10);
@@ -51,7 +57,7 @@ export function NotificationPromptBanner() {
             // First time visitor - show modal
             setShowModal(true);
         }
-    }, []);
+    }, [isLoading, isSubscribed]);
 
     // Timer to show "Not Now" button after delay
     useEffect(() => {
