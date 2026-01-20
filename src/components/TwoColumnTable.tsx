@@ -2,6 +2,7 @@
 "use client";
 
 import { cn } from "@/src/lib/utils";
+import { sanitizeDisplayName } from "@/src/utils/displayName";
 
 export interface IPlayer {
   id: string;
@@ -58,7 +59,7 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
     <div className="mobile-list sm:hidden space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
       {teams.map((team, index) => {
         const rank = index + 1;
-        const teamName = team.players.map((p) => p.displayName || p.name).join("_");
+        const teamName = sanitizeDisplayName(team.players.map((p) => p.displayName || p.name).join("_"));
         const styles = getRankStyles(rank);
 
         return (
@@ -142,7 +143,7 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
         <tbody>
           {slice.map((team, idx) => {
             const rank = startIndex + idx + 1;
-            const teamName = team.players.map((p) => p.displayName || p.name).join("_");
+            const teamName = sanitizeDisplayName(team.players.map((p) => p.displayName || p.name).join("_"));
             const styles = getRankStyles(rank);
 
             return (

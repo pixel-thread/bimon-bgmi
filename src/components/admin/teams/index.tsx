@@ -34,7 +34,7 @@ import { BulkEditStatsDialog } from "./BulkEditStatsDialog";
 import { useGlobalBackground } from "@/src/hooks/gallery/useGlobalBackground";
 import { SwapPlayersDialog } from "./swap-players-dialog";
 import { ArrowLeftRight, Loader2, Pencil, Trash2 } from "lucide-react";
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/displayName";
 import { usePendingRefetch } from "@/src/store/match/usePendingRefetch";
 import {
   AlertDialog,

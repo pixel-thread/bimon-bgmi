@@ -9,6 +9,7 @@ import { Loader2, Trash2, Pencil } from "lucide-react";
 import { useTournamentStore } from "@/src/store/tournament";
 import React, { useState } from "react";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
+import { sanitizeDisplayName } from "@/src/utils/displayName";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +34,7 @@ export const useTeamsColumns = ({ page }: Props = { page: "1" }) => {
         header: "Team",
         cell: ({ row }) => (
           <div className="flex items-center gap-2 font-medium">
-            {row.original.name}
+            {sanitizeDisplayName(row.original.name)}
             {row.original.status === "PROCESSING" && (
               <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" title="Processing..." />
             )}

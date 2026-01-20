@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/src/components/ui/sidebar";
 import { useAuth } from "../hooks/context/auth/useAuth";
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/displayName";
 import { cn } from "@/src/lib/utils";
 import Image from "next/image";
 

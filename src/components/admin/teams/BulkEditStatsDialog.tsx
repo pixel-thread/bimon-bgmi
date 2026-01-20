@@ -21,7 +21,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { LoaderFive } from "../../ui/loader";
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/displayName";
 
 type Props = {
     open: boolean;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/src/lib/db/prisma";
 import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddleware";
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/displayName";
 
 interface PlayerFinancials {
     playerId: string;

@@ -1,12 +1,13 @@
 "use client";
 import { FiX, FiCheck } from "react-icons/fi";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import html2canvas from "html2canvas-pro";
 import { Button } from "@/src/components/ui/button";
 import { ShareableContent } from "../ShareableContent";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { TeamT } from "@/src/types/team";
 import { useStandings } from "@/src/hooks/team/useStandings";
+import { useMatches } from "@/src/hooks/match/useMatches";
 import TeamStats from "./TeamStats";
 import { LoaderFive } from "../ui/loader";
 import { Copy } from "lucide-react";
@@ -34,6 +35,25 @@ export default function OverallStandingModal({
 
   // Use the derived useStandings hook - shares cache with useTeams, no extra API call
   const { data: teamsStats, isFetching } = useStandings();
+  const { data: matches } = useMatches();
+
+  // Compute matchDate: specific match's updatedAt or latest match's updatedAt for overall
+  const matchDate = useMemo(() => {
+    if (!matches || matches.length === 0) return null;
+
+    const isOverall = selectedMatch === "all" || !selectedMatch;
+    if (isOverall) {
+      // For overall, use the latest match's updatedAt
+      const sortedMatches = [...matches].sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+      return sortedMatches[0]?.updatedAt || null;
+    } else {
+      // For specific match, use that match's updatedAt
+      const match = matches.find((m: any) => m.id === selectedMatch);
+      return match?.updatedAt || null;
+    }
+  }, [matches, selectedMatch]);
   // Fallback for devices without clipboard support
   const downloadFallback = (canvas: HTMLCanvasElement) => {
     const downloadLink = document.createElement("a");
@@ -72,14 +92,12 @@ export default function OverallStandingModal({
       width: 1280px;
       height: 720px;
       left: -9999px;
+      top: 0;
       overflow: hidden;
       background-image: url(${backgroundImage});
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     `;
     document.body.appendChild(tempContainer);
 
@@ -232,6 +250,7 @@ export default function OverallStandingModal({
           tournamentTitle={tournamentTitle}
           maxMatchNumber={maxMatchNumber}
           isLoading={isFetching}
+          matchDate={matchDate}
         />
       </div>
     </>

@@ -6,13 +6,12 @@
 const BGMI_INVISIBLE_CHARS = /[ĒēĪīŌōŪū]/g;
 
 /**
- * Converts a displayName to how it appears in BGMI
- * Characters that are invisible in BGMI are replaced with spaces
- * Note: Ā/ā are preserved for better readability
+ * Sanitizes a display name by replacing invisible BGMI characters with spaces
+ * Multiple consecutive spaces are collapsed to single space
  */
-export function toBGMIDisplay(name: string | null | undefined): string {
+export function sanitizeDisplayName(name: string | null | undefined): string {
     if (!name) return "";
-    return name.replace(BGMI_INVISIBLE_CHARS, " ");
+    return name.replace(BGMI_INVISIBLE_CHARS, " ").replace(/\s+/g, " ").trim();
 }
 
 /**
@@ -24,5 +23,5 @@ export function getDisplayName(
     userName: string | null | undefined
 ): string {
     const name = displayName || userName || "";
-    return toBGMIDisplay(name);
+    return sanitizeDisplayName(name);
 }

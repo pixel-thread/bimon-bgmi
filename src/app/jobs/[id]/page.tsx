@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/src/components/ui/button";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { PlayerAvatar } from "@/src/components/ui/player-avatar";
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/displayName";
 import {
     ArrowLeft, Phone, MapPin, Clock, ThumbsUp, ThumbsDown,
     CheckCircle, Calendar, ExternalLink, Image as ImageIcon

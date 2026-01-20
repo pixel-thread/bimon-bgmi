@@ -25,7 +25,7 @@ import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { VotersListSkeleton, VotersSkeleton } from "./VotersSkeleton";
 
 import { PollT } from "@/src/types/poll";
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/displayName";
 import { getPollTheme, calculateParticipantCount } from "./pollTheme";
 import { useDialogBackHandler } from "@/src/hooks/useDialogBackHandler";
 

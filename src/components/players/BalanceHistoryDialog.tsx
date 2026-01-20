@@ -14,7 +14,7 @@ import { History, TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 import { LoaderFive } from "@/src/components/ui/loader";
 import { usePlayer } from "@/src/hooks/player/usePlayer";
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/displayName";
 
 interface BalanceHistory {
   id: string;

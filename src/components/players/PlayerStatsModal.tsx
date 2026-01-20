@@ -25,7 +25,7 @@ import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { UCTransferDialog } from "./UCTransferDialog";
 
 
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/displayName";
 
 function ModalSkeleton() {
   return (

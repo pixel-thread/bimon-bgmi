@@ -27,7 +27,7 @@ import { useTournamentStore } from "@/src/store/tournament";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { useQuery } from "@tanstack/react-query";
 import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
-import { toBGMIDisplay, getDisplayName } from "@/src/utils/bgmiDisplay";
+import { sanitizeDisplayName, getDisplayName } from "@/src/utils/displayName";
 
 type SwapPlayersDialogProps = {
     open: boolean;

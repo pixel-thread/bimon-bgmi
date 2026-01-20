@@ -8,7 +8,7 @@ import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { cn } from "@/src/lib/utils";
 import { PLAYER_ENDPOINTS } from "@/src/lib/endpoints/player";
 import { useSeasonStore } from "@/src/store/season";
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/displayName";
 
 type PlayerStatsT = Prisma.PlayerStatsGetPayload<{
   include: {

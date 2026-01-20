@@ -20,7 +20,7 @@ import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { SearchPlayerDialog } from "../player/SearchPlayerDialog";
 import { useTournament } from "@/src/hooks/tournament/useTournament";
 import { TeamT } from "@/src/types/team";
-import { toBGMIDisplay } from "@/src/utils/bgmiDisplay";
+import { sanitizeDisplayName } from "@/src/utils/displayName";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -294,7 +294,7 @@ export const CreateTeamDialog = ({
                       <span className="text-xs font-medium text-muted-foreground">
                         {index + 1}.
                       </span>
-                      <span className="text-sm font-medium">{toBGMIDisplay(player.name)}</span>
+                      <span className="text-sm font-medium">{sanitizeDisplayName(player.name)}</span>
                       {player.moveFromTeamName && (
                         <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                           Moving from {player.moveFromTeamName}

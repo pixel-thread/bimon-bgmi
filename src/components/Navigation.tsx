@@ -29,7 +29,7 @@ import { Crown } from "lucide-react";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
 import Link from "next/link";
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/displayName";
 
 // Shared navigation items with icons for mobile
 const navItems = [

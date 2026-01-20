@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Phone, ChevronLeft, ChevronRight, X, ThumbsUp, ThumbsDown, CheckCircle, MapPin, Clock, ExternalLink } from "lucide-react";
 import { useJobListings, useReactToListing, JobListing, EXPERIENCE_OPTIONS, TIME_OPTIONS } from "@/src/hooks/jobListing/useJobListings";
 import { PlayerAvatar } from "@/src/components/ui/player-avatar";
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/displayName";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import Link from "next/link";
 

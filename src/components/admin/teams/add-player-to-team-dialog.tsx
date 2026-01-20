@@ -23,7 +23,7 @@ import { TeamT } from "@/src/types/team";
 import { usePlayers } from "@/src/hooks/player/usePlayers";
 import React from "react";
 import { toast } from "sonner";
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/displayName";
 import { useTournamentStore } from "@/src/store/tournament";
 import { useMatchStore } from "@/src/store/match/useMatchStore";
 import { LoaderFive } from "../../ui/loader";

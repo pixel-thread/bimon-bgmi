@@ -17,6 +17,7 @@ interface ShareableContentProps {
   tournamentTitle: string;
   maxMatchNumber: number;
   isLoading?: boolean;
+  matchDate?: Date | null;
 }
 
 export function ShareableContent({
@@ -24,6 +25,7 @@ export function ShareableContent({
   backgroundImage,
   tournamentTitle,
   isLoading,
+  matchDate,
 }: ShareableContentProps) {
   const { matchId: selectedMatch, matchNumber } = useMatchStore();
   const { seasonId: selectedSeason } = useSeasonStore();
@@ -40,7 +42,9 @@ export function ShareableContent({
   const derivedMatchNumber = matchIndex >= 0 ? matchIndex + 1 : null;
   const displayMatchNumber = isOverall ? null : (matchNumber ?? derivedMatchNumber);
 
-  const todayFormatted = formatDateDDMMYYYY(new Date());
+  // Use provided matchDate or fall back to today
+  const displayDate = matchDate ? new Date(matchDate) : new Date();
+  const dateFormatted = formatDateDDMMYYYY(displayDate);
 
   // Normalize teams into the minimal table shape expected by TwoColumnTable
   const normalizedTeams: ITeamStats[] = (teams || []).map((t: any) => ({
@@ -88,6 +92,14 @@ export function ShareableContent({
         /* Force desktop table for sharing */
         #shareable-content.force-desktop .mobile-list { display: none !important; }
         #shareable-content.force-desktop .desktop-table { display: block !important; }
+        
+        /* Screenshot mode - align to top, exact height */
+        #shareable-content.force-desktop {
+          min-height: 720px !important;
+          height: 720px !important;
+          align-items: flex-start !important;
+          padding-top: 24px !important;
+        }
 
         /* Marquee on hover for long single-line names */
         @keyframes marquee {
@@ -112,7 +124,7 @@ export function ShareableContent({
       `}</style>
 
       {/* Premium gradient overlay - lighter to show more background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/65 to-black/75" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/60" />
 
       {/* Decorative corner accents */}
       <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-orange-500/20 to-transparent pointer-events-none" />
@@ -167,7 +179,7 @@ export function ShareableContent({
           </div>
           <div className="flex items-center gap-1.5 text-zinc-500">
             <Calendar className="h-3 w-3" />
-            <span>{todayFormatted}</span>
+            <span>{dateFormatted}</span>
           </div>
         </div>
       </div>

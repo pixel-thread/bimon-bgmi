@@ -19,7 +19,7 @@ import { Button } from "../../ui/button";
 import { RefreshCwIcon, Users } from "lucide-react";
 import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
 import { TeamT } from "@/src/types/team";
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/displayName";
 
 type PlayerTeamInfo = {
   teamId: string;

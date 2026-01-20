@@ -21,7 +21,7 @@ import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { useUser } from "@clerk/nextjs";
 import { formatDistanceToNow } from "date-fns";
 import Image from "next/image";
-import { getDisplayName } from "@/src/utils/bgmiDisplay";
+import { getDisplayName } from "@/src/utils/displayName";
 import { getKdRank } from "@/src/utils/categoryUtils";
 import { CategoryBadge } from "@/src/components/ui/category-badge";
 import Link from "next/link";
