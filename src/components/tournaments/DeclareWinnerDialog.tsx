@@ -19,6 +19,7 @@ import http from "@/src/utils/http";
 import { toast } from "sonner";
 import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
 import { getFinalDistribution, getTeamSize } from "@/src/utils/prizeDistribution";
+import { useSeasonStore } from "@/src/store/season";
 
 type TeamRanking = {
     teamId: string;
@@ -78,8 +79,25 @@ export function DeclareWinnerDialog({
 }: Props) {
     const [placementCount, setPlacementCount] = useState(2);
     const queryClient = useQueryClient();
+    const { seasonId } = useSeasonStore();
 
-    const prizePool = prizePoolMeta?.prizePool || 0;
+    // Fetch bonus pool from solo tax (accumulated from previous solo winners)
+    const { data: bonusPoolData } = useQuery({
+        queryKey: ["solo-tax-pool", seasonId],
+        queryFn: async (): Promise<{ amount: number; donorName: string | null }> => {
+            if (!seasonId) return { amount: 0, donorName: null };
+            const response = await http.get(`/solo-tax-pool?seasonId=${seasonId}`);
+            return (response.data as { amount: number; donorName: string | null }) || { amount: 0, donorName: null };
+        },
+        enabled: isOpen && !!seasonId,
+    });
+
+    const bonusPool = bonusPoolData?.amount || 0;
+    const bonusDonorName = bonusPoolData?.donorName || null;
+
+    // Add bonus pool to total prize pool
+    const basePrizePool = prizePoolMeta?.prizePool || 0;
+    const prizePool = basePrizePool + bonusPool;
     const entryFee = prizePoolMeta?.entryFee || 0;
     const totalPlayers = prizePoolMeta?.totalPlayers || 0;
 
@@ -192,6 +210,7 @@ export function DeclareWinnerDialog({
                 });
                 queryClient.invalidateQueries({ queryKey: ["tournament-winners"] });
                 queryClient.invalidateQueries({ queryKey: ["tournament-rankings"] });
+                queryClient.invalidateQueries({ queryKey: ["solo-tax-pool"] }); // Refresh bonus pool display
                 handleClose();
             } else {
                 toast.error(data.message || "Failed to declare winners");
@@ -256,6 +275,17 @@ export function DeclareWinnerDialog({
                                 <div className="font-medium">₹{entryFee}</div>
                                 <div className="text-muted-foreground">Total Players:</div>
                                 <div className="font-medium">{totalPlayers}</div>
+                                {bonusPool > 0 && (
+                                    <>
+                                        <div className="text-muted-foreground">Base Prize Pool:</div>
+                                        <div className="font-medium">₹{basePrizePool.toLocaleString()}</div>
+                                        <div className="text-muted-foreground">🎁 Bonus Pool:</div>
+                                        <div className="font-medium text-purple-600 dark:text-purple-400">
+                                            +₹{bonusPool.toLocaleString()}
+                                            {bonusDonorName && <span className="text-xs ml-1">({bonusDonorName})</span>}
+                                        </div>
+                                    </>
+                                )}
                                 <div className="text-muted-foreground font-semibold">Total Prize Pool:</div>
                                 <div className="font-bold text-green-600 dark:text-green-400">₹{prizePool.toLocaleString()}</div>
                             </div>

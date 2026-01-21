@@ -4,7 +4,7 @@ import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { addTournamentWinner } from "@/src/services/winner/addTournamentWinner";
 import { getUniqedTournamentWinners } from "@/src/services/winner/getTournamentWinner";
 import { getPlayerRecentWins } from "@/src/services/winner/getPlayerRecentWins";
-import { getPlayerLosses, isPlayerSolo, addToSoloTaxPool } from "@/src/services/winner/getPlayerLosses";
+import { getPlayerLosses, isPlayerSolo, addToSoloTaxPool, consumeSoloTaxPool } from "@/src/services/winner/getPlayerLosses";
 import { calculatePlayerPoints } from "@/src/utils/calculatePlayersPoints";
 import { calculateRepeatWinnerTax, aggregateTaxTotals, TaxResult } from "@/src/utils/repeatWinnerTax";
 import { calculateSoloTax, getTaxDistribution, calculateTierDistribution, getLoserSupportMessage, SoloTaxResult } from "@/src/utils/soloTax";
@@ -495,6 +495,11 @@ export async function POST(
         const donorName = soloWinnerDisplayNames.join(", ");
         await addToSoloTaxPool(tournament.seasonId, taxDist.poolAmount, donorName);
       }
+    }
+
+    // Consume the solo tax bonus pool (reset to 0) - this pool was already added to prize distribution on the client
+    if (tournament.seasonId) {
+      await consumeSoloTaxPool(tournament.seasonId);
     }
 
     return SuccessResponse({
