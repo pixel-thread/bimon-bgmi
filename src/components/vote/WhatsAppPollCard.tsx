@@ -7,6 +7,7 @@ import { PollOption } from "./PollOption";
 import { usePlayerVote } from "@/src/hooks/poll/usePlayerVote";
 import { PollT } from "@/src/types/poll";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
+import { useUser } from "@clerk/nextjs";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
@@ -147,6 +148,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     bonusDonorName = null,
   }) => {
     const { user } = useAuth();
+    const { user: clerkUser } = useUser();
     const queryClient = useQueryClient();
     const isBanned = user?.player?.isBanned || false;
     const isOnboarded = user?.isOnboarded || false;
@@ -227,7 +229,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                 updatedVotes[existingVoteIndex] = { ...updatedVotes[existingVoteIndex], vote: newVote };
               } else {
                 // Add new vote entry (first time voting)
-                // Use current user's data from auth context for complete display
+                // Use current user's data from auth context + Clerk for complete display
                 updatedVotes.push({
                   id: `optimistic-${Date.now()}`,
                   playerId,
@@ -235,6 +237,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                   createdAt: new Date().toISOString(),
                   player: {
                     characterImage: user?.player?.characterImage || null,
+                    imageUrl: clerkUser?.imageUrl || null, // Clerk profile image for instant display
                     user: {
                       displayName: user?.displayName || null,
                       userName: user?.userName || ''
@@ -543,9 +546,9 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                 displayName: currentUserInfo.player?.user?.displayName || null,
                 userName: currentUserInfo.player?.user?.userName || '',
               } : (user?.player ? {
-                // Fall back to auth data for instant avatar display
+                // Fall back to auth data + Clerk for instant avatar display
                 id: `auth-${playerId}`,
-                imageUrl: null,
+                imageUrl: clerkUser?.imageUrl || null,
                 characterImageUrl: user.player.characterImage?.publicUrl || null,
                 displayName: user.displayName || null,
                 userName: user.userName || '',
