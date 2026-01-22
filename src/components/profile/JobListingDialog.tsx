@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Loader2, Upload, X, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
@@ -31,11 +31,190 @@ import {
     TIME_OPTIONS,
 } from "@/src/hooks/jobListing/useJobListings";
 import { useDialogBackHandler } from "@/src/hooks/useDialogBackHandler";
+import { useGoogleDrive } from "@/src/hooks/jobListing/useGoogleDrive";
 
 interface JobListingDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     editListing?: JobListing | null;
+}
+
+// Image Upload Section Component
+function ImageUploadSection({
+    imageUrls,
+    setImageUrls,
+}: {
+    imageUrls: string[];
+    setImageUrls: (urls: string[]) => void;
+}) {
+    const { isConnected, isCheckingStatus, isUploading, uploadImage, connectDrive } = useGoogleDrive();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [showUrlInput, setShowUrlInput] = useState(false);
+    const [urlInput, setUrlInput] = useState("");
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        const file = files[0];
+        const url = await uploadImage(file);
+        if (url) {
+            const emptyIndex = imageUrls.findIndex((u) => !u.trim());
+            if (emptyIndex !== -1) {
+                const newUrls = [...imageUrls];
+                newUrls[emptyIndex] = url;
+                setImageUrls(newUrls);
+            }
+        }
+        // Reset input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
+    const handleAddUrl = () => {
+        if (!urlInput.trim()) return;
+        const emptyIndex = imageUrls.findIndex((u) => !u.trim());
+        if (emptyIndex !== -1) {
+            const newUrls = [...imageUrls];
+            newUrls[emptyIndex] = urlInput.trim();
+            setImageUrls(newUrls);
+            setUrlInput("");
+            setShowUrlInput(false);
+        }
+    };
+
+    const removeImage = (index: number) => {
+        const newUrls = [...imageUrls];
+        newUrls[index] = "";
+        setImageUrls(newUrls);
+    };
+
+    const filledCount = imageUrls.filter((u) => u.trim()).length;
+    const canAddMore = filledCount < 3;
+
+    return (
+        <div className="space-y-3">
+            <Label>
+                Work Samples <span className="text-muted-foreground text-xs">(optional, max 3)</span>
+            </Label>
+
+            {/* Image previews */}
+            <div className="grid grid-cols-3 gap-2">
+                {imageUrls.map((url, index) =>
+                    url.trim() ? (
+                        <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800 group">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src={url}
+                                alt={`Sample ${index + 1}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).src =
+                                        'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23334155" width="100" height="100"/><text x="50" y="55" text-anchor="middle" fill="%2394a3b8" font-size="10">Error</text></svg>';
+                                }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => removeImage(index)}
+                                className="absolute top-1 right-1 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
+                        </div>
+                    ) : null
+                )}
+            </div>
+
+            {/* Upload/Connect buttons */}
+            {canAddMore && (
+                <div className="space-y-2">
+                    {isCheckingStatus ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Checking Google Drive...
+                        </div>
+                    ) : isConnected ? (
+                        <div className="flex gap-2">
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileSelect}
+                                accept="image/*"
+                                className="hidden"
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploading}
+                                className="flex-1"
+                            >
+                                {isUploading ? (
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Upload className="w-4 h-4 mr-2" />
+                                )}
+                                {isUploading ? "Uploading..." : "Upload Image"}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowUrlInput(!showUrlInput)}
+                            >
+                                <LinkIcon className="w-4 h-4" />
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                                Connect Google Drive to upload images (stored in your Drive)
+                            </p>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={connectDrive}
+                                className="w-full"
+                            >
+                                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
+                                    <path
+                                        fill="currentColor"
+                                        d="M12.01 1.485c-2.082 0-3.754.02-3.743.047.01.02 1.708 3.001 3.774 6.62l3.76 6.574h3.76c2.062 0 3.76-.02 3.76-.047s-1.692-3.001-3.76-6.62l-3.76-6.574h-3.79zm-4.76 6.574l-3.76 6.574c-2.068 3.619-3.76 6.6-3.76 6.62 0 .027 1.698.047 3.76.047h3.76l3.76-6.574c2.068-3.619 3.76-6.6 3.76-6.62 0-.027-1.698-.047-3.76-.047h-3.76z"
+                                    />
+                                </svg>
+                                Connect Google Drive
+                            </Button>
+                            <button
+                                type="button"
+                                onClick={() => setShowUrlInput(!showUrlInput)}
+                                className="text-xs text-blue-500 hover:underline"
+                            >
+                                Or paste image URL instead
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Manual URL input */}
+                    {showUrlInput && (
+                        <div className="flex gap-2">
+                            <Input
+                                value={urlInput}
+                                onChange={(e) => setUrlInput(e.target.value)}
+                                placeholder="Paste image URL..."
+                                className="flex-1 text-sm"
+                            />
+                            <Button type="button" size="sm" onClick={handleAddUrl}>
+                                Add
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
 }
 
 const TITLE_MAX_LENGTH = 50;
@@ -564,10 +743,10 @@ export function JobListingDialog({
                                             setWorkingHours(newHours);
                                         }}
                                         className={`w-full aspect-square rounded text-xs font-medium transition-colors ${isClosed
-                                                ? "bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700"
-                                                : isOpen
-                                                    ? "bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400 border border-green-300 dark:border-green-700"
-                                                    : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500 border border-gray-200 dark:border-gray-700"
+                                            ? "bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700"
+                                            : isOpen
+                                                ? "bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400 border border-green-300 dark:border-green-700"
+                                                : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500 border border-gray-200 dark:border-gray-700"
                                             }`}
                                         title={isClosed ? `${key}: Closed` : isOpen ? `${key}: ${workingHours[key]}` : `${key}: Not set`}
                                     >
@@ -582,27 +761,10 @@ export function JobListingDialog({
                     </div>
 
                     {/* Image URLs */}
-                    <div className="space-y-2">
-                        <Label>
-                            Work Samples <span className="text-muted-foreground text-xs">(optional - external URLs)</span>
-                        </Label>
-                        <p className="text-xs text-muted-foreground mb-2">
-                            Paste image links from Google Drive, Imgur, etc.
-                        </p>
-                        {imageUrls.map((url, index) => (
-                            <Input
-                                key={index}
-                                value={url}
-                                onChange={(e) => {
-                                    const newUrls = [...imageUrls];
-                                    newUrls[index] = e.target.value;
-                                    setImageUrls(newUrls);
-                                }}
-                                placeholder={`Image URL ${index + 1}`}
-                                className="text-sm"
-                            />
-                        ))}
-                    </div>
+                    <ImageUploadSection
+                        imageUrls={imageUrls}
+                        setImageUrls={setImageUrls}
+                    />
                 </div>
 
                 <DialogFooter>
