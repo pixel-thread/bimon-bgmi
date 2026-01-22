@@ -288,6 +288,9 @@ model Poll {
   tournamentId String
   teamType     TeamType  @default(DUO)
   createdAt    DateTime  @default(now())
+  
+  // Lucky voter - player who gets free entry for this tournament
+  luckyVoterId String?
 
   // Relations
   tournament   Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)

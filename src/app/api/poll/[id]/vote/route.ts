@@ -10,7 +10,8 @@ import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { playerVoteSchema } from "@/src/utils/validation/poll";
-import { isMeritBanEnabled } from "@/src/services/settings/getAppSetting";
+import { isMeritBanEnabled, getAppSetting } from "@/src/services/settings/getAppSetting";
+import { selectLuckyVoter } from "@/src/services/team/previewTeamsByPoll";
 
 export async function GET(
   req: Request,
@@ -176,9 +177,52 @@ export async function POST(
       },
     });
 
+    // Lucky voter selection - only for IN or SOLO votes on polls with entry fees
+    let isLuckyVoter = false;
+    const tournamentFee = isPollExist.tournament?.fee || 0;
+    const seasonId = isPollExist.tournament?.seasonId;
+
+    if ((body.vote === "IN" || body.vote === "SOLO") && tournamentFee > 0 && seasonId) {
+      // Check if this poll already has a lucky voter
+      const pollWithLucky = await prisma.poll.findUnique({
+        where: { id: pollId },
+        select: { luckyVoterId: true },
+      });
+
+      if (!pollWithLucky?.luckyVoterId) {
+        // No lucky voter yet - get all eligible voters (IN or SOLO) and select one
+        const eligibleVotes = await prisma.playerPollVote.findMany({
+          where: {
+            pollId,
+            vote: { in: ["IN", "SOLO"] },
+          },
+          select: { playerId: true },
+        });
+
+        const eligiblePlayerIds = eligibleVotes.map(v => v.playerId);
+
+        // Select lucky voter using once-per-season algorithm
+        const luckyVoterId = await selectLuckyVoter(eligiblePlayerIds, pollId, seasonId);
+
+        if (luckyVoterId) {
+          // Store lucky voter in poll
+          await prisma.poll.update({
+            where: { id: pollId },
+            data: { luckyVoterId },
+          });
+
+          // Check if current player is the lucky voter
+          isLuckyVoter = luckyVoterId === playerId;
+        }
+      } else {
+        // Check if current player is the existing lucky voter
+        isLuckyVoter = pollWithLucky.luckyVoterId === playerId;
+      }
+    }
+
     return SuccessResponse({
-      message: "Vote added successfully",
-      data: vote,
+      message: isLuckyVoter ? "🎉 Congratulations! You won FREE ENTRY!" : "Vote added successfully",
+      data: { ...vote, isLuckyVoter },
     });
   } catch (error) {
     return handleApiErrors(error);

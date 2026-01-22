@@ -7,7 +7,8 @@ import { clientClerk } from "@/src/lib/clerk/client";
 
 export async function GET(req: NextRequest) {
   try {
-    await tokenMiddleware(req);
+    const user = await tokenMiddleware(req);
+    const currentPlayerId = user?.player?.id || null;
     const query = req.nextUrl.searchParams;
     const page = query.get("page");
     const withImages = query.get("withImages") === "true";
@@ -31,6 +32,16 @@ export async function GET(req: NextRequest) {
       },
       page,
     });
+
+    // Helper to process poll and hide luckyVoterId from non-winners
+    const processPoll = (poll: any) => {
+      // Only include luckyVoterId if it matches the current user
+      const isLuckyVoter = currentPlayerId && poll.luckyVoterId === currentPlayerId;
+      return {
+        ...poll,
+        luckyVoterId: isLuckyVoter ? poll.luckyVoterId : null,
+      };
+    };
 
     // Only fetch Clerk images if requested (for lazy loading)
     if (withImages) {
@@ -62,7 +73,7 @@ export async function GET(req: NextRequest) {
 
       // Add imageUrl and hasRoyalPass to each vote's player
       const pollsWithImages = polls.map((poll: any) => ({
-        ...poll,
+        ...processPoll(poll),
         playersVotes: poll.playersVotes?.map((vote: any) => ({
           ...vote,
           player: {
@@ -84,7 +95,7 @@ export async function GET(req: NextRequest) {
 
     // Add hasRoyalPass to players even without images
     const pollsWithRoyalPass = polls.map((poll: any) => ({
-      ...poll,
+      ...processPoll(poll),
       playersVotes: poll.playersVotes?.map((vote: any) => ({
         ...vote,
         player: {

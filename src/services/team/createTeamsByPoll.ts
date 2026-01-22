@@ -11,6 +11,7 @@ import { computeWeightedScore, PlayerWithWins, SeasonScoringConfig } from "@/src
 import { PlayerWithWeightT } from "@/src/types/player";
 import { getPreviousTournamentTeammates } from "@/src/utils/previousTeammates";
 import { isMeritBanEnabled } from "@/src/services/settings/getAppSetting";
+import { recordLuckyVoter } from "@/src/services/team/previewTeamsByPoll";
 
 
 type PreviewTeamInput = {
@@ -66,6 +67,17 @@ export async function createTeamsByPolls({
     select: { name: true },
   });
   const tournamentName = tournament?.name ?? "Tournament";
+
+  // Get lucky voter ID from the poll (they get free entry)
+  // Note: We'll validate this against allPlayers later to ensure they're still participating (IN/SOLO)
+  let luckyVoterId: string | null = null;
+  if (pollId) {
+    const poll = await prisma.poll.findUnique({
+      where: { id: pollId },
+      select: { luckyVoterId: true },
+    });
+    luckyVoterId = poll?.luckyVoterId || null;
+  }
 
   // Count tournaments in current season (for season transition logic)
   const tournamentCountInSeason = await prisma.tournament.count({
@@ -331,6 +343,12 @@ export async function createTeamsByPolls({
 
       const allPlayers = teams.flatMap((t) => t.players);
 
+      // Validate lucky voter is still participating (didn't switch to OUT)
+      // If they're not in allPlayers, they don't get free entry
+      if (luckyVoterId && !allPlayers.some(p => p.id === luckyVoterId)) {
+        luckyVoterId = null;
+      }
+
       // Phase 3: Upsert PlayerStats in batches
       await processBatches(
         allPlayers,
@@ -352,9 +370,26 @@ export async function createTeamsByPolls({
         })
       );
 
-      // Phase 4: Debit UC from non-exempt players
+      // Phase 4: Debit UC from non-exempt players (also skip lucky voter)
       if (entryFee > 0) {
-        const playersToCharge = allPlayers.filter((player) => !player.isUCExempt);
+        const playersToCharge = allPlayers.filter((player) =>
+          !player.isUCExempt && player.id !== luckyVoterId
+        );
+
+        // Record lucky voter in season history and create their "Free Entry" transaction
+        if (luckyVoterId) {
+          await recordLuckyVoter(luckyVoterId, seasonId);
+
+          // Create transaction record for lucky voter showing free entry
+          await tx.transaction.create({
+            data: {
+              amount: 0,
+              type: "credit",
+              description: `🎉 Free Entry (Lucky Winner) for ${tournamentName}`,
+              playerId: luckyVoterId,
+            },
+          });
+        }
 
         if (playersToCharge.length > 0) {
           // Record transaction history in bulk
