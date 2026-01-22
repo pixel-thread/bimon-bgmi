@@ -1,7 +1,6 @@
 import { prisma } from "@/src/lib/db/prisma";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
-import { addTournamentWinner } from "@/src/services/winner/addTournamentWinner";
 import { getUniqedTournamentWinners } from "@/src/services/winner/getTournamentWinner";
 import { getPlayerRecentWins } from "@/src/services/winner/getPlayerRecentWins";
 import { getPlayerLosses, isPlayerSolo, addToSoloTaxPool, consumeSoloTaxPool } from "@/src/services/winner/getPlayerLosses";
@@ -224,24 +223,34 @@ export async function POST(
     // Track solo tax results for loser distribution
     const allSoloTaxResults: SoloTaxResult[] = [];
 
-    let winnerTeam = [];
+    // Prepare winner data for atomic transaction
+    interface PlayerPrizeData {
+      playerId: string;
+      userId: string;
+      finalAmount: number;
+      prizeDescription: string;
+      taxResult: TaxResult;
+      soloTaxResult: SoloTaxResult;
+    }
+
+    interface WinnerTeamData {
+      teamId: string;
+      amount: number;
+      position: number;
+      players: PlayerPrizeData[];
+    }
+
+    const winnerTeamsData: WinnerTeamData[] = [];
+
+    // Pre-calculate all prize amounts and collect data BEFORE the transaction
     for (let i = 0; i < placementsToUse.length; i++) {
       const placement = placementsToUse[i];
       const team = sortedData[placement.position - 1]; // position is 1-indexed
 
       if (!team) continue;
 
-      // Create winner record 
-      const winTeam = await addTournamentWinner({
-        data: {
-          amount: placement.amount,
-          position: placement.position,
-          team: { connect: { id: team.teamId } },
-          tournament: { connect: { id: id } },
-        },
-      });
+      const playersData: PlayerPrizeData[] = [];
 
-      // Distribute UC to players if amount > 0
       if (placement.amount > 0 && team.players && team.players.length > 0) {
         const basePerPlayerAmount = Math.floor(placement.amount / team.players.length);
 
@@ -252,62 +261,107 @@ export async function POST(
             include: { user: true },
           });
 
-          if (!playerData) continue;
+          if (!playerData) {
+            console.error(`Player not found: ${player.id}`);
+            continue;
+          }
 
           // Check if player voted SOLO
           const isSolo = await isPlayerSolo(player.id, id);
 
           // Calculate repeat winner tax for this player
-          // Add +1 to include the CURRENT win they're receiving now
           const previousWins = playerWinCounts.get(player.id) || 0;
           const totalWinsIncludingCurrent = previousWins + 1;
           const taxResult = calculateRepeatWinnerTax(player.id, basePerPlayerAmount, totalWinsIncludingCurrent);
-          allTaxResults.push(taxResult);
 
           // Calculate solo tax on top of repeat winner tax
           const soloTaxResult = calculateSoloTax(player.id, taxResult.netAmount, isSolo);
-          if (soloTaxResult.isSolo) {
-            allSoloTaxResults.push(soloTaxResult);
-          }
 
           // Use net amount after both taxes
           const finalAmount = soloTaxResult.netAmount;
+          const prizeDescription = `${getOrdinal(placement.position)} Place Prize: ${tournament.name}`;
 
-          // Prize winners don't get RP benefit - RP benefit goes to first non-prize position (Safety Net model)
+          playersData.push({
+            playerId: player.id,
+            userId: playerData.user.id,
+            finalAmount,
+            prizeDescription,
+            taxResult,
+            soloTaxResult,
+          });
+        }
+      }
 
+      winnerTeamsData.push({
+        teamId: team.teamId,
+        amount: placement.amount,
+        position: placement.position,
+        players: playersData,
+      });
+    }
+
+    // Execute ALL winner-related DB operations in a single atomic transaction
+    // This ensures either ALL players get their prizes or NONE do (no partial failures)
+    const winnerTeam = await prisma.$transaction(async (tx) => {
+      const createdWinners = [];
+
+      for (const teamData of winnerTeamsData) {
+        // Create winner record
+        const winTeam = await tx.tournamentWinner.create({
+          data: {
+            amount: teamData.amount,
+            position: teamData.position,
+            team: { connect: { id: teamData.teamId } },
+            tournament: { connect: { id: id } },
+          },
+        });
+
+        // Distribute UC to all players in this team
+        for (const playerData of teamData.players) {
           // Update or create UC balance
-          await prisma.uC.upsert({
-            where: { playerId: player.id },
+          await tx.uC.upsert({
+            where: { playerId: playerData.playerId },
             create: {
-              player: { connect: { id: player.id } },
-              user: { connect: { id: playerData.user.id } },
-              balance: finalAmount,
+              player: { connect: { id: playerData.playerId } },
+              user: { connect: { id: playerData.userId } },
+              balance: playerData.finalAmount,
             },
-            update: { balance: { increment: finalAmount } },
+            update: { balance: { increment: playerData.finalAmount } },
           });
 
           // Create transaction record for prize
-          const prizeDescription = `${getOrdinal(placement.position)} Place Prize: ${tournament.name}`;
-
-          await prisma.transaction.create({
+          await tx.transaction.create({
             data: {
-              amount: finalAmount,
+              amount: playerData.finalAmount,
               type: "credit",
-              description: prizeDescription,
-              playerId: player.id,
+              description: playerData.prizeDescription,
+              playerId: playerData.playerId,
             },
+          });
+
+          // Collect tax results for later processing
+          allTaxResults.push(playerData.taxResult);
+          if (playerData.soloTaxResult.isSolo) {
+            allSoloTaxResults.push(playerData.soloTaxResult);
+          }
+        }
+
+        // Mark winner as distributed if there were players
+        if (teamData.players.length > 0) {
+          await tx.tournamentWinner.update({
+            where: { id: winTeam.id },
+            data: { isDistributed: true },
           });
         }
 
-        // Mark winner as distributed
-        await prisma.tournamentWinner.update({
-          where: { id: winTeam.id },
-          data: { isDistributed: true },
-        });
+        createdWinners.push(winTeam);
       }
 
-      winnerTeam.push(winTeam);
-    }
+      return createdWinners;
+    }, {
+      timeout: 30000, // 30 second timeout for winner distribution
+      maxWait: 35000,
+    });
 
     // Mark tournament as completed with winners declared and set to INACTIVE
     await prisma.tournament.update({
