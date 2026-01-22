@@ -34,8 +34,8 @@ import { BulkEditStatsDialog } from "./BulkEditStatsDialog";
 import { useGlobalBackground } from "@/src/hooks/gallery/useGlobalBackground";
 import { SwapPlayersDialog } from "./swap-players-dialog";
 import { ArrowLeftRight, Loader2, Pencil, Trash2 } from "lucide-react";
-import { getDisplayName } from "@/src/utils/displayName";
 import { usePendingRefetch } from "@/src/store/match/usePendingRefetch";
+import TeamsListModal from "./TeamsListModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,6 +54,7 @@ export const AdminTeamsManagement: React.FC = () => {
   const [showStandingsModal, setShowStandingsModal] = useState(false);
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [showSwapPlayers, setShowSwapPlayers] = useState(false);
+  const [showTeamsListModal, setShowTeamsListModal] = useState(false);
   const { tournamentId } = useTournamentStore();
   const { seasonId } = useSeasonStore();
   const { data: tournament } = useTournament({ id: tournamentId });
@@ -84,93 +85,6 @@ export const AdminTeamsManagement: React.FC = () => {
     refetch();
     setPendingRefetch(false);
   };
-
-  // Export to Excel with merged cells and centered text
-  const exportToExcel = React.useCallback(async () => {
-    if (!teams) return;
-
-    const ExcelJS = (await import("exceljs")).default;
-
-    // Deduplicate teams based on player composition (sorted player names as key)
-    const seenTeams = new Set<string>();
-    const uniqueTeams = teams.filter((team) => {
-      const playerKey = (team.players?.map((p) => p.name).sort().join(",")) || team.id;
-      if (seenTeams.has(playerKey)) {
-        return false;
-      }
-      seenTeams.add(playerKey);
-      return true;
-    });
-
-    // Calculate total players across unique teams
-    const totalPlayers = uniqueTeams.reduce((sum, team) => sum + (team.players?.length || 0), 0);
-
-    // Find the maximum number of players in any team
-    const maxPlayers = Math.max(...uniqueTeams.map((team) => team.players?.length || 0), 1);
-    const totalColumns = maxPlayers + 1; // Slot No + Player columns
-
-    // Create workbook and worksheet
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Teams");
-
-    // Set column widths
-    worksheet.columns = [
-      { width: 12 }, // Slot No
-      ...Array(maxPlayers).fill({ width: 18 }), // Player columns
-    ];
-
-    // Row 1: Title row (merged across all columns)
-    const titleRow = worksheet.addRow([tournament?.name || "Tournament"]);
-    worksheet.mergeCells(1, 1, 1, totalColumns);
-    titleRow.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
-    titleRow.getCell(1).font = { name: "PUBG SANS", bold: true, size: 14 };
-    titleRow.height = 24;
-
-    // Row 2: Empty row for spacing (merged)
-    const emptyRow1 = worksheet.addRow([""]);
-    worksheet.mergeCells(2, 1, 2, totalColumns);
-
-    // Row 3: Column headers
-    const headerData = ["Slot No", ...Array(maxPlayers).fill(0).map((_, i) => `Player ${i + 1}`)];
-    const headerRow = worksheet.addRow(headerData);
-    headerRow.eachCell((cell) => {
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-      cell.font = { name: "PUBG SANS", bold: true };
-    });
-
-    // Team data rows - use index+2 for slot number to ensure sequential numbering
-    uniqueTeams.forEach((team, index) => {
-      const players = team.players?.map((p) => getDisplayName(p.displayName, p.name)) || [];
-      const paddedPlayers = [...players, ...Array(maxPlayers - players.length).fill("")];
-      const row = worksheet.addRow([index + 2, ...paddedPlayers]); // Sequential slot numbers starting from 2
-      row.eachCell((cell) => {
-        cell.alignment = { horizontal: "center", vertical: "middle" };
-        cell.font = { name: "PUBG SANS" };
-      });
-    });
-
-    // Empty row for spacing (merged)
-    const emptyRow2Index = worksheet.rowCount + 1;
-    const emptyRow2 = worksheet.addRow([""]);
-    worksheet.mergeCells(emptyRow2Index, 1, emptyRow2Index, totalColumns);
-
-    // Footer row: Total Players in one merged cell
-    const footerRowIndex = worksheet.rowCount + 1;
-    const footerRow = worksheet.addRow([`Total Players: ${totalPlayers}`]);
-    worksheet.mergeCells(footerRowIndex, 1, footerRowIndex, totalColumns);
-    footerRow.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
-    footerRow.getCell(1).font = { name: "PUBG SANS", bold: true };
-
-    // Generate and download the file
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${tournament?.name || "Teams"}.xlsx`;
-    link.click();
-    window.URL.revokeObjectURL(url);
-  }, [teams, tournament?.name]);
 
   const onValidateTeams = () => {
     queryClient.invalidateQueries({
@@ -250,8 +164,8 @@ export const AdminTeamsManagement: React.FC = () => {
             size="sm"
             variant="outline"
             disabled={isLoading || !tournamentId}
-            onClick={exportToExcel}
-            title="Export Excel"
+            onClick={() => setShowTeamsListModal(true)}
+            title="Teams List Screenshot"
           >
             <IconFileExport className="h-4 w-4" />
           </Button>
@@ -376,6 +290,14 @@ export const AdminTeamsManagement: React.FC = () => {
       <SwapPlayersDialog
         open={showSwapPlayers}
         onOpenChange={setShowSwapPlayers}
+      />
+      <TeamsListModal
+        visible={showTeamsListModal}
+        onClose={() => setShowTeamsListModal(false)}
+        backgroundImage={globalBackground?.publicUrl || "/images/image.webp"}
+        tournamentTitle={tournament?.name || "Tournament"}
+        teams={teams as any}
+        isLoading={isFetching}
       />
     </>
   );
