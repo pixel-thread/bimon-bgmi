@@ -40,6 +40,7 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
 
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/player/merit`, {
           headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
         });
 
         if (res.ok) {
