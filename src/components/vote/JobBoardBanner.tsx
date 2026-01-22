@@ -242,7 +242,7 @@ export function JobBoardBanner() {
             <div className="px-4 py-2 bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40 border-b border-amber-200 dark:border-amber-800/50 flex items-center justify-between">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                     <PlayerAvatar
-                        characterImageUrl={currentListing.player?.characterImage?.publicUrl}
+                        characterImageUrl={currentListing.player?.customProfileImageUrl || currentListing.player?.characterImage?.publicUrl}
                         imageUrl={currentListing.player?.imageUrl}
                         displayName={currentListing.player?.user.displayName || ""}
                         userName={currentListing.player?.user.userName || "User"}

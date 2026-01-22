@@ -32,6 +32,7 @@ export interface JobListing {
         characterImage?: {
             publicUrl: string;
         } | null;
+        customProfileImageUrl?: string | null;
         imageUrl?: string | null;
     };
     userReaction?: "like" | "dislike" | null;

@@ -146,8 +146,44 @@ export async function POST(
       };
     });
 
-    // Sort teams by total points (highest first)
-    const sortedData = mappedData.sort((a, b) => b.total - a.total);
+    // Sort teams using BGMI tiebreaker rules (same as Rankings API)
+    // This ensures the order matches what's shown in the Declare Winner modal
+    const sortedData = mappedData.sort((a, b) => {
+      // Primary: Total points (higher is better)
+      if (b.total !== a.total) {
+        return b.total - a.total;
+      }
+
+      // Count chicken dinners for each team
+      const aChickenDinners = teamsStats.filter(s => s.teamId === a.teamId && s.position === 1).length;
+      const bChickenDinners = teamsStats.filter(s => s.teamId === b.teamId && s.position === 1).length;
+
+      // Tiebreaker 1: Chicken dinners (higher is better)
+      if (bChickenDinners !== aChickenDinners) {
+        return bChickenDinners - aChickenDinners;
+      }
+
+      // Tiebreaker 2: Placement points (higher is better)
+      if (b.pts !== a.pts) {
+        return b.pts - a.pts;
+      }
+
+      // Tiebreaker 3: Total kills (higher is better)
+      if ((b.kills || 0) !== (a.kills || 0)) {
+        return (b.kills || 0) - (a.kills || 0);
+      }
+
+      // Tiebreaker 4: Last match position (lower is better)
+      // Get most recent match position for each team
+      const aLastStats = teamsStats
+        .filter(s => s.teamId === a.teamId)
+        .sort((x, y) => new Date(y.createdAt).getTime() - new Date(x.createdAt).getTime())[0];
+      const bLastStats = teamsStats
+        .filter(s => s.teamId === b.teamId)
+        .sort((x, y) => new Date(y.createdAt).getTime() - new Date(x.createdAt).getTime())[0];
+
+      return (aLastStats?.position || 99) - (bLastStats?.position || 99);
+    });
 
     // Use custom placements if provided, otherwise default to top 2 with default amounts
     const placementsToUse = placements && placements.length > 0

@@ -106,7 +106,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
 
   // Derived display values - use initialData for instant AND accurate display
   const displayName = player?.user?.displayName || player?.user?.userName || initialData?.displayName || initialData?.userName || "Player";
-  const displayImageUrl = (player as any)?.characterImage?.publicUrl || player?.clerkImageUrl || initialData?.imageUrl;
+  const displayImageUrl = (player as any)?.customProfileImageUrl || (player as any)?.characterImage?.publicUrl || player?.clerkImageUrl || initialData?.imageUrl;
 
   // Stats from initialData (already accurate from players list API)
   const displayDeaths = initialData?.deaths ?? 0;
@@ -150,7 +150,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
   }, [isImagePreviewOpen]);
 
   const handleAvatarClick = () => {
-    const avatarUrl = (player as any)?.characterImage?.publicUrl || player?.clerkImageUrl;
+    const avatarUrl = (player as any)?.customProfileImageUrl || (player as any)?.characterImage?.publicUrl || player?.clerkImageUrl;
     if (avatarUrl && avatarRef.current) {
       const rect = avatarRef.current.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
@@ -548,7 +548,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
       {/* Image Preview Overlay - rendered via Portal to document.body to cover everything */}
       {typeof document !== 'undefined' && createPortal(
         <AnimatePresence>
-          {isImagePreviewOpen && ((player as any)?.characterImage?.publicUrl || player?.clerkImageUrl) && (
+          {isImagePreviewOpen && ((player as any)?.customProfileImageUrl || (player as any)?.characterImage?.publicUrl || player?.clerkImageUrl) && (
             <>
               {/* Backdrop - covers entire page including modal */}
               <motion.div
@@ -567,7 +567,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                 className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[10000] w-64 h-64 sm:w-80 sm:h-80 rounded-full border-4 border-white dark:border-zinc-800 shadow-2xl overflow-hidden"
               >
                 <img
-                  src={(player as any)?.characterImage?.publicUrl || player?.clerkImageUrl}
+                  src={(player as any)?.customProfileImageUrl || (player as any)?.characterImage?.publicUrl || player?.clerkImageUrl}
                   alt={getDisplayName(player?.user?.displayName, player?.user?.userName) || "Player"}
                   className="w-full h-full object-cover"
                 />

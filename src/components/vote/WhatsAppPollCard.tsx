@@ -542,14 +542,14 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
               const currentUserAvatarData = currentUserInfo ? {
                 id: currentUserInfo.id,
                 imageUrl: (currentUserInfo.player as any)?.imageUrl || null,
-                characterImageUrl: currentUserInfo.player?.characterImage?.publicUrl || null,
+                characterImageUrl: currentUserInfo.player?.customProfileImageUrl || currentUserInfo.player?.characterImage?.publicUrl || null,
                 displayName: currentUserInfo.player?.user?.displayName || null,
                 userName: currentUserInfo.player?.user?.userName || '',
               } : (user?.player ? {
                 // Fall back to auth data + Clerk for instant avatar display
                 id: `auth-${playerId}`,
                 imageUrl: clerkUser?.imageUrl || null,
-                characterImageUrl: user.player.characterImage?.publicUrl || null,
+                characterImageUrl: user.player.customProfileImageUrl || user.player.characterImage?.publicUrl || null,
                 displayName: user.displayName || null,
                 userName: user.userName || '',
               } : null);
@@ -560,7 +560,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                 ...otherVoters.slice(0, showCurrentUserHere ? 1 : 2).map((v) => ({
                   id: v.id,
                   imageUrl: (v.player as any)?.imageUrl || null,
-                  characterImageUrl: v.player?.characterImage?.publicUrl || null,
+                  characterImageUrl: v.player?.customProfileImageUrl || v.player?.characterImage?.publicUrl || null,
                   displayName: v.player?.user?.displayName || null,
                   userName: v.player?.user?.userName || '',
                 })),

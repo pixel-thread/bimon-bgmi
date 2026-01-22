@@ -169,17 +169,59 @@ export default function PrivacyPolicyPage() {
                     account management
                   </li>
                   <li>
-                    <strong>Firebase:</strong> For data storage and real-time
-                    updates
+                    <strong>Google Drive:</strong> For storing profile images
+                    and job listing images that you upload
                   </li>
                   <li>
-                    <strong>Google AdSense:</strong> For displaying relevant
-                    advertisements
+                    <strong>Supabase:</strong> For data storage
+                  </li>
+                  <li>
+                    <strong>Clerk:</strong> For authentication
                   </li>
                 </ul>
                 <p className="mt-4">
                   These services have their own privacy policies, and we
                   encourage you to review them.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-4">
+                  8. Google Drive Access
+                </h2>
+                <p className="mb-4">
+                  If you choose to upload profile images or job listing images, we request
+                  limited access to your Google Drive using the <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">drive.file</code> scope.
+                </p>
+                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 mb-4">
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">
+                    What we CAN do:
+                  </h3>
+                  <ul className="list-disc pl-6 space-y-1 text-sm">
+                    <li>Upload images to your Drive that you choose to share</li>
+                    <li>Access files that our app created</li>
+                  </ul>
+                </div>
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 mb-4">
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">
+                    What we CANNOT do:
+                  </h3>
+                  <ul className="list-disc pl-6 space-y-1 text-sm">
+                    <li>View or access any other files in your Google Drive</li>
+                    <li>Delete files not created by our app</li>
+                    <li>Access your Gmail, Calendar, or other Google services</li>
+                  </ul>
+                </div>
+                <p>
+                  You can revoke this access anytime at{" "}
+                  <a
+                    href="https://myaccount.google.com/permissions"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Google Account Permissions
+                  </a>.
                 </p>
               </section>
 

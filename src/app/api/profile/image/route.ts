@@ -6,10 +6,12 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 
 const updateImageSchema = z.object({
-    // "google" = use Google image, "none" = no image (initials), "custom" = use a custom image
-    imageType: z.enum(["google", "none", "custom"]),
+    // "google" = use Google image, "custom" = use a gallery image, "uploaded" = use user-uploaded image
+    imageType: z.enum(["google", "custom", "uploaded"]),
     // Required when imageType is "custom"
     customImageId: z.string().optional(),
+    // Required when imageType is "uploaded"
+    uploadedImageUrl: z.string().url().optional(),
 });
 
 // GET - Get current profile image settings
@@ -32,10 +34,10 @@ export async function GET(req: NextRequest) {
         }
 
         // Determine current image type
-        let imageType: "google" | "none" | "custom" = "google";
-        if (player.characterImageId === "none") {
-            imageType = "none";
-        } else if (player.characterImageId) {
+        let imageType: "google" | "custom" | "uploaded" = "google";
+        if (player.customProfileImageUrl) {
+            imageType = "uploaded";
+        } else if (player.characterImageId && player.characterImageId !== "none") {
             imageType = "custom";
         }
 
@@ -44,6 +46,7 @@ export async function GET(req: NextRequest) {
                 imageType,
                 customImageId: player.characterImageId !== "none" ? player.characterImageId : null,
                 customImage: player.characterImage,
+                uploadedImageUrl: player.customProfileImageUrl,
             },
             message: "Profile image settings fetched",
         });
@@ -73,14 +76,13 @@ export async function PATCH(req: NextRequest) {
         }
 
         let characterImageId: string | null = null;
+        let customProfileImageUrl: string | null = null;
 
         switch (body.imageType) {
             case "google":
+                // Clear both custom image selections
                 characterImageId = null;
-                break;
-            case "none":
-                // Use a special identifier for "no image"
-                characterImageId = "none";
+                customProfileImageUrl = null;
                 break;
             case "custom":
                 if (!body.customImageId) {
@@ -104,21 +106,37 @@ export async function PATCH(req: NextRequest) {
                     });
                 }
                 characterImageId = body.customImageId;
+                customProfileImageUrl = null; // Clear uploaded image
+                break;
+            case "uploaded":
+                if (!body.uploadedImageUrl) {
+                    return ErrorResponse({
+                        message: "Uploaded image URL is required",
+                        status: 400,
+                    });
+                }
+                // Store the Google Drive URL
+                customProfileImageUrl = body.uploadedImageUrl;
+                characterImageId = null; // Clear gallery selection
                 break;
         }
 
         // Update player
         const updatedPlayer = await prisma.player.update({
             where: { id: player.id },
-            data: { characterImageId },
+            data: {
+                characterImageId,
+                customProfileImageUrl,
+            },
             include: { characterImage: true },
         });
 
         return SuccessResponse({
             data: {
                 imageType: body.imageType,
-                customImageId: characterImageId !== "none" ? characterImageId : null,
+                customImageId: characterImageId,
                 customImage: updatedPlayer.characterImage,
+                uploadedImageUrl: customProfileImageUrl,
             },
             message: "Profile image updated",
         });

@@ -11,7 +11,8 @@ export async function getJobListings() {
         },
         include: {
             player: {
-                include: {
+                select: {
+                    customProfileImageUrl: true,
                     user: {
                         select: {
                             displayName: true,

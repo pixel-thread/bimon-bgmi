@@ -31,7 +31,7 @@ import {
     TIME_OPTIONS,
 } from "@/src/hooks/jobListing/useJobListings";
 import { useDialogBackHandler } from "@/src/hooks/useDialogBackHandler";
-import { useGoogleDrive } from "@/src/hooks/jobListing/useGoogleDrive";
+import axiosInstance from "@/src/utils/api";
 
 interface JobListingDialogProps {
     open: boolean;
@@ -39,7 +39,7 @@ interface JobListingDialogProps {
     editListing?: JobListing | null;
 }
 
-// Image Upload Section Component
+// Image Upload Section Component - Uses ImgBB (free unlimited storage)
 function ImageUploadSection({
     imageUrls,
     setImageUrls,
@@ -47,8 +47,8 @@ function ImageUploadSection({
     imageUrls: string[];
     setImageUrls: (urls: string[]) => void;
 }) {
-    const { isConnected, isCheckingStatus, isUploading, uploadImage, connectDrive } = useGoogleDrive();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
     const [showUrlInput, setShowUrlInput] = useState(false);
     const [urlInput, setUrlInput] = useState("");
 
@@ -57,18 +57,49 @@ function ImageUploadSection({
         if (!files || files.length === 0) return;
 
         const file = files[0];
-        const url = await uploadImage(file);
-        if (url) {
-            const emptyIndex = imageUrls.findIndex((u) => !u.trim());
-            if (emptyIndex !== -1) {
-                const newUrls = [...imageUrls];
-                newUrls[emptyIndex] = url;
-                setImageUrls(newUrls);
-            }
+
+        // Validate file type
+        if (!file.type.startsWith("image/")) {
+            alert("Please select an image file");
+            return;
         }
-        // Reset input
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
+
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            alert("Image must be smaller than 5MB");
+            return;
+        }
+
+        setIsUploading(true);
+
+        try {
+            const formData = new FormData();
+            formData.append("image", file);
+
+            const response = await axiosInstance.post("/api/upload/image", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
+            const result = response.data;
+
+            if (result.success && result.data?.url) {
+                const emptyIndex = imageUrls.findIndex((u) => !u.trim());
+                if (emptyIndex !== -1) {
+                    const newUrls = [...imageUrls];
+                    newUrls[emptyIndex] = result.data.url;
+                    setImageUrls(newUrls);
+                }
+            } else {
+                alert(result.message || "Failed to upload image");
+            }
+        } catch (error) {
+            console.error("Upload error:", error);
+            alert("Failed to upload image");
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
         }
     };
 
@@ -126,76 +157,41 @@ function ImageUploadSection({
                 )}
             </div>
 
-            {/* Upload/Connect buttons */}
+            {/* Upload buttons */}
             {canAddMore && (
                 <div className="space-y-2">
-                    {isCheckingStatus ? (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Checking Google Drive...
-                        </div>
-                    ) : isConnected ? (
-                        <div className="flex gap-2">
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileSelect}
-                                accept="image/*"
-                                className="hidden"
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={isUploading}
-                                className="flex-1"
-                            >
-                                {isUploading ? (
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                ) : (
-                                    <Upload className="w-4 h-4 mr-2" />
-                                )}
-                                {isUploading ? "Uploading..." : "Upload Image"}
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setShowUrlInput(!showUrlInput)}
-                            >
-                                <LinkIcon className="w-4 h-4" />
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                            <p className="text-xs text-muted-foreground">
-                                Connect Google Drive to upload images (stored in your Drive)
-                            </p>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={connectDrive}
-                                className="w-full"
-                            >
-                                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
-                                    <path
-                                        fill="currentColor"
-                                        d="M12.01 1.485c-2.082 0-3.754.02-3.743.047.01.02 1.708 3.001 3.774 6.62l3.76 6.574h3.76c2.062 0 3.76-.02 3.76-.047s-1.692-3.001-3.76-6.62l-3.76-6.574h-3.79zm-4.76 6.574l-3.76 6.574c-2.068 3.619-3.76 6.6-3.76 6.62 0 .027 1.698.047 3.76.047h3.76l3.76-6.574c2.068-3.619 3.76-6.6 3.76-6.62 0-.027-1.698-.047-3.76-.047h-3.76z"
-                                    />
-                                </svg>
-                                Connect Google Drive
-                            </Button>
-                            <button
-                                type="button"
-                                onClick={() => setShowUrlInput(!showUrlInput)}
-                                className="text-xs text-blue-500 hover:underline"
-                            >
-                                Or paste image URL instead
-                            </button>
-                        </div>
-                    )}
+                    <div className="flex gap-2">
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                            accept="image/*"
+                            className="hidden"
+                        />
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                            className="flex-1"
+                        >
+                            {isUploading ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                                <Upload className="w-4 h-4 mr-2" />
+                            )}
+                            {isUploading ? "Uploading..." : "Upload Image"}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowUrlInput(!showUrlInput)}
+                        >
+                            <LinkIcon className="w-4 h-4" />
+                        </Button>
+                    </div>
 
                     {/* Manual URL input */}
                     {showUrlInput && (

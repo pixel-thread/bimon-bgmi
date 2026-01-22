@@ -337,8 +337,9 @@ model Player {
   userId            String              @unique
   matchPlayerPlayed MatchPlayerPlayed[]
 
-  characterImageId String?  @unique
-  createdAt        DateTime @default(now())
+  characterImageId      String?  @unique
+  customProfileImageUrl String?  // User-uploaded profile image stored on their Google Drive
+  createdAt             DateTime @default(now())
   updatedAt        DateTime @updatedAt
   pollId           String?
   seasons          Season[] @relation("PlayerSeason")
@@ -382,11 +383,6 @@ model Player {
   streakSeasonId       String?   // Season this streak belongs to (resets when season changes)
   lastTournamentSeqId  Int?      // Sequence ID of last participated tournament
   lastStreakRewardAt   DateTime? // When last streak reward was given
-  
-  // Google Drive OAuth for job listing images
-  googleDriveToken     String?   // Encrypted access token
-  googleDriveRefresh   String?   // Encrypted refresh token
-  googleDriveExpiry    DateTime? // Token expiry time
   
   royalPasses          RoyalPass[]
 
