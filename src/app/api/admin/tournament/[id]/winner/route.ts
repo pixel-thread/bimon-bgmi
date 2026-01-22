@@ -15,6 +15,7 @@ import { NextRequest } from "next/server";
 import { resetMeritAfterSolo } from "@/src/services/merit/calculateMerit";
 import { processReferralCommission } from "@/src/services/referral/processReferralCommission";
 import { recordTournamentParticipation, resetStreaksForNonParticipants } from "@/src/services/player/tournamentStreak";
+import { batchNotifyUCReceived, notifyUCReceived } from "@/src/services/push/sendUCNotification";
 
 export async function GET(
   req: NextRequest,
@@ -363,6 +364,21 @@ export async function POST(
       maxWait: 35000,
     });
 
+    // Send push notifications for prize distributions (after transaction commits)
+    // Using batch method with throttling for large winner lists
+    const prizeNotifications = winnerTeamsData
+      .flatMap(teamData => teamData.players)
+      .filter(playerData => playerData.finalAmount > 0)
+      .map(playerData => ({
+        playerId: playerData.playerId,
+        amount: playerData.finalAmount,
+        source: playerData.prizeDescription,
+      }));
+
+    // Fire and forget - runs in background with batching
+    batchNotifyUCReceived(prizeNotifications)
+      .catch(err => console.error("Failed to send prize notifications:", err));
+
     // Mark tournament as completed with winners declared and set to INACTIVE
     await prisma.tournament.update({
       where: { id: id },
@@ -521,58 +537,101 @@ export async function POST(
         // Calculate tier-based distribution
         const tierDistribution = calculateTierDistribution(taxDist.loserAmount, loserTiers);
 
-        // Get winner names for transaction message
-        const soloWinnerNames = await Promise.all(
-          allSoloTaxResults.map(async (r) => {
-            const player = await prisma.player.findUnique({
-              where: { id: r.playerId },
-              include: { user: { select: { userName: true } } },
-            });
-            return player?.user.userName || "Unknown";
-          })
-        );
-        const winnerNamesStr = soloWinnerNames.join(", ");
+        // Check if every tier can distribute at least ₹1 per player
+        // If not, redirect 100% to bonus pool instead
+        const canDistribute = tierDistribution.every(tier => tier.perPlayer >= 1);
 
-        // Distribute to each tier
-        for (const tier of tierDistribution) {
-          if (tier.perPlayer > 0) {
-            for (const loserId of tier.playerIds) {
-              // Get loser's user info
-              const loser = await prisma.player.findUnique({
-                where: { id: loserId },
-                include: { user: true },
+        if (!canDistribute) {
+          // Solo tax is too small to distribute meaningfully - add 100% to bonus pool
+          // Get solo winner names for donor display
+          const soloWinnerDisplayNames = await Promise.all(
+            allSoloTaxResults.map(async (r) => {
+              const player = await prisma.player.findUnique({
+                where: { id: r.playerId },
+                include: { user: { select: { displayName: true, userName: true } } },
               });
+              return player?.user.displayName || player?.user.userName || "Unknown";
+            })
+          );
+          const donorName = soloWinnerDisplayNames.join(", ");
 
-              if (!loser) continue;
-
-              // Update UC balance
-              await prisma.uC.upsert({
-                where: { playerId: loserId },
-                create: {
-                  player: { connect: { id: loserId } },
-                  user: { connect: { id: loser.user.id } },
-                  balance: tier.perPlayer,
-                },
-                update: { balance: { increment: tier.perPlayer } },
+          // Add the entire solo tax to pool (not just 40%)
+          await addToSoloTaxPool(tournament.seasonId, totalSoloTax, donorName);
+        } else {
+          // Proceed with normal distribution
+          // Get winner names for transaction message
+          const soloWinnerNames = await Promise.all(
+            allSoloTaxResults.map(async (r) => {
+              const player = await prisma.player.findUnique({
+                where: { id: r.playerId },
+                include: { user: { select: { userName: true } } },
               });
+              return player?.user.userName || "Unknown";
+            })
+          );
+          const winnerNamesStr = soloWinnerNames.join(", ");
 
-              // Create support transaction
-              await prisma.transaction.create({
-                data: {
-                  amount: tier.perPlayer,
-                  type: "credit",
-                  description: getLoserSupportMessage(winnerNamesStr, tournament.name),
-                  playerId: loserId,
-                },
-              });
+          // Distribute to each tier
+          for (const tier of tierDistribution) {
+            if (tier.perPlayer > 0) {
+              for (const loserId of tier.playerIds) {
+                // Get loser's user info
+                const loser = await prisma.player.findUnique({
+                  where: { id: loserId },
+                  include: { user: true },
+                });
+
+                if (!loser) continue;
+
+                // Update UC balance
+                await prisma.uC.upsert({
+                  where: { playerId: loserId },
+                  create: {
+                    player: { connect: { id: loserId } },
+                    user: { connect: { id: loser.user.id } },
+                    balance: tier.perPlayer,
+                  },
+                  update: { balance: { increment: tier.perPlayer } },
+                });
+
+                // Create support transaction
+                await prisma.transaction.create({
+                  data: {
+                    amount: tier.perPlayer,
+                    type: "credit",
+                    description: getLoserSupportMessage(winnerNamesStr, tournament.name),
+                    playerId: loserId,
+                  },
+                });
+
+                // Send push notification for support received
+                notifyUCReceived(
+                  loserId,
+                  tier.perPlayer,
+                  getLoserSupportMessage(winnerNamesStr, tournament.name)
+                ).catch(err => console.error("Failed to send support notification:", err));
+              }
             }
           }
-        }
-      }
 
-      // Add 40% to solo tax pool for next tournament
-      if (taxDist.poolAmount > 0) {
-        // Get solo winner names for donor display (use displayName for prettier display)
+          // Add 40% to solo tax pool for next tournament (only if we distributed)
+          if (taxDist.poolAmount > 0) {
+            // Get solo winner names for donor display (use displayName for prettier display)
+            const soloWinnerDisplayNames = await Promise.all(
+              allSoloTaxResults.map(async (r) => {
+                const player = await prisma.player.findUnique({
+                  where: { id: r.playerId },
+                  include: { user: { select: { displayName: true, userName: true } } },
+                });
+                return player?.user.displayName || player?.user.userName || "Unknown";
+              })
+            );
+            const donorName = soloWinnerDisplayNames.join(", ");
+            await addToSoloTaxPool(tournament.seasonId, taxDist.poolAmount, donorName);
+          }
+        }
+      } else if (totalSoloTax > 0 && tournament.seasonId) {
+        // No loser tiers available - add 100% to pool
         const soloWinnerDisplayNames = await Promise.all(
           allSoloTaxResults.map(async (r) => {
             const player = await prisma.player.findUnique({
@@ -583,7 +642,7 @@ export async function POST(
           })
         );
         const donorName = soloWinnerDisplayNames.join(", ");
-        await addToSoloTaxPool(tournament.seasonId, taxDist.poolAmount, donorName);
+        await addToSoloTaxPool(tournament.seasonId, totalSoloTax, donorName);
       }
     }
 

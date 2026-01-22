@@ -12,6 +12,7 @@ import { PlayerWithWeightT } from "@/src/types/player";
 import { getPreviousTournamentTeammates } from "@/src/utils/previousTeammates";
 import { isMeritBanEnabled } from "@/src/services/settings/getAppSetting";
 import { recordLuckyVoter } from "@/src/services/team/previewTeamsByPoll";
+import { batchNotifyTournamentEntry } from "@/src/services/push/sendUCNotification";
 
 
 type PreviewTeamInput = {
@@ -487,6 +488,25 @@ export async function createTeamsByPolls({
       timeout: 600000, // Transaction timeout (10 minutes - match global config)
     },
   );
+
+  // Send push notifications for entry fees (after transaction commits)
+  // Using batch method with throttling for large tournaments
+  if (entryFee > 0) {
+    const allPlayersFromTeams = teams.flatMap((t) => t.players);
+    const luckyVoterIdFromPoll = luckyVoterId;
+
+    const notificationsToSend = allPlayersFromTeams
+      .filter(player => !player.isUCExempt && player.id !== luckyVoterIdFromPoll)
+      .map(player => ({
+        playerId: player.id,
+        amount: entryFee,
+        tournamentName,
+      }));
+
+    // Fire and forget - runs in background with batching
+    batchNotifyTournamentEntry(notificationsToSend)
+      .catch(err => console.error("Failed to send entry fee notifications:", err));
+  }
 
   return {
     teams: createdTeams,

@@ -116,8 +116,13 @@ export async function GET(req: Request) {
 
                 for (const tx of player.transactions) {
                     // Check if transaction is related to this season's tournaments
+                    // Use exact match to prevent partial matches (e.g., "Lehkai sngewtynnad 1" should NOT match "Lehkai sngewtynnad 10")
+                    // Transaction formats:
+                    // - Entry: "Entry fee for {tournamentName}"
+                    // - Prize: "1st Place Prize: {tournamentName}", "2nd Place Prize: {tournamentName}", etc.
                     const isSeasonTransaction = tournaments.some(
-                        (t) => tx.description.includes(t.name)
+                        (t) => tx.description === `Entry fee for ${t.name}` ||
+                            tx.description.endsWith(`: ${t.name}`)
                     );
 
                     if (!isSeasonTransaction) continue;
@@ -196,6 +201,9 @@ export async function GET(req: Request) {
 
         // Parse support transactions and attach to losers
         // Format: "Support from PlayerName: TournamentName"
+        // Only include support from this season's tournaments
+        const tournamentNames = new Set(tournaments.map(t => t.name));
+
         for (const loser of losers.slice(0, 10)) {
             if (!loser.playerId) continue;
             const supports = supportTransactions
@@ -207,7 +215,9 @@ export async function GET(req: Request) {
                         amount: tx.amount,
                         tournament: match?.[2] || "Unknown",
                     };
-                });
+                })
+                // Filter to only include support from this season's tournaments
+                .filter(s => tournamentNames.has(s.tournament));
             loser.supportReceived = supports;
             loser.totalSupport = supports.reduce((sum, s) => sum + s.amount, 0);
         }
