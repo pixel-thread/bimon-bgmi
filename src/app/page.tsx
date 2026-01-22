@@ -364,16 +364,37 @@ export default function HomePage() {
   const router = useRouter();
 
   // Detect and preserve new user status (from onboarding redirect)
+  // Use sessionStorage to persist across re-renders caused by router.replace
   const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
+    // Check sessionStorage first for persisted new user status
+    const storedNewUser = sessionStorage.getItem("is_new_user");
+    if (storedNewUser === "true") {
+      setIsNewUser(true);
+      return; // Already processed, don't check URL again
+    }
+
     const welcomeParam = searchParams.get("welcome") === "1";
     if (welcomeParam) {
       setIsNewUser(true);
+      // Persist to sessionStorage so it survives the URL cleanup
+      sessionStorage.setItem("is_new_user", "true");
       // Clean up URL without losing the state
       router.replace("/", { scroll: false });
     }
   }, [searchParams, router]);
+
+  // Clear the new user flag when WhatsApp groups are joined (or after some time)
+  useEffect(() => {
+    if (isNewUser) {
+      // Clear the flag after 30 seconds to avoid showing forever
+      const timer = setTimeout(() => {
+        sessionStorage.removeItem("is_new_user");
+      }, 30000);
+      return () => clearTimeout(timer);
+    }
+  }, [isNewUser]);
 
   // Block rendering while PWA is restoring to a saved route
   if (isRestoring) {
@@ -397,11 +418,14 @@ export default function HomePage() {
               isSuperAdmin={user?.role === "SUPER_ADMIN"}
               isAdmin={user?.role === "ADMIN"}
               isLoading={isAuthLoading}
-              isNewUser={isNewUser}
+              isNewUser={false} // WhatsApp button now handled at page level
             />
           ) : (
             <GuestCard />
           )}
+
+          {/* Show WhatsApp joining modal immediately for new users - independent of loading state */}
+          {isNewUser && <WhatsAppButton autoOpen />}
         </div>
       </div>
     </div>

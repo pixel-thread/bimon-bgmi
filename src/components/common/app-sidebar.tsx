@@ -97,6 +97,7 @@ const navGroups: NavGroup[] = [
       { title: "Player Insights", url: "/admin/insights", icon: TrendingDown },
       { title: "Promoters", url: "/admin/promoters", icon: Gift },
       { title: "Royal Pass", url: "/admin/royal-pass", icon: Crown },
+      { title: "Lucky Voters", url: "/admin/lucky-voters", icon: Gift },
       { title: "Merit Ratings", url: "/admin/merit-ratings", icon: Star },
       { title: "Income", url: "/admin/income", icon: DollarSign },
       { title: "Push Subscribers", url: "/admin/push-subscribers", icon: Bell },
