@@ -60,6 +60,9 @@ export default function OnboardingPage() {
         return "";
     };
 
+    // Track if we just completed onboarding to prevent race condition
+    const [justCompleted, setJustCompleted] = useState(false);
+
     const { mutate: submitUsernames, isPending } = useMutation({
         mutationFn: (data: { userName: string; displayName: string; dateOfBirth?: string; referralCode?: string }) =>
             http.post("/onboarding", data),
@@ -67,6 +70,8 @@ export default function OnboardingPage() {
             // Clear stored referral code after successful signup
             clearStoredReferralCode();
             toast.success("Welcome to PUBGMI Tournament! Your account is ready.");
+            // Mark as just completed BEFORE refreshAuth to prevent race condition
+            setJustCompleted(true);
             // IMPORTANT: Wait for auth cache to update with isOnboarded: true
             // before navigating, otherwise RoleBaseRouting may redirect back here
             await refreshAuth();
@@ -110,9 +115,16 @@ export default function OnboardingPage() {
         });
     };
 
-    // If user is already onboarded, redirect to home
-    if (user?.isOnboarded) {
-        router.push("/");
+    // If user is already onboarded (and we didn't just complete onboarding), redirect to home
+    // Use useEffect to avoid calling router during render
+    useEffect(() => {
+        if (user?.isOnboarded && !justCompleted) {
+            router.push("/");
+        }
+    }, [user?.isOnboarded, justCompleted, router]);
+
+    // Show nothing while redirecting an already-onboarded user
+    if (user?.isOnboarded && !justCompleted) {
         return null;
     }
 

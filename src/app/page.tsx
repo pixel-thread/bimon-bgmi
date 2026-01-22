@@ -348,10 +348,10 @@ function UserCard({
         <p className="text-slate-600 dark:text-slate-400">{email}</p>
       </div>
 
-      {/* Action button with WhatsApp (only for new users) */}
+      {/* Action button with WhatsApp */}
       <div className="flex items-center justify-center gap-3">
         {ActionButton}
-        {isNewUser && <WhatsAppButton autoOpen />}
+        <WhatsAppButton autoOpen={isNewUser} />
       </div>
     </div>
   );
@@ -418,14 +418,11 @@ export default function HomePage() {
               isSuperAdmin={user?.role === "SUPER_ADMIN"}
               isAdmin={user?.role === "ADMIN"}
               isLoading={isAuthLoading}
-              isNewUser={false} // WhatsApp button now handled at page level
+              isNewUser={isNewUser}
             />
           ) : (
             <GuestCard />
           )}
-
-          {/* Show WhatsApp joining modal immediately for new users - independent of loading state */}
-          {isNewUser && <WhatsAppButton autoOpen />}
         </div>
       </div>
     </div>
