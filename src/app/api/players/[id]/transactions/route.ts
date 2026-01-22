@@ -23,11 +23,30 @@ export async function GET(
         const { searchParams } = new URL(req.url);
         const page = parseInt(searchParams.get("page") || "1");
         const limit = parseInt(searchParams.get("limit") || "10");
+        const seasonId = searchParams.get("season") || "";
+
+        // Get season date range for filtering (if season specified)
+        let seasonDateFilter: { gte?: Date; lte?: Date } | undefined;
+        if (seasonId && seasonId !== "lifetime") {
+            const season = await prisma.season.findUnique({
+                where: { id: seasonId },
+                select: { startDate: true, endDate: true },
+            });
+            if (season) {
+                seasonDateFilter = {
+                    gte: season.startDate,
+                    ...(season.endDate ? { lte: season.endDate } : {}),
+                };
+            }
+        }
 
         // Fetch all transactions and UC transfers for accurate total count
         const [transactions, ucTransfersReceived, ucTransfersSent] = await Promise.all([
             prisma.transaction.findMany({
-                where: { playerId },
+                where: {
+                    playerId,
+                    ...(seasonDateFilter ? { timestamp: seasonDateFilter } : {}),
+                },
                 orderBy: { timestamp: "desc" },
             }),
             // UC transfers where this player received UC
@@ -35,6 +54,7 @@ export async function GET(
                 where: {
                     toPlayerId: playerId,
                     status: "COMPLETED",
+                    ...(seasonDateFilter ? { createdAt: seasonDateFilter } : {}),
                 },
                 include: {
                     fromPlayer: {
@@ -48,6 +68,7 @@ export async function GET(
                 where: {
                     fromPlayerId: playerId,
                     status: "COMPLETED",
+                    ...(seasonDateFilter ? { createdAt: seasonDateFilter } : {}),
                 },
                 include: {
                     toPlayer: {

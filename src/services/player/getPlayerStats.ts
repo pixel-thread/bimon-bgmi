@@ -6,7 +6,10 @@ type Props = {
 };
 
 // Helper function to get extended stats (seasons, tournaments, best match, podium, ban status, wins, top10, UC placements)
-async function getExtendedStats(playerId: string) {
+// When seasonId is provided, all stats are filtered to that season only
+async function getExtendedStats(playerId: string, seasonId?: string) {
+  const isLifetime = !seasonId || seasonId === "all" || seasonId === "lifetime";
+
   // Get player with relations for seasons, teams, ban status, and UC distribution placements
   const player = await prisma.player.findUnique({
     where: { id: playerId },
@@ -14,9 +17,13 @@ async function getExtendedStats(playerId: string) {
       isBanned: true,
       seasons: { select: { id: true } },
       teams: {
+        where: isLifetime ? {} : {
+          tournament: { seasonId },
+        },
         select: {
           id: true,
           tournamentId: true,
+          tournament: { select: { seasonId: true } },
           teamStats: {
             select: { position: true, matchId: true },
           },
@@ -51,18 +58,21 @@ async function getExtendedStats(playerId: string) {
     };
   }
 
-  // Count seasons played
+  // Count seasons played (always lifetime for this stat)
   const seasonsPlayed = player.seasons.length;
 
-  // Count unique tournaments
+  // Count unique tournaments (filtered by season if applicable)
   const uniqueTournaments = new Set(
     player.teams.map((t) => t.tournamentId).filter(Boolean)
   );
   const totalTournaments = uniqueTournaments.size;
 
-  // Get best match (highest kills) and calculate avg kills
+  // Get best match (highest kills) and calculate avg kills - filtered by season
   const allMatchStats = await prisma.teamPlayerStats.findMany({
-    where: { playerId },
+    where: {
+      playerId,
+      ...(isLifetime ? {} : { seasonId }),
+    },
     select: { kills: true },
     orderBy: { kills: "desc" },
   });
@@ -153,8 +163,8 @@ async function getExtendedStats(playerId: string) {
 }
 
 export async function getPlayerStatsByPlayerId({ playerId, seasonId }: Props) {
-  // Get extended stats (runs in parallel with other queries)
-  const extendedStatsPromise = getExtendedStats(playerId);
+  // Get extended stats (runs in parallel with other queries) - pass seasonId for filtering
+  const extendedStatsPromise = getExtendedStats(playerId, seasonId);
 
   // Get the player's last match stats to calculate K/D trend
   const lastMatchStats = await prisma.teamPlayerStats.findFirst({

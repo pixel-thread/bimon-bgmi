@@ -26,6 +26,7 @@ interface SeasonSelectorProps {
   className?: string;
   placeholder?: string;
   showAllSeasons?: boolean;
+  showLifetime?: boolean;
   size?: "sm" | "md" | "lg";
   variant?: "default" | "green" | "blue" | "purple";
 }
@@ -34,6 +35,7 @@ export function SeasonSelector({
   className = "",
   placeholder = "Season",
   size = "md",
+  showLifetime = false,
 }: SeasonSelectorProps) {
   const { setSeasonId, seasonId: selectedSeason } = useSeasonStore();
   const { isSuperAdmin } = useAuth();
@@ -73,6 +75,11 @@ export function SeasonSelector({
             condition={data?.length && data?.length > 0 ? true : false}
             trueComponent={
               <>
+                {showLifetime && (
+                  <SelectItem value="lifetime">
+                    Lifetime
+                  </SelectItem>
+                )}
                 {data?.map((season) => (
                   <SelectItem key={season.id} value={season.id}>
                     {season.name}

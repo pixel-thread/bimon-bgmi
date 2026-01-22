@@ -129,11 +129,12 @@ export default function ProfilePage() {
     // Check if displayName guide should be shown (no displayName set)
     const showDisplayNameGuide = !user?.displayName && !!user;
 
-    // Fetch player stats - filtered by selected season
+    // Fetch player stats - filtered by selected season (empty = lifetime/all seasons)
+    const statsSeasonParam = selectedSeasonId === "lifetime" ? "" : selectedSeasonId;
     const { data: statsData, isLoading: statsLoading } = useQuery({
-        queryKey: ["player-stats", playerId, selectedSeasonId],
-        queryFn: () => http.get<PlayerStats>(`/players/${playerId}/stats?season=${selectedSeasonId}`),
-        enabled: !!playerId && !!selectedSeasonId,
+        queryKey: ["player-stats", playerId, statsSeasonParam],
+        queryFn: () => http.get<PlayerStats>(`/players/${playerId}/stats?season=${statsSeasonParam}`),
+        enabled: !!playerId && (selectedSeasonId === "lifetime" || !!selectedSeasonId),
     });
 
     // Fetch transfers
@@ -150,10 +151,10 @@ export default function ProfilePage() {
         enabled: !!playerId,
     });
 
-    // Fetch balance history - only when UC History is expanded
+    // Fetch balance history - only when UC History is expanded, filtered by season
     const { data: balanceHistoryData, isLoading: isBalanceHistoryLoading } = useQuery({
-        queryKey: ["balance-history", playerId, ucHistoryPage],
-        queryFn: () => http.get<{ transactions: BalanceHistoryItem[]; pagination: { total: number; pages: number; page: number } }>(`/players/${playerId}/transactions?page=${ucHistoryPage}&limit=${UC_HISTORY_PAGE_SIZE}`),
+        queryKey: ["balance-history", playerId, ucHistoryPage, selectedSeasonId],
+        queryFn: () => http.get<{ transactions: BalanceHistoryItem[]; pagination: { total: number; pages: number; page: number } }>(`/players/${playerId}/transactions?page=${ucHistoryPage}&limit=${UC_HISTORY_PAGE_SIZE}&season=${selectedSeasonId}`),
         enabled: !!playerId && showUCHistory, // Only fetch when section is expanded
     });
 
@@ -185,28 +186,29 @@ export default function ProfilePage() {
     const ucHistoryTotalPages = balanceHistoryData?.data?.pagination?.pages || 1;
 
     // Compute basic stats from preloaded auth data (instant) or fallback to API data
-    // Note: preloadedStats aggregates ALL seasons, so only use as fallback when no season is selected
+    // Note: preloadedStats aggregates ALL seasons, so only use for lifetime view
     const preloadedStats = user?.player?.playerStats || [];
     const preloadedKills = preloadedStats.reduce((sum, s) => sum + s.kills, 0);
     const preloadedDeaths = preloadedStats.reduce((sum, s) => sum + s.deaths, 0);
     const preloadedKd = preloadedDeaths > 0 ? preloadedKills / preloadedDeaths : preloadedKills;
 
-    // When a specific season is selected but has no stats yet, show zeros (not all-time stats)
-    // playerStats will be null/undefined for new seasons - that's expected
-    const hasSeasonSelected = !!selectedSeasonId && selectedSeasonId !== "all";
-    const seasonHasNoStats = hasSeasonSelected && !playerStats;
+    // Determine if we're viewing lifetime stats
+    const isLifetimeView = selectedSeasonId === "lifetime";
 
-    // Use preloaded data for instant display ONLY when viewing all seasons, 
-    // otherwise use API data (which may be null for new seasons = show zeros)
-    const kills = seasonHasNoStats ? 0 : (playerStats?.kills ?? preloadedKills);
-    const deaths = seasonHasNoStats ? 0 : (playerStats?.deaths ?? preloadedDeaths);
-    const kd = seasonHasNoStats ? 0 : (playerStats?.kd ?? Number(preloadedKd.toFixed(2)));
+    // When a specific season is selected, don't use preloaded stats (they're lifetime aggregate)
+    // Only use preloaded stats as fallback when viewing lifetime
+    const usePreloadedStats = isLifetimeView && !playerStats;
+
+    // When viewing a specific season, show zeros while loading or if no stats exist
+    const kills = usePreloadedStats ? preloadedKills : (playerStats?.kills ?? 0);
+    const deaths = usePreloadedStats ? preloadedDeaths : (playerStats?.deaths ?? 0);
+    const kd = usePreloadedStats ? Number(preloadedKd.toFixed(2)) : (playerStats?.kd ?? 0);
 
     // Extended stats only from API (require complex aggregations)
     const kdTrend = playerStats?.kdTrend || "same";
     const kdChange = playerStats?.kdChange || 0;
     const lastMatchKills = playerStats?.lastMatchKills || 0;
-    const seasonsPlayed = playerStats?.seasonsPlayed || preloadedStats.length;
+    const seasonsPlayed = usePreloadedStats ? preloadedStats.length : (playerStats?.seasonsPlayed || 0);
     const totalTournaments = playerStats?.totalTournaments || 0;
     const bestMatchKills = playerStats?.bestMatchKills || 0;
     const podiumFinishes = playerStats?.podiumFinishes || { first: 0, second: 0, third: 0 };
@@ -503,17 +505,17 @@ export default function ProfilePage() {
                     </TabsTrigger>
                 </TabsList>
 
-                {/* Season Filter - Subtle row below tabs */}
-                <div className="flex items-center justify-center gap-2 mt-3 mb-2">
-                    <span className="text-xs text-muted-foreground">Stats for:</span>
-                    <SeasonSelector
-                        className="w-auto min-w-[100px] h-7 text-xs border-0 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors [&>button]:border-0 [&>button]:bg-transparent [&>button]:font-medium [&>button]:text-violet-600 [&>button]:dark:text-violet-400"
-                        placeholder="Season"
-                    />
-                </div>
-
                 {/* Overview Tab */}
                 <TabsContent value="overview" className="space-y-4 mt-4">
+                    {/* Season Filter - Only on Overview tab */}
+                    <div className="flex items-center justify-center gap-2">
+                        <span className="text-xs text-muted-foreground">Stats for:</span>
+                        <SeasonSelector
+                            className="w-auto min-w-[100px] h-7 text-xs border-0 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors [&>button]:border-0 [&>button]:bg-transparent [&>button]:font-medium [&>button]:text-violet-600 [&>button]:dark:text-violet-400"
+                            placeholder="Season"
+                            showLifetime
+                        />
+                    </div>
                     {/* Stats Section - Glassmorphism */}
                     <div className="relative rounded-2xl overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-purple-500/10 to-fuchsia-500/10 dark:from-violet-600/20 dark:via-purple-600/20 dark:to-fuchsia-600/20" />
