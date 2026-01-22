@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { FiUsers } from "react-icons/fi";
-import { User, Crown, ArrowLeft, Clock } from "lucide-react";
+import { User, Crown, ArrowLeft, Clock, ChevronRight, Users } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -181,10 +181,13 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                               displayLimit && (
                                 <button
                                   onClick={() => setSelectedGroup(option.vote)}
-                                  className={`text-sm font-medium ${theme ? theme.button : 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300'}`}
+                                  className={`text-sm font-medium px-4 py-2 rounded-lg border flex items-center gap-2 transition-all duration-200 ${theme
+                                    ? `${theme.button} border-current bg-gradient-to-r from-transparent to-transparent hover:from-white/20 hover:to-white/10`
+                                    : 'text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30'}`}
                                 >
-                                  See all {filterPollVote(option.vote).length}{" "}
-                                  voters
+                                  <Users className="w-4 h-4" />
+                                  See all {filterPollVote(option.vote).length} voters
+                                  <ChevronRight className="w-4 h-4" />
                                 </button>
                               )}
                           </div>
