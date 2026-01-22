@@ -395,19 +395,22 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
             className="flex justify-center mb-2 relative z-20"
           >
-            <div className="relative overflow-hidden px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 text-amber-900 font-bold shadow-xl border-2 border-amber-500">
+            <div className="relative overflow-hidden px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500 text-white font-bold shadow-xl border-2 border-emerald-400">
               {/* Sparkle effects */}
               <div className="absolute top-1 left-4 w-2 h-2 bg-white rounded-full animate-ping opacity-75" />
               <div className="absolute bottom-2 right-6 w-1.5 h-1.5 bg-white rounded-full animate-ping opacity-60" style={{ animationDelay: '0.3s' }} />
               <div className="absolute top-3 right-12 w-1 h-1 bg-white rounded-full animate-ping opacity-50" style={{ animationDelay: '0.6s' }} />
 
-              <div className="flex items-center gap-2">
-                <span className="text-2xl animate-bounce">🎉</span>
+              <div className="flex items-center gap-3">
+                <span className="text-3xl animate-bounce">🎁</span>
                 <div className="text-center">
-                  <p className="text-xs uppercase tracking-wider opacity-80">Congratulations!</p>
-                  <p className="text-lg font-black">You Won FREE ENTRY! 🎁</p>
+                  <p className="text-xs uppercase tracking-wider opacity-90">Lucky Winner!</p>
+                  <p className="text-lg font-black">FREE ENTRY 🎉</p>
+                  {entryFee > 0 && (
+                    <p className="text-sm font-semibold opacity-90">You saved {entryFee} UC!</p>
+                  )}
                 </div>
-                <span className="text-2xl animate-bounce" style={{ animationDelay: '0.2s' }}>🏆</span>
+                <span className="text-3xl animate-bounce" style={{ animationDelay: '0.2s' }}>🍀</span>
               </div>
             </div>
           </motion.div>
