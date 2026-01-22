@@ -162,8 +162,9 @@ export default function ProfilePage() {
     const { data: imageSettingsData, isLoading: isImageSettingsLoading } = useQuery({
         queryKey: ["profile-image-settings"],
         queryFn: () => http.get<{
-            imageType: "google" | "none" | "custom";
-            customImage: { publicUrl: string } | null
+            imageType: "google" | "none" | "custom" | "uploaded";
+            customImage: { publicUrl: string } | null;
+            uploadedImageUrl: string | null;
         }>("/profile/image"),
         enabled: !!playerId,
     });
@@ -438,6 +439,16 @@ export default function ProfilePage() {
                         <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-2xl font-bold text-primary-foreground">
                             {user.userName?.charAt(0).toUpperCase()}
                         </div>
+                    ) : imageSettings?.imageType === "uploaded" && imageSettings.uploadedImageUrl ? (
+                        <Image
+                            src={imageSettings.uploadedImageUrl}
+                            alt={user.userName || "Profile"}
+                            width={64}
+                            height={64}
+                            className="h-16 w-16 rounded-full object-cover"
+                            loading="lazy"
+                            unoptimized
+                        />
                     ) : imageSettings?.imageType === "custom" && imageSettings.customImage ? (
                         <Image
                             src={imageSettings.customImage.publicUrl}

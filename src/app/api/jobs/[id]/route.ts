@@ -16,7 +16,8 @@ export async function GET(
             where: { id },
             include: {
                 player: {
-                    include: {
+                    select: {
+                        customProfileImageUrl: true,
                         user: {
                             select: {
                                 displayName: true,
@@ -38,8 +39,8 @@ export async function GET(
             return ErrorResponse({ message: "Job listing not found", status: 404 });
         }
 
-        // Fetch Clerk image if no character image
-        let imageUrl: string | null = listing.player.characterImage?.publicUrl || null;
+        // Fetch Clerk image if no custom/character image (customProfileImageUrl takes priority)
+        let imageUrl: string | null = listing.player.customProfileImageUrl || listing.player.characterImage?.publicUrl || null;
         if (!imageUrl && listing.player.user.clerkId) {
             try {
                 const client = await clerkClient();

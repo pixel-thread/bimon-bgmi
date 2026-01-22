@@ -22,7 +22,9 @@ export async function GET(req: NextRequest) {
             where,
             include: {
                 player: {
-                    include: {
+                    select: {
+                        id: true,
+                        customProfileImageUrl: true,
                         user: {
                             select: {
                                 userName: true,
