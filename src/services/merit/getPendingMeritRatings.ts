@@ -58,13 +58,35 @@ export async function getPendingMeritRatings(playerId: string) {
         return { pendingRatings: [], tournament: null };
     }
 
-    // Get teammates (exclude self)
-    const teammates = recentMatch.team.players.filter((p) => p.id !== playerId);
+    // Get actual teammates from the same team AND tournament using MatchPlayerPlayed records
+    // This is more accurate than team.players which can include players from other tournaments
+    const teammatesInTournament = await prisma.matchPlayerPlayed.findMany({
+        where: {
+            teamId: recentMatch.teamId,
+            tournamentId: recentMatch.tournamentId,
+            playerId: { not: playerId }, // Exclude self
+        },
+        distinct: ['playerId'], // Get unique players (in case of multiple matches)
+        include: {
+            player: {
+                include: {
+                    user: {
+                        select: {
+                            displayName: true,
+                            userName: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
 
-    // If solo (no teammates), skip
-    if (teammates.length === 0) {
+    // If solo (no teammates in this tournament), skip
+    if (teammatesInTournament.length === 0) {
         return { pendingRatings: [], tournament: null };
     }
+
+    const teammates = teammatesInTournament.map((mpp) => mpp.player);
 
     // Check which teammates have already been rated for this tournament
     const existingRatings = await prisma.playerMeritRating.findMany({
