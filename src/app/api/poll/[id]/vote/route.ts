@@ -160,6 +160,77 @@ export async function POST(
       }
     }
 
+    // Check max player capacity and max team count
+    // Max 64 players AND mode-specific team limits
+    if (body.vote !== "OUT") {
+      const teamType = isPollExist.teamType;
+      const MAX_PLAYERS = 64;
+
+      // Max teams per mode
+      const maxTeamsMap: Record<string, number> = {
+        SOLO: 64,
+        DUO: 49,
+        TRIO: 24,
+        SQUAD: 24,
+        DYNAMIC: 49, // Default to duo limit
+      };
+      const MAX_TEAMS = maxTeamsMap[teamType || "DYNAMIC"] || 49;
+
+      // Get team size based on poll's teamType
+      const teamSizeMap: Record<string, number> = {
+        SOLO: 1,
+        DUO: 2,
+        TRIO: 3,
+        SQUAD: 4,
+        DYNAMIC: 2, // Default to duo for dynamic
+      };
+      const teamSize = teamSizeMap[teamType || "DYNAMIC"] || 2;
+
+      // Count current voters (excluding current player's previous vote)
+      const currentVotes = await prisma.playerPollVote.findMany({
+        where: {
+          pollId,
+          vote: { in: ["IN", "SOLO"] },
+          playerId: { not: playerId },
+        },
+        select: { vote: true },
+      });
+
+      const currentInVoters = currentVotes.filter(v => v.vote === "IN").length;
+      const currentSoloVoters = currentVotes.filter(v => v.vote === "SOLO").length;
+      const totalVoters = currentInVoters + currentSoloVoters;
+
+      // Check max players limit
+      if (totalVoters >= MAX_PLAYERS) {
+        return ErrorResponse({
+          message: `Slot full! Max ${MAX_PLAYERS} players`,
+          status: 403,
+        });
+      }
+
+      // Calculate projected teams if this vote is added
+      let projectedInVoters = currentInVoters;
+      let projectedSoloVoters = currentSoloVoters;
+
+      if (body.vote === "IN") {
+        projectedInVoters += 1;
+      } else if (body.vote === "SOLO") {
+        projectedSoloVoters += 1;
+      }
+
+      // Total teams = full teams from IN voters + solo teams
+      const fullTeamsFromIn = Math.floor(projectedInVoters / teamSize);
+      const projectedTeams = fullTeamsFromIn + projectedSoloVoters;
+
+      // Check max teams limit (mode-specific)
+      if (projectedTeams > MAX_TEAMS) {
+        return ErrorResponse({
+          message: `Team limit reached! Max ${MAX_TEAMS} teams for ${teamType || "this"} mode`,
+          status: 403,
+        });
+      }
+    }
+
     const isPlayerVoted = await getPlayerVoteByPollId({
       playerId,
       pollId,

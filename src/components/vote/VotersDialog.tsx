@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { FiUsers } from "react-icons/fi";
-import { User, Crown, ArrowLeft } from "lucide-react";
+import { User, Crown, ArrowLeft, Clock } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -28,6 +28,7 @@ import { PollT } from "@/src/types/poll";
 import { getDisplayName } from "@/src/utils/displayName";
 import { getPollTheme, calculateParticipantCount } from "./pollTheme";
 import { useDialogBackHandler } from "@/src/hooks/useDialogBackHandler";
+
 
 type VotersDialogsProps = {
   isOpen: boolean;
@@ -85,6 +86,43 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
     // Calculate theme based on participant count
     const participantCount = calculateParticipantCount(pollVoters as { vote: string }[] | undefined);
     const theme = getPollTheme(participantCount);
+
+    // Calculate waiting players (leftover players who don't form a complete team)
+    const waitingPlayerIds = useMemo(() => {
+      if (!pollVoters || !poll?.teamType) return new Set<string>();
+
+      // Get team size based on teamType
+      const teamSizeMap: Record<string, number> = {
+        SOLO: 1,
+        DUO: 2,
+        TRIO: 3,
+        SQUAD: 4,
+        DYNAMIC: 2, // Default to duo for dynamic
+      };
+      const teamSize = teamSizeMap[poll.teamType] || 2;
+
+      // If solo mode, no one is waiting
+      if (teamSize === 1) return new Set<string>();
+
+      // Get all IN/SOLO voters sorted by vote time (oldest first)
+      const inSoloVoters = pollVoters
+        .filter(v => v.vote === "IN" || v.vote === "SOLO")
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+      const totalVoters = inSoloVoters.length;
+      const leftoverCount = totalVoters % teamSize;
+
+      // No leftovers = no one waiting
+      if (leftoverCount === 0) return new Set<string>();
+
+      // The last N voters are waiting (most recent voters)
+      const waitingIds = new Set<string>();
+      for (let i = totalVoters - leftoverCount; i < totalVoters; i++) {
+        waitingIds.add(inSoloVoters[i].playerId);
+      }
+
+      return waitingIds;
+    }, [pollVoters, poll?.teamType]);
 
     // Use the back button handler hook
     const handleOpenChange = useDialogBackHandler(isOpen, (open) => {
@@ -191,6 +229,11 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                                             {getDisplayName(vote.player.user.displayName, vote.player.user.userName)}
                                             {(vote.player as any)?.hasRoyalPass && (
                                               <Crown className="w-4 h-4 text-amber-500 crown-glow flex-shrink-0" />
+                                            )}
+                                            {(option.vote === "IN" || option.vote === "SOLO") && waitingPlayerIds.has(vote.playerId) && (
+                                              <span title="Waiting for more players">
+                                                <Clock className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                                              </span>
                                             )}
                                           </p>
                                           <p className="text-xs text-gray-500 dark:text-gray-400">

@@ -229,15 +229,14 @@ export async function createTeamsByPolls({
     playersForTeams.sort((a, b) => b.weightedScore - a.weightedScore);
 
     // Check for odd number of players (when groupSize > 1)
-    // If odd, the highest-scoring player becomes a solo leftover
+    // Leftover players who voted IN are excluded (waiting status)
+    // Only SOLO voters get solo teams, not IN voters who don't form complete teams
     if (groupSize > 1 && playersForTeams.length % groupSize !== 0) {
       const leftoverCount = playersForTeams.length % groupSize;
-      // Take the highest-scoring leftover players and make them solo
+      // Remove the lowest-scoring leftover players (they are "waiting")
+      // These are IN voters who couldn't form a complete team
       for (let i = 0; i < leftoverCount; i++) {
-        const leftover = playersForTeams.shift(); // Take from front (highest scores)
-        if (leftover) {
-          soloPlayers.push(leftover);
-        }
+        playersForTeams.pop(); // Remove from end (lowest scores)
       }
     }
 
