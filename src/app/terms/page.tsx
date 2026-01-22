@@ -50,6 +50,36 @@ export default function TermsOfServicePage() {
 
               <section>
                 <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-4">
+                  2.1 Virtual Currency Disclaimer
+                </h2>
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                  <p className="font-semibold text-amber-800 dark:text-amber-200 mb-2">
+                    Important Notice About UC (Unknown Cash)
+                  </p>
+                  <ul className="list-disc pl-6 space-y-2 text-amber-700 dark:text-amber-300">
+                    <li>
+                      <strong>UC is virtual in-game currency</strong> used within
+                      PUBG Mobile and BGMI games. It is not real money and has no
+                      real-world monetary value.
+                    </li>
+                    <li>
+                      <strong>This platform is NOT gambling.</strong> Entry fees
+                      and prizes are tracked as virtual game credits, not cash.
+                    </li>
+                    <li>
+                      Tournament participation is skill-based and intended for
+                      entertainment purposes only.
+                    </li>
+                    <li>
+                      By participating, you acknowledge that UC prizes are virtual
+                      rewards with no guaranteed monetary equivalent.
+                    </li>
+                  </ul>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-4">
                   3. User Accounts and Registration
                 </h2>
                 <div className="space-y-4">
@@ -364,7 +394,7 @@ export default function TermsOfServicePage() {
                 </p>
                 <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
                   <p>
-                    <strong>Email:</strong> support@pubgmi-tournament.com
+                    <strong>Email:</strong> bimonlangnongsiej@gmail.com
                   </p>
                   <p>
                     <strong>Platform:</strong> Through the support section in

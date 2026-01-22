@@ -104,8 +104,9 @@ export default function AboutPage() {
               UC Prizes
             </h3>
             <p className="text-slate-600 dark:text-slate-400">
-              Win UC prizes in tournaments. Entry fees go to the prize pool
-              for 1st, 2nd, and 3rd place teams.
+              Win UC (virtual in-game currency) prizes in tournaments. Entry fees
+              form the prize pool for top teams. This is skill-based competition,
+              not gambling.
             </p>
           </div>
         </div>

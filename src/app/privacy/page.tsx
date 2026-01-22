@@ -229,7 +229,7 @@ export default function PrivacyPolicyPage() {
                 </p>
                 <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
                   <p>
-                    <strong>Email:</strong> privacy@pubgmi-tournament.com
+                    <strong>Email:</strong> bimonlangnongsiej@gmail.com
                   </p>
                   <p>
                     <strong>Platform:</strong> Through the contact form in your
