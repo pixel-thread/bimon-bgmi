@@ -150,8 +150,8 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
   }, [isImagePreviewOpen]);
 
   const handleAvatarClick = () => {
-    const avatarUrl = (player as any)?.customProfileImageUrl || (player as any)?.characterImage?.publicUrl || player?.clerkImageUrl;
-    if (avatarUrl && avatarRef.current) {
+    // Use displayImageUrl which already falls back to initialData for non-admins
+    if (displayImageUrl && avatarRef.current) {
       const rect = avatarRef.current.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
@@ -548,7 +548,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
       {/* Image Preview Overlay - rendered via Portal to document.body to cover everything */}
       {typeof document !== 'undefined' && createPortal(
         <AnimatePresence>
-          {isImagePreviewOpen && ((player as any)?.customProfileImageUrl || (player as any)?.characterImage?.publicUrl || player?.clerkImageUrl) && (
+          {isImagePreviewOpen && displayImageUrl && (
             <>
               {/* Backdrop - covers entire page including modal */}
               <motion.div
@@ -567,8 +567,8 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                 className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[10000] w-64 h-64 sm:w-80 sm:h-80 rounded-full border-4 border-white dark:border-zinc-800 shadow-2xl overflow-hidden"
               >
                 <img
-                  src={(player as any)?.customProfileImageUrl || (player as any)?.characterImage?.publicUrl || player?.clerkImageUrl}
-                  alt={getDisplayName(player?.user?.displayName, player?.user?.userName) || "Player"}
+                  src={displayImageUrl}
+                  alt={displayName}
                   className="w-full h-full object-cover"
                 />
               </motion.div>
