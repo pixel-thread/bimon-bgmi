@@ -31,6 +31,7 @@ import { TeamStatsForm } from "@/src/utils/validation/team/team-stats";
 import { ADMIN_MATCH_ENDPOINTS } from "@/src/lib/endpoints/admin/match";
 import { useSeasonStore } from "@/src/store/season";
 import { BulkEditStatsDialog } from "./BulkEditStatsDialog";
+import { TournamentBulkEditDialog } from "./TournamentBulkEditDialog";
 import { useGlobalBackground } from "@/src/hooks/gallery/useGlobalBackground";
 import { SwapPlayersDialog } from "./swap-players-dialog";
 import { ArrowLeftRight, Loader2, Pencil, Trash2 } from "lucide-react";
@@ -53,6 +54,7 @@ export const AdminTeamsManagement: React.FC = () => {
   const page = "all";
   const [showStandingsModal, setShowStandingsModal] = useState(false);
   const [showBulkEdit, setShowBulkEdit] = useState(false);
+  const [showTournamentBulkEdit, setShowTournamentBulkEdit] = useState(false);
   const [showSwapPlayers, setShowSwapPlayers] = useState(false);
   const [showTeamsListModal, setShowTeamsListModal] = useState(false);
   const { tournamentId } = useTournamentStore();
@@ -188,9 +190,15 @@ export const AdminTeamsManagement: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => setShowBulkEdit(true)}
-            disabled={isLoading || !tournamentId || matchId === "" || matchId === "all"}
-            title="Bulk Edit Stats"
+            onClick={() => {
+              if (matchId === "all") {
+                setShowTournamentBulkEdit(true);
+              } else {
+                setShowBulkEdit(true);
+              }
+            }}
+            disabled={isLoading || !tournamentId || matchId === ""}
+            title={matchId === "all" ? "Select matches to bulk edit" : "Bulk Edit Stats"}
           >
             <Pencil className="h-4 w-4 sm:mr-1" />
             <span className="hidden sm:inline">Bulk Edit</span>
@@ -286,6 +294,10 @@ export const AdminTeamsManagement: React.FC = () => {
       <BulkEditStatsDialog
         open={showBulkEdit}
         onOpenChange={setShowBulkEdit}
+      />
+      <TournamentBulkEditDialog
+        open={showTournamentBulkEdit}
+        onOpenChange={setShowTournamentBulkEdit}
       />
       <SwapPlayersDialog
         open={showSwapPlayers}
