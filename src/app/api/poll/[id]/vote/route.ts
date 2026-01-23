@@ -137,7 +137,7 @@ export async function POST(
     if (user.role === "PLAYER" && body.vote !== "OUT") {
       const userBalance = (user as any).player?.uc?.balance ?? 0;
       const isTrusted = (user as any).player?.isTrusted ?? false;
-      const minBalance = isTrusted ? -100 : -30;
+      const minBalance = isTrusted ? -100 : -29;
       if (userBalance < minBalance) {
         return ErrorResponse({
           message: `sen chuwa bai rung (${userBalance} UC)`,
