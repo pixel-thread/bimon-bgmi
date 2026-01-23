@@ -24,6 +24,7 @@ interface FreeOfferInfo {
 interface RoyalPassData {
     hasRoyalPass: boolean;
     currentBalance: number;
+    lostDiscount?: boolean; // True if non-RP holder reached 8 streak, must pay full price
     freeOffer?: FreeOfferInfo;
     streak?: StreakInfo;
     message?: string;
@@ -70,6 +71,7 @@ export function useRoyalPass() {
     return {
         hasRoyalPass: data?.data?.hasRoyalPass ?? false,
         currentBalance: data?.data?.currentBalance ?? 0,
+        lostDiscount: data?.data?.lostDiscount ?? false,
         // Free offer info
         freeOffer: {
             isActive: freeOfferData?.isActive ?? false,

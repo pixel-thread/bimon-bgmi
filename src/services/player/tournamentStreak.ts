@@ -108,11 +108,17 @@ export async function recordTournamentParticipation(
     }
     // If season changed, newStreak stays at 1 (reset)
 
-    // Check if reward should be given
+    // Check if reward should be given (only for RP holders)
     let rewardGiven = false;
     let rewardAmount = 0;
 
-    if (newStreak >= STREAK_REWARD_THRESHOLD) {
+    // Check if player has Royal Pass
+    const hasRoyalPass = await prisma.royalPass.findFirst({
+        where: { playerId },
+    });
+
+    if (newStreak >= STREAK_REWARD_THRESHOLD && hasRoyalPass) {
+        // RP holder hitting 8 streak -> give 30 UC and reset
         rewardGiven = true;
         rewardAmount = STREAK_REWARD_AMOUNT;
 
@@ -151,7 +157,9 @@ export async function recordTournamentParticipation(
         };
     }
 
-    // No reward yet - just update streak
+    // No reward (non-RP holder or streak < 8) - just update streak
+    // For non-RP holders with streak >= 8: streak keeps going (9, 10, etc.)
+    // They lose the 50% RP discount but don't get reset
     await prisma.player.update({
         where: { id: playerId },
         data: {

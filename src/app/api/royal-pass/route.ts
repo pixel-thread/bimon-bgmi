@@ -41,10 +41,14 @@ export async function GET(req: NextRequest) {
             where: { playerId: player.id },
         });
 
+        // Non-RP holders with streak >= 8 lose the 50% discount
+        const lostDiscount = !hasRoyalPass && streakInfo.currentStreak >= STREAK_REWARD_THRESHOLD;
+
         return SuccessResponse({
             data: {
                 currentBalance: uc?.balance ?? 0,
                 hasRoyalPass: !!hasRoyalPass,
+                lostDiscount, // True if non-RP holder hit 8 streak - must pay full price
                 // Free offer info
                 freeOffer: {
                     isActive: isFreeOffer,

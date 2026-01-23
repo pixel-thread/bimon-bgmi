@@ -168,26 +168,25 @@ export async function POST(
 
                         if (gotReward) {
                             // They got the 8-tournament reward - restore streak to 7
-                            // IMPORTANT: Keep lastTournamentSeqId the SAME so re-declaring triggers
-                            // "same tournament" check and doesn't double-count
+                            // Decrement lastTournamentSeqId so re-declaring properly increments streak
                             await tx.player.update({
                                 where: { id: playerId },
                                 data: {
                                     tournamentStreak: 7,
-                                    // Keep lastTournamentSeqId unchanged!
+                                    lastTournamentSeqId: tournamentSeq.sequenceId - 1,
                                     lastStreakRewardAt: null,
                                 },
                             });
                         } else {
-                            // Just decrement streak but KEEP lastTournamentSeqId the same
+                            // Decrement streak AND lastTournamentSeqId
                             // This way, when winners are re-declared for this tournament,
-                            // the streak code sees currentSeqId === lastTournamentSeqId (same tournament)
-                            // and returns early without changing the streak again
+                            // the streak code sees it as the "next consecutive" tournament
+                            // and properly increments the streak again
                             await tx.player.update({
                                 where: { id: playerId },
                                 data: {
                                     tournamentStreak: Math.max(0, player.tournamentStreak - 1),
-                                    // Keep lastTournamentSeqId unchanged!
+                                    lastTournamentSeqId: tournamentSeq.sequenceId - 1,
                                 },
                             });
                         }

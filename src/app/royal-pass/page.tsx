@@ -12,7 +12,8 @@ import { ArrowLeft, Crown, Loader2, Flame, Gift } from "lucide-react";
 import { toast } from "sonner";
 import http from "@/src/utils/http";
 
-const RP_PRICE = 5; // 5 UC (50% off from 10 UC)
+const RP_PRICE_DISCOUNTED = 5; // 5 UC (50% off from 10 UC)
+const RP_PRICE_FULL = 10; // Full price when discount lost
 
 export default function RoyalPassPage() {
     const router = useRouter();
@@ -22,22 +23,25 @@ export default function RoyalPassPage() {
         streak,
         freeOffer,
         hasRoyalPass,
+        lostDiscount,
         isLoading,
         refetch,
     } = useRoyalPass();
+
+    const rpPrice = lostDiscount ? RP_PRICE_FULL : RP_PRICE_DISCOUNTED;
 
     const [isPurchasing, setIsPurchasing] = useState(false);
 
     const handleBuyRP = async () => {
         // Skip balance check if free offer is active
-        if (!freeOffer.isActive && currentBalance < RP_PRICE) {
-            toast.error(`Not enough UC! You need ${RP_PRICE} UC but have ${currentBalance} UC.`);
+        if (!freeOffer.isActive && currentBalance < rpPrice) {
+            toast.error(`Not enough UC! You need ${rpPrice} UC but have ${currentBalance} UC.`);
             return;
         }
 
         setIsPurchasing(true);
         try {
-            const response = await http.post("/royal-pass/purchase", { amount: RP_PRICE });
+            const response = await http.post("/royal-pass/purchase", { amount: rpPrice });
             if (response.success) {
                 toast.success(response.message || "🎉 Royal Pass purchased!");
                 refetch();
@@ -87,7 +91,7 @@ export default function RoyalPassPage() {
         );
     }
 
-    const canAfford = freeOffer.isActive || currentBalance >= RP_PRICE;
+    const canAfford = freeOffer.isActive || currentBalance >= rpPrice;
 
     return (
         <div className="container mx-auto px-4 py-4 max-w-lg space-y-4">
@@ -100,8 +104,8 @@ export default function RoyalPassPage() {
                 Back
             </button>
 
-            {/* Promo Banner - only show if user doesn't have Royal Pass */}
-            {!hasRoyalPass && (
+            {/* Promo Banner - only show if user doesn't have Royal Pass AND hasn't lost discount */}
+            {!hasRoyalPass && !lostDiscount && (
                 <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-center py-2 px-4 rounded-lg text-sm font-medium">
                     🎉 <span className="line-through opacity-75">10 UC</span> → {freeOffer.isActive ? "FREE" : "5 UC only"}! Limited time offer
                 </div>
@@ -149,7 +153,9 @@ export default function RoyalPassPage() {
                     </div>
 
                     <p className="text-xs text-muted-foreground text-center">
-                        Leh kai ban ban 8 tournament ioh ei 30 uc
+                        {hasRoyalPass
+                            ? "Leh kai ban ban 8 tournament ioh ei 30 UC instant!"
+                            : "Get Royal Pass to earn 30 UC when you hit 8 streak!"}
                     </p>
                 </CardContent>
             </Card>
@@ -170,7 +176,9 @@ export default function RoyalPassPage() {
                     <Button
                         className={`w-full h-14 text-lg font-bold shadow-lg relative overflow-hidden disabled:opacity-50 ${freeOffer.isActive
                             ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600'
-                            : 'bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 hover:from-yellow-600 hover:via-amber-600 hover:to-orange-600'
+                            : lostDiscount
+                                ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 hover:from-purple-600 hover:via-pink-600 hover:to-rose-600 animate-bounce'
+                                : 'bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 hover:from-yellow-600 hover:via-amber-600 hover:to-orange-600'
                             } text-white`}
                         onClick={handleBuyRP}
                         disabled={isPurchasing || !canAfford}
@@ -178,6 +186,10 @@ export default function RoyalPassPage() {
                         {freeOffer.isActive ? (
                             <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl animate-pulse">
                                 🎁 FREE
+                            </div>
+                        ) : lostDiscount ? (
+                            <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl animate-pulse">
+                                💰 +30 UC
                             </div>
                         ) : (
                             <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl">
@@ -196,7 +208,9 @@ export default function RoyalPassPage() {
                                 ? "Claiming..."
                                 : freeOffer.isActive
                                     ? "Claim FREE Royal Pass"
-                                    : `Buy RP - ${RP_PRICE} UC`
+                                    : lostDiscount
+                                        ? `Buy RP - Get 🔥 30 UC Instant!`
+                                        : `Buy RP - ${rpPrice} UC`
                             }
                         </span>
                     </Button>
@@ -211,7 +225,7 @@ export default function RoyalPassPage() {
                     {/* Not enough UC message */}
                     {!freeOffer.isActive && !canAfford && (
                         <p className="text-xs text-center text-muted-foreground">
-                            Need {RP_PRICE} UC (you have {currentBalance} UC)
+                            Need {rpPrice} UC (you have {currentBalance} UC)
                         </p>
                     )}
                 </div>
