@@ -66,6 +66,7 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
     const [selectedMatchIds, setSelectedMatchIds] = useState<Set<string>>(new Set()); // For match selection
     const [matchNumberMap, setMatchNumberMap] = useState<Map<string, number>>(new Map()); // Store matchId -> matchNumber
     const [showMatchSelector, setShowMatchSelector] = useState(true); // Start with match selector view
+    const [changeNotes, setChangeNotes] = useState<string[]>([]); // DEV: Track changes from saved data
 
     // Fetch all matches for this tournament
     const { data: matches, isFetching: isMatchesFetching } = useQuery({
@@ -164,7 +165,8 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
                                 playerId: player.id,
                                 name: playerName,
                                 displayName: player.displayName ?? null,
-                                kills: playerStats?.kills === 0 ? "" : (playerStats?.kills ?? ""),
+                                // Preserve 0 kills, only convert null/undefined to empty
+                                kills: playerStats?.kills != null ? String(playerStats.kills) : "",
                                 isAbsent: wasAbsent,
                             };
                         }),
@@ -181,7 +183,6 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
 
             // Sort by match number
             initialData.sort((a, b) => a.matchNumber - b.matchNumber);
-            console.log("Final initialData:", initialData);
             setMatchDataList(initialData);
             setInitialMatchDataList(JSON.parse(JSON.stringify(initialData))); // Deep copy for comparison
             setHasInitialized(true);
@@ -202,8 +203,10 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
                 const currentTeam = current.teams[t];
                 const initialTeam = initial.teams[t];
 
-                // Compare position
-                if (currentTeam.position !== initialTeam.position) return true;
+                // Compare position (normalize to strings for comparison)
+                const currentPos = String(currentTeam.position || "");
+                const initialPos = String(initialTeam.position || "");
+                if (currentPos !== initialPos) return true;
 
                 // Compare players
                 if (currentTeam.players.length !== initialTeam.players.length) return true;
@@ -375,6 +378,58 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
                 };
             });
 
+            // DEV: Log changes compared to initial saved data
+            if (initialMatchDataList.length > 0) {
+                const changes: string[] = [];
+                for (let mIdx = 0; mIdx < newMatchDataList.length && mIdx < initialMatchDataList.length; mIdx++) {
+                    const newMatch = newMatchDataList[mIdx];
+                    const oldMatch = initialMatchDataList[mIdx];
+                    if (!oldMatch) continue;
+
+                    const matchChanges: string[] = [];
+                    for (let tIdx = 0; tIdx < newMatch.teams.length && tIdx < oldMatch.teams.length; tIdx++) {
+                        const newTeam = newMatch.teams[tIdx];
+                        const oldTeam = oldMatch.teams[tIdx];
+                        if (!oldTeam) continue;
+
+                        // Position change - normalize to strings for comparison
+                        const oldPos = String(oldTeam.position || "");
+                        const newPos = String(newTeam.position || "");
+                        if (oldPos !== newPos) {
+                            matchChanges.push(`📍 ${newTeam.name}: Position ${oldPos || "?"} → ${newPos || "?"}`);
+                        }
+
+                        // Player changes
+                        for (let pIdx = 0; pIdx < newTeam.players.length && pIdx < oldTeam.players.length; pIdx++) {
+                            const newPlayer = newTeam.players[pIdx];
+                            const oldPlayer = oldTeam.players[pIdx];
+                            if (!oldPlayer) continue;
+
+                            // Use same normalization as hasDataChanges
+                            const oldKills = oldPlayer.kills === "" || oldPlayer.kills === null ? "" : String(oldPlayer.kills);
+                            const newKills = newPlayer.kills === "" || newPlayer.kills === null ? "" : String(newPlayer.kills);
+
+                            if (oldKills !== newKills) {
+                                matchChanges.push(`  🎯 ${newPlayer.displayName || newPlayer.name}: Kills ${oldKills || "-"} → ${newKills || "-"}`);
+                            }
+
+                            if (oldPlayer.isAbsent !== newPlayer.isAbsent) {
+                                matchChanges.push(`  👤 ${newPlayer.displayName || newPlayer.name}: ${oldPlayer.isAbsent ? "Absent → Present" : "Present → Absent"}`);
+                            }
+                        }
+                    }
+
+                    if (matchChanges.length > 0) {
+                        changes.push(...matchChanges);
+                    }
+                }
+
+                // Store in state for UI display
+                setChangeNotes(changes);
+            } else {
+                setChangeNotes([]);
+            }
+
             setMatchDataList(newMatchDataList);
             setUnknownPlayers(newUnknownPlayers);
             toast.success(`Applied data for ${Math.min(matchGroups.length, matchDataList.length)} matches!`);
@@ -382,7 +437,7 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
             const err = error as Error;
             toast.error(err.message || "Failed to parse JSON");
         }
-    }, [matchDataList, normalizeName]);
+    }, [matchDataList, normalizeName, initialMatchDataList]);
 
     // Handle paste
     const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -422,54 +477,52 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
 
         const prompt = `Extract player stats from ${numMatches} BGMI match scoreboards.
 
-SCOREBOARD LAYOUT:
-- Each image shows a split view: LEFT panel = TOP teams (Position 1, 2, etc.), RIGHT panel = LOWER teams (Position 7+)
-- The LEFT PANEL always shows Position 1 and 2 teams with their players and "finishes" (kills)
-- Images from the SAME MATCH will have IDENTICAL Position 1 and 2 teams on the LEFT side
+REGISTERED PLAYERS (${totalTeams} teams, ${totalPlayers} players):
+${Array.from(allTeams.entries()).map(([name, players]) => `• ${name}: ${players.join(", ")}`).join("\n")}
 
-⚠️ CRITICAL: Group images by looking at the LEFT PANEL ONLY. If Position 1 team = "PlayerA_PlayerB_PlayerC" and Position 2 team = "PlayerD_PlayerE_PlayerF" with same finish counts, they are the SAME MATCH.
+HOW TO GROUP MATCHES:
+- Look at LEFT side of scoreboard - shows Position #1 and #2 teams
+- Images with SAME #1 and #2 teams (same names + same kills) = SAME MATCH
 
-Player names to match (USE THESE EXACT NAMES in output):
-${Array.from(allPlayers.values()).join(", ")}
+⚠️⚠️⚠️ CRITICAL - NULL vs 0 (READ CAREFULLY):
+- kills: 0 = Player IS in scoreboard with 0 finishes (PRESENT)
+- kills: null = Player is NOT in ANY scoreboard image (ABSENT)
 
-Total: ${totalTeams} teams, ${totalPlayers} players, ${numMatches} matches
+CHECK EACH PLAYER:
+1. Search ALL images for this player's name
+2. Found with "0" finishes? → kills: 0 (they played but got 0 kills)
+3. Found with N finishes? → kills: N
+4. NOT found in ANY image? → kills: null (they didn't play this match)
 
-Teams and their players:
-${Array.from(allTeams.entries()).map(([name, players]) => `- ${name}: ${players.join(", ")}`).join("\n")}
+❌ WRONG: {"name": "MissingPlayer", "kills": 0} ← Don't use 0 for missing players!
+✅ RIGHT: {"name": "MissingPlayer", "kills": null} ← Use null for missing players
+✅ RIGHT: {"name": "FoundPlayer", "kills": 0} ← Use 0 only if you SEE them with 0
 
 OUTPUT FORMAT:
 {
   "matches": [
     {
       "identifier": "A",
-      "topTeams": "#1 Player1_Player2_Player3 (X kills), #2 Player4_Player5_Player6 (Y kills)",
+      "topTeams": "#1 Team (Xkills), #2 Team (Ykills)",
       "players": [
-        {"name": "player_from_my_list", "kills": 5, "position": 1},
-        {"name": "absent_player", "kills": null, "position": null},
-        {"name": "unknown_player", "kills": 3, "position": 2, "isUnknown": true}
+        {"name": "player_i_saw", "kills": 5, "position": 1},
+        {"name": "player_with_0_finishes", "kills": 0, "position": 3},
+        {"name": "player_NOT_in_any_image", "kills": null, "position": null}
       ]
-    },
-    {
-      "identifier": "B",
-      "topTeams": "...",
-      "players": [...]
     }
   ]
 }
 
 RULES:
-- FIRST: Look at LEFT panel of each image to identify Position 1 and 2 teams
-- Group all images with identical Position 1 + 2 teams (with same finish counts) as ONE match
-- Include ALL ${totalPlayers} registered players in EACH match group
-- For players NOT found in that match's scoreboard: set kills to null
-- Use EXACT names from MY list above
-- "kills" = the "finishes" number shown next to each player name
-- Position = the rank number (1, 2, 3...) shown next to each team on the left
+1. Group images by #1 + #2 teams in LEFT panel
+2. Include ALL ${totalPlayers} players in EACH match output
+3. Use EXACT names from my list
+4. kills = finishes number you SEE; null if NOT FOUND
+5. position = team's rank (1-13)
 
-After JSON, show:
-Match A: Position 1 team (with player names), Position 2 team, total players found
-Match B: Position 1 team (with player names), Position 2 team, total players found
-⚠️ Any uncertain matches`;
+BEFORE SUBMITTING: Double-check that absent players have null, not 0!
+
+Confirm: Match A: #1 team, #2 team, X found, Y absent (null)`;
 
         navigator.clipboard.writeText(prompt);
         toast.success("Prompt copied to clipboard!");
@@ -495,9 +548,15 @@ Match B: Position 1 team (with player names), Position 2 team, total players fou
                     })),
                 };
 
-                const url = `/api/admin/match/${matchData.matchId}/bulk-stats`;
+                const url = `/admin/match/${matchData.matchId}/bulk-stats`;
                 // 30 second timeout per match (optimized for free Vercel tier)
                 const result = await http.put(url, payload, { timeout: 30000 });
+
+                // Validate the response - http.put returns {success: false} on error instead of throwing
+                if (!result.success) {
+                    throw new Error(result.message || `Failed to save Match ${matchData.matchNumber}`);
+                }
+
                 results.push(result);
             }
             return results;
@@ -745,6 +804,23 @@ Match B: Position 1 team (with player names), Position 2 team, total players fou
                                         {unknownPlayers.slice(0, 5).map(p => `${p.name} (Match ${matchDataList[p.matchIdx]?.matchNumber || p.matchIdx + 1})`).join(", ")}
                                         {unknownPlayers.length > 5 && ` +${unknownPlayers.length - 5} more`}
                                     </p>
+                                </div>
+                            )}
+
+                            {/* DEV: Change notes from saved data */}
+                            {changeNotes.length > 0 && (
+                                <div className="mx-3 sm:mx-4 mb-4 p-3 rounded-md bg-cyan-500/10 border border-cyan-500/30 max-h-32 overflow-y-auto">
+                                    <p className="text-sm font-semibold text-cyan-600 dark:text-cyan-400 mb-2">
+                                        🔄 Changes from saved data ({changeNotes.length})
+                                    </p>
+                                    <div className="text-xs text-cyan-600/80 dark:text-cyan-400/80 space-y-0.5 font-mono">
+                                        {changeNotes.slice(0, 20).map((note, idx) => (
+                                            <div key={idx}>{note}</div>
+                                        ))}
+                                        {changeNotes.length > 20 && (
+                                            <div className="text-cyan-500">+{changeNotes.length - 20} more changes...</div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </>
