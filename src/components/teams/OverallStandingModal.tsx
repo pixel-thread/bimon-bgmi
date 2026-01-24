@@ -1,6 +1,6 @@
 "use client";
 import { FiX, FiCheck } from "react-icons/fi";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import html2canvas from "html2canvas-pro";
 import { Button } from "@/src/components/ui/button";
 import { ShareableContent } from "../ShareableContent";
@@ -34,8 +34,15 @@ export default function OverallStandingModal({
   const [shareSuccess, setShareSuccess] = useState(false);
 
   // Use the derived useStandings hook - shares cache with useTeams, no extra API call
-  const { data: teamsStats, isFetching } = useStandings();
+  const { data: teamsStats, isFetching, refetch } = useStandings();
   const { data: matches } = useMatches();
+
+  // Always refetch fresh data when modal opens
+  useEffect(() => {
+    if (visible) {
+      refetch();
+    }
+  }, [visible, refetch]);
 
   // Compute matchDate: specific match's updatedAt or latest match's updatedAt for overall
   const matchDate = useMemo(() => {

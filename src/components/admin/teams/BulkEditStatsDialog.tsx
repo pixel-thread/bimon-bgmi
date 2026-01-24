@@ -48,6 +48,7 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
     // Only fetch when dialog is open to avoid unnecessary API calls
     const { data: teams, isFetching } = useTeams({ page: "all", refetchOnWindowFocus: false, enabled: open });
     const [editableStats, setEditableStats] = useState<EditableTeamStats[]>([]);
+    const [initialEditableStats, setInitialEditableStats] = useState<EditableTeamStats[]>([]);
     // Track if we've initialized the form to prevent resetting on subsequent renders
     const [hasInitialized, setHasInitialized] = useState(false);
     // Track manually toggled player IDs (playerId -> current isAbsent status)
@@ -123,12 +124,44 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                 };
             });
             setEditableStats(stats);
+            setInitialEditableStats(JSON.parse(JSON.stringify(stats))); // Deep copy for comparison
             setHasInitialized(true);
             // Clear manual toggles and unknown players when data is reset
             setManualToggles(new Map());
             setUnknownPlayers([]);
         }
     }, [teams, hasInitialized]);
+
+    // Compare only the relevant data fields to detect actual changes
+    const hasDataChanges = useCallback(() => {
+        if (editableStats.length !== initialEditableStats.length) return true;
+
+        for (let t = 0; t < editableStats.length; t++) {
+            const current = editableStats[t];
+            const initial = initialEditableStats[t];
+
+            // Compare position
+            if (current.position !== initial.position) return true;
+
+            // Compare players
+            if (current.players.length !== initial.players.length) return true;
+
+            for (let p = 0; p < current.players.length; p++) {
+                const currentPlayer = current.players[p];
+                const initialPlayer = initial.players[p];
+
+                // Compare kills (normalize empty string vs 0)
+                const currentKills = currentPlayer.kills === "" || currentPlayer.kills === null ? "" : String(currentPlayer.kills);
+                const initialKills = initialPlayer.kills === "" || initialPlayer.kills === null ? "" : String(initialPlayer.kills);
+                if (currentKills !== initialKills) return true;
+
+                // Compare isAbsent
+                if (currentPlayer.isAbsent !== initialPlayer.isAbsent) return true;
+            }
+        }
+
+        return false;
+    }, [editableStats, initialEditableStats]);
 
     // Teams data is reset on dialog open/close via editableStats initialization
 
@@ -646,8 +679,9 @@ Players absent: X (list names)
 
                         <Button
                             onClick={handleSave}
-                            disabled={isPending}
+                            disabled={isPending || !hasDataChanges()}
                             className="flex-1 sm:flex-none h-10 sm:h-11 font-semibold shadow-md"
+                            title={!hasDataChanges() ? "No changes to save" : ""}
                         >
                             {isPending ? (
                                 <>

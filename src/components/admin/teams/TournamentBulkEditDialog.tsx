@@ -64,6 +64,7 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
     const [hasInitialized, setHasInitialized] = useState(false);
     const [unknownPlayers, setUnknownPlayers] = useState<Array<{ name: string; kills: number; matchIdx: number }>>([]);
     const [selectedMatchIds, setSelectedMatchIds] = useState<Set<string>>(new Set()); // For match selection
+    const [matchNumberMap, setMatchNumberMap] = useState<Map<string, number>>(new Map()); // Store matchId -> matchNumber
     const [showMatchSelector, setShowMatchSelector] = useState(true); // Start with match selector view
 
     // Fetch all matches for this tournament
@@ -81,12 +82,12 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
     // Fetch teams for selected matches (only after user clicks Proceed)
     const selectedMatchesArr = matches?.filter(m => selectedMatchIds.has(m.id)) || [];
     const { data: allTeamsData, isFetching: isTeamsFetching } = useQuery({
-        queryKey: ["teams-selected-matches", tournamentId, Array.from(selectedMatchIds).join(",")],
+        queryKey: ["teams-selected-matches", tournamentId, Array.from(selectedMatchIds).join(","), matchNumberMap.size],
         queryFn: async () => {
             if (selectedMatchesArr.length === 0) return [];
 
             // Fetch teams for each selected match
-            const teamsPromises = selectedMatchesArr.map(async (match, idx) => {
+            const teamsPromises = selectedMatchesArr.map(async (match) => {
                 const url = ADMIN_TOURNAMENT_ENDPOINTS.GET_TEAM_BY_TOURNAMENT_ID
                     .replace(":id", tournamentId)
                     .replace(":matchId", match.id)
@@ -107,7 +108,7 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
 
                 return {
                     matchId: match.id,
-                    matchNumber: idx + 1, // Use 1-based index for display
+                    matchNumber: matchNumberMap.get(match.id) || 1, // Get match number from map
                     teams,
                 };
             });
@@ -139,6 +140,11 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
     useEffect(() => {
         if (allTeamsData && allTeamsData.length > 0 && !hasInitialized) {
             const initialData: MatchData[] = allTeamsData.map((matchTeams) => {
+                // Check if ANY team has stats submitted (meaning scoreboard was saved for this match)
+                const matchHasStats = (matchTeams.teams || []).some((team: TeamT) =>
+                    team.teamPlayerStats && team.teamPlayerStats.length > 0
+                );
+
                 const editableTeams = (matchTeams.teams || []).map((team: TeamT, idx: number) => {
                     // Use the team name from API directly - it's already constructed from player display names
                     return {
@@ -151,13 +157,15 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
                             );
                             // Use fallback player name if not present
                             const playerName = player.name || `Player ${pIdx + 1}`;
+                            // Player is absent if: match has stats saved but this player doesn't have stats
+                            const wasAbsent = matchHasStats && !playerStats;
 
                             return {
                                 playerId: player.id,
                                 name: playerName,
                                 displayName: player.displayName ?? null,
                                 kills: playerStats?.kills === 0 ? "" : (playerStats?.kills ?? ""),
-                                isAbsent: false,
+                                isAbsent: wasAbsent,
                             };
                         }),
                     };
@@ -179,6 +187,44 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
             setHasInitialized(true);
         }
     }, [allTeamsData, hasInitialized]);
+
+    // Compare only the relevant data fields, ignoring display-only fields like topTeamsLabel
+    const hasDataChanges = useCallback(() => {
+        if (matchDataList.length !== initialMatchDataList.length) return true;
+
+        for (let m = 0; m < matchDataList.length; m++) {
+            const current = matchDataList[m];
+            const initial = initialMatchDataList[m];
+
+            if (current.teams.length !== initial.teams.length) return true;
+
+            for (let t = 0; t < current.teams.length; t++) {
+                const currentTeam = current.teams[t];
+                const initialTeam = initial.teams[t];
+
+                // Compare position
+                if (currentTeam.position !== initialTeam.position) return true;
+
+                // Compare players
+                if (currentTeam.players.length !== initialTeam.players.length) return true;
+
+                for (let p = 0; p < currentTeam.players.length; p++) {
+                    const currentPlayer = currentTeam.players[p];
+                    const initialPlayer = initialTeam.players[p];
+
+                    // Compare kills (normalize empty string vs 0)
+                    const currentKills = currentPlayer.kills === "" || currentPlayer.kills === null ? "" : String(currentPlayer.kills);
+                    const initialKills = initialPlayer.kills === "" || initialPlayer.kills === null ? "" : String(initialPlayer.kills);
+                    if (currentKills !== initialKills) return true;
+
+                    // Compare isAbsent
+                    if (currentPlayer.isAbsent !== initialPlayer.isAbsent) return true;
+                }
+            }
+        }
+
+        return false;
+    }, [matchDataList, initialMatchDataList]);
 
     // Handle position change
     const handlePositionChange = (matchIdx: number, teamIdx: number, value: string) => {
@@ -376,7 +422,12 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
 
         const prompt = `Extract player stats from ${numMatches} BGMI match scoreboards.
 
-IMPORTANT: The images are from ${numMatches} DIFFERENT MATCHES. Group images by their TOP 3 TEAMS (+ their kills) on the LEFT side of each image. Images with identical Position 1, 2, 3 teams AND kills = same match.
+SCOREBOARD LAYOUT:
+- Each image shows a split view: LEFT panel = TOP teams (Position 1, 2, etc.), RIGHT panel = LOWER teams (Position 7+)
+- The LEFT PANEL always shows Position 1 and 2 teams with their players and "finishes" (kills)
+- Images from the SAME MATCH will have IDENTICAL Position 1 and 2 teams on the LEFT side
+
+⚠️ CRITICAL: Group images by looking at the LEFT PANEL ONLY. If Position 1 team = "PlayerA_PlayerB_PlayerC" and Position 2 team = "PlayerD_PlayerE_PlayerF" with same finish counts, they are the SAME MATCH.
 
 Player names to match (USE THESE EXACT NAMES in output):
 ${Array.from(allPlayers.values()).join(", ")}
@@ -391,7 +442,7 @@ OUTPUT FORMAT:
   "matches": [
     {
       "identifier": "A",
-      "topTeams": "Position1Team (X total kills), Position2Team (Y kills), Position3Team (Z kills)",
+      "topTeams": "#1 Player1_Player2_Player3 (X kills), #2 Player4_Player5_Player6 (Y kills)",
       "players": [
         {"name": "player_from_my_list", "kills": 5, "position": 1},
         {"name": "absent_player", "kills": null, "position": null},
@@ -407,17 +458,18 @@ OUTPUT FORMAT:
 }
 
 RULES:
-- Group images by identical top-3 teams + their kills (same match will have same top-3 in every image)
+- FIRST: Look at LEFT panel of each image to identify Position 1 and 2 teams
+- Group all images with identical Position 1 + 2 teams (with same finish counts) as ONE match
 - Include ALL ${totalPlayers} registered players in EACH match group
 - For players NOT found in that match's scoreboard: set kills to null
 - Use EXACT names from MY list above
-- The "topTeams" field helps identify which match is which - include team names and total kills
-- Position = rank number shown next to each team (1, 2, 3, etc.)
+- "kills" = the "finishes" number shown next to each player name
+- Position = the rank number (1, 2, 3...) shown next to each team on the left
 
 After JSON, show:
-Match A: Position 1-3 teams, total players found
-Match B: Position 1-3 teams, total players found
-⚠️ Any uncertain matches or high kill counts`;
+Match A: Position 1 team (with player names), Position 2 team, total players found
+Match B: Position 1 team (with player names), Position 2 team, total players found
+⚠️ Any uncertain matches`;
 
         navigator.clipboard.writeText(prompt);
         toast.success("Prompt copied to clipboard!");
@@ -599,7 +651,7 @@ Match B: Position 1-3 teams, total players found
                                         <div key={matchData.matchId} className="border rounded-lg p-3 bg-background">
                                             <div className="flex items-center justify-between mb-3">
                                                 <h3 className="font-semibold text-base">
-                                                    Match {matchIdx + 1}
+                                                    Match {matchData.matchNumber}
                                                 </h3>
                                                 {matchData.topTeamsLabel && (
                                                     <span className="text-xs text-muted-foreground max-w-[60%] truncate">
@@ -622,7 +674,20 @@ Match B: Position 1-3 teams, total players found
                                                                     className="flex-1 min-w-0 overflow-x-auto scrollbar-hide"
                                                                     title={team.name}
                                                                 >
-                                                                    <span className="font-medium text-sm whitespace-nowrap">{team.name}</span>
+                                                                    <span className="font-medium text-sm whitespace-nowrap">
+                                                                        {team.players.map((player, pIdx) => (
+                                                                            <span key={player.playerId}>
+                                                                                {pIdx > 0 && "_"}
+                                                                                <span
+                                                                                    onClick={() => handleToggleAbsent(matchIdx, teamIdx, pIdx)}
+                                                                                    className={`cursor-pointer hover:underline ${player.isAbsent ? "text-red-600 dark:text-red-400" : ""}`}
+                                                                                    title={`Click to ${player.isAbsent ? "mark present" : "mark absent"}`}
+                                                                                >
+                                                                                    {player.displayName || player.name}
+                                                                                </span>
+                                                                            </span>
+                                                                        ))}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="flex items-center gap-1 flex-shrink-0">
                                                                     <span className="text-xs text-muted-foreground">#</span>
@@ -694,7 +759,19 @@ Match B: Position 1-3 teams, total players found
                                     Cancel
                                 </Button>
                                 <Button
-                                    onClick={() => setShowMatchSelector(false)}
+                                    onClick={() => {
+                                        // Build map of matchId -> matchNumber before proceeding
+                                        if (matches) {
+                                            const numberMap = new Map<string, number>();
+                                            matches.forEach((m, idx) => {
+                                                if (selectedMatchIds.has(m.id)) {
+                                                    numberMap.set(m.id, idx + 1); // 1-based match number
+                                                }
+                                            });
+                                            setMatchNumberMap(numberMap);
+                                        }
+                                        setShowMatchSelector(false);
+                                    }}
                                     disabled={selectedMatchIds.size === 0}
                                     className="font-semibold"
                                 >
@@ -708,9 +785,9 @@ Match B: Position 1-3 teams, total players found
                                 </Button>
                                 <Button
                                     onClick={handleSave}
-                                    disabled={isPending || JSON.stringify(matchDataList) === JSON.stringify(initialMatchDataList)}
+                                    disabled={isPending || !hasDataChanges()}
                                     className="font-semibold"
-                                    title={JSON.stringify(matchDataList) === JSON.stringify(initialMatchDataList) ? "No changes to save" : ""}
+                                    title={!hasDataChanges() ? "No changes to save" : ""}
                                 >
                                     {isPending ? (
                                         <>
