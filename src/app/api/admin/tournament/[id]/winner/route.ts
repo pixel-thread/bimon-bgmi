@@ -232,6 +232,9 @@ export async function POST(
       prizeDescription: string;
       taxResult: TaxResult;
       soloTaxResult: SoloTaxResult;
+      participationAdjustment: number; // +bonus or -penalty from participation
+      matchesPlayed: number;
+      totalMatches: number;
     }
 
     interface WinnerTeamData {
@@ -242,6 +245,27 @@ export async function POST(
     }
 
     const winnerTeamsData: WinnerTeamData[] = [];
+
+    // Get total matches in tournament for participation calculation
+    const totalMatches = await prisma.match.count({
+      where: { tournamentId: id },
+    });
+
+    // Get matches played per player using TeamPlayerStats
+    const playerMatchCounts = await prisma.teamPlayerStats.groupBy({
+      by: ['playerId'],
+      where: {
+        playerId: { in: allWinningPlayerIds },
+        teamStats: { tournamentId: id },
+      },
+      _count: { matchId: true },
+    });
+
+    // Build map of playerId -> matchesPlayed
+    const matchesPlayedMap = new Map<string, number>();
+    for (const record of playerMatchCounts) {
+      matchesPlayedMap.set(record.playerId, record._count.matchId);
+    }
 
     // Pre-calculate all prize amounts and collect data BEFORE the transaction
     for (let i = 0; i < placementsToUse.length; i++) {
@@ -255,6 +279,36 @@ export async function POST(
       if (placement.amount > 0 && team.players && team.players.length > 0) {
         const basePerPlayerAmount = Math.floor(placement.amount / team.players.length);
 
+        // Calculate participation-adjusted amounts for this team (50% softened penalty)
+        const SOFTENING_FACTOR = 0.5;
+
+        // Get participation rates for all players in team
+        interface ParticipationData {
+          playerId: string;
+          matchesPlayed: number;
+          rate: number;
+        }
+
+        const participationRates: ParticipationData[] = team.players.map(p => {
+          const matchesPlayed = matchesPlayedMap.get(p.id) || 0;
+          const rate = totalMatches > 0 ? matchesPlayed / totalMatches : 1;
+          return { playerId: p.id, matchesPlayed, rate };
+        });
+
+        // Calculate average participation rate for the team
+        const averageRate = participationRates.reduce((sum, r) => sum + r.rate, 0) / team.players.length;
+
+        // Calculate adjusted base amounts per player
+        const adjustedAmounts = new Map<string, { adjusted: number; adjustment: number }>();
+        for (const p of participationRates) {
+          const difference = p.rate - averageRate;
+          const adjustment = Math.floor(difference * basePerPlayerAmount * SOFTENING_FACTOR);
+          adjustedAmounts.set(p.playerId, {
+            adjusted: basePerPlayerAmount + adjustment,
+            adjustment: adjustment,
+          });
+        }
+
         for (const player of team.players) {
           // Get player with user info
           const playerData = await prisma.player.findUnique({
@@ -267,13 +321,19 @@ export async function POST(
             continue;
           }
 
+          // Get participation-adjusted amount
+          const participationData = adjustedAmounts.get(player.id) || { adjusted: basePerPlayerAmount, adjustment: 0 };
+          const adjustedBase = participationData.adjusted;
+          const participationAdjustment = participationData.adjustment;
+          const matchesPlayed = matchesPlayedMap.get(player.id) || 0;
+
           // Check if player voted SOLO
           const isSolo = await isPlayerSolo(player.id, id);
 
-          // Calculate repeat winner tax for this player
+          // Calculate repeat winner tax on the ADJUSTED amount
           const previousWins = playerWinCounts.get(player.id) || 0;
           const totalWinsIncludingCurrent = previousWins + 1;
-          const taxResult = calculateRepeatWinnerTax(player.id, basePerPlayerAmount, totalWinsIncludingCurrent);
+          const taxResult = calculateRepeatWinnerTax(player.id, adjustedBase, totalWinsIncludingCurrent);
 
           // Calculate solo tax on top of repeat winner tax
           const soloTaxResult = calculateSoloTax(player.id, taxResult.netAmount, isSolo);
@@ -289,6 +349,9 @@ export async function POST(
             prizeDescription,
             taxResult,
             soloTaxResult,
+            participationAdjustment,
+            matchesPlayed,
+            totalMatches,
           });
         }
       }

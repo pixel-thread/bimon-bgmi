@@ -121,6 +121,10 @@ export function DeclareWinnerDialog({
         repeatWinnerTaxRate: number;
         soloTaxRate: number;
         isSolo: boolean;
+        // Match participation data
+        matchesPlayed: number;
+        totalMatches: number;
+        participationRate: number;
     }>;
 
     const { data: taxPreviewData } = useQuery({
@@ -158,7 +162,71 @@ export function DeclareWinnerDialog({
         return Math.floor(baseAmount * (1 - tax.taxRate));
     };
 
-    // Calculate total tax from all winning players
+    /**
+     * Calculate participation-adjusted amounts for a team (50% softened penalty).
+     * Players who miss matches get reduced prizes, redistributed to committed players.
+     */
+    const getParticipationAdjustedAmounts = (
+        players: { id: string; name: string; displayName?: string | null }[],
+        basePerPlayer: number
+    ): Map<string, { base: number; adjusted: number; bonus: number; penalty: number; matchesPlayed: number; totalMatches: number; rate: number }> => {
+        const result = new Map<string, { base: number; adjusted: number; bonus: number; penalty: number; matchesPlayed: number; totalMatches: number; rate: number }>();
+
+        if (players.length === 0 || basePerPlayer === 0) return result;
+
+        // Get participation rates for all players
+        const rates: { id: string; rate: number; matchesPlayed: number; totalMatches: number }[] = [];
+        for (const p of players) {
+            const tax = taxPreview[p.id];
+            const matchesPlayed = tax?.matchesPlayed ?? 0;
+            const totalMatches = tax?.totalMatches ?? 1;
+            const rate = tax?.participationRate ?? 1;
+            rates.push({ id: p.id, rate, matchesPlayed, totalMatches });
+        }
+
+        // If tournament has no matches yet (totalMatches = 0), everyone gets full share
+        const firstPlayer = rates[0];
+        if (!firstPlayer || firstPlayer.totalMatches === 0) {
+            for (const p of players) {
+                result.set(p.id, {
+                    base: basePerPlayer,
+                    adjusted: basePerPlayer,
+                    bonus: 0,
+                    penalty: 0,
+                    matchesPlayed: 0,
+                    totalMatches: 0,
+                    rate: 1,
+                });
+            }
+            return result;
+        }
+
+        // Calculate average participation rate
+        const totalWeight = rates.reduce((sum, r) => sum + r.rate, 0);
+        const averageRate = totalWeight / players.length;
+
+        // Apply 50% softened adjustment
+        const SOFTENING_FACTOR = 0.5;
+
+        for (const r of rates) {
+            const difference = r.rate - averageRate;
+            const adjustment = Math.floor(difference * basePerPlayer * SOFTENING_FACTOR);
+
+            result.set(r.id, {
+                base: basePerPlayer,
+                adjusted: basePerPlayer + adjustment,
+                bonus: adjustment > 0 ? adjustment : 0,
+                penalty: adjustment < 0 ? -adjustment : 0,
+                matchesPlayed: r.matchesPlayed,
+                totalMatches: r.totalMatches,
+                rate: r.rate,
+            });
+        }
+
+        return result;
+    };
+
+    // Calculate total tax from all winning players (using participation-adjusted amounts)
     const taxTotals = useMemo(() => {
         let totalRepeatTax = 0;
         let totalSoloTax = 0;
@@ -166,14 +234,25 @@ export function DeclareWinnerDialog({
             const playerCount = team.players?.length || 0;
             if (playerCount === 0) return;
             const perPlayer = getPerPlayerAmount(idx + 1, playerCount);
+
+            // Get participation-adjusted amounts for this team
+            const participationAmounts = getParticipationAdjustedAmounts(
+                team.players || [],
+                perPlayer
+            );
+
             team.players?.forEach(p => {
                 const tax = taxPreview[p.id];
                 if (tax) {
+                    // Use participation-adjusted amount as base for tax calculation
+                    const pa = participationAmounts.get(p.id);
+                    const adjustedAmount = pa?.adjusted ?? perPlayer;
+
                     if (tax.repeatWinnerTaxRate > 0) {
-                        totalRepeatTax += Math.floor(perPlayer * tax.repeatWinnerTaxRate);
+                        totalRepeatTax += Math.floor(adjustedAmount * tax.repeatWinnerTaxRate);
                     }
                     if (tax.soloTaxRate > 0) {
-                        totalSoloTax += Math.floor(perPlayer * tax.soloTaxRate);
+                        totalSoloTax += Math.floor(adjustedAmount * tax.soloTaxRate);
                     }
                 }
             });
@@ -374,12 +453,26 @@ export function DeclareWinnerDialog({
                                     const teamPrize = getPrizeForPositionAmount(idx + 1);
                                     const perPlayer = getPerPlayerAmount(idx + 1, playerCount);
 
+                                    // Get participation-adjusted amounts for all players
+                                    const participationAmounts = getParticipationAdjustedAmounts(
+                                        team.players || [],
+                                        perPlayer
+                                    );
+
+                                    // Check if any adjustments (bonus/penalty) 
+                                    const hasAnyAdjustment = Array.from(participationAmounts.values()).some(
+                                        pa => pa.bonus > 0 || pa.penalty > 0
+                                    );
+
                                     // Check if any player on this team has tax
                                     const playersWithTax = team.players?.filter(p => {
                                         const tax = taxPreview[p.id];
                                         return tax && tax.taxRate > 0;
                                     }) || [];
                                     const hasTax = playersWithTax.length > 0;
+
+                                    // Check if we should show player details (has adjustment or tax)
+                                    const showPlayerDetails = hasAnyAdjustment || hasTax;
 
                                     return (
                                         <Card key={team.teamId} className={`${idx === 0 ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20" : idx === 1 ? "border-gray-400 bg-gray-50 dark:bg-gray-800/50" : idx === 2 ? "border-orange-400 bg-orange-50 dark:bg-orange-900/20" : ""}`}>
@@ -400,38 +493,85 @@ export function DeclareWinnerDialog({
                                                                 ₹{teamPrize.toLocaleString()}
                                                             </Badge>
                                                             <p className="text-[10px] text-muted-foreground mt-0.5">
-                                                                ₹{perPlayer}/player
+                                                                ₹{perPlayer}/player (base)
                                                             </p>
                                                         </div>
                                                     )}
                                                 </div>
-                                                {/* Tax info for players (repeat winner + solo) */}
-                                                {hasTax && (
-                                                    <div className="mt-2 pt-2 border-t border-dashed space-y-1">
+
+                                                {/* Player details: participation + tax adjustments */}
+                                                {showPlayerDetails && teamPrize > 0 && (
+                                                    <div className="mt-2 pt-2 border-t border-dashed space-y-1.5">
                                                         {team.players?.map(p => {
                                                             const tax = taxPreview[p.id];
-                                                            if (!tax || tax.taxRate === 0) return null;
-                                                            const taxedAmount = getTaxedAmount(p.id, perPlayer);
+                                                            const pa = participationAmounts.get(p.id);
+                                                            if (!pa) return null;
+
+                                                            // Calculate final amount: adjusted for participation, then taxed
+                                                            const afterParticipation = pa.adjusted;
+                                                            const finalAmount = getTaxedAmount(p.id, afterParticipation);
+                                                            const taxDeduction = afterParticipation - finalAmount;
+
                                                             return (
-                                                                <div key={p.id} className="flex items-center justify-between text-xs">
-                                                                    <span className="flex items-center gap-1">
-                                                                        {tax.isSolo && (
+                                                                <div key={p.id} className="text-xs space-y-0.5">
+                                                                    {/* Player name + badges row */}
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="font-medium text-foreground">
+                                                                            {p.displayName || p.name}
+                                                                        </span>
+                                                                        {/* Participation badge */}
+                                                                        {pa.totalMatches > 0 && (
+                                                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${pa.rate >= 1
+                                                                                ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                                                                                : pa.rate >= 0.5
+                                                                                    ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                                                                                    : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'
+                                                                                }`}>
+                                                                                {pa.matchesPlayed}/{pa.totalMatches} matches
+                                                                            </span>
+                                                                        )}
+                                                                        {tax?.isSolo && (
                                                                             <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded text-[10px] font-medium">
                                                                                 SOLO
                                                                             </span>
                                                                         )}
-                                                                        {tax.repeatWinnerTaxRate > 0 && (
-                                                                            <span className="text-amber-600 dark:text-amber-400">
+                                                                        {tax?.repeatWinnerTaxRate && tax.repeatWinnerTaxRate > 0 && (
+                                                                            <span className="text-amber-600 dark:text-amber-400 text-[10px]">
                                                                                 🔄 {tax.totalWins} wins
                                                                             </span>
                                                                         )}
-                                                                        <span className="text-muted-foreground">
-                                                                            {p.displayName || p.name}
+                                                                    </div>
+
+                                                                    {/* Amount calculation row */}
+                                                                    <div className="flex items-center justify-between text-muted-foreground">
+                                                                        <div className="flex items-center gap-1">
+                                                                            <span>₹{perPlayer}</span>
+                                                                            {/* Participation adjustment */}
+                                                                            {pa.bonus > 0 && (
+                                                                                <span className="text-green-600 dark:text-green-400">
+                                                                                    +{pa.bonus}
+                                                                                </span>
+                                                                            )}
+                                                                            {pa.penalty > 0 && (
+                                                                                <span className="text-orange-600 dark:text-orange-400">
+                                                                                    -{pa.penalty}
+                                                                                </span>
+                                                                            )}
+                                                                            {/* Tax deduction */}
+                                                                            {taxDeduction > 0 && (
+                                                                                <span className="text-amber-600 dark:text-amber-400">
+                                                                                    -{taxDeduction} tax
+                                                                                </span>
+                                                                            )}
+                                                                            <span className="mx-1">→</span>
+                                                                        </div>
+                                                                        <span className={`font-semibold ${pa.bonus > 0 ? 'text-green-600 dark:text-green-400' :
+                                                                            pa.penalty > 0 ? 'text-orange-600 dark:text-orange-400' :
+                                                                                'text-foreground'
+                                                                            }`}>
+                                                                            ₹{finalAmount}
                                                                         </span>
-                                                                    </span>
-                                                                    <span className="text-amber-600 dark:text-amber-400 font-medium">
-                                                                        ₹{perPlayer} → ₹{taxedAmount} <span className="text-[10px]">(-{tax.taxPercentage})</span>
-                                                                    </span>
+                                                                    </div>
                                                                 </div>
                                                             );
                                                         })}

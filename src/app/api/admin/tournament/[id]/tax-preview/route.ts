@@ -10,7 +10,7 @@ import { NextRequest } from "next/server";
 
 /**
  * Get tax preview for tournament winners before declaring.
- * Returns player win counts and calculated tax rates.
+ * Returns player win counts, calculated tax rates, and match participation data.
  */
 export async function GET(
     req: NextRequest,
@@ -42,6 +42,28 @@ export async function GET(
             tournament.seasonId || "",
             6
         );
+
+        // Get total matches in tournament
+        const totalMatches = await prisma.match.count({
+            where: { tournamentId },
+        });
+
+        // Get matches played per player using TeamPlayerStats
+        // (TeamPlayerStats has one entry per player per match they participated in)
+        const playerMatchCounts = await prisma.teamPlayerStats.groupBy({
+            by: ['playerId'],
+            where: {
+                playerId: { in: playerIds },
+                teamStats: { tournamentId },
+            },
+            _count: { matchId: true },
+        });
+
+        // Build map of playerId -> matchesPlayed
+        const matchesPlayedMap = new Map<string, number>();
+        for (const record of playerMatchCounts) {
+            matchesPlayedMap.set(record.playerId, record._count.matchId);
+        }
 
         // Get teams to check actual solo status (team with only 1 player)
         const teams = await prisma.team.findMany({
@@ -77,6 +99,10 @@ export async function GET(
             repeatWinnerTaxRate: number;
             soloTaxRate: number;
             isSolo: boolean;
+            // Match participation data
+            matchesPlayed: number;
+            totalMatches: number;
+            participationRate: number;
         }> = {};
 
         for (const playerId of playerIds) {
@@ -89,6 +115,10 @@ export async function GET(
             // Combined tax rate (both taxes stack)
             const combinedTaxRate = repeatTaxRate + playerSoloTax;
 
+            // Match participation
+            const matchesPlayed = matchesPlayedMap.get(playerId) || 0;
+            const participationRate = totalMatches > 0 ? matchesPlayed / totalMatches : 1;
+
             taxPreview[playerId] = {
                 previousWins,
                 totalWins,
@@ -97,6 +127,9 @@ export async function GET(
                 repeatWinnerTaxRate: repeatTaxRate,
                 soloTaxRate: playerSoloTax,
                 isSolo,
+                matchesPlayed,
+                totalMatches,
+                participationRate,
             };
         }
 
@@ -108,3 +141,4 @@ export async function GET(
         return handleApiErrors(error);
     }
 }
+

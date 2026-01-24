@@ -145,6 +145,31 @@ export const getPollTheme = (participantCount: number): PollTheme | null => {
     return null; // No theme (0 participants)
 };
 
+/**
+ * Special theme for Lucky Voters - a celebratory golden/emerald theme
+ * This is a FIXED theme that doesn't change based on participant count
+ */
+export const getLuckyWinnerTheme = (): PollTheme => {
+    return {
+        card: 'bg-gradient-to-b from-emerald-50 via-amber-50 to-white dark:from-emerald-950/40 dark:via-amber-950/30 dark:to-gray-800 border-2 border-emerald-400 dark:border-emerald-500 shadow-xl shadow-emerald-300/60 dark:shadow-emerald-900/40 ring-2 ring-amber-300/50 dark:ring-amber-500/30',
+        header: 'from-emerald-500 via-green-400 to-amber-500',
+        wave1: 'rgba(16,185,129,0.4)',
+        wave2: 'rgba(251,191,36,0.25)',
+        sparkle: 'bg-amber-300',
+        badge: 'bg-emerald-600/90 text-white backdrop-blur-sm font-bold',
+        options: 'bg-gradient-to-b from-emerald-100/60 via-amber-50/40 to-emerald-50/30 dark:from-emerald-900/30 dark:via-amber-900/20 dark:to-emerald-950/10',
+        footer: 'bg-gradient-to-b from-emerald-50/40 via-amber-50/30 to-emerald-100/50 dark:from-emerald-950/20 dark:via-amber-950/10 dark:to-emerald-900/20',
+        button: 'text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-emerald-200 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 font-semibold',
+        optionSelected: { border: 'border-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-700 dark:text-emerald-300', radio: 'border-emerald-500 bg-emerald-500' },
+        optionUnselected: { border: 'border-emerald-200 dark:border-emerald-700 hover:border-emerald-400 dark:hover:border-emerald-500', radio: 'border-emerald-300 dark:border-emerald-600 group-hover:border-emerald-400' },
+        dialogHeader: 'bg-gradient-to-r from-emerald-500 via-green-400 to-amber-500',
+        dialogIcon: 'bg-emerald-500',
+        dialogBorder: 'border-emerald-300 dark:border-emerald-700',
+        progressBar: 'bg-emerald-500',
+        voterCard: 'bg-emerald-50 dark:bg-emerald-900/20',
+    };
+};
+
 // Calculate participant count from votes (IN + SOLO, excluding OUT)
 export const calculateParticipantCount = (playersVotes: { vote: string }[] | undefined): number => {
     if (!playersVotes) return 0;

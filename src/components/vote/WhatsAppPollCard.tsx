@@ -13,7 +13,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
 import { SlotMachineCounter } from "@/src/components/ui/AnimatedCounter";
-import { getPollTheme, PollTheme } from "./pollTheme";
+import { getPollTheme, getLuckyWinnerTheme, PollTheme } from "./pollTheme";
 import { motion, AnimatePresence } from "motion/react";
 import { getPrizeDistribution, getTeamSize } from "@/src/utils/prizeDistribution";
 import { PollCardSkeleton } from "./PollCardSkeleton";
@@ -367,7 +367,11 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     const teamSize = effectiveTeamInfo.size;
 
     // Use shared theme utility
-    const theme = hasPrizePool ? getPollTheme(participantCount) : null;
+    // Lucky voters get a special fixed theme that doesn't change with participant count
+    const isLuckyVoter = poll.luckyVoterId === playerId && !!playerId;
+    const theme = isLuckyVoter
+      ? getLuckyWinnerTheme()
+      : (hasPrizePool ? getPollTheme(participantCount) : null);
 
     // Show skeleton when refetching
     if (isRefetching) {
