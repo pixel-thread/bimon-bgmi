@@ -110,6 +110,7 @@ export async function POST(req: Request) {
         options: { createMany: { data: body.options } },
         endDate: body.endDate,
         days: body.days,
+        teamType: body.teamType,
       },
     });
 
