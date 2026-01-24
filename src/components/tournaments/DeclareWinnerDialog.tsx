@@ -205,13 +205,15 @@ export function DeclareWinnerDialog({
         onSuccess: (data) => {
             if (data.success) {
                 toast.success("Winners declared and UC distributed successfully!");
+                // Close dialog FIRST to prevent tax-preview refetch from showing stale +1 win counts
+                handleClose();
+                // Then invalidate queries (dialog already closed, so no visual flash)
                 queryClient.invalidateQueries({
                     queryKey: ["tournament", tournamentId],
                 });
                 queryClient.invalidateQueries({ queryKey: ["tournament-winners"] });
                 queryClient.invalidateQueries({ queryKey: ["tournament-rankings"] });
                 queryClient.invalidateQueries({ queryKey: ["solo-tax-pool"] }); // Refresh bonus pool display
-                handleClose();
             } else {
                 toast.error(data.message || "Failed to declare winners");
             }
