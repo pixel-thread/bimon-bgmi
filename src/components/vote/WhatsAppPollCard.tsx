@@ -369,6 +369,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     // Use shared theme utility
     // Lucky voters get a special fixed theme that doesn't change with participant count
     const isLuckyVoter = poll.luckyVoterId === playerId && !!playerId;
+
     const theme = isLuckyVoter
       ? getLuckyWinnerTheme()
       : (hasPrizePool ? getPollTheme(participantCount) : null);
@@ -391,34 +392,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
           </div>
         )}
 
-        {/* Lucky Voter Celebration Banner */}
-        {poll.luckyVoterId === playerId && playerId && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: -20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            className="flex justify-center mb-2 relative z-20"
-          >
-            <div className="relative overflow-hidden px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500 text-white font-bold shadow-xl border-2 border-emerald-400">
-              {/* Sparkle effects */}
-              <div className="absolute top-1 left-4 w-2 h-2 bg-white rounded-full animate-ping opacity-75" />
-              <div className="absolute bottom-2 right-6 w-1.5 h-1.5 bg-white rounded-full animate-ping opacity-60" style={{ animationDelay: '0.3s' }} />
-              <div className="absolute top-3 right-12 w-1 h-1 bg-white rounded-full animate-ping opacity-50" style={{ animationDelay: '0.6s' }} />
 
-              <div className="flex items-center gap-3">
-                <span className="text-3xl animate-bounce">🎁</span>
-                <div className="text-center">
-                  <p className="text-xs uppercase tracking-wider opacity-90">Lucky Winner!</p>
-                  <p className="text-lg font-black">FREE ENTRY 🎉</p>
-                  {entryFee > 0 && (
-                    <p className="text-sm font-semibold opacity-90">You saved {entryFee} UC!</p>
-                  )}
-                </div>
-                <span className="text-3xl animate-bounce" style={{ animationDelay: '0.2s' }}>🍀</span>
-              </div>
-            </div>
-          </motion.div>
-        )}
         <div className={`relative rounded-xl overflow-hidden transition-all duration-700 ease-in-out ${theme
           ? theme.card
           : 'bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700'
@@ -514,8 +488,7 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                   {/* Prize Pool Display */}
                   {theme && (
                     <>
-
-                      <div className="mt-4 flex items-center justify-center gap-3">
+                      <div className="mt-3 flex items-center justify-center gap-3">
                         <span className="text-3xl">🏆</span>
                         <div className="text-center">
                           <p className="text-xs font-medium text-white/80 uppercase tracking-widest">Prize Pool</p>
@@ -639,7 +612,11 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                   </span>
                 </span>
                 <span className="text-xs">
-                  {entryFee > 0 ? `Entry: ₹${entryFee}` : 'Free Entry'}
+                  {isLuckyVoter && entryFee > 0 ? (
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                      🎉 Congratulations! FREE ENTRY: <span className="line-through opacity-60">{entryFee}</span> 0 UC
+                    </span>
+                  ) : entryFee > 0 ? `Entry: ${entryFee} UC` : 'Free Entry'}
                 </span>
               </div>
 
