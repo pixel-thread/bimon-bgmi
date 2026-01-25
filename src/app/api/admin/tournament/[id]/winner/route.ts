@@ -452,12 +452,21 @@ export async function POST(
     });
 
     // Reset merit for solo-restricted players who completed this tournament
-    // Find all players who participated in this tournament and are solo-restricted
-    const tournamentPlayers = await prisma.matchPlayerPlayed.findMany({
+    // Find all players who are on teams in this tournament (not just those who played matches)
+    // This ensures players who were absent from some matches still get their streak recorded
+    const tournamentTeamsForParticipants = await prisma.team.findMany({
       where: { tournamentId: id },
-      select: { playerId: true },
-      distinct: ["playerId"],
+      include: {
+        players: {
+          select: { id: true },
+        },
+      },
     });
+
+    // Flatten to get all unique player IDs from all teams
+    const tournamentPlayers = tournamentTeamsForParticipants.flatMap(team =>
+      team.players.map(p => ({ playerId: p.id }))
+    );
 
     for (const { playerId } of tournamentPlayers) {
       const player = await prisma.player.findUnique({
