@@ -14,7 +14,6 @@ import http from "@/src/utils/http";
 import { toast } from "sonner";
 import { Loader2, User, Mail, Shield, AlertCircle, CheckCircle, Edit2, ChevronRight, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { ProfileImageSelector } from "@/src/components/profile/ProfileImageSelector";
 import { GameNameInput, validateDisplayName } from "@/src/components/common/GameNameInput";
 
 export function ProfileSettings() {
@@ -216,8 +215,6 @@ export function ProfileSettings() {
     return (
         <>
             <div className="space-y-6">
-                {/* Profile Image Selector */}
-                <ProfileImageSelector />
 
                 {/* Profile Information Card */}
                 <Card>

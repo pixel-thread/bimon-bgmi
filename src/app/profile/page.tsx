@@ -8,6 +8,7 @@ import { Badge } from "@/src/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { ProfileSettings } from "@/src/components/profile/ProfileSettings";
+import { ProfileImageSheet } from "@/src/components/profile/ProfileImageSheet";
 import { AddBalanceDialog } from "@/src/components/profile/AddBalanceDialog";
 import { JobListingManager } from "@/src/components/profile/JobListingManager";
 import { PromoterTab } from "@/src/components/profile/PromoterTab";
@@ -89,7 +90,6 @@ export default function ProfilePage() {
     const queryClient = useQueryClient();
     const playerId = user?.playerId;
     const userBalance = user?.player?.uc?.balance || 0;
-    const profileImageUrl = clerkUser?.imageUrl;
 
     // Loading state
     const isPageLoading = isAuthLoading || !isClerkLoaded;
@@ -158,16 +158,7 @@ export default function ProfilePage() {
         enabled: !!playerId && showUCHistory, // Only fetch when section is expanded
     });
 
-    // Fetch profile image settings
-    const { data: imageSettingsData, isLoading: isImageSettingsLoading } = useQuery({
-        queryKey: ["profile-image-settings"],
-        queryFn: () => http.get<{
-            imageType: "google" | "none" | "custom" | "uploaded";
-            customImage: { publicUrl: string } | null;
-            uploadedImageUrl: string | null;
-        }>("/profile/image"),
-        enabled: !!playerId,
-    });
+
 
     // Fetch merit data
     const { data: meritData } = useQuery({
@@ -181,7 +172,6 @@ export default function ProfilePage() {
     const unreadCount = notificationsData?.data?.unreadCount || 0;
 
     const notifications = notificationsData?.data?.notifications || [];
-    const imageSettings = imageSettingsData?.data;
     const balanceHistory = balanceHistoryData?.data?.transactions || [];
     const totalBalanceHistoryCount = balanceHistoryData?.data?.pagination?.total || 0;
     const ucHistoryTotalPages = balanceHistoryData?.data?.pagination?.pages || 1;
@@ -431,50 +421,12 @@ export default function ProfilePage() {
 
             {/* Header with User Info */}
             <div className="flex items-center gap-4">
-                {/* Profile Image - respects user's image selection */}
+                {/* Profile Image - Click to change */}
                 <div className="relative">
-                    {isImageSettingsLoading ? (
-                        <Skeleton className="h-16 w-16 !rounded-full" />
-                    ) : imageSettings?.imageType === "none" ? (
-                        <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-2xl font-bold text-primary-foreground">
-                            {user.userName?.charAt(0).toUpperCase()}
-                        </div>
-                    ) : imageSettings?.imageType === "uploaded" && imageSettings.uploadedImageUrl ? (
-                        <Image
-                            src={imageSettings.uploadedImageUrl}
-                            alt={user.userName || "Profile"}
-                            width={64}
-                            height={64}
-                            className="h-16 w-16 rounded-full object-cover"
-                            loading="lazy"
-                            unoptimized
-                        />
-                    ) : imageSettings?.imageType === "custom" && imageSettings.customImage ? (
-                        <Image
-                            src={imageSettings.customImage.publicUrl}
-                            alt={user.userName || "Profile"}
-                            width={64}
-                            height={64}
-                            className="h-16 w-16 rounded-full object-cover"
-                            loading="lazy"
-                        />
-                    ) : profileImageUrl ? (
-                        <Image
-                            src={profileImageUrl}
-                            alt={user.userName || "Profile"}
-                            width={64}
-                            height={64}
-                            className="h-16 w-16 rounded-full object-cover"
-                            loading="lazy"
-                        />
-                    ) : (
-                        <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-2xl font-bold text-primary-foreground">
-                            {user.userName?.charAt(0).toUpperCase()}
-                        </div>
-                    )}
+                    <ProfileImageSheet userName={user.userName} />
                     {/* Banned Stamp Overlay */}
                     {banStatus.isBanned && (
-                        <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="absolute inset-0 bg-black/40 rounded-full" />
                             <div className="relative rotate-[-20deg] bg-red-600 text-white text-xs font-bold px-3 py-1 rounded border-2 border-red-800 shadow-lg uppercase tracking-wider">
                                 Banned
