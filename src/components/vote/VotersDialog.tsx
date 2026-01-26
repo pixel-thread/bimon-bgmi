@@ -104,12 +104,13 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
       // If solo mode, no one is waiting
       if (teamSize === 1) return new Set<string>();
 
-      // Get all IN/SOLO voters sorted by vote time (oldest first)
-      const inSoloVoters = pollVoters
-        .filter(v => v.vote === "IN" || v.vote === "SOLO")
+      // Get only IN voters sorted by vote time (oldest first)
+      // SOLO voters are NOT counted - they get their own solo teams
+      const inVoters = pollVoters
+        .filter(v => v.vote === "IN")
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-      const totalVoters = inSoloVoters.length;
+      const totalVoters = inVoters.length;
       const leftoverCount = totalVoters % teamSize;
 
       // No leftovers = no one waiting
@@ -118,7 +119,7 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
       // The last N voters are waiting (most recent voters)
       const waitingIds = new Set<string>();
       for (let i = totalVoters - leftoverCount; i < totalVoters; i++) {
-        waitingIds.add(inSoloVoters[i].playerId);
+        waitingIds.add(inVoters[i].playerId);
       }
 
       return waitingIds;
