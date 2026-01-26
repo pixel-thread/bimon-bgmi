@@ -17,22 +17,47 @@ export function useDialogBackHandler(
     dialogId: string
 ) {
     const isClosingRef = useRef(false);
+    const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Store setIsOpen in a ref to avoid stale closures
+    const setIsOpenRef = useRef(setIsOpen);
+    setIsOpenRef.current = setIsOpen;
 
     useEffect(() => {
+        // Always reset closing ref when isOpen changes to false
         if (!isOpen) {
             isClosingRef.current = false;
+            // Clear any pending timeout
+            if (closeTimeoutRef.current) {
+                clearTimeout(closeTimeoutRef.current);
+                closeTimeoutRef.current = null;
+            }
             return;
         }
 
         const handlePopState = (event: PopStateEvent) => {
+            // Clear any pending timeout since popstate fired
+            if (closeTimeoutRef.current) {
+                clearTimeout(closeTimeoutRef.current);
+                closeTimeoutRef.current = null;
+            }
+
             // Prevent closing twice
-            if (isClosingRef.current) return;
+            if (isClosingRef.current) {
+                // Reset the flag and call setIsOpen to ensure dialog closes
+                isClosingRef.current = false;
+                setIsOpenRef.current(false);
+                return;
+            }
 
             // If we're in the dialog state, close the dialog
             if (isOpen) {
                 event.preventDefault();
                 isClosingRef.current = true;
-                setIsOpen(false);
+                setIsOpenRef.current(false);
+                // Reset closing ref after a short delay to handle edge cases
+                setTimeout(() => {
+                    isClosingRef.current = false;
+                }, 100);
             }
         };
 
@@ -42,8 +67,13 @@ export function useDialogBackHandler(
 
         return () => {
             window.removeEventListener('popstate', handlePopState);
+            // Clear timeout on cleanup
+            if (closeTimeoutRef.current) {
+                clearTimeout(closeTimeoutRef.current);
+                closeTimeoutRef.current = null;
+            }
         };
-    }, [isOpen, setIsOpen, dialogId]);
+    }, [isOpen, dialogId]);
 
     // Wrapper for onOpenChange that handles history cleanup
     const handleOpenChange = useCallback((open: boolean) => {
@@ -53,12 +83,22 @@ export function useDialogBackHandler(
             if (window.history.state?.dialogOpen === dialogId) {
                 isClosingRef.current = true;
                 window.history.back();
+
+                // Set a timeout fallback - if popstate doesn't fire within 200ms, force close
+                // This handles edge cases where popstate event might not fire (e.g., during re-renders)
+                closeTimeoutRef.current = setTimeout(() => {
+                    if (isClosingRef.current) {
+                        isClosingRef.current = false;
+                        setIsOpenRef.current(false);
+                    }
+                }, 200);
+
                 return; // The popstate handler will set isOpen to false
             }
         }
 
-        setIsOpen(open);
-    }, [isOpen, setIsOpen, dialogId]);
+        setIsOpenRef.current(open);
+    }, [isOpen, dialogId]);
 
     return handleOpenChange;
 }

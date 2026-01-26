@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { FiUsers } from "react-icons/fi";
 import { User, Crown, ArrowLeft, Clock, ChevronRight, Users } from "lucide-react";
 import {
@@ -124,13 +124,16 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
       return waitingIds;
     }, [pollVoters, poll?.teamType]);
 
-    // Use the back button handler hook
-    const handleOpenChange = useDialogBackHandler(isOpen, (open) => {
+    // Stable callback for dialog close handling
+    const handleDialogClose = useCallback((open: boolean) => {
       if (!open) {
         setSelectedGroup(null);
         onClose();
       }
-    }, "votersDialog");
+    }, [onClose]);
+
+    // Use the back button handler hook
+    const handleOpenChange = useDialogBackHandler(isOpen, handleDialogClose, "votersDialog");
 
     return (
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
