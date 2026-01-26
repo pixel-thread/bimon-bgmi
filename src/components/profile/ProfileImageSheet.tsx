@@ -48,6 +48,7 @@ export function ProfileImageSheet({ userName, className }: ProfileImageSheetProp
     const [isCompressing, setIsCompressing] = useState(false);
     const [showGallery, setShowGallery] = useState(false);
     const [pendingImageId, setPendingImageId] = useState<string | null>(null);
+    const [pendingAction, setPendingAction] = useState<"upload" | "remove" | "gallery" | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Use the back button handler hook
@@ -81,11 +82,16 @@ export function ProfileImageSheet({ userName, className }: ProfileImageSheetProp
                 setIsOpen(false);
                 setShowGallery(false);
                 setPendingImageId(null);
+                setPendingAction(null);
             } else {
                 toast.error(response.message || "Failed to update image");
+                setPendingAction(null);
             }
         },
-        onError: () => toast.error("Failed to update profile image"),
+        onError: () => {
+            toast.error("Failed to update profile image");
+            setPendingAction(null);
+        },
     });
 
     const handleOpenChange = useCallback((open: boolean) => {
@@ -149,6 +155,7 @@ export function ProfileImageSheet({ userName, className }: ProfileImageSheetProp
 
     // Handle remove (revert to Google image)
     const handleRemove = () => {
+        setPendingAction("remove");
         updateImage({ imageType: "google" });
     };
 
@@ -160,6 +167,7 @@ export function ProfileImageSheet({ userName, className }: ProfileImageSheetProp
     // Confirm gallery selection
     const handleConfirmGallerySelection = () => {
         if (pendingImageId) {
+            setPendingAction("gallery");
             updateImage({
                 imageType: "custom",
                 customImageId: pendingImageId,
@@ -409,7 +417,7 @@ export function ProfileImageSheet({ userName, className }: ProfileImageSheetProp
                                         className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors disabled:opacity-50"
                                     >
                                         <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
-                                            {isPending ? (
+                                            {pendingAction === "remove" ? (
                                                 <Loader2 className="w-5 h-5 text-red-500 animate-spin" />
                                             ) : (
                                                 <Trash2 className="w-5 h-5 text-red-500" />

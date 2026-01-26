@@ -77,119 +77,114 @@ export async function POST(req: NextRequest) {
             orderBy: { createdAt: "asc" },
         });
 
-        // Perform the swap in a transaction (increased timeout for many matches)
-        await prisma.$transaction(async (tx) => {
-            // 1. Update team player connections
-            // Remove playerA from teamA
-            await tx.team.update({
-                where: { id: teamAId },
-                data: {
-                    players: { disconnect: { id: playerAId } },
-                },
-            });
+        const matchIds = matchesToUpdate.map((m) => m.id);
 
-            // Remove playerB from teamB
-            await tx.team.update({
-                where: { id: teamBId },
-                data: {
-                    players: { disconnect: { id: playerBId } },
-                },
-            });
-
-            // Add playerA to teamB
-            await tx.team.update({
-                where: { id: teamBId },
-                data: {
-                    players: { connect: { id: playerAId } },
-                },
-            });
-
-            // Add playerB to teamA
-            await tx.team.update({
-                where: { id: teamAId },
-                data: {
-                    players: { connect: { id: playerBId } },
-                },
-            });
-
-            // 2. Update TeamPlayerStats for all affected matches
-            for (const match of matchesToUpdate) {
-                // Update playerA's stats to point to teamB
-                await tx.teamPlayerStats.updateMany({
-                    where: {
-                        playerId: playerAId,
-                        teamId: teamAId,
-                        matchId: match.id,
-                    },
-                    data: {
-                        teamId: teamBId,
-                    },
-                });
-
-                // Update playerB's stats to point to teamA
-                await tx.teamPlayerStats.updateMany({
-                    where: {
-                        playerId: playerBId,
-                        teamId: teamBId,
-                        matchId: match.id,
-                    },
-                    data: {
-                        teamId: teamAId,
-                    },
-                });
-
-                // 3. Update MatchPlayerPlayed records
-                await tx.matchPlayerPlayed.updateMany({
-                    where: {
-                        playerId: playerAId,
-                        teamId: teamAId,
-                        matchId: match.id,
-                    },
-                    data: {
-                        teamId: teamBId,
-                    },
-                });
-
-                await tx.matchPlayerPlayed.updateMany({
-                    where: {
-                        playerId: playerBId,
-                        teamId: teamBId,
-                        matchId: match.id,
-                    },
-                    data: {
-                        teamId: teamAId,
-                    },
-                });
-            }
-
-            // 4. Update team names to reflect new player composition
-            const [updatedTeamA, updatedTeamB] = await Promise.all([
-                tx.team.findUnique({
-                    where: { id: teamAId },
-                    include: { players: { include: { user: true } } },
-                }),
-                tx.team.findUnique({
-                    where: { id: teamBId },
-                    include: { players: { include: { user: true } } },
-                }),
-            ]);
-
-            if (updatedTeamA) {
-                const newNameA = updatedTeamA.players.map((p) => p.user.userName).join("_");
-                await tx.team.update({
-                    where: { id: teamAId },
-                    data: { name: newNameA },
-                });
-            }
-
-            if (updatedTeamB) {
-                const newNameB = updatedTeamB.players.map((p) => p.user.userName).join("_");
-                await tx.team.update({
-                    where: { id: teamBId },
-                    data: { name: newNameB },
-                });
-            }
+        // Step 1: Update team player connections (sequential, not in transaction - PgBouncer compatible)
+        // Remove players from their original teams
+        await prisma.team.update({
+            where: { id: teamAId },
+            data: {
+                players: { disconnect: { id: playerAId } },
+            },
         });
+
+        await prisma.team.update({
+            where: { id: teamBId },
+            data: {
+                players: { disconnect: { id: playerBId } },
+            },
+        });
+
+        // Add players to their new teams
+        await prisma.team.update({
+            where: { id: teamBId },
+            data: {
+                players: { connect: { id: playerAId } },
+            },
+        });
+
+        await prisma.team.update({
+            where: { id: teamAId },
+            data: {
+                players: { connect: { id: playerBId } },
+            },
+        });
+
+        // Step 2: Bulk update TeamPlayerStats and MatchPlayerPlayed (PgBouncer compatible batch)
+        await prisma.$transaction([
+            // Update playerA's stats to point to teamB
+            prisma.teamPlayerStats.updateMany({
+                where: {
+                    playerId: playerAId,
+                    teamId: teamAId,
+                    matchId: { in: matchIds },
+                },
+                data: {
+                    teamId: teamBId,
+                },
+            }),
+            // Update playerB's stats to point to teamA
+            prisma.teamPlayerStats.updateMany({
+                where: {
+                    playerId: playerBId,
+                    teamId: teamBId,
+                    matchId: { in: matchIds },
+                },
+                data: {
+                    teamId: teamAId,
+                },
+            }),
+            // Update MatchPlayerPlayed records for playerA
+            prisma.matchPlayerPlayed.updateMany({
+                where: {
+                    playerId: playerAId,
+                    teamId: teamAId,
+                    matchId: { in: matchIds },
+                },
+                data: {
+                    teamId: teamBId,
+                },
+            }),
+            // Update MatchPlayerPlayed records for playerB
+            prisma.matchPlayerPlayed.updateMany({
+                where: {
+                    playerId: playerBId,
+                    teamId: teamBId,
+                    matchId: { in: matchIds },
+                },
+                data: {
+                    teamId: teamAId,
+                },
+            }),
+        ]);
+
+        // Step 3: Update team names to reflect new player composition
+        const [updatedTeamA, updatedTeamB] = await Promise.all([
+            prisma.team.findUnique({
+                where: { id: teamAId },
+                include: { players: { include: { user: true } } },
+            }),
+            prisma.team.findUnique({
+                where: { id: teamBId },
+                include: { players: { include: { user: true } } },
+            }),
+        ]);
+
+        if (updatedTeamA) {
+            const newNameA = updatedTeamA.players.map((p) => p.user.userName).join("_");
+            await prisma.team.update({
+                where: { id: teamAId },
+                data: { name: newNameA },
+            });
+        }
+
+        if (updatedTeamB) {
+            const newNameB = updatedTeamB.players.map((p) => p.user.userName).join("_");
+            await prisma.team.update({
+                where: { id: teamBId },
+                data: { name: newNameB },
+            });
+        }
 
         return SuccessResponse({
             message: "Players swapped successfully",
