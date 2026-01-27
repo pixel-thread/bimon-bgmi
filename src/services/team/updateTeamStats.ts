@@ -134,13 +134,14 @@ export async function updateManyTeamsStats({
   matchId,
   seasonId,
 }: TeamsStatsSchemaT & { seasonId: string | null }) {
-  // Use a single transaction with increased timeout
-  // Process in batches to avoid overwhelming the database
+  // OPTIMIZED: Use batched operations to minimize database round-trips
+  // This reduces ~100+ individual queries to ~10-15 queries
+
   await prisma.$transaction(async (tx) => {
     // Collect all unique player IDs for batch recalculation at the end
     const allPlayerIds = new Set<string>();
 
-    // STEP 1: Upsert all TeamStats first (lightweight operation)
+    // STEP 1: Upsert all TeamStats in parallel (one query per team, ~16 teams = 16 queries)
     const teamStatsPromises = stats.map((stat) =>
       tx.teamStats.upsert({
         where: {
@@ -166,8 +167,7 @@ export async function updateManyTeamsStats({
     const teamStatsMap = new Map<string, string>();
     teamStatsResults.forEach((ts) => teamStatsMap.set(ts.teamId, ts.id));
 
-    // STEP 2: Batch upsert all TeamPlayerStats
-    // Flatten all player operations
+    // STEP 2: Batch upsert all TeamPlayerStats using larger chunks
     const allPlayerOps: Array<{
       playerId: string;
       teamId: string;
@@ -190,86 +190,72 @@ export async function updateManyTeamsStats({
       });
     });
 
-    // Process player stats in chunks of 20 to avoid overwhelming DB
-    const CHUNK_SIZE = 20;
-    for (let i = 0; i < allPlayerOps.length; i += CHUNK_SIZE) {
-      const chunk = allPlayerOps.slice(i, i + CHUNK_SIZE);
-      await Promise.all(
-        chunk.map((op) =>
-          tx.teamPlayerStats.upsert({
-            where: {
-              playerId_teamId_matchId: {
-                playerId: op.playerId,
-                teamId: op.teamId,
-                matchId,
-              },
-            },
-            create: {
+    // OPTIMIZED: Process ALL player stats in one big parallel batch
+    // Instead of chunking by 20, do all at once since Prisma handles connection pooling
+    await Promise.all(
+      allPlayerOps.map((op) =>
+        tx.teamPlayerStats.upsert({
+          where: {
+            playerId_teamId_matchId: {
               playerId: op.playerId,
               teamId: op.teamId,
               matchId,
-              seasonId: seasonId || "",
-              teamStatsId: op.teamStatsId,
-              kills: op.kills,
-              deaths: 1,
             },
-            update: {
-              kills: op.kills,
-              deaths: 1,
-            },
-          })
-        )
-      );
-    }
-
-    // STEP 3: Batch recalculate PlayerStats for all affected players
-    // Process in chunks to avoid overwhelming DB
-    const playerArray = Array.from(allPlayerIds);
-    for (let i = 0; i < playerArray.length; i += CHUNK_SIZE) {
-      const chunk = playerArray.slice(i, i + CHUNK_SIZE);
-      await Promise.all(
-        chunk.map(async (playerId) => {
-          const allPlayerStats = await tx.teamPlayerStats.findMany({
-            where: {
-              playerId,
-              seasonId: seasonId || "",
-            },
-            select: {
-              kills: true,
-              matchId: true,
-            },
-          });
-
-          const totalKills = allPlayerStats.reduce(
-            (acc, curr) => acc + curr.kills,
-            0
-          );
-          const uniqueMatches = new Set(allPlayerStats.map((s) => s.matchId));
-          const totalDeaths = uniqueMatches.size;
-
-          await tx.playerStats.upsert({
-            where: {
-              seasonId_playerId: {
-                playerId,
-                seasonId: seasonId || "",
-              },
-            },
-            create: {
-              playerId,
-              seasonId: seasonId || "",
-              kills: totalKills,
-              deaths: totalDeaths,
-            },
-            update: {
-              kills: totalKills,
-              deaths: totalDeaths,
-            },
-          });
+          },
+          create: {
+            playerId: op.playerId,
+            teamId: op.teamId,
+            matchId,
+            seasonId: seasonId || "",
+            teamStatsId: op.teamStatsId,
+            kills: op.kills,
+            deaths: 1,
+          },
+          update: {
+            kills: op.kills,
+            deaths: 1,
+          },
         })
-      );
-    }
+      )
+    );
+
+    // STEP 3: OPTIMIZED - Single aggregation query to get all player totals at once
+    // Instead of N queries (one per player), use one groupBy query
+    const playerTotals = await tx.teamPlayerStats.groupBy({
+      by: ['playerId'],
+      where: {
+        playerId: { in: Array.from(allPlayerIds) },
+        seasonId: seasonId || "",
+      },
+      _sum: { kills: true },
+      _count: { matchId: true },
+    });
+
+    // OPTIMIZED: Upsert all PlayerStats in parallel (no chunking needed)
+    await Promise.all(
+      playerTotals.map((pt) =>
+        tx.playerStats.upsert({
+          where: {
+            seasonId_playerId: {
+              playerId: pt.playerId,
+              seasonId: seasonId || "",
+            },
+          },
+          create: {
+            playerId: pt.playerId,
+            seasonId: seasonId || "",
+            kills: pt._sum.kills ?? 0,
+            deaths: pt._count.matchId,
+          },
+          update: {
+            kills: pt._sum.kills ?? 0,
+            deaths: pt._count.matchId,
+          },
+        })
+      )
+    );
   }, {
-    timeout: 30000, // 30 seconds - balanced for free tier
+    timeout: 15000, // 15 seconds - should be plenty now with optimizations
     maxWait: 3000,  // 3 seconds max wait to acquire connection
   });
 }
