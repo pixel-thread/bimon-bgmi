@@ -199,48 +199,47 @@ export function InstallPrompt() {
         return null;
     }
 
-    // iOS Safari - show instruction modal
+    // iOS Safari - show instruction bottom banner
     if (isIOS) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                <div className="mx-4 w-full max-w-sm rounded-2xl border border-border/50 bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-300">
-                    <div className="text-center">
-                        <div className="mx-auto h-16 w-16 overflow-hidden rounded-xl shadow-lg">
+            <div className="fixed bottom-[max(env(safe-area-inset-bottom),1rem)] left-1/2 z-50 w-full max-w-[min(calc(100%-2rem),400px)] -translate-x-1/2 animate-in slide-in-from-bottom-5 duration-500">
+                <div className="relative rounded-3xl border border-white/10 bg-card/95 p-6 shadow-[0_20px_50px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+                    <div className="flex flex-col items-center text-center">
+                        <div className="mb-4 h-16 w-16 overflow-hidden rounded-2xl shadow-xl ring-2 ring-primary/20">
                             <img src="/android-chrome-192x192.png" alt="PUBGMI" className="h-full w-full object-cover" />
                         </div>
-                        <h3 className="mt-4 text-xl font-semibold text-foreground">Install App</h3>
-                        <div className="mt-4 text-left space-y-3">
-                            <div className="flex items-start gap-3">
-                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">1</span>
-                                <p className="text-sm text-muted-foreground">
-                                    Tap the <IconShare className="inline h-5 w-5 mx-0.5 -mt-0.5 text-primary" /> <span className="font-semibold text-foreground">Share</span> button at the bottom of Safari
+
+                        <h3 className="text-xl font-bold tracking-tight text-foreground">Install PUBGMI</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">Add to Home Screen for the full experience</p>
+
+                        <div className="mt-6 w-full space-y-4 text-left">
+                            <div className="flex items-center gap-4 rounded-2xl bg-primary/5 p-3 ring-1 ring-primary/10">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/20 font-bold text-primary">1</div>
+                                <p className="text-sm font-medium leading-relaxed">
+                                    Tap the <IconShare className="mx-1 inline h-5 w-5 -mt-1 text-primary" /> <span className="text-primary font-bold italic">Share</span> button below
                                 </p>
                             </div>
-                            <div className="flex items-start gap-3">
-                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">2</span>
-                                <p className="text-sm text-muted-foreground">
-                                    Scroll down and tap <span className="font-semibold text-foreground">&quot;Add to Home Screen&quot;</span>
-                                </p>
-                            </div>
-                            <div className="flex items-start gap-3">
-                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">3</span>
-                                <p className="text-sm text-muted-foreground">
-                                    Tap <span className="font-semibold text-foreground">Add</span> in the top right corner
+
+                            <div className="flex items-center gap-4 rounded-2xl bg-white/5 p-3 ring-1 ring-white/10">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10 font-bold text-muted-foreground">2</div>
+                                <p className="text-sm font-medium leading-relaxed">
+                                    Select <span className="font-bold underline decoration-primary/50 underline-offset-4">&quot;Add to Home Screen&quot;</span>
                                 </p>
                             </div>
                         </div>
-                    </div>
-                    {showNotNow && (
-                        <div className="mt-6">
-                            <Button
-                                variant="outline"
-                                className="w-full"
+
+                        {showNotNow && (
+                            <button
                                 onClick={handleDismiss}
+                                className="mt-6 text-sm font-medium text-muted-foreground/60 transition-colors hover:text-muted-foreground"
                             >
-                                Not now
-                            </Button>
-                        </div>
-                    )}
+                                Maybe later
+                            </button>
+                        )}
+                    </div>
+
+                    {/* The Pointing Arrow */}
+                    <div className="absolute -bottom-3 left-1/2 h-6 w-6 -translate-x-1/2 rotate-45 border-b border-r border-white/10 bg-card/95 shadow-[10px_10px_20px_rgba(0,0,0,0.2)]"></div>
                 </div>
             </div>
         );
