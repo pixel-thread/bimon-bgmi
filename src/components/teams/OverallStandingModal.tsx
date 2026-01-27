@@ -130,7 +130,7 @@ export default function OverallStandingModal({
         ignoreElements: (el) => el.classList.contains("floating-button-group"),
       });
 
-      // Copy to Clipboard with download fallback for unsupported devices
+      // Create blob from canvas
       const blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, "image/png")
       );
@@ -140,7 +140,29 @@ export default function OverallStandingModal({
         return;
       }
 
-      // Try clipboard first (modern browsers)
+      const fileName = `${tournamentTitle.replace(/\s+/g, "-")}-standings.png`;
+
+      // Try Web Share API first (mobile devices)
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], fileName, { type: "image/png" });
+        const shareData = { files: [file] };
+
+        if (navigator.canShare(shareData)) {
+          try {
+            await navigator.share(shareData);
+            setShareSuccess(true);
+            setTimeout(() => setShareSuccess(false), 2000);
+            return; // Exit after successful share
+          } catch (e) {
+            // User cancelled share or share failed, fall through to clipboard
+            if ((e as Error).name !== 'AbortError') {
+              console.warn("Share failed, falling back to clipboard:", e);
+            }
+          }
+        }
+      }
+
+      // Fallback: Try clipboard (desktop browsers)
       if (navigator.clipboard && window.ClipboardItem) {
         try {
           await navigator.clipboard.write([
@@ -148,15 +170,14 @@ export default function OverallStandingModal({
           ]);
           setShareSuccess(true);
           setTimeout(() => setShareSuccess(false), 2000);
+          return;
         } catch (e) {
-          // Clipboard failed, fall back to download
           console.warn("Clipboard failed, falling back to download:", e);
-          downloadFallback(canvas);
         }
-      } else {
-        // No clipboard support, use download fallback
-        downloadFallback(canvas);
       }
+
+      // Final fallback: Download
+      downloadFallback(canvas);
     } catch (error) {
       console.error("Screenshot error:", error);
     } finally {
