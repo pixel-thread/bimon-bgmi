@@ -76,6 +76,7 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
         <MeritRatingModal
           pendingRatings={meritData.pendingRatings}
           tournamentId={meritData.tournament.id}
+          tournamentName={meritData.tournament.name}
           onComplete={handleRatingComplete}
         />
       )}
@@ -97,3 +98,4 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
 export const VoteTab = React.memo(VoteTabComponent);
 
 VoteTab.displayName = "VoteTab";
+

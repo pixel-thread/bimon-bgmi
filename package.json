@@ -109,6 +109,7 @@
     "eslint-config-next": "^16.0.7",
     "jsdom": "^26.1.0",
     "prisma": "^6.16.3",
+    "tailwind-scrollbar": "^4.0.2",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
