@@ -98,11 +98,13 @@ export function setupChunkErrorHandler() {
         const message = event.message || "";
         const filename = event.filename || "";
 
-        // Detect chunk loading errors
+        // Detect chunk loading errors AND importScripts errors
         const isChunkError =
             message.includes("Loading chunk") ||
             message.includes("Failed to fetch dynamically imported module") ||
             message.includes("ChunkLoadError") ||
+            message.includes("importScripts") ||
+            message.includes("didn't register its module") ||
             // Also catch "X is not defined" errors that happen with stale cache
             (message.includes("is not defined") && filename.includes("/_next/"));
 
@@ -137,7 +139,9 @@ export function setupChunkErrorHandler() {
         if (
             reason.includes("Failed to fetch") ||
             reason.includes("ChunkLoadError") ||
-            reason.includes("dynamically imported module")
+            reason.includes("dynamically imported module") ||
+            reason.includes("importScripts") ||
+            reason.includes("didn't register")
         ) {
             console.warn("[SW] Dynamic import error, reloading...");
 
@@ -153,8 +157,23 @@ export function setupChunkErrorHandler() {
 
     window.addEventListener("unhandledrejection", handleRejection);
 
+    // Listen for FORCE_RELOAD message from service worker (fallback recovery)
+    const handleSWMessage = (event: MessageEvent) => {
+        if (event.data?.type === "FORCE_RELOAD") {
+            console.warn("[SW] Received FORCE_RELOAD from service worker");
+            window.location.reload();
+        }
+    };
+
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.addEventListener("message", handleSWMessage);
+    }
+
     return () => {
         window.removeEventListener("error", handleError);
         window.removeEventListener("unhandledrejection", handleRejection);
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.removeEventListener("message", handleSWMessage);
+        }
     };
 }
