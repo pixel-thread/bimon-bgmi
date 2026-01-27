@@ -340,45 +340,39 @@ export function JobBoardBanner() {
                         )}
                     </div>
 
-                    {/* Action Row - Like/Dislike & Phone */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        {/* Like/Dislike Buttons */}
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => handleReact("like")}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${reactionState.userReaction === 'like' ? 'bg-green-200 dark:bg-green-800 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-green-100 dark:hover:bg-green-900'}`}
-                            >
-                                <ThumbsUp className="h-3.5 w-3.5" fill={reactionState.userReaction === 'like' ? 'currentColor' : 'none'} />
-                                {reactionState.likeCount}
-                            </button>
-                            <button
-                                onClick={() => handleReact("dislike")}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${reactionState.userReaction === 'dislike' ? 'bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900'}`}
-                            >
-                                <ThumbsDown className="h-3.5 w-3.5" fill={reactionState.userReaction === 'dislike' ? 'currentColor' : 'none'} />
-                                {reactionState.dislikeCount}
-                            </button>
-                        </div>
+                    {/* Action Row - All buttons on one line */}
+                    <div className="flex items-center gap-2">
+                        {/* Like Button */}
+                        <button
+                            onClick={() => handleReact("like")}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${reactionState.userReaction === 'like' ? 'bg-green-200 dark:bg-green-800 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-green-100 dark:hover:bg-green-900'}`}
+                        >
+                            <ThumbsUp className="h-3.5 w-3.5" fill={reactionState.userReaction === 'like' ? 'currentColor' : 'none'} />
+                            {reactionState.likeCount}
+                        </button>
+                        {/* Dislike Button - no counter shown */}
+                        <button
+                            onClick={() => handleReact("dislike")}
+                            className={`flex items-center justify-center p-1.5 rounded-full text-xs font-medium transition-colors ${reactionState.userReaction === 'dislike' ? 'bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900'}`}
+                        >
+                            <ThumbsDown className="h-3.5 w-3.5" fill={reactionState.userReaction === 'dislike' ? 'currentColor' : 'none'} />
+                        </button>
 
-                        <div className="flex items-center gap-2 ml-auto">
-                            {/* Phone Number */}
-                            <a
-                                href={`tel:${currentListing.phoneNumber}`}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-full bg-green-500 text-white hover:bg-green-600 transition-colors"
-                            >
-                                <Phone className="h-3 w-3" />
-                                Call
-                            </a>
-
-                            {/* View Details Link */}
-                            <Link
-                                href={`/jobs/${currentListing.id}`}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-full bg-amber-500 text-white hover:bg-amber-600 transition-colors"
-                            >
-                                <ExternalLink className="h-3 w-3" />
-                                More
-                            </Link>
-                        </div>
+                        {/* Call & More buttons */}
+                        <a
+                            href={`tel:${currentListing.phoneNumber}`}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-full bg-green-500 text-white hover:bg-green-600 transition-colors ml-auto"
+                        >
+                            <Phone className="h-3 w-3" />
+                            Call
+                        </a>
+                        <Link
+                            href={`/jobs/${currentListing.id}`}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-full bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+                        >
+                            <ExternalLink className="h-3 w-3" />
+                            More
+                        </Link>
                     </div>
                 </div>
             </div>
