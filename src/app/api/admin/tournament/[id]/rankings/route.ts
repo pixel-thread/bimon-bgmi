@@ -107,6 +107,12 @@ export async function GET(
         // Sort using official BGMI tiebreaker rules
         const sortedData = sortTeamsByTiebreaker(mappedData);
 
+        // Fetch the poll to get teamType
+        const poll = await prisma.poll.findUnique({
+            where: { tournamentId },
+            select: { teamType: true },
+        });
+
         // Calculate total player count and UC-exempt count across all teams in this tournament
         const allTeams = await prisma.team.findMany({
             where: { tournamentId },
@@ -129,6 +135,7 @@ export async function GET(
                 totalPlayers,
                 prizePool: (tournament.fee || 0) * totalPlayers,
                 ucExemptCount,
+                teamType: poll?.teamType || "DUO",
             },
         });
     } catch (error) {

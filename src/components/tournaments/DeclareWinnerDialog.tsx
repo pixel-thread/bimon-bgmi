@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -18,7 +18,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
 import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
-import { getFinalDistribution, getTeamSize } from "@/src/utils/prizeDistribution";
+import { getFinalDistribution, getTeamSize, getTierInfo } from "@/src/utils/prizeDistribution";
 import { useSeasonStore } from "@/src/store/season";
 
 type TeamRanking = {
@@ -39,6 +39,7 @@ type PrizePoolMeta = {
     totalPlayers: number;
     prizePool: number;
     ucExemptCount: number;
+    teamType: string;
 };
 
 type Props = {
@@ -100,8 +101,20 @@ export function DeclareWinnerDialog({
     const prizePool = basePrizePool + bonusPool;
     const entryFee = prizePoolMeta?.entryFee || 0;
     const totalPlayers = prizePoolMeta?.totalPlayers || 0;
+    const teamType = prizePoolMeta?.teamType || "DUO";
+    const teamSize = getTeamSize(teamType);
 
     const ucExemptCount = prizePoolMeta?.ucExemptCount || 0;
+
+    // Get tier info for smart default winner count
+    const tier = getTierInfo(prizePool);
+
+    // Sync placementCount with tier when dialog opens or prize pool changes
+    useEffect(() => {
+        if (isOpen && prizePool > 0) {
+            setPlacementCount(tier.winnerCount);
+        }
+    }, [isOpen, prizePool, tier.winnerCount]);
 
     // Get player IDs from top teams for tax preview
     const topTeamPlayerIds = useMemo(() => {
@@ -139,8 +152,8 @@ export function DeclareWinnerDialog({
 
     // Get dynamic prize distribution based on prize pool tier with UC-exempt adjustments
     const distribution = useMemo(
-        () => getFinalDistribution(prizePool, entryFee, getTeamSize("DUO"), ucExemptCount),
-        [prizePool, entryFee, ucExemptCount]
+        () => getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount),
+        [prizePool, entryFee, teamSize, ucExemptCount]
     );
 
     // Calculate prize amounts per position from dynamic distribution
@@ -301,7 +314,8 @@ export function DeclareWinnerDialog({
     });
 
     const handleClose = () => {
-        setPlacementCount(2);
+        // Reset to tier-based default winner count
+        setPlacementCount(tier.winnerCount);
         onClose();
     };
 

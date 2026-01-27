@@ -10,6 +10,7 @@ export type MetaT = {
   totalPlayers?: number;
   prizePool?: number;
   ucExemptCount?: number;
+  teamType?: string; // SOLO, DUO, TRIO, SQUAD, DYNAMIC
   // Balance aggregates for admin
   totalBalance?: number;
   negativeBalance?: number;

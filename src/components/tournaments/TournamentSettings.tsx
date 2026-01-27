@@ -87,6 +87,7 @@ export function TournamentSettings() {
     totalPlayers: rankingsData.meta.totalPlayers || 0,
     prizePool: rankingsData.meta.prizePool || 0,
     ucExemptCount: rankingsData.meta.ucExemptCount || 0,
+    teamType: rankingsData.meta.teamType || "DUO",
   } : undefined;
 
   const handleDeclareWinnersClick = () => {
