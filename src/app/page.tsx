@@ -130,6 +130,16 @@ function WhatsAppButton({ autoOpen = false }: { autoOpen?: boolean }) {
     }
   }, [autoOpen, isHydrated]);
 
+  // Track if user was auto-opened (for hiding close button)
+  const [wasAutoOpened, setWasAutoOpened] = useState(false);
+
+  // Set wasAutoOpened when auto-opening
+  useEffect(() => {
+    if (autoOpen && isOpen) {
+      setWasAutoOpened(true);
+    }
+  }, [autoOpen, isOpen]);
+
   const handleJoinGroup = (groupId: string, link: string) => {
     // Open WhatsApp link in new tab
     window.open(link, "_blank", "noopener,noreferrer");
@@ -141,6 +151,9 @@ function WhatsAppButton({ autoOpen = false }: { autoOpen?: boolean }) {
 
     // Persist to localStorage
     localStorage.setItem("whatsapp_joined_groups", JSON.stringify([...newJoined]));
+
+    // Allow closing after joining at least one group
+    setWasAutoOpened(false);
   };
 
   // Don't render until hydrated to avoid hydration mismatch
@@ -169,7 +182,7 @@ function WhatsAppButton({ autoOpen = false }: { autoOpen?: boolean }) {
       {isOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => setIsOpen(false)}
+          onClick={() => !wasAutoOpened && setIsOpen(false)}
         >
           <div
             className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 mx-4 max-w-sm w-full animate-in fade-in zoom-in-95 duration-200"
@@ -185,14 +198,16 @@ function WhatsAppButton({ autoOpen = false }: { autoOpen?: boolean }) {
                   Join WhatsApp
                 </h2>
               </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              {!wasAutoOpened && (
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
 
             {/* Description */}
