@@ -14,9 +14,10 @@ const withPWA = withPWAInit({
   },
   // Workbox options for caching
   workboxOptions: {
-    // Don't skipWaiting automatically - we handle this via postMessage
-    // This prevents the "stale JS + new chunks" bug that causes freezes
-    skipWaiting: false,
+    // Automatically skipWaiting - new SW takes over immediately
+    // Combined with clientsClaim, this ensures all tabs get new code instantly
+    // The client-side hook will detect controllerchange and reload
+    skipWaiting: true,
     clientsClaim: true,
     // Runtime caching for dynamic content
     runtimeCaching: [
