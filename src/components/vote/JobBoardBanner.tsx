@@ -239,67 +239,69 @@ export function JobBoardBanner() {
             onTouchEnd={() => setIsPaused(false)}
         >
             {/* Header */}
-            <div className="px-4 py-2 bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40 border-b border-amber-200 dark:border-amber-800/50 flex items-center justify-between">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <PlayerAvatar
-                        characterImageUrl={currentListing.player?.customProfileImageUrl || currentListing.player?.characterImage?.publicUrl}
-                        imageUrl={currentListing.player?.imageUrl}
-                        displayName={currentListing.player?.user.displayName || ""}
-                        userName={currentListing.player?.user.userName || "User"}
-                        size="sm"
-                        showUserIcon
-                    />
-                    <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-semibold text-amber-800 dark:text-amber-200 truncate flex items-center gap-1">
-                            {getDisplayName(
-                                currentListing.player?.user.displayName || null,
-                                currentListing.player?.user.userName || "User"
-                            )}
-                            {reactionState.likeCount >= 10 && (
-                                <span title="Verified - 10+ likes">
-                                    <CheckCircle className="h-3.5 w-3.5 text-blue-500" />
+            <div className="px-3 py-2.5 bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40 border-b border-amber-200 dark:border-amber-800/50">
+                <div className="flex items-start justify-between gap-2">
+                    {/* User Info Row */}
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <PlayerAvatar
+                            characterImageUrl={currentListing.player?.customProfileImageUrl || currentListing.player?.characterImage?.publicUrl}
+                            imageUrl={currentListing.player?.imageUrl}
+                            displayName={currentListing.player?.user.displayName || ""}
+                            userName={currentListing.player?.user.userName || "User"}
+                            size="sm"
+                            showUserIcon
+                        />
+                        <div className="flex flex-col min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-sm font-semibold text-amber-800 dark:text-amber-200 truncate flex items-center gap-1">
+                                    {getDisplayName(
+                                        currentListing.player?.user.displayName || null,
+                                        currentListing.player?.user.userName || "User"
+                                    )}
+                                    {reactionState.likeCount >= 10 && (
+                                        <span title="Verified - 10+ likes">
+                                            <CheckCircle className="h-3.5 w-3.5 text-blue-500" />
+                                        </span>
+                                    )}
                                 </span>
-                            )}
-                        </span>
-                        {currentListing.experience && (
-                            <span className="text-[10px] text-amber-600 dark:text-amber-400">
-                                {EXPERIENCE_OPTIONS.find(o => o.value === currentListing.experience)?.label || currentListing.experience} exp
-                                {currentListing.availability && currentListing.availability.includes("-") && (
-                                    <span className="ml-1.5">
-                                        • {currentListing.availability.split("-").map(t => TIME_OPTIONS.find(o => o.value === t)?.label || t).join(" - ")}
+                                <span className="px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200">
+                                    {displayCategory1}{displayCategory2 && ` • ${displayCategory2}`}
+                                </span>
+                            </div>
+                            {/* Experience & Location Row */}
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap text-[10px] text-amber-600 dark:text-amber-400">
+                                {currentListing.experience && (
+                                    <span>
+                                        {EXPERIENCE_OPTIONS.find(o => o.value === currentListing.experience)?.label || currentListing.experience} exp
                                     </span>
                                 )}
-                            </span>
-                        )}
-                        {!currentListing.experience && currentListing.availability && currentListing.availability.includes("-") && (
-                            <span className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
-                                <Clock className="h-2.5 w-2.5" />
-                                {currentListing.availability.split("-").map(t => TIME_OPTIONS.find(o => o.value === t)?.label || t).join(" - ")}
-                            </span>
-                        )}
+                                {currentListing.availability && currentListing.availability.includes("-") && (
+                                    <span className="flex items-center gap-0.5">
+                                        <Clock className="h-2.5 w-2.5" />
+                                        {currentListing.availability.split("-").map(t => TIME_OPTIONS.find(o => o.value === t)?.label || t).join(" - ")}
+                                    </span>
+                                )}
+                                {currentListing.location && (
+                                    <span className="flex items-center gap-0.5 text-blue-600 dark:text-blue-400">
+                                        <MapPin className="h-2.5 w-2.5" />
+                                        {currentListing.location}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 shrink-0">
-                        {displayCategory1}{displayCategory2 && ` • ${displayCategory2}`}
-                    </span>
-                    {/* Location badge */}
-                    {currentListing.location && (
-                        <span className="flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-medium rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 shrink-0">
-                            <MapPin className="h-2.5 w-2.5" />
-                            {currentListing.location}
-                        </span>
-                    )}
+                    {/* Close Button */}
+                    <button
+                        onClick={() => {
+                            localStorage.setItem(BANNER_HIDDEN_KEY, String(Date.now() + HIDE_DURATION_MS));
+                            setIsClosed(true);
+                        }}
+                        className="p-1 rounded-full hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors shrink-0"
+                        aria-label="Close banner"
+                    >
+                        <X className="h-4 w-4 text-amber-700 dark:text-amber-300" />
+                    </button>
                 </div>
-                {/* Close Button */}
-                <button
-                    onClick={() => {
-                        localStorage.setItem(BANNER_HIDDEN_KEY, String(Date.now() + HIDE_DURATION_MS));
-                        setIsClosed(true);
-                    }}
-                    className="p-1 rounded-full hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
-                    aria-label="Close banner"
-                >
-                    <X className="h-4 w-4 text-amber-700 dark:text-amber-300" />
-                </button>
             </div>
 
             {/* Content */}
