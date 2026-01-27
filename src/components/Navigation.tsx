@@ -67,6 +67,7 @@ export default function Navigation() {
     const [isSigningOut, setIsSigningOut] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
+    const [isNavigatingToRoyalPass, setIsNavigatingToRoyalPass] = useState(false);
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const pathname = usePathname();
@@ -168,6 +169,21 @@ export default function Navigation() {
         return pathname.startsWith(href);
     };
 
+    const handleRoyalPassClick = () => {
+        if (pathname === '/royal-pass') return;
+        setIsNavigatingToRoyalPass(true);
+        startTransition(() => {
+            router.push('/royal-pass');
+        });
+    };
+
+    // Reset Royal Pass loading state when navigation completes
+    useEffect(() => {
+        if (pathname === '/royal-pass' && isNavigatingToRoyalPass) {
+            setIsNavigatingToRoyalPass(false);
+        }
+    }, [pathname, isNavigatingToRoyalPass]);
+
     return (
         <>
             {/* Desktop Navigation */}
@@ -211,16 +227,21 @@ export default function Navigation() {
                     {/* Royal Pass Button - Desktop */}
                     {isAuthorized && (
                         <button
-                            onClick={() => router.push('/royal-pass')}
-                            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all duration-200"
+                            onClick={handleRoyalPassClick}
+                            disabled={isNavigatingToRoyalPass}
+                            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all duration-200 disabled:opacity-50"
                             aria-label="Royal Pass"
                         >
-                            <span className="relative inline-flex">
-                                <Crown className="h-4 w-4" />
-                                <span className="absolute inset-0 overflow-hidden pointer-events-none">
-                                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/80 to-transparent w-[200%] -translate-x-full animate-[iconShine_1.5s_ease-in-out_1] [animation-delay:1s] mix-blend-overlay" />
+                            {isNavigatingToRoyalPass ? (
+                                <FiLoader className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <span className="relative inline-flex">
+                                    <Crown className="h-4 w-4" />
+                                    <span className="absolute inset-0 overflow-hidden pointer-events-none">
+                                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/80 to-transparent w-[200%] -translate-x-full animate-[iconShine_1.5s_ease-in-out_1] [animation-delay:1s] mix-blend-overlay" />
+                                    </span>
                                 </span>
-                            </span>
+                            )}
                         </button>
                     )}
 
@@ -264,28 +285,33 @@ export default function Navigation() {
             </div>
 
             {/* Mobile: Royal Pass Button + Hamburger - Inline in header */}
-            <div className="md:hidden flex items-center gap-1">
-                {/* Royal Pass Button - subtle crown icon */}
+            <div className="md:hidden flex items-center gap-2">
+                {/* Royal Pass Button - subtle crown icon with loader */}
                 {isAuthorized && (
                     <motion.button
                         whileTap={{ scale: 0.95 }}
-                        className="p-2 text-amber-500 dark:text-amber-400"
-                        onClick={() => router.push('/royal-pass')}
+                        className="w-10 h-10 flex items-center justify-center text-amber-500 dark:text-amber-400 disabled:opacity-50"
+                        onClick={handleRoyalPassClick}
+                        disabled={isNavigatingToRoyalPass}
                         aria-label="Royal Pass"
                     >
-                        <span className="relative inline-flex">
-                            <Crown className="h-5 w-5" />
-                            <span className="absolute inset-0 overflow-hidden pointer-events-none">
-                                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/80 to-transparent w-[200%] -translate-x-full animate-[iconShine_1.5s_ease-in-out_1] [animation-delay:0.5s] mix-blend-overlay" />
+                        {isNavigatingToRoyalPass ? (
+                            <FiLoader className="h-5 w-5 animate-spin" />
+                        ) : (
+                            <span className="relative inline-flex">
+                                <Crown className="h-5 w-5 drop-shadow-[0_0_6px_rgba(251,191,36,0.7)] animate-pulse" />
+                                <span className="absolute inset-0 overflow-hidden pointer-events-none">
+                                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/80 to-transparent w-[200%] -translate-x-full animate-[iconShine_1.5s_ease-in-out_1] [animation-delay:0.5s] mix-blend-overlay" />
+                                </span>
                             </span>
-                        </span>
+                        )}
                     </motion.button>
                 )}
 
                 {/* Hamburger Button */}
                 <motion.button
                     whileTap={{ scale: 0.95 }}
-                    className="p-2 relative"
+                    className="w-10 h-10 flex items-center justify-center relative"
                     onClick={() => setIsOpen(!isOpen)}
                     aria-label="Toggle menu"
                 >

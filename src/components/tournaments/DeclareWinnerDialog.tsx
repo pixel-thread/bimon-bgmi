@@ -13,8 +13,13 @@ import { Button } from "@/src/components/ui/button";
 import { Label } from "@/src/components/ui/label";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
-import { Plus, Trash2, Trophy, Loader2, Coins } from "lucide-react";
+import { Plus, Trash2, Trophy, Loader2, Coins, ChevronDown } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@/src/components/ui/collapsible";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
 import { ADMIN_TOURNAMENT_ENDPOINTS } from "@/src/lib/endpoints/admin/tournament";
@@ -357,97 +362,106 @@ export function DeclareWinnerDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-4">
-                    {/* Prize Pool Summary */}
+                <div className="space-y-3 py-2">
+                    {/* Prize Pool Summary - Collapsible */}
                     {prizePool > 0 && (
-                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Coins className="h-5 w-5 text-green-600" />
-                                <span className="font-semibold text-green-800 dark:text-green-200">Prize Pool</span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                                <div className="text-muted-foreground">Entry Fee:</div>
-                                <div className="font-medium">₹{entryFee}</div>
-                                <div className="text-muted-foreground">Total Players:</div>
-                                <div className="font-medium">{totalPlayers}</div>
-                                {bonusPool > 0 && (
-                                    <>
-                                        <div className="text-muted-foreground">Base Prize Pool:</div>
-                                        <div className="font-medium">₹{basePrizePool.toLocaleString()}</div>
-                                        <div className="text-muted-foreground">🎁 Bonus Pool:</div>
-                                        <div className="font-medium text-purple-600 dark:text-purple-400">
-                                            +₹{bonusPool.toLocaleString()}
-                                            {bonusDonorName && <span className="text-xs ml-1">({bonusDonorName})</span>}
+                        <Collapsible>
+                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                <CollapsibleTrigger className="w-full p-3 flex items-center justify-between hover:bg-green-100/50 dark:hover:bg-green-800/20 rounded-lg transition-colors">
+                                    <div className="flex items-center gap-2">
+                                        <Coins className="h-4 w-4 text-green-600" />
+                                        <span className="font-semibold text-green-800 dark:text-green-200 text-sm">Prize Pool</span>
+                                        <Badge variant="secondary" className="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 text-xs">
+                                            ₹{prizePool.toLocaleString()}
+                                        </Badge>
+                                    </div>
+                                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                    <div className="px-3 pb-3 space-y-2">
+                                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                                            <div className="text-muted-foreground">Entry Fee:</div>
+                                            <div className="font-medium">₹{entryFee}</div>
+                                            <div className="text-muted-foreground">Players:</div>
+                                            <div className="font-medium">{totalPlayers}</div>
+                                            {bonusPool > 0 && (
+                                                <>
+                                                    <div className="text-muted-foreground">Base Pool:</div>
+                                                    <div className="font-medium">₹{basePrizePool.toLocaleString()}</div>
+                                                    <div className="text-muted-foreground">🎁 Bonus:</div>
+                                                    <div className="font-medium text-purple-600 dark:text-purple-400">
+                                                        +₹{bonusPool.toLocaleString()}
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
-                                    </>
-                                )}
-                                <div className="text-muted-foreground font-semibold">Total Prize Pool:</div>
-                                <div className="font-bold text-green-600 dark:text-green-400">₹{prizePool.toLocaleString()}</div>
-                            </div>
-                            <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-700 space-y-1 text-xs">
-                                {Array.from(distribution.prizes.entries())
-                                    .sort(([a], [b]) => a - b)
-                                    .map(([position, prize]) => {
-                                        const medals = ['🥇', '🥈', '🥉', '🏅', '🎖️'];
-                                        const medal = medals[position - 1] || '🏅';
-                                        const label = prize.isFixed
-                                            ? `${position}${position === 1 ? 'st' : position === 2 ? 'nd' : position === 3 ? 'rd' : 'th'} (refund)`
-                                            : `${position}${position === 1 ? 'st' : position === 2 ? 'nd' : position === 3 ? 'rd' : 'th'} (${prize.percentage}%)`;
-                                        return (
-                                            <div key={position} className="flex justify-between">
-                                                <span>{medal} {label}:</span>
-                                                <span className="font-medium">₹{prize.amount.toLocaleString()}</span>
+                                        <div className="pt-2 border-t border-green-200 dark:border-green-700 space-y-0.5 text-xs">
+                                            {Array.from(distribution.prizes.entries())
+                                                .sort(([a], [b]) => a - b)
+                                                .map(([position, prize]) => {
+                                                    const medals = ['🥇', '🥈', '🥉', '🏅', '🎖️'];
+                                                    const medal = medals[position - 1] || '🏅';
+                                                    const label = prize.isFixed
+                                                        ? `${position}${position === 1 ? 'st' : position === 2 ? 'nd' : position === 3 ? 'rd' : 'th'} (refund)`
+                                                        : `${position}${position === 1 ? 'st' : position === 2 ? 'nd' : position === 3 ? 'rd' : 'th'} (${prize.percentage}%)`;
+                                                    return (
+                                                        <div key={position} className="flex justify-between">
+                                                            <span>{medal} {label}:</span>
+                                                            <span className="font-medium">₹{prize.amount.toLocaleString()}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            <div className="flex justify-between text-muted-foreground">
+                                                <span>💼 Organizer ({distribution.tier.orgFeePercent}%){ucExemptCount > 0 ? ` - ${ucExemptCount} exempt` : ""}:</span>
+                                                <span className="font-medium">
+                                                    {taxTotals.orgContribution > 0 ? (
+                                                        <>
+                                                            ₹{organizerAmount.toLocaleString()}
+                                                            <span className="text-amber-600 dark:text-amber-400"> +₹{taxTotals.orgContribution}</span>
+                                                            <span className="text-green-600 dark:text-green-400"> = ₹{(organizerAmount + taxTotals.orgContribution).toLocaleString()}</span>
+                                                        </>
+                                                    ) : (
+                                                        <>₹{organizerAmount.toLocaleString()}</>
+                                                    )}
+                                                </span>
                                             </div>
-                                        );
-                                    })}
-                                <div className="flex justify-between text-muted-foreground">
-                                    <span>💼 Organizer ({distribution.tier.orgFeePercent}%){ucExemptCount > 0 ? ` - ${ucExemptCount} exempt` : ""}:</span>
-                                    <span className="font-medium">
-                                        {taxTotals.orgContribution > 0 ? (
-                                            <>
-                                                ₹{organizerAmount.toLocaleString()}
-                                                <span className="text-amber-600 dark:text-amber-400"> +₹{taxTotals.orgContribution}</span>
-                                                <span className="text-green-600 dark:text-green-400"> = ₹{(organizerAmount + taxTotals.orgContribution).toLocaleString()}</span>
-                                            </>
-                                        ) : (
-                                            <>₹{organizerAmount.toLocaleString()}</>
-                                        )}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between text-muted-foreground">
-                                    <span>🏦 Fund ({distribution.tier.fundPercent}%):</span>
-                                    <span className="font-medium">
-                                        {taxTotals.fundContribution > 0 ? (
-                                            <>
-                                                ₹{distribution.finalFundAmount.toLocaleString()}
-                                                <span className="text-amber-600 dark:text-amber-400"> +₹{taxTotals.fundContribution}</span>
-                                                <span className="text-green-600 dark:text-green-400"> = ₹{(distribution.finalFundAmount + taxTotals.fundContribution).toLocaleString()}</span>
-                                            </>
-                                        ) : (
-                                            <>₹{distribution.finalFundAmount.toLocaleString()}</>
-                                        )}
-                                    </span>
-                                </div>
-                                {taxTotals.repeatTax > 0 && (
-                                    <div className="flex justify-between text-amber-600 dark:text-amber-400 pt-1 border-t border-green-200 dark:border-green-700">
-                                        <span>🔄 Repeat Winner Tax:</span>
-                                        <span className="font-medium">₹{taxTotals.repeatTax.toLocaleString()}</span>
+                                            <div className="flex justify-between text-muted-foreground">
+                                                <span>🏦 Fund ({distribution.tier.fundPercent}%):</span>
+                                                <span className="font-medium">
+                                                    {taxTotals.fundContribution > 0 ? (
+                                                        <>
+                                                            ₹{distribution.finalFundAmount.toLocaleString()}
+                                                            <span className="text-amber-600 dark:text-amber-400"> +₹{taxTotals.fundContribution}</span>
+                                                            <span className="text-green-600 dark:text-green-400"> = ₹{(distribution.finalFundAmount + taxTotals.fundContribution).toLocaleString()}</span>
+                                                        </>
+                                                    ) : (
+                                                        <>₹{distribution.finalFundAmount.toLocaleString()}</>
+                                                    )}
+                                                </span>
+                                            </div>
+                                            {taxTotals.repeatTax > 0 && (
+                                                <div className="flex justify-between text-amber-600 dark:text-amber-400 pt-1 border-t border-green-200 dark:border-green-700">
+                                                    <span>🔄 Repeat Winner Tax:</span>
+                                                    <span className="font-medium">₹{taxTotals.repeatTax.toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                            {taxTotals.soloTax > 0 && (
+                                                <div className="flex justify-between text-purple-600 dark:text-purple-400">
+                                                    <span>👤 Solo Tax (→ losers + next pool):</span>
+                                                    <span className="font-medium">₹{taxTotals.soloTax.toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                            {ucExemptCount > 0 && (
+                                                <div className="flex justify-between text-amber-600 dark:text-amber-400 pt-1 border-t border-green-200 dark:border-green-700">
+                                                    <span>⚠️ UC-Exempt ({ucExemptCount} × ₹{entryFee}):</span>
+                                                    <span className="font-medium">-₹{distribution.ucExemptCost.toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                )}
-                                {taxTotals.soloTax > 0 && (
-                                    <div className="flex justify-between text-purple-600 dark:text-purple-400">
-                                        <span>👤 Solo Tax (→ losers + next pool):</span>
-                                        <span className="font-medium">₹{taxTotals.soloTax.toLocaleString()}</span>
-                                    </div>
-                                )}
-                                {ucExemptCount > 0 && (
-                                    <div className="flex justify-between text-amber-600 dark:text-amber-400 pt-1 border-t border-green-200 dark:border-green-700">
-                                        <span>⚠️ UC-Exempt cost ({ucExemptCount} × ₹{entryFee}):</span>
-                                        <span className="font-medium">-₹{distribution.ucExemptCost.toLocaleString()}</span>
-                                    </div>
-                                )}
+                                </CollapsibleContent>
                             </div>
-                        </div>
+                        </Collapsible>
                     )}
 
                     {/* Team Rankings Preview */}
@@ -600,15 +614,15 @@ export function DeclareWinnerDialog({
                     </div>
 
                     {/* Placement Controls */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         {placementCount < teamRankings.length && placementCount < 10 && (
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={addPlacement}
-                                className="gap-1"
+                                className="gap-1 text-xs h-8"
                             >
-                                <Plus className="h-4 w-4" />
+                                <Plus className="h-3.5 w-3.5" />
                                 Add {getOrdinal(placementCount + 1)} Place
                             </Button>
                         )}
@@ -617,34 +631,20 @@ export function DeclareWinnerDialog({
                                 variant="outline"
                                 size="sm"
                                 onClick={removePlacement}
-                                className="gap-1 text-destructive hover:text-destructive"
+                                className="gap-1 text-xs h-8 text-destructive hover:text-destructive"
                             >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3.5 w-3.5" />
                                 Remove {getOrdinal(placementCount)} Place
                             </Button>
                         )}
                     </div>
-
-                    {/* Info Note */}
-                    {prizePool > 0 ? (
-                        <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                            💰 UC will be distributed immediately: {distribution.summaryText}, split equally among team members.
-                        </p>
-                    ) : (
-                        <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                            ℹ️ No entry fee set. Winners will be declared without UC distribution.
-                        </p>
-                    )}
                 </div>
 
-                <DialogFooter className="gap-2">
-                    <Button variant="outline" onClick={handleClose} disabled={isPending}>
-                        Cancel
-                    </Button>
+                <DialogFooter>
                     <Button
                         onClick={handleSubmit}
                         disabled={isPending || teamRankings.length === 0}
-                        className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
+                        className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
                     >
                         {isPending ? (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
