@@ -141,7 +141,7 @@ export function PlayersTab() {
         </div>
 
         {isLoading || !seasonId ? (
-          <PlayerTableSkeleton />
+          <PlayerTableSkeleton showPodium={page === "1" && !query} />
         ) : (
           <CustomPlayerTable data={players ?? []} meta={meta} sortBy={sortBy} />
         )}

@@ -16,11 +16,12 @@ import http from "@/src/utils/http";
 import axiosInstance from "@/src/utils/api";
 import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
-import { Camera, CloudUpload, ImageIcon, Loader2, Trash2, User, Check, X } from "lucide-react";
+import { Camera, CloudUpload, ImageIcon, Loader2, Trash2, User, Check, X, RefreshCw, Copy } from "lucide-react";
 import Image from "next/image";
 import { useDialogBackHandler } from "@/src/hooks/useDialogBackHandler";
-import { compressProfileImage } from "@/src/utils/image/compressImage";
+import { compressProfileImage, compressCharacterImage } from "@/src/utils/image/compressImage";
 import { cn } from "@/src/lib/utils";
+import { generateRandomPrompt } from "@/src/data/ai-prompt-styles";
 
 type ProfileImage = {
     id: string;
@@ -37,18 +38,24 @@ type ImageSettings = {
 
 interface ProfileImageSheetProps {
     userName?: string;
+    displayName?: string;
     className?: string;
+    children?: React.ReactNode;
 }
 
-export function ProfileImageSheet({ userName, className }: ProfileImageSheetProps) {
+export function ProfileImageSheet({ userName, displayName, className, children }: ProfileImageSheetProps) {
     const { user: clerkUser } = useUser();
     const queryClient = useQueryClient();
     const [isOpen, setIsOpen] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [isCompressing, setIsCompressing] = useState(false);
     const [showGallery, setShowGallery] = useState(false);
+    const [showUploadChoice, setShowUploadChoice] = useState(false);
+    const [uploadTargetType, setUploadTargetType] = useState<"profile" | "character">("profile");
     const [pendingImageId, setPendingImageId] = useState<string | null>(null);
     const [pendingAction, setPendingAction] = useState<"upload" | "remove" | "gallery" | null>(null);
+    const [promptData, setPromptData] = useState(() => generateRandomPrompt());
+    const [isCopied, setIsCopied] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Use the back button handler hook
@@ -98,6 +105,7 @@ export function ProfileImageSheet({ userName, className }: ProfileImageSheetProp
         if (!open) {
             // Reset state when closing
             setShowGallery(false);
+            setShowUploadChoice(false);
             setPendingImageId(null);
         }
         handleOpenChangeWithBack(open);
@@ -119,8 +127,11 @@ export function ProfileImageSheet({ userName, className }: ProfileImageSheetProp
         try {
             setIsCompressing(true);
 
-            // Compress the image for profile use (512x512, 200KB max)
-            const compressedFile = await compressProfileImage(file);
+            // Use different compression based on target type
+            // Character images get strict 9:16 center-crop, profile images stay square
+            const compressedFile = uploadTargetType === "character"
+                ? await compressCharacterImage(file)
+                : await compressProfileImage(file);
 
             setIsCompressing(false);
             setIsUploading(true);
@@ -136,11 +147,29 @@ export function ProfileImageSheet({ userName, className }: ProfileImageSheetProp
             const result = response.data;
 
             if (result.success && result.data?.url) {
-                // Directly save the uploaded image
-                updateImage({
-                    imageType: "uploaded",
-                    uploadedImageUrl: result.data.url,
-                });
+                if (uploadTargetType === "character") {
+                    // Save as character image via different endpoint
+                    try {
+                        const charResponse = await axiosInstance.post("/profile/character-image", {
+                            imageUrl: result.data.url,
+                        });
+                        if (charResponse.data.success) {
+                            toast.success("Character image updated!");
+                            queryClient.invalidateQueries({ queryKey: ["auth"] });
+                            setIsOpen(false);
+                        } else {
+                            toast.error(charResponse.data.message || "Failed to update character image");
+                        }
+                    } catch (err) {
+                        toast.error("Failed to save character image");
+                    }
+                } else {
+                    // Save as profile image
+                    updateImage({
+                        imageType: "uploaded",
+                        uploadedImageUrl: result.data.url,
+                    });
+                }
             } else {
                 toast.error(result.message || "Failed to upload image");
             }
@@ -241,7 +270,7 @@ export function ProfileImageSheet({ userName, className }: ProfileImageSheetProp
 
     return (
         <>
-            {/* Clickable Avatar */}
+            {/* Clickable Trigger - Use children if provided, otherwise default avatar */}
             <button
                 onClick={() => setIsOpen(true)}
                 className={cn(
@@ -249,11 +278,15 @@ export function ProfileImageSheet({ userName, className }: ProfileImageSheetProp
                     className
                 )}
             >
-                {getCurrentImageDisplay()}
-                {/* Camera overlay on hover */}
-                <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Camera className="w-5 h-5 text-white" />
-                </div>
+                {children || (
+                    <>
+                        {getCurrentImageDisplay()}
+                        {/* Camera overlay on hover */}
+                        <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Camera className="w-5 h-5 text-white" />
+                        </div>
+                    </>
+                )}
             </button>
 
             {/* Hidden file input */}
@@ -271,7 +304,11 @@ export function ProfileImageSheet({ userName, className }: ProfileImageSheetProp
                     <SheetHeader className="text-center pb-2">
                         <SheetTitle>Profile Picture</SheetTitle>
                         <SheetDescription>
-                            {showGallery ? "Select an image from the gallery" : "Choose how you want to change your profile picture"}
+                            {showGallery
+                                ? "Select an image from the gallery"
+                                : showUploadChoice
+                                    ? "What type of image are you uploading?"
+                                    : "Choose how you want to change your profile picture"}
                         </SheetDescription>
                     </SheetHeader>
 
@@ -361,6 +398,104 @@ export function ProfileImageSheet({ userName, className }: ProfileImageSheetProp
                                     </motion.div>
                                 )}
                             </motion.div>
+                        ) : showUploadChoice ? (
+                            <motion.div
+                                key="uploadChoice"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="pt-2 pb-6 space-y-3"
+                            >
+                                {/* Back button */}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowUploadChoice(false)}
+                                    className="text-muted-foreground"
+                                >
+                                    ← Back to options
+                                </Button>
+
+                                {/* Profile Image option */}
+                                <button
+                                    onClick={() => {
+                                        setUploadTargetType("profile");
+                                        setTimeout(() => fileInputRef.current?.click(), 50);
+                                    }}
+                                    disabled={isProcessing}
+                                    className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors disabled:opacity-50 border border-muted"
+                                >
+                                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+                                        <User className="w-5 h-5 text-blue-500" />
+                                    </div>
+                                    <div className="text-left flex-1">
+                                        <p className="font-medium">Profile Image</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            Your account avatar (circle)
+                                        </p>
+                                    </div>
+                                </button>
+
+                                {/* Character Image option with inline AI prompt icons */}
+                                <div className="w-full flex items-center gap-4 p-4 rounded-xl border border-muted">
+                                    <button
+                                        onClick={() => {
+                                            setUploadTargetType("character");
+                                            setTimeout(() => fileInputRef.current?.click(), 50);
+                                        }}
+                                        disabled={isProcessing}
+                                        className="flex items-center gap-4 flex-1 hover:opacity-80 transition-opacity disabled:opacity-50"
+                                    >
+                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500/20 to-amber-500/20 flex items-center justify-center">
+                                            <ImageIcon className="w-5 h-5 text-amber-500" />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="font-medium">Character Image</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                9:16 podium card background
+                                            </p>
+                                        </div>
+                                    </button>
+                                    {/* AI Prompt icons */}
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setPromptData(generateRandomPrompt());
+                                                setIsCopied(false);
+                                            }}
+                                            className="p-2 rounded-full hover:bg-purple-500/10 transition-colors"
+                                            title="Generate new AI prompt"
+                                        >
+                                            <RefreshCw className="w-4 h-4 text-purple-500" />
+                                        </button>
+                                        <button
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                try {
+                                                    await navigator.clipboard.writeText(promptData.prompt);
+                                                    setIsCopied(true);
+                                                    toast.success("AI prompt copied!");
+                                                    setTimeout(() => setIsCopied(false), 2000);
+                                                } catch {
+                                                    toast.error("Failed to copy");
+                                                }
+                                            }}
+                                            className={cn(
+                                                "p-2 rounded-full transition-colors",
+                                                isCopied ? "bg-green-500/20" : "hover:bg-purple-500/10"
+                                            )}
+                                            title="Copy AI prompt"
+                                        >
+                                            {isCopied ? (
+                                                <Check className="w-4 h-4 text-green-500" />
+                                            ) : (
+                                                <Copy className="w-4 h-4 text-purple-500" />
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
                         ) : (
                             <motion.div
                                 key="options"
@@ -369,9 +504,9 @@ export function ProfileImageSheet({ userName, className }: ProfileImageSheetProp
                                 exit={{ opacity: 0, x: 20 }}
                                 className="pt-2 pb-6 space-y-2"
                             >
-                                {/* Upload option */}
+                                {/* Upload option - now shows choice first */}
                                 <button
-                                    onClick={() => fileInputRef.current?.click()}
+                                    onClick={() => setShowUploadChoice(true)}
                                     disabled={isProcessing}
                                     className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors disabled:opacity-50"
                                 >

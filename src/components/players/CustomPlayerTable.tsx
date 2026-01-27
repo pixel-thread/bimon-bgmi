@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Crown, Medal, Award, TrendingUp, Target, Gamepad2, Coins, Star } from "lucide-react";
 import { getDisplayName } from "@/src/utils/displayName";
+import { motion, AnimatePresence } from "framer-motion";
 
 type PlayerT = {
     id: string;
@@ -26,6 +27,7 @@ type PlayerT = {
     kd: number;
     uc?: number;
     imageUrl?: string | null;
+    profileImageUrl?: string | null;
     characterImageUrl?: string | null;
     kills?: number;
     hasRoyalPass?: boolean;
@@ -152,9 +154,109 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
     const headerInfo = getDynamicHeader();
     const HeaderIcon = headerInfo.icon;
 
+    // Get top 3 players for podium (only on page 1 and when there are at least 3 players)
+    const isFirstPage = !meta || (meta.page === 1);
+    const hasEnoughForPodium = isFirstPage && data && data.length >= 3;
+    const top3Players = hasEnoughForPodium ? data.slice(0, 3) : [];
+    const remainingPlayers = hasEnoughForPodium ? data.slice(3) : data;
+
+    // Podium card component - tall rectangular design
+    const PodiumCard = ({ player, position }: { player: PlayerT; position: 1 | 2 | 3 }) => {
+        const positionConfig = {
+            1: {
+                size: "w-24 sm:w-32 aspect-[9/16]",
+                border: "border-2 border-yellow-400 dark:border-yellow-500",
+                glow: "shadow-[0_0_25px_rgba(250,204,21,0.4)]",
+                badge: "bg-gradient-to-br from-yellow-400 to-amber-500 text-yellow-900",
+                bg: "from-yellow-100 via-amber-50 to-yellow-100 dark:from-yellow-900/40 dark:via-amber-900/30 dark:to-yellow-900/40",
+            },
+            2: {
+                size: "w-20 sm:w-28 aspect-[9/16]",
+                border: "border-2 border-gray-400 dark:border-gray-400",
+                glow: "shadow-[0_0_15px_rgba(156,163,175,0.3)]",
+                badge: "bg-gradient-to-br from-gray-300 to-gray-400 text-gray-800",
+                bg: "from-gray-100 via-slate-50 to-gray-100 dark:from-gray-800/50 dark:via-slate-800/40 dark:to-gray-800/50",
+            },
+            3: {
+                size: "w-20 sm:w-28 aspect-[9/16]",
+                border: "border-2 border-amber-600 dark:border-amber-500",
+                glow: "shadow-[0_0_15px_rgba(217,119,6,0.3)]",
+                badge: "bg-gradient-to-br from-amber-600 to-orange-600 text-amber-100",
+                bg: "from-amber-100 via-orange-50 to-amber-100 dark:from-amber-900/40 dark:via-orange-900/30 dark:to-amber-900/40",
+            },
+        };
+
+        const config = positionConfig[position];
+        const kdValue = Number(player.kd || 0);
+        const displayKd = isFinite(kdValue) ? kdValue.toFixed(2) : "0.00";
+
+        return (
+            <div
+                onClick={() => handleRowClick(player.id)}
+                className={`
+                    ${config.size} relative cursor-pointer group
+                    rounded-2xl ${config.border} ${config.glow}
+                    bg-gradient-to-b ${config.bg}
+                    overflow-hidden transition-all duration-200
+                    hover:scale-105 hover:shadow-xl
+                `}
+            >
+                {/* Background image or gradient */}
+                {player.characterImageUrl || player.imageUrl ? (
+                    <div
+                        className="absolute inset-0 bg-cover bg-center opacity-90"
+                        style={{ backgroundImage: `url(${player.characterImageUrl || player.imageUrl})` }}
+                    />
+                ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-5xl sm:text-6xl font-bold text-zinc-300 dark:text-zinc-600 opacity-50">
+                            {getDisplayName(player.displayName, player.userName).charAt(0).toUpperCase()}
+                        </span>
+                    </div>
+                )}
+
+                {/* Dark gradient overlay at bottom */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                {/* Position badge - top */}
+                <div className={`absolute top-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${config.badge}`}>
+                    #{position}
+                </div>
+
+                {/* Crown for #1 */}
+                {position === 1 && (
+                    <Crown className="absolute top-2 right-2 w-5 h-5 text-yellow-400 drop-shadow-lg" />
+                )}
+
+                {/* Player info - bottom: Profile image centered, name below */}
+                <div className="absolute bottom-0 left-0 right-0 p-2 flex flex-col items-center gap-1">
+                    {/* Centered circular profile image */}
+                    <div className="w-8 h-8 rounded-full border border-white/80 shadow-md overflow-hidden bg-slate-700">
+                        {player.profileImageUrl ? (
+                            <div
+                                className="w-full h-full bg-cover bg-center"
+                                style={{ backgroundImage: `url(${player.profileImageUrl})` }}
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-primary/60">
+                                <span className="text-[10px] font-bold text-white">
+                                    {getDisplayName(player.displayName, player.userName).charAt(0).toUpperCase()}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                    {/* Name only */}
+                    <p className="text-[10px] sm:text-xs font-bold text-white truncate max-w-full px-1 drop-shadow-lg">
+                        {getDisplayName(player.displayName, player.userName)}
+                    </p>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="w-full space-y-3">
-            {/* Header */}
+            {/* Header - Leaderboard info */}
             <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
                     <span className="font-medium">Leaderboard</span>
@@ -170,9 +272,49 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                 </div>
             </div>
 
+            {/* Top 3 Podium */}
+            {isFirstPage && top3Players && top3Players.length >= 3 && (
+                <div className="bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900/80 dark:to-zinc-800/60 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-4 sm:p-6">
+                    <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6">
+                        <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
+                        <span className="font-bold text-base sm:text-lg text-zinc-800 dark:text-zinc-100">Top Players</span>
+                        <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
+                    </div>
+                    <div className="flex items-end justify-center gap-2 sm:gap-6">
+                        {/* 2nd place - left */}
+                        <motion.div
+                            className="mb-0"
+                            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
+                        >
+                            <PodiumCard player={top3Players[1]} position={2} />
+                        </motion.div>
+                        {/* 1st place - center, elevated */}
+                        <motion.div
+                            className="mb-2 sm:mb-4"
+                            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+                        >
+                            <PodiumCard player={top3Players[0]} position={1} />
+                        </motion.div>
+                        {/* 3rd place - right */}
+                        <motion.div
+                            className="mb-0"
+                            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
+                        >
+                            <PodiumCard player={top3Players[2]} position={3} />
+                        </motion.div>
+                    </div>
+                </div>
+            )}
+
             {/* Players List */}
             <div className="space-y-2">
-                {data?.length === 0 ? (
+                {remainingPlayers?.length === 0 && top3Players?.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                         <div className="w-16 h-16 mb-4 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
                             <Gamepad2 className="w-8 h-8 text-zinc-400" />
@@ -181,14 +323,23 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                         <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">Try adjusting your filters</p>
                     </div>
                 ) : (
-                    data?.flatMap((player, index) => {
-                        const globalIndex = meta ? ((meta.page || 1) - 1) * (meta.pageSize || 10) + index + 1 : index + 1;
+                    remainingPlayers?.flatMap((player, index) => {
+                        // Adjust index: on page 1, skip 3 for podium; otherwise use normal pagination
+                        const offset = isFirstPage ? 3 : 0;
+                        const globalIndex = meta ? ((meta.page || 1) - 1) * (meta.pageSize || 10) + index + 1 + offset : index + 1 + offset;
                         const rankStyle = getRankStyle(globalIndex);
                         const RankIcon = rankStyle.icon;
 
                         const playerRow = (
-                            <div
+                            <motion.div
                                 key={player.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{
+                                    duration: 0.5,
+                                    delay: index * 0.15,
+                                    ease: "easeOut"
+                                }}
                                 onClick={() => handleRowClick(player.id)}
                                 className={`
                                     group relative cursor-pointer rounded-xl border p-3 sm:p-4
@@ -272,7 +423,7 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                                 <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <ChevronRight className="w-5 h-5 text-zinc-400" />
                                 </div>
-                            </div>
+                            </motion.div>
                         );
 
                         return playerRow;

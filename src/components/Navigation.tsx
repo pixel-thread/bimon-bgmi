@@ -481,9 +481,9 @@ export default function Navigation() {
                                                     </div>
                                                 ) : (
                                                     <div className="h-10 w-10 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-zinc-700 relative flex-shrink-0">
-                                                        {(playerUser as any)?.player?.characterImage?.publicUrl ? (
+                                                        {((playerUser as any)?.player?.customProfileImageUrl || user?.imageUrl) ? (
                                                             <Image
-                                                                src={(playerUser as any).player.characterImage.publicUrl}
+                                                                src={(playerUser as any)?.player?.customProfileImageUrl || user?.imageUrl || ''}
                                                                 alt="Profile"
                                                                 fill
                                                                 sizes="40px"

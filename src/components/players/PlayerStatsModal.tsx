@@ -105,8 +105,9 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
   const isLoading = isAdmin ? (!hasInitialData && isPlayerLoading) : !hasInitialData;
 
   // Derived display values - use initialData for instant AND accurate display
+  // Circle avatars: customProfileImageUrl > Clerk image (no character image)
   const displayName = player?.user?.displayName || player?.user?.userName || initialData?.displayName || initialData?.userName || "Player";
-  const displayImageUrl = (player as any)?.customProfileImageUrl || (player as any)?.characterImage?.publicUrl || player?.clerkImageUrl || initialData?.imageUrl;
+  const displayImageUrl = (player as any)?.customProfileImageUrl || player?.clerkImageUrl || initialData?.imageUrl;
 
   // Stats from initialData (already accurate from players list API)
   const displayDeaths = initialData?.deaths ?? 0;

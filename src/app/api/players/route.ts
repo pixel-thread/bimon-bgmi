@@ -126,8 +126,13 @@ export async function GET(req: NextRequest) {
             playerStats.reduce((acc, curr) => acc + curr.deaths, 0),
           ),
           imageUrl: clerkInfo?.imageUrl || null,
-          characterImageUrl: player.customProfileImageUrl
-            || (player.characterImageId === "none" ? null : player.characterImage?.publicUrl)
+          // Profile image for circle: uploaded profile > Google (no character image)
+          profileImageUrl: player.customProfileImageUrl
+            || clerkInfo?.imageUrl
+            || null,
+          // Character image for 9:16 background: character image > uploaded profile
+          characterImageUrl: (player.characterImageId === "none" ? null : player.characterImage?.publicUrl)
+            || player.customProfileImageUrl
             || null,
           email: clerkInfo?.email || null,
           firstName: clerkInfo?.firstName || null,
@@ -159,8 +164,13 @@ export async function GET(req: NextRequest) {
             player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0),
           ),
           imageUrl: clerkInfo?.imageUrl || null,
-          characterImageUrl: player.customProfileImageUrl
-            || (player.characterImageId === "none" ? null : player.characterImage?.publicUrl)
+          // Profile image for circle: uploaded profile > Google (no character image)
+          profileImageUrl: player.customProfileImageUrl
+            || clerkInfo?.imageUrl
+            || null,
+          // Character image for 9:16 background: character image > uploaded profile
+          characterImageUrl: (player.characterImageId === "none" ? null : player.characterImage?.publicUrl)
+            || player.customProfileImageUrl
             || null,
           email: clerkInfo?.email || null,
           firstName: clerkInfo?.firstName || null,

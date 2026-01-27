@@ -24,8 +24,8 @@ export function NavUser() {
 
   const isProfileActive = pathname === "/profile";
 
-  // Get profile image: customProfileImageUrl > characterImage > Clerk image > fallback
-  const profileImage = user?.player?.customProfileImageUrl || user?.player?.characterImage?.publicUrl || clerkUser?.imageUrl;
+  // Get profile image: customProfileImageUrl > Clerk image > fallback (no character image for circles)
+  const profileImage = user?.player?.customProfileImageUrl || clerkUser?.imageUrl;
   const displayName = getDisplayName(user?.displayName, user?.userName);
   const initials = displayName?.charAt(0).toUpperCase() || "?";
 

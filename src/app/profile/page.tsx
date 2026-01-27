@@ -84,6 +84,13 @@ type PlayerStats = {
     avgKillsPerMatch: number;
 };
 
+type ProfileImageSettings = {
+    imageType: "google" | "custom" | "uploaded" | "none";
+    customImageId: string | null;
+    customImage: { publicUrl: string } | null;
+    uploadedImageUrl: string | null;
+};
+
 export default function ProfilePage() {
     const { user, isAuthLoading } = useAuth();
     const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
@@ -166,6 +173,33 @@ export default function ProfilePage() {
         queryFn: () => http.get<{ merit: { score: number; isSoloRestricted: boolean } }>("/player/merit"),
         enabled: !!playerId,
     });
+
+    // Fetch profile image settings for circular avatar
+    const { data: profileImageData } = useQuery({
+        queryKey: ["profile-image-settings"],
+        queryFn: () => http.get<ProfileImageSettings>("/profile/image"),
+        enabled: !!playerId,
+    });
+    const profileImageSettings = profileImageData?.data;
+
+    // Get current profile image URL based on settings
+    const getProfileImageUrl = (): string | null => {
+        if (!profileImageSettings) return clerkUser?.imageUrl || null;
+
+        switch (profileImageSettings.imageType) {
+            case "uploaded":
+                return profileImageSettings.uploadedImageUrl || clerkUser?.imageUrl || null;
+            case "custom":
+                return profileImageSettings.customImage?.publicUrl || clerkUser?.imageUrl || null;
+            case "google":
+                return clerkUser?.imageUrl || null;
+            case "none":
+                return null;
+            default:
+                return clerkUser?.imageUrl || null;
+        }
+    };
+    const currentProfileImageUrl = getProfileImageUrl();
 
     const playerStats = statsData?.data;
     const transfers = transfersData?.data || [];
@@ -275,17 +309,27 @@ export default function ProfilePage() {
     if (isPageLoading) {
         return (
             <div className="container mx-auto px-4 py-8 space-y-6">
-                {/* Header skeleton */}
+                {/* Profile Header - 9:16 Card on LEFT, Info on RIGHT */}
                 <div className="flex items-center gap-4">
-                    <Skeleton className="h-16 w-16 rounded-full" />
-                    <div className="space-y-2">
-                        <Skeleton className="h-8 w-48" />
-                        <Skeleton className="h-4 w-32" />
+                    {/* 9:16 Podium Card Skeleton */}
+                    <div className="relative w-28 sm:w-36 aspect-[9/16] rounded-2xl border-[3px] border-yellow-400/50 bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 overflow-hidden flex-shrink-0">
+                        <Skeleton className="absolute inset-0" />
+                        {/* Bottom info skeleton */}
+                        <div className="absolute bottom-2 inset-x-1 flex flex-col items-center gap-1">
+                            <Skeleton className="w-8 h-8 rounded-full" />
+                            <Skeleton className="h-3 w-16" />
+                        </div>
+                    </div>
+                    {/* User Info Skeleton */}
+                    <div className="flex-1 min-w-0 space-y-2">
+                        <Skeleton className="h-8 w-40 sm:w-52" />
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-36" />
                     </div>
                 </div>
 
                 {/* Tabs skeleton */}
-                <Skeleton className="h-10 w-full max-w-md rounded-xl" />
+                <Skeleton className="h-11 w-full max-w-lg rounded-xl" />
 
                 {/* Stats Section - Glassmorphism skeleton */}
                 <div className="relative rounded-2xl overflow-hidden">
@@ -342,7 +386,7 @@ export default function ProfilePage() {
                             <Skeleton className="h-5 w-28" />
                         </div>
                         <div className="space-y-2">
-                            {[...Array(3)].map((_, i) => (
+                            {[...Array(2)].map((_, i) => (
                                 <div key={i} className="p-3 rounded-xl bg-white/30 dark:bg-slate-800/30">
                                     <div className="flex items-start gap-2.5">
                                         <Skeleton className="h-7 w-7 rounded-full flex-shrink-0" />
@@ -356,22 +400,6 @@ export default function ProfilePage() {
                         </div>
                     </div>
                 </div>
-
-                {/* UC History skeleton - Glassmorphism */}
-                <div className="relative rounded-2xl overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-violet-500/10 to-indigo-500/10 dark:from-purple-600/15 dark:via-violet-600/15 dark:to-indigo-600/15" />
-                    <div className="absolute inset-0 backdrop-blur-3xl" />
-
-                    <div className="relative p-4 md:p-5">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Skeleton className="h-8 w-8 rounded-lg" />
-                                <Skeleton className="h-5 w-24" />
-                            </div>
-                            <Skeleton className="h-7 w-14 rounded-md" />
-                        </div>
-                    </div>
-                </div>
             </div>
         );
     }
@@ -382,7 +410,10 @@ export default function ProfilePage() {
         return (
             <div className="container mx-auto px-4 py-8 space-y-6">
                 <div className="flex items-center gap-4">
-                    <Skeleton className="h-16 w-16 rounded-full" />
+                    {/* 9:16 Card Skeleton */}
+                    <div className="relative w-28 sm:w-36 aspect-[9/16] rounded-2xl border-[3px] border-yellow-400/50 bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 overflow-hidden flex-shrink-0">
+                        <Skeleton className="absolute inset-0" />
+                    </div>
                     <div className="space-y-2">
                         <Skeleton className="h-8 w-48" />
                         <Skeleton className="h-4 w-32" />
@@ -419,30 +450,73 @@ export default function ProfilePage() {
                 </button>
             )}
 
-            {/* Header with User Info */}
+            {/* Profile Header - Image on LEFT, Info on RIGHT */}
             <div className="flex items-center gap-4">
-                {/* Profile Image - Click to change */}
-                <div className="relative">
-                    <ProfileImageSheet userName={user.userName} />
-                    {/* Banned Stamp Overlay */}
-                    {banStatus.isBanned && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="absolute inset-0 bg-black/40 rounded-full" />
-                            <div className="relative rotate-[-20deg] bg-red-600 text-white text-xs font-bold px-3 py-1 rounded border-2 border-red-800 shadow-lg uppercase tracking-wider">
-                                Banned
+                {/* 9:16 Podium Preview - LEFT side */}
+                <ProfileImageSheet userName={user.userName} displayName={user.displayName || undefined}>
+                    <div className="relative w-28 sm:w-36 aspect-[9/16] rounded-2xl border-[3px] border-yellow-400 dark:border-yellow-500 shadow-[0_0_25px_rgba(250,204,21,0.4)] bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 overflow-hidden cursor-pointer group hover:scale-105 transition-transform flex-shrink-0">
+                        {/* Character image or fallback gradient */}
+                        {user.player?.characterImage?.publicUrl ? (
+                            <div
+                                className="absolute inset-0 bg-cover bg-center"
+                                style={{ backgroundImage: `url(${user.player.characterImage.publicUrl})` }}
+                            />
+                        ) : (
+                            <div className="absolute inset-0 bg-gradient-to-b from-purple-900/50 via-slate-900 to-slate-950 flex items-center justify-center">
+                                <span className="text-5xl sm:text-6xl font-bold text-white/20">
+                                    {getDisplayName(user.displayName, user.userName).charAt(0).toUpperCase()}
+                                </span>
                             </div>
+                        )}
+                        {/* Dark gradient overlay for bottom */}
+                        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/60 to-transparent" />
+
+                        {/* Bottom: Profile image centered, name below - matching players page */}
+                        <div className="absolute bottom-2 inset-x-1 flex flex-col items-center gap-1 px-1">
+                            {/* Centered circular profile image */}
+                            <div className="w-8 h-8 rounded-full border border-white/80 shadow-md overflow-hidden bg-slate-700">
+                                {currentProfileImageUrl ? (
+                                    <div
+                                        className="w-full h-full bg-cover bg-center"
+                                        style={{ backgroundImage: `url(${currentProfileImageUrl})` }}
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-primary/60">
+                                        <span className="text-[10px] font-bold text-white">
+                                            {getDisplayName(user.displayName, user.userName).charAt(0).toUpperCase()}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            {/* Name only */}
+                            <p className="text-[10px] sm:text-xs font-bold text-white truncate max-w-full drop-shadow-lg">
+                                {getDisplayName(user.displayName, user.userName)}
+                            </p>
                         </div>
-                    )}
-                </div>
-                <div>
+
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <span className="text-white text-xs font-medium">Tap to edit</span>
+                        </div>
+                    </div>
+                </ProfileImageSheet>
+
+                {/* User Info - RIGHT side */}
+                <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                        <h1 className="text-3xl font-bold">{getDisplayName(user.displayName, user.userName)}</h1>
+                        <h1 className="text-2xl sm:text-3xl font-bold truncate">{getDisplayName(user.displayName, user.userName)}</h1>
                         {hasRoyalPass && (
-                            <Crown className="w-6 h-6 text-amber-500 crown-glow flex-shrink-0" />
+                            <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 crown-glow flex-shrink-0" />
                         )}
                     </div>
                     <p className="text-sm text-muted-foreground">@{user.userName}</p>
-                    <p className="text-muted-foreground">{user.email || "No email linked"}</p>
+                    <p className="text-sm text-muted-foreground truncate">{user.email || "No email linked"}</p>
+                    {/* Banned status */}
+                    {banStatus.isBanned && (
+                        <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-500/10 border border-red-500/30">
+                            <span className="text-xs font-medium text-red-600 dark:text-red-400">Banned</span>
+                        </div>
+                    )}
                 </div>
             </div>
 
