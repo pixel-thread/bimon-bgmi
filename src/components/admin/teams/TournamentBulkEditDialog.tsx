@@ -67,6 +67,7 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
     const [matchNumberMap, setMatchNumberMap] = useState<Map<string, number>>(new Map()); // Store matchId -> matchNumber
     const [showMatchSelector, setShowMatchSelector] = useState(true); // Start with match selector view
     const [changeNotes, setChangeNotes] = useState<string[]>([]); // DEV: Track changes from saved data
+    const [hasPasted, setHasPasted] = useState(false); // Track if first paste has happened
 
     // Fetch all matches for this tournament
     const { data: matches, isFetching: isMatchesFetching } = useQuery({
@@ -132,6 +133,8 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
             setMatchDataList([]);
             setSelectedMatchIds(new Set());
             setShowMatchSelector(true);
+            setHasPasted(false);
+            setChangeNotes([]);
         }
     }, [open]);
 
@@ -378,12 +381,13 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
                 };
             });
 
-            // DEV: Log changes compared to initial saved data
-            if (initialMatchDataList.length > 0) {
+            // DEV: Log changes compared to PREVIOUS paste (not initial saved data)
+            // Only show change notes on second or subsequent pastes
+            if (hasPasted && matchDataList.length > 0) {
                 const changes: string[] = [];
-                for (let mIdx = 0; mIdx < newMatchDataList.length && mIdx < initialMatchDataList.length; mIdx++) {
+                for (let mIdx = 0; mIdx < newMatchDataList.length && mIdx < matchDataList.length; mIdx++) {
                     const newMatch = newMatchDataList[mIdx];
-                    const oldMatch = initialMatchDataList[mIdx];
+                    const oldMatch = matchDataList[mIdx]; // Compare to CURRENT data (previous paste)
                     if (!oldMatch) continue;
 
                     const matchChanges: string[] = [];
@@ -430,6 +434,9 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
                 setChangeNotes([]);
             }
 
+            // Mark that first paste has happened
+            setHasPasted(true);
+
             setMatchDataList(newMatchDataList);
             setUnknownPlayers(newUnknownPlayers);
             toast.success(`Applied data for ${Math.min(matchGroups.length, matchDataList.length)} matches!`);
@@ -437,7 +444,7 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
             const err = error as Error;
             toast.error(err.message || "Failed to parse JSON");
         }
-    }, [matchDataList, normalizeName, initialMatchDataList]);
+    }, [matchDataList, normalizeName, hasPasted]);
 
     // Handle paste
     const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
