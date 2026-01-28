@@ -152,7 +152,7 @@ export default function AdminJobListingsPage() {
                                 <CardContent className="p-4">
                                     <div className="flex items-start gap-4">
                                         <PlayerAvatar
-                                            characterImageUrl={(listing.player as any).customProfileImageUrl || listing.player.characterImage?.publicUrl}
+                                            profileImageUrl={(listing.player as any).customProfileImageUrl}
                                             displayName={listing.player.user.displayName || ""}
                                             userName={listing.player.user.userName}
                                             size="sm"

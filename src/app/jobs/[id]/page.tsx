@@ -104,7 +104,7 @@ export default function JobDetailPage() {
                     {/* Profile */}
                     <div className="flex items-center gap-4">
                         <PlayerAvatar
-                            characterImageUrl={(listing.player as any)?.customProfileImageUrl || listing.player?.characterImage?.publicUrl}
+                            profileImageUrl={(listing.player as any)?.customProfileImageUrl}
                             imageUrl={listing.player?.imageUrl}
                             displayName={listing.player?.user.displayName || ""}
                             userName={listing.player?.user.userName || "User"}

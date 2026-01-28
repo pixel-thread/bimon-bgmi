@@ -224,7 +224,7 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                                           }`}
                                       >
                                         <PlayerAvatar
-                                          characterImageUrl={vote.player?.customProfileImageUrl}
+                                          profileImageUrl={vote.player?.customProfileImageUrl}
                                           imageUrl={(vote.player as any)?.imageUrl}
                                           displayName={vote.player.user.displayName}
                                           userName={vote.player.user.userName}
@@ -272,7 +272,7 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
                                       className="flex items-center space-x-2"
                                     >
                                       <PlayerAvatar
-                                        characterImageUrl={vote.player?.customProfileImageUrl}
+                                        profileImageUrl={vote.player?.customProfileImageUrl}
                                         imageUrl={(vote.player as any)?.imageUrl}
                                         displayName={vote.player.user.displayName}
                                         userName={vote.player.user.userName}

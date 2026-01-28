@@ -9,7 +9,7 @@ import { User } from "lucide-react";
 type RecentVoter = {
   id: string;
   imageUrl?: string | null;
-  characterImageUrl?: string | null;
+  profileImageUrl?: string | null;
   displayName?: string | null;
   userName?: string;
 };
@@ -116,7 +116,7 @@ export const PollOption: React.FC<PollOptionProps> = React.memo(
                     {recentVoters.slice(0, 2).map((voter, index) => (
                       <PlayerAvatar
                         key={voter.id}
-                        characterImageUrl={voter.characterImageUrl}
+                        profileImageUrl={voter.profileImageUrl}
                         imageUrl={voter.imageUrl}
                         displayName={voter.displayName}
                         userName={voter.userName}

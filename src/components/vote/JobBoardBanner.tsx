@@ -244,7 +244,7 @@ export function JobBoardBanner() {
                     {/* User Info Row */}
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                         <PlayerAvatar
-                            characterImageUrl={currentListing.player?.customProfileImageUrl}
+                            profileImageUrl={currentListing.player?.customProfileImageUrl}
                             imageUrl={currentListing.player?.imageUrl}
                             displayName={currentListing.player?.user.displayName || ""}
                             userName={currentListing.player?.user.userName || "User"}

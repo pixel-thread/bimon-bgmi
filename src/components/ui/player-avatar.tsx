@@ -5,9 +5,9 @@ import { User } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 
 type PlayerAvatarProps = {
-    /** Custom image URL from character gallery - highest priority */
-    characterImageUrl?: string | null;
-    /** Google/Clerk image URL - fallback if no custom image */
+    /** Profile image URL (uploaded profile or Google) - for circle avatars */
+    profileImageUrl?: string | null;
+    /** Google/Clerk image URL - fallback if no profile image */
     imageUrl?: string | null;
     /** Player's display name */
     displayName?: string | null;
@@ -21,6 +21,8 @@ type PlayerAvatarProps = {
     showUserIcon?: boolean;
     /** Whether the player is banned - shows banned stamp overlay */
     isBanned?: boolean;
+    /** @deprecated Use profileImageUrl instead. This prop is ignored. */
+    characterImageUrl?: string | null;
 };
 
 const sizeClasses = {
@@ -48,13 +50,12 @@ const bannedStampSizeClasses = {
 };
 
 /**
- * Reusable player avatar component that handles image priority:
- * 1. Custom character image (if set)
- * 2. Google/Clerk image (fallback - now disabled, shows skeleton instead)
- * 3. Skeleton/loading fallback
+ * Reusable player avatar component for CIRCLE avatars.
+ * Uses profile image (uploaded or Google), NOT character image.
+ * Character image is only for 9:16 podium backgrounds.
  */
 export function PlayerAvatar({
-    characterImageUrl,
+    profileImageUrl,
     imageUrl,
     displayName,
     userName,
@@ -63,9 +64,9 @@ export function PlayerAvatar({
     showUserIcon = false,
     isBanned = false,
 }: PlayerAvatarProps) {
-    // Priority: characterImage > imageUrl (if explicitly set) > skeleton fallback
-    // Only use imageUrl if characterImageUrl isn't set
-    const imageSrc = characterImageUrl || imageUrl || undefined;
+    // Priority: profileImageUrl > imageUrl (Google) > skeleton fallback
+    // NEVER use characterImageUrl for circle avatars
+    const imageSrc = profileImageUrl || imageUrl || undefined;
 
     return (
         <div className="relative">

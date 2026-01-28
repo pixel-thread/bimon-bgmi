@@ -20,6 +20,7 @@ type PlayerT = {
   kills: number;
   uc: number;
   imageUrl?: string | null;
+  profileImageUrl?: string | null;
   characterImageUrl?: string | null;
   hasRoyalPass?: boolean;
 };

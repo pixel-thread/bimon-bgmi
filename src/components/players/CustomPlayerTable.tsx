@@ -364,7 +364,7 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
 
                                     {/* Avatar */}
                                     <PlayerAvatar
-                                        characterImageUrl={player.characterImageUrl}
+                                        profileImageUrl={player.profileImageUrl}
                                         imageUrl={player.imageUrl}
                                         displayName={player.displayName}
                                         userName={player.userName}
