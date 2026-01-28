@@ -21,6 +21,7 @@ type PlayerT = {
   uc: number;
   imageUrl?: string | null;
   characterImageUrl?: string | null;
+  hasRoyalPass?: boolean;
 };
 
 export function usePlayers({

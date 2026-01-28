@@ -74,6 +74,7 @@ type InitialPlayerData = {
   deaths: number;
   imageUrl?: string | null;
   balance?: number;
+  hasRoyalPass?: boolean;
 };
 
 type Props = {
@@ -307,7 +308,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                           BANNED
                         </Badge>
                       )}
-                      {(player as any)?.hasRoyalPass && (
+                      {((player as any)?.hasRoyalPass || initialData?.hasRoyalPass) && (
                         <Crown className="w-4 h-4 text-amber-500 crown-glow flex-shrink-0" />
                       )}
                       {isSuperAdmin && player?.isUCExempt && (

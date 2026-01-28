@@ -99,6 +99,7 @@ export function PlayersTab() {
               deaths: selectedPlayer.deaths,
               imageUrl: selectedPlayer.characterImageUrl || selectedPlayer.imageUrl,
               balance: selectedPlayer.uc,
+              hasRoyalPass: selectedPlayer.hasRoyalPass,
             } : undefined}
           />
         );

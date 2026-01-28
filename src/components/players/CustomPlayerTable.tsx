@@ -223,11 +223,6 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                     #{position}
                 </div>
 
-                {/* Crown for #1 */}
-                {position === 1 && (
-                    <Crown className="absolute top-2 right-2 w-5 h-5 text-yellow-400 drop-shadow-lg" />
-                )}
-
                 {/* Player info - bottom: Profile image centered, name below */}
                 <div className="absolute bottom-0 left-0 right-0 p-2 flex flex-col items-center gap-1">
                     {/* Centered circular profile image */}
