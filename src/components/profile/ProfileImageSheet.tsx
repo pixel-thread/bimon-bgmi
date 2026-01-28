@@ -56,6 +56,7 @@ export function ProfileImageSheet({ userName, displayName, className, children }
     const [pendingAction, setPendingAction] = useState<"upload" | "remove" | "gallery" | null>(null);
     const [promptData, setPromptData] = useState(() => generateRandomPrompt());
     const [isCopied, setIsCopied] = useState(false);
+    const [isRegenerating, setIsRegenerating] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Use the back button handler hook
@@ -426,12 +427,22 @@ export function ProfileImageSheet({ userName, displayName, className, children }
                                     className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors disabled:opacity-50 border border-muted"
                                 >
                                     <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
-                                        <User className="w-5 h-5 text-blue-500" />
+                                        {(isCompressing || isUploading) && uploadTargetType === "profile" ? (
+                                            <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                                        ) : (
+                                            <User className="w-5 h-5 text-blue-500" />
+                                        )}
                                     </div>
                                     <div className="text-left flex-1">
-                                        <p className="font-medium">Profile Image</p>
+                                        <p className="font-medium">
+                                            {(isCompressing || isUploading) && uploadTargetType === "profile"
+                                                ? (isCompressing ? "Compressing..." : "Uploading...")
+                                                : "Profile Image"}
+                                        </p>
                                         <p className="text-sm text-muted-foreground">
-                                            Your account avatar (circle)
+                                            {(isCompressing || isUploading) && uploadTargetType === "profile"
+                                                ? "Please wait..."
+                                                : "Your account avatar (circle)"}
                                         </p>
                                     </div>
                                 </button>
@@ -447,12 +458,22 @@ export function ProfileImageSheet({ userName, displayName, className, children }
                                         className="flex items-center gap-4 flex-1 hover:opacity-80 transition-opacity disabled:opacity-50"
                                     >
                                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500/20 to-amber-500/20 flex items-center justify-center">
-                                            <ImageIcon className="w-5 h-5 text-amber-500" />
+                                            {(isCompressing || isUploading) && uploadTargetType === "character" ? (
+                                                <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                                            ) : (
+                                                <ImageIcon className="w-5 h-5 text-amber-500" />
+                                            )}
                                         </div>
                                         <div className="text-left">
-                                            <p className="font-medium">Character Image</p>
+                                            <p className="font-medium">
+                                                {(isCompressing || isUploading) && uploadTargetType === "character"
+                                                    ? (isCompressing ? "Compressing..." : "Uploading...")
+                                                    : "Character Image"}
+                                            </p>
                                             <p className="text-sm text-muted-foreground">
-                                                9:16 podium card background
+                                                {(isCompressing || isUploading) && uploadTargetType === "character"
+                                                    ? "Please wait..."
+                                                    : "9:16 podium card background"}
                                             </p>
                                         </div>
                                     </button>
@@ -461,13 +482,18 @@ export function ProfileImageSheet({ userName, displayName, className, children }
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
+                                                setIsRegenerating(true);
                                                 setPromptData(generateRandomPrompt());
                                                 setIsCopied(false);
+                                                setTimeout(() => setIsRegenerating(false), 300);
                                             }}
                                             className="p-2 rounded-full hover:bg-purple-500/10 transition-colors"
                                             title="Generate new AI prompt"
                                         >
-                                            <RefreshCw className="w-4 h-4 text-purple-500" />
+                                            <RefreshCw className={cn(
+                                                "w-4 h-4 text-purple-500 transition-transform",
+                                                isRegenerating && "animate-spin"
+                                            )} />
                                         </button>
                                         <button
                                             onClick={async (e) => {
