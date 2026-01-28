@@ -11,7 +11,6 @@ import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { playerVoteSchema } from "@/src/utils/validation/poll";
 import { isMeritBanEnabled, getAppSetting } from "@/src/services/settings/getAppSetting";
-import { selectLuckyVoter } from "@/src/services/team/previewTeamsByPoll";
 
 export async function GET(
   req: Request,
@@ -248,7 +247,7 @@ export async function POST(
       },
     });
 
-    // Lucky voter selection - only for IN or SOLO votes on polls with entry fees
+    // Lucky voter selection - Fair dice roll: each voter gets equal 8% chance
     let isLuckyVoter = false;
     const tournamentFee = isPollExist.tournament?.fee || 0;
     const seasonId = isPollExist.tournament?.seasonId;
@@ -261,30 +260,30 @@ export async function POST(
       });
 
       if (!pollWithLucky?.luckyVoterId) {
-        // No lucky voter yet - get all eligible voters (IN or SOLO) and select one
-        const eligibleVotes = await prisma.playerPollVote.findMany({
-          where: {
-            pollId,
-            vote: { in: ["IN", "SOLO"] },
-          },
-          select: { playerId: true },
-        });
+        // No lucky voter yet - check if this player is eligible for the dice roll
+        // First, check if they already won this season (excluded from lottery)
+        const luckyVotersJson = await getAppSetting("luckyVotersBySeason");
+        const luckyVotersBySeason: Record<string, string[]> = luckyVotersJson
+          ? JSON.parse(luckyVotersJson)
+          : {};
+        const seasonLuckyVoters = luckyVotersBySeason[seasonId] || [];
 
-        const eligiblePlayerIds = eligibleVotes.map(v => v.playerId);
+        // Only roll the dice if player hasn't won this season
+        if (!seasonLuckyVoters.includes(playerId)) {
+          // Fair dice roll: 8% chance per voter (everyone has equal odds)
+          const LUCKY_CHANCE_PERCENT = 8;
+          const roll = Math.floor(Math.random() * 100);
 
-        // Select lucky voter using once-per-season algorithm
-        const luckyVoterId = await selectLuckyVoter(eligiblePlayerIds, pollId, seasonId);
-
-        if (luckyVoterId) {
-          // Store lucky voter in poll
-          await prisma.poll.update({
-            where: { id: pollId },
-            data: { luckyVoterId },
-          });
-
-          // Check if current player is the lucky voter
-          isLuckyVoter = luckyVoterId === playerId;
+          if (roll < LUCKY_CHANCE_PERCENT) {
+            // Winner! Store in poll
+            await prisma.poll.update({
+              where: { id: pollId },
+              data: { luckyVoterId: playerId },
+            });
+            isLuckyVoter = true;
+          }
         }
+        // If no one wins during voting, fallback selection happens at team creation
       } else {
         // Check if current player is the existing lucky voter
         isLuckyVoter = pollWithLucky.luckyVoterId === playerId;

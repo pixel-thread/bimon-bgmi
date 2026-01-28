@@ -78,6 +78,31 @@ export async function createTeamsByPolls({
       select: { luckyVoterId: true },
     });
     luckyVoterId = poll?.luckyVoterId || null;
+
+    // Fallback: If no one won the dice roll during voting, select a lucky winner now
+    if (!luckyVoterId && entryFee > 0) {
+      // Get all eligible voters (IN or SOLO) for this poll
+      const eligibleVotes = await prisma.playerPollVote.findMany({
+        where: {
+          pollId,
+          vote: { in: ["IN", "SOLO"] },
+        },
+        select: { playerId: true },
+      });
+      const eligiblePlayerIds = eligibleVotes.map(v => v.playerId);
+
+      // Use the selectLuckyVoter algorithm to pick a winner (with season exclusion)
+      const { selectLuckyVoter } = await import("@/src/services/team/previewTeamsByPoll");
+      luckyVoterId = await selectLuckyVoter(eligiblePlayerIds, pollId, seasonId);
+
+      // Store the lucky voter in the poll
+      if (luckyVoterId) {
+        await prisma.poll.update({
+          where: { id: pollId },
+          data: { luckyVoterId },
+        });
+      }
+    }
   }
 
   // Count tournaments in current season (for season transition logic)
