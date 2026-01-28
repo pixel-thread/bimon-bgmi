@@ -6,10 +6,8 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 
 const updateImageSchema = z.object({
-    // "google" = use Google image, "custom" = use a gallery image, "uploaded" = use user-uploaded image
-    imageType: z.enum(["google", "custom", "uploaded"]),
-    // Required when imageType is "custom"
-    customImageId: z.string().optional(),
+    // "google" = use Google/Clerk image, "uploaded" = use user-uploaded image
+    imageType: z.enum(["google", "uploaded"]),
     // Required when imageType is "uploaded"
     uploadedImageUrl: z.string().url().optional(),
 });
@@ -23,29 +21,25 @@ export async function GET(req: NextRequest) {
             return ErrorResponse({ message: "User not found", status: 404 });
         }
 
-        // Get player with character image
+        // Get player
         const player = await prisma.player.findUnique({
             where: { userId: user.id },
-            include: { characterImage: true },
         });
 
         if (!player) {
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
 
-        // Determine current image type
-        let imageType: "google" | "custom" | "uploaded" = "google";
+        // Determine current image type for profile (circle avatar)
+        // Only check customProfileImageUrl - characterImageId is for the podium card background
+        let imageType: "google" | "uploaded" = "google";
         if (player.customProfileImageUrl) {
             imageType = "uploaded";
-        } else if (player.characterImageId && player.characterImageId !== "none") {
-            imageType = "custom";
         }
 
         return SuccessResponse({
             data: {
                 imageType,
-                customImageId: player.characterImageId !== "none" ? player.characterImageId : null,
-                customImage: player.characterImage,
                 uploadedImageUrl: player.customProfileImageUrl,
             },
             message: "Profile image settings fetched",
@@ -75,38 +69,12 @@ export async function PATCH(req: NextRequest) {
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
 
-        let characterImageId: string | null = null;
         let customProfileImageUrl: string | null = null;
 
         switch (body.imageType) {
             case "google":
-                // Clear both custom image selections
-                characterImageId = null;
+                // Clear uploaded profile image - will use Google/Clerk image
                 customProfileImageUrl = null;
-                break;
-            case "custom":
-                if (!body.customImageId) {
-                    return ErrorResponse({
-                        message: "Custom image ID is required",
-                        status: 400,
-                    });
-                }
-                // Verify the image exists and is a character image
-                const image = await prisma.gallery.findFirst({
-                    where: {
-                        id: body.customImageId,
-                        isCharacterImg: true,
-                        status: "ACTIVE",
-                    },
-                });
-                if (!image) {
-                    return ErrorResponse({
-                        message: "Invalid image selection",
-                        status: 400,
-                    });
-                }
-                characterImageId = body.customImageId;
-                customProfileImageUrl = null; // Clear uploaded image
                 break;
             case "uploaded":
                 if (!body.uploadedImageUrl) {
@@ -115,27 +83,23 @@ export async function PATCH(req: NextRequest) {
                         status: 400,
                     });
                 }
-                // Store the Google Drive URL
+                // Store the uploaded URL
                 customProfileImageUrl = body.uploadedImageUrl;
-                characterImageId = null; // Clear gallery selection
                 break;
         }
 
-        // Update player
-        const updatedPlayer = await prisma.player.update({
+        // Update player - only update customProfileImageUrl, NOT characterImageId
+        // characterImageId is for the 9:16 podium card background, not the profile picture
+        await prisma.player.update({
             where: { id: player.id },
             data: {
-                characterImageId,
                 customProfileImageUrl,
             },
-            include: { characterImage: true },
         });
 
         return SuccessResponse({
             data: {
                 imageType: body.imageType,
-                customImageId: characterImageId,
-                customImage: updatedPlayer.characterImage,
                 uploadedImageUrl: customProfileImageUrl,
             },
             message: "Profile image updated",

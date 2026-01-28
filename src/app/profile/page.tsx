@@ -183,18 +183,14 @@ export default function ProfilePage() {
     const profileImageSettings = profileImageData?.data;
 
     // Get current profile image URL based on settings
+    // Profile image only uses google or uploaded - character image is separate
     const getProfileImageUrl = (): string | null => {
         if (!profileImageSettings) return clerkUser?.imageUrl || null;
 
         switch (profileImageSettings.imageType) {
             case "uploaded":
                 return profileImageSettings.uploadedImageUrl || clerkUser?.imageUrl || null;
-            case "custom":
-                return profileImageSettings.customImage?.publicUrl || clerkUser?.imageUrl || null;
             case "google":
-                return clerkUser?.imageUrl || null;
-            case "none":
-                return null;
             default:
                 return clerkUser?.imageUrl || null;
         }
