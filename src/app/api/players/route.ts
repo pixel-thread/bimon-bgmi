@@ -130,10 +130,10 @@ export async function GET(req: NextRequest) {
           profileImageUrl: player.customProfileImageUrl
             || clerkInfo?.imageUrl
             || null,
-          // Character image for 9:16 background: character image > uploaded profile
-          characterImageUrl: (player.characterImageId === "none" ? null : player.characterImage?.publicUrl)
-            || player.customProfileImageUrl
-            || null,
+          // Character image for 9:16 background: ONLY from Gallery, never profile image
+          characterImageUrl: (player.characterImageId && player.characterImageId !== "none")
+            ? player.characterImage?.publicUrl || null
+            : null,
           email: clerkInfo?.email || null,
           firstName: clerkInfo?.firstName || null,
           lastName: clerkInfo?.lastName || null,
@@ -168,10 +168,10 @@ export async function GET(req: NextRequest) {
           profileImageUrl: player.customProfileImageUrl
             || clerkInfo?.imageUrl
             || null,
-          // Character image for 9:16 background: character image > uploaded profile
-          characterImageUrl: (player.characterImageId === "none" ? null : player.characterImage?.publicUrl)
-            || player.customProfileImageUrl
-            || null,
+          // Character image for 9:16 background: ONLY from Gallery, never profile image
+          characterImageUrl: (player.characterImageId && player.characterImageId !== "none")
+            ? player.characterImage?.publicUrl || null
+            : null,
           email: clerkInfo?.email || null,
           firstName: clerkInfo?.firstName || null,
           lastName: clerkInfo?.lastName || null,
