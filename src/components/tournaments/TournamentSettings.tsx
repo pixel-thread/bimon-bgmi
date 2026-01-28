@@ -28,6 +28,7 @@ import {
   Undo2,
   ChevronDown,
   Trophy,
+  RefreshCw,
 } from "lucide-react";
 import {
   Collapsible,
@@ -127,6 +128,26 @@ export function TournamentSettings() {
     }
   };
 
+  // Update streaks mutation (for manually triggering streak updates)
+  const { isPending: isUpdatingStreaks, mutate: updateStreaks } = useMutation({
+    mutationFn: () => http.post(`/admin/tournament/${tournamentId}/update-streaks`),
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message || "Streaks updated successfully!");
+      } else {
+        toast.error(data.message || "Failed to update streaks");
+      }
+    },
+    onError: () => {
+      toast.error("Failed to update streaks");
+    },
+  });
+
+  const handleUpdateStreaks = () => {
+    if (!tournamentId || !tournament?.isWinnerDeclared) return;
+    updateStreaks();
+  };
+
   return (
     <div className="space-y-4">
       {/* Tournament Manager - Merged with Configuration */}
@@ -195,19 +216,35 @@ export function TournamentSettings() {
                   Declare Winners
                 </Button>
               ) : (
-                <Button
-                  onClick={handleUndoWinner}
-                  disabled={isUndoing}
-                  variant="destructive"
-                  className="flex-1 gap-1.5 h-8 text-xs"
-                >
-                  {isUndoing ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Undo2 className="h-3.5 w-3.5" />
-                  )}
-                  {isUndoing ? "Undoing..." : "Undo Winners"}
-                </Button>
+                <>
+                  <Button
+                    onClick={handleUpdateStreaks}
+                    disabled={isUpdatingStreaks}
+                    variant="outline"
+                    className="flex-1 gap-1.5 h-8 text-xs"
+                    title="Manually update tournament streaks for all participants"
+                  >
+                    {isUpdatingStreaks ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    )}
+                    {isUpdatingStreaks ? "Updating..." : "Update Streaks"}
+                  </Button>
+                  <Button
+                    onClick={handleUndoWinner}
+                    disabled={isUndoing}
+                    variant="destructive"
+                    className="flex-1 gap-1.5 h-8 text-xs"
+                  >
+                    {isUndoing ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Undo2 className="h-3.5 w-3.5" />
+                    )}
+                    {isUndoing ? "Undoing..." : "Undo Winners"}
+                  </Button>
+                </>
               )}
             </div>
           )}

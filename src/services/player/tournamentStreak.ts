@@ -70,10 +70,11 @@ export async function recordTournamentParticipation(
     // Get current active season
     const currentSeasonId = await getActiveSeasonId();
 
-    // Get player's current streak data
+    // Get player's current streak data (including userId for UC upsert)
     const player = await prisma.player.findUnique({
         where: { id: playerId },
         select: {
+            userId: true,
             tournamentStreak: true,
             streakSeasonId: true,
             lastTournamentSeqId: true,
@@ -124,10 +125,15 @@ export async function recordTournamentParticipation(
 
         // Award the reward and reset streak
         await prisma.$transaction([
-            // Credit UC
-            prisma.uC.update({
+            // Credit UC (use upsert in case player doesn't have UC record yet)
+            prisma.uC.upsert({
                 where: { playerId },
-                data: { balance: { increment: STREAK_REWARD_AMOUNT } },
+                create: {
+                    playerId,
+                    userId: player.userId,
+                    balance: STREAK_REWARD_AMOUNT,
+                },
+                update: { balance: { increment: STREAK_REWARD_AMOUNT } },
             }),
             // Create transaction record
             prisma.transaction.create({
