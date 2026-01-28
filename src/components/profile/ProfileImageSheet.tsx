@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -16,7 +17,7 @@ import http from "@/src/utils/http";
 import axiosInstance from "@/src/utils/api";
 import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
-import { Camera, CloudUpload, ImageIcon, Loader2, Trash2, User, Check, X, RefreshCw, Copy } from "lucide-react";
+import { Camera, CloudUpload, ImageIcon, Loader2, Trash2, User, Check, X, RefreshCw, Copy, HelpCircle } from "lucide-react";
 import Image from "next/image";
 import { useDialogBackHandler } from "@/src/hooks/useDialogBackHandler";
 import { compressProfileImage, compressCharacterImage } from "@/src/utils/image/compressImage";
@@ -57,7 +58,14 @@ export function ProfileImageSheet({ userName, displayName, className, children }
     const [promptData, setPromptData] = useState(() => generateRandomPrompt());
     const [isCopied, setIsCopied] = useState(false);
     const [isRegenerating, setIsRegenerating] = useState(false);
+    const [showTutorialModal, setShowTutorialModal] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // For portal rendering
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Use the back button handler hook
     const handleOpenChangeWithBack = useDialogBackHandler(isOpen, setIsOpen, "profileImageSheet");
@@ -519,6 +527,16 @@ export function ProfileImageSheet({ userName, displayName, className, children }
                                                 <Copy className="w-4 h-4 text-purple-500" />
                                             )}
                                         </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowTutorialModal(true);
+                                            }}
+                                            className="p-2 rounded-full hover:bg-purple-500/10 transition-colors"
+                                            title="How to use AI prompt"
+                                        >
+                                            <HelpCircle className="w-4 h-4 text-purple-500" />
+                                        </button>
                                     </div>
                                 </div>
                             </motion.div>
@@ -609,6 +627,55 @@ export function ProfileImageSheet({ userName, displayName, className, children }
                     </AnimatePresence>
                 </SheetContent>
             </Sheet>
+
+            {/* Tutorial Video Modal - rendered via portal to avoid Sheet event issues */}
+            {mounted && createPortal(
+                <AnimatePresence>
+                    {showTutorialModal && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowTutorialModal(false);
+                            }}
+                        >
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.9, opacity: 0 }}
+                                className="relative w-full max-w-sm mx-4"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {/* Close button */}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowTutorialModal(false);
+                                    }}
+                                    className="absolute -top-10 right-0 p-2 text-white/80 hover:text-white transition-colors"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                                {/* YouTube Shorts embed - 9:16 aspect ratio */}
+                                <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden bg-black shadow-2xl">
+                                    <iframe
+                                        src="https://www.youtube.com/embed/JPYNttbdrFk?autoplay=1&loop=1&playlist=JPYNttbdrFk"
+                                        title="AI Prompt Tutorial"
+                                        className="absolute inset-0 w-full h-full"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                    />
+                                </div>
+                                <p className="text-center text-white/60 text-sm mt-3">Tap outside to close</p>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </>
     );
 }
