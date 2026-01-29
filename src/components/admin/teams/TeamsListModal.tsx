@@ -10,6 +10,7 @@ import { getDisplayName } from "@/src/utils/displayName";
 import { useSeasonStore } from "@/src/store/season";
 import { useGetSeasons } from "@/src/hooks/season/useGetSeasons";
 import { useAppContext } from "@/src/hooks/context/useAppContext";
+import { getTeamDisplayName } from "@/src/utils/teamNameGenerator";
 
 interface TeamsListModalProps {
     visible: boolean;
@@ -307,6 +308,12 @@ export default function TeamsListModal({
                                             <th className="px-2 py-2 text-center text-sm font-semibold text-zinc-300">
                                                 Slot No
                                             </th>
+                                            {/* Show Team Name column for multi-player teams (duo/trio/squad) */}
+                                            {maxPlayers > 1 && (
+                                                <th className="px-2 py-2 text-center text-sm font-semibold text-orange-400">
+                                                    Team Name
+                                                </th>
+                                            )}
                                             {Array.from({ length: maxPlayers }, (_, i) => (
                                                 <th key={i} className="px-2 py-2 text-center text-sm font-semibold text-zinc-300">
                                                     Player {i + 1}
@@ -320,6 +327,10 @@ export default function TeamsListModal({
                                                 getDisplayName(p.displayName, p.name)
                                             ) || [];
                                             const paddedPlayers = [...players, ...Array(maxPlayers - players.length).fill("")];
+                                            // Get random team name for multi-player teams
+                                            const teamDisplayName = maxPlayers > 1
+                                                ? getTeamDisplayName(team.id, team.players || [])
+                                                : null;
 
                                             return (
                                                 <tr
@@ -333,6 +344,12 @@ export default function TeamsListModal({
                                                     <td className="px-2 py-1.5 text-center text-sm font-medium text-zinc-400">
                                                         {index + 2}
                                                     </td>
+                                                    {/* Show team name for multi-player teams */}
+                                                    {maxPlayers > 1 && (
+                                                        <td className="px-2 py-1.5 text-center text-sm font-semibold text-orange-400">
+                                                            {teamDisplayName}
+                                                        </td>
+                                                    )}
                                                     {paddedPlayers.map((playerName, playerIndex) => (
                                                         <td
                                                             key={playerIndex}

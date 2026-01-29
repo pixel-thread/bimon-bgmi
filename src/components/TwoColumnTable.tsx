@@ -3,6 +3,7 @@
 
 import { cn } from "@/src/lib/utils";
 import { sanitizeDisplayName } from "@/src/utils/displayName";
+import { getTeamDisplayName } from "@/src/utils/teamNameGenerator";
 
 export interface IPlayer {
   id: string;
@@ -59,7 +60,8 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
     <div className="mobile-list sm:hidden space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
       {teams.map((team, index) => {
         const rank = index + 1;
-        const teamName = sanitizeDisplayName(team.players.map((p) => p.displayName || p.name).join("_"));
+        // Use random team name for multi-player teams, player name for solo
+        const teamName = getTeamDisplayName(team.teamId || team.id, team.players, sanitizeDisplayName);
         const styles = getRankStyles(rank);
 
         return (
@@ -143,7 +145,8 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
         <tbody>
           {slice.map((team, idx) => {
             const rank = startIndex + idx + 1;
-            const teamName = sanitizeDisplayName(team.players.map((p) => p.displayName || p.name).join("_"));
+            // Use random team name for multi-player teams, player name for solo
+            const teamName = getTeamDisplayName(team.teamId || team.id, team.players, sanitizeDisplayName);
             const styles = getRankStyles(rank);
 
             return (
