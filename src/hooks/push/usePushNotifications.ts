@@ -18,6 +18,27 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
 
 export type PushPermissionState = "granted" | "denied" | "default" | "unsupported";
 
+/**
+ * Get service worker registration with a timeout to prevent app freeze.
+ * navigator.serviceWorker.ready can hang indefinitely if SW is stuck during install/update.
+ */
+async function getServiceWorkerWithTimeout(timeoutMs = 5000): Promise<ServiceWorkerRegistration | null> {
+    if (!("serviceWorker" in navigator)) return null;
+
+    try {
+        const registration = await Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error("Service worker not ready (timeout)")), timeoutMs)
+            )
+        ]);
+        return registration;
+    } catch (error) {
+        console.warn("[Push] Service worker not ready within timeout:", error);
+        return null;
+    }
+}
+
 export function usePushNotifications() {
     const { getToken } = useAuth();
     const [isSupported, setIsSupported] = useState(false);
@@ -38,11 +59,13 @@ export function usePushNotifications() {
             setIsSupported(true);
             setPermission(Notification.permission as PushPermissionState);
 
-            // Check if already subscribed
+            // Check if already subscribed (with timeout to prevent freeze)
             try {
-                const registration = await navigator.serviceWorker.ready;
-                const subscription = await registration.pushManager.getSubscription();
-                setIsSubscribed(!!subscription);
+                const registration = await getServiceWorkerWithTimeout();
+                if (registration) {
+                    const subscription = await registration.pushManager.getSubscription();
+                    setIsSubscribed(!!subscription);
+                }
             } catch (error) {
                 console.error("Error checking push subscription:", error);
             }
@@ -77,8 +100,13 @@ export function usePushNotifications() {
                 return false;
             }
 
-            // Get service worker registration
-            const registration = await navigator.serviceWorker.ready;
+            // Get service worker registration (with timeout to prevent freeze)
+            const registration = await getServiceWorkerWithTimeout();
+            if (!registration) {
+                console.error("Service worker not available");
+                setIsLoading(false);
+                return false;
+            }
 
             // Check if there's an existing subscription
             const existingSubscription = await registration.pushManager.getSubscription();
@@ -143,7 +171,11 @@ export function usePushNotifications() {
         setIsLoading(true);
 
         try {
-            const registration = await navigator.serviceWorker.ready;
+            const registration = await getServiceWorkerWithTimeout();
+            if (!registration) {
+                setIsLoading(false);
+                return false;
+            }
             const subscription = await registration.pushManager.getSubscription();
 
             if (subscription) {

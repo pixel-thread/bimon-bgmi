@@ -72,7 +72,7 @@ export function MeritRatingModal({
 
             // Submit all ratings in parallel
             const submissions = pendingRatings.map(player =>
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/player/merit`, {
+                fetch(`/api/player/merit`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -88,18 +88,24 @@ export function MeritRatingModal({
 
             const results = await Promise.all(submissions);
 
-            // Check if all succeeded
-            const allSucceeded = results.every(res => res.ok);
-
-            if (!allSucceeded) {
-                throw new Error("Some ratings failed to submit");
+            // Check if any failed and get error message
+            const failedResponses = results.filter(res => !res.ok);
+            if (failedResponses.length > 0) {
+                // Try to get error message from first failed response
+                try {
+                    const errorData = await failedResponses[0].json();
+                    throw new Error(errorData.message || "Some ratings failed to submit");
+                } catch {
+                    throw new Error("Some ratings failed to submit");
+                }
             }
 
             // Success - close modal
             onComplete();
-        } catch (err) {
-            console.error("Failed to submit ratings:", err);
-            setError("Failed to save ratings. Please try again.");
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to save ratings";
+            console.error("Failed to submit ratings:", errorMessage);
+            setError(errorMessage + ". Please try again.");
         } finally {
             setIsSubmitting(false);
         }
