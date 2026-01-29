@@ -66,9 +66,11 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { toPlayerId, rating, tournamentId } = body;
 
+        console.log("[Merit API] Submit rating:", { fromPlayerId: playerId, toPlayerId, rating, tournamentId });
+
         if (!toPlayerId || !rating || !tournamentId) {
             return ErrorResponse({
-                message: "Missing required fields",
+                message: `Missing required fields: ${!toPlayerId ? 'toPlayerId' : ''} ${!rating ? 'rating' : ''} ${!tournamentId ? 'tournamentId' : ''}`.trim(),
                 status: 400,
             });
         }
@@ -87,6 +89,7 @@ export async function POST(req: Request) {
             data: { success: true },
         });
     } catch (error) {
+        console.error("[Merit API] Error:", error);
         return handleApiErrors(error);
     }
 }
