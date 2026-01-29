@@ -30,7 +30,11 @@ export const AuthProvider = ({ children }: Props) => {
     queryKey: ["user"],
     select: (data) => data.data,
     enabled: isTokenSet,
-    refetchOnWindowFocus: false,
+    // Refetch on window focus to ensure isOnboarded status is fresh
+    // This prevents redirect loops when users return to the app
+    refetchOnWindowFocus: true,
+    // Keep data fresh for 30 seconds to avoid excessive refetches during normal usage
+    staleTime: 30 * 1000,
   });
 
   const getUser = useCallback(async () => {
