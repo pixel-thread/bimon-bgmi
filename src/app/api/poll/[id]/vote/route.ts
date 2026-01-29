@@ -259,7 +259,7 @@ export async function POST(
       },
     });
 
-    // Lucky voter selection - Fair dice roll: each voter gets equal 8% chance
+    // Lucky voter selection - Fair dice roll: each voter gets equal 15% chance (instant win only)
     let isLuckyVoter = false;
     const tournamentFee = isPollExist.tournament?.fee || 0;
     const seasonId = isPollExist.tournament?.seasonId;
@@ -282,8 +282,8 @@ export async function POST(
 
         // Only roll the dice if player hasn't won this season
         if (!seasonLuckyVoters.includes(playerId)) {
-          // Fair dice roll: 8% chance per voter (everyone has equal odds)
-          const LUCKY_CHANCE_PERCENT = 8;
+          // Fair dice roll: 15% chance per voter (instant win only - no fallback)
+          const LUCKY_CHANCE_PERCENT = 15;
           const roll = Math.floor(Math.random() * 100);
 
           if (roll < LUCKY_CHANCE_PERCENT) {
@@ -295,7 +295,7 @@ export async function POST(
             isLuckyVoter = true;
           }
         }
-        // If no one wins during voting, fallback selection happens at team creation
+        // No fallback - if no one wins during voting, no lucky winner for this poll
       } else {
         // Check if current player is the existing lucky voter
         isLuckyVoter = pollWithLucky.luckyVoterId === playerId;

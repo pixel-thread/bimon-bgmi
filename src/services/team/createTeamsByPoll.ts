@@ -70,7 +70,7 @@ export async function createTeamsByPolls({
   const tournamentName = tournament?.name ?? "Tournament";
 
   // Get lucky voter ID from the poll (they get free entry)
-  // Note: We'll validate this against allPlayers later to ensure they're still participating (IN/SOLO)
+  // Note: Only instant winners during voting get free entry - no fallback selection
   let luckyVoterId: string | null = null;
   if (pollId) {
     const poll = await prisma.poll.findUnique({
@@ -78,31 +78,7 @@ export async function createTeamsByPolls({
       select: { luckyVoterId: true },
     });
     luckyVoterId = poll?.luckyVoterId || null;
-
-    // Fallback: If no one won the dice roll during voting, select a lucky winner now
-    if (!luckyVoterId && entryFee > 0) {
-      // Get all eligible voters (IN or SOLO) for this poll
-      const eligibleVotes = await prisma.playerPollVote.findMany({
-        where: {
-          pollId,
-          vote: { in: ["IN", "SOLO"] },
-        },
-        select: { playerId: true },
-      });
-      const eligiblePlayerIds = eligibleVotes.map(v => v.playerId);
-
-      // Use the selectLuckyVoter algorithm to pick a winner (with season exclusion)
-      const { selectLuckyVoter } = await import("@/src/services/team/previewTeamsByPoll");
-      luckyVoterId = await selectLuckyVoter(eligiblePlayerIds, pollId, seasonId);
-
-      // Store the lucky voter in the poll
-      if (luckyVoterId) {
-        await prisma.poll.update({
-          where: { id: pollId },
-          data: { luckyVoterId },
-        });
-      }
-    }
+    // No fallback - if no one won during voting, no lucky winner for this poll
   }
 
   // Count tournaments in current season (for season transition logic)
