@@ -11,6 +11,7 @@ import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { playerVoteSchema } from "@/src/utils/validation/poll";
 import { isMeritBanEnabled, getAppSetting } from "@/src/services/settings/getAppSetting";
+import { getPendingMeritRatings } from "@/src/services/merit/getPendingMeritRatings";
 
 export async function GET(
   req: Request,
@@ -58,7 +59,18 @@ export async function POST(
       });
     }
 
+    // Block voting if player has pending teammate ratings (only for IN/SOLO votes)
     const body = playerVoteSchema.parse(await req.json());
+
+    if (body.vote !== "OUT") {
+      const pendingRatings = await getPendingMeritRatings(playerId);
+      if (pendingRatings.pendingRatings.length > 0) {
+        return ErrorResponse({
+          message: `Ka teammates ${pendingRatings.pendingRatings.length} næ jong kawei katto lah ka rate hawa, katto lehkhai vote (Rate ${pendingRatings.pendingRatings.length} teammates first)`,
+          status: 403,
+        });
+      }
+    }
 
     const isPollExist = await getPollById({
       where: { id: pollId },

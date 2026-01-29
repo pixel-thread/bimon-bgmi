@@ -7,6 +7,7 @@ import { VoteTabProps } from "./types";
 import { NotificationPromptBanner } from "@/src/components/common/NotificationPromptBanner";
 import { JobBoardBanner } from "./JobBoardBanner";
 import { MeritRatingModal } from "./MeritRatingModal";
+import { PollCardSkeleton } from "./PollCardSkeleton";
 
 interface PendingRating {
   playerId: string;
@@ -20,13 +21,17 @@ interface MeritData {
 
 const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
   const [meritData, setMeritData] = useState<MeritData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMerit, setIsLoadingMerit] = useState(true);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showPollsBehindModal, setShowPollsBehindModal] = useState(false);
   const { getToken, isSignedIn } = useAuth();
+
+  // Check if user has pending ratings that block voting
+  const hasPendingRatings = meritData?.pendingRatings && meritData.pendingRatings.length > 0;
 
   useEffect(() => {
     if (!isSignedIn) {
-      setIsLoading(false);
+      setIsLoadingMerit(false);
       return;
     }
 
@@ -34,7 +39,7 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
       try {
         const token = await getToken({ template: "jwt" });
         if (!token) {
-          setIsLoading(false);
+          setIsLoadingMerit(false);
           return;
         }
 
@@ -50,12 +55,16 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
           // Show modal if there are pending ratings
           if (data?.pendingRatings?.length > 0) {
             setShowRatingModal(true);
+            // After 1 second, reveal the polls behind the modal
+            setTimeout(() => {
+              setShowPollsBehindModal(true);
+            }, 1000);
           }
         }
       } catch (error) {
         console.error("Failed to fetch merit data:", error);
       } finally {
-        setIsLoading(false);
+        setIsLoadingMerit(false);
       }
     };
 
@@ -64,10 +73,17 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
 
   const handleRatingComplete = () => {
     setShowRatingModal(false);
+    setShowPollsBehindModal(false);
     setMeritData((prev) =>
       prev ? { ...prev, pendingRatings: [] } : null
     );
   };
+
+  // Show skeleton only during initial loading, or when modal is shown but polls aren't revealed yet
+  const shouldShowSkeleton = isSignedIn && (isLoadingMerit || (hasPendingRatings && !showPollsBehindModal));
+
+  // Show polls when: not signed in, no pending ratings, OR polls revealed behind modal
+  const shouldShowPolls = !isSignedIn || !hasPendingRatings || showPollsBehindModal;
 
   return (
     <div className="min-h-[calc(100vh-200px)]">
@@ -81,16 +97,29 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
         />
       )}
 
-      <NotificationPromptBanner />
-      <JobBoardBanner />
-      <PollVotingInterface
-        readOnly={readOnly}
-        showAdminActions={false}
-        showViewAllVotes={true}
-        title="Tournament Polls"
-        description="Vote on active tournament polls"
-        forcePublic={true}
-      />
+      {/* Show skeleton while loading or before polls are revealed */}
+      {shouldShowSkeleton && (
+        <div className="space-y-4 px-4 py-4">
+          <PollCardSkeleton />
+          <PollCardSkeleton />
+        </div>
+      )}
+
+      {/* Show actual polls - either normally or behind the modal */}
+      {shouldShowPolls && !shouldShowSkeleton && (
+        <>
+          <NotificationPromptBanner />
+          <JobBoardBanner />
+          <PollVotingInterface
+            readOnly={readOnly}
+            showAdminActions={false}
+            showViewAllVotes={true}
+            title="Tournament Polls"
+            description="Vote on active tournament polls"
+            forcePublic={true}
+          />
+        </>
+      )}
     </div>
   );
 };
