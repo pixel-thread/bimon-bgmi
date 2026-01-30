@@ -13,6 +13,7 @@ import { getPreviousTournamentTeammates } from "@/src/utils/previousTeammates";
 import { isMeritBanEnabled } from "@/src/services/settings/getAppSetting";
 import { recordLuckyVoter } from "@/src/services/team/previewTeamsByPoll";
 import { batchNotifyTournamentEntry } from "@/src/services/push/sendUCNotification";
+import { logger } from "@/src/utils/logger";
 
 
 type PreviewTeamInput = {
@@ -289,6 +290,18 @@ export async function createTeamsByPolls({
     teams = shuffle(teams);
   }
 
+  // Validate all eligible players are included in teams
+  const allTeamPlayerIds = new Set(teams.flatMap(t => t.players.map(p => p.id)));
+  const missingPlayers = playersWithScore.filter(p => !allTeamPlayerIds.has(p.id));
+
+  if (missingPlayers.length > 0) {
+    const missingNames = missingPlayers.map(p => p.user?.userName || p.id);
+    logger.teamGen.missingPlayers(pollId, missingNames);
+  }
+
+  // Log team generation start
+  logger.teamGen.start(pollId, groupSize === 1 ? 'SOLO' : groupSize === 2 ? 'DUO' : groupSize === 3 ? 'TRIO' : 'SQUAD', playersWithScore.length);
+
   // Batch size for parallel operations - keep low for PgBouncer compatibility
   const BATCH_SIZE = 5;
 
@@ -508,6 +521,9 @@ export async function createTeamsByPolls({
     batchNotifyTournamentEntry(notificationsToSend)
       .catch(err => console.error("Failed to send entry fee notifications:", err));
   }
+
+  // Log team generation completion
+  logger.teamGen.complete(pollId, createdTeams.length, teams.flatMap(t => t.players).length);
 
   return {
     teams: createdTeams,

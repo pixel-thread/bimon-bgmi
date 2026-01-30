@@ -212,9 +212,10 @@ export function createBalancedTrios(
   const third = Math.floor(sorted.length / 3);
 
   // Split into three tiers: strong (top third), medium (middle third), weak (bottom third)
+  // Use sorted.slice(third * 2) instead of sorted.slice(third * 2, third * 3) to include all remaining players
   const strongTier = sorted.slice(0, third);
   const mediumTier = sorted.slice(third, third * 2);
-  const weakTier = sorted.slice(third * 2, third * 3);
+  const weakTier = sorted.slice(third * 2);
 
   // Shuffle each tier independently to create varied groupings
   const shuffledStrong = shuffle(strongTier);
@@ -303,10 +304,11 @@ export function createBalancedQuads(
   const quarter = Math.floor(sorted.length / 4);
 
   // Split into four tiers
+  // Use sorted.slice(quarter * 3) instead of sorted.slice(quarter * 3, quarter * 4) to include all remaining players
   const tier1 = sorted.slice(0, quarter);               // Strongest
   const tier2 = sorted.slice(quarter, quarter * 2);     // Upper-middle
   const tier3 = sorted.slice(quarter * 2, quarter * 3); // Lower-middle
-  const tier4 = sorted.slice(quarter * 3, quarter * 4); // Weakest
+  const tier4 = sorted.slice(quarter * 3);              // Weakest (includes all remaining)
 
   // Shuffle each tier independently to create varied groupings
   const shuffled1 = shuffle(tier1);

@@ -1,7 +1,6 @@
 import { prisma } from "@/src/lib/db/prisma";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 import { supabaseClient } from "@/src/lib/supabase";
-import { logger } from "@/src/utils/logger";
 
 type Props = {
   bucketName?: string;
@@ -22,7 +21,7 @@ export async function removeGalleryImage({
 
   if (error) {
     //BUG: Handle error
-    logger.error(error);
+    console.error(error);
   }
 
   return await prisma.gallery.update({

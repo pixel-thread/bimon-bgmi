@@ -3,7 +3,6 @@ import { getTeamsStats } from "@/src/services/team/getTeamsStats";
 import { getTournamentById } from "@/src/services/tournament/getTournamentById";
 import { calculatePlayerPoints } from "@/src/utils/calculatePlayersPoints";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { logger } from "@/src/utils/logger";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";

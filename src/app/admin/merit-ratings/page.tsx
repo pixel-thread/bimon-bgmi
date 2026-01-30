@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Star, Users, ChevronRight, AlertTriangle, Shield, ShieldOff, Calendar } from "lucide-react";
+import { Star, Users, ChevronRight, AlertTriangle, Shield, ShieldOff, Calendar, Clock, Eraser } from "lucide-react";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { Switch } from "@/src/components/ui/switch";
 import { Button } from "@/src/components/ui/button";
@@ -31,6 +31,21 @@ type MeritRatingsResponse = {
             restrictedPlayers: number;
             totalRatings: number;
         };
+    };
+};
+
+type PendingPlayer = {
+    id: string;
+    displayName: string;
+    userName: string;
+    pendingCount: number;
+    tournamentName: string;
+};
+
+type PendingRatingsResponse = {
+    data: {
+        players: PendingPlayer[];
+        totalPending: number;
     };
 };
 
@@ -124,6 +139,13 @@ export default function MeritRatingsPage() {
         enabled: isSignedIn && !!user,
     });
 
+    // Fetch pending ratings
+    const { data: pendingData, isLoading: isLoadingPending } = useQuery({
+        queryKey: ["merit-ratings-pending"],
+        queryFn: () => fetchWithAuth<PendingRatingsResponse>(`/admin/merit-ratings/pending`),
+        enabled: isSignedIn && !!user && isSuperAdmin,
+    });
+
     // Fetch merit ban setting
     const { data: settingsData } = useQuery({
         queryKey: ["app-settings", "meritBanEnabled"],
@@ -171,6 +193,22 @@ export default function MeritRatingsPage() {
         },
     });
 
+    // Clear pending ratings mutation
+    const clearPendingMutation = useMutation({
+        mutationFn: async (playerId: string) => {
+            return fetchWithAuth(`/admin/merit-ratings/${playerId}/clear-pending`, {
+                method: "POST",
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["merit-ratings-pending"] });
+            toast.success("Pending ratings cleared");
+        },
+        onError: () => {
+            toast.error("Failed to clear pending ratings");
+        },
+    });
+
     const handleToggle = (checked: boolean) => {
         setMeritBanEnabled(checked);
         toggleMutation.mutate(checked);
@@ -180,9 +218,14 @@ export default function MeritRatingsPage() {
         liftBanMutation.mutate(playerId);
     };
 
+    const handleClearPending = (playerId: string) => {
+        clearPendingMutation.mutate(playerId);
+    };
+
     const players = data?.data?.players || [];
     const seasonName = data?.data?.seasonName;
     const summary = data?.data?.summary;
+    const pendingPlayers = pendingData?.data?.players || [];
 
     return (
         <div className="space-y-6 max-w-3xl mx-auto px-2 sm:px-4 overflow-x-hidden">
@@ -256,6 +299,48 @@ export default function MeritRatingsPage() {
                         <span className="text-sm">⭐</span>
                         <span className="text-xs text-muted-foreground">Total</span>
                         <span className="font-bold">{summary.totalRatings}</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Pending Ratings Section (Super Admin Only) */}
+            {isSuperAdmin && pendingPlayers.length > 0 && (
+                <div className="rounded-2xl p-4 bg-amber-500/10 border border-amber-500/30">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                            <Clock className="h-5 w-5 text-amber-500" />
+                        </div>
+                        <div>
+                            <p className="font-semibold">Pending Ratings ({pendingPlayers.length})</p>
+                            <p className="text-xs text-muted-foreground">
+                                Players who haven&apos;t rated their teammates yet
+                            </p>
+                        </div>
+                    </div>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                        {pendingPlayers.map((player) => (
+                            <div
+                                key={player.id}
+                                className="flex items-center justify-between gap-2 p-2 rounded-lg bg-card/50 border border-border"
+                            >
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-medium truncate">{player.displayName}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {player.pendingCount} pending • {player.tournamentName}
+                                    </p>
+                                </div>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleClearPending(player.id)}
+                                    disabled={clearPendingMutation.isPending}
+                                    className="shrink-0 gap-1"
+                                >
+                                    <Eraser className="h-3 w-3" />
+                                    Clear
+                                </Button>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}

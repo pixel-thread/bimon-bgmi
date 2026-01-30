@@ -1,6 +1,5 @@
 import { prisma } from "@/src/lib/db/prisma";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { logger } from "@/src/utils/logger";
 import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { teamStatsSchema } from "@/src/utils/validation/team/team-stats";
@@ -49,7 +48,7 @@ export async function PUT(
 
         if (!parseResult.success) {
             const errorDetails = parseResult.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
-            logger.log(`[TOURNAMENT_BULK] Validation failed: ${errorDetails}`);
+            console.log(`[TOURNAMENT_BULK] Validation failed: ${errorDetails}`);
             return ErrorResponse({
                 message: `Validation failed: ${errorDetails}`,
                 status: 400,
@@ -62,7 +61,7 @@ export async function PUT(
         const totalPlayers = body.matches.reduce((acc, m) =>
             acc + m.stats.reduce((a, s) => a + s.players.length, 0), 0);
 
-        logger.log(`[TOURNAMENT_BULK] Processing ${matchCount} matches, ${totalTeams} teams, ${totalPlayers} players for tournament ${tournamentId}`);
+        console.log(`[TOURNAMENT_BULK] Processing ${matchCount} matches, ${totalTeams} teams, ${totalPlayers} players for tournament ${tournamentId}`);
 
         const startTime = Date.now();
         const seasonId = tournament.seasonId;
@@ -204,14 +203,14 @@ export async function PUT(
         });
 
         const duration = Date.now() - startTime;
-        logger.log(`[TOURNAMENT_BULK] All ${matchCount} matches saved successfully in ${duration}ms`);
+        console.log(`[TOURNAMENT_BULK] All ${matchCount} matches saved successfully in ${duration}ms`);
 
         return SuccessResponse({
             message: `All ${matchCount} matches saved successfully (${duration}ms)`,
         });
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.log(`[TOURNAMENT_BULK] Error: ${errorMessage}`);
+        console.error(`[TOURNAMENT_BULK] Error: ${errorMessage}`);
 
         if (errorMessage.includes("timeout") || errorMessage.includes("expired transaction") || errorMessage.includes("Transaction already closed")) {
             return ErrorResponse({

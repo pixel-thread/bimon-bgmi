@@ -10,10 +10,12 @@ import { SuccessResponse, ErrorResponse } from "@/src/utils/next-response";
  * Get pending teammates to rate + current merit status
  */
 export async function GET(req: Request) {
+    const startTime = Date.now();
     try {
+        console.log('[Merit API] Starting...');
         const user = await tokenMiddleware(req);
         const playerId = user?.player?.id;
-
+        console.log('[Merit API] Token validated:', Date.now() - startTime, 'ms');
 
         if (!playerId) {
             return ErrorResponse({
@@ -26,7 +28,7 @@ export async function GET(req: Request) {
             getPendingMeritRatings(playerId),
             getPlayerMerit(playerId),
         ]);
-
+        console.log('[Merit API] Data fetched:', Date.now() - startTime, 'ms, pendingCount:', pending.pendingRatings.length);
 
         return SuccessResponse({
             data: {
@@ -42,6 +44,7 @@ export async function GET(req: Request) {
             message: "Merit data fetched",
         });
     } catch (error) {
+        console.error('[Merit API] Error after', Date.now() - startTime, 'ms:', error);
         return handleApiErrors(error);
     }
 }

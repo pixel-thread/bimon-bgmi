@@ -3,6 +3,7 @@ import { superAdminMiddleware } from "@/src/utils/middleware/superAdminMiddlewar
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { SuccessResponse } from "@/src/utils/next-response";
 import { getActiveSeason } from "@/src/services/season/getActiveSeason";
+import { getPendingMeritRatings } from "@/src/services/merit/getPendingMeritRatings";
 
 /**
  * GET /api/admin/merit-ratings

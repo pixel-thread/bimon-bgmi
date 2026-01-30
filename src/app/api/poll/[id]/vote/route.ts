@@ -66,7 +66,7 @@ export async function POST(
       const pendingRatings = await getPendingMeritRatings(playerId);
       if (pendingRatings.pendingRatings.length > 0) {
         return ErrorResponse({
-          message: `Ka teammates ${pendingRatings.pendingRatings.length} næ jong kawei katto lah ka rate hawa, katto lehkhai vote (Rate ${pendingRatings.pendingRatings.length} teammates first)`,
+          message: `Please rate ${pendingRatings.pendingRatings.length} teammate${pendingRatings.pendingRatings.length > 1 ? 's' : ''} first before voting`,
           status: 403,
         });
       }

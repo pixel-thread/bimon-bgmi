@@ -1,6 +1,5 @@
 import { prisma } from "@/src/lib/db/prisma";
 import { supabaseClient } from "@/src/lib/supabase";
-import { logger } from "@/src/utils/logger";
 
 const defaultBucket = process.env.SUPABASE_BUCKET_NAME as string;
 
@@ -62,7 +61,7 @@ export async function deleteProfileImage(id: string, force: boolean = false): Pr
         .remove([image.path]);
 
     if (error) {
-        logger.error(`Failed to delete image from storage: ${error.message}`);
+        console.error(`Failed to delete image from storage: ${error.message}`);
     }
 
     // Soft delete in database

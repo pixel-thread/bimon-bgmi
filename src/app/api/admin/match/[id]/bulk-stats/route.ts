@@ -1,7 +1,6 @@
 import { getUniqueMatch } from "@/src/services/match/getMatchById";
 import { updateManyTeamsStats } from "@/src/services/team/updateTeamStats";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
-import { logger } from "@/src/utils/logger";
 import { adminMiddleware } from "@/src/utils/middleware/adminMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { teamStatsSchema } from "@/src/utils/validation/team/team-stats";
@@ -40,7 +39,7 @@ export async function PUT(
         const parseResult = bulkStatsSchema.safeParse(rawBody);
         if (!parseResult.success) {
             const errorDetails = parseResult.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
-            logger.log(`[BULK] Validation failed: ${errorDetails}`);
+            console.log(`[BULK] Validation failed: ${errorDetails}`);
             return ErrorResponse({
                 message: `Validation failed: ${errorDetails}`,
                 status: 400,
@@ -51,7 +50,7 @@ export async function PUT(
         const teamCount = body.stats.length;
         const totalPlayers = body.stats.reduce((acc, s) => acc + s.players.length, 0);
 
-        logger.log(`[BULK] Processing ${teamCount} teams, ${totalPlayers} players for match ${matchId}`);
+        console.log(`[BULK] Processing ${teamCount} teams, ${totalPlayers} players for match ${matchId}`);
 
         const startTime = Date.now();
 
@@ -64,14 +63,14 @@ export async function PUT(
         });
 
         const duration = Date.now() - startTime;
-        logger.log(`[BULK] Processing completed in ${duration}ms`);
+        console.log(`[BULK] Processing completed in ${duration}ms`);
 
         return SuccessResponse({
             message: `Stats saved successfully (${duration}ms)`,
         });
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.log(`[BULK] Error: ${errorMessage}`);
+        console.error(`[BULK] Error: ${errorMessage}`);
 
         // Check for transaction timeout errors and return a user-friendly message
         if (errorMessage.includes("timeout") || errorMessage.includes("expired transaction") || errorMessage.includes("Transaction already closed")) {

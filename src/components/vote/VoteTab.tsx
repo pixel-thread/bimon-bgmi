@@ -43,23 +43,38 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
           return;
         }
 
+        // Add 10 second timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
         const res = await fetch(`/api/player/merit`, {
           headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (res.ok) {
           const response = await res.json();
           const data = response.data;
+          console.log('[VoteTab] Merit data received:', {
+            pendingCount: data?.pendingRatings?.length || 0,
+            hasTournament: !!data?.tournament,
+            tournamentName: data?.tournament?.name
+          });
           setMeritData(data);
           // Show modal if there are pending ratings
           if (data?.pendingRatings?.length > 0) {
+            console.log('[VoteTab] Showing rating modal for', data.pendingRatings.length, 'teammates');
             setShowRatingModal(true);
             // After 1 second, reveal the polls behind the modal
             setTimeout(() => {
               setShowPollsBehindModal(true);
             }, 1000);
           }
+        } else {
+          console.error('[VoteTab] Merit API failed:', res.status, res.statusText);
         }
       } catch (error) {
         console.error("Failed to fetch merit data:", error);

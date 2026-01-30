@@ -1,5 +1,4 @@
 import { ZodError } from "zod";
-import { logger } from "../logger";
 import { UnauthorizedError } from "./unAuthError";
 import { EmailError } from "./EmailError";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
@@ -19,11 +18,7 @@ export const handleApiErrors = (error: unknown) => {
   }
 
   if (error instanceof ZodError) {
-    logger.error({
-      type: "ZodError",
-      message: error.issues[0].message,
-      error: error,
-    });
+    console.error("ZodError:", error.issues[0].message, error);
     return ErrorResponse({
       message: error.issues[0].message,
       error: error.issues,
@@ -53,11 +48,7 @@ export const handleApiErrors = (error: unknown) => {
     });
   }
 
-  logger.error({
-    type: "UnknownError",
-    message: "Internal Server Error",
-    error,
-  });
+  console.error("UnknownError:", "Internal Server Error", error);
 
   return ErrorResponse({ message: "Internal Server Error", error });
 };
