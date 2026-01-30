@@ -4,59 +4,58 @@
  * Names are deterministically generated based on team ID for consistency.
  */
 
-// Curated list of BGMI/esports themed team names
+// Curated list of anime-themed team names
 const TEAM_NAMES = [
-    // Predator/Animal themed
-    "Shadow Wolves", "Phoenix Rising", "Thunder Hawks", "Viper Squad",
-    "Dragon Force", "Night Stalkers", "Storm Eagles", "Frost Tigers",
-    "Crimson Panthers", "Silver Foxes", "Dark Ravens", "Iron Lions",
-    "Ghost Bears", "Apex Hunters", "Savage Sharks", "Swift Cobras",
-    "Raging Bulls", "Silent Owls", "Arctic Wolves", "Golden Eagles",
+    // One Piece themed
+    "Straw Hats", "Red Hair Pirates", "Whitebeard Pirates", "Heart Pirates",
+    "Blackbeard Crew", "Big Mom Pirates", "Beast Pirates", "Baroque Works",
+    "Revolutionary Army", "Marine Admirals", "Warlords", "Worst Generation",
+    "Vinsmoke Family", "Kozuki Samurai", "Mink Tribe", "Fishman Pirates",
 
-    // Action/Military themed
-    "Thunder Strike", "Shadow Ops", "Elite Force", "Titan Squad",
-    "Storm Riders", "Death Squad", "War Machine", "Chaos Brigade",
-    "Phantom Force", "Stealth Unit", "Black Ops", "Alpha Team",
-    "Omega Squad", "Delta Force", "Bravo Unit", "Echo Warriors",
-    "Sierra Company", "Victor Team", "Whiskey Platoon", "X-Ray Division",
+    // Naruto themed
+    "Akatsuki", "Team 7", "Uchiha Clan", "Hyuga Clan",
+    "Sannin Legends", "Root ANBU", "Konoha Jonin", "Sand Siblings",
+    "Tailed Beasts", "Sage Mode", "Sharingan Squad", "Rasengan Force",
+    "Hokage Guard", "Otsutsuki Clan", "Sound Four", "Kage Summit",
 
-    // Mythical/Fantasy themed
-    "Dragon Knights", "Phoenix Lords", "Shadow Demons", "Thunder Gods",
-    "Mystic Warriors", "Legendary Beasts", "Immortal Squad", "Divine Fury",
-    "Chaos Lords", "Dark Knights", "Storm Titans", "Fire Demons",
-    "Ice Warlords", "Spirit Hunters", "Magic Guardians", "Eternal Flames",
-    "Cosmic Warriors", "Nebula Force", "Galaxy Riders", "Star Hunters",
+    // Dragon Ball themed
+    "Z Fighters", "Saiyan Elite", "Frieza Force", "Ginyu Force",
+    "Namekian Warriors", "Universe 7", "Pride Troopers", "Cell Games",
+    "Androids", "Majin Squad", "Capsule Corp", "Turtle School",
+    "God of Destruction", "Ultra Instinct", "Super Saiyan Blue", "Galactic Patrol",
 
-    // Cool/Edgy themed
-    "Nightmare Crew", "Reaper Squad", "Inferno Team", "Blizzard Force",
-    "Rampage Unit", "Havoc Team", "Mayhem Squad", "Vendetta Crew",
-    "Carnage Corps", "Savage Kings", "Ruthless Squad", "Lethal Unit",
-    "Fatal Five", "Deadly Trio", "Killer Instinct", "Danger Zone",
-    "Zero Fear", "No Mercy", "Last Stand", "Final Strike",
+    // Attack on Titan themed
+    "Survey Corps", "Garrison Regiment", "Military Police", "Titan Shifters",
+    "Ackerman Clan", "Eldian Warriors", "Marleyan Army", "Thunder Spears",
+    "Levi Squad", "Yeagerists", "Scout Legion", "Wall Defenders",
 
-    // Numbers/Tech themed
-    "Code Red", "Sector 7", "Squad 47", "Unit 404",
-    "Team Alpha", "Bravo Six", "Triple Threat", "Double Trouble",
-    "Quad Squad", "The Trio", "Dynamic Duo", "The Four Horsemen",
-    "Circuit Breakers", "System Override", "Data Storm", "Pixel Warriors",
+    // Demon Slayer themed
+    "Hashira", "Demon Slayer Corps", "Kamado Clan", "Butterfly Mansion",
+    "Muzan Army", "Upper Moons", "Lower Moons", "Flame Breathers",
+    "Water Breathers", "Thunder Breathers", "Wind Breathers", "Stone Breathers",
+    "Mist Breathers", "Love Breathers", "Serpent Breathers", "Sound Breathers",
 
-    // Nature/Elements themed  
-    "Thunder Storm", "Solar Flare", "Lunar Eclipse", "Volcanic Fury",
-    "Tsunami Wave", "Earthquake Force", "Hurricane Squad", "Tornado Team",
-    "Avalanche Crew", "Wildfire Unit", "Desert Storm", "Ocean Force",
-    "Mountain Kings", "Forest Shadows", "River Raiders", "Valley Vipers",
+    // Jujutsu Kaisen themed
+    "Tokyo Jujutsu", "Kyoto Jujutsu", "Curse Users", "Special Grade",
+    "Gojo Clan", "Zenin Clan", "Kamo Clan", "Sukuna Fingers",
+    "Domain Expansion", "Cursed Spirits", "Star Plasma", "Six Eyes",
 
-    // More unique combinations
-    "Apex Predators", "Night Crawlers", "Day Breakers", "Soul Reapers",
-    "Mind Benders", "Time Lords", "Space Rangers", "Ground Zero",
-    "Sky Raiders", "Sea Wolves", "Land Sharks", "Air Strike",
-    "Power Surge", "Energy Elite", "Force Field", "Impact Zone",
+    // My Hero Academia themed
+    "Class 1-A", "League of Villains", "Pro Heroes", "Wild Wild Pussycats",
+    "Big Three", "Todoroki Family", "Paranormal Liberation", "Hero Killers",
 
-    // Indian/Desi themed (for BGMI audience)
-    "Desi Destroyers", "Mumbai Mavericks", "Delhi Dragons", "Chennai Champions",
-    "Kolkata Kings", "Bangalore Blazers", "Hyderabad Hawks", "Jaipur Jaguars",
-    "Punjab Panthers", "Gujarat Giants", "Rajput Warriors", "Maratha Militia",
-    "Sikh Soldiers", "Tamil Tigers", "Kerala Knights", "Bengal Bombers",
+    // Hunter x Hunter themed
+    "Phantom Troupe", "Zoldyck Family", "Chimera Ants", "Hunter Association",
+    "Nen Masters", "Greed Island", "Zodiac Twelve", "Shadow Beasts",
+
+    // Bleach themed
+    "Soul Reapers", "Espada", "Quincy Army", "Vizards",
+    "Gotei 13", "Arrancar", "Fullbringers", "Zero Division",
+
+    // More anime themed
+    "Fairy Tail", "Phantom Lord", "Blue Pegasus", "Sabertooth",
+    "Stardust Crusaders", "Passione", "Pillar Men", "Stand Users",
+    "Night Raid", "Jaegers", "Revolutionaries", "Imperial Arms",
 ];
 
 /**
@@ -91,6 +90,14 @@ export function getUniqueTeamNames(tournamentId: string, count: number): string[
     const names: string[] = [];
 
     for (let i = 0; i < count; i++) {
+        // First team is always "Team Gay"
+        if (i === 0) {
+            const firstName = "Team Gay";
+            usedNames.add(firstName);
+            names.push(firstName);
+            continue;
+        }
+
         // Create a unique key for each team position
         const key = `${tournamentId}-team-${i}`;
         let name = getRandomTeamName(key);
