@@ -134,6 +134,9 @@ export async function GET(req: NextRequest) {
           characterImageUrl: (player.characterImageId && player.characterImageId !== "none")
             ? player.characterImage?.publicUrl || null
             : null,
+          // Animation info for GIF support
+          isAnimated: player.characterImage?.isAnimated || false,
+          thumbnailUrl: player.characterImage?.thumbnailUrl || null,
           email: clerkInfo?.email || null,
           firstName: clerkInfo?.firstName || null,
           lastName: clerkInfo?.lastName || null,
@@ -172,6 +175,9 @@ export async function GET(req: NextRequest) {
           characterImageUrl: (player.characterImageId && player.characterImageId !== "none")
             ? player.characterImage?.publicUrl || null
             : null,
+          // Animation info for GIF support
+          isAnimated: player.characterImage?.isAnimated || false,
+          thumbnailUrl: player.characterImage?.thumbnailUrl || null,
           email: clerkInfo?.email || null,
           firstName: clerkInfo?.firstName || null,
           lastName: clerkInfo?.lastName || null,
@@ -242,7 +248,18 @@ export async function GET(req: NextRequest) {
     });
 
     // Remove sensitive fields before sending to client (keep for search but don't expose)
-    const sanitizedData = data.map(({ email, firstName, lastName, clerkId, ...rest }) => rest);
+    // Also, for performance, only include animated GIF URLs for top 3 (podium) players
+    const sanitizedData = data.map(({ email, firstName, lastName, clerkId, ...rest }, index) => {
+      // For non-podium players, use thumbnail instead of animated GIF to improve performance
+      if (index >= 3 && rest.isAnimated && rest.thumbnailUrl) {
+        return {
+          ...rest,
+          characterImageUrl: rest.thumbnailUrl, // Use static thumbnail for non-podium
+          isAnimated: false, // Don't mark as animated since we're showing static
+        };
+      }
+      return rest;
+    });
 
     // Calculate balance aggregates
     const totalBalance = data.reduce((acc, player) => acc + (player.uc || 0), 0);

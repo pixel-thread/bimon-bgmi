@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { PlayerAvatar } from "@/src/components/ui/player-avatar";
@@ -31,6 +31,8 @@ type PlayerT = {
     characterImageUrl?: string | null;
     kills?: number;
     hasRoyalPass?: boolean;
+    isAnimated?: boolean;
+    thumbnailUrl?: string | null;
 };
 
 interface CustomPlayerTableProps {
@@ -190,6 +192,19 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
         const kdValue = Number(player.kd || 0);
         const displayKd = isFinite(kdValue) ? kdValue.toFixed(2) : "0.00";
 
+        // For animated GIFs - track loaded state for smooth playback
+        const [gifLoaded, setGifLoaded] = useState(false);
+        const gifUrl = player.isAnimated ? (player.characterImageUrl || player.imageUrl) : null;
+
+        // Preload GIF on mount
+        useEffect(() => {
+            if (gifUrl) {
+                const img = new Image();
+                img.onload = () => setGifLoaded(true);
+                img.src = gifUrl;
+            }
+        }, [gifUrl]);
+
         return (
             <div
                 onClick={() => handleRowClick(player.id)}
@@ -201,12 +216,31 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                     hover:scale-105 hover:shadow-xl
                 `}
             >
-                {/* Background image or gradient */}
+                {/* Background image or animated GIF */}
                 {player.characterImageUrl || player.imageUrl ? (
-                    <div
-                        className="absolute inset-0 bg-cover bg-center opacity-90"
-                        style={{ backgroundImage: `url(${player.characterImageUrl || player.imageUrl})` }}
-                    />
+                    player.isAnimated && gifUrl ? (
+                        // Animated GIF - preload then show for smooth playback
+                        <>
+                            {/* Show thumbnail or static bg while loading */}
+                            {!gifLoaded && (
+                                <div
+                                    className="absolute inset-0 bg-cover bg-center opacity-90"
+                                    style={{ backgroundImage: `url(${player.thumbnailUrl || player.characterImageUrl || player.imageUrl})` }}
+                                />
+                            )}
+                            {/* Show animated GIF once loaded */}
+                            <img
+                                src={gifUrl}
+                                alt=""
+                                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${gifLoaded ? 'opacity-90' : 'opacity-0'}`}
+                            />
+                        </>
+                    ) : (
+                        <div
+                            className="absolute inset-0 bg-cover bg-center opacity-90"
+                            style={{ backgroundImage: `url(${player.characterImageUrl || player.imageUrl})` }}
+                        />
+                    )
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
                         <span className="text-5xl sm:text-6xl font-bold text-zinc-300 dark:text-zinc-600 opacity-50">

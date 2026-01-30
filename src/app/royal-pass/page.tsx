@@ -239,6 +239,7 @@ export default function RoyalPassPage() {
                     <li>Your streak increases by 1</li>
                     <li>Pep shi tournament? Ka streak la resets sha 0</li>
                     <li>Khlem pep 8 tournament → Ioh 30 UC bonus!</li>
+                    <li className="text-amber-600 dark:text-amber-400">Upload custom character image for your podium card!</li>
                 </ul>
             </div>
         </div>

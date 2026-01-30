@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -17,10 +18,12 @@ import http from "@/src/utils/http";
 import axiosInstance from "@/src/utils/api";
 import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
-import { Camera, CloudUpload, ImageIcon, Loader2, Trash2, User, Check, X, RefreshCw, Copy, HelpCircle } from "lucide-react";
+import { Camera, CloudUpload, ImageIcon, Loader2, Trash2, User, Check, X, RefreshCw, Copy, HelpCircle, Video, Crown } from "lucide-react";
 import Image from "next/image";
 import { useDialogBackHandler } from "@/src/hooks/useDialogBackHandler";
 import { compressProfileImage, compressCharacterImage } from "@/src/utils/image/compressImage";
+import { videoToGif, isVideoFile } from "@/src/utils/image/videoToGif";
+import { useRoyalPass } from "@/src/hooks/royal-pass/useRoyalPass";
 import { cn } from "@/src/lib/utils";
 import { generateRandomPrompt } from "@/src/data/ai-prompt-styles";
 
@@ -45,11 +48,15 @@ interface ProfileImageSheetProps {
 }
 
 export function ProfileImageSheet({ userName, displayName, className, children }: ProfileImageSheetProps) {
+    const router = useRouter();
     const { user: clerkUser } = useUser();
+    const { hasRoyalPass: _hasRoyalPass } = useRoyalPass();
+    const hasRoyalPass = _hasRoyalPass;
     const queryClient = useQueryClient();
     const [isOpen, setIsOpen] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [isCompressing, setIsCompressing] = useState(false);
+    const [isConvertingGif, setIsConvertingGif] = useState(false);
     const [showGallery, setShowGallery] = useState(false);
     const [showUploadChoice, setShowUploadChoice] = useState(false);
     const [uploadTargetType, setUploadTargetType] = useState<"profile" | "character">("profile");
@@ -59,6 +66,7 @@ export function ProfileImageSheet({ userName, displayName, className, children }
     const [isCopied, setIsCopied] = useState(false);
     const [isRegenerating, setIsRegenerating] = useState(false);
     const [showTutorialModal, setShowTutorialModal] = useState(false);
+    const [isRedirecting, setIsRedirecting] = useState(false);
     const [mounted, setMounted] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -128,19 +136,68 @@ export function ProfileImageSheet({ userName, displayName, className, children }
         // Reset input so same file can be selected again
         e.target.value = "";
 
-        if (!file.type.startsWith("image/")) {
-            toast.error("Please select an image file");
+        // Validate file type - allow videos for character images
+        const isImage = file.type.startsWith("image/");
+        const isVideo = file.type.startsWith("video/");
+
+        if (!isImage && !isVideo) {
+            toast.error("Please select an image or video file");
+            return;
+        }
+
+        // Only allow videos for character images
+        if (isVideo && uploadTargetType !== "character") {
+            toast.error("Videos are only supported for character images");
             return;
         }
 
         try {
             setIsCompressing(true);
 
-            // Use different compression based on target type
-            // Character images get strict 9:16 center-crop, profile images stay square
-            const compressedFile = uploadTargetType === "character"
-                ? await compressCharacterImage(file)
-                : await compressProfileImage(file);
+            let compressedFile: File;
+            let wasVideoConversion = false;
+            let thumbnailBlob: Blob | null = null;
+
+            // Character image upload is restricted to Royal Pass holders
+            if (uploadTargetType === "character" && !hasRoyalPass) {
+                toast.error("Character image is a Royal Pass feature. Get Royal Pass to customize your podium card!");
+                return;
+            }
+
+            // Check if it's a video file (for character images only)
+            if (uploadTargetType === "character" && isVideoFile(file)) {
+                setIsConvertingGif(true);
+                setIsCompressing(false);
+                try {
+                    // Import getVideoThumbnail dynamically
+                    const { getVideoThumbnail } = await import("@/src/utils/image/videoToGif");
+
+                    // Extract thumbnail first
+                    thumbnailBlob = await getVideoThumbnail(file);
+
+                    // Convert video to GIF
+                    compressedFile = await videoToGif(file, {
+                        maxWidth: 270,
+                        maxHeight: 480,
+                        fps: 10,
+                        maxDuration: 5,
+                    });
+                    wasVideoConversion = true;
+                    toast.success(`Video converted to GIF (${(compressedFile.size / 1024).toFixed(0)}KB)`);
+                } catch (err) {
+                    console.error("Video conversion error:", err);
+                    toast.error(err instanceof Error ? err.message : "Failed to convert video to GIF");
+                    setIsConvertingGif(false);
+                    return;
+                }
+                setIsConvertingGif(false);
+            } else {
+                // Use different compression based on target type
+                // Character images get strict 9:16 center-crop, profile images stay square
+                compressedFile = uploadTargetType === "character"
+                    ? await compressCharacterImage(file)
+                    : await compressProfileImage(file);
+            }
 
             setIsCompressing(false);
             setIsUploading(true);
@@ -157,13 +214,32 @@ export function ProfileImageSheet({ userName, displayName, className, children }
 
             if (result.success && result.data?.url) {
                 if (uploadTargetType === "character") {
+                    // If it was a video conversion, also upload the thumbnail
+                    let thumbnailUrl: string | undefined;
+                    if (wasVideoConversion && thumbnailBlob) {
+                        try {
+                            const thumbFormData = new FormData();
+                            thumbFormData.append("image", thumbnailBlob, "thumbnail.jpg");
+                            const thumbResponse = await axiosInstance.post("/upload/image", thumbFormData, {
+                                headers: { "Content-Type": "multipart/form-data" },
+                            });
+                            if (thumbResponse.data.success && thumbResponse.data.data?.url) {
+                                thumbnailUrl = thumbResponse.data.data.url;
+                            }
+                        } catch {
+                            console.warn("Failed to upload thumbnail, proceeding without it");
+                        }
+                    }
+
                     // Save as character image via different endpoint
                     try {
                         const charResponse = await axiosInstance.post("/profile/character-image", {
                             imageUrl: result.data.url,
+                            isAnimated: wasVideoConversion,
+                            thumbnailUrl: thumbnailUrl,
                         });
                         if (charResponse.data.success) {
-                            toast.success("Character image updated!");
+                            toast.success(wasVideoConversion ? "Animated character image saved!" : "Character image updated!");
                             queryClient.invalidateQueries({ queryKey: ["auth"] });
                             setIsOpen(false);
                         } else {
@@ -275,7 +351,7 @@ export function ProfileImageSheet({ userName, displayName, className, children }
         );
     };
 
-    const isProcessing = isPending || isUploading || isCompressing;
+    const isProcessing = isPending || isUploading || isCompressing || isConvertingGif;
 
     return (
         <>
@@ -298,11 +374,11 @@ export function ProfileImageSheet({ userName, displayName, className, children }
                 )}
             </button>
 
-            {/* Hidden file input */}
+            {/* Hidden file input - accept images and videos for character */}
             <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept={uploadTargetType === "character" ? "image/*,video/mp4,video/webm,video/quicktime" : "image/*"}
                 className="hidden"
                 onChange={handleFileSelect}
             />
@@ -455,88 +531,109 @@ export function ProfileImageSheet({ userName, displayName, className, children }
                                     </div>
                                 </button>
 
-                                {/* Character Image option with inline AI prompt icons */}
-                                <div className="w-full flex items-center gap-4 p-4 rounded-xl border border-muted">
-                                    <button
-                                        onClick={() => {
-                                            setUploadTargetType("character");
-                                            setTimeout(() => fileInputRef.current?.click(), 50);
-                                        }}
-                                        disabled={isProcessing}
-                                        className="flex items-center gap-4 flex-1 hover:opacity-80 transition-opacity disabled:opacity-50"
-                                    >
-                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500/20 to-amber-500/20 flex items-center justify-center">
-                                            {(isCompressing || isUploading) && uploadTargetType === "character" ? (
-                                                <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
-                                            ) : (
-                                                <ImageIcon className="w-5 h-5 text-amber-500" />
-                                            )}
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="font-medium">
-                                                {(isCompressing || isUploading) && uploadTargetType === "character"
-                                                    ? (isCompressing ? "Compressing..." : "Uploading...")
-                                                    : "Character Image"}
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {(isCompressing || isUploading) && uploadTargetType === "character"
-                                                    ? "Please wait..."
-                                                    : "9:16 podium card background"}
-                                            </p>
-                                        </div>
-                                    </button>
-                                    {/* AI Prompt icons */}
-                                    <div className="flex items-center gap-1">
+                                {/* Character Image option - RP Only */}
+                                <div className="w-full rounded-xl border border-muted">
+                                    <div className="flex items-center gap-4 p-4">
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setIsRegenerating(true);
-                                                setPromptData(generateRandomPrompt());
-                                                setIsCopied(false);
-                                                setTimeout(() => setIsRegenerating(false), 300);
-                                            }}
-                                            className="p-2 rounded-full hover:bg-purple-500/10 transition-colors"
-                                            title="Generate new AI prompt"
-                                        >
-                                            <RefreshCw className={cn(
-                                                "w-4 h-4 text-purple-500 transition-transform",
-                                                isRegenerating && "animate-spin"
-                                            )} />
-                                        </button>
-                                        <button
-                                            onClick={async (e) => {
-                                                e.stopPropagation();
-                                                try {
-                                                    await navigator.clipboard.writeText(promptData.prompt);
-                                                    setIsCopied(true);
-                                                    toast.success("AI prompt copied!");
-                                                    setTimeout(() => setIsCopied(false), 2000);
-                                                } catch {
-                                                    toast.error("Failed to copy");
+                                            onClick={() => {
+                                                if (!hasRoyalPass) {
+                                                    setIsRedirecting(true);
+                                                    setTimeout(() => {
+                                                        router.push("/royal-pass");
+                                                    }, 500);
+                                                    return;
                                                 }
+                                                setUploadTargetType("character");
+                                                setTimeout(() => fileInputRef.current?.click(), 50);
                                             }}
+                                            disabled={isProcessing || isRedirecting}
                                             className={cn(
-                                                "p-2 rounded-full transition-colors",
-                                                isCopied ? "bg-green-500/20" : "hover:bg-purple-500/10"
+                                                "flex items-center gap-4 flex-1 hover:opacity-80 transition-opacity disabled:opacity-50",
+                                                !hasRoyalPass && !isRedirecting && "opacity-50"
                                             )}
-                                            title="Copy AI prompt"
                                         >
-                                            {isCopied ? (
-                                                <Check className="w-4 h-4 text-green-500" />
-                                            ) : (
-                                                <Copy className="w-4 h-4 text-purple-500" />
-                                            )}
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500/20 to-amber-500/20 flex items-center justify-center">
+                                                {isRedirecting ? (
+                                                    <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                                                ) : isConvertingGif && uploadTargetType === "character" ? (
+                                                    <Video className="w-5 h-5 text-amber-500 animate-pulse" />
+                                                ) : (isCompressing || isUploading) && uploadTargetType === "character" ? (
+                                                    <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                                                ) : (
+                                                    <ImageIcon className="w-5 h-5 text-amber-500" />
+                                                )}
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="font-medium flex items-center gap-2">
+                                                    {isRedirecting
+                                                        ? "Redirecting..."
+                                                        : (isCompressing || isUploading || isConvertingGif) && uploadTargetType === "character"
+                                                            ? (isConvertingGif ? "Converting to GIF..." : isCompressing ? "Compressing..." : "Uploading...")
+                                                            : "Character Image"}
+                                                    <Crown className="w-4 h-4 text-amber-500" />
+                                                </p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {isRedirecting
+                                                        ? "Taking you to Royal Pass..."
+                                                        : (isCompressing || isUploading || isConvertingGif) && uploadTargetType === "character"
+                                                            ? "Please wait..."
+                                                            : "Image or video for podium card"}
+                                                </p>
+                                            </div>
                                         </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setShowTutorialModal(true);
-                                            }}
-                                            className="p-2 rounded-full hover:bg-purple-500/10 transition-colors"
-                                            title="How to use AI prompt"
-                                        >
-                                            <HelpCircle className="w-4 h-4 text-purple-500" />
-                                        </button>
+                                        {/* AI Prompt icons - visible for all users */}
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setIsRegenerating(true);
+                                                    setPromptData(generateRandomPrompt());
+                                                    setIsCopied(false);
+                                                    setTimeout(() => setIsRegenerating(false), 300);
+                                                }}
+                                                className="p-2 rounded-full hover:bg-purple-500/10 transition-colors"
+                                                title="Generate new AI prompt"
+                                            >
+                                                <RefreshCw className={cn(
+                                                    "w-4 h-4 text-purple-500 transition-transform",
+                                                    isRegenerating && "animate-spin"
+                                                )} />
+                                            </button>
+                                            <button
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    try {
+                                                        await navigator.clipboard.writeText(promptData.prompt);
+                                                        setIsCopied(true);
+                                                        toast.success("AI prompt copied!");
+                                                        setTimeout(() => setIsCopied(false), 2000);
+                                                    } catch {
+                                                        toast.error("Failed to copy");
+                                                    }
+                                                }}
+                                                className={cn(
+                                                    "p-2 rounded-full transition-colors",
+                                                    isCopied ? "bg-green-500/20" : "hover:bg-purple-500/10"
+                                                )}
+                                                title="Copy AI prompt"
+                                            >
+                                                {isCopied ? (
+                                                    <Check className="w-4 h-4 text-green-500" />
+                                                ) : (
+                                                    <Copy className="w-4 h-4 text-purple-500" />
+                                                )}
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShowTutorialModal(true);
+                                                }}
+                                                className="p-2 rounded-full hover:bg-purple-500/10 transition-colors"
+                                                title="How to use AI prompt"
+                                            >
+                                                <HelpCircle className="w-4 h-4 text-purple-500" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </motion.div>
@@ -624,58 +721,60 @@ export function ProfileImageSheet({ userName, displayName, className, children }
                                 </div>
                             </motion.div>
                         )}
-                    </AnimatePresence>
-                </SheetContent>
-            </Sheet>
+                    </AnimatePresence >
+                </SheetContent >
+            </Sheet >
 
             {/* Tutorial Video Modal - rendered via portal to avoid Sheet event issues */}
-            {mounted && createPortal(
-                <AnimatePresence>
-                    {showTutorialModal && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setShowTutorialModal(false);
-                            }}
-                        >
+            {
+                mounted && createPortal(
+                    <AnimatePresence>
+                        {showTutorialModal && (
                             <motion.div
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.9, opacity: 0 }}
-                                className="relative w-full max-w-sm mx-4"
-                                onClick={(e) => e.stopPropagation()}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowTutorialModal(false);
+                                }}
                             >
-                                {/* Close button */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowTutorialModal(false);
-                                    }}
-                                    className="absolute -top-10 right-0 p-2 text-white/80 hover:text-white transition-colors"
+                                <motion.div
+                                    initial={{ scale: 0.9, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0.9, opacity: 0 }}
+                                    className="relative w-full max-w-sm mx-4"
+                                    onClick={(e) => e.stopPropagation()}
                                 >
-                                    <X className="w-6 h-6" />
-                                </button>
-                                {/* YouTube Shorts embed - 9:16 aspect ratio */}
-                                <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden bg-black shadow-2xl">
-                                    <iframe
-                                        src="https://www.youtube.com/embed/JPYNttbdrFk?autoplay=1&loop=1&playlist=JPYNttbdrFk"
-                                        title="AI Prompt Tutorial"
-                                        className="absolute inset-0 w-full h-full"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                    />
-                                </div>
-                                <p className="text-center text-white/60 text-sm mt-3">Tap outside to close</p>
+                                    {/* Close button */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowTutorialModal(false);
+                                        }}
+                                        className="absolute -top-10 right-0 p-2 text-white/80 hover:text-white transition-colors"
+                                    >
+                                        <X className="w-6 h-6" />
+                                    </button>
+                                    {/* YouTube Shorts embed - 9:16 aspect ratio */}
+                                    <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden bg-black shadow-2xl">
+                                        <iframe
+                                            src="https://www.youtube.com/embed/JPYNttbdrFk?autoplay=1&loop=1&playlist=JPYNttbdrFk"
+                                            title="AI Prompt Tutorial"
+                                            className="absolute inset-0 w-full h-full"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowFullScreen
+                                        />
+                                    </div>
+                                    <p className="text-center text-white/60 text-sm mt-3">Tap outside to close</p>
+                                </motion.div>
                             </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>,
-                document.body
-            )}
+                        )}
+                    </AnimatePresence>,
+                    document.body
+                )
+            }
         </>
     );
 }

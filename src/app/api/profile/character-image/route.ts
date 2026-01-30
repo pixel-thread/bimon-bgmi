@@ -15,7 +15,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { imageUrl } = body;
+        const { imageUrl, isAnimated = false, thumbnailUrl } = body;
 
         if (!imageUrl) {
             return ErrorResponse({ message: "Image URL is required", status: 400 });
@@ -43,6 +43,8 @@ export async function POST(req: Request) {
                 fullPath: imageUrl,
                 publicUrl: imageUrl,
                 isCharacterImg: true,
+                isAnimated: isAnimated,
+                thumbnailUrl: thumbnailUrl || null,
             },
         });
 

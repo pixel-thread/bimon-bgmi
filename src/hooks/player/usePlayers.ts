@@ -23,6 +23,8 @@ type PlayerT = {
   profileImageUrl?: string | null;
   characterImageUrl?: string | null;
   hasRoyalPass?: boolean;
+  isAnimated?: boolean;
+  thumbnailUrl?: string | null;
 };
 
 export function usePlayers({

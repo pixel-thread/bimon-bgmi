@@ -497,6 +497,8 @@ model Gallery {
   status             GalleryStatus @default(ACTIVE)
   isCharacterImg     Boolean       @default(false)
   isGlobalBackground Boolean       @default(false)
+  isAnimated         Boolean       @default(false)
+  thumbnailUrl       String?
 
   playerId String? @unique
   player   Player?
