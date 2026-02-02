@@ -57,7 +57,62 @@ export function CustomPlayerTable({
     const router = useRouter();
     const queryClient = useQueryClient();
 
-    // Intersection observer for infinite scroll
+    // Track whether to show spinner or button during fetch
+    const [showSpinner, setShowSpinner] = useState(false);
+    const spinnerTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const wasFetchingRef = useRef(false);
+
+    // Track data length to reset animation for new players only
+    const [previousDataLength, setPreviousDataLength] = useState(0);
+
+    // Update previous data length when new data arrives
+    useEffect(() => {
+        if (!isFetchingNextPage && data.length > previousDataLength) {
+            // Delay reset to allow animations to complete
+            const timer = setTimeout(() => {
+                setPreviousDataLength(data.length);
+            }, 1500); // Wait for animations to finish
+            return () => clearTimeout(timer);
+        }
+    }, [data.length, isFetchingNextPage, previousDataLength]);
+
+    // When fetch starts, show button first, then spinner after 3 seconds
+    useEffect(() => {
+        if (isFetchingNextPage && !wasFetchingRef.current) {
+            // Fetch just started - show button, set timer for spinner
+            setShowSpinner(false);
+
+            spinnerTimerRef.current = setTimeout(() => {
+                setShowSpinner(true);
+            }, 3000);
+        }
+
+        if (!isFetchingNextPage && wasFetchingRef.current) {
+            // Fetch just completed - reset
+            setShowSpinner(false);
+            if (spinnerTimerRef.current) {
+                clearTimeout(spinnerTimerRef.current);
+            }
+        }
+
+        wasFetchingRef.current = isFetchingNextPage;
+
+        return () => {
+            if (spinnerTimerRef.current) {
+                clearTimeout(spinnerTimerRef.current);
+            }
+        };
+    }, [isFetchingNextPage]);
+
+    // Skip to spinner immediately when button is clicked
+    const handleLoadMoreClick = () => {
+        if (spinnerTimerRef.current) {
+            clearTimeout(spinnerTimerRef.current);
+        }
+        setShowSpinner(true);
+    };
+
+    // Intersection observer for infinite scroll (fetches in background)
     const loadMoreRef = useCallback(
         (node: HTMLDivElement | null) => {
             if (!node) return;
@@ -376,20 +431,27 @@ export function CustomPlayerTable({
                         <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">Try adjusting your filters</p>
                     </div>
                 ) : (
-                    remainingPlayers?.flatMap((player, index) => {
+                    remainingPlayers?.flatMap((player: PlayerT, index: number) => {
                         // For infinite scroll, index is straightforward since we skip top 3 for podium
                         const globalIndex = index + 4; // +4 because we're after the top 3
                         const rankStyle = getRankStyle(globalIndex);
                         const RankIcon = rankStyle.icon;
 
+                        // Calculate animation delay - only for new players
+                        // previousDataLength tracks already-animated items, so offset by that minus the podium (3)
+                        const animationOffset = Math.max(0, previousDataLength - 3);
+                        const relativeIndex = index - animationOffset;
+                        const isNewPlayer = relativeIndex >= 0;
+                        const animationDelay = isNewPlayer ? relativeIndex * 0.1 : 0;
+
                         const playerRow = (
                             <motion.div
                                 key={player.id}
-                                initial={{ opacity: 0, y: 20 }}
+                                initial={isNewPlayer ? { opacity: 0, y: 20 } : false}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{
-                                    duration: 0.5,
-                                    delay: index * 0.15,
+                                    duration: 0.4,
+                                    delay: animationDelay,
                                     ease: "easeOut"
                                 }}
                                 onClick={() => handleRowClick(player.id)}
@@ -484,12 +546,23 @@ export function CustomPlayerTable({
             </div>
 
             {/* Infinite Scroll Load More */}
-            <div ref={loadMoreRef} className="py-6 flex items-center justify-center">
+            <div ref={loadMoreRef} className="py-6 flex flex-col items-center justify-center gap-3">
                 {isFetchingNextPage ? (
-                    <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span className="text-sm">Loading more players...</span>
-                    </div>
+                    showSpinner ? (
+                        <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <span className="text-sm">Loading more players...</span>
+                        </div>
+                    ) : (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleLoadMoreClick}
+                            className="px-6"
+                        >
+                            Load More
+                        </Button>
+                    )
                 ) : hasNextPage ? (
                     <p className="text-xs text-zinc-400 dark:text-zinc-500">Scroll for more</p>
                 ) : data.length > 0 ? (
