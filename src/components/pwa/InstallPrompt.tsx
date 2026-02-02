@@ -21,6 +21,9 @@ declare global {
 // DEMO MODE: Set to true to always show on homepage (for testing)
 const DEMO_MODE = false;
 
+// localStorage key for tracking installation
+const PWA_INSTALLED_KEY = "pwa-installed";
+
 export function InstallPrompt() {
     const pathname = usePathname();
     const [deferredPrompt, setDeferredPrompt] =
@@ -45,11 +48,52 @@ export function InstallPrompt() {
             return;
         }
 
-        // Check if already installed
-        if (window.matchMedia("(display-mode: standalone)").matches) {
+        // Check if already installed using multiple detection methods
+        const checkIfInstalled = (): boolean => {
+            // Method 1: Check if running in standalone mode (inside PWA)
+            if (window.matchMedia("(display-mode: standalone)").matches) {
+                localStorage.setItem(PWA_INSTALLED_KEY, "true");
+                return true;
+            }
+
+            // Method 2: Check iOS standalone mode
+            if ((navigator as unknown as { standalone?: boolean }).standalone === true) {
+                localStorage.setItem(PWA_INSTALLED_KEY, "true");
+                return true;
+            }
+
+            // Method 3: Check localStorage flag (set when app is installed)
+            // This persists across sessions so we know if user previously installed
+            if (localStorage.getItem(PWA_INSTALLED_KEY) === "true") {
+                return true;
+            }
+
+            return false;
+        };
+
+        if (checkIfInstalled()) {
             setIsInstalled(true);
             return;
         }
+
+        // Also check using getInstalledRelatedApps API (async, for Chrome/Edge/Brave)
+        const checkInstalledApps = async () => {
+            if ("getInstalledRelatedApps" in navigator) {
+                try {
+                    const relatedApps = await (navigator as unknown as {
+                        getInstalledRelatedApps: () => Promise<Array<{ platform: string; url?: string }>>
+                    }).getInstalledRelatedApps();
+                    if (relatedApps.length > 0) {
+                        setIsInstalled(true);
+                        localStorage.setItem(PWA_INSTALLED_KEY, "true");
+                    }
+                } catch (e) {
+                    // API not supported or failed, ignore
+                    console.debug("getInstalledRelatedApps check failed:", e);
+                }
+            }
+        };
+        checkInstalledApps();
 
         // Detect iOS Safari
         const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) &&
@@ -108,6 +152,12 @@ export function InstallPrompt() {
         // Also listen for new events (backup)
         const handleBeforeInstallPrompt = (e: Event) => {
             e.preventDefault();
+
+            // If already installed, don't show the prompt
+            if (localStorage.getItem(PWA_INSTALLED_KEY) === "true") {
+                return;
+            }
+
             window.deferredPWAPrompt = e as BeforeInstallPromptEvent;
             setDeferredPrompt(e as BeforeInstallPromptEvent);
 
@@ -132,6 +182,7 @@ export function InstallPrompt() {
             setDeferredPrompt(null);
             window.deferredPWAPrompt = null;
             localStorage.removeItem("pwa-install-dismissed");
+            localStorage.setItem(PWA_INSTALLED_KEY, "true");
         };
 
         window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -161,6 +212,7 @@ export function InstallPrompt() {
         if (outcome === "accepted") {
             setIsInstalled(true);
             window.deferredPWAPrompt = null;
+            localStorage.setItem(PWA_INSTALLED_KEY, "true");
 
             // Track PWA installation in PostHog
             posthog.capture("pwa_installed", {
