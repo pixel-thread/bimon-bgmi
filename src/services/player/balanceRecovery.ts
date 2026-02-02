@@ -2,7 +2,7 @@ import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 
 /**
  * Clears trusted status when player's balance recovers above -30.
- * Trusted status is specifically for allowing deeper negative balance (-100 vs -30).
+ * Trusted status is specifically for allowing deeper negative balance (-200 vs -30).
  * Admin must manually unban players.
  */
 export async function clearPlayerStatusOnBalanceRecovery(
