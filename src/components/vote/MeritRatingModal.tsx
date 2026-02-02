@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useAuth } from "@clerk/nextjs";
 import {
     Dialog,
@@ -30,14 +30,22 @@ export function MeritRatingModal({
     tournamentName,
     onComplete,
 }: MeritRatingModalProps) {
-    // Track ratings for all players: playerId -> rating (1-5) or null
-    const [ratings, setRatings] = useState<Record<string, number | null>>(
-        Object.fromEntries(pendingRatings.map(p => [p.playerId, null]))
+    // Memoize initial state to prevent re-initialization on re-renders
+    const initialRatings = useMemo(
+        () => Object.fromEntries(pendingRatings.map(p => [p.playerId, null])),
+        [] // Empty deps - only compute on mount
     );
+
+    // Track ratings for all players: playerId -> rating (1-5) or null
+    const [ratings, setRatings] = useState<Record<string, number | null>>(initialRatings);
     const [hoverRatings, setHoverRatings] = useState<Record<string, number>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { getToken } = useAuth();
+
+    // Use a ref to store ratings during submission to prevent loss on re-render
+    const ratingsRef = useRef(ratings);
+    ratingsRef.current = ratings;
 
     // Check if all players have been rated
     const allRated = pendingRatings.every(p => ratings[p.playerId] !== null);
@@ -65,46 +73,70 @@ export function MeritRatingModal({
         setIsSubmitting(true);
         setError(null);
 
-
+        // Capture ratings at the start of submission using ref
+        // This prevents loss of ratings if component re-renders during async operations
+        const currentRatings = { ...ratingsRef.current };
 
         try {
             const token = await getToken({ template: "jwt" });
 
-            // Submit all ratings in parallel
-            const submissions = pendingRatings.map(player =>
-                fetch(`/api/player/merit`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({
-                        toPlayerId: player.playerId,
-                        rating: ratings[player.playerId],
-                        tournamentId,
-                    }),
-                })
-            );
+            // Submit ratings sequentially to avoid server overload and timeouts
+            const results: Response[] = [];
+            for (const player of pendingRatings) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
-            const results = await Promise.all(submissions);
+                try {
+                    const res = await fetch(`/api/player/merit`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({
+                            toPlayerId: player.playerId,
+                            rating: currentRatings[player.playerId],
+                            tournamentId,
+                        }),
+                        signal: controller.signal,
+                    });
+                    clearTimeout(timeoutId);
+                    results.push(res);
+                } catch (err) {
+                    clearTimeout(timeoutId);
+                    if (err instanceof Error && err.name === 'AbortError') {
+                        throw new Error(`Rating for ${player.displayName} timed out. Please try again.`);
+                    }
+                    throw err;
+                }
+            }
+
 
             // Check if any failed and get error message
             const failedResponses = results.filter(res => !res.ok);
             if (failedResponses.length > 0) {
                 // Try to get error message from first failed response
+                let errorMessage = "Some ratings failed to submit";
                 try {
                     const errorData = await failedResponses[0].json();
-                    throw new Error(errorData.message || "Some ratings failed to submit");
-                } catch {
-                    throw new Error("Some ratings failed to submit");
+                    errorMessage = errorData.message || errorMessage;
+                    console.error("Rating submission failed:", {
+                        status: failedResponses[0].status,
+                        error: errorData,
+                        failedCount: failedResponses.length,
+                        totalCount: results.length
+                    });
+                } catch (parseError) {
+                    console.error("Failed to parse error response:", parseError);
                 }
+                throw new Error(errorMessage);
             }
 
             // Success - close modal
             onComplete();
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : "Failed to save ratings";
-            console.error("Failed to submit ratings:", errorMessage);
+            console.error("Failed to submit ratings:", err);
             setError(errorMessage + ". Please try again.");
         } finally {
             setIsSubmitting(false);
