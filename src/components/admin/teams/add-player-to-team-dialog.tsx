@@ -8,14 +8,8 @@ import {
   DialogTitle,
 } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/src/components/ui/select";
 import { PlusIcon, XIcon, SaveIcon, AlertCircle, ArrowRight, RefreshCw } from "lucide-react";
+import { PlayerAvatar } from "@/src/components/ui/player-avatar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { ADMIN_TEAM_ENDPOINTS } from "@/src/lib/endpoints/admin/team";
@@ -101,6 +95,79 @@ export const AddPlayerToTeamDialog = ({
 
   // Only fetch players when dialog is open to avoid unnecessary API calls
   const { data: players, isFetching: isFetchingPlayers } = usePlayers({ enabled: open });
+
+  // Also use the all-players-search cache (same as SearchPlayerDialog uses)
+  // This gives us profile images and full data for players added via search
+  const { data: allSearchPlayers } = useQuery({
+    queryKey: ["all-players-search"],
+    queryFn: () => http.post<{ id: string; user: { displayName?: string; userName: string }; customProfileImageUrl?: string }[]>(`/players/search`, { query: "" }),
+    select: (data) => data.data,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    enabled: open,
+  });
+
+  // Create a combined player lookup that merges team data with full player data
+  // This ensures we always have basic info from team.players even if full data isn't loaded
+  type CombinedPlayerData = {
+    id: string;
+    userName?: string;
+    displayName?: string | null;
+    profileImageUrl?: string | null;
+    imageUrl?: string | null;
+    category?: string | number;
+    kd?: number;
+    matches?: number;
+    hasRoyalPass?: boolean;
+    isBanned?: boolean;
+  };
+
+  const playerLookup = React.useMemo(() => {
+    const lookup = new Map<string, CombinedPlayerData>();
+
+    // First, add team players data (basic info)
+    team?.players?.forEach(p => {
+      lookup.set(p.id, {
+        id: p.id,
+        userName: p.name,
+        displayName: p.displayName,
+        category: p.category,
+      });
+    });
+
+    // Add data from all-players-search (used by SearchPlayerDialog)
+    allSearchPlayers?.forEach(p => {
+      const existing = lookup.get(p.id);
+      lookup.set(p.id, {
+        ...existing,
+        id: p.id,
+        userName: p.user?.userName,
+        displayName: p.user?.displayName,
+        profileImageUrl: p.customProfileImageUrl,
+      });
+    });
+
+    // Then, overlay with full player data if available (from usePlayers)
+    players?.forEach(p => {
+      const existing = lookup.get(p.id);
+      lookup.set(p.id, {
+        ...existing,
+        id: p.id,
+        userName: p.userName,
+        displayName: p.displayName,
+        profileImageUrl: p.profileImageUrl,
+        imageUrl: p.imageUrl,
+        category: p.category,
+        kd: p.kd,
+        matches: p.matches,
+        hasRoyalPass: p.hasRoyalPass,
+        isBanned: p.isBanned,
+      });
+    });
+
+    return lookup;
+  }, [team?.players, allSearchPlayers, players]);
 
   const { tournamentId } = useTournamentStore();
   // Only fetch tournament when dialog is open
@@ -474,60 +541,101 @@ export const AddPlayerToTeamDialog = ({
             </div>
           }
           falseComponent={
-            <div className="flex flex-col space-y-4 mt-3">
+            <div className="flex flex-col space-y-3 mt-3">
               {playersList.map((playerId, index) => {
+                const player = playerLookup.get(playerId);
                 const isNewWithUC = !originalPlayersList.includes(playerId) && playersWithUCDeduction.has(playerId);
                 const moveFromInfo = playersToMoveFrom.get(playerId);
                 const isBeingMoved = !originalPlayersList.includes(playerId) && !!moveFromInfo;
                 const willBeRefunded = playersToRefund.has(playerId);
+
                 return (
-                  <div key={index} className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium">Player {index + 1}</p>
-                      {isNewWithUC && (
-                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded dark:bg-orange-900 dark:text-orange-300">
-                          -{entryFee} UC
+                  <div
+                    key={playerId}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border hover:bg-muted/80 transition-colors"
+                  >
+                    {/* Player Avatar & Info */}
+                    <PlayerAvatar
+                      profileImageUrl={player?.profileImageUrl}
+                      imageUrl={player?.imageUrl}
+                      displayName={player?.displayName}
+                      userName={player?.userName}
+                      size="md"
+                      isBanned={player?.isBanned}
+                    />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-muted-foreground font-medium">
+                          #{index + 1}
                         </span>
-                      )}
-                      {willBeRefunded && (
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded dark:bg-green-900 dark:text-green-300">
-                          +{entryFee} UC refund
+                        <span className="font-medium text-foreground truncate">
+                          {getDisplayName(player?.displayName, player?.userName)}
                         </span>
-                      )}
-                      {isBeingMoved && (
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                          Moving from {moveFromInfo.teamName}
-                        </span>
+                        {player?.hasRoyalPass && (
+                          <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-300">
+                            RP
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                        {player?.userName && (
+                          <span className="text-xs text-muted-foreground">
+                            @{player.userName}
+                          </span>
+                        )}
+
+                        {/* Player Stats */}
+                        {player?.category && (
+                          <span className="text-xs text-purple-600 dark:text-purple-400">
+                            {player.category}
+                          </span>
+                        )}
+                        {typeof player?.kd === 'number' && (
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                            {player.kd.toFixed(2)} K/D
+                          </span>
+                        )}
+                        {typeof player?.matches === 'number' && player.matches > 0 && (
+                          <span className="text-xs text-sky-600 dark:text-sky-400">
+                            {player.matches} matches
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Status badges (UC/move) */}
+                      {(isNewWithUC || willBeRefunded || isBeingMoved) && (
+                        <div className="flex items-center gap-2 flex-wrap mt-1">
+                          {isNewWithUC && (
+                            <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded dark:bg-orange-900 dark:text-orange-300">
+                              -{entryFee} UC
+                            </span>
+                          )}
+                          {willBeRefunded && (
+                            <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">
+                              +{entryFee} UC
+                            </span>
+                          )}
+                          {isBeingMoved && (
+                            <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                              from {moveFromInfo.teamName}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Select
-                        value={playerId}
-                        onValueChange={(value) => handleReplacePlayer(index, value)}
-                        disabled={isFetchingPlayers || isSaving}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select player" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {players?.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {getDisplayName(p.displayName, p.userName)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        disabled={isSaving}
-                        onClick={() => handleRemovePlayer(playerId)}
-                      >
-                        <XIcon className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    {/* Remove Button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={isSaving}
+                      onClick={() => handleRemovePlayer(playerId)}
+                      className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <XIcon className="w-4 h-4" />
+                    </Button>
                   </div>
                 );
               })}
