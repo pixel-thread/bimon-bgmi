@@ -170,6 +170,31 @@ export const getLuckyWinnerTheme = (): PollTheme => {
     };
 };
 
+/**
+ * Special theme for Birthday Players - a celebratory pink/purple cake theme
+ * This is a FIXED theme for players with birthdays ±1 day from today
+ */
+export const getBirthdayTheme = (): PollTheme => {
+    return {
+        card: 'bg-gradient-to-b from-pink-50 via-purple-50 to-white dark:from-pink-950/40 dark:via-purple-950/30 dark:to-gray-800 border-2 border-pink-400 dark:border-pink-500 shadow-xl shadow-pink-300/60 dark:shadow-pink-900/40 ring-2 ring-purple-300/50 dark:ring-purple-500/30',
+        header: 'from-pink-500 via-purple-500 to-indigo-500',
+        wave1: 'rgba(236,72,153,0.4)',
+        wave2: 'rgba(168,85,247,0.25)',
+        sparkle: 'bg-yellow-300',
+        badge: 'bg-pink-600/90 text-white backdrop-blur-sm font-bold',
+        options: 'bg-gradient-to-b from-pink-100/60 via-purple-50/40 to-pink-50/30 dark:from-pink-900/30 dark:via-purple-900/20 dark:to-pink-950/10',
+        footer: 'bg-gradient-to-b from-pink-50/40 via-purple-50/30 to-pink-100/50 dark:from-pink-950/20 dark:via-purple-950/10 dark:to-pink-900/20',
+        button: 'text-pink-700 dark:text-pink-300 hover:text-pink-900 dark:hover:text-pink-200 hover:bg-pink-100 dark:hover:bg-pink-900/30 font-semibold',
+        optionSelected: { border: 'border-pink-500', bg: 'bg-pink-50 dark:bg-pink-900/20', text: 'text-pink-700 dark:text-pink-300', radio: 'border-pink-500 bg-pink-500' },
+        optionUnselected: { border: 'border-pink-200 dark:border-pink-700 hover:border-pink-400 dark:hover:border-pink-500', radio: 'border-pink-300 dark:border-pink-600 group-hover:border-pink-400' },
+        dialogHeader: 'bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500',
+        dialogIcon: 'bg-pink-500',
+        dialogBorder: 'border-pink-300 dark:border-pink-700',
+        progressBar: 'bg-pink-500',
+        voterCard: 'bg-pink-50 dark:bg-pink-900/20',
+    };
+};
+
 // Calculate participant count from votes (IN + SOLO, excluding OUT)
 export const calculateParticipantCount = (playersVotes: { vote: string }[] | undefined): number => {
     if (!playersVotes) return 0;
@@ -177,3 +202,4 @@ export const calculateParticipantCount = (playersVotes: { vote: string }[] | und
     const soloVotes = playersVotes.filter(v => v.vote === 'SOLO').length;
     return inVotes + soloVotes;
 };
+

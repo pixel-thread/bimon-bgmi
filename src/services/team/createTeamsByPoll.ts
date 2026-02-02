@@ -14,6 +14,7 @@ import { isMeritBanEnabled } from "@/src/services/settings/getAppSetting";
 import { recordLuckyVoter } from "@/src/services/team/previewTeamsByPoll";
 import { batchNotifyTournamentEntry } from "@/src/services/push/sendUCNotification";
 import { logger } from "@/src/utils/logger";
+import { isBirthdayWithinWindow } from "@/src/utils/birthdayCheck";
 
 
 type PreviewTeamInput = {
@@ -384,10 +385,21 @@ export async function createTeamsByPolls({
         })
       );
 
-      // Phase 4: Debit UC from non-exempt players (also skip lucky voter)
+      // Phase 4: Debit UC from non-exempt players (also skip lucky voter and birthday players)
       if (entryFee > 0) {
+        // Find birthday players - check if their DOB is within ±1 day of today
+        const birthdayPlayerIds = new Set<string>();
+        for (const player of allPlayers) {
+          const dateOfBirth = (player as any).user?.dateOfBirth;
+          if (dateOfBirth && isBirthdayWithinWindow(dateOfBirth)) {
+            birthdayPlayerIds.add(player.id);
+          }
+        }
+
         const playersToCharge = allPlayers.filter((player) =>
-          !player.isUCExempt && player.id !== luckyVoterId
+          !player.isUCExempt &&
+          player.id !== luckyVoterId &&
+          !birthdayPlayerIds.has(player.id)
         );
 
         // Record lucky voter in season history and create their "Free Entry" transaction
@@ -403,6 +415,21 @@ export async function createTeamsByPolls({
               playerId: luckyVoterId,
             },
           });
+        }
+
+        // Create transaction records for birthday players
+        for (const birthdayPlayerId of birthdayPlayerIds) {
+          // Don't double-record if they're also the lucky voter
+          if (birthdayPlayerId !== luckyVoterId) {
+            await tx.transaction.create({
+              data: {
+                amount: 0,
+                type: "credit",
+                description: `🎂 Birthday Free Entry for ${tournamentName}`,
+                playerId: birthdayPlayerId,
+              },
+            });
+          }
         }
 
         if (playersToCharge.length > 0) {
@@ -509,8 +536,21 @@ export async function createTeamsByPolls({
     const allPlayersFromTeams = teams.flatMap((t) => t.players);
     const luckyVoterIdFromPoll = luckyVoterId;
 
+    // Build birthday player set for notification filtering
+    const birthdayPlayerIdsForNotif = new Set<string>();
+    for (const player of allPlayersFromTeams) {
+      const dateOfBirth = (player as any).user?.dateOfBirth;
+      if (dateOfBirth && isBirthdayWithinWindow(dateOfBirth)) {
+        birthdayPlayerIdsForNotif.add(player.id);
+      }
+    }
+
     const notificationsToSend = allPlayersFromTeams
-      .filter(player => !player.isUCExempt && player.id !== luckyVoterIdFromPoll)
+      .filter(player =>
+        !player.isUCExempt &&
+        player.id !== luckyVoterIdFromPoll &&
+        !birthdayPlayerIdsForNotif.has(player.id)
+      )
       .map(player => ({
         playerId: player.id,
         amount: entryFee,

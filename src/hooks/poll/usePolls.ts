@@ -15,11 +15,15 @@ export function usePolls({ page, forcePublic }: Props = { page: "1" }) {
   const query = useQuery({
     queryKey: ["polls"],
     queryFn: () => http.get<PollT[]>(baseUrl),
-    select: (data) => data.data,
     placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
     staleTime: 0, // Always fetch fresh data on mount to ensure accurate vote counts for dynamic team type
   });
 
-  return query;
+  return {
+    ...query,
+    data: query.data?.data ?? [],
+    isBirthdayPlayer: query.data?.isBirthdayPlayer ?? false,
+    userDateOfBirth: query.data?.userDateOfBirth ?? null,
+  };
 }

@@ -13,10 +13,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
 import { SlotMachineCounter } from "@/src/components/ui/AnimatedCounter";
-import { getPollTheme, getLuckyWinnerTheme, PollTheme } from "./pollTheme";
+import { getPollTheme, getLuckyWinnerTheme, getBirthdayTheme, PollTheme } from "./pollTheme";
 import { motion, AnimatePresence } from "motion/react";
 import { getPrizeDistribution, getTeamSize } from "@/src/utils/prizeDistribution";
 import { PollCardSkeleton } from "./PollCardSkeleton";
+import { isBirthdayWithinWindow } from "@/src/utils/birthdayCheck";
 
 
 const bannedStampStyles = {
@@ -380,12 +381,16 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     const teamSize = effectiveTeamInfo.size;
 
     // Use shared theme utility
-    // Lucky voters get a special fixed theme that doesn't change with participant count
+    // Check if current user has birthday within ±1 day
+    const isBirthdayPlayer = user?.dateOfBirth ? isBirthdayWithinWindow(user.dateOfBirth) : false;
+    // Lucky voters and birthday players get special fixed themes
     const isLuckyVoter = poll.luckyVoterId === playerId && !!playerId;
 
-    const theme = isLuckyVoter
-      ? getLuckyWinnerTheme()
-      : (hasPrizePool ? getPollTheme(participantCount) : null);
+    const theme = isBirthdayPlayer
+      ? getBirthdayTheme()
+      : isLuckyVoter
+        ? getLuckyWinnerTheme()
+        : (hasPrizePool ? getPollTheme(participantCount) : null);
 
     // Show skeleton when refetching
     if (isRefetching) {
@@ -625,7 +630,11 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                   </span>
                 </span>
                 <span className="text-xs">
-                  {isLuckyVoter && entryFee > 0 ? (
+                  {isBirthdayPlayer && entryFee > 0 ? (
+                    <span className="text-pink-500 dark:text-pink-400 font-semibold">
+                      🎂 Happy Birthday! FREE ENTRY: <span className="line-through opacity-60">{entryFee}</span> 0 UC
+                    </span>
+                  ) : isLuckyVoter && entryFee > 0 ? (
                     <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
                       🎉 Congratulations! FREE ENTRY: <span className="line-through opacity-60">{entryFee}</span> 0 UC
                     </span>

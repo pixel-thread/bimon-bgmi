@@ -4,11 +4,15 @@ import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
 import { clientClerk } from "@/src/lib/clerk/client";
+import { isBirthdayWithinWindow } from "@/src/utils/birthdayCheck";
 
 export async function GET(req: NextRequest) {
   try {
     const user = await tokenMiddleware(req);
     const currentPlayerId = user?.player?.id || null;
+
+    // Check if current user has birthday within ±1 day
+    const isBirthdayPlayer = user?.dateOfBirth ? isBirthdayWithinWindow(user.dateOfBirth) : false;
     const query = req.nextUrl.searchParams;
     const page = query.get("page");
     const withImages = query.get("withImages") === "true";
@@ -88,6 +92,8 @@ export async function GET(req: NextRequest) {
 
       return SuccessResponse({
         data: pollsWithImages,
+        isBirthdayPlayer,
+        userDateOfBirth: isBirthdayPlayer ? user?.dateOfBirth : null,
         status: 200,
         message: "Polls fetched successfully",
       });
@@ -107,6 +113,8 @@ export async function GET(req: NextRequest) {
 
     return SuccessResponse({
       data: pollsWithRoyalPass,
+      isBirthdayPlayer,
+      userDateOfBirth: isBirthdayPlayer ? user?.dateOfBirth : null,
       status: 200,
       message: "Polls fetched successfully",
     });

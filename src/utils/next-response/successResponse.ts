@@ -9,6 +9,9 @@ interface Props<T> {
   status?: HttpStatusCode;
   token?: string;
   headers?: Record<string, string>;
+  // Birthday free entry fields
+  isBirthdayPlayer?: boolean;
+  userDateOfBirth?: Date | string | null;
 }
 
 export const SuccessResponse = <T>({
@@ -18,6 +21,8 @@ export const SuccessResponse = <T>({
   meta,
   token,
   headers,
+  isBirthdayPlayer,
+  userDateOfBirth,
 }: Props<T>) => {
   return NextResponse.json(
     {
@@ -26,6 +31,8 @@ export const SuccessResponse = <T>({
       data: data,
       token: token,
       meta: meta,
+      isBirthdayPlayer: isBirthdayPlayer,
+      userDateOfBirth: userDateOfBirth,
       timeStamp: new Date().toISOString(),
     },
     { status: status, headers: headers },

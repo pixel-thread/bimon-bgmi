@@ -8,6 +8,10 @@ import { NotificationPromptBanner } from "@/src/components/common/NotificationPr
 import { JobBoardBanner } from "./JobBoardBanner";
 import { MeritRatingModal } from "./MeritRatingModal";
 import { PollCardSkeleton } from "./PollCardSkeleton";
+import { BirthdayGiftModal, hasBirthdayPromptResponse, shouldShowBirthdayPublicly } from "./BirthdayGiftModal";
+import { usePolls } from "@/src/hooks/poll/usePolls";
+import { useAuth as useAuthContext } from "@/src/hooks/context/auth/useAuth";
+import { BirthdayBanner } from "./BirthdayBanner";
 
 interface PendingRating {
   playerId: string;
@@ -25,6 +29,29 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [showPollsBehindModal, setShowPollsBehindModal] = useState(false);
   const { getToken, isSignedIn } = useAuth();
+  const { user } = useAuthContext();
+
+  // Birthday modal state
+  const [showBirthdayModal, setShowBirthdayModal] = useState(false);
+  const [birthdayShareChoice, setBirthdayShareChoice] = useState<"share" | "private" | null>(null);
+
+  // Get birthday info from polls hook
+  const { isBirthdayPlayer, userDateOfBirth, data: polls } = usePolls({});
+  const activePollId = polls?.[0]?.id || "";
+  const entryFee = polls?.[0]?.tournament?.fee || 0;
+
+  // Check if user has already responded to birthday prompt
+  useEffect(() => {
+    if (isBirthdayPlayer && activePollId) {
+      const existingResponse = hasBirthdayPromptResponse(activePollId);
+      if (existingResponse) {
+        setBirthdayShareChoice(existingResponse.response);
+      } else {
+        // Show birthday modal if no response yet
+        setShowBirthdayModal(true);
+      }
+    }
+  }, [isBirthdayPlayer, activePollId]);
 
   const hasPendingRatings = meritData?.pendingRatings && meritData.pendingRatings.length > 0;
 
@@ -82,11 +109,43 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
     setMeritData((prev) => prev ? { ...prev, pendingRatings: [] } : null);
   };
 
+  const handleBirthdayShare = () => {
+    setBirthdayShareChoice("share");
+    setShowBirthdayModal(false);
+  };
+
+  const handleBirthdayPrivate = () => {
+    setBirthdayShareChoice("private");
+    setShowBirthdayModal(false);
+  };
+
+  const handleBirthdayClose = () => {
+    // Just close modal without saving - will ask again next time
+    setShowBirthdayModal(false);
+  };
+
   const shouldShowSkeleton = isSignedIn && (isLoadingMerit || (hasPendingRatings && !showPollsBehindModal));
   const shouldShowPolls = !isSignedIn || !hasPendingRatings || showPollsBehindModal;
 
+  // Determine if we should show birthday banner instead of job board banner
+  const showBirthdayBanner = isBirthdayPlayer && birthdayShareChoice === "share";
+
   return (
     <div className="min-h-[calc(100vh-200px)]">
+      {/* Birthday Gift Modal - shows on load if birthday player */}
+      {showBirthdayModal && userDateOfBirth && (
+        <BirthdayGiftModal
+          isOpen={showBirthdayModal}
+          dateOfBirth={userDateOfBirth}
+          playerName={user?.displayName || user?.userName || "Player"}
+          pollId={activePollId}
+          entryFee={entryFee}
+          onShare={handleBirthdayShare}
+          onPrivate={handleBirthdayPrivate}
+          onClose={handleBirthdayClose}
+        />
+      )}
+
       {showRatingModal && meritData?.pendingRatings && meritData.tournament && (
         <MeritRatingModal
           pendingRatings={meritData.pendingRatings}
@@ -106,7 +165,15 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
       {shouldShowPolls && !shouldShowSkeleton && (
         <>
           <NotificationPromptBanner />
-          <JobBoardBanner />
+          {/* Show birthday banner if sharing publicly, otherwise show job board */}
+          {showBirthdayBanner ? (
+            <BirthdayBanner
+              dateOfBirth={userDateOfBirth!}
+              playerName={user?.displayName || user?.userName || "Player"}
+            />
+          ) : (
+            <JobBoardBanner />
+          )}
           <PollVotingInterface
             readOnly={readOnly}
             showAdminActions={false}
@@ -124,3 +191,4 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
 export const VoteTab = React.memo(VoteTabComponent);
 
 VoteTab.displayName = "VoteTab";
+

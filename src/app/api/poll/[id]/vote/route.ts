@@ -12,6 +12,7 @@ import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { playerVoteSchema } from "@/src/utils/validation/poll";
 import { isMeritBanEnabled, getAppSetting } from "@/src/services/settings/getAppSetting";
 import { getPendingMeritRatings } from "@/src/services/merit/getPendingMeritRatings";
+import { isBirthdayWithinWindow } from "@/src/utils/birthdayCheck";
 
 export async function GET(
   req: Request,
@@ -260,11 +261,14 @@ export async function POST(
     });
 
     // Lucky voter selection - Fair dice roll: each voter gets equal 15% chance (instant win only)
+    // Birthday players are excluded from lottery (they already get free entry)
     let isLuckyVoter = false;
+    const isBirthdayPlayer = user?.dateOfBirth ? isBirthdayWithinWindow(user.dateOfBirth) : false;
     const tournamentFee = isPollExist.tournament?.fee || 0;
     const seasonId = isPollExist.tournament?.seasonId;
 
-    if ((body.vote === "IN" || body.vote === "SOLO") && tournamentFee > 0 && seasonId) {
+    // Only run lucky voter lottery if NOT a birthday player (they get free entry anyway)
+    if ((body.vote === "IN" || body.vote === "SOLO") && tournamentFee > 0 && seasonId && !isBirthdayPlayer) {
       // Check if this poll already has a lucky voter
       const pollWithLucky = await prisma.poll.findUnique({
         where: { id: pollId },
@@ -302,9 +306,17 @@ export async function POST(
       }
     }
 
+    // Determine the success message
+    let successMessage = "Vote added successfully";
+    if (isBirthdayPlayer) {
+      successMessage = "🎂 Vote added! Enjoy your Birthday Free Entry!";
+    } else if (isLuckyVoter) {
+      successMessage = "🎉 Congratulations! You won FREE ENTRY!";
+    }
+
     return SuccessResponse({
-      message: isLuckyVoter ? "🎉 Congratulations! You won FREE ENTRY!" : "Vote added successfully",
-      data: { ...vote, isLuckyVoter },
+      message: successMessage,
+      data: { ...vote, isLuckyVoter, isBirthdayPlayer },
     });
   } catch (error) {
     // Log detailed error for debugging

@@ -10,6 +10,9 @@ export interface ApiResponse<T> {
   meta?: MetaT;
   token?: string;
   error?: string | Record<string, unknown>;
+  // Birthday free entry fields
+  isBirthdayPlayer?: boolean;
+  userDateOfBirth?: string | null;
 }
 
 export const handleAxiosError = <T>(error: unknown): ApiResponse<T> => {
@@ -51,6 +54,8 @@ const handleResponse = <T>(
     data: response.data.data ?? null,
     meta: response?.data?.meta,
     token: response.data.token,
+    isBirthdayPlayer: response.data.isBirthdayPlayer,
+    userDateOfBirth: response.data.userDateOfBirth,
   };
 };
 
