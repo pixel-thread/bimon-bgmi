@@ -13,6 +13,7 @@ import { Badge } from "@/src/components/ui/badge";
 import { Loader2, AlertTriangle, Users, Coins, Trophy, RefreshCw, CheckCircle2 } from "lucide-react";
 import type { PreviewTeamsByPollsResult, TeamPreview } from "@/src/services/team/previewTeamsByPoll";
 import { getDisplayName } from "@/src/utils/displayName";
+import { getCategoryLabel, type PlayerTier } from "@/src/utils/categoryUtils";
 
 type JobStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
 
@@ -45,6 +46,18 @@ function getBalanceColor(balance: number, entryFee: number): string {
     return "text-red-500";
 }
 
+function getCategoryColor(category: PlayerTier): string {
+    const colors: Record<PlayerTier, string> = {
+        BOT: "text-red-400",
+        ULTRA_NOOB: "text-orange-400",
+        NOOB: "text-yellow-400",
+        PRO: "text-green-400",
+        ULTRA_PRO: "text-blue-400",
+        LEGEND: "text-purple-400",
+    };
+    return colors[category];
+}
+
 function TeamCard({ team, entryFee }: { team: TeamPreview; entryFee: number }) {
     return (
         <div className="p-2 sm:p-2.5 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -71,9 +84,14 @@ function TeamCard({ team, entryFee }: { team: TeamPreview; entryFee: number }) {
                         key={player.id}
                         className="flex items-center justify-between py-1.5 sm:py-1 px-2 sm:px-1.5 bg-white dark:bg-gray-900 rounded text-xs"
                     >
-                        <span className="font-medium text-gray-900 dark:text-white truncate max-w-[50%] sm:max-w-[45%]">
-                            {getDisplayName(player.displayName, player.userName)}
-                        </span>
+                        <div className="flex items-center gap-1 min-w-0 max-w-[55%] sm:max-w-[50%]">
+                            <span className="font-medium text-gray-900 dark:text-white truncate">
+                                {getDisplayName(player.displayName, player.userName)}
+                            </span>
+                            <span className={`text-[9px] font-medium shrink-0 ${getCategoryColor(player.category)}`}>
+                                {getCategoryLabel(player.category)}
+                            </span>
+                        </div>
                         <div className="flex items-center gap-2 sm:gap-1.5 shrink-0">
                             <span className={`font-mono text-xs ${getKDColor(player.kd)}`}>
                                 {player.kd.toFixed(2)}

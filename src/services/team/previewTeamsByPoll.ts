@@ -11,6 +11,7 @@ import { computeWeightedScore, PlayerWithWins, SeasonScoringConfig } from "@/src
 import { PlayerWithWeightT } from "@/src/types/player";
 import { getPreviousTournamentTeammates } from "@/src/utils/previousTeammates";
 import { getAppSetting, setAppSetting } from "@/src/services/settings/getAppSetting";
+import { getCategoryFromKD, PlayerTier } from "@/src/utils/categoryUtils";
 
 /**
  * Select a lucky voter from eligible players with anti-abuse protection.
@@ -178,7 +179,7 @@ export type TeamPreviewPlayer = {
     kills: number;
     deaths: number;
     kd: number;
-    category?: string;
+    category: PlayerTier;
     recentWins?: number;
 };
 
@@ -471,6 +472,7 @@ export async function previewTeamsByPolls({
                 kills,
                 deaths,
                 kd: Math.round(kd * 100) / 100,
+                category: getCategoryFromKD(kills, deaths),
                 recentWins,
             };
         });
