@@ -401,24 +401,63 @@ export function DeclareWinnerDialog({
                                                 .map(([position, prize]) => {
                                                     const medals = ['🥇', '🥈', '🥉', '🏅', '🎖️'];
                                                     const medal = medals[position - 1] || '🏅';
+
+                                                    // Calculate total tax for this position
+                                                    const team = teamRankings[position - 1];
+                                                    let teamTax = 0;
+                                                    if (team && team.players) {
+                                                        const playerCount = team.players.length;
+                                                        const perPlayer = getPerPlayerAmount(position, playerCount);
+                                                        const participationAmounts = getParticipationAdjustedAmounts(team.players, perPlayer);
+
+                                                        team.players.forEach(p => {
+                                                            const tax = taxPreview[p.id];
+                                                            if (tax) {
+                                                                const pa = participationAmounts.get(p.id);
+                                                                const adjustedAmount = pa?.adjusted ?? perPlayer;
+                                                                if (tax.repeatWinnerTaxRate > 0) {
+                                                                    teamTax += Math.floor(adjustedAmount * tax.repeatWinnerTaxRate);
+                                                                }
+                                                                if (tax.soloTaxRate > 0) {
+                                                                    teamTax += Math.floor(adjustedAmount * tax.soloTaxRate);
+                                                                }
+                                                            }
+                                                        });
+                                                    }
+
+                                                    const netPrize = prize.amount - teamTax;
                                                     const label = prize.isFixed
                                                         ? `${position}${position === 1 ? 'st' : position === 2 ? 'nd' : position === 3 ? 'rd' : 'th'} (refund)`
                                                         : `${position}${position === 1 ? 'st' : position === 2 ? 'nd' : position === 3 ? 'rd' : 'th'} (${prize.percentage}%)`;
+
                                                     return (
                                                         <div key={position} className="flex justify-between">
                                                             <span>{medal} {label}:</span>
-                                                            <span className="font-medium">₹{prize.amount.toLocaleString()}</span>
+                                                            <span className="font-medium">
+                                                                {teamTax > 0 ? (
+                                                                    <>
+                                                                        <span className="text-muted-foreground line-through mr-1">₹{prize.amount.toLocaleString()}</span>
+                                                                        <span className="text-amber-600 dark:text-amber-400">-₹{teamTax}</span>
+                                                                        <span className="mx-1">=</span>
+                                                                        <span>₹{netPrize.toLocaleString()}</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>₹{prize.amount.toLocaleString()}</>
+                                                                )}
+                                                            </span>
                                                         </div>
                                                     );
                                                 })}
                                             <div className="flex justify-between text-muted-foreground">
-                                                <span>💼 Organizer ({distribution.tier.orgFeePercent}%){ucExemptCount > 0 ? ` - ${ucExemptCount} exempt` : ""}:</span>
-                                                <span className="font-medium">
-                                                    {taxTotals.orgContribution > 0 ? (
+                                                <span>💼 Org ({distribution.tier.orgFeePercent}%){ucExemptCount > 0 ? ` - ₹${distribution.ucExemptCost} UC Exempt` : ""}:</span>
+                                                <span className="font-medium text-foreground">
+                                                    {(ucExemptCount > 0 || taxTotals.orgContribution > 0) ? (
                                                         <>
-                                                            ₹{organizerAmount.toLocaleString()}
-                                                            <span className="text-amber-600 dark:text-amber-400"> +₹{taxTotals.orgContribution}</span>
-                                                            <span className="text-green-600 dark:text-green-400"> = ₹{(organizerAmount + taxTotals.orgContribution).toLocaleString()}</span>
+                                                            <span className="text-muted-foreground">₹{(organizerAmount + distribution.ucExemptCost).toLocaleString()}</span>
+                                                            {ucExemptCount > 0 && <span className="text-amber-600 dark:text-amber-400"> -₹{distribution.ucExemptCost}</span>}
+                                                            {taxTotals.orgContribution > 0 && <span className="text-green-600 dark:text-green-400"> +₹{taxTotals.orgContribution}</span>}
+                                                            <span className="mx-1">=</span>
+                                                            <span>₹{(organizerAmount + taxTotals.orgContribution).toLocaleString()}</span>
                                                         </>
                                                     ) : (
                                                         <>₹{organizerAmount.toLocaleString()}</>
@@ -427,36 +466,39 @@ export function DeclareWinnerDialog({
                                             </div>
                                             <div className="flex justify-between text-muted-foreground">
                                                 <span>🏦 Fund ({distribution.tier.fundPercent}%):</span>
-                                                <span className="font-medium">
+                                                <span className="font-medium text-foreground">
                                                     {taxTotals.fundContribution > 0 ? (
                                                         <>
-                                                            ₹{distribution.finalFundAmount.toLocaleString()}
-                                                            <span className="text-amber-600 dark:text-amber-400"> +₹{taxTotals.fundContribution}</span>
-                                                            <span className="text-green-600 dark:text-green-400"> = ₹{(distribution.finalFundAmount + taxTotals.fundContribution).toLocaleString()}</span>
+                                                            <span className="text-muted-foreground">₹{distribution.finalFundAmount.toLocaleString()}</span>
+                                                            <span className="text-green-600 dark:text-green-400"> +₹{taxTotals.fundContribution}</span>
+                                                            <span className="mx-1">=</span>
+                                                            <span>₹{(distribution.finalFundAmount + taxTotals.fundContribution).toLocaleString()}</span>
                                                         </>
                                                     ) : (
                                                         <>₹{distribution.finalFundAmount.toLocaleString()}</>
                                                     )}
                                                 </span>
                                             </div>
-                                            {taxTotals.repeatTax > 0 && (
-                                                <div className="flex justify-between text-amber-600 dark:text-amber-400 pt-1 border-t border-green-200 dark:border-green-700">
-                                                    <span>🔄 Repeat Winner Tax:</span>
-                                                    <span className="font-medium">₹{taxTotals.repeatTax.toLocaleString()}</span>
-                                                </div>
-                                            )}
-                                            {taxTotals.soloTax > 0 && (
-                                                <div className="flex justify-between text-purple-600 dark:text-purple-400">
-                                                    <span>👤 Solo Tax (→ losers + next pool):</span>
-                                                    <span className="font-medium">₹{taxTotals.soloTax.toLocaleString()}</span>
-                                                </div>
-                                            )}
-                                            {ucExemptCount > 0 && (
-                                                <div className="flex justify-between text-amber-600 dark:text-amber-400 pt-1 border-t border-green-200 dark:border-green-700">
-                                                    <span>⚠️ UC-Exempt ({ucExemptCount} × ₹{entryFee}):</span>
-                                                    <span className="font-medium">-₹{distribution.ucExemptCost.toLocaleString()}</span>
-                                                </div>
-                                            )}
+
+
+                                            {/* Informational Notes */}
+                                            <div className="mt-3 pt-2 border-t border-dashed border-green-200 dark:border-green-800 space-y-1 opacity-80 italic">
+                                                {taxTotals.repeatTax > 0 && (
+                                                    <div className="flex justify-between text-[10px] text-amber-600 dark:text-amber-500">
+                                                        <span>Note: ₹{taxTotals.repeatTax} Repeat Winner Tax was deducted from prizes and added to Organizer (₹{taxTotals.orgContribution}) & Fund (₹{taxTotals.fundContribution}).</span>
+                                                    </div>
+                                                )}
+                                                {taxTotals.soloTax > 0 && (
+                                                    <div className="flex justify-between text-[10px] text-purple-600 dark:text-purple-500">
+                                                        <span>Note: ₹{taxTotals.soloTax} Solo Tax was deducted from prizes and added to Loser Support (₹{taxTotals.soloToLosers}) & Next Pool (₹{taxTotals.soloToPool}).</span>
+                                                    </div>
+                                                )}
+                                                {ucExemptCount > 0 && (
+                                                    <div className="flex justify-between text-[10px] text-amber-600 dark:text-amber-500">
+                                                        <span>Note: {ucExemptCount} UC-Exempt = ₹{distribution.ucExemptCost}</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </CollapsibleContent>
