@@ -59,6 +59,10 @@ export async function tokenMiddleware(req: NextRequest | Request) {
       // Allow onboarding for new users to set their username
     } else if (req.url.includes("/profile") && reqMethod === "PATCH") {
       // Allow profile updates for users
+    } else if (req.url.includes("/player/merit") && reqMethod === "POST") {
+      // Allow merit ratings for players
+    } else if (req.url.includes("/player/claim-") && reqMethod === "POST") {
+      // Allow all claiming endpoints (streak, winner, solo support, referral bonus)
     } else {
       throw new Error("Long ki ba jai jai se: Permission Denied");
     }
