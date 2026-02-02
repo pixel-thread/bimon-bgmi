@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import { PlayerFilters } from "./PlayerFilters";
 import { PlayerStatsModal } from "./PlayerStatsModal";
@@ -16,7 +16,6 @@ import { useSeasonStore } from "@/src/store/season";
 
 export function PlayersTab() {
   const search = useSearchParams();
-  const page = search.get("page") || "1";
   const router = useRouter();
   const ucId = search.get("uc") || "";
   const historyId = search.get("history") || "";
@@ -33,37 +32,30 @@ export function PlayersTab() {
   >("kd");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // Reset pagination to page 1 when search/filter changes
-  const resetToFirstPage = () => {
-    const params = new URLSearchParams(search.toString());
-    if (params.get("page") !== "1") {
-      params.set("page", "1");
-      router.push(`?${params.toString()}`, { scroll: false });
-    }
-  };
-
   const handleSearchChange = (newQuery: string) => {
     setQuery(newQuery);
-    resetToFirstPage();
   };
 
   const handleTierChange = (newTier: string) => {
     setSelectedTier(newTier);
-    resetToFirstPage();
   };
 
   const handleSortByChange = (newSortBy: "name" | "kd" | "kills" | "matches" | "balance" | "banned") => {
     setSortBy(newSortBy);
-    resetToFirstPage();
   };
 
   const handleSortOrderChange = (newSortOrder: "asc" | "desc") => {
     setSortOrder(newSortOrder);
-    resetToFirstPage();
   };
 
-  const { data: players, meta, isFetching: isLoading } = usePlayers({
-    page,
+  const {
+    data: players,
+    meta,
+    isFetching: isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = usePlayers({
     search: query,
     tier: selectedTier,
     sortBy,
@@ -141,10 +133,17 @@ export function PlayersTab() {
           </div>
         </div>
 
-        {isLoading || !seasonId ? (
-          <PlayerTableSkeleton showPodium={page === "1" && !query} />
+        {isLoading && (!players || players.length === 0) || !seasonId ? (
+          <PlayerTableSkeleton showPodium={!query} />
         ) : (
-          <CustomPlayerTable data={players ?? []} meta={meta} sortBy={sortBy} />
+          <CustomPlayerTable
+            data={players ?? []}
+            meta={meta}
+            sortBy={sortBy}
+            fetchNextPage={fetchNextPage}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+          />
         )}
       </div>
 

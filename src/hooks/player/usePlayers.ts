@@ -1,7 +1,6 @@
 import http from "@/src/utils/http";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, keepPreviousData } from "@tanstack/react-query";
 import { MetaT } from "@/src/types/meta";
-import { useEffect, useState } from "react";
 import { useSeasonStore } from "@/src/store/season";
 
 type UsePlayersProps = {
@@ -27,15 +26,18 @@ type PlayerT = {
   thumbnailUrl?: string | null;
 };
 
+type PlayersResponse = {
+  data: PlayerT[];
+  meta: MetaT;
+};
+
 export function usePlayers({
-  page = "1",
   search = "",
   tier = "All",
   sortBy = "kd",
   sortOrder = "desc",
   enabled = true,
 }: {
-  page?: string | number;
   search?: string;
   tier?: string;
   sortBy?: string;
@@ -44,37 +46,45 @@ export function usePlayers({
 } = {}) {
   const { seasonId } = useSeasonStore();
 
-  const queryParams = new URLSearchParams({
-    page: page.toString(),
-    season: seasonId,
-    ...(search && { search }),
-    ...(tier !== "All" && { tier }),
-    sortBy,
-    sortOrder,
-  });
+  const query = useInfiniteQuery({
+    queryKey: ["player", "infinite", seasonId, search, tier, sortBy, sortOrder],
+    queryFn: async ({ pageParam = 1 }) => {
+      const queryParams = new URLSearchParams({
+        page: pageParam.toString(),
+        season: seasonId,
+        ...(search && { search }),
+        ...(tier !== "All" && { tier }),
+        sortBy,
+        sortOrder,
+      });
 
-  // Always use public endpoint for immediate data fetch (no auth blocking)
-  const url = `/players?${queryParams.toString()}`;
-
-  const [meta, setMeta] = useState<MetaT | undefined>(undefined);
-
-  const query = useQuery({
-    queryFn: () => http.get<PlayerT[]>(url),
-    queryKey: ["player", page, seasonId, search, tier, sortBy, sortOrder],
-    select: (data) => data,
+      const url = `/players?${queryParams.toString()}`;
+      const response = await http.get<PlayerT[]>(url);
+      return response as unknown as PlayersResponse;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      if (lastPage?.meta?.hasNextPage) {
+        return (lastPage.meta.page || 1) + 1;
+      }
+      return undefined;
+    },
     enabled: enabled && !!seasonId,
-    placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  useEffect(() => {
-    if (query.data) {
-      setMeta(query.data?.meta);
-    }
-  }, [query?.data]);
+  // Flatten all pages into a single array of players
+  const allPlayers = query.data?.pages?.flatMap((page) => page.data) ?? [];
 
-  return { ...query, data: query.data?.data, meta };
+  // Get meta from first page for total count, etc.
+  const meta = query.data?.pages?.[0]?.meta;
+
+  return {
+    ...query,
+    data: allPlayers,
+    meta,
+  };
 }

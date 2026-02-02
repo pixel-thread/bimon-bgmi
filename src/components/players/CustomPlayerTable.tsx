@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { PlayerAvatar } from "@/src/components/ui/player-avatar";
@@ -8,12 +8,12 @@ import { Badge } from "@/src/components/ui/badge";
 import { CategoryBadge } from "@/src/components/ui/category-badge";
 import { MetaT } from "@/src/types/meta";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, FetchNextPageOptions, InfiniteQueryObserverResult } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { ADMIN_PLAYER_ENDPOINTS } from "@/src/lib/endpoints/admin/player";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Crown, Medal, Award, TrendingUp, Target, Gamepad2, Coins, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Crown, Medal, Award, TrendingUp, Target, Gamepad2, Coins, Star, Loader2 } from "lucide-react";
 import { getDisplayName } from "@/src/utils/displayName";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -38,20 +38,45 @@ type PlayerT = {
 interface CustomPlayerTableProps {
     data: PlayerT[];
     meta?: MetaT;
+    sortBy: string;
+    fetchNextPage: (options?: FetchNextPageOptions) => Promise<InfiniteQueryObserverResult>;
+    hasNextPage: boolean;
+    isFetchingNextPage: boolean;
 }
 
-export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps & { sortBy: string }) {
+export function CustomPlayerTable({
+    data,
+    meta,
+    sortBy,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+}: CustomPlayerTableProps) {
     const { user } = useAuth();
     const search = useSearchParams();
-    const page = search.get("page") || "1";
     const router = useRouter();
     const queryClient = useQueryClient();
 
-    const handlePageChange = (newPage: number) => {
-        const params = new URLSearchParams(search.toString());
-        params.set("page", String(newPage));
-        router.push(`?${params.toString()}`);
-    };
+    // Intersection observer for infinite scroll
+    const loadMoreRef = useCallback(
+        (node: HTMLDivElement | null) => {
+            if (!node) return;
+
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+                        fetchNextPage();
+                    }
+                },
+                { threshold: 0.1, rootMargin: "100px" }
+            );
+
+            observer.observe(node);
+
+            return () => observer.disconnect();
+        },
+        [hasNextPage, isFetchingNextPage, fetchNextPage]
+    );
 
     const { mutate: toggleBan } = useMutation({
         mutationFn: (playerId: string) =>
@@ -156,9 +181,8 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
     const headerInfo = getDynamicHeader();
     const HeaderIcon = headerInfo.icon;
 
-    // Get top 3 players for podium (only on page 1 and when there are at least 3 players)
-    const isFirstPage = !meta || (meta.page === 1);
-    const hasEnoughForPodium = isFirstPage && data && data.length >= 3;
+    // For infinite scroll, podium is always shown when we have at least 3 players
+    const hasEnoughForPodium = data && data.length >= 3;
     const top3Players = hasEnoughForPodium ? data.slice(0, 3) : [];
     const remainingPlayers = hasEnoughForPodium ? data.slice(3) : data;
 
@@ -302,7 +326,7 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
             </div>
 
             {/* Top 3 Podium */}
-            {isFirstPage && top3Players && top3Players.length >= 3 && (
+            {hasEnoughForPodium && top3Players.length >= 3 && (
                 <div className="bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900/80 dark:to-zinc-800/60 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-4 sm:p-6">
                     <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6">
                         <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
@@ -353,9 +377,8 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                     </div>
                 ) : (
                     remainingPlayers?.flatMap((player, index) => {
-                        // Adjust index: on page 1, skip 3 for podium; otherwise use normal pagination
-                        const offset = isFirstPage ? 3 : 0;
-                        const globalIndex = meta ? ((meta.page || 1) - 1) * (meta.pageSize || 10) + index + 1 + offset : index + 1 + offset;
+                        // For infinite scroll, index is straightforward since we skip top 3 for podium
+                        const globalIndex = index + 4; // +4 because we're after the top 3
                         const rankStyle = getRankStyle(globalIndex);
                         const RankIcon = rankStyle.icon;
 
@@ -460,37 +483,21 @@ export function CustomPlayerTable({ data, meta, sortBy }: CustomPlayerTableProps
                 )}
             </div>
 
-            {/* Pagination */}
-            {meta && (meta.totalPages || 0) > 1 && (
-                <div className="flex items-center justify-between pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                    <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-                        Page <span className="font-medium text-zinc-700 dark:text-zinc-300">{meta.page}</span> of{" "}
-                        <span className="font-medium text-zinc-700 dark:text-zinc-300">{meta.totalPages}</span>
-                    </p>
-                    <div className="flex items-center gap-1.5">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePageChange(Number(page) - 1)}
-                            disabled={!meta.hasPreviousPage}
-                            className="h-8 w-8 p-0 sm:w-auto sm:px-3"
-                        >
-                            <ChevronLeft className="w-4 h-4" />
-                            <span className="hidden sm:inline ml-1">Previous</span>
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePageChange(Number(page) + 1)}
-                            disabled={!meta.hasNextPage}
-                            className="h-8 w-8 p-0 sm:w-auto sm:px-3"
-                        >
-                            <span className="hidden sm:inline mr-1">Next</span>
-                            <ChevronRight className="w-4 h-4" />
-                        </Button>
+            {/* Infinite Scroll Load More */}
+            <div ref={loadMoreRef} className="py-6 flex items-center justify-center">
+                {isFetchingNextPage ? (
+                    <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span className="text-sm">Loading more players...</span>
                     </div>
-                </div>
-            )}
+                ) : hasNextPage ? (
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500">Scroll for more</p>
+                ) : data.length > 0 ? (
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                        Showing all {meta?.total || data.length} players
+                    </p>
+                ) : null}
+            </div>
         </div>
     );
 }
