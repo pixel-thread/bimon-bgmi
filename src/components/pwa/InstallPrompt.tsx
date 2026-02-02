@@ -63,7 +63,7 @@ export function InstallPrompt() {
                 const dismissed = localStorage.getItem("pwa-ios-dismissed");
                 if (dismissed) {
                     const dismissedTime = parseInt(dismissed, 10);
-                    if (Date.now() - dismissedTime < 1 * 24 * 60 * 60 * 1000) {
+                    if (Date.now() - dismissedTime < 7 * 24 * 60 * 60 * 1000) {
                         return;
                     }
                 }
@@ -90,7 +90,7 @@ export function InstallPrompt() {
                 const dismissed = localStorage.getItem("pwa-install-dismissed");
                 if (dismissed) {
                     const dismissedTime = parseInt(dismissed, 10);
-                    if (Date.now() - dismissedTime < 1 * 24 * 60 * 60 * 1000) {
+                    if (Date.now() - dismissedTime < 7 * 24 * 60 * 60 * 1000) {
                         return;
                     }
                 }
@@ -115,7 +115,7 @@ export function InstallPrompt() {
                 const dismissed = localStorage.getItem("pwa-install-dismissed");
                 if (dismissed) {
                     const dismissedTime = parseInt(dismissed, 10);
-                    if (Date.now() - dismissedTime < 1 * 24 * 60 * 60 * 1000) {
+                    if (Date.now() - dismissedTime < 7 * 24 * 60 * 60 * 1000) {
                         return;
                     }
                 }
