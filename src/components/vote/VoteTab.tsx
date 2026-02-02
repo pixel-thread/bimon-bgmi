@@ -26,10 +26,8 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
   const [showPollsBehindModal, setShowPollsBehindModal] = useState(false);
   const { getToken, isSignedIn } = useAuth();
 
-  // Check if user has pending ratings that block voting
   const hasPendingRatings = meritData?.pendingRatings && meritData.pendingRatings.length > 0;
 
-  // Memoize fetchMeritData to prevent unnecessary re-renders
   const fetchMeritData = useCallback(async () => {
     if (!isSignedIn) {
       setIsLoadingMerit(false);
@@ -43,9 +41,8 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
         return;
       }
 
-      // Add 10 second timeout to prevent hanging
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       const res = await fetch(`/api/player/merit`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -58,26 +55,15 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
       if (res.ok) {
         const response = await res.json();
         const data = response.data;
-        console.log('[VoteTab] Merit data received:', {
-          pendingCount: data?.pendingRatings?.length || 0,
-          hasTournament: !!data?.tournament,
-          tournamentName: data?.tournament?.name
-        });
         setMeritData(data);
-        // Show modal if there are pending ratings
-        if (data?.pendingRatings?.length > 0) {
-          console.log('[VoteTab] Showing rating modal for', data.pendingRatings.length, 'teammates');
+
+        if (data?.pendingRatings?.length > 0 && data?.tournament) {
           setShowRatingModal(true);
-          // After 1 second, reveal the polls behind the modal
-          setTimeout(() => {
-            setShowPollsBehindModal(true);
-          }, 1000);
+          setTimeout(() => setShowPollsBehindModal(true), 1000);
         }
-      } else {
-        console.error('[VoteTab] Merit API failed:', res.status, res.statusText);
       }
     } catch (error) {
-      // Only log if not an abort error
+      // Silently handle timeout/abort errors
       if (error instanceof Error && error.name !== 'AbortError') {
         console.error("Failed to fetch merit data:", error);
       }
@@ -93,20 +79,14 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
   const handleRatingComplete = () => {
     setShowRatingModal(false);
     setShowPollsBehindModal(false);
-    setMeritData((prev) =>
-      prev ? { ...prev, pendingRatings: [] } : null
-    );
+    setMeritData((prev) => prev ? { ...prev, pendingRatings: [] } : null);
   };
 
-  // Show skeleton only during initial loading, or when modal is shown but polls aren't revealed yet
   const shouldShowSkeleton = isSignedIn && (isLoadingMerit || (hasPendingRatings && !showPollsBehindModal));
-
-  // Show polls when: not signed in, no pending ratings, OR polls revealed behind modal
   const shouldShowPolls = !isSignedIn || !hasPendingRatings || showPollsBehindModal;
 
   return (
     <div className="min-h-[calc(100vh-200px)]">
-      {/* Merit Rating Modal - shows when pending ratings exist */}
       {showRatingModal && meritData?.pendingRatings && meritData.tournament && (
         <MeritRatingModal
           pendingRatings={meritData.pendingRatings}
@@ -116,7 +96,6 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
         />
       )}
 
-      {/* Show skeleton while loading or before polls are revealed */}
       {shouldShowSkeleton && (
         <div className="space-y-4 px-4 py-4">
           <PollCardSkeleton />
@@ -124,7 +103,6 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
         </div>
       )}
 
-      {/* Show actual polls - either normally or behind the modal */}
       {shouldShowPolls && !shouldShowSkeleton && (
         <>
           <NotificationPromptBanner />
@@ -146,4 +124,3 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
 export const VoteTab = React.memo(VoteTabComponent);
 
 VoteTab.displayName = "VoteTab";
-

@@ -317,6 +317,11 @@ model MatchPlayerPlayed {
   player       Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+
+  // Indexes for performance
+  @@index([playerId, seasonId, createdAt(sort: Desc)]) // For finding recent matches by player
+  @@index([teamId, tournamentId]) // For finding teammates
+  @@index([tournamentId]) // For tournament-based queries
 }
 
 model PlayerBanned {
