@@ -307,6 +307,12 @@ export async function POST(
       data: { ...vote, isLuckyVoter },
     });
   } catch (error) {
+    // Log detailed error for debugging
+    console.error('[Vote API Error]', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
     return handleApiErrors(error);
   }
 }

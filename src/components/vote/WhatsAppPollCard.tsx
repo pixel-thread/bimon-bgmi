@@ -268,14 +268,27 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
           toast.error(data.message);
         }
       },
-      onError: (_error, _newVote, context) => {
+      onError: (error: any, newVote, context) => {
+        // Log detailed error for debugging
+        console.error('[Vote Failed]', {
+          pollId,
+          playerId,
+          attemptedVote: newVote,
+          error: error?.message || error,
+          response: error?.response?.data || null,
+          timestamp: new Date().toISOString(),
+        });
+
         // Revert to previous state on error
         if (context?.previousPolls) {
           queryClient.setQueryData(["polls"], context.previousPolls);
         }
         setPendingVote(null);
         setOptimisticVote(null);
-        toast.error("Failed to vote. Please try again.");
+
+        // Show error message from API or fallback
+        const errorMessage = error?.response?.data?.message || error?.message || "Failed to vote. Please try again.";
+        toast.error(errorMessage);
       },
     });
 
