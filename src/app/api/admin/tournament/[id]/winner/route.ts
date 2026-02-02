@@ -14,7 +14,6 @@ import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
 import { resetMeritAfterSolo } from "@/src/services/merit/calculateMerit";
 import { processReferralCommission } from "@/src/services/referral/processReferralCommission";
-import { recordTournamentParticipation, resetStreaksForNonParticipants } from "@/src/services/player/tournamentStreak";
 import { batchNotifyUCReceived, notifyUCReceived } from "@/src/services/push/sendUCNotification";
 
 export async function GET(
@@ -495,31 +494,8 @@ export async function POST(
       await processReferralCommission(playerId);
     }
 
-    // Update tournament streaks for all participants
-    // This awards 30 UC if a player hits 8 consecutive tournaments
-    const participantPlayerIds = tournamentPlayers.map((p) => p.playerId);
-
-    // Process streak updates in batches to avoid overwhelming database
-    const STREAK_BATCH_SIZE = 5;
-    for (let i = 0; i < participantPlayerIds.length; i += STREAK_BATCH_SIZE) {
-      const batch = participantPlayerIds.slice(i, i + STREAK_BATCH_SIZE);
-      await Promise.all(
-        batch.map(async (playerId) => {
-          try {
-            await recordTournamentParticipation(playerId, id);
-          } catch (error) {
-            console.error(`Failed to update streak for player ${playerId}:`, error);
-          }
-        })
-      );
-    }
-
-    // Reset streaks for players who missed this tournament
-    try {
-      await resetStreaksForNonParticipants(id, participantPlayerIds);
-    } catch (error) {
-      console.error("Failed to reset streaks for non-participants:", error);
-    }
+    // NOTE: Streak updates removed from here for faster winner declaration
+    // Use the "Update Streaks" button in Tournament Settings to update streaks separately
 
     // Calculate total repeat winner tax contributions
     const taxTotals = aggregateTaxTotals(allTaxResults);

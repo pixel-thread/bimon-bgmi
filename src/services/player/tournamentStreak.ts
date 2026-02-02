@@ -91,13 +91,9 @@ export async function recordTournamentParticipation(
     const seasonChanged = currentSeasonId && player.streakSeasonId !== currentSeasonId;
 
     if (!seasonChanged && player.lastTournamentSeqId !== null) {
-        // Same season - check for consecutive tournament
-        const expectedSeqId = player.lastTournamentSeqId + 1;
+        // Same season - check if player missed any tournaments
 
-        if (currentSeqId === expectedSeqId) {
-            // Consecutive! Increment streak
-            newStreak = player.tournamentStreak + 1;
-        } else if (currentSeqId === player.lastTournamentSeqId) {
+        if (currentSeqId === player.lastTournamentSeqId) {
             // Same tournament - don't change streak
             return {
                 newStreak: player.tournamentStreak,
@@ -105,7 +101,23 @@ export async function recordTournamentParticipation(
                 rewardAmount: 0,
             };
         }
-        // Otherwise, streak breaks - newStreak stays at 1
+
+        // Check if there are any tournaments between player's last participation and current
+        // This handles gaps in sequence IDs (e.g., deleted tournaments)
+        const tournamentsBetween = await prisma.tournamentSequence.count({
+            where: {
+                sequenceId: {
+                    gt: player.lastTournamentSeqId,
+                    lt: currentSeqId,
+                },
+            },
+        });
+
+        if (tournamentsBetween === 0) {
+            // No tournaments between - this is consecutive! Increment streak
+            newStreak = player.tournamentStreak + 1;
+        }
+        // Otherwise, player missed tournaments - newStreak stays at 1
     }
     // If season changed, newStreak stays at 1 (reset)
 

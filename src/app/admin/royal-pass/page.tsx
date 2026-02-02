@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
     Crown,
@@ -7,6 +8,9 @@ import {
     Coins,
     Sparkles,
     Flame,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
 } from "lucide-react";
 import {
     Table,
@@ -16,6 +20,13 @@ import {
     TableHeader,
     TableRow,
 } from "@/src/components/ui/table";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/src/components/ui/select";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { Badge } from "@/src/components/ui/badge";
 import { useAuth } from "@clerk/nextjs";
@@ -54,6 +65,7 @@ type ApiResponse<T> = {
 export default function RoyalPassAdminPage() {
     const { getToken, isSignedIn } = useAuth();
     const { user } = useAuthContext();
+    const [sortBy, setSortBy] = useState<string>("streak-desc");
 
     const fetchWithAuth = async <T,>(url: string): Promise<ApiResponse<T> | null> => {
         const token = await getToken({ template: "jwt" });
@@ -72,6 +84,34 @@ export default function RoyalPassAdminPage() {
     });
 
     const stats = response?.data;
+
+    // Sort subscribers based on selected sort option
+    const sortedSubscribers = useMemo(() => {
+        if (!stats?.subscribers) return [];
+
+        const subscribers = [...stats.subscribers];
+
+        switch (sortBy) {
+            case "streak-desc":
+                return subscribers.sort((a, b) => b.streak - a.streak);
+            case "streak-asc":
+                return subscribers.sort((a, b) => a.streak - b.streak);
+            case "date-desc":
+                return subscribers.sort((a, b) => new Date(b.purchasedAt).getTime() - new Date(a.purchasedAt).getTime());
+            case "date-asc":
+                return subscribers.sort((a, b) => new Date(a.purchasedAt).getTime() - new Date(b.purchasedAt).getTime());
+            case "uc-desc":
+                return subscribers.sort((a, b) => b.amount - a.amount);
+            case "uc-asc":
+                return subscribers.sort((a, b) => a.amount - b.amount);
+            case "type-paid":
+                return subscribers.sort((a, b) => (a.wasFree === b.wasFree ? 0 : a.wasFree ? 1 : -1));
+            case "type-free":
+                return subscribers.sort((a, b) => (a.wasFree === b.wasFree ? 0 : a.wasFree ? -1 : 1));
+            default:
+                return subscribers;
+        }
+    }, [stats?.subscribers, sortBy]);
 
     if (user?.role !== "SUPER_ADMIN") {
         return (
@@ -149,18 +189,68 @@ export default function RoyalPassAdminPage() {
 
             {/* Subscribers List */}
             <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-6">
-                <h2 className="text-lg font-bold mb-4">All Purchases</h2>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold">All Purchases</h2>
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                        <SelectTrigger className="w-[180px] h-9">
+                            <ArrowUpDown className="h-4 w-4 mr-2" />
+                            <SelectValue placeholder="Sort by..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="date-desc">
+                                <span className="flex items-center gap-2">
+                                    <ArrowDown className="h-3 w-3" /> Newest First
+                                </span>
+                            </SelectItem>
+                            <SelectItem value="date-asc">
+                                <span className="flex items-center gap-2">
+                                    <ArrowUp className="h-3 w-3" /> Oldest First
+                                </span>
+                            </SelectItem>
+                            <SelectItem value="streak-desc">
+                                <span className="flex items-center gap-2">
+                                    <Flame className="h-3 w-3 text-orange-500" /> Streak (High)
+                                </span>
+                            </SelectItem>
+                            <SelectItem value="streak-asc">
+                                <span className="flex items-center gap-2">
+                                    <Flame className="h-3 w-3 text-orange-500" /> Streak (Low)
+                                </span>
+                            </SelectItem>
+                            <SelectItem value="uc-desc">
+                                <span className="flex items-center gap-2">
+                                    <Coins className="h-3 w-3 text-amber-500" /> UC Paid (High)
+                                </span>
+                            </SelectItem>
+                            <SelectItem value="uc-asc">
+                                <span className="flex items-center gap-2">
+                                    <Coins className="h-3 w-3 text-amber-500" /> UC Paid (Low)
+                                </span>
+                            </SelectItem>
+                            <SelectItem value="type-paid">
+                                <span className="flex items-center gap-2">
+                                    <Crown className="h-3 w-3 text-amber-400" /> Paid First
+                                </span>
+                            </SelectItem>
+                            <SelectItem value="type-free">
+                                <span className="flex items-center gap-2">
+                                    <Sparkles className="h-3 w-3 text-emerald-500" /> Free First
+                                </span>
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
                 {isLoading ? (
                     <div className="space-y-3">
                         {[...Array(5)].map((_, i) => (
                             <Skeleton key={i} className="h-12 w-full" />
                         ))}
                     </div>
-                ) : stats?.subscribers && stats.subscribers.length > 0 ? (
+                ) : sortedSubscribers.length > 0 ? (
                     <>
                         {/* Mobile Card Layout */}
                         <div className="space-y-3 md:hidden">
-                            {stats.subscribers.map((sub) => (
+                            {sortedSubscribers.map((sub) => (
                                 <div key={sub.id} className="rounded-xl bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 p-4 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <span className="font-semibold">{sub.playerName}</span>
@@ -209,7 +299,7 @@ export default function RoyalPassAdminPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {stats.subscribers.map((sub) => (
+                                    {sortedSubscribers.map((sub) => (
                                         <TableRow key={sub.id} className="border-zinc-200 dark:border-zinc-800">
                                             <TableCell className="font-semibold">{sub.playerName}</TableCell>
                                             <TableCell>{format(new Date(sub.purchasedAt), "MMM d, yyyy")}</TableCell>
