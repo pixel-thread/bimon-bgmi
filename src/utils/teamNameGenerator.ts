@@ -20,9 +20,9 @@ const TEAM_NAMES = [
 
     // Dragon Ball themed
     "Z Fighters", "Saiyan Elite", "Frieza Force", "Ginyu Force",
-    "Namekian Warriors", "Universe 7", "Pride Troopers", "Cell Games",
+    "Namekian Warriors", "Universe 7", "Pride Troopers", "Omega Destroyers",
     "Androids", "Majin Squad", "Capsule Corp", "Turtle School",
-    "God of Destruction", "Ultra Instinct", "Super Saiyan Blue", "Galactic Patrol",
+    "God of Destruction", "Beerus Wrath", "Super Saiyan Blue", "Galactic Patrol",
 
     // Attack on Titan themed
     "Survey Corps", "Garrison Regiment", "Military Police", "Titan Shifters",
@@ -30,10 +30,10 @@ const TEAM_NAMES = [
     "Levi Squad", "Yeagerists", "Scout Legion", "Wall Defenders",
 
     // Demon Slayer themed
-    "Hashira", "Demon Slayer Corps", "Kamado Clan", "Butterfly Mansion",
+    "Hashira", "Demon Slayer Corps", "Kamado Clan", "Blood Demons",
     "Muzan Army", "Upper Moons", "Lower Moons", "Flame Breathers",
     "Water Breathers", "Thunder Breathers", "Wind Breathers", "Stone Breathers",
-    "Mist Breathers", "Love Breathers", "Serpent Breathers", "Sound Breathers",
+    "Mist Breathers", "Serpent Wrath", "Serpent Breathers", "Sound Breathers",
 
     // Jujutsu Kaisen themed
     "Tokyo Jujutsu", "Kyoto Jujutsu", "Curse Users", "Special Grade",
@@ -41,7 +41,7 @@ const TEAM_NAMES = [
     "Domain Expansion", "Cursed Spirits", "Star Plasma", "Six Eyes",
 
     // My Hero Academia themed
-    "Class 1-A", "League of Villains", "Pro Heroes", "Wild Wild Pussycats",
+    "Class 1-A", "League of Villains", "Pro Heroes", "Vanguard Action",
     "Big Three", "Todoroki Family", "Paranormal Liberation", "Hero Killers",
 
     // Hunter x Hunter themed
@@ -53,9 +53,22 @@ const TEAM_NAMES = [
     "Gotei 13", "Arrancar", "Fullbringers", "Zero Division",
 
     // More anime themed
-    "Fairy Tail", "Phantom Lord", "Blue Pegasus", "Sabertooth",
+    "Death Legion", "Phantom Lord", "Blood Ravens", "Sabertooth",
     "Stardust Crusaders", "Passione", "Pillar Men", "Stand Users",
     "Night Raid", "Jaegers", "Revolutionaries", "Imperial Arms",
+
+    // Extra badass gaming names
+    "Apex Predators", "Omega Slayers", "Void Walkers", "Shadow Syndicate",
+    "Death Dealers", "Skull Crushers", "Venom Squad", "Chaos Legion",
+    "Dark Reapers", "Iron Wolves", "Crimson Fury", "Storm Breakers",
+    "Phantom Strike", "Savage Kings", "Lethal Force", "Warzone Elite",
+
+    // Popular Anime Characters (iconic names)
+    "Team Goku", "Team Vegeta", "Team Naruto", "Team Sasuke",
+    "Team Itachi", "Team Madara", "Team Kakashi", "Team Minato",
+    "Team Levi", "Team Eren", "Team Gojo", "Team Sukuna",
+    "Team Tanjiro", "Team Zoro", "Team Luffy", "Team Shanks",
+    "Team Whitebeard", "Team Aizen", "Team Ichigo", "Team Saitama",
 ];
 
 /**
@@ -90,14 +103,6 @@ export function getUniqueTeamNames(tournamentId: string, count: number): string[
     const names: string[] = [];
 
     for (let i = 0; i < count; i++) {
-        // First team is always "Team Gay"
-        if (i === 0) {
-            const firstName = "Team Gay";
-            usedNames.add(firstName);
-            names.push(firstName);
-            continue;
-        }
-
         // Create a unique key for each team position
         const key = `${tournamentId}-team-${i}`;
         let name = getRandomTeamName(key);
@@ -146,9 +151,97 @@ export function getTeamDisplayName(
     return getRandomTeamName(teamId);
 }
 
+interface TeamInfo {
+    id: string;
+    players: Array<{ name: string; displayName?: string | null }>;
+}
+
+/**
+ * Get unique display names for multiple teams in a tournament
+ * This prevents duplicate names by tracking used names and applying suffixes
+ * 
+ * @param teams - Array of teams with id and players
+ * @param sanitizeDisplayNameFn - Optional function to sanitize player display names
+ * @returns Map of team ID to unique display name
+ */
+export function getUniqueTeamDisplayNames(
+    teams: TeamInfo[],
+    sanitizeDisplayNameFn?: (name: string) => string
+): Map<string, string> {
+    const usedNames = new Set<string>();
+    const teamNameMap = new Map<string, string>();
+
+    // First pass: assign all teams their hash-based names
+    for (const team of teams) {
+        // For solo teams, use the player's name
+        if (team.players.length === 1) {
+            const player = team.players[0];
+            const name = player.displayName || player.name;
+            const displayName = sanitizeDisplayNameFn ? sanitizeDisplayNameFn(name) : name;
+            teamNameMap.set(team.id, displayName);
+            continue;
+        }
+
+        // For multi-player teams, get a random name based on team ID (consistent)
+        let name = getRandomTeamName(team.id);
+
+        // If name is already used, try with different suffixes
+        if (usedNames.has(name)) {
+            let suffix = 2;
+            let uniqueName = `${name} ${suffix}`;
+
+            // Try numbered suffixes first
+            while (usedNames.has(uniqueName) && suffix <= 10) {
+                suffix++;
+                uniqueName = `${name} ${suffix}`;
+            }
+
+            // If still not unique, try hashing with suffixes
+            if (usedNames.has(uniqueName)) {
+                for (let i = 1; i <= 20; i++) {
+                    const altName = getRandomTeamName(`${team.id}-alt-${i}`);
+                    if (!usedNames.has(altName)) {
+                        uniqueName = altName;
+                        break;
+                    }
+                }
+            }
+
+            name = uniqueName;
+        }
+
+        usedNames.add(name);
+        teamNameMap.set(team.id, name);
+    }
+
+    // Pick one multi-player team to be "Team Gay" (the one with lowest hash)
+    const multiPlayerTeams = teams.filter(t => t.players.length > 1);
+    if (multiPlayerTeams.length > 0) {
+        // Find the team with the lowest hash value - this is deterministic and stable
+        let lowestHash = Infinity;
+        let selectedTeamId = "";
+
+        for (const team of multiPlayerTeams) {
+            const hash = hashString(team.id);
+            if (hash < lowestHash) {
+                lowestHash = hash;
+                selectedTeamId = team.id;
+            }
+        }
+
+        // Replace this team's name with "Team Gay"
+        if (selectedTeamId) {
+            teamNameMap.set(selectedTeamId, "Team Gay");
+        }
+    }
+
+    return teamNameMap;
+}
+
 export default {
     getRandomTeamName,
     getUniqueTeamNames,
     getTeamDisplayName,
+    getUniqueTeamDisplayNames,
     TEAM_NAMES,
 };

@@ -3,7 +3,8 @@
 
 import { cn } from "@/src/lib/utils";
 import { sanitizeDisplayName } from "@/src/utils/displayName";
-import { getTeamDisplayName } from "@/src/utils/teamNameGenerator";
+import { getUniqueTeamDisplayNames } from "@/src/utils/teamNameGenerator";
+import { useMemo } from "react";
 
 export interface IPlayer {
   id: string;
@@ -55,13 +56,22 @@ const getRankStyles = (rank: number) => {
 };
 
 export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
+  // Compute unique team names for all teams upfront to prevent duplicates
+  const teamNameMap = useMemo(() => {
+    const teamsWithIds = teams.map(team => ({
+      id: team.teamId || team.id,
+      players: team.players
+    }));
+    return getUniqueTeamDisplayNames(teamsWithIds, sanitizeDisplayName);
+  }, [teams]);
+
   // Mobile cards (smaller screens)
   const MobileList = (
     <div className="mobile-list sm:hidden space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
       {teams.map((team, index) => {
         const rank = index + 1;
-        // Use random team name for multi-player teams, player name for solo
-        const teamName = getTeamDisplayName(team.teamId || team.id, team.players, sanitizeDisplayName);
+        // Use the precomputed unique team name
+        const teamName = teamNameMap.get(team.teamId || team.id) || team.name;
         const styles = getRankStyles(rank);
 
         return (
@@ -145,8 +155,8 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
         <tbody>
           {slice.map((team, idx) => {
             const rank = startIndex + idx + 1;
-            // Use random team name for multi-player teams, player name for solo
-            const teamName = getTeamDisplayName(team.teamId || team.id, team.players, sanitizeDisplayName);
+            // Use the precomputed unique team name
+            const teamName = teamNameMap.get(team.teamId || team.id) || team.name;
             const styles = getRankStyles(rank);
 
             return (
