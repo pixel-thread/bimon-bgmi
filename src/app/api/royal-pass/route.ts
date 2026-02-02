@@ -4,19 +4,31 @@ import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { SuccessResponse, ErrorResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
 import { getPlayerStreakInfo, STREAK_REWARD_AMOUNT, STREAK_REWARD_THRESHOLD } from "@/src/services/player/tournamentStreak";
+import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 
 const FREE_RP_LIMIT = 5; // First 5 purchases are free
 
 /**
- * GET /api/royal-pass - Get current user's rewards status (streak and balance)
+ * GET /api/royal-pass - Get current user's rewards status (streak, balance, pending rewards)
  */
 export async function GET(req: NextRequest) {
     try {
         const user = await tokenMiddleware(req);
 
-        // Get player from user
+        // Get player with pending reward fields
         const player = await prisma.player.findUnique({
             where: { userId: user.id },
+            select: {
+                id: true,
+                pendingWinnerReward: true,
+                pendingWinnerPosition: true,
+                pendingWinnerTournament: true,
+                pendingWinnerDetails: true,
+                pendingSoloSupport: true,
+                pendingSoloSupportMsg: true,
+                pendingReferralBonus: true,
+                pendingReferralMsg: true,
+            },
         });
 
         if (!player) {
@@ -64,7 +76,25 @@ export async function GET(req: NextRequest) {
                     rewardThreshold: STREAK_REWARD_THRESHOLD,
                     rewardAmount: STREAK_REWARD_AMOUNT,
                     lastRewardAt: streakInfo.lastRewardAt,
+                    pendingReward: streakInfo.pendingReward, // Claimable streak reward
                 },
+                // Pending winner reward info (for claim banner)
+                pendingWinner: player.pendingWinnerReward ? {
+                    amount: player.pendingWinnerReward,
+                    position: player.pendingWinnerPosition,
+                    tournament: player.pendingWinnerTournament,
+                    details: player.pendingWinnerDetails as Prisma.JsonObject | null,
+                } : null,
+                // Pending solo support (for claim banner)
+                pendingSoloSupport: player.pendingSoloSupport ? {
+                    amount: player.pendingSoloSupport,
+                    message: player.pendingSoloSupportMsg,
+                } : null,
+                // Pending referral bonus (for claim banner)
+                pendingReferralBonus: player.pendingReferralBonus ? {
+                    amount: player.pendingReferralBonus,
+                    message: player.pendingReferralMsg,
+                } : null,
             },
         });
     } catch (error) {

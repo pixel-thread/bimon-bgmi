@@ -131,42 +131,22 @@ export async function recordTournamentParticipation(
     });
 
     if (newStreak >= STREAK_REWARD_THRESHOLD && hasRoyalPass) {
-        // RP holder hitting 8 streak -> give 30 UC and reset
+        // RP holder hitting 8 streak -> set pending reward for them to claim
+        // This defers the UC transaction to when the player actively claims it
         rewardGiven = true;
         rewardAmount = STREAK_REWARD_AMOUNT;
 
-        // Award the reward and reset streak
-        await prisma.$transaction([
-            // Credit UC (use upsert in case player doesn't have UC record yet)
-            prisma.uC.upsert({
-                where: { playerId },
-                create: {
-                    playerId,
-                    userId: player.userId,
-                    balance: STREAK_REWARD_AMOUNT,
-                },
-                update: { balance: { increment: STREAK_REWARD_AMOUNT } },
-            }),
-            // Create transaction record
-            prisma.transaction.create({
-                data: {
-                    playerId,
-                    amount: STREAK_REWARD_AMOUNT,
-                    type: "credit",
-                    description: `🔥 ${STREAK_REWARD_THRESHOLD}-Tournament Streak Bonus!`,
-                },
-            }),
-            // Reset streak and update last tournament + season
-            prisma.player.update({
-                where: { id: playerId },
-                data: {
-                    tournamentStreak: 0, // Reset after reward
-                    streakSeasonId: currentSeasonId,
-                    lastTournamentSeqId: currentSeqId,
-                    lastStreakRewardAt: new Date(),
-                },
-            }),
-        ]);
+        // Set pending reward and reset streak (no UC transfer yet - player must claim)
+        await prisma.player.update({
+            where: { id: playerId },
+            data: {
+                tournamentStreak: 0, // Reset after reward
+                streakSeasonId: currentSeasonId,
+                lastTournamentSeqId: currentSeqId,
+                lastStreakRewardAt: new Date(),
+                pendingStreakReward: STREAK_REWARD_AMOUNT, // Player must claim this
+            },
+        });
 
         return {
             newStreak: 0, // Reset after reward
@@ -257,6 +237,7 @@ export async function getPlayerStreakInfo(playerId: string): Promise<{
     progressToReward: number;
     tournamentsUntilReward: number;
     lastRewardAt: Date | null;
+    pendingReward: number | null;
 }> {
     // Get active season
     const currentSeasonId = await getActiveSeasonId();
@@ -267,6 +248,7 @@ export async function getPlayerStreakInfo(playerId: string): Promise<{
             tournamentStreak: true,
             streakSeasonId: true,
             lastStreakRewardAt: true,
+            pendingStreakReward: true,
         },
     });
 
@@ -276,6 +258,7 @@ export async function getPlayerStreakInfo(playerId: string): Promise<{
             progressToReward: 0,
             tournamentsUntilReward: STREAK_REWARD_THRESHOLD,
             lastRewardAt: null,
+            pendingReward: null,
         };
     }
 
@@ -291,5 +274,6 @@ export async function getPlayerStreakInfo(playerId: string): Promise<{
         progressToReward: progress,
         tournamentsUntilReward: STREAK_REWARD_THRESHOLD - progress,
         lastRewardAt: player.lastStreakRewardAt,
+        pendingReward: player.pendingStreakReward,
     };
 }

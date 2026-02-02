@@ -391,6 +391,21 @@ model Player {
   streakSeasonId       String?   // Season this streak belongs to (resets when season changes)
   lastTournamentSeqId  Int?      // Sequence ID of last participated tournament
   lastStreakRewardAt   DateTime? // When last streak reward was given
+  pendingStreakReward  Int?      // Unclaimed streak reward amount (shown as claimable banner)
+  
+  // Pending winner reward (deferred UC transfer for faster declare winner)
+  pendingWinnerReward      Int?      // Final UC amount after all calculations
+  pendingWinnerPosition    Int?      // Position (1, 2, 3...) for display
+  pendingWinnerTournament  String?   // Tournament name for banner
+  pendingWinnerDetails     Json?     // Breakdown: {base, participationAdj, repeatTax, soloTax}
+  
+  // Pending solo support (deferred UC for losers who played against solo winners)
+  pendingSoloSupport       Int?      // UC amount to claim
+  pendingSoloSupportMsg    String?   // Message like "Support from SoloWinner in Tournament"
+  
+  // Pending referral bonus (deferred UC for promoters when referred player hits 5 tournaments)
+  pendingReferralBonus     Int?      // UC amount to claim
+  pendingReferralMsg       String?   // Message like "Referral bonus: PlayerName completed 5 tournaments"
   
   royalPasses          RoyalPass[]
 

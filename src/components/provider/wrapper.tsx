@@ -16,6 +16,7 @@ import { ErrorBoundary } from "../common/ErrorBoundary";
 import { useEffect, useState, Suspense } from "react";
 import { useServiceWorkerUpdate, setupChunkErrorHandler } from "@/src/hooks/useServiceWorkerUpdate";
 import { ReferralCapture } from "../common/ReferralCapture";
+import { StreakRewardBanner } from "../common/StreakRewardBanner";
 
 type Props = {
   children: React.ReactNode;
@@ -81,6 +82,7 @@ function ClerkContent({ children }: { children: React.ReactNode }) {
                 </Layout>
                 <InstallPrompt />
                 <AdSenseScript />
+                <StreakRewardBanner />
                 <Toaster richColors position="top-right" />
               </RoleBaseRoute>
             </RouteRestorerProvider>

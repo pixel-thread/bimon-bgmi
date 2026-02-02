@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 
@@ -12,6 +12,7 @@ interface StreakInfo {
     rewardThreshold: number;
     rewardAmount: number;
     lastRewardAt: string | null;
+    pendingReward: number | null;
 }
 
 interface FreeOfferInfo {
@@ -21,12 +22,37 @@ interface FreeOfferInfo {
     remaining: number;
 }
 
+interface PendingWinnerInfo {
+    amount: number;
+    position: number | null;
+    tournament: string | null;
+    details: {
+        baseShare?: number;
+        participationAdj?: number;
+        repeatTax?: number;
+        soloTax?: number;
+    } | null;
+}
+
+interface PendingSoloSupportInfo {
+    amount: number;
+    message: string | null;
+}
+
+interface PendingReferralBonusInfo {
+    amount: number;
+    message: string | null;
+}
+
 interface RoyalPassData {
     hasRoyalPass: boolean;
     currentBalance: number;
-    lostDiscount?: boolean; // True if non-RP holder reached 8 streak, must pay full price
+    lostDiscount?: boolean;
     freeOffer?: FreeOfferInfo;
     streak?: StreakInfo;
+    pendingWinner?: PendingWinnerInfo | null;
+    pendingSoloSupport?: PendingSoloSupportInfo | null;
+    pendingReferralBonus?: PendingReferralBonusInfo | null;
     message?: string;
 }
 
@@ -53,7 +79,6 @@ export function useRoyalPass() {
                 throw new Error(response.message || "Failed to subscribe");
             }
 
-            // Refresh the data
             await queryClient.invalidateQueries({ queryKey: ["royal-pass"] });
             await queryClient.invalidateQueries({ queryKey: ["player"] });
             return { success: true, message: response.message };
@@ -65,8 +90,47 @@ export function useRoyalPass() {
         }
     }, [queryClient]);
 
+    // Claim pending streak reward
+    const claimStreakRewardMutation = useMutation({
+        mutationFn: () => http.post("/player/claim-streak-reward"),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["royal-pass"] });
+            queryClient.invalidateQueries({ queryKey: ["player"] });
+        },
+    });
+
+    // Claim pending winner reward
+    const claimWinnerRewardMutation = useMutation({
+        mutationFn: () => http.post("/player/claim-winner-reward"),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["royal-pass"] });
+            queryClient.invalidateQueries({ queryKey: ["player"] });
+        },
+    });
+
+    // Claim pending solo support
+    const claimSoloSupportMutation = useMutation({
+        mutationFn: () => http.post("/player/claim-solo-support"),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["royal-pass"] });
+            queryClient.invalidateQueries({ queryKey: ["player"] });
+        },
+    });
+
+    // Claim pending referral bonus
+    const claimReferralBonusMutation = useMutation({
+        mutationFn: () => http.post("/player/claim-referral-bonus"),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["royal-pass"] });
+            queryClient.invalidateQueries({ queryKey: ["player"] });
+        },
+    });
+
     const streakData = data?.data?.streak;
     const freeOfferData = data?.data?.freeOffer;
+    const pendingWinnerData = data?.data?.pendingWinner;
+    const pendingSoloSupportData = data?.data?.pendingSoloSupport;
+    const pendingReferralBonusData = data?.data?.pendingReferralBonus;
 
     return {
         hasRoyalPass: data?.data?.hasRoyalPass ?? false,
@@ -87,11 +151,30 @@ export function useRoyalPass() {
             rewardThreshold: streakData?.rewardThreshold ?? 8,
             rewardAmount: streakData?.rewardAmount ?? 30,
             lastRewardAt: streakData?.lastRewardAt ?? null,
+            pendingReward: streakData?.pendingReward ?? null,
         },
+        // Pending winner reward
+        pendingWinner: pendingWinnerData ?? null,
+        // Pending solo support
+        pendingSoloSupport: pendingSoloSupportData ?? null,
+        // Pending referral bonus
+        pendingReferralBonus: pendingReferralBonusData ?? null,
         isLoading: !!user?.playerId && isLoading,
         isSubscribing,
         error,
         subscribe,
+        // Streak reward claim
+        claimStreakReward: claimStreakRewardMutation.mutate,
+        isClaimingStreakReward: claimStreakRewardMutation.isPending,
+        // Winner reward claim
+        claimWinnerReward: claimWinnerRewardMutation.mutate,
+        isClaimingWinnerReward: claimWinnerRewardMutation.isPending,
+        // Solo support claim
+        claimSoloSupport: claimSoloSupportMutation.mutate,
+        isClaimingSoloSupport: claimSoloSupportMutation.isPending,
+        // Referral bonus claim
+        claimReferralBonus: claimReferralBonusMutation.mutate,
+        isClaimingReferralBonus: claimReferralBonusMutation.isPending,
         refetch: () => queryClient.invalidateQueries({ queryKey: ["royal-pass"] }),
     };
 }

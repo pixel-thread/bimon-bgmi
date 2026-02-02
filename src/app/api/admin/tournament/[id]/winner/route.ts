@@ -364,7 +364,7 @@ export async function POST(
     }
 
     // Execute ALL winner-related DB operations in a single atomic transaction
-    // This ensures either ALL players get their prizes or NONE do (no partial failures)
+    // UC transfers are now DEFERRED - players must claim their rewards via banner
     const winnerTeam = await prisma.$transaction(async (tx) => {
       const createdWinners = [];
 
@@ -379,26 +379,28 @@ export async function POST(
           },
         });
 
-        // Distribute UC to all players in this team
+        // Set pending winner rewards for all players in this team (NO UC TRANSFER NOW)
         for (const playerData of teamData.players) {
-          // Update or create UC balance
-          await tx.uC.upsert({
-            where: { playerId: playerData.playerId },
-            create: {
-              player: { connect: { id: playerData.playerId } },
-              user: { connect: { id: playerData.userId } },
-              balance: playerData.finalAmount,
-            },
-            update: { balance: { increment: playerData.finalAmount } },
-          });
+          // Build prize details for breakdown display
+          const prizeDetails = {
+            baseShare: Math.floor(teamData.amount / teamData.players.length),
+            participationAdj: playerData.participationAdjustment,
+            matchesPlayed: playerData.matchesPlayed,
+            totalMatches: playerData.totalMatches,
+            repeatTax: playerData.taxResult.taxAmount,
+            soloTax: playerData.soloTaxResult.taxAmount,
+            wasRepeatWinner: playerData.taxResult.winCount > 1,
+            wasSolo: playerData.soloTaxResult.isSolo,
+          };
 
-          // Create transaction record for prize
-          await tx.transaction.create({
+          // Set pending reward on player (they must claim it via banner)
+          await tx.player.update({
+            where: { id: playerData.playerId },
             data: {
-              amount: playerData.finalAmount,
-              type: "credit",
-              description: playerData.prizeDescription,
-              playerId: playerData.playerId,
+              pendingWinnerReward: playerData.finalAmount,
+              pendingWinnerPosition: teamData.position,
+              pendingWinnerTournament: tournament.name,
+              pendingWinnerDetails: prizeDetails,
             },
           });
 
@@ -410,6 +412,7 @@ export async function POST(
         }
 
         // Mark winner as distributed if there were players
+        // Note: UC will transfer when player claims, but winner record is created now
         if (teamData.players.length > 0) {
           await tx.tournamentWinner.update({
             where: { id: winTeam.id },
@@ -422,8 +425,8 @@ export async function POST(
 
       return createdWinners;
     }, {
-      timeout: 30000, // 30 second timeout for winner distribution
-      maxWait: 35000,
+      timeout: 15000, // Reduced timeout since no UC operations
+      maxWait: 20000,
     });
 
     // Send push notifications for prize distributions (after transaction commits)
@@ -494,8 +497,27 @@ export async function POST(
       await processReferralCommission(playerId);
     }
 
-    // NOTE: Streak updates removed from here for faster winner declaration
-    // Use the "Update Streaks" button in Tournament Settings to update streaks separately
+    // Update tournament streaks for all participants
+    // This is fast since UC transfers are deferred to claim time
+    const { recordTournamentParticipation, resetStreaksForNonParticipants } = await import("@/src/services/player/tournamentStreak");
+
+    const participantPlayerIds = tournamentPlayers.map(p => p.playerId);
+    const STREAK_BATCH_SIZE = 10;
+
+    for (let i = 0; i < participantPlayerIds.length; i += STREAK_BATCH_SIZE) {
+      const batch = participantPlayerIds.slice(i, i + STREAK_BATCH_SIZE);
+      await Promise.all(
+        batch.map(playerId =>
+          recordTournamentParticipation(playerId, id).catch(err =>
+            console.error(`Failed streak update for ${playerId}:`, err)
+          )
+        )
+      );
+    }
+
+    // Reset streaks for players who missed this tournament
+    resetStreaksForNonParticipants(id, participantPlayerIds)
+      .catch(err => console.error("Failed to reset streaks for non-participants:", err));
 
     // Calculate total repeat winner tax contributions
     const taxTotals = aggregateTaxTotals(allTaxResults);
@@ -619,45 +641,18 @@ export async function POST(
           );
           const winnerNamesStr = soloWinnerNames.join(", ");
 
-          // Distribute to each tier
+          // Distribute to each tier - SET PENDING SUPPORT (no immediate UC transfer)
           for (const tier of tierDistribution) {
             if (tier.perPlayer > 0) {
               for (const loserId of tier.playerIds) {
-                // Get loser's user info
-                const loser = await prisma.player.findUnique({
+                // Set pending solo support on player (they claim on next API call)
+                await prisma.player.update({
                   where: { id: loserId },
-                  include: { user: true },
-                });
-
-                if (!loser) continue;
-
-                // Update UC balance
-                await prisma.uC.upsert({
-                  where: { playerId: loserId },
-                  create: {
-                    player: { connect: { id: loserId } },
-                    user: { connect: { id: loser.user.id } },
-                    balance: tier.perPlayer,
-                  },
-                  update: { balance: { increment: tier.perPlayer } },
-                });
-
-                // Create support transaction
-                await prisma.transaction.create({
                   data: {
-                    amount: tier.perPlayer,
-                    type: "credit",
-                    description: getLoserSupportMessage(winnerNamesStr, tournament.name),
-                    playerId: loserId,
+                    pendingSoloSupport: tier.perPlayer,
+                    pendingSoloSupportMsg: getLoserSupportMessage(winnerNamesStr, tournament.name),
                   },
                 });
-
-                // Send push notification for support received
-                notifyUCReceived(
-                  loserId,
-                  tier.perPlayer,
-                  getLoserSupportMessage(winnerNamesStr, tournament.name)
-                ).catch(err => console.error("Failed to send support notification:", err));
               }
             }
           }

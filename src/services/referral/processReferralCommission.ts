@@ -61,22 +61,10 @@ export async function processReferralCommission(playerId: string): Promise<{
                 },
             });
 
-            // 2. Credit promoter's UC balance
-            await tx.uC.upsert({
-                where: { userId: referral.promoterId },
-                create: {
-                    user: { connect: { id: referral.promoterId } },
-                    // Need to find promoter's playerId for uC record
-                    player: {
-                        connect: {
-                            userId: referral.promoterId,
-                        },
-                    },
-                    balance: REFERRAL_COMMISSION,
-                },
-                update: {
-                    balance: { increment: REFERRAL_COMMISSION },
-                },
+            // 2. Get promoter's playerId for pending bonus
+            const promoterUser = await tx.user.findUnique({
+                where: { id: referral.promoterId },
+                select: { playerId: true },
             });
 
             // 3. Update promoter's earnings tracker
@@ -87,22 +75,15 @@ export async function processReferralCommission(playerId: string): Promise<{
                 },
             });
 
-            // 4. Get promoter's playerId for transaction
-            const promoterUser = await tx.user.findUnique({
-                where: { id: referral.promoterId },
-                select: { playerId: true },
-            });
-
-            // 5. Create transaction record for promoter
+            // 4. Set pending referral bonus on promoter (NO IMMEDIATE UC TRANSFER)
             if (promoterUser?.playerId) {
                 const playerName = referral.referredPlayer.user.displayName ||
                     referral.referredPlayer.user.userName;
-                await tx.transaction.create({
+                await tx.player.update({
+                    where: { id: promoterUser.playerId },
                     data: {
-                        playerId: promoterUser.playerId,
-                        amount: REFERRAL_COMMISSION,
-                        type: "credit",
-                        description: `Referral bonus: ${playerName} completed ${TOURNAMENTS_REQUIRED} tournaments`,
+                        pendingReferralBonus: REFERRAL_COMMISSION,
+                        pendingReferralMsg: `Referral bonus: ${playerName} completed ${TOURNAMENTS_REQUIRED} tournaments`,
                     },
                 });
             }
