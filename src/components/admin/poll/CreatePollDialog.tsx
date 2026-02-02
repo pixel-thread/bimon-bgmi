@@ -92,9 +92,9 @@ export const CreatePollDialog = ({
       question: tournament?.name,
       tournamentId: tournamentId,
       options: [
-        { name: "Nga Leh", vote: "IN" },
-        { name: "Nga Leh rei", vote: "OUT" },
-        { name: "Nga Leh solo", vote: "SOLO" },
+        { name: "Nga Leh 😎", vote: "IN" },
+        { name: "Leh rei, I'm ge 🏳️‍🌈", vote: "OUT" },
+        { name: "Nga Leh solo 🫩", vote: "SOLO" },
       ],
       days: "Monday",
       teamType: "DYNAMIC",
