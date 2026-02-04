@@ -10,7 +10,8 @@ export async function GET() {
             take: 50,
             include: {
                 player: {
-                    include: {
+                    select: {
+                        customProfileImageUrl: true,
                         user: {
                             select: {
                                 userName: true,
@@ -27,6 +28,7 @@ export async function GET() {
                 rank: index + 1,
                 playerId: entry.playerId,
                 playerName: entry.player.user.displayName || entry.player.user.userName,
+                playerImage: entry.player.customProfileImageUrl,
                 highScore: entry.highScore,
                 lastPlayedAt: entry.lastPlayedAt,
             })),
