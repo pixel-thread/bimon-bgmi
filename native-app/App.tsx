@@ -3,7 +3,6 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
-import mobileAds from 'react-native-google-mobile-ads';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { useAuthStore } from './src/hooks/useAuth';
 import { COLORS } from './src/lib/config';
@@ -18,9 +17,14 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
-        // Initialize mobile ads
-        await mobileAds().initialize();
-        console.log('Mobile ads initialized');
+        // Initialize mobile ads (optional - skip if not configured)
+        try {
+          const mobileAds = require('react-native-google-mobile-ads').default;
+          await mobileAds().initialize();
+          console.log('Mobile ads initialized');
+        } catch (adError) {
+          console.log('AdMob not configured, skipping:', adError);
+        }
 
         // Load stored auth data
         await loadStoredAuth();

@@ -22,7 +22,7 @@
         "backgroundColor": "#0f0f0f"
       },
       "package": "com.pubgmi.games",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE"
@@ -48,7 +48,13 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-2651043074081875~1960370652"
+        }
+      ]
     ],
     "extra": {
       "eas": {
