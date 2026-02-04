@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/db/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 
 // GET - Fetch all game scores (leaderboard)
 export async function GET() {
@@ -16,6 +16,7 @@ export async function GET() {
                             select: {
                                 userName: true,
                                 displayName: true,
+                                clerkId: true,
                             },
                         },
                     },
@@ -23,12 +24,33 @@ export async function GET() {
             },
         });
 
+        // Get Clerk images for players without custom profile images
+        const clerkIdsToFetch = leaderboard
+            .filter(entry => !entry.player.customProfileImageUrl)
+            .map(entry => entry.player.user.clerkId);
+
+        let clerkImageMap = new Map<string, string | null>();
+        if (clerkIdsToFetch.length > 0) {
+            try {
+                const client = await clerkClient();
+                const clerkUsers = await client.users.getUserList({
+                    userId: clerkIdsToFetch,
+                    limit: 50,
+                });
+                clerkUsers.data.forEach(user => {
+                    clerkImageMap.set(user.id, user.imageUrl);
+                });
+            } catch (e) {
+                console.log("Failed to fetch Clerk images:", e);
+            }
+        }
+
         return NextResponse.json({
             leaderboard: leaderboard.map((entry, index) => ({
                 rank: index + 1,
                 playerId: entry.playerId,
                 playerName: entry.player.user.displayName || entry.player.user.userName,
-                playerImage: entry.player.customProfileImageUrl,
+                playerImage: entry.player.customProfileImageUrl || clerkImageMap.get(entry.player.user.clerkId) || null,
                 highScore: entry.highScore,
                 lastPlayedAt: entry.lastPlayedAt,
             })),
