@@ -131,7 +131,7 @@ const AdminRecentMatchesPage = () => {
 
                 if (cachedResponse) {
                     const formData = await cachedResponse.formData();
-                    const files = formData.getAll("images") as File[];
+                    const files = formData.getAll("images") as unknown as File[];
 
                     console.log("[Share Target] Files from cache:", files.length);
 
