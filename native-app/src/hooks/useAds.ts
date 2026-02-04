@@ -76,11 +76,14 @@ export function useRewardedAd() {
     const [loaded, setLoaded] = useState(false);
     const [adInstance, setAdInstance] = useState<any>(null);
     const [reward, setReward] = useState<{ type: string; amount: number } | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         // Skip ads in Expo Go
         if (isExpoGo) {
             console.log('Ads not available in Expo Go');
+            setIsLoading(false);
             return;
         }
 
@@ -91,6 +94,8 @@ export function useRewardedAd() {
 
                 const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
                     setLoaded(true);
+                    setIsLoading(false);
+                    setError(null);
                 });
 
                 const unsubscribeEarned = rewarded.addAdEventListener(
@@ -103,12 +108,28 @@ export function useRewardedAd() {
 
                 const unsubscribeClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
                     setLoaded(false);
+                    setIsLoading(true);
                     rewarded.load();
                 });
 
                 const unsubscribeError = rewarded.addAdEventListener(AdEventType.ERROR, (error: any) => {
                     console.log('Rewarded ad error:', error);
                     setLoaded(false);
+                    setIsLoading(false);
+                    // Common error codes:
+                    // 0 = Internal error, 1 = Invalid request, 2 = Network error, 3 = No fill (no ads available)
+                    if (error?.code === 3 || error?.message?.includes('No fill')) {
+                        setError('Ads are temporarily unavailable. Please try again later.');
+                    } else if (error?.code === 2) {
+                        setError('Network error. Check your connection.');
+                    } else {
+                        setError('Ads are not available right now.');
+                    }
+                    // Retry loading after a delay
+                    setTimeout(() => {
+                        setIsLoading(true);
+                        rewarded.load();
+                    }, 30000); // Retry after 30 seconds
                 });
 
                 setAdInstance(rewarded);
@@ -122,6 +143,8 @@ export function useRewardedAd() {
                 };
             } catch (error) {
                 console.log('Ads not available:', error);
+                setIsLoading(false);
+                setError('Ads module not available.');
             }
         };
 
@@ -138,5 +161,5 @@ export function useRewardedAd() {
         return false;
     }, [adInstance, loaded]);
 
-    return { loaded, showAd, reward };
+    return { loaded, showAd, reward, error, isLoading };
 }

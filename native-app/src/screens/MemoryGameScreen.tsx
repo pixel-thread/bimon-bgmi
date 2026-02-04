@@ -81,7 +81,7 @@ const modalStyles = StyleSheet.create({
 
 export function MemoryGameScreen() {
     const navigation = useNavigation<MemoryGameNavigationProp>();
-    const { loaded: adLoaded, showAd } = useRewardedAd();
+    const { loaded: adLoaded, showAd, error: adError, isLoading: adLoading } = useRewardedAd();
     const { user, isAuthenticated } = useAuthStore();
     const { playFlip, playMatch, playMismatch, playWin, playButton, setEnabled: setSoundEnabled } = useGameSounds();
 
@@ -323,6 +323,8 @@ export function MemoryGameScreen() {
         setModalType('none');
     };
 
+    const [adErrorShown, setAdErrorShown] = useState(false);
+
     const handleWatchAd = async () => {
         if (lives >= GAME_CONFIG.MAX_LIVES) return;
 
@@ -332,7 +334,16 @@ export function MemoryGameScreen() {
             return;
         }
 
-        if (!adLoaded) return;
+        // Show error if ads aren't available
+        if (adError && !adLoaded) {
+            setAdErrorShown(true);
+            return;
+        }
+
+        if (!adLoaded) {
+            // Still loading
+            return;
+        }
 
         try {
             const shown = await showAd();
@@ -340,7 +351,32 @@ export function MemoryGameScreen() {
                 setLives(prev => Math.min(prev + 1, GAME_CONFIG.MAX_LIVES));
                 setModalType('adReward');
             }
-        } catch { }
+        } catch (e) {
+            console.log('Failed to show ad:', e);
+            setAdErrorShown(true);
+        }
+    };
+
+    // Render ad button with proper state
+    const renderAdButton = () => {
+        if (lives >= GAME_CONFIG.MAX_LIVES) return null;
+
+        const isDisabled = !isExpoGo && !adLoaded && !adError;
+        const buttonText = adLoading && !adError
+            ? '⏳ Loading Ad...'
+            : adError && !adLoaded
+                ? '😔 Ads Unavailable'
+                : '📺 Watch Ad = +1 ❤️';
+
+        return (
+            <TouchableOpacity
+                style={[styles.adBtn, isDisabled && styles.adBtnDisabled, adError && !adLoaded && styles.adBtnError]}
+                onPress={handleWatchAd}
+                disabled={isDisabled}
+            >
+                <Text style={styles.adBtnText}>{buttonText}</Text>
+            </TouchableOpacity>
+        );
     };
 
     const openLeaderboard = () => {
@@ -487,11 +523,7 @@ export function MemoryGameScreen() {
                         <Text style={styles.playBtnText}>{lives > 0 ? '▶️ Play Game' : '😢 No Lives'}</Text>
                     </TouchableOpacity>
 
-                    {lives < GAME_CONFIG.MAX_LIVES && (
-                        <TouchableOpacity style={styles.adBtn} onPress={handleWatchAd}>
-                            <Text style={styles.adBtnText}>📺 Watch Ad = +1 ❤️</Text>
-                        </TouchableOpacity>
-                    )}
+                    {renderAdButton()}
                 </View>
 
                 <CustomModal visible={modalType === 'noLives'} onClose={() => setModalType('none')}>
@@ -502,10 +534,28 @@ export function MemoryGameScreen() {
                         <TouchableOpacity style={styles.modalBtnSecondary} onPress={() => setModalType('none')}>
                             <Text style={styles.modalBtnSecondaryText}>Cancel</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.modalBtnPrimary} onPress={() => { setModalType('none'); handleWatchAd(); }}>
-                            <Text style={styles.modalBtnPrimaryText}>Watch Ad</Text>
+                        <TouchableOpacity
+                            style={[styles.modalBtnPrimary, (!adLoaded && !isExpoGo) && styles.btnDisabled]}
+                            onPress={() => { setModalType('none'); handleWatchAd(); }}
+                            disabled={!adLoaded && !isExpoGo}
+                        >
+                            <Text style={styles.modalBtnPrimaryText}>
+                                {adLoading && !adError ? 'Loading...' : adError ? 'Unavailable' : 'Watch Ad'}
+                            </Text>
                         </TouchableOpacity>
                     </View>
+                </CustomModal>
+
+                {/* Ad Error Modal */}
+                <CustomModal visible={adErrorShown} onClose={() => setAdErrorShown(false)}>
+                    <Text style={styles.modalEmoji}>😔</Text>
+                    <Text style={styles.modalTitle}>Ads Unavailable</Text>
+                    <Text style={styles.modalText}>
+                        {adError || 'Ads are being reviewed and will be available soon. Please check back later!'}
+                    </Text>
+                    <TouchableOpacity style={styles.modalBtnPrimary} onPress={() => setAdErrorShown(false)}>
+                        <Text style={styles.modalBtnPrimaryText}>OK</Text>
+                    </TouchableOpacity>
                 </CustomModal>
 
                 <CustomModal visible={modalType === 'adReward'} onClose={() => setModalType('none')}>
@@ -548,11 +598,7 @@ export function MemoryGameScreen() {
                         <Text style={styles.playBtnText}>🔄 Play Again</Text>
                     </TouchableOpacity>
 
-                    {lives < GAME_CONFIG.MAX_LIVES && (
-                        <TouchableOpacity style={styles.adBtn} onPress={handleWatchAd}>
-                            <Text style={styles.adBtnText}>📺 +1 ❤️</Text>
-                        </TouchableOpacity>
-                    )}
+                    {lives < GAME_CONFIG.MAX_LIVES && renderAdButton()}
 
                     <TouchableOpacity style={styles.menuBtn} onPress={() => { setGameState('idle'); fetchGameData(); }}>
                         <Text style={styles.menuBtnText}>Menu</Text>
@@ -581,9 +627,7 @@ export function MemoryGameScreen() {
                             <Text style={styles.playBtnText}>🔄 Try Again</Text>
                         </TouchableOpacity>
                     ) : (
-                        <TouchableOpacity style={styles.adBtn} onPress={handleWatchAd}>
-                            <Text style={styles.adBtnText}>📺 Watch Ad = +1 ❤️</Text>
-                        </TouchableOpacity>
+                        renderAdButton()
                     )}
 
                     <TouchableOpacity style={styles.menuBtn} onPress={() => { setGameState('idle'); fetchGameData(); }}>
@@ -671,6 +715,8 @@ const styles = StyleSheet.create({
     playBtnText: { fontSize: 18, fontWeight: '700', color: '#fff' },
     btnDisabled: { backgroundColor: '#333', opacity: 0.5 },
     adBtn: { backgroundColor: '#059669', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14, marginBottom: 12 },
+    adBtnDisabled: { backgroundColor: '#444', opacity: 0.7 },
+    adBtnError: { backgroundColor: '#6b7280' },
     adBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
     menuBtn: { marginTop: 8 },
     menuBtnText: { fontSize: 14, color: '#666', textDecorationLine: 'underline' },
