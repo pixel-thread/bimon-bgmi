@@ -19,8 +19,13 @@ export async function GET(request: NextRequest) {
                     player: {
                         select: {
                             id: true,
-                            displayName: true,
-                            imageUrl: true,
+                            customProfileImageUrl: true,
+                            user: {
+                                select: {
+                                    userName: true,
+                                    displayName: true,
+                                }
+                            }
                         }
                     }
                 }
@@ -33,8 +38,8 @@ export async function GET(request: NextRequest) {
                 leaderboard: leaderboard.map((g, i) => ({
                     rank: i + 1,
                     id: g.player.id,
-                    name: g.player.displayName,
-                    imageUrl: g.player.imageUrl,
+                    name: g.player.user.displayName || g.player.user.userName,
+                    imageUrl: g.player.customProfileImageUrl,
                     score: g.highScore,
                 })),
                 topScore
