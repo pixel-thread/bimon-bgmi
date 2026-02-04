@@ -12,14 +12,14 @@ export const NATIVE_APP_CONFIG = {
 
     // Direct APK download URL (for sideloading)
     // Update this to your actual APK hosting URL
-    apkDownloadUrl: "https://bimon-bgmi.vercel.app/downloads/pubgmi-games.apk",
+    apkDownloadUrl: "https://bimon-bgmi.vercel.app/squad-up-v1.0.1.apk",
 
     // Google Play Store URL (once published)
     // Set to null if not yet published
     playStoreUrl: null as string | null,
 
     // App version
-    version: "1.0.0",
+    version: "1.0.1",
 
     // Minimum Android version required
     minAndroidVersion: "6.0",
@@ -34,7 +34,7 @@ export const NATIVE_APP_CONFIG = {
     ],
 
     // Size of the APK (approximate)
-    appSize: "~25 MB",
+    appSize: "~84 MB",
 } as const;
 
 /**

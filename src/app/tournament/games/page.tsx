@@ -36,8 +36,8 @@ export default function GamesPage() {
               </p>
             </div>
             <a
-              href="/downloads/pubgmi-games.apk"
-              download="pubgmi-games.apk"
+              href="/squad-up-v1.0.1.apk"
+              download="squad-up-v1.0.1.apk"
               className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/30 transition-all duration-200"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
