@@ -581,15 +581,18 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
               const currentUserInfo = playersVotes?.find((v) => v.playerId === playerId);
               const currentUserAvatarData = currentUserInfo ? {
                 id: currentUserInfo.id,
-                imageUrl: (currentUserInfo.player as any)?.imageUrl || null,
-
+                // Priority: customProfileImageUrl > Clerk imageUrl (Google) > fallback
+                // NEVER use characterImage for circle avatars
+                profileImageUrl: (currentUserInfo.player as any)?.customProfileImageUrl
+                  || (currentUserInfo.player as any)?.imageUrl
+                  || null,
                 displayName: currentUserInfo.player?.user?.displayName || null,
                 userName: currentUserInfo.player?.user?.userName || '',
               } : (user?.player ? {
                 // Fall back to auth data + Clerk for instant avatar display
                 id: `auth-${playerId}`,
-                imageUrl: clerkUser?.imageUrl || null,
-
+                // Priority: customProfileImageUrl > Clerk imageUrl
+                profileImageUrl: user.player.customProfileImageUrl || clerkUser?.imageUrl || null,
                 displayName: user.displayName || null,
                 userName: user.userName || '',
               } : null);
@@ -599,8 +602,11 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
                 ...(showCurrentUserHere && currentUserAvatarData ? [currentUserAvatarData] : []),
                 ...otherVoters.slice(0, showCurrentUserHere ? 1 : 2).map((v) => ({
                   id: v.id,
-                  imageUrl: (v.player as any)?.imageUrl || null,
-
+                  // Priority: customProfileImageUrl > Clerk imageUrl (Google) > fallback
+                  // NEVER use characterImage for circle avatars
+                  profileImageUrl: (v.player as any)?.customProfileImageUrl
+                    || (v.player as any)?.imageUrl
+                    || null,
                   displayName: v.player?.user?.displayName || null,
                   userName: v.player?.user?.userName || '',
                 })),

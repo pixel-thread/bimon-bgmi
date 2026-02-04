@@ -153,6 +153,7 @@ export default function AdminJobListingsPage() {
                                     <div className="flex items-start gap-4">
                                         <PlayerAvatar
                                             profileImageUrl={(listing.player as any).customProfileImageUrl}
+                                            imageUrl={(listing.player as any).imageUrl}
                                             displayName={listing.player.user.displayName || ""}
                                             userName={listing.player.user.userName}
                                             size="sm"
