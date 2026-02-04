@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "PUBGMI Games",
+    "name": "Squad Up",
     "slug": "pubgmi-games",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -33,7 +33,7 @@
           "autoVerify": true,
           "data": [
             {
-              "scheme": "pubgmi-games",
+              "scheme": "squad-up",
               "host": "auth"
             }
           ],
