@@ -260,6 +260,22 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
           toast.success(data.message);
           // Clear pending state - cache already updated in onMutate
           setPendingVote(null);
+
+          // If user just won lucky voter lottery, update poll cache immediately
+          // so the lucky winner theme shows instantly without refresh
+          const responseData = data.data as { isLuckyVoter?: boolean; isBirthdayPlayer?: boolean } | null;
+          if (responseData?.isLuckyVoter && playerId) {
+            queryClient.setQueryData(["polls"], (oldData: any) => {
+              if (!oldData?.data) return oldData;
+              return {
+                ...oldData,
+                data: oldData.data.map((p: any) => {
+                  if (p.id !== pollId) return p;
+                  return { ...p, luckyVoterId: playerId };
+                }),
+              };
+            });
+          }
         } else {
           // Revert on failure - go back to server state
           setPendingVote(null);
