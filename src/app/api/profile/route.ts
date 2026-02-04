@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
                 role: user.role,
                 isEmailLinked: user.isEmailLinked,
                 usernameLastChangeAt: user.usernameLastChangeAt,
+                displayNameLastChangeAt: user.displayNameLastChangeAt,
                 dateOfBirth: user.dateOfBirth,
             },
             message: "Profile fetched successfully",
@@ -96,6 +97,25 @@ export async function PATCH(req: NextRequest) {
             });
         }
 
+        // Check 1-week cooldown for display name changes
+        if (body.displayName !== undefined && body.displayName !== user.displayName) {
+            if (user.displayNameLastChangeAt) {
+                const cooldownMs = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+                const timeSinceLastChange = Date.now() - new Date(user.displayNameLastChangeAt).getTime();
+
+                if (timeSinceLastChange < cooldownMs) {
+                    const remainingMs = cooldownMs - timeSinceLastChange;
+                    const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+                    const canChangeAt = new Date(new Date(user.displayNameLastChangeAt).getTime() + cooldownMs);
+
+                    return ErrorResponse({
+                        message: `You can change your IGN again in ${remainingDays} day${remainingDays === 1 ? '' : 's'} (on ${canChangeAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`,
+                        status: 400,
+                    });
+                }
+            }
+        }
+
         // Update the user in our database
         const updatedUser = await updateUser({
             where: { id: user.id },
@@ -104,8 +124,9 @@ export async function PATCH(req: NextRequest) {
                     userName: body.userName,
                     usernameLastChangeAt: new Date(),
                 }),
-                ...(body.displayName !== undefined && {
+                ...(body.displayName !== undefined && body.displayName !== user.displayName && {
                     displayName: body.displayName,
+                    displayNameLastChangeAt: new Date(),
                 }),
                 ...(body.dateOfBirth !== undefined && !user.dateOfBirth && {
                     dateOfBirth: body.dateOfBirth,
@@ -121,6 +142,7 @@ export async function PATCH(req: NextRequest) {
                 email: updatedUser.email,
                 role: updatedUser.role,
                 usernameLastChangeAt: updatedUser.usernameLastChangeAt,
+                displayNameLastChangeAt: updatedUser.displayNameLastChangeAt,
                 dateOfBirth: updatedUser.dateOfBirth,
             },
             message: "Profile updated successfully",

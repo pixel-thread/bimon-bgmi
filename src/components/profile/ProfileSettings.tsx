@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
@@ -12,7 +12,7 @@ import { Separator } from "@/src/components/ui/separator";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
-import { Loader2, User, Mail, Shield, AlertCircle, CheckCircle, Edit2, ChevronRight, Calendar } from "lucide-react";
+import { Loader2, User, Mail, Shield, AlertCircle, CheckCircle, Edit2, ChevronRight, Calendar, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { GameNameInput, validateDisplayName } from "@/src/components/common/GameNameInput";
 
@@ -35,6 +35,27 @@ export function ProfileSettings() {
     const [isEditingDob, setIsEditingDob] = useState(false);
     const [dateOfBirth, setDateOfBirth] = useState("");
     const [dobError, setDobError] = useState("");
+
+    // Calculate display name cooldown (1 week = 7 days)
+    const displayNameCooldown = useMemo(() => {
+        if (!user?.displayNameLastChangeAt) {
+            return { isInCooldown: false, remainingDays: 0, canChangeAt: null };
+        }
+
+        const cooldownMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+        const lastChangeTime = new Date(user.displayNameLastChangeAt).getTime();
+        const timeSinceLastChange = Date.now() - lastChangeTime;
+
+        if (timeSinceLastChange >= cooldownMs) {
+            return { isInCooldown: false, remainingDays: 0, canChangeAt: null };
+        }
+
+        const remainingMs = cooldownMs - timeSinceLastChange;
+        const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+        const canChangeAt = new Date(lastChangeTime + cooldownMs);
+
+        return { isInCooldown: true, remainingDays, canChangeAt };
+    }, [user?.displayNameLastChangeAt]);
 
 
     // Update local state when user changes
@@ -241,31 +262,54 @@ export function ProfileSettings() {
                                 readOnly={true}
                             />
 
+                            {/* Show cooldown warning if in cooldown */}
+                            {displayNameCooldown.isInCooldown && (
+                                <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                    <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                                        Name change available in {displayNameCooldown.remainingDays} day{displayNameCooldown.remainingDays === 1 ? '' : 's'}
+                                        {displayNameCooldown.canChangeAt && (
+                                            <span className="opacity-75">
+                                                {' '}(on {displayNameCooldown.canChangeAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+                                            </span>
+                                        )}
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Show Cancel/Save buttons only when there are changes */}
                             {displayName !== (user?.displayName || user?.userName || "") && (
-                                <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setDisplayName(user?.displayName || user?.userName || "")}
-                                        disabled={isUpdatingDisplayName}
-                                        size="sm"
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        onClick={handleSaveDisplayName}
-                                        disabled={isUpdatingDisplayName || !displayName.trim() || !!displayNameError}
-                                        size="sm"
-                                    >
-                                        {isUpdatingDisplayName ? (
-                                            <>
-                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                Saving...
-                                            </>
-                                        ) : (
-                                            "Save"
-                                        )}
-                                    </Button>
+                                <div className="flex flex-col gap-2">
+                                    {displayNameCooldown.isInCooldown && (
+                                        <p className="text-xs text-red-500 flex items-center gap-1">
+                                            <AlertCircle className="w-3 h-3" />
+                                            Cannot save changes during cooldown period
+                                        </p>
+                                    )}
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setDisplayName(user?.displayName || user?.userName || "")}
+                                            disabled={isUpdatingDisplayName}
+                                            size="sm"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            onClick={handleSaveDisplayName}
+                                            disabled={isUpdatingDisplayName || !displayName.trim() || !!displayNameError || displayNameCooldown.isInCooldown}
+                                            size="sm"
+                                        >
+                                            {isUpdatingDisplayName ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                    Saving...
+                                                </>
+                                            ) : (
+                                                "Save"
+                                            )}
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -523,6 +567,14 @@ export function ProfileSettings() {
                                     <Badge variant="destructive">Banned</Badge>
                                 </div>
                             )}
+                            <div className="p-4 bg-muted/30 rounded-lg">
+                                <p className="text-sm text-muted-foreground mb-1">Last IGN Change</p>
+                                <p className="font-medium text-sm">
+                                    {user?.displayNameLastChangeAt
+                                        ? formatDistanceToNow(new Date(user.displayNameLastChangeAt), { addSuffix: true })
+                                        : "Never"}
+                                </p>
+                            </div>
                             <div className="p-4 bg-muted/30 rounded-lg">
                                 <p className="text-sm text-muted-foreground mb-1">Last Username Change</p>
                                 <p className="font-medium text-sm">

@@ -105,7 +105,8 @@ model User {
   displayName          String?  // BGMI IGN with fancy Unicode characters
   dateOfBirth          DateTime? // Optional date of birth
   isOnboarded          Boolean  @default(true) // New users set to false, existing users unaffected
-  usernameLastChangeAt DateTime @default(now())
+  usernameLastChangeAt    DateTime  @default(now())
+  displayNameLastChangeAt DateTime? // When BGMI IGN was last changed (for 1-week cooldown)
   role                 Role     @default(USER)
   balance              Int      @default(0)
   isInternal           Boolean  @default(false)
