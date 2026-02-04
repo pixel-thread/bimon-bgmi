@@ -49,6 +49,7 @@ export type RootStackParamList = {
     Home: undefined;
     Games: undefined;
     GamePlayer: { gameId: string; gameUrl: string };
+    MemoryGame: undefined;
     Profile: undefined;
     Login: undefined;
     Tournaments: undefined;

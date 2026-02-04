@@ -17,11 +17,18 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
-        // Initialize mobile ads (optional - skip if not configured)
+        // Initialize mobile ads (optional - skip if not configured or in Expo Go)
         try {
-          const mobileAds = require('react-native-google-mobile-ads').default;
-          await mobileAds().initialize();
-          console.log('Mobile ads initialized');
+          const Constants = require('expo-constants').default;
+          const isExpoGo = Constants.appOwnership === 'expo';
+
+          if (!isExpoGo) {
+            const mobileAds = require('react-native-google-mobile-ads').default;
+            await mobileAds().initialize();
+            console.log('Mobile ads initialized');
+          } else {
+            console.log('Skipping ads in Expo Go');
+          }
         } catch (adError) {
           console.log('AdMob not configured, skipping:', adError);
         }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     Image,
     RefreshControl,
+    Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -19,6 +20,8 @@ import { RootStackParamList } from '../types';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
+const WEBSITE_URL = 'https://pubgmi.games';
+
 export function HomeScreen() {
     const navigation = useNavigation<HomeScreenNavigationProp>();
     const { user, isAuthenticated } = useAuthStore();
@@ -26,8 +29,11 @@ export function HomeScreen() {
 
     const onRefresh = async () => {
         setRefreshing(true);
-        // TODO: Refresh user data from API
         setTimeout(() => setRefreshing(false), 1000);
+    };
+
+    const openWebsite = () => {
+        Linking.openURL(WEBSITE_URL);
     };
 
     return (
@@ -48,10 +54,8 @@ export function HomeScreen() {
                 {/* Header */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.greeting}>Welcome back,</Text>
-                        <Text style={styles.username}>
-                            {isAuthenticated ? user?.displayName : 'Guest'}
-                        </Text>
+                        <Text style={styles.greeting}>Welcome to</Text>
+                        <Text style={styles.appName}>PUBGMI Games</Text>
                     </View>
                     <TouchableOpacity
                         style={styles.profileButton}
@@ -69,69 +73,62 @@ export function HomeScreen() {
                     </TouchableOpacity>
                 </View>
 
-                {/* UC Balance Card */}
-                {isAuthenticated && (
-                    <View style={styles.balanceCard}>
-                        <View style={styles.balanceHeader}>
-                            <Text style={styles.balanceLabel}>UC Balance</Text>
-                            <View style={styles.ucBadge}>
-                                <Text style={styles.ucIcon}>💰</Text>
-                            </View>
+                {/* Featured Game - Memory Game */}
+                <Text style={styles.sectionTitle}>🎮 Featured Game</Text>
+                <TouchableOpacity
+                    style={styles.featuredCard}
+                    onPress={() => navigation.navigate('MemoryGame')}
+                >
+                    <View style={styles.featuredContent}>
+                        <Text style={styles.featuredEmoji}>🧠</Text>
+                        <View style={styles.featuredInfo}>
+                            <Text style={styles.featuredTitle}>Memory Challenge</Text>
+                            <Text style={styles.featuredDesc}>Match all pairs to win! Test your memory.</Text>
                         </View>
-                        <Text style={styles.balanceAmount}>{user?.ucBalance || 0}</Text>
-                        <Text style={styles.balanceSubtext}>Play games & watch ads to earn more!</Text>
                     </View>
-                )}
+                    <View style={styles.playBadge}>
+                        <Text style={styles.playBadgeText}>▶️ Play</Text>
+                    </View>
+                </TouchableOpacity>
 
-                {/* Quick Actions */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Quick Actions</Text>
-                    <View style={styles.actionGrid}>
-                        <TouchableOpacity
-                            style={styles.actionCard}
-                            onPress={() => navigation.navigate('Games')}
-                        >
-                            <View style={[styles.actionIcon, { backgroundColor: COLORS.primary + '20' }]}>
-                                <Text style={styles.actionEmoji}>🎮</Text>
-                            </View>
-                            <Text style={styles.actionTitle}>Play Games</Text>
-                            <Text style={styles.actionSubtitle}>Earn UC rewards</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.actionCard}
-                            onPress={() => navigation.navigate('Tournaments')}
-                        >
-                            <View style={[styles.actionIcon, { backgroundColor: COLORS.accent + '20' }]}>
-                                <Text style={styles.actionEmoji}>🏆</Text>
-                            </View>
-                            <Text style={styles.actionTitle}>Tournaments</Text>
-                            <Text style={styles.actionSubtitle}>Compete & win</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.actionCard}
-                            onPress={() => navigation.navigate('Profile')}
-                        >
-                            <View style={[styles.actionIcon, { backgroundColor: COLORS.success + '20' }]}>
-                                <Text style={styles.actionEmoji}>📊</Text>
-                            </View>
-                            <Text style={styles.actionTitle}>My Stats</Text>
-                            <Text style={styles.actionSubtitle}>View progress</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.actionCard}
-                            onPress={() => {/* Open website */ }}
-                        >
-                            <View style={[styles.actionIcon, { backgroundColor: COLORS.secondary + '20' }]}>
-                                <Text style={styles.actionEmoji}>🌐</Text>
-                            </View>
-                            <Text style={styles.actionTitle}>Website</Text>
-                            <Text style={styles.actionSubtitle}>Full features</Text>
-                        </TouchableOpacity>
+                {/* Coming Soon Games */}
+                <Text style={styles.sectionTitle}>🔜 Coming Soon</Text>
+                <View style={styles.comingSoonGrid}>
+                    <View style={styles.comingSoonCard}>
+                        <Text style={styles.comingSoonEmoji}>🎯</Text>
+                        <Text style={styles.comingSoonTitle}>Quiz Battle</Text>
+                        <Text style={styles.comingSoonTag}>Soon</Text>
+                    </View>
+                    <View style={styles.comingSoonCard}>
+                        <Text style={styles.comingSoonEmoji}>🎰</Text>
+                        <Text style={styles.comingSoonTitle}>Spin & Win</Text>
+                        <Text style={styles.comingSoonTag}>Soon</Text>
+                    </View>
+                    <View style={styles.comingSoonCard}>
+                        <Text style={styles.comingSoonEmoji}>🃏</Text>
+                        <Text style={styles.comingSoonTitle}>Card Match</Text>
+                        <Text style={styles.comingSoonTag}>Soon</Text>
+                    </View>
+                    <View style={styles.comingSoonCard}>
+                        <Text style={styles.comingSoonEmoji}>🎲</Text>
+                        <Text style={styles.comingSoonTitle}>Lucky Dice</Text>
+                        <Text style={styles.comingSoonTag}>Soon</Text>
                     </View>
                 </View>
+
+                {/* Website Link */}
+                <TouchableOpacity style={styles.websiteCard} onPress={openWebsite}>
+                    <View style={styles.websiteContent}>
+                        <View style={styles.websiteIcon}>
+                            <Text style={styles.websiteEmoji}>🌐</Text>
+                        </View>
+                        <View>
+                            <Text style={styles.websiteTitle}>Visit Website</Text>
+                            <Text style={styles.websiteSubtitle}>Tournaments, voting, leaderboard & more!</Text>
+                        </View>
+                    </View>
+                    <Text style={styles.websiteArrow}>→</Text>
+                </TouchableOpacity>
 
                 {/* Login CTA for guests */}
                 {!isAuthenticated && (
@@ -140,9 +137,9 @@ export function HomeScreen() {
                         onPress={() => navigation.navigate('Login')}
                     >
                         <View style={styles.loginContent}>
-                            <Text style={styles.loginTitle}>Login to Sync Progress</Text>
+                            <Text style={styles.loginTitle}>🔗 Login to Sync</Text>
                             <Text style={styles.loginSubtitle}>
-                                Connect with your PUBGMI account to sync UC, stats, and more!
+                                Connect your PUBGMI account to save progress
                             </Text>
                         </View>
                         <Text style={styles.loginArrow}>→</Text>
@@ -159,7 +156,7 @@ export function HomeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.dark.background,
+        backgroundColor: '#0a0a0f',
     },
     scrollView: {
         flex: 1,
@@ -172,16 +169,16 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 28,
     },
     greeting: {
         fontSize: 14,
-        color: COLORS.dark.textMuted,
+        color: '#666',
     },
-    username: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: COLORS.dark.text,
+    appName: {
+        fontSize: 26,
+        fontWeight: '800',
+        color: '#fff',
         marginTop: 2,
     },
     profileButton: {
@@ -206,117 +203,165 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: '700',
     },
-    balanceCard: {
-        // Note: RN doesn't support linear-gradient directly, using solid color
-        // For gradient, use react-native-linear-gradient
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#fff',
+        marginBottom: 12,
+        marginTop: 8,
+    },
+
+    // Featured Game Card
+    featuredCard: {
         backgroundColor: COLORS.primary,
         borderRadius: 20,
         padding: 20,
         marginBottom: 24,
-        borderWidth: 1,
-        borderColor: COLORS.primary + '30',
-    },
-    balanceHeader: {
         flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'space-between',
+    },
+    featuredContent: {
+        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
+        flex: 1,
     },
-    balanceLabel: {
-        fontSize: 14,
-        color: 'rgba(255,255,255,0.8)',
-        fontWeight: '600',
+    featuredEmoji: {
+        fontSize: 48,
+        marginRight: 16,
     },
-    ucBadge: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        alignItems: 'center',
-        justifyContent: 'center',
+    featuredInfo: {
+        flex: 1,
     },
-    ucIcon: {
-        fontSize: 18,
-    },
-    balanceAmount: {
-        fontSize: 42,
+    featuredTitle: {
+        fontSize: 20,
         fontWeight: '800',
         color: '#fff',
         marginBottom: 4,
     },
-    balanceSubtext: {
+    featuredDesc: {
         fontSize: 13,
-        color: 'rgba(255,255,255,0.7)',
+        color: 'rgba(255,255,255,0.8)',
+        lineHeight: 18,
     },
-    section: {
-        marginBottom: 24,
+    playBadge: {
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 12,
     },
-    sectionTitle: {
-        fontSize: 18,
+    playBadgeText: {
+        fontSize: 15,
         fontWeight: '700',
-        color: COLORS.dark.text,
-        marginBottom: 16,
+        color: '#fff',
     },
-    actionGrid: {
+
+    // Coming Soon Grid
+    comingSoonGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 12,
+        marginBottom: 24,
     },
-    actionCard: {
+    comingSoonCard: {
         width: '48%',
-        backgroundColor: COLORS.dark.card,
+        backgroundColor: '#1a1a2e',
+        borderRadius: 16,
+        padding: 16,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#2a2a4e',
+        opacity: 0.6,
+    },
+    comingSoonEmoji: {
+        fontSize: 32,
+        marginBottom: 8,
+    },
+    comingSoonTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#fff',
+        marginBottom: 6,
+    },
+    comingSoonTag: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#888',
+        backgroundColor: '#333',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+        overflow: 'hidden',
+    },
+
+    // Website Card
+    websiteCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1a1a2e',
         borderRadius: 16,
         padding: 16,
         borderWidth: 1,
-        borderColor: COLORS.dark.cardBorder,
+        borderColor: '#2a2a4e',
+        marginBottom: 16,
     },
-    actionIcon: {
-        width: 48,
-        height: 48,
-        borderRadius: 14,
+    websiteContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    websiteIcon: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        backgroundColor: '#0066ff20',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 12,
+        marginRight: 14,
     },
-    actionEmoji: {
-        fontSize: 24,
+    websiteEmoji: {
+        fontSize: 22,
     },
-    actionTitle: {
+    websiteTitle: {
         fontSize: 15,
         fontWeight: '700',
-        color: COLORS.dark.text,
-        marginBottom: 2,
+        color: '#fff',
     },
-    actionSubtitle: {
+    websiteSubtitle: {
         fontSize: 12,
-        color: COLORS.dark.textMuted,
+        color: '#666',
+        marginTop: 2,
     },
+    websiteArrow: {
+        fontSize: 20,
+        color: '#666',
+    },
+
+    // Login CTA
     loginCta: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.dark.card,
+        backgroundColor: '#1a1a2e',
         borderRadius: 16,
-        padding: 20,
+        padding: 16,
         borderWidth: 1,
-        borderColor: COLORS.primary + '30',
+        borderColor: COLORS.primary + '40',
     },
     loginContent: {
         flex: 1,
     },
     loginTitle: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '700',
         color: COLORS.primary,
         marginBottom: 4,
     },
     loginSubtitle: {
-        fontSize: 13,
-        color: COLORS.dark.textMuted,
-        lineHeight: 18,
+        fontSize: 12,
+        color: '#666',
     },
     loginArrow: {
-        fontSize: 24,
+        fontSize: 20,
         color: COLORS.primary,
-        marginLeft: 12,
     },
 });

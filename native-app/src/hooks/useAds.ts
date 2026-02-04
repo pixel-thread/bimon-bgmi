@@ -1,13 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
-import {
-    InterstitialAd,
-    RewardedAd,
-    AdEventType,
-    RewardedAdEventType,
-    TestIds,
-} from 'react-native-google-mobile-ads';
+import Constants from 'expo-constants';
 import { ADMOB_CONFIG } from '../lib/config';
+
+// Check if we're in Expo Go (no native modules available)
+const isExpoGo = Constants.appOwnership === 'expo';
 
 // Get the appropriate ad unit ID based on platform
 const getAdUnitId = (type: 'interstitial' | 'rewarded') => {
@@ -18,37 +15,52 @@ const getAdUnitId = (type: 'interstitial' | 'rewarded') => {
 // Interstitial Ad Hook
 export function useInterstitialAd() {
     const [loaded, setLoaded] = useState(false);
-    const [adInstance, setAdInstance] = useState<InterstitialAd | null>(null);
+    const [adInstance, setAdInstance] = useState<any>(null);
 
     useEffect(() => {
-        const interstitial = InterstitialAd.createForAdRequest(getAdUnitId('interstitial'));
+        // Skip ads in Expo Go
+        if (isExpoGo) {
+            console.log('Ads not available in Expo Go');
+            return;
+        }
 
-        const unsubscribeLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => {
-            setLoaded(true);
-        });
+        const initAd = async () => {
+            try {
+                const { InterstitialAd, AdEventType } = await import('react-native-google-mobile-ads');
+                const interstitial = InterstitialAd.createForAdRequest(getAdUnitId('interstitial'));
 
-        const unsubscribeClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
-            setLoaded(false);
-            // Preload next ad
-            interstitial.load();
-        });
+                const unsubscribeLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => {
+                    setLoaded(true);
+                });
 
-        const unsubscribeError = interstitial.addAdEventListener(AdEventType.ERROR, (error) => {
-            console.log('Interstitial ad error:', error);
-            setLoaded(false);
-        });
+                const unsubscribeClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
+                    setLoaded(false);
+                    interstitial.load();
+                });
 
-        setAdInstance(interstitial);
-        interstitial.load();
+                const unsubscribeError = interstitial.addAdEventListener(AdEventType.ERROR, (error: any) => {
+                    console.log('Interstitial ad error:', error);
+                    setLoaded(false);
+                });
 
-        return () => {
-            unsubscribeLoaded();
-            unsubscribeClosed();
-            unsubscribeError();
+                setAdInstance(interstitial);
+                interstitial.load();
+
+                return () => {
+                    unsubscribeLoaded();
+                    unsubscribeClosed();
+                    unsubscribeError();
+                };
+            } catch (error) {
+                console.log('Ads not available:', error);
+            }
         };
+
+        initAd();
     }, []);
 
     const showAd = useCallback(async () => {
+        if (isExpoGo) return false;
         if (adInstance && loaded) {
             await adInstance.show();
             return true;
@@ -62,47 +74,62 @@ export function useInterstitialAd() {
 // Rewarded Ad Hook
 export function useRewardedAd() {
     const [loaded, setLoaded] = useState(false);
-    const [adInstance, setAdInstance] = useState<RewardedAd | null>(null);
+    const [adInstance, setAdInstance] = useState<any>(null);
     const [reward, setReward] = useState<{ type: string; amount: number } | null>(null);
 
     useEffect(() => {
-        const rewarded = RewardedAd.createForAdRequest(getAdUnitId('rewarded'));
+        // Skip ads in Expo Go
+        if (isExpoGo) {
+            console.log('Ads not available in Expo Go');
+            return;
+        }
 
-        const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
-            setLoaded(true);
-        });
+        const initAd = async () => {
+            try {
+                const { RewardedAd, AdEventType, RewardedAdEventType } = await import('react-native-google-mobile-ads');
+                const rewarded = RewardedAd.createForAdRequest(getAdUnitId('rewarded'));
 
-        const unsubscribeEarned = rewarded.addAdEventListener(
-            RewardedAdEventType.EARNED_REWARD,
-            (reward) => {
-                console.log('User earned reward:', reward);
-                setReward(reward);
+                const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
+                    setLoaded(true);
+                });
+
+                const unsubscribeEarned = rewarded.addAdEventListener(
+                    RewardedAdEventType.EARNED_REWARD,
+                    (reward: any) => {
+                        console.log('User earned reward:', reward);
+                        setReward(reward);
+                    }
+                );
+
+                const unsubscribeClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
+                    setLoaded(false);
+                    rewarded.load();
+                });
+
+                const unsubscribeError = rewarded.addAdEventListener(AdEventType.ERROR, (error: any) => {
+                    console.log('Rewarded ad error:', error);
+                    setLoaded(false);
+                });
+
+                setAdInstance(rewarded);
+                rewarded.load();
+
+                return () => {
+                    unsubscribeLoaded();
+                    unsubscribeEarned();
+                    unsubscribeClosed();
+                    unsubscribeError();
+                };
+            } catch (error) {
+                console.log('Ads not available:', error);
             }
-        );
-
-        const unsubscribeClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
-            setLoaded(false);
-            // Preload next ad
-            rewarded.load();
-        });
-
-        const unsubscribeError = rewarded.addAdEventListener(AdEventType.ERROR, (error) => {
-            console.log('Rewarded ad error:', error);
-            setLoaded(false);
-        });
-
-        setAdInstance(rewarded);
-        rewarded.load();
-
-        return () => {
-            unsubscribeLoaded();
-            unsubscribeEarned();
-            unsubscribeClosed();
-            unsubscribeError();
         };
+
+        initAd();
     }, []);
 
     const showAd = useCallback(async (): Promise<boolean> => {
+        if (isExpoGo) return false;
         if (adInstance && loaded) {
             setReward(null);
             await adInstance.show();

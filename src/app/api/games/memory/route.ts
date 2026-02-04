@@ -1,12 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/db/prisma";
 
-// GET - Fetch player's high score
+// GET - Fetch leaderboard and player's high score
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const playerId = searchParams.get("playerId");
+        const action = searchParams.get("action") || "score";
 
+        // Leaderboard action
+        if (action === "leaderboard") {
+            const limit = parseInt(searchParams.get("limit") || "10");
+
+            const leaderboard = await prisma.gameScore.findMany({
+                orderBy: { highScore: 'desc' },
+                take: limit,
+                include: {
+                    player: {
+                        select: {
+                            id: true,
+                            displayName: true,
+                            imageUrl: true,
+                        }
+                    }
+                }
+            });
+
+            const topScore = leaderboard.length > 0 ? leaderboard[0].highScore : 0;
+
+            return NextResponse.json({
+                success: true,
+                leaderboard: leaderboard.map((g, i) => ({
+                    rank: i + 1,
+                    id: g.player.id,
+                    name: g.player.displayName,
+                    imageUrl: g.player.imageUrl,
+                    score: g.highScore,
+                })),
+                topScore
+            });
+        }
+
+        // Single player score
         if (!playerId) {
             return NextResponse.json(
                 { error: "Player ID is required" },
@@ -18,9 +53,24 @@ export async function GET(request: NextRequest) {
             where: { playerId },
         });
 
+        // Get player's rank
+        let rank = 0;
+        if (gameScore) {
+            rank = await prisma.gameScore.count({
+                where: { highScore: { gt: gameScore.highScore } }
+            }) + 1;
+        }
+
+        // Get global top score
+        const topScoreRecord = await prisma.gameScore.findFirst({
+            orderBy: { highScore: 'desc' }
+        });
+
         return NextResponse.json({
-            highScore: gameScore?.highScore ?? null,
+            highScore: gameScore?.highScore ?? 0,
             lastPlayedAt: gameScore?.lastPlayedAt ?? null,
+            rank,
+            topScore: topScoreRecord?.highScore ?? 0
         });
     } catch (error) {
         console.error("Error fetching game score:", error);
@@ -77,10 +127,16 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        // Get rank after save
+        const rank = await prisma.gameScore.count({
+            where: { highScore: { gt: gameScore.highScore } }
+        }) + 1;
+
         return NextResponse.json({
             success: true,
             highScore: gameScore.highScore,
             isNewHighScore,
+            rank,
         });
     } catch (error) {
         console.error("Error saving game score:", error);

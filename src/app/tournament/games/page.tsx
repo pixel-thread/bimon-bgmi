@@ -1,104 +1,9 @@
 "use client";
 
 import { Card, CardContent } from "@/src/components/ui/card";
-import { Button } from "@/src/components/ui/button";
-import { Badge } from "@/src/components/ui/badge";
-import {
-  Gamepad2,
-  Brain,
-  Zap,
-  Target,
-  Lock,
-  Clock,
-} from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-
-interface GameInfo {
-  id: string;
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-  image?: string;
-  status: "available" | "coming_soon" | "locked";
-  difficulty: "Easy" | "Medium" | "Hard";
-  playTime: string;
-  href?: string;
-}
-
-const GAMES: GameInfo[] = [
-  {
-    id: "memory",
-    name: "Memory Match",
-    description: "Match pairs of cards to test your memory skills",
-    icon: <Brain className="h-6 w-6" />,
-    image: "/images/games/memory-game/memory-game.webp",
-    status: "available",
-    difficulty: "Medium",
-    playTime: "3-8 min",
-    href: "/tournament/games/memory",
-  },
-  {
-    id: "flappy",
-    name: "Flappy BGMI",
-    description: "Navigate through obstacles in this classic arcade game",
-    icon: <Target className="h-6 w-6" />,
-    image: "/images/games/flappy-bird/fb-game-background.webp",
-    status: "coming_soon",
-    difficulty: "Hard",
-    playTime: "1-3 min",
-  },
-  {
-    id: "snake",
-    name: "Snake Rush",
-    description: "Classic snake game with a modern twist",
-    icon: <Zap className="h-6 w-6" />,
-    status: "coming_soon",
-    difficulty: "Medium",
-    playTime: "3-10 min",
-  },
-];
+import { Gamepad2 } from "lucide-react";
 
 export default function GamesPage() {
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "Easy":
-        return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
-      case "Medium":
-        return "bg-amber-500/10 text-amber-500 border-amber-500/20";
-      case "Hard":
-        return "bg-red-500/10 text-red-500 border-red-500/20";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "available":
-        return (
-          <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20">
-            Play Now
-          </Badge>
-        );
-      case "coming_soon":
-        return (
-          <Badge variant="secondary" className="gap-1">
-            <Clock className="h-3 w-3" />
-            Coming Soon
-          </Badge>
-        );
-      case "locked":
-        return (
-          <Badge variant="outline" className="gap-1">
-            <Lock className="h-3 w-3" />
-            Locked
-          </Badge>
-        );
-      default:
-        return null;
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -115,90 +20,48 @@ export default function GamesPage() {
         </div>
       </div>
 
-      {/* Games Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {GAMES.map((game) => {
-          const CardWrapper = game.status === "available" && game.href
-            ? ({ children }: { children: React.ReactNode }) => (
-              <Link href={game.href!} className="block">
-                {children}
-              </Link>
-            )
-            : ({ children }: { children: React.ReactNode }) => <>{children}</>;
+      {/* Download APK Banner */}
+      <Card className="bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border-indigo-500/20">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-500/30">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+            </div>
+            <div className="flex-1 text-center sm:text-left">
+              <h3 className="font-bold text-lg">Download PUBGMI Games App</h3>
+              <p className="text-sm text-muted-foreground">
+                Play games on your Android phone with the native app experience
+              </p>
+            </div>
+            <a
+              href="/downloads/pubgmi-games.apk"
+              download="pubgmi-games.apk"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/30 transition-all duration-200"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download APK
+            </a>
+          </div>
+        </CardContent>
+      </Card>
 
-          return (
-            <CardWrapper key={game.id}>
-              <Card
-                className={`group overflow-hidden transition-all duration-300 ${game.status === "available"
-                  ? "hover:shadow-xl hover:shadow-indigo-500/10 hover:border-indigo-500/30 cursor-pointer"
-                  : "opacity-75"
-                  }`}
-              >
-                {/* Game Image/Preview */}
-                <div className="relative h-32 bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden">
-                  {game.image ? (
-                    <Image
-                      src={game.image}
-                      alt={game.name}
-                      fill
-                      className="object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-500"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="p-4 bg-white/5 rounded-full">{game.icon}</div>
-                    </div>
-                  )}
-                  {/* Overlay gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  {/* Status badge */}
-                  <div className="absolute top-3 right-3">
-                    {getStatusBadge(game.status)}
-                  </div>
-                  {/* Game icon */}
-                  <div className="absolute bottom-3 left-3 p-2 bg-black/50 backdrop-blur-sm rounded-lg">
-                    {game.icon}
-                  </div>
-                </div>
-
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    <div>
-                      <h3 className="font-bold text-lg group-hover:text-indigo-400 transition-colors">
-                        {game.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {game.description}
-                      </p>
-                    </div>
-
-                    {/* Game Meta */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge
-                        variant="outline"
-                        className={getDifficultyColor(game.difficulty)}
-                      >
-                        {game.difficulty}
-                      </Badge>
-                      <Badge variant="outline" className="gap-1">
-                        <Clock className="h-3 w-3" />
-                        {game.playTime}
-                      </Badge>
-                    </div>
-
-                    {/* Play Button */}
-                    {game.status === "available" && (
-                      <Button className="w-full gap-2 group-hover:bg-indigo-600 transition-colors">
-                        <Gamepad2 className="h-4 w-4" />
-                        Play Now
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </CardWrapper>
-          );
-        })}
-      </div>
+      {/* Info Card */}
+      <Card className="border-dashed">
+        <CardContent className="p-6 text-center">
+          <div className="space-y-2">
+            <Gamepad2 className="h-12 w-12 mx-auto text-muted-foreground/50" />
+            <h3 className="font-semibold text-lg">Games available on mobile only</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Download the PUBGMI Games app to play Memory Match and other games.
+              Compete on the leaderboard and earn rewards!
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

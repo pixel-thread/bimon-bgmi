@@ -6,6 +6,7 @@ import {
     HomeScreen,
     GamesScreen,
     GamePlayerScreen,
+    MemoryGameScreen,
     LoginScreen,
     ProfileScreen,
     TournamentsScreen,
@@ -50,6 +51,13 @@ export function AppNavigator() {
                     options={{
                         animation: 'slide_from_bottom',
                         gestureEnabled: false,
+                    }}
+                />
+                <Stack.Screen
+                    name="MemoryGame"
+                    component={MemoryGameScreen}
+                    options={{
+                        animation: 'slide_from_bottom',
                     }}
                 />
                 <Stack.Screen
