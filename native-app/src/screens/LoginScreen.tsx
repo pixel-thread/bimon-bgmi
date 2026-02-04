@@ -86,8 +86,10 @@ export function LoginScreen() {
         setLoading(true);
 
         try {
-            // Build the login URL
-            const loginUrl = `${API_CONFIG.websiteUrl}/auth/sign-in?redirect_url=/api/auth/mobile-callback`;
+            // Go directly to the callback URL
+            // If logged in: returns user data and redirects back to app
+            // If not logged in: callback redirects to sign-in, then back to callback
+            const loginUrl = `${API_CONFIG.websiteUrl}/api/auth/mobile-callback`;
 
             // Open in the real browser (not WebView!)
             // This is trusted by Google and allows OAuth
