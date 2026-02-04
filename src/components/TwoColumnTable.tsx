@@ -3,7 +3,6 @@
 
 import { cn } from "@/src/lib/utils";
 import { sanitizeDisplayName } from "@/src/utils/displayName";
-import { getUniqueTeamDisplayNames } from "@/src/utils/teamNameGenerator";
 import { useMemo } from "react";
 
 export interface IPlayer {
@@ -56,13 +55,17 @@ const getRankStyles = (rank: number) => {
 };
 
 export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
-  // Compute unique team names for all teams upfront to prevent duplicates
+  // Compute unique team display names by joining player names
   const teamNameMap = useMemo(() => {
-    const teamsWithIds = teams.map(team => ({
-      id: team.teamId || team.id,
-      players: team.players
-    }));
-    return getUniqueTeamDisplayNames(teamsWithIds, sanitizeDisplayName);
+    const map = new Map<string, string>();
+    for (const team of teams) {
+      const teamId = team.teamId || team.id;
+      const playerNames = team.players.map(p =>
+        sanitizeDisplayName(p.displayName || p.name)
+      );
+      map.set(teamId, playerNames.join(", "));
+    }
+    return map;
   }, [teams]);
 
   // Mobile cards (smaller screens)
@@ -135,21 +138,21 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
     <div className="overflow-hidden rounded-xl border border-white/10 bg-black/30 backdrop-blur-sm">
       <table className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
         <colgroup>
-          <col style={{ width: '50px' }} />
+          <col style={{ width: '32px' }} />
           <col />
-          <col style={{ width: '50px' }} />
-          <col style={{ width: '60px' }} />
-          <col style={{ width: '60px' }} />
-          <col style={{ width: '70px' }} />
+          <col style={{ width: '30px' }} />
+          <col style={{ width: '38px' }} />
+          <col style={{ width: '38px' }} />
+          <col style={{ width: '52px' }} />
         </colgroup>
         <thead>
           <tr className="border-b border-white/10 bg-gradient-to-r from-orange-500/10 via-transparent to-orange-500/10">
-            <th className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-orange-400">#</th>
-            <th className="px-2 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-orange-400">Team</th>
-            <th className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-zinc-500">M</th>
-            <th className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-zinc-500">PTS</th>
-            <th className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-zinc-500">Kills</th>
-            <th className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-orange-400">Total</th>
+            <th className="px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-orange-400">#</th>
+            <th className="px-1 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-orange-400">Team</th>
+            <th className="px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-zinc-500">M</th>
+            <th className="px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-zinc-500">PTS</th>
+            <th className="px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-zinc-500">Kills</th>
+            <th className="px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-orange-400">Total</th>
           </tr>
         </thead>
         <tbody>
@@ -167,7 +170,7 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
                   styles.row
                 )}
               >
-                <td className="px-2 py-2 text-center align-middle">
+                <td className="px-1 py-1.5 text-center align-middle">
                   <span
                     className={cn(
                       "inline-flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-bold",
@@ -177,25 +180,27 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
                     {rank}
                   </span>
                 </td>
-                <td className="px-2 py-2 text-left align-middle">
-                  <div className="flex items-center gap-1.5 overflow-hidden">
+                <td className="px-1 py-1 text-left align-middle">
+                  <div className="flex flex-col min-h-[32px] justify-center">
                     <span className={cn(
                       "truncate font-semibold text-sm",
                       rank <= 3 ? "text-white" : "text-zinc-300"
                     )}>
                       {teamName}
                     </span>
-                    {team.wins > 0 && (
-                      <span className="inline-flex items-center shrink-0 gap-0.5 px-1 py-0.5 rounded bg-yellow-500/20 text-yellow-400 text-[9px] font-bold">
-                        🍗{team.wins > 1 ? `×${team.wins}` : ""}
-                      </span>
-                    )}
+                    {/* Always reserve space for chicken line to keep rows same height */}
+                    <span className={cn(
+                      "text-[9px] mt-0.5 h-3",
+                      team.wins > 0 ? "text-yellow-400" : "invisible"
+                    )}>
+                      {team.wins > 0 ? `🍗 ${team.wins} win${team.wins > 1 ? "s" : ""}` : "-"}
+                    </span>
                   </div>
                 </td>
-                <td className="px-2 py-2 text-center align-middle text-zinc-500 tabular-nums font-mono text-xs">{team.matches}</td>
-                <td className="px-2 py-2 text-center align-middle text-zinc-300 font-medium tabular-nums font-mono text-xs">{team.pts}</td>
-                <td className="px-2 py-2 text-center align-middle text-zinc-400 tabular-nums font-mono text-xs">{team.kills}</td>
-                <td className="px-2 py-2 text-center align-middle">
+                <td className="px-1 py-1.5 text-center align-middle text-zinc-500 tabular-nums font-mono text-xs">{team.matches}</td>
+                <td className="px-1 py-1.5 text-center align-middle text-zinc-300 font-medium tabular-nums font-mono text-xs">{team.pts}</td>
+                <td className="px-1 py-1.5 text-center align-middle text-zinc-400 tabular-nums font-mono text-xs">{team.kills}</td>
+                <td className="px-1 py-1.5 text-center align-middle">
                   <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-400 font-bold tabular-nums font-mono text-xs border border-orange-500/20">
                     {team.total}
                   </span>
