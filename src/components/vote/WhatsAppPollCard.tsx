@@ -46,6 +46,35 @@ const bannedStampStyles = {
   filter: "drop-shadow(2px 2px 1px rgba(0,0,0,0.1))",
 };
 
+// Error stamp styles - same style as banned but with amber/orange color
+const errorStampStyles = {
+  position: "absolute" as const,
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%) rotate(-19deg)",
+  color: "#d97706",
+  fontSize: "2.8rem",
+  fontWeight: "900",
+  opacity: 0.9,
+  pointerEvents: "none" as const,
+  textShadow: "2px 2px 4px rgba(0, 0, 0, 0.3)",
+  zIndex: 10,
+  textTransform: "uppercase" as const,
+  letterSpacing: "3px",
+  fontFamily: '"Rajdhani", "Montserrat", sans-serif',
+  border: "5px solid #d97706",
+  borderRadius: "12px",
+  padding: "15px 30px",
+  backgroundColor: "rgba(255, 255, 255, 0.95)",
+  boxShadow: "0 10px 30px rgba(217, 119, 6, 0.3)",
+  lineHeight: "1.2",
+  textStroke: "1px #fef3c7",
+  WebkitTextStroke: "1px #fef3c7",
+  filter: "drop-shadow(2px 2px 1px rgba(0,0,0,0.1))",
+  textAlign: "center" as const,
+  maxWidth: "85%",
+};
+
 type VoteT = Prisma.PlayerPollVoteCreateInput["vote"];
 
 // Aceternity-style animated tooltip for prize breakdown
@@ -176,6 +205,9 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
     const [optimisticVote, setOptimisticVote] = useState<VoteT | null>(null);
     const [pendingVote, setPendingVote] = useState<VoteT | null>(null); // For loader
 
+    // Error stamp state - shows error message on poll when vote fails
+    const [errorStamp, setErrorStamp] = useState<string | null>(null);
+
     // Use pre-fetched votes if available, otherwise fetch
     const preFetchedVotes = poll.playersVotes;
     const { data: fetchedVotes, isFetching: isLoadingVotes } = usePlayerVote({
@@ -283,6 +315,10 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
           // Invalidate to refetch correct data
           queryClient.invalidateQueries({ queryKey: ["polls"] });
           toast.error(data.message);
+
+          // Show error stamp on poll for 5 seconds
+          setErrorStamp(data.message);
+          setTimeout(() => setErrorStamp(null), 5000);
         }
       },
       onError: (error: any, newVote, context) => {
@@ -306,6 +342,10 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
         // Show error message from API or fallback
         const errorMessage = error?.response?.data?.message || error?.message || "Failed to vote. Please try again.";
         toast.error(errorMessage);
+
+        // Show error stamp on poll for 5 seconds
+        setErrorStamp(errorMessage);
+        setTimeout(() => setErrorStamp(null), 5000);
       },
     });
 
@@ -435,6 +475,12 @@ export const WhatsAppPollCard: React.FC<WhatAppPollCardProps> = React.memo(
           {isBanned && (
             <div className="absolute inset-0 bg-black/5 dark:bg-white/5 z-10 pointer-events-none">
               <div style={bannedStampStyles}>Banned</div>
+            </div>
+          )}
+          {/* Error Stamp Overlay - shows when vote fails */}
+          {errorStamp && !isBanned && (
+            <div className="absolute inset-0 bg-black/5 dark:bg-white/5 z-10 pointer-events-none animate-in fade-in duration-300">
+              <div style={errorStampStyles}>{errorStamp}</div>
             </div>
           )}
           {/* Combined Header with Prize Pool */}
