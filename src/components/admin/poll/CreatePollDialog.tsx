@@ -143,7 +143,7 @@ export const CreatePollDialog = ({
     if (tournament?.name) {
       form.setValue("question", tournament.name);
     }
-  }, [tournamentId]);
+  }, [tournament?.name]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
