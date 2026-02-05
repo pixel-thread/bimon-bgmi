@@ -190,8 +190,110 @@ export async function GET(
     // 4. Total kills (higher is better)
     // 5. Last match position (lower is better)
     const sortedData = finalData.sort(compareTiebreaker);
+
+    // Calculate position changes (only for "all" view with more than 1 match)
+    let dataWithPositionChange = sortedData.map((team, idx) => ({
+      ...team,
+      currentRank: idx + 1,
+      positionChange: 0, // Default: no change
+    }));
+
+    if (matchId === "all" && teamsStats.length > 0) {
+      // Get all unique match IDs and find the last match by createdAt
+      const matchIds = [...new Set(teamsStats.map((ts) => ts.matchId))];
+
+      if (matchIds.length > 1) {
+        // Get match creation dates to find the last match
+        const matchesWithDates = await prisma.match.findMany({
+          where: { id: { in: matchIds } },
+          select: { id: true, createdAt: true },
+        });
+
+        // Sort matches by createdAt descending to find the latest one
+        const sortedMatches = matchesWithDates.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        const lastMatchId = sortedMatches[0]?.id;
+
+        if (lastMatchId) {
+          // Calculate standings WITHOUT the last match
+          const previousTeamAggregates = new Map<string, {
+            teamId: string;
+            totalKills: number;
+            placementPoints: number;
+            chickenDinners: number;
+            total: number;
+          }>();
+
+          // Get kills excluding last match
+          const previousKillsStats = await prisma.teamPlayerStats.groupBy({
+            where: {
+              teamId: { in: teamsStats.map((team) => team.teamId) },
+              matchId: { not: lastMatchId },
+            },
+            by: ["teamId"],
+            _sum: { kills: true },
+          });
+          const previousKillsMap = new Map(
+            previousKillsStats.map((g) => [g.teamId, g._sum?.kills || 0])
+          );
+
+          // Aggregate team stats excluding the last match
+          for (const teamStat of teamsStats) {
+            if (teamStat.matchId === lastMatchId) continue; // Skip last match
+
+            const existing = previousTeamAggregates.get(teamStat.teamId);
+            const placementPts = calculatePlayerPoints(teamStat.position, 0);
+            const isChickenDinner = teamStat.position === 1;
+
+            if (existing) {
+              existing.placementPoints += placementPts;
+              existing.chickenDinners += isChickenDinner ? 1 : 0;
+              existing.total = existing.placementPoints + existing.totalKills;
+            } else {
+              const kills = previousKillsMap.get(teamStat.teamId) || 0;
+              previousTeamAggregates.set(teamStat.teamId, {
+                teamId: teamStat.teamId,
+                totalKills: kills,
+                placementPoints: placementPts,
+                chickenDinners: isChickenDinner ? 1 : 0,
+                total: placementPts + kills,
+              });
+            }
+          }
+
+          // Sort previous standings using tiebreaker
+          const previousStandings = Array.from(previousTeamAggregates.values())
+            .sort((a, b) => compareTiebreaker(a as TeamRankingData, b as TeamRankingData));
+
+          // Create a map of teamId -> previous rank
+          const previousRankMap = new Map<string, number>();
+          previousStandings.forEach((team, idx) => {
+            previousRankMap.set(team.teamId, idx + 1);
+          });
+
+          // Calculate position change for each team
+          dataWithPositionChange = sortedData.map((team, idx) => {
+            const currentRank = idx + 1;
+            const previousRank = previousRankMap.get(team.teamId);
+
+            // positionChange: positive = moved up, negative = moved down
+            // If team wasn't in previous standings (new team), show no change
+            const positionChange = previousRank ? previousRank - currentRank : 0;
+
+            return {
+              ...team,
+              currentRank,
+              positionChange,
+              previousRank: previousRank || null,
+            };
+          });
+        }
+      }
+    }
+
     return SuccessResponse({
-      data: sortedData,
+      data: dataWithPositionChange,
       message: "Out Standing fetched successfully",
     });
   } catch (error) {

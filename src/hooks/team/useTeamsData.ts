@@ -18,6 +18,7 @@ type Props = {
     page?: string;
     refetchOnWindowFocus?: boolean;
     enabled?: boolean;
+    compareMatches?: number; // How many matches back to compare for position changes (default: 2)
 };
 
 /**
@@ -27,7 +28,7 @@ type Props = {
  * Other hooks like useTeams and useStandings should consume this hook
  * to share the same cached data.
  */
-export function useTeamsData({ page = "1", refetchOnWindowFocus = true, enabled = true }: Props = { page: "1" }) {
+export function useTeamsData({ page = "1", refetchOnWindowFocus = true, enabled = true, compareMatches = 2 }: Props = { page: "1" }) {
     const { isSuperAdmin } = useAuth();
     const { tournamentId } = useTournamentStore();
     const { matchId } = useMatchStore();
@@ -39,11 +40,15 @@ export function useTeamsData({ page = "1", refetchOnWindowFocus = true, enabled 
         ).replace(":page", page)
         : TOURNAMENT_ENDPOINTS.GET_TEAM_BY_TOURNAMENT_ID;
 
-    const url = urlBase.replace(":id", tournamentId).replace(":matchId", matchId);
+    // Add compareMatches parameter to URL
+    const baseUrl = urlBase.replace(":id", tournamentId).replace(":matchId", matchId);
+    const url = baseUrl.includes("?")
+        ? `${baseUrl}&compareMatches=${compareMatches}`
+        : `${baseUrl}?compareMatches=${compareMatches}`;
 
     const query = useQuery({
         queryFn: () => http.get<TeamDataT[]>(url),
-        queryKey: ["teams", tournamentId, matchId, page],
+        queryKey: ["teams", tournamentId, matchId, page, compareMatches],
         enabled: enabled && !!tournamentId && !!matchId,
         select: (data) => data,
         placeholderData: keepPreviousData,

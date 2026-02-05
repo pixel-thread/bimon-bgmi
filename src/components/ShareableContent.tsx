@@ -58,6 +58,7 @@ export function ShareableContent({
     pts: t.pts ?? 0,
     wins: t.wins ?? 0,
     players: (t.players || []).map((p: any) => ({ id: p.id, name: p.name, displayName: p.displayName })),
+    positionChange: t.positionChange ?? 0,
   }));
 
   if (isLoading) {

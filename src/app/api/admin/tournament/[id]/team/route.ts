@@ -25,6 +25,9 @@ export async function GET(
 
     const page = req.nextUrl.searchParams.get("page") || "1";
 
+    // How many matches back to compare for position changes (default: 2)
+    const compareMatches = parseInt(req.nextUrl.searchParams.get("compareMatches") || "2", 10);
+
     const tournament = await getTournamentById({ id });
 
     if (!tournament) {
@@ -121,6 +124,89 @@ export async function GET(
         teamPlayerStats: teamPlayerStats,
       };
     });
+
+    // Calculate position changes for "all" matches view
+    if (isAllMatchFilter && data && data.length > 0) {
+      const { prisma } = await import("@/src/lib/db/prisma");
+
+      // Sort current data by total points (descending) to determine current rankings
+      const sortedData = [...data].sort((a, b) => {
+        // Use same tiebreaker logic: total > wins > pts > kills
+        if (b.total !== a.total) return b.total - a.total;
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        return b.kills - a.kills;
+      });
+
+      // Get all matches for this tournament directly
+      const tournamentMatches = await prisma.match.findMany({
+        where: { tournamentId: id },
+        select: { id: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (tournamentMatches.length > compareMatches) {
+        // Get IDs of the last N matches to exclude
+        const matchIdsToExclude = tournamentMatches.slice(0, compareMatches).map(m => m.id);
+
+        // Calculate standings WITHOUT the last N matches
+        const previousData = teams?.map((team) => {
+          // Filter out the last N matches stats
+          const teamStatsExcludingLast = (team.teamStats || []).filter(
+            (stat) => !matchIdsToExclude.includes(stat.matchId)
+          );
+
+          // Get kills excluding last N matches
+          const playerStatsExcludingLast = (team.teamPlayerStats || []).filter(
+            (stat) => !matchIdsToExclude.includes(stat.matchId)
+          );
+          const previousKills = playerStatsExcludingLast.reduce((a, b) => a + b.kills, 0);
+
+          const previousPts = teamStatsExcludingLast.reduce((acc, stat) => {
+            return acc + calculatePlayerPoints(stat.position, 0);
+          }, 0);
+
+          const previousWins = teamStatsExcludingLast.filter((stat) => stat.position === 1).length;
+
+          return {
+            id: team.id,
+            total: previousPts + previousKills,
+            pts: previousPts,
+            kills: previousKills,
+            wins: previousWins,
+          };
+        }) || [];
+
+        // Sort previous standings
+        const previousSorted = [...previousData].sort((a, b) => {
+          if (b.total !== a.total) return b.total - a.total;
+          if (b.wins !== a.wins) return b.wins - a.wins;
+          if (b.pts !== a.pts) return b.pts - a.pts;
+          return b.kills - a.kills;
+        });
+
+        // Create map of teamId -> previous rank
+        const previousRankMap = new Map<string, number>();
+        previousSorted.forEach((team, idx) => {
+          previousRankMap.set(team.id, idx + 1);
+        });
+
+        data = sortedData.map((team, idx) => {
+          const currentRank = idx + 1;
+          const previousRank = previousRankMap.get(team.id);
+          // positive = moved up, negative = moved down
+          const positionChange = previousRank ? previousRank - currentRank : 0;
+
+          return {
+            ...team,
+            positionChange,
+          };
+        });
+      } else {
+        // Not enough matches to compare, just add positionChange: 0 to sorted data
+        data = sortedData.map((team) => ({ ...team, positionChange: 0 }));
+      }
+    }
 
     return SuccessResponse({
       data: data,

@@ -10,7 +10,7 @@ import { useStandings } from "@/src/hooks/team/useStandings";
 import { useMatches } from "@/src/hooks/match/useMatches";
 import TeamStats from "./TeamStats";
 import { LoaderFive } from "../ui/loader";
-import { Copy } from "lucide-react";
+import { Copy, Settings } from "lucide-react";
 
 interface OverallStandingModalProps {
   visible: boolean;
@@ -32,9 +32,11 @@ export default function OverallStandingModal({
   const { matchId: selectedMatch } = useMatchStore();
   const [isSharing, setIsSharing] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [compareMatches, setCompareMatches] = useState(2); // Default: compare to 2 matches ago
 
   // Use the derived useStandings hook - shares cache with useTeams, no extra API call
-  const { data: teamsStats, isFetching, refetch } = useStandings();
+  const { data: teamsStats, isFetching, refetch } = useStandings(compareMatches);
   const { data: matches } = useMatches();
 
   // Always refetch fresh data when modal opens
@@ -255,6 +257,24 @@ export default function OverallStandingModal({
             )}
           </Button>
 
+          {/* Settings Button */}
+          <Button
+            onClick={() => setShowSettings(!showSettings)}
+            variant="ghost"
+            className={`
+              text-white hover:text-orange-400
+              bg-black/60 hover:bg-black/80
+              backdrop-blur-md
+              border border-white/20 hover:border-orange-500/50
+              p-2.5 rounded-xl
+              transition-all duration-300
+              ${showSettings ? 'border-orange-500/50 text-orange-400' : ''}
+            `}
+            title={`Comparing to ${compareMatches} match${compareMatches > 1 ? 'es' : ''} ago`}
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
+
           {/* Close Button */}
           <Button
             onClick={handleClose}
@@ -271,6 +291,32 @@ export default function OverallStandingModal({
             <FiX className="h-6 w-6" />
           </Button>
         </div>
+
+        {/* Settings Dropdown */}
+        {showSettings && (
+          <div className="floating-button-group absolute top-16 right-4 z-30 bg-black/80 backdrop-blur-md border border-white/20 rounded-xl p-3 min-w-[180px]">
+            <div className="text-xs text-zinc-400 mb-2 font-medium">Compare to</div>
+            <div className="flex flex-col gap-1">
+              {[1, 2, 3, 4].map((num) => (
+                <button
+                  key={num}
+                  onClick={() => {
+                    setCompareMatches(num);
+                    setShowSettings(false);
+                  }}
+                  className={`
+                    text-sm text-left px-3 py-1.5 rounded-lg transition-colors
+                    ${compareMatches === num
+                      ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                      : 'text-zinc-300 hover:bg-white/10'}
+                  `}
+                >
+                  {num === 1 ? '1 match ago' : `${num} matches ago`}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <ShareableContent
           teams={teamsStats || []}

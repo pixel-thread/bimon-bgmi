@@ -9,6 +9,7 @@ export type StandingTeamT = TeamT & {
     placementPoints: number;
     totalKills: number;
     lastMatchPosition: number;
+    positionChange?: number; // positive = moved up, negative = moved down
 };
 
 /**
@@ -16,9 +17,11 @@ export type StandingTeamT = TeamT & {
  * 
  * This hook consumes useTeamsData and applies tiebreaker sorting client-side.
  * No additional API call is made since it shares the same React Query cache.
+ * 
+ * @param compareMatches - How many matches back to compare for position changes (default: 2)
  */
-export function useStandings() {
-    const { data: teams, isFetching, isLoading, ...rest } = useTeamsData({ page: "all" });
+export function useStandings(compareMatches: number = 2) {
+    const { data: teams, isFetching, isLoading, ...rest } = useTeamsData({ page: "all", compareMatches });
 
     // Transform and sort teams for standings
     const standings = useMemo(() => {

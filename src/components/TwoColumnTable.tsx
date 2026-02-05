@@ -4,6 +4,7 @@
 import { cn } from "@/src/lib/utils";
 import { sanitizeDisplayName } from "@/src/utils/displayName";
 import { useMemo } from "react";
+import { ChevronUp, ChevronDown, Minus } from "lucide-react";
 
 export interface IPlayer {
   id: string;
@@ -22,7 +23,35 @@ export interface ITeamStats {
   pts: number;
   wins: number;
   players: IPlayer[];
+  positionChange?: number; // positive = moved up, negative = moved down
 }
+
+// Position change indicator component
+const PositionChangeIndicator = ({ change }: { change?: number }) => {
+  if (!change || change === 0) {
+    return (
+      <span className="inline-flex items-center justify-center w-5 h-5 text-zinc-500">
+        <Minus className="w-3 h-3" />
+      </span>
+    );
+  }
+
+  if (change > 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-emerald-400 text-[10px] font-bold">
+        <ChevronUp className="w-3.5 h-3.5" />
+        <span>{change}</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-0.5 text-red-400 text-[10px] font-bold">
+      <ChevronDown className="w-3.5 h-3.5" />
+      <span>{Math.abs(change)}</span>
+    </span>
+  );
+};
 
 interface TwoColumnTableProps {
   teams: ITeamStats[];
@@ -85,14 +114,18 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
               styles.row
             )}
           >
-            <div
-              className={cn(
-                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-all",
-                styles.badge
-              )}
-              aria-label={`Rank ${rank}`}
-            >
-              {rank}
+            {/* Rank and position change */}
+            <div className="flex flex-col items-center gap-0.5">
+              <div
+                className={cn(
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-all",
+                  styles.badge
+                )}
+                aria-label={`Rank ${rank}`}
+              >
+                {rank}
+              </div>
+              <PositionChangeIndicator change={team.positionChange} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
@@ -139,6 +172,7 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
       <table className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
         <colgroup>
           <col style={{ width: '32px' }} />
+          <col style={{ width: '28px' }} />
           <col />
           <col style={{ width: '30px' }} />
           <col style={{ width: '38px' }} />
@@ -148,6 +182,7 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
         <thead>
           <tr className="border-b border-white/10 bg-gradient-to-r from-orange-500/10 via-transparent to-orange-500/10">
             <th className="px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-orange-400">#</th>
+            <th className="px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-zinc-500" title="Position Change">+/-</th>
             <th className="px-1 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-orange-400">Team</th>
             <th className="px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-zinc-500">M</th>
             <th className="px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-zinc-500">PTS</th>
@@ -179,6 +214,9 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
                   >
                     {rank}
                   </span>
+                </td>
+                <td className="px-0 py-1.5 text-center align-middle">
+                  <PositionChangeIndicator change={team.positionChange} />
                 </td>
                 <td className="px-1 py-1 text-left align-middle">
                   <div className="flex flex-col min-h-[32px] justify-center">
