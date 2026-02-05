@@ -21,10 +21,10 @@ export function StreakRewardBanner() {
         pendingWinner,
         pendingSoloSupport,
         pendingReferralBonus,
-        claimStreakReward,
-        claimWinnerReward,
-        claimSoloSupport,
-        claimReferralBonus,
+        claimStreakRewardAsync,
+        claimWinnerRewardAsync,
+        claimSoloSupportAsync,
+        claimReferralBonusAsync,
         isClaimingStreakReward,
         isClaimingWinnerReward,
         isClaimingSoloSupport,
@@ -48,8 +48,8 @@ export function StreakRewardBanner() {
                 position={pendingWinner.position || 1}
                 tournament={pendingWinner.tournament || "Tournament"}
                 playerName={user?.displayName || user?.userName || "Champion"}
-                onClaim={() => {
-                    claimWinnerReward();
+                onClaim={async () => {
+                    await claimWinnerRewardAsync();
                     confetti({
                         particleCount: 200,
                         spread: 100,
@@ -73,8 +73,8 @@ export function StreakRewardBanner() {
                 amount={pendingSoloSupport.amount}
                 message={pendingSoloSupport.message || "Support from solo winner"}
                 playerName={user?.displayName || user?.userName || "Player"}
-                onClaim={() => {
-                    claimSoloSupport();
+                onClaim={async () => {
+                    await claimSoloSupportAsync();
                     confetti({
                         particleCount: 100,
                         spread: 60,
@@ -98,8 +98,8 @@ export function StreakRewardBanner() {
                 amount={pendingReferralBonus.amount}
                 message={pendingReferralBonus.message || "Referral bonus"}
                 playerName={user?.displayName || user?.userName || "Promoter"}
-                onClaim={() => {
-                    claimReferralBonus();
+                onClaim={async () => {
+                    await claimReferralBonusAsync();
                     confetti({
                         particleCount: 120,
                         spread: 80,
@@ -122,8 +122,8 @@ export function StreakRewardBanner() {
             <StreakRewardModal
                 amount={streak.pendingReward}
                 playerName={user?.displayName || user?.userName || "Champion"}
-                onClaim={() => {
-                    claimStreakReward();
+                onClaim={async () => {
+                    await claimStreakRewardAsync();
                     confetti({
                         particleCount: 150,
                         spread: 70,

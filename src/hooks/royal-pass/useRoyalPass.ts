@@ -165,16 +165,21 @@ export function useRoyalPass() {
         subscribe,
         // Streak reward claim
         claimStreakReward: claimStreakRewardMutation.mutate,
+        claimStreakRewardAsync: claimStreakRewardMutation.mutateAsync,
         isClaimingStreakReward: claimStreakRewardMutation.isPending,
         // Winner reward claim
         claimWinnerReward: claimWinnerRewardMutation.mutate,
+        claimWinnerRewardAsync: claimWinnerRewardMutation.mutateAsync,
         isClaimingWinnerReward: claimWinnerRewardMutation.isPending,
         // Solo support claim
         claimSoloSupport: claimSoloSupportMutation.mutate,
+        claimSoloSupportAsync: claimSoloSupportMutation.mutateAsync,
         isClaimingSoloSupport: claimSoloSupportMutation.isPending,
         // Referral bonus claim
         claimReferralBonus: claimReferralBonusMutation.mutate,
+        claimReferralBonusAsync: claimReferralBonusMutation.mutateAsync,
         isClaimingReferralBonus: claimReferralBonusMutation.isPending,
         refetch: () => queryClient.invalidateQueries({ queryKey: ["royal-pass"] }),
     };
 }
+
