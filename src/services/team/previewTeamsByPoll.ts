@@ -387,18 +387,33 @@ export async function previewTeamsByPolls({
         }
     }
 
-    // Sort remaining players by weighted score descending
-    playersForTeams.sort((a, b) => b.weightedScore - a.weightedScore);
+    // Create a map of player ID to vote timestamp for this poll
+    const voteTimestampMap = new Map<string, Date>();
+    for (const p of players) {
+        const vote = p.playerPollVote.find(v => v.pollId === pollId && v.vote === 'IN');
+        if (vote) {
+            voteTimestampMap.set(p.id, vote.createdAt);
+        }
+    }
 
     // Check for odd number of players (when groupSize > 1)
-    // Leftover players who voted IN are excluded (waiting status)
+    // Leftover players who voted LAST are excluded (waiting status) - FIFO
     // Only SOLO voters get solo teams, not IN voters who don't form complete teams
     if (groupSize > 1 && playersForTeams.length % groupSize !== 0) {
         const leftoverCount = playersForTeams.length % groupSize;
-        // Remove the lowest-scoring leftover players (they are "waiting")
+
+        // Sort by vote timestamp DESCENDING (latest voters first)
+        // Then remove the ones who voted last
+        playersForTeams.sort((a, b) => {
+            const timeA = voteTimestampMap.get(a.id)?.getTime() ?? 0;
+            const timeB = voteTimestampMap.get(b.id)?.getTime() ?? 0;
+            return timeB - timeA; // Latest first
+        });
+
+        // Remove players who voted last (they are "waiting")
         // These are IN voters who couldn't form a complete team
         for (let i = 0; i < leftoverCount; i++) {
-            playersForTeams.pop(); // Remove from end (lowest scores)
+            playersForTeams.shift(); // Remove from start (latest voters)
         }
     }
 
