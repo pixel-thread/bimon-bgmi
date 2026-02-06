@@ -9,7 +9,7 @@ import { isBirthdayWithinWindow } from "@/src/utils/birthdayCheck";
 export async function GET(req: NextRequest) {
   try {
     const user = await tokenMiddleware(req);
-    const currentPlayerId = user?.player?.id || null;
+    const currentPlayerId = user?.playerId || null;
 
     // Check if current user has birthday within ±1 day
     const isBirthdayPlayer = user?.dateOfBirth ? isBirthdayWithinWindow(user.dateOfBirth) : false;

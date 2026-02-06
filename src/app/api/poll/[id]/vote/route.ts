@@ -43,7 +43,7 @@ export async function POST(
   try {
     const user = await tokenMiddleware(req);
     const pollId = (await params).id;
-    const playerId = user?.player?.id;
+    const playerId = user?.playerId;
 
     if (!playerId) {
       return ErrorResponse({

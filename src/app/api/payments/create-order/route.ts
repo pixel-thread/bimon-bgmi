@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
 
-        const playerId = user.playerId || user.player?.id;
+        const playerId = user.playerId;
         if (!playerId) {
             return ErrorResponse({ message: "Only players can add balance", status: 403 });
         }

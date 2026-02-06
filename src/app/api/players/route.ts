@@ -1,287 +1,177 @@
+import { prisma } from "@/src/lib/db/prisma";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
-import { getAllPlayers } from "@/src/services/player/getAllPlayers";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { SuccessResponse } from "@/src/utils/next-response";
 import { getMeta } from "@/src/utils/pagination/getMeta";
 import { NextRequest } from "next/server";
-import { clientClerk } from "@/src/lib/clerk/client";
 import { getKdRank } from "@/src/utils/categoryUtils";
 
-type PaginateProps = {
-  array: any[];
-  pageSize: number;
-  pageNumber: number;
-};
-
-function paginate({ array, pageSize, pageNumber }: PaginateProps) {
-  const startIndex = (pageNumber - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  return array.slice(startIndex, endIndex);
-}
-
-// Type for Clerk user data used in search
-type ClerkUserInfo = {
-  imageUrl: string | null;
-  email: string | null;
-  firstName: string | null;
-  lastName: string | null;
-};
+const PAGE_SIZE = 10;
 
 export async function GET(req: NextRequest) {
   try {
+    // Run auth first (lightweight for GET requests)
     await tokenMiddleware(req);
 
-    const page = req.nextUrl.searchParams.get("page") || "1";
+    const page = parseInt(req.nextUrl.searchParams.get("page") || "1");
     const search = req.nextUrl.searchParams.get("search") || "";
     const tier = req.nextUrl.searchParams.get("tier") || "All";
-
-    let seasonId: string | undefined =
-      req.nextUrl.searchParams.get("season") || "all";
+    const seasonId = req.nextUrl.searchParams.get("season") || "all";
     const sortBy = req.nextUrl.searchParams.get("sortBy") || "kd";
     const sortOrder = req.nextUrl.searchParams.get("sortOrder") || "desc";
 
-    let where: Prisma.PlayerWhereInput = {
-      playerStats: { some: { seasonId } },
-      user: { isOnboarded: true }, // Only show onboarded users
+    // Build where clause - push as much filtering to DB as possible
+    const where: Prisma.PlayerWhereInput = {
+      user: { isOnboarded: true },
     };
 
-    if (seasonId === "all") {
-      where = {
-        user: { isOnboarded: true }, // Only show onboarded users
-      };
-    }
-
-    // If sortBy is "banned", filter to only show banned players
-    if (sortBy === "banned") {
-      where = {
-        ...where,
-        isBanned: true,
-      };
-    }
-
-    const [players, total] = await getAllPlayers({
-      page: "all",
-      where,
-    });
-
-    // Fetch Clerk user info in batch (images, email, name for search)
-    const clerkIds = players.map((p) => p.user?.clerkId).filter(Boolean) as string[];
-    const clerkUserMap = new Map<string, ClerkUserInfo>();
-
-    try {
-      // Fetch users from Clerk in batches
-      if (clerkIds.length > 0) {
-        const clerkUsers = await clientClerk.users.getUserList({
-          userId: clerkIds,
-          limit: 100,
-        });
-        clerkUsers.data.forEach((user) => {
-          const primaryEmail = user.emailAddresses.find(
-            (e) => e.id === user.primaryEmailAddressId
-          )?.emailAddress || user.emailAddresses[0]?.emailAddress || null;
-
-          clerkUserMap.set(user.id, {
-            imageUrl: user.imageUrl || null,
-            email: primaryEmail,
-            firstName: user.firstName || null,
-            lastName: user.lastName || null,
-          });
-        });
-      }
-    } catch (error) {
-      console.error("Failed to fetch Clerk user info:", error);
-    }
-
-    let data;
-
     if (seasonId !== "all") {
-      data = players.map((player) => {
-        const playerStats = player.playerStats.filter(
-          (value) => value.seasonId === seasonId,
-        );
-        const totalKills = playerStats.reduce((acc, curr) => acc + curr.kills, 0);
-        const totalDeaths = playerStats.reduce((acc, curr) => acc + curr.deaths, 0);
-        const playerKd = totalDeaths > 0 ? totalKills / totalDeaths : 0;
-        const matches =
-          player?.matchPlayerPlayed.filter(
-            (value) => value.seasonId === seasonId,
-          ).length || 0;
-
-        const clerkInfo = player?.user?.clerkId ? clerkUserMap.get(player.user.clerkId) : null;
-
-        return {
-          id: player.id,
-          clerkId: player?.user?.clerkId || null,
-          isBanned: player.isBanned,
-          userName: player?.user?.userName,
-          displayName: player?.user?.displayName,
-          uc: player.uc?.balance || 0,
-          matches: matches,
-          deaths: totalDeaths,
-          kills: totalKills,
-          kd: playerKd.toFixed(2) || 0,
-          category: getKdRank(
-            playerStats.reduce((acc, curr) => acc + curr.kills, 0),
-            playerStats.reduce((acc, curr) => acc + curr.deaths, 0),
-          ),
-          imageUrl: clerkInfo?.imageUrl || null,
-          // Profile image for circle: uploaded profile > Google (no character image)
-          profileImageUrl: player.customProfileImageUrl
-            || clerkInfo?.imageUrl
-            || null,
-          // Character image for 9:16 background: ONLY from Gallery, never profile image
-          characterImageUrl: (player.characterImageId && player.characterImageId !== "none")
-            ? player.characterImage?.publicUrl || null
-            : null,
-          // Animation info for GIF/video support
-          isAnimated: player.characterImage?.isAnimated || false,
-          isVideo: player.characterImage?.isVideo || false,
-          thumbnailUrl: player.characterImage?.thumbnailUrl || null,
-          email: clerkInfo?.email || null,
-          firstName: clerkInfo?.firstName || null,
-          lastName: clerkInfo?.lastName || null,
-          hasRoyalPass: (player as any).royalPasses?.length > 0,
-        };
-      });
-    } else {
-      data = players.map((player) => {
-        const totalKills = player.playerStats.reduce((acc, curr) => acc + curr.kills, 0);
-        const totalDeaths = player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0);
-        const playerKd = totalDeaths > 0 ? totalKills / totalDeaths : 0;
-
-        const clerkInfo = player?.user?.clerkId ? clerkUserMap.get(player.user.clerkId) : null;
-
-        return {
-          id: player.id,
-          clerkId: player?.user?.clerkId || null,
-          isBanned: player.isBanned,
-          uc: player.uc?.balance || 0,
-          userName: player?.user?.userName,
-          displayName: player?.user?.displayName,
-          matches: player?.matchPlayerPlayed.length,
-          deaths: totalDeaths,
-          kills: totalKills,
-          kd: playerKd.toFixed(2) || 0,
-          category: getKdRank(
-            player.playerStats.reduce((acc, curr) => acc + curr.kills, 0),
-            player.playerStats.reduce((acc, curr) => acc + curr.deaths, 0),
-          ),
-          imageUrl: clerkInfo?.imageUrl || null,
-          // Profile image for circle: uploaded profile > Google (no character image)
-          profileImageUrl: player.customProfileImageUrl
-            || clerkInfo?.imageUrl
-            || null,
-          // Character image for 9:16 background: ONLY from Gallery, never profile image
-          characterImageUrl: (player.characterImageId && player.characterImageId !== "none")
-            ? player.characterImage?.publicUrl || null
-            : null,
-          // Animation info for GIF/video support
-          isAnimated: player.characterImage?.isAnimated || false,
-          isVideo: player.characterImage?.isVideo || false,
-          thumbnailUrl: player.characterImage?.thumbnailUrl || null,
-          email: clerkInfo?.email || null,
-          firstName: clerkInfo?.firstName || null,
-          lastName: clerkInfo?.lastName || null,
-          hasRoyalPass: (player as any).royalPasses?.length > 0,
-        };
-      });
+      where.playerStats = { some: { seasonId } };
     }
 
-    // Apply search filter (search by displayName, username, email, firstName, lastName)
+    if (sortBy === "banned") {
+      where.isBanned = true;
+    }
+
+    // Database-level search
     if (search) {
-      const searchLower = search.toLowerCase();
-      data = data.filter((player) => {
-        const displayName = player.displayName?.toLowerCase() || "";
-        const userName = player.userName?.toLowerCase() || "";
-        const email = player.email?.toLowerCase() || "";
-        const firstName = player.firstName?.toLowerCase() || "";
-        const lastName = player.lastName?.toLowerCase() || "";
-        const fullName = `${firstName} ${lastName}`.trim();
-
-        return (
-          displayName.includes(searchLower) ||
-          userName.includes(searchLower) ||
-          email.includes(searchLower) ||
-          firstName.includes(searchLower) ||
-          lastName.includes(searchLower) ||
-          fullName.includes(searchLower)
-        );
-      });
+      where.OR = [
+        { user: { userName: { contains: search, mode: "insensitive" } } },
+        { user: { displayName: { contains: search, mode: "insensitive" } } },
+        { user: { email: { contains: search, mode: "insensitive" } } },
+      ];
     }
 
-    // Filter by tier/category
-    if (tier && tier !== "All") {
-      data = data.filter((player) => player.category.toLowerCase() === tier.toLowerCase());
-    }
-
-    // Sort the data
-    data.sort((a: any, b: any) => {
-      let aValue: any;
-      let bValue: any;
-
-      switch (sortBy) {
-        case "kd":
-          aValue = parseFloat(a.kd) || 0;
-          bValue = parseFloat(b.kd) || 0;
-          break;
-        case "kills":
-          aValue = a.kills || 0;
-          bValue = b.kills || 0;
-          break;
-        case "matches":
-          aValue = a.matches || 0;
-          bValue = b.matches || 0;
-          break;
-        case "balance":
-          aValue = a.uc || 0;
-          bValue = b.uc || 0;
-          break;
-        default:
-          aValue = parseFloat(a.kd) || 0;
-          bValue = parseFloat(b.kd) || 0;
-      }
-
-      if (sortOrder === "asc") {
-        return aValue - bValue;
-      } else {
-        return bValue - aValue;
-      }
+    // Fetch players with optimized includes
+    const players = await prisma.player.findMany({
+      where,
+      select: {
+        id: true,
+        isBanned: true,
+        customProfileImageUrl: true,
+        characterImageId: true,
+        user: {
+          select: {
+            userName: true,
+            displayName: true,
+            imageUrl: true,
+          },
+        },
+        uc: {
+          select: {
+            balance: true,
+          },
+        },
+        characterImage: {
+          select: {
+            publicUrl: true,
+            isAnimated: true,
+            isVideo: true,
+            thumbnailUrl: true,
+          },
+        },
+        _count: {
+          select: {
+            royalPasses: true,
+          },
+        },
+        playerStats: {
+          where: seasonId !== "all" ? { seasonId } : undefined,
+          select: {
+            kills: true,
+            deaths: true,
+          },
+        },
+        matchPlayerPlayed: {
+          where: seasonId !== "all" ? { seasonId } : undefined,
+          select: { id: true },
+        },
+      },
     });
 
-    // Remove sensitive fields before sending to client (keep for search but don't expose)
-    // Also, for performance, only include animated GIF URLs for top 3 (podium) players
-    const sanitizedData = data.map(({ email, firstName, lastName, clerkId, ...rest }, index) => {
-      // For non-podium players, use thumbnail instead of animated GIF to improve performance
-      if (index >= 3 && rest.isAnimated && rest.thumbnailUrl) {
-        return {
-          ...rest,
-          characterImageUrl: rest.thumbnailUrl, // Use static thumbnail for non-podium
-          isAnimated: false, // Don't mark as animated since we're showing static
-        };
+    // Transform to response format
+    let data = players.map((player) => {
+      const kills = player.playerStats.reduce((acc, s) => acc + s.kills, 0);
+      const deaths = player.playerStats.reduce((acc, s) => acc + s.deaths, 0);
+      const matches = player.matchPlayerPlayed.length;
+      const kd = deaths > 0 ? kills / deaths : 0;
+      const category = getKdRank(kills, deaths);
+
+      // Use cached Clerk image URL from database (no API call needed)
+      const cachedImageUrl = player.user?.imageUrl || null;
+
+      return {
+        id: player.id,
+        isBanned: player.isBanned,
+        userName: player.user?.userName || "",
+        displayName: player.user?.displayName || null,
+        uc: player.uc?.balance || 0,
+        matches,
+        deaths,
+        kills,
+        kd: kd.toFixed(2),
+        category,
+        imageUrl: cachedImageUrl,
+        profileImageUrl: player.customProfileImageUrl || cachedImageUrl,
+        characterImageUrl: (player.characterImageId && player.characterImageId !== "none")
+          ? player.characterImage?.publicUrl || null
+          : null,
+        isAnimated: player.characterImage?.isAnimated || false,
+        isVideo: player.characterImage?.isVideo || false,
+        thumbnailUrl: player.characterImage?.thumbnailUrl || null,
+        hasRoyalPass: (player._count?.royalPasses || 0) > 0,
+        _kd: kd,
+      };
+    });
+
+    // Filter by tier (must be done in JS since tier is computed)
+    if (tier && tier !== "All") {
+      data = data.filter((p) => p.category.toLowerCase() === tier.toLowerCase());
+    }
+
+    // Sort
+    data.sort((a, b) => {
+      let aVal: number, bVal: number;
+      switch (sortBy) {
+        case "kd": aVal = a._kd; bVal = b._kd; break;
+        case "kills": aVal = a.kills; bVal = b.kills; break;
+        case "matches": aVal = a.matches; bVal = b.matches; break;
+        case "balance": aVal = a.uc; bVal = b.uc; break;
+        default: aVal = a._kd; bVal = b._kd;
+      }
+      return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+    });
+
+    // Calculate aggregates before pagination
+    const totalBalance = data.reduce((acc, p) => acc + p.uc, 0);
+    const negativeBalance = data.filter((p) => p.uc < 0).reduce((acc, p) => acc + p.uc, 0);
+    const totalCount = data.length;
+
+    // Paginate
+    const startIndex = (page - 1) * PAGE_SIZE;
+    const paginatedData = data.slice(startIndex, startIndex + PAGE_SIZE);
+
+    // Apply thumbnail optimization and remove internal fields
+    const sanitizedData = paginatedData.map(({ _kd, ...rest }, index) => {
+      const globalIndex = startIndex + index;
+      if (globalIndex >= 3 && rest.isAnimated && rest.thumbnailUrl) {
+        return { ...rest, characterImageUrl: rest.thumbnailUrl, isAnimated: false };
       }
       return rest;
     });
 
-    // Calculate balance aggregates
-    const totalBalance = data.reduce((acc, player) => acc + (player.uc || 0), 0);
-    const negativeBalance = data
-      .filter((player) => (player.uc || 0) < 0)
-      .reduce((acc, player) => acc + (player.uc || 0), 0);
-
-    // Apply pagination to the sanitized data
-    const paginatedData = paginate({ array: sanitizedData, pageSize: 10, pageNumber: parseInt(page) });
-
     return SuccessResponse({
-      data: paginatedData,
+      data: sanitizedData,
       message: "Players fetched successfully",
       meta: {
-        ...getMeta({ total: data.length, currentPage: page }),
+        ...getMeta({ total: totalCount, currentPage: page.toString() }),
         totalBalance,
         negativeBalance,
       },
     });
   } catch (error) {
+    console.error("Players API error:", error);
     return handleApiErrors(error);
   }
 }

@@ -68,7 +68,7 @@ export function PlayersTab() {
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Player Stats Modal */}
       {(() => {
-        const selectedPlayer = players?.find(p => p.id === playerId);
+        const selectedPlayer = players?.find(p => p?.id === playerId);
         return (
           <PlayerStatsModal
             key={playerId}

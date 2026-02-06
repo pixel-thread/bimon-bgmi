@@ -18,6 +18,7 @@ type ClerkUser = {
     createdBy: string;
     role?: string;
     clerkId: string;
+    imageUrl?: string | null;
   };
 };
 
@@ -62,6 +63,7 @@ export async function createUserIfNotExistInDB({ data }: ClerkUser) {
         createdBy: data.createdBy,
         email: data.email || null,
         role: data.role,
+        imageUrl: data.imageUrl || null,
         isOnboarded: false, // New users need to complete onboarding
       },
       include: {

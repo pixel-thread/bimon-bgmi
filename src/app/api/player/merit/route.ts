@@ -11,7 +11,7 @@ import { SuccessResponse, ErrorResponse } from "@/src/utils/next-response";
 export async function GET(req: Request) {
     try {
         const user = await tokenMiddleware(req);
-        const playerId = user?.player?.id;
+        const playerId = user?.playerId;
 
         if (!playerId) {
             return ErrorResponse({
@@ -51,7 +51,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const user = await tokenMiddleware(req);
-        const playerId = user?.player?.id;
+        const playerId = user?.playerId;
 
         if (!playerId) {
             return ErrorResponse({

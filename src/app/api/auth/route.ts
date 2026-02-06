@@ -4,7 +4,9 @@ import { SuccessResponse } from "@/src/utils/next-response";
 
 export async function GET(req: Request) {
   try {
-    const user = await tokenMiddleware(req);
+    // Use requireFullUser to load complete user data for auth context
+    // This includes player, characterImage, playerBanned, uc, playerStats
+    const user = await tokenMiddleware(req, { requireFullUser: true });
     return SuccessResponse({
       data: user,
       message: "User verified (created if absent)",

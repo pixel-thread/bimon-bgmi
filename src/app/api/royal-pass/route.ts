@@ -3,64 +3,85 @@ import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { SuccessResponse, ErrorResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
-import { getPlayerStreakInfo, STREAK_REWARD_AMOUNT, STREAK_REWARD_THRESHOLD } from "@/src/services/player/tournamentStreak";
+import { STREAK_REWARD_AMOUNT, STREAK_REWARD_THRESHOLD } from "@/src/services/player/tournamentStreak";
 import { Prisma } from "@/src/lib/db/prisma/generated/prisma";
 
 const FREE_RP_LIMIT = 5; // First 5 purchases are free
 
 /**
  * GET /api/royal-pass - Get current user's rewards status (streak, balance, pending rewards)
+ * 
+ * OPTIMIZED: Combined multiple queries into parallel execution and a single player query
  */
 export async function GET(req: NextRequest) {
     try {
         const user = await tokenMiddleware(req);
 
-        // Get player with pending reward fields
-        const player = await prisma.player.findUnique({
-            where: { userId: user.id },
-            select: {
-                id: true,
-                pendingWinnerReward: true,
-                pendingWinnerPosition: true,
-                pendingWinnerTournament: true,
-                pendingWinnerDetails: true,
-                pendingSoloSupport: true,
-                pendingSoloSupportMsg: true,
-                pendingReferralBonus: true,
-                pendingReferralMsg: true,
-            },
-        });
+        // Run independent queries in parallel
+        const [player, activeSeason, totalRPClaimed] = await Promise.all([
+            // Single query for player with ALL needed fields (including UC, royal pass, and streak data)
+            prisma.player.findUnique({
+                where: { userId: user.id },
+                select: {
+                    id: true,
+                    // Streak fields
+                    tournamentStreak: true,
+                    streakSeasonId: true,
+                    lastStreakRewardAt: true,
+                    pendingStreakReward: true,
+                    // Pending reward fields
+                    pendingWinnerReward: true,
+                    pendingWinnerPosition: true,
+                    pendingWinnerTournament: true,
+                    pendingWinnerDetails: true,
+                    pendingSoloSupport: true,
+                    pendingSoloSupportMsg: true,
+                    pendingReferralBonus: true,
+                    pendingReferralMsg: true,
+                    // Include UC and RoyalPass in same query
+                    uc: {
+                        select: { balance: true },
+                    },
+                    royalPasses: {
+                        select: { id: true },
+                        take: 1, // We just need to know if they have one
+                    },
+                },
+            }),
+            // Active season for streak calculation
+            prisma.season.findFirst({
+                where: { status: "ACTIVE" },
+                select: { id: true },
+            }),
+            // Total RP count for free offer
+            prisma.royalPass.count(),
+        ]);
 
         if (!player) {
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
 
-        // Get player's UC balance
-        const uc = await prisma.uC.findUnique({
-            where: { playerId: player.id },
-        });
+        const hasRoyalPass = player.royalPasses.length > 0;
 
-        // Get streak info
-        const streakInfo = await getPlayerStreakInfo(player.id);
+        // Calculate streak info inline (no separate query needed)
+        const currentSeasonId = activeSeason?.id ?? null;
+        const effectiveStreak = (currentSeasonId && player.streakSeasonId !== currentSeasonId)
+            ? 0
+            : player.tournamentStreak;
+        const progress = effectiveStreak % STREAK_REWARD_THRESHOLD;
 
-        // Get total RP claim count for free offer
-        const totalRPClaimed = await prisma.royalPass.count();
+        // Free offer calculations
         const freeSlotsRemaining = Math.max(0, FREE_RP_LIMIT - totalRPClaimed);
         const isFreeOffer = freeSlotsRemaining > 0;
 
-        // Check if current player already has RP
-        const hasRoyalPass = await prisma.royalPass.findFirst({
-            where: { playerId: player.id },
-        });
-
         // Non-RP holders with streak >= 8 lose the 50% discount
-        const lostDiscount = !hasRoyalPass && streakInfo.currentStreak >= STREAK_REWARD_THRESHOLD;
+        const lostDiscount = !hasRoyalPass && effectiveStreak >= STREAK_REWARD_THRESHOLD;
 
         return SuccessResponse({
             data: {
-                currentBalance: uc?.balance ?? 0,
-                hasRoyalPass: !!hasRoyalPass,
-                lostDiscount, // True if non-RP holder hit 8 streak - must pay full price
+                currentBalance: player.uc?.balance ?? 0,
+                hasRoyalPass,
+                lostDiscount,
                 // Free offer info
                 freeOffer: {
                     isActive: isFreeOffer,
@@ -70,13 +91,13 @@ export async function GET(req: NextRequest) {
                 },
                 // Streak info
                 streak: {
-                    current: streakInfo.currentStreak,
-                    progress: streakInfo.progressToReward,
-                    tournamentsUntilReward: streakInfo.tournamentsUntilReward,
+                    current: effectiveStreak,
+                    progress: progress,
+                    tournamentsUntilReward: STREAK_REWARD_THRESHOLD - progress,
                     rewardThreshold: STREAK_REWARD_THRESHOLD,
                     rewardAmount: STREAK_REWARD_AMOUNT,
-                    lastRewardAt: streakInfo.lastRewardAt,
-                    pendingReward: streakInfo.pendingReward, // Claimable streak reward
+                    lastRewardAt: player.lastStreakRewardAt,
+                    pendingReward: player.pendingStreakReward,
                 },
                 // Pending winner reward info (for claim banner)
                 pendingWinner: player.pendingWinnerReward ? {

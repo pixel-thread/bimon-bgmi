@@ -103,6 +103,7 @@ model User {
   isEmailLinked        Boolean  @default(false)
   userName             String   @unique
   displayName          String?  // BGMI IGN with fancy Unicode characters
+  imageUrl             String?  // Cached Clerk profile image URL
   dateOfBirth          DateTime? // Optional date of birth
   isOnboarded          Boolean  @default(true) // New users set to false, existing users unaffected
   usernameLastChangeAt    DateTime  @default(now())
@@ -127,6 +128,9 @@ model User {
   
   // Referrals given by this user as a promoter
   referralsGiven Referral[] @relation("PromoterReferrals")
+
+  // Indexes for performance
+  @@index([isOnboarded])  // For filtering onboarded users in players list
 }
 
 model Notification {
@@ -433,6 +437,7 @@ model PlayerStats {
 
   @@unique([seasonId, playerId])
   @@index([seasonId])
+  @@index([playerId])  // For aggregating player stats
 }
 
 model Team {

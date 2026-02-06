@@ -5,14 +5,41 @@ import { getUserByClerkId } from "../../services/user/getUserByClerkId";
 import { clientClerk } from "@/src/lib/clerk/client";
 import { createUserIfNotExistInDB } from "@/src/services/user/createUser";
 import { updateUser } from "@/src/services/user/updateUser";
+import { prisma } from "@/src/lib/db/prisma";
 
-export async function tokenMiddleware(req: NextRequest | Request) {
+/**
+ * Lightweight user lookup for auth - returns user without heavy player includes.
+ * Used for most GET requests to avoid loading full player data with nested relations.
+ * The performance gain comes from skipping the player include, not from limiting user fields.
+ */
+async function getLightweightUserByClerkId(clerkId: string) {
+  return prisma.user.findUnique({
+    where: { clerkId },
+    // Don't use select - return all User fields
+    // The optimization is skipping the heavy player/characterImage/uc includes
+  });
+}
+
+/**
+ * Optimized token middleware that avoids unnecessary Clerk API calls.
+ * 
+ * For GET requests with existing users, we use lightweight lookup
+ * to avoid loading full player data. This saves significant DB time.
+ * 
+ * Options:
+ * - requireFullUser: If true, always loads full user with player data (for /api/auth)
+ */
+export async function tokenMiddleware(
+  req: NextRequest | Request,
+  options?: { requireFullUser?: boolean }
+) {
   const authHeader = req.headers.get("authorization");
   const token = authHeader?.split(" ")[1];
 
   if (!token) {
     throw new UnauthorizedError("Token khlem sent");
   }
+
   // Parse the Clerk session JWT and get claims
   const claims = await verifyToken(token, {
     secretKey: process.env.CLERK_SECRET_KEY,
@@ -22,14 +49,37 @@ export async function tokenMiddleware(req: NextRequest | Request) {
     throw new UnauthorizedError("Unauthorized");
   }
 
-  const clerkUser = await clientClerk.users.getUser(claims.sub);
+  const clerkId = claims.sub;
+  const reqMethod = req.method;
+  const requireFullUser = options?.requireFullUser ?? false;
+
+  // OPTIMIZATION: For GET requests (except when requireFullUser is true),
+  // use lightweight lookup to avoid loading full player data
+  if (reqMethod === "GET" && !requireFullUser) {
+    const lightweightUser = await getLightweightUserByClerkId(clerkId);
+
+    if (lightweightUser) {
+      // User exists and it's a read operation - no need to call Clerk
+      return lightweightUser;
+    }
+  }
+
+  // For write operations, /api/auth, or new users - use full lookup
+  let user = await getUserByClerkId({ id: clerkId });
+
+  // If user exists and it's a GET (and requireFullUser), return without Clerk call
+  if (user && reqMethod === "GET") {
+    return user;
+  }
+
+  // For new users or write operations, we need to call Clerk
+  const clerkUser = await clientClerk.users.getUser(clerkId);
 
   if (!clerkUser) {
     throw new UnauthorizedError("Unauthorized");
   }
-  // Try to find user in your backend
-  let user = await getUserByClerkId({ id: clerkUser.id });
 
+  // If user doesn't exist in our DB, create them
   if (!user) {
     const newUser = await createUserIfNotExistInDB({
       data: {
@@ -38,6 +88,7 @@ export async function tokenMiddleware(req: NextRequest | Request) {
         userName: clerkUser.username || "",
         createdBy: clerkUser.id,
         clerkId: clerkUser.id,
+        imageUrl: clerkUser.imageUrl || null,
       },
     });
 
@@ -47,10 +98,8 @@ export async function tokenMiddleware(req: NextRequest | Request) {
     return newUser;
   }
 
-  const reqMethod = req.method;
-
+  // Permission checks for non-GET requests
   if (user.role === "USER" && reqMethod !== "GET") {
-    // Allow voting for USER role
     if (req.url.includes("/vote") && reqMethod === "POST") {
       // Allow
     } else if (req.url.includes("/payments/") && reqMethod === "POST") {
@@ -69,7 +118,6 @@ export async function tokenMiddleware(req: NextRequest | Request) {
   }
 
   // Only sync username from Clerk if user has completed onboarding
-  // Non-onboarded users will set their own username during onboarding
   if (user.isOnboarded && clerkUser.username !== user.userName) {
     const newUserName =
       clerkUser.username ||
@@ -90,6 +138,6 @@ export async function tokenMiddleware(req: NextRequest | Request) {
       },
     });
   }
-  // User is guaranteed to be non-null at this point
+
   return user!;
 }

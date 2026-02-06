@@ -284,8 +284,8 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                 Player Not Found
               </DialogTitle>
             ) : (
-              /* Mobile: 2-column grid, Desktop: centered flex */
-              <div className="grid grid-cols-2 md:flex md:justify-center md:items-center gap-4 w-full">
+              /* Mobile: 2-column grid when character image exists, centered flex when it doesn't, Desktop: centered flex */
+              <div className={`${characterImageUrl ? 'grid grid-cols-2' : 'flex justify-center'} md:flex md:justify-center md:items-center gap-4 w-full`}>
                 {/* Character Video/Image */}
                 {characterImageUrl && (
                   <div className="flex justify-center items-center">
