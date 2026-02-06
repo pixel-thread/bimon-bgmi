@@ -182,6 +182,14 @@ export default function ProfilePage() {
     });
     const profileImageSettings = profileImageData?.data;
 
+    // Fetch player bio
+    const { data: bioData } = useQuery({
+        queryKey: ["player-bio"],
+        queryFn: () => http.get<{ bio: string | null }>("/profile/bio"),
+        enabled: !!playerId,
+    });
+    const playerBio = bioData?.data?.bio;
+
     // Get current profile image URL based on settings
     // Profile image only uses google or uploaded - character image is separate
     const getProfileImageUrl = (): string | null => {
@@ -529,6 +537,7 @@ export default function ProfilePage() {
                         )}
                     </div>
                     <p className="text-sm text-muted-foreground">@{user.userName}</p>
+                    <p className="text-sm text-muted-foreground italic">"{playerBio || `Nga u ${getDisplayName(user.displayName, user.userName)} dei u Ge`}"</p>
                     <p className="text-sm text-muted-foreground truncate">{user.email || "No email linked"}</p>
                     {/* Banned status */}
                     {banStatus.isBanned && (

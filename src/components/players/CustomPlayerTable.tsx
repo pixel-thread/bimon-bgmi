@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, memo } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { PlayerAvatar } from "@/src/components/ui/player-avatar";
@@ -44,6 +44,187 @@ interface CustomPlayerTableProps {
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
 }
+
+// Position config for podium cards
+const positionConfig = {
+    1: {
+        size: "w-24 sm:w-32 aspect-[9/16]",
+        border: "border-2 border-yellow-400 dark:border-yellow-500",
+        glow: "shadow-[0_0_25px_rgba(250,204,21,0.4)]",
+        badge: "bg-gradient-to-br from-yellow-400 to-amber-500 text-yellow-900",
+        bg: "from-yellow-100 via-amber-50 to-yellow-100 dark:from-yellow-900/40 dark:via-amber-900/30 dark:to-yellow-900/40",
+    },
+    2: {
+        size: "w-20 sm:w-28 aspect-[9/16]",
+        border: "border-2 border-gray-400 dark:border-gray-400",
+        glow: "shadow-[0_0_15px_rgba(156,163,175,0.3)]",
+        badge: "bg-gradient-to-br from-gray-300 to-gray-400 text-gray-800",
+        bg: "from-gray-100 via-slate-50 to-gray-100 dark:from-gray-800/50 dark:via-slate-800/40 dark:to-gray-800/50",
+    },
+    3: {
+        size: "w-20 sm:w-28 aspect-[9/16]",
+        border: "border-2 border-amber-600 dark:border-amber-500",
+        glow: "shadow-[0_0_15px_rgba(217,119,6,0.3)]",
+        badge: "bg-gradient-to-br from-amber-600 to-orange-600 text-amber-100",
+        bg: "from-amber-100 via-orange-50 to-amber-100 dark:from-amber-900/40 dark:via-orange-900/30 dark:to-amber-900/40",
+    },
+} as const;
+
+// Memoized PodiumCard component - prevents re-renders from recreating video elements
+const PodiumCard = memo(function PodiumCard({
+    player,
+    position,
+    onPlayerClick
+}: {
+    player: PlayerT;
+    position: 1 | 2 | 3;
+    onPlayerClick: (id: string) => void;
+}) {
+    const config = positionConfig[position];
+    const kdValue = Number(player.kd || 0);
+    const displayKd = isFinite(kdValue) ? kdValue.toFixed(2) : "0.00";
+
+    // For animated content (GIF or video) - deferred loading
+    const [mediaLoaded, setMediaLoaded] = useState(false);
+    const [shouldLoadMedia, setShouldLoadMedia] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const isVideo = player.isVideo;
+    const isAnimated = player.isAnimated;
+    const mediaUrl = (isAnimated || isVideo) ? (player.characterImageUrl || player.imageUrl) : null;
+
+    // Defer media loading to not block initial render
+    useEffect(() => {
+        if (mediaUrl) {
+            // Longer delay to prioritize data loading over media
+            const deferTimer = setTimeout(() => {
+                setShouldLoadMedia(true);
+            }, 500);
+            return () => clearTimeout(deferTimer);
+        }
+    }, [mediaUrl]);
+
+    // Hover to replay video (only if paused/ended)
+    const handleMouseEnter = useCallback(() => {
+        if (videoRef.current && videoRef.current.paused) {
+            videoRef.current.currentTime = 0;
+            videoRef.current.play().catch(() => { });
+        }
+    }, []);
+
+    return (
+        <div
+            onClick={() => onPlayerClick(player.id)}
+            onMouseEnter={isVideo ? handleMouseEnter : undefined}
+            className={`
+                ${config.size} relative cursor-pointer group
+                rounded-2xl ${config.border} ${config.glow}
+                bg-gradient-to-b ${config.bg}
+                overflow-hidden transition-all duration-200
+                hover:scale-105 hover:shadow-xl
+            `}
+        >
+            {/* Background image, video, or animated GIF */}
+            {player.characterImageUrl || player.imageUrl ? (
+                isVideo && mediaUrl ? (
+                    // Video content - show thumbnail first, then video
+                    <>
+                        {/* Static thumbnail - shows immediately */}
+                        <img
+                            src={player.thumbnailUrl || player.characterImageUrl || player.imageUrl || ''}
+                            alt=""
+                            loading="lazy"
+                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded ? 'opacity-0' : 'opacity-90'}`}
+                        />
+                        {/* Video - plays once, replays on hover */}
+                        {shouldLoadMedia && (
+                            <video
+                                ref={videoRef}
+                                src={mediaUrl}
+                                autoPlay
+                                muted
+                                playsInline
+                                loop={false}
+                                preload="none"
+                                onLoadedData={() => setMediaLoaded(true)}
+                                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded ? 'opacity-90' : 'opacity-0'}`}
+                                style={{ willChange: 'opacity' }}
+                            />
+                        )}
+                    </>
+                ) : isAnimated && mediaUrl ? (
+                    // Animated GIF - show thumbnail first, swap to GIF when loaded
+                    <>
+                        {/* Static thumbnail - shows immediately, fades out when GIF loads */}
+                        <img
+                            src={player.thumbnailUrl || player.characterImageUrl || player.imageUrl || ''}
+                            alt=""
+                            loading="lazy"
+                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded ? 'opacity-0' : 'opacity-90'}`}
+                        />
+                        {/* Animated GIF - rendered hidden, becomes visible on load */}
+                        {shouldLoadMedia && (
+                            <img
+                                src={mediaUrl}
+                                alt=""
+                                onLoad={() => setMediaLoaded(true)}
+                                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded ? 'opacity-90' : 'opacity-0'}`}
+                            />
+                        )}
+                    </>
+                ) : (
+                    // Static image
+                    <img
+                        src={player.characterImageUrl || player.imageUrl || ''}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="absolute inset-0 w-full h-full object-cover opacity-90"
+                    />
+                )
+            ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-5xl sm:text-6xl font-bold text-zinc-300 dark:text-zinc-600 opacity-50">
+                        {getDisplayName(player.displayName, player.userName).charAt(0).toUpperCase()}
+                    </span>
+                </div>
+            )}
+
+            {/* Dark gradient overlay at bottom */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+            {/* Position badge - top */}
+            <div className={`absolute top-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${config.badge}`}>
+                #{position}
+            </div>
+
+            {/* Player info - bottom: Profile image centered, name below */}
+            <div className="absolute bottom-0 left-0 right-0 p-2 flex flex-col items-center gap-1">
+                {/* Centered circular profile image */}
+                <div className="w-8 h-8 rounded-full border border-white/80 shadow-md overflow-hidden bg-slate-700">
+                    {player.profileImageUrl ? (
+                        <img
+                            src={player.profileImageUrl}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-primary/60">
+                            <span className="text-[10px] font-bold text-white">
+                                {getDisplayName(player.displayName, player.userName).charAt(0).toUpperCase()}
+                            </span>
+                        </div>
+                    )}
+                </div>
+                {/* Name only */}
+                <p className="text-[10px] sm:text-xs font-bold text-white truncate max-w-full px-1 drop-shadow-lg">
+                    {getDisplayName(player.displayName, player.userName)}
+                </p>
+            </div>
+        </div>
+    );
+});
 
 export function CustomPlayerTable({
     data,
@@ -242,165 +423,6 @@ export function CustomPlayerTable({
     const top3Players = hasEnoughForPodium ? data.slice(0, 3) : [];
     const remainingPlayers = hasEnoughForPodium ? data.slice(3) : data;
 
-    // Podium card component - tall rectangular design
-    const PodiumCard = ({ player, position }: { player: PlayerT; position: 1 | 2 | 3 }) => {
-        const positionConfig = {
-            1: {
-                size: "w-24 sm:w-32 aspect-[9/16]",
-                border: "border-2 border-yellow-400 dark:border-yellow-500",
-                glow: "shadow-[0_0_25px_rgba(250,204,21,0.4)]",
-                badge: "bg-gradient-to-br from-yellow-400 to-amber-500 text-yellow-900",
-                bg: "from-yellow-100 via-amber-50 to-yellow-100 dark:from-yellow-900/40 dark:via-amber-900/30 dark:to-yellow-900/40",
-            },
-            2: {
-                size: "w-20 sm:w-28 aspect-[9/16]",
-                border: "border-2 border-gray-400 dark:border-gray-400",
-                glow: "shadow-[0_0_15px_rgba(156,163,175,0.3)]",
-                badge: "bg-gradient-to-br from-gray-300 to-gray-400 text-gray-800",
-                bg: "from-gray-100 via-slate-50 to-gray-100 dark:from-gray-800/50 dark:via-slate-800/40 dark:to-gray-800/50",
-            },
-            3: {
-                size: "w-20 sm:w-28 aspect-[9/16]",
-                border: "border-2 border-amber-600 dark:border-amber-500",
-                glow: "shadow-[0_0_15px_rgba(217,119,6,0.3)]",
-                badge: "bg-gradient-to-br from-amber-600 to-orange-600 text-amber-100",
-                bg: "from-amber-100 via-orange-50 to-amber-100 dark:from-amber-900/40 dark:via-orange-900/30 dark:to-amber-900/40",
-            },
-        };
-
-        const config = positionConfig[position];
-        const kdValue = Number(player.kd || 0);
-        const displayKd = isFinite(kdValue) ? kdValue.toFixed(2) : "0.00";
-
-        // For animated content (GIF or video) - deferred loading
-        const [mediaLoaded, setMediaLoaded] = useState(false);
-        const [shouldLoadMedia, setShouldLoadMedia] = useState(false);
-        const isVideo = player.isVideo;
-        const isAnimated = player.isAnimated;
-        const mediaUrl = (isAnimated || isVideo) ? (player.characterImageUrl || player.imageUrl) : null;
-
-        // Defer media loading to not block initial render
-        useEffect(() => {
-            if (mediaUrl) {
-                // Small delay to let the page render first
-                const deferTimer = setTimeout(() => {
-                    setShouldLoadMedia(true);
-                }, 100);
-                return () => clearTimeout(deferTimer);
-            }
-        }, [mediaUrl]);
-
-        return (
-            <div
-                onClick={() => handleRowClick(player.id)}
-                className={`
-                    ${config.size} relative cursor-pointer group
-                    rounded-2xl ${config.border} ${config.glow}
-                    bg-gradient-to-b ${config.bg}
-                    overflow-hidden transition-all duration-200
-                    hover:scale-105 hover:shadow-xl
-                `}
-            >
-                {/* Background image, video, or animated GIF */}
-                {player.characterImageUrl || player.imageUrl ? (
-                    isVideo && mediaUrl ? (
-                        // Video content - show thumbnail first, then video
-                        <>
-                            {/* Static thumbnail - shows immediately */}
-                            <img
-                                src={player.thumbnailUrl || player.characterImageUrl || player.imageUrl || ''}
-                                alt=""
-                                loading="eager"
-                                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded ? 'opacity-0' : 'opacity-90'}`}
-                            />
-                            {/* Video - plays once and stops */}
-                            {shouldLoadMedia && (
-                                <video
-                                    src={mediaUrl}
-                                    autoPlay
-                                    muted
-                                    playsInline
-                                    loop={false}
-                                    onLoadedData={() => setMediaLoaded(true)}
-                                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded ? 'opacity-90' : 'opacity-0'}`}
-                                />
-                            )}
-                        </>
-                    ) : isAnimated && mediaUrl ? (
-                        // Animated GIF - show thumbnail first, swap to GIF when loaded
-                        <>
-                            {/* Static thumbnail - shows immediately, fades out when GIF loads */}
-                            <img
-                                src={player.thumbnailUrl || player.characterImageUrl || player.imageUrl || ''}
-                                alt=""
-                                loading="eager"
-                                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded ? 'opacity-0' : 'opacity-90'}`}
-                            />
-                            {/* Animated GIF - rendered hidden, becomes visible on load */}
-                            {shouldLoadMedia && (
-                                <img
-                                    src={mediaUrl}
-                                    alt=""
-                                    onLoad={() => setMediaLoaded(true)}
-                                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded ? 'opacity-90' : 'opacity-0'}`}
-                                />
-                            )}
-                        </>
-                    ) : (
-                        // Static image
-                        <img
-                            src={player.characterImageUrl || player.imageUrl || ''}
-                            alt=""
-                            loading="lazy"
-                            decoding="async"
-                            className="absolute inset-0 w-full h-full object-cover opacity-90"
-                        />
-                    )
-                ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-5xl sm:text-6xl font-bold text-zinc-300 dark:text-zinc-600 opacity-50">
-                            {getDisplayName(player.displayName, player.userName).charAt(0).toUpperCase()}
-                        </span>
-                    </div>
-                )}
-
-                {/* Dark gradient overlay at bottom */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-                {/* Position badge - top */}
-                <div className={`absolute top-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${config.badge}`}>
-                    #{position}
-                </div>
-
-                {/* Player info - bottom: Profile image centered, name below */}
-                <div className="absolute bottom-0 left-0 right-0 p-2 flex flex-col items-center gap-1">
-                    {/* Centered circular profile image */}
-                    <div className="w-8 h-8 rounded-full border border-white/80 shadow-md overflow-hidden bg-slate-700">
-                        {player.profileImageUrl ? (
-                            <img
-                                src={player.profileImageUrl}
-                                alt=""
-                                loading="lazy"
-                                decoding="async"
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-primary/60">
-                                <span className="text-[10px] font-bold text-white">
-                                    {getDisplayName(player.displayName, player.userName).charAt(0).toUpperCase()}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-                    {/* Name only */}
-                    <p className="text-[10px] sm:text-xs font-bold text-white truncate max-w-full px-1 drop-shadow-lg">
-                        {getDisplayName(player.displayName, player.userName)}
-                    </p>
-                </div>
-            </div>
-        );
-    };
-
     return (
         <div className="w-full space-y-3">
             {/* Header - Leaderboard info */}
@@ -435,7 +457,7 @@ export function CustomPlayerTable({
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
                         >
-                            <PodiumCard player={top3Players[1]} position={2} />
+                            <PodiumCard player={top3Players[1]} position={2} onPlayerClick={handleRowClick} />
                         </motion.div>
                         {/* 1st place - center, elevated */}
                         <motion.div
@@ -444,7 +466,7 @@ export function CustomPlayerTable({
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
                         >
-                            <PodiumCard player={top3Players[0]} position={1} />
+                            <PodiumCard player={top3Players[0]} position={1} onPlayerClick={handleRowClick} />
                         </motion.div>
                         {/* 3rd place - right */}
                         <motion.div
@@ -453,7 +475,7 @@ export function CustomPlayerTable({
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
                         >
-                            <PodiumCard player={top3Players[2]} position={3} />
+                            <PodiumCard player={top3Players[2]} position={3} onPlayerClick={handleRowClick} />
                         </motion.div>
                     </div>
                 </div>

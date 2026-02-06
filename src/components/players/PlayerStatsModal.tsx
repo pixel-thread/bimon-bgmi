@@ -284,81 +284,12 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                 Player Not Found
               </DialogTitle>
             ) : (
-              <div className="flex flex-col items-center gap-2">
-                {/* Clickable Avatar */}
-                <div
-                  ref={avatarRef}
-                  className="relative h-14 w-14 sm:h-16 sm:w-16 rounded-full border-2 border-zinc-200 dark:border-zinc-700 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={handleAvatarClick}
-                >
-                  {displayImageUrl ? (
-                    <img
-                      src={displayImageUrl}
-                      alt={displayName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-lg font-semibold bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                      {displayName?.substring(0, 2).toUpperCase()}
-                    </div>
-                  )}
-                  {displayIsBanned && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="absolute inset-0 bg-black/40 rounded-full" />
-                      <div className="relative rotate-[-20deg] bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded border border-red-800 shadow-lg uppercase">
-                        Banned
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {/* Name + Crown */}
-                <DialogTitle className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-1.5">
-                  {displayName}
-                  {((player as any)?.hasRoyalPass || initialData?.hasRoyalPass) && (
-                    <Crown className="w-5 h-5 text-amber-500 crown-glow" />
-                  )}
-                </DialogTitle>
-                {/* Category Badge */}
-                <CategoryBadge category={displayCategory} size="sm" />
-                {/* Admin badges */}
-                <div className="flex items-center gap-1.5 flex-wrap justify-center">
-                  {displayIsBanned && (
-                    <Badge variant="destructive" className="bg-red-600 hover:bg-red-700 text-[10px] px-1.5 py-0">
-                      <Ban className="w-2.5 h-2.5 mr-0.5" />
-                      BANNED
-                    </Badge>
-                  )}
-                  {isSuperAdmin && player?.isUCExempt && (
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 text-[10px] px-1.5 py-0">
-                      <Shield className="w-2.5 h-2.5 mr-0.5" />
-                      UC EXEMPT
-                    </Badge>
-                  )}
-                  {isSuperAdmin && player?.isTrusted && (
-                    <Badge variant="secondary" className="bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-100 text-[10px] px-1.5 py-0">
-                      <Heart className="w-2.5 h-2.5 mr-0.5" />
-                      TRUSTED
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            )}
-          </DialogHeader>
-
-          {isLoading ? (
-            <ModalSkeleton />
-          ) : (!player && !initialData) ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Player data could not be loaded
-            </div>
-          ) : (
-            <div className="space-y-4 sm:space-y-5 py-2">
-              {/* Two column layout: Video | Stats */}
-              <div className="flex gap-4 sm:gap-5">
-                {/* Character Video/Image - Left */}
+              /* Mobile: 2-column grid, Desktop: centered flex */
+              <div className="grid grid-cols-2 md:flex md:justify-center md:items-center gap-4 w-full">
+                {/* Character Video/Image */}
                 {characterImageUrl && (
-                  <div className="flex-shrink-0">
-                    <div className="relative w-20 sm:w-24 aspect-[9/16] rounded-xl overflow-hidden border-2 border-yellow-400/60 dark:border-yellow-500/60 shadow-md bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950">
+                  <div className="flex justify-center items-center">
+                    <div className="relative w-24 sm:w-28 md:w-32 aspect-[9/16] rounded-xl overflow-hidden border-2 border-yellow-400/60 dark:border-yellow-500/60 shadow-lg bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950">
                       {isVideo ? (
                         <video
                           key={videoKey}
@@ -389,37 +320,111 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                   </div>
                 )}
 
-                {/* Stats Grid 2x2 - Right */}
-                <div className="flex-1 grid grid-cols-2 gap-2 sm:gap-3">
-                  <div className="text-center p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
-                    <p className="text-xl sm:text-2xl font-bold text-blue-600">
-                      {displayDeaths}
-                    </p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Matches</p>
+                {/* Player Info - Centered in right column */}
+                <div className="flex flex-col justify-center items-center gap-2 text-center">
+                  {/* Clickable Avatar */}
+                  <div
+                    ref={avatarRef}
+                    className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-full border-2 border-zinc-200 dark:border-zinc-700 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={handleAvatarClick}
+                  >
+                    {displayImageUrl ? (
+                      <img
+                        src={displayImageUrl}
+                        alt={displayName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-lg font-semibold bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                        {displayName?.substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    {displayIsBanned && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/40 rounded-full" />
+                        <div className="relative rotate-[-20deg] bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded border border-red-800 shadow-lg uppercase">
+                          Banned
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="text-center p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-900/30">
-                    <p className="text-xl sm:text-2xl font-bold text-green-600">
-                      {displayKills}
-                    </p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Kills</p>
+                  {/* Name + Crown */}
+                  <DialogTitle className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-1.5 w-full">
+                    {displayName}
+                    {((player as any)?.hasRoyalPass || initialData?.hasRoyalPass) && (
+                      <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 crown-glow -translate-y-0.5" />
+                    )}
+                  </DialogTitle>
+                  {/* Category Badge */}
+                  <CategoryBadge category={displayCategory} size="sm" />
+                  {/* Admin badges */}
+                  <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                    {displayIsBanned && (
+                      <Badge variant="destructive" className="bg-red-600 hover:bg-red-700 text-[10px] px-1.5 py-0">
+                        <Ban className="w-2.5 h-2.5 mr-0.5" />
+                        BANNED
+                      </Badge>
+                    )}
+                    {isSuperAdmin && player?.isUCExempt && (
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 text-[10px] px-1.5 py-0">
+                        <Shield className="w-2.5 h-2.5 mr-0.5" />
+                        UC EXEMPT
+                      </Badge>
+                    )}
+                    {isSuperAdmin && player?.isTrusted && (
+                      <Badge variant="secondary" className="bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-100 text-[10px] px-1.5 py-0">
+                        <Heart className="w-2.5 h-2.5 mr-0.5" />
+                        TRUSTED
+                      </Badge>
+                    )}
                   </div>
-                  <div className="text-center p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
-                    <p className="text-xl sm:text-2xl font-bold text-yellow-600">
-                      {displayKd.toFixed(2)}
-                    </p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">K/D</p>
-                  </div>
-                  <div className="text-center p-3 sm:p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-900/30">
-                    <p
-                      className={`text-xl sm:text-2xl font-bold ${Number(displayBalance) >= 0
-                        ? "text-green-600"
-                        : "text-red-600"
-                        }`}
-                    >
-                      {Math.floor(Number(displayBalance))} UC
-                    </p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Balance</p>
-                  </div>
+                  {/* Bio/Message */}
+                  <p className="text-xs sm:text-sm text-muted-foreground italic max-w-[200px] text-center mx-auto">
+                    "{(player as any)?.bio || `Nga u ${displayName} dei u Ge`}"
+                  </p>
+                </div>
+              </div>
+            )}
+          </DialogHeader>
+
+          {isLoading ? (
+            <ModalSkeleton />
+          ) : (!player && !initialData) ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Player data could not be loaded
+            </div>
+          ) : (
+            <div className="space-y-4 sm:space-y-5 py-2">
+              {/* Stats Grid - 2x2 on mobile, 4x1 on desktop */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+                <div className="text-center p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                  <p className="text-xl sm:text-2xl font-bold text-blue-600">
+                    {displayDeaths}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Matches</p>
+                </div>
+                <div className="text-center p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-900/30">
+                  <p className="text-xl sm:text-2xl font-bold text-green-600">
+                    {displayKills}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Kills</p>
+                </div>
+                <div className="text-center p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
+                  <p className="text-xl sm:text-2xl font-bold text-yellow-600">
+                    {displayKd.toFixed(2)}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">K/D</p>
+                </div>
+                <div className="text-center p-3 sm:p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-900/30">
+                  <p
+                    className={`text-xl sm:text-2xl font-bold ${Number(displayBalance) >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                      }`}
+                  >
+                    {Math.floor(Number(displayBalance))} UC
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Balance</p>
                 </div>
               </div>
 

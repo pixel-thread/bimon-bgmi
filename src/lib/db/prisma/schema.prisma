@@ -348,6 +348,7 @@ model Player {
 
   characterImageId      String?  @unique
   customProfileImageUrl String?  // User-uploaded profile image stored on their Google Drive
+  bio                   String?  // Player's bio/status message (max 100 chars)
   createdAt             DateTime @default(now())
   updatedAt        DateTime @updatedAt
   pollId           String?

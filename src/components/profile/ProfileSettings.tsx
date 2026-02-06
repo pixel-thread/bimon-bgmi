@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
@@ -12,7 +12,7 @@ import { Separator } from "@/src/components/ui/separator";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import http from "@/src/utils/http";
 import { toast } from "sonner";
-import { Loader2, User, Mail, Shield, AlertCircle, CheckCircle, Edit2, ChevronRight, Calendar, Clock } from "lucide-react";
+import { Loader2, User, Mail, Shield, AlertCircle, CheckCircle, Edit2, ChevronRight, Calendar, Clock, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { GameNameInput, validateDisplayName } from "@/src/components/common/GameNameInput";
 
@@ -35,6 +35,10 @@ export function ProfileSettings() {
     const [isEditingDob, setIsEditingDob] = useState(false);
     const [dateOfBirth, setDateOfBirth] = useState("");
     const [dobError, setDobError] = useState("");
+
+    // Bio editing state
+    const [bio, setBio] = useState("");
+    const [bioError, setBioError] = useState("");
 
     // Calculate display name cooldown (1 week = 7 days)
     const displayNameCooldown = useMemo(() => {
@@ -142,6 +146,56 @@ export function ProfileSettings() {
             toast.error(message);
         },
     });
+
+    // Fetch current bio
+    const { data: bioData, isSuccess: bioDataLoaded } = useQuery({
+        queryKey: ["player-bio"],
+        queryFn: () => http.get<{ bio: string | null }>("/profile/bio"),
+        staleTime: 5 * 60 * 1000,
+    });
+
+    // Get the default bio message
+    const defaultBio = user?.displayName ? `Nga u ${user.displayName} dei u Ge` : "";
+
+    // The "original" bio is what's saved in DB, or the default if nothing saved
+    const savedBio = bioData?.data?.bio;
+    const originalBio = savedBio ?? defaultBio;
+
+    // Update bio when data is fetched - prefill with saved or default
+    useEffect(() => {
+        if (bioDataLoaded && user?.displayName) {
+            setBio(savedBio ?? defaultBio);
+        }
+    }, [bioDataLoaded, savedBio, defaultBio, user?.displayName]);
+
+    const { mutate: updateBio, isPending: isUpdatingBio } = useMutation({
+        mutationFn: (data: { bio: string | null }) => http.patch("/profile/bio", data),
+        onSuccess: (response) => {
+            if (response.success) {
+                toast.success("Bio updated successfully!");
+                setBioError("");
+                queryClient.invalidateQueries({ queryKey: ["player-bio"] });
+                queryClient.invalidateQueries({ queryKey: ["player"] });
+            } else {
+                setBioError(response.message || "Failed to update bio");
+                toast.error(response.message || "Failed to update bio");
+            }
+        },
+        onError: (error: any) => {
+            const message = error?.response?.data?.message || "Failed to update bio";
+            setBioError(message);
+            toast.error(message);
+        },
+    });
+
+    const handleSaveBio = () => {
+        if (bio.length > 100) {
+            setBioError("Bio must be at most 100 characters");
+            return;
+        }
+        setBioError("");
+        updateBio({ bio: bio.trim() || null });
+    };
 
     const validateUsername = (value: string) => {
         if (value.length < 3) {
@@ -410,6 +464,68 @@ export function ProfileSettings() {
                                     )}
                                 </div>
                             )}
+                        </div>
+
+                        <Separator />
+
+                        {/* Bio Section */}
+                        <div className="space-y-3">
+                            <Label htmlFor="bio" className="text-base font-medium flex items-center gap-2">
+                                <MessageSquare className="w-4 h-4" />
+                                Bio
+                                <span className="text-xs text-muted-foreground font-normal">(Optional - Max 100 chars)</span>
+                            </Label>
+                            <div className="space-y-2">
+                                <Input
+                                    id="bio"
+                                    value={bio}
+                                    onChange={(e) => {
+                                        setBio(e.target.value);
+                                        setBioError("");
+                                    }}
+                                    placeholder="Enter your bio or status message..."
+                                    maxLength={100}
+                                    className={bioError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                    disabled={isUpdatingBio}
+                                />
+                                <div className="flex items-center justify-between">
+                                    <p className="text-xs text-muted-foreground">
+                                        {bio.length}/100 characters
+                                    </p>
+                                    {bioError && (
+                                        <div className="flex items-center gap-1 text-xs text-red-600">
+                                            <AlertCircle className="w-3 h-3" />
+                                            {bioError}
+                                        </div>
+                                    )}
+                                </div>
+                                {bio !== originalBio && (
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setBio(originalBio)}
+                                            disabled={isUpdatingBio}
+                                            size="sm"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            onClick={handleSaveBio}
+                                            disabled={isUpdatingBio || bio.length > 100}
+                                            size="sm"
+                                        >
+                                            {isUpdatingBio ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                    Saving...
+                                                </>
+                                            ) : (
+                                                "Save"
+                                            )}
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <Separator />
