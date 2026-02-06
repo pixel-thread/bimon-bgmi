@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
 } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
-import { History, TrendingUp, TrendingDown } from "lucide-react";
+import { History, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { LoaderFive } from "@/src/components/ui/loader";
 import { usePlayer } from "@/src/hooks/player/usePlayer";
@@ -133,6 +133,10 @@ export function BalanceHistoryDialog({
     [],
   );
 
+  // Use a ref to track current page to avoid dependency issues
+  const historyPageRef = useRef(historyPage);
+  historyPageRef.current = historyPage;
+
   const fetchBalanceHistory = useCallback(
     async (pid: string, reset: boolean = true) => {
       if (reset) {
@@ -143,9 +147,10 @@ export function BalanceHistoryDialog({
       }
 
       try {
-        const page = reset ? 1 : historyPage + 1;
+        const page = reset ? 1 : historyPageRef.current + 1;
+        const seasonParam = selectedSeason ? `&season=${selectedSeason}` : '';
         const res = await fetch(
-          `/api/players/${pid}/transactions?page=${page}&limit=10`,
+          `/api/players/${pid}/transactions?page=${page}&limit=10${seasonParam}`,
         );
         const data = await res.json();
 
@@ -173,20 +178,43 @@ export function BalanceHistoryDialog({
         setIsLoadingMoreHistory(false);
       }
     },
-    [historyPage],
+    [], // No dependencies - uses ref for page
   );
 
-  const handleLoadMoreHistory = async () => {
+  const handleLoadMoreHistory = useCallback(async () => {
     if (playerId) {
       await fetchBalanceHistory(playerId, false);
     }
-  };
+  }, [playerId, fetchBalanceHistory]);
 
-  React.useEffect(() => {
+  // Intersection observer for infinite scroll
+  const hasMoreHistory = balanceHistory.length < totalHistory;
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreHistory && !isLoadingMoreHistory && !isLoadingBalanceHistory) {
+          handleLoadMoreHistory();
+        }
+      },
+      { threshold: 0.1, rootMargin: "100px" }
+    );
+
+    observer.observe(sentinel);
+
+    return () => observer.disconnect();
+  }, [hasMoreHistory, isLoadingMoreHistory, isLoadingBalanceHistory, handleLoadMoreHistory]);
+
+  useEffect(() => {
     if (isOpen && playerId) {
       fetchBalanceHistory(playerId, true);
     }
-  }, [isOpen, playerId, fetchBalanceHistory]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, playerId, selectedSeason]); // Intentionally exclude fetchBalanceHistory to avoid re-fetching on callback recreation
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -282,21 +310,26 @@ export function BalanceHistoryDialog({
               })()}
             </div>
           )}
-        </div>
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
-          {balanceHistory.length < totalHistory && (
-            <Button
-              variant="outline"
-              onClick={handleLoadMoreHistory}
-              disabled={isLoadingMoreHistory}
-              className="w-full sm:w-auto sm:mr-auto"
-            >
-              {isLoadingMoreHistory
-                ? "Loading..."
-                : `Load More (${totalHistory - balanceHistory.length
-                } remaining)`}
-            </Button>
+
+          {/* Infinite scroll sentinel */}
+          {!isLoadingBalanceHistory && displayedHistory.length > 0 && (
+            <div ref={loadMoreSentinelRef} className="py-4 flex flex-col items-center justify-center">
+              {isLoadingMoreHistory ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">Loading more...</span>
+                </div>
+              ) : hasMoreHistory ? (
+                <p className="text-xs text-muted-foreground">Scroll for more</p>
+              ) : totalHistory > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Showing all {totalHistory} transactions
+                </p>
+              ) : null}
+            </div>
           )}
+        </div>
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

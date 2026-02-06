@@ -12,7 +12,7 @@ import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
 import { CategoryBadge } from "@/src/components/ui/category-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
-import { History, Ban, AlertTriangle, CheckCircle, DollarSign, ArrowUpRight, Shield, Heart, User, Crown } from "lucide-react";
+import { History, Ban, AlertTriangle, CheckCircle, DollarSign, ArrowUpRight, Shield, Heart, User, Crown, Loader2 } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { usePlayer } from "@/src/hooks/player/usePlayer";
 import { usePlayerStats } from "@/src/hooks/player/usePlayerStats";
@@ -437,23 +437,31 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                       Adjust UC
                     </Button>
                     <Button
-                      variant={player?.isUCExempt ? "outline" : "secondary"}
+                      variant="outline"
                       onClick={() => toggleUCExemption(!player?.isUCExempt)}
                       disabled={isExemptionPending}
                       className={`w-full sm:w-auto text-sm ${player?.isUCExempt ? "border-amber-600 text-amber-600 hover:bg-amber-50" : ""}`}
                       size="sm"
                     >
-                      <Shield className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
+                      {isExemptionPending ? (
+                        <Loader2 className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0 animate-spin" />
+                      ) : (
+                        <Shield className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
+                      )}
                       {player?.isUCExempt ? "Remove Exempt" : "UC Exempt"}
                     </Button>
                     <Button
-                      variant={player?.isTrusted ? "outline" : "secondary"}
+                      variant="outline"
                       onClick={() => toggleTrusted(!player?.isTrusted)}
                       disabled={isTrustedPending}
                       className={`w-full sm:w-auto text-sm ${player?.isTrusted ? "border-pink-600 text-pink-600 hover:bg-pink-50" : ""}`}
                       size="sm"
                     >
-                      <Heart className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
+                      {isTrustedPending ? (
+                        <Loader2 className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0 animate-spin" />
+                      ) : (
+                        <Heart className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
+                      )}
                       {player?.isTrusted ? "Remove Trusted" : "Trusted"}
                     </Button>
                   </>

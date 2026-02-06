@@ -66,12 +66,12 @@ export async function PATCH(
       const updated = await prisma.player.update({
         where: { id },
         data: { isUCExempt: body.isUCExempt },
-        select: { id: true, isUCExempt: true, user: { select: { userName: true } } },
+        select: { id: true, isUCExempt: true, user: { select: { userName: true, displayName: true } } },
       });
 
       return SuccessResponse({
         data: updated,
-        message: `UC exemption ${updated.isUCExempt ? "enabled" : "disabled"} for ${updated.user.userName}`,
+        message: `UC exemption ${updated.isUCExempt ? "enabled" : "disabled"} for ${updated.user.displayName || updated.user.userName}`,
       });
     }
 
@@ -80,12 +80,12 @@ export async function PATCH(
       const updated = await prisma.player.update({
         where: { id },
         data: { isTrusted: body.isTrusted },
-        select: { id: true, isTrusted: true, user: { select: { userName: true } } },
+        select: { id: true, isTrusted: true, user: { select: { userName: true, displayName: true } } },
       });
 
       return SuccessResponse({
         data: updated,
-        message: `Trusted status ${updated.isTrusted ? "enabled" : "disabled"} for ${updated.user.userName}`,
+        message: `Trusted status ${updated.isTrusted ? "enabled" : "disabled"} for ${updated.user.displayName || updated.user.userName}`,
       });
     }
 
