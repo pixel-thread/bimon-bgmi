@@ -147,7 +147,9 @@ export const VotersDialog: React.FC<VotersDialogsProps> = React.memo(
               <div>{pollQuestion}</div>
             </DialogTitle>
             <DialogDescription>
-              {totalVotes} total vote{totalVotes !== 1 ? "s" : ""}
+              {selectedGroup
+                ? `${filterPollVote(selectedGroup).length} voter${filterPollVote(selectedGroup).length !== 1 ? "s" : ""}`
+                : `${totalVotes} total vote${totalVotes !== 1 ? "s" : ""}`}
             </DialogDescription>
           </DialogHeader>
 
