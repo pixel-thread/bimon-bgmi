@@ -32,6 +32,7 @@ type PlayerT = {
     kills?: number;
     hasRoyalPass?: boolean;
     isAnimated?: boolean;
+    isVideo?: boolean;
     thumbnailUrl?: string | null;
 };
 
@@ -271,18 +272,23 @@ export function CustomPlayerTable({
         const kdValue = Number(player.kd || 0);
         const displayKd = isFinite(kdValue) ? kdValue.toFixed(2) : "0.00";
 
-        // For animated GIFs - track loaded state for smooth playback
-        const [gifLoaded, setGifLoaded] = useState(false);
-        const gifUrl = player.isAnimated ? (player.characterImageUrl || player.imageUrl) : null;
+        // For animated content (GIF or video) - deferred loading
+        const [mediaLoaded, setMediaLoaded] = useState(false);
+        const [shouldLoadMedia, setShouldLoadMedia] = useState(false);
+        const isVideo = player.isVideo;
+        const isAnimated = player.isAnimated;
+        const mediaUrl = (isAnimated || isVideo) ? (player.characterImageUrl || player.imageUrl) : null;
 
-        // Preload GIF on mount
+        // Defer media loading to not block initial render
         useEffect(() => {
-            if (gifUrl) {
-                const img = new Image();
-                img.onload = () => setGifLoaded(true);
-                img.src = gifUrl;
+            if (mediaUrl) {
+                // Small delay to let the page render first
+                const deferTimer = setTimeout(() => {
+                    setShouldLoadMedia(true);
+                }, 100);
+                return () => clearTimeout(deferTimer);
             }
-        }, [gifUrl]);
+        }, [mediaUrl]);
 
         return (
             <div
@@ -295,29 +301,59 @@ export function CustomPlayerTable({
                     hover:scale-105 hover:shadow-xl
                 `}
             >
-                {/* Background image or animated GIF */}
+                {/* Background image, video, or animated GIF */}
                 {player.characterImageUrl || player.imageUrl ? (
-                    player.isAnimated && gifUrl ? (
-                        // Animated GIF - preload then show for smooth playback
+                    isVideo && mediaUrl ? (
+                        // Video content - show thumbnail first, then video
                         <>
-                            {/* Show thumbnail or static bg while loading */}
-                            {!gifLoaded && (
-                                <div
-                                    className="absolute inset-0 bg-cover bg-center opacity-90"
-                                    style={{ backgroundImage: `url(${player.thumbnailUrl || player.characterImageUrl || player.imageUrl})` }}
+                            {/* Static thumbnail - shows immediately */}
+                            <img
+                                src={player.thumbnailUrl || player.characterImageUrl || player.imageUrl || ''}
+                                alt=""
+                                loading="eager"
+                                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded ? 'opacity-0' : 'opacity-90'}`}
+                            />
+                            {/* Video - plays once and stops */}
+                            {shouldLoadMedia && (
+                                <video
+                                    src={mediaUrl}
+                                    autoPlay
+                                    muted
+                                    playsInline
+                                    loop={false}
+                                    onLoadedData={() => setMediaLoaded(true)}
+                                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded ? 'opacity-90' : 'opacity-0'}`}
                                 />
                             )}
-                            {/* Show animated GIF once loaded */}
+                        </>
+                    ) : isAnimated && mediaUrl ? (
+                        // Animated GIF - show thumbnail first, swap to GIF when loaded
+                        <>
+                            {/* Static thumbnail - shows immediately, fades out when GIF loads */}
                             <img
-                                src={gifUrl}
+                                src={player.thumbnailUrl || player.characterImageUrl || player.imageUrl || ''}
                                 alt=""
-                                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${gifLoaded ? 'opacity-90' : 'opacity-0'}`}
+                                loading="eager"
+                                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded ? 'opacity-0' : 'opacity-90'}`}
                             />
+                            {/* Animated GIF - rendered hidden, becomes visible on load */}
+                            {shouldLoadMedia && (
+                                <img
+                                    src={mediaUrl}
+                                    alt=""
+                                    onLoad={() => setMediaLoaded(true)}
+                                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded ? 'opacity-90' : 'opacity-0'}`}
+                                />
+                            )}
                         </>
                     ) : (
-                        <div
-                            className="absolute inset-0 bg-cover bg-center opacity-90"
-                            style={{ backgroundImage: `url(${player.characterImageUrl || player.imageUrl})` }}
+                        // Static image
+                        <img
+                            src={player.characterImageUrl || player.imageUrl || ''}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute inset-0 w-full h-full object-cover opacity-90"
                         />
                     )
                 ) : (
@@ -341,9 +377,12 @@ export function CustomPlayerTable({
                     {/* Centered circular profile image */}
                     <div className="w-8 h-8 rounded-full border border-white/80 shadow-md overflow-hidden bg-slate-700">
                         {player.profileImageUrl ? (
-                            <div
-                                className="w-full h-full bg-cover bg-center"
-                                style={{ backgroundImage: `url(${player.profileImageUrl})` }}
+                            <img
+                                src={player.profileImageUrl}
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                className="w-full h-full object-cover"
                             />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-primary/60">

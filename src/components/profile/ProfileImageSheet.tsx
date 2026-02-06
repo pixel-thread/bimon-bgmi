@@ -22,7 +22,7 @@ import { Camera, CloudUpload, ImageIcon, Loader2, Trash2, User, Check, X, Refres
 import Image from "next/image";
 import { useDialogBackHandler } from "@/src/hooks/useDialogBackHandler";
 import { compressProfileImage, compressCharacterImage } from "@/src/utils/image/compressImage";
-import { videoToGif, isVideoFile } from "@/src/utils/image/videoToGif";
+import { isVideoFile } from "@/src/utils/image/compressVideo";
 import { useRoyalPass } from "@/src/hooks/royal-pass/useRoyalPass";
 import { cn } from "@/src/lib/utils";
 import { generateRandomPrompt } from "@/src/data/ai-prompt-styles";
@@ -50,8 +50,7 @@ interface ProfileImageSheetProps {
 export function ProfileImageSheet({ userName, displayName, className, children }: ProfileImageSheetProps) {
     const router = useRouter();
     const { user: clerkUser } = useUser();
-    const { hasRoyalPass: _hasRoyalPass } = useRoyalPass();
-    const hasRoyalPass = _hasRoyalPass;
+    const { hasRoyalPass } = useRoyalPass();
     const queryClient = useQueryClient();
     const [isOpen, setIsOpen] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -154,8 +153,6 @@ export function ProfileImageSheet({ userName, displayName, className, children }
         try {
             setIsCompressing(true);
 
-            let compressedFile: File;
-            let wasVideoConversion = false;
             let thumbnailBlob: Blob | null = null;
 
             // Character image upload is restricted to Royal Pass holders
@@ -166,38 +163,96 @@ export function ProfileImageSheet({ userName, displayName, className, children }
 
             // Check if it's a video file (for character images only)
             if (uploadTargetType === "character" && isVideoFile(file)) {
-                setIsConvertingGif(true);
+                setIsConvertingGif(true); // Reuse this state for "processing video"
                 setIsCompressing(false);
                 try {
-                    // Import getVideoThumbnail dynamically
-                    const { getVideoThumbnail } = await import("@/src/utils/image/videoToGif");
+                    // Import video utilities
+                    const { validateVideo, getVideoThumbnail } = await import("@/src/utils/image/compressVideo");
+                    const { uploadVideoToCloudinary } = await import("@/src/services/upload/cloudinary");
 
-                    // Extract thumbnail first
-                    thumbnailBlob = await getVideoThumbnail(file);
+                    // Validate video duration and size
+                    await validateVideo(file, 10, 50); // max 10 seconds, 50MB (Cloudinary optimizes)
 
-                    // Convert video to GIF
-                    compressedFile = await videoToGif(file, {
-                        maxWidth: 270,
-                        maxHeight: 480,
-                        fps: 10,
-                        maxDuration: 5,
-                    });
-                    wasVideoConversion = true;
-                    toast.success(`Video converted to GIF (${(compressedFile.size / 1024).toFixed(0)}KB)`);
-                } catch (err) {
-                    console.error("Video conversion error:", err);
-                    toast.error(err instanceof Error ? err.message : "Failed to convert video to GIF");
+                    // Extract thumbnail for preview
+                    thumbnailBlob = await getVideoThumbnail(file, 0.5);
+
+                    // Get Cloudinary config from API
+                    const configResponse = await axiosInstance.get("/upload/video");
+                    if (!configResponse.data.success || !configResponse.data.data) {
+                        throw new Error("Video upload not available");
+                    }
+                    const { cloudName, uploadPreset, folder } = configResponse.data.data;
+
+                    // Upload video to Cloudinary
+                    setIsUploading(true);
                     setIsConvertingGif(false);
-                    return;
+
+                    const uploadResult = await uploadVideoToCloudinary(file, {
+                        cloudName,
+                        uploadPreset,
+                        folder,
+                        resourceType: "video",
+                    });
+
+                    if (!uploadResult.success || !uploadResult.url) {
+                        throw new Error(uploadResult.error || "Video upload failed");
+                    }
+
+                    // Upload thumbnail to ImgBB for fallback/preview
+                    let thumbnailUrl: string | undefined;
+                    if (thumbnailBlob) {
+                        try {
+                            const thumbFormData = new FormData();
+                            thumbFormData.append("image", thumbnailBlob, "thumbnail.jpg");
+                            const thumbResponse = await axiosInstance.post("/upload/image", thumbFormData, {
+                                headers: { "Content-Type": "multipart/form-data" },
+                            });
+                            if (thumbResponse.data.success && thumbResponse.data.data?.url) {
+                                thumbnailUrl = thumbResponse.data.data.url;
+                            }
+                        } catch {
+                            // Use Cloudinary's auto-generated thumbnail
+                            thumbnailUrl = uploadResult.thumbnailUrl;
+                        }
+                    }
+
+                    // Generate optimized video URL with Cloudinary transformations
+                    // This makes the video load faster and look great at the target size
+                    let optimizedUrl = uploadResult.url;
+                    if (uploadResult.publicId) {
+                        // Apply Cloudinary transformations: resize, quality auto, format auto
+                        optimizedUrl = `https://res.cloudinary.com/${cloudName}/video/upload/w_540,h_960,c_fill,q_auto,f_auto/${uploadResult.publicId}`;
+                    }
+
+                    // Save video as character image with optimized URL
+                    const charResponse = await axiosInstance.post("/profile/character-image", {
+                        imageUrl: optimizedUrl,
+                        isAnimated: true, // Videos are animated content
+                        isVideo: true, // New flag to indicate video format
+                        thumbnailUrl: thumbnailUrl || uploadResult.thumbnailUrl,
+                    });
+
+                    if (charResponse.data.success) {
+                        toast.success("Video uploaded!");
+                        queryClient.invalidateQueries({ queryKey: ["auth"] });
+                        setIsOpen(false);
+                    } else {
+                        toast.error(charResponse.data.message || "Failed to save character video");
+                    }
+                } catch (err) {
+                    console.error("Video upload error:", err);
+                    toast.error(err instanceof Error ? err.message : "Failed to upload video");
+                } finally {
+                    setIsConvertingGif(false);
+                    setIsUploading(false);
                 }
-                setIsConvertingGif(false);
-            } else {
-                // Use different compression based on target type
-                // Character images get strict 9:16 center-crop, profile images stay square
-                compressedFile = uploadTargetType === "character"
-                    ? await compressCharacterImage(file)
-                    : await compressProfileImage(file);
+                return; // Early return - video flow is complete
             }
+
+            // For images, use different compression based on target type
+            const compressedFile = uploadTargetType === "character"
+                ? await compressCharacterImage(file)
+                : await compressProfileImage(file);
 
             setIsCompressing(false);
             setIsUploading(true);
@@ -214,38 +269,21 @@ export function ProfileImageSheet({ userName, displayName, className, children }
 
             if (result.success && result.data?.url) {
                 if (uploadTargetType === "character") {
-                    // If it was a video conversion, also upload the thumbnail
-                    let thumbnailUrl: string | undefined;
-                    if (wasVideoConversion && thumbnailBlob) {
-                        try {
-                            const thumbFormData = new FormData();
-                            thumbFormData.append("image", thumbnailBlob, "thumbnail.jpg");
-                            const thumbResponse = await axiosInstance.post("/upload/image", thumbFormData, {
-                                headers: { "Content-Type": "multipart/form-data" },
-                            });
-                            if (thumbResponse.data.success && thumbResponse.data.data?.url) {
-                                thumbnailUrl = thumbResponse.data.data.url;
-                            }
-                        } catch {
-                            console.warn("Failed to upload thumbnail, proceeding without it");
-                        }
-                    }
-
-                    // Save as character image via different endpoint
+                    // Save as character image
                     try {
                         const charResponse = await axiosInstance.post("/profile/character-image", {
                             imageUrl: result.data.url,
-                            isAnimated: wasVideoConversion,
-                            thumbnailUrl: thumbnailUrl,
+                            isAnimated: false,
+                            isVideo: false,
                         });
                         if (charResponse.data.success) {
-                            toast.success(wasVideoConversion ? "Animated character image saved!" : "Character image updated!");
+                            toast.success("Character image updated!");
                             queryClient.invalidateQueries({ queryKey: ["auth"] });
                             setIsOpen(false);
                         } else {
                             toast.error(charResponse.data.message || "Failed to update character image");
                         }
-                    } catch (err) {
+                    } catch {
                         toast.error("Failed to save character image");
                     }
                 } else {

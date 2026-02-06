@@ -15,25 +15,37 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { imageUrl, isAnimated = false, thumbnailUrl } = body;
+        const { imageUrl, isAnimated = false, isVideo = false, thumbnailUrl } = body;
 
         if (!imageUrl) {
             return ErrorResponse({ message: "Image URL is required", status: 400 });
         }
 
-        // Find the user
+        // Find the user with player and royalPasses
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
-            include: { player: true },
+            include: {
+                player: {
+                    include: {
+                        royalPasses: { take: 1 }
+                    }
+                }
+            },
         });
 
         if (!user?.playerId) {
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
 
+        // Check if user has Royal Pass
+        const hasRoyalPass = (user.player?.royalPasses?.length ?? 0) > 0;
+        if (!hasRoyalPass) {
+            return ErrorResponse({ message: "Royal Pass required to upload character images", status: 403 });
+        }
+
         // Create gallery entry for the character image using existing service
         // Use a unique ID for imageId since we're using external URL
-        const uniqueId = `imgbb_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+        const uniqueId = `${isVideo ? 'cloudinary' : 'imgbb'}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
         const galleryImage = await addGalleryImage({
             data: {
@@ -43,7 +55,8 @@ export async function POST(req: Request) {
                 fullPath: imageUrl,
                 publicUrl: imageUrl,
                 isCharacterImg: true,
-                isAnimated: isAnimated,
+                isAnimated: isAnimated || isVideo, // Videos are also animated content
+                isVideo: isVideo,
                 thumbnailUrl: thumbnailUrl || null,
             },
         });

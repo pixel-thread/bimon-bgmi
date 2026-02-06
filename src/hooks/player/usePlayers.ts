@@ -23,6 +23,7 @@ type PlayerT = {
   characterImageUrl?: string | null;
   hasRoyalPass?: boolean;
   isAnimated?: boolean;
+  isVideo?: boolean;
   thumbnailUrl?: string | null;
 };
 

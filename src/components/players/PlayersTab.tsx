@@ -89,7 +89,12 @@ export function PlayersTab() {
               kills: selectedPlayer.kills,
               matches: selectedPlayer.matches,
               deaths: selectedPlayer.deaths,
-              imageUrl: selectedPlayer.profileImageUrl || selectedPlayer.imageUrl,
+              imageUrl: selectedPlayer.imageUrl,
+              profileImageUrl: selectedPlayer.profileImageUrl,
+              characterImageUrl: selectedPlayer.characterImageUrl,
+              isAnimated: selectedPlayer.isAnimated,
+              isVideo: selectedPlayer.isVideo,
+              thumbnailUrl: selectedPlayer.thumbnailUrl,
               balance: selectedPlayer.uc,
               hasRoyalPass: selectedPlayer.hasRoyalPass,
             } : undefined}

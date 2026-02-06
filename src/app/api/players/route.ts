@@ -134,8 +134,9 @@ export async function GET(req: NextRequest) {
           characterImageUrl: (player.characterImageId && player.characterImageId !== "none")
             ? player.characterImage?.publicUrl || null
             : null,
-          // Animation info for GIF support
+          // Animation info for GIF/video support
           isAnimated: player.characterImage?.isAnimated || false,
+          isVideo: player.characterImage?.isVideo || false,
           thumbnailUrl: player.characterImage?.thumbnailUrl || null,
           email: clerkInfo?.email || null,
           firstName: clerkInfo?.firstName || null,
@@ -175,8 +176,9 @@ export async function GET(req: NextRequest) {
           characterImageUrl: (player.characterImageId && player.characterImageId !== "none")
             ? player.characterImage?.publicUrl || null
             : null,
-          // Animation info for GIF support
+          // Animation info for GIF/video support
           isAnimated: player.characterImage?.isAnimated || false,
+          isVideo: player.characterImage?.isVideo || false,
           thumbnailUrl: player.characterImage?.thumbnailUrl || null,
           email: clerkInfo?.email || null,
           firstName: clerkInfo?.firstName || null,

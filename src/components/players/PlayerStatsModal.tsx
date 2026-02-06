@@ -73,6 +73,11 @@ type InitialPlayerData = {
   matches: number;
   deaths: number;
   imageUrl?: string | null;
+  profileImageUrl?: string | null;
+  characterImageUrl?: string | null;
+  isAnimated?: boolean;
+  isVideo?: boolean;
+  thumbnailUrl?: string | null;
   balance?: number;
   hasRoyalPass?: boolean;
 };
@@ -108,7 +113,13 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
   // Derived display values - use initialData for instant AND accurate display
   // Circle avatars: customProfileImageUrl > Clerk image (no character image)
   const displayName = player?.user?.displayName || player?.user?.userName || initialData?.displayName || initialData?.userName || "Player";
-  const displayImageUrl = (player as any)?.customProfileImageUrl || player?.clerkImageUrl || initialData?.imageUrl;
+  const displayImageUrl = initialData?.profileImageUrl || (player as any)?.customProfileImageUrl || player?.clerkImageUrl || initialData?.imageUrl;
+
+  // Character image/video data (for 9:16 preview)
+  const characterImageUrl = initialData?.characterImageUrl || (player as any)?.characterImage?.publicUrl;
+  const isVideo = initialData?.isVideo || (player as any)?.characterImage?.isVideo;
+  const isAnimated = initialData?.isAnimated || (player as any)?.characterImage?.isAnimated;
+  const thumbnailUrl = initialData?.thumbnailUrl || (player as any)?.characterImage?.thumbnailUrl;
 
   // Stats from initialData (already accurate from players list API)
   const displayDeaths = initialData?.deaths ?? 0;
@@ -124,6 +135,15 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const [avatarPosition, setAvatarPosition] = useState({ x: 0, y: 0 });
   const avatarRef = React.useRef<HTMLDivElement>(null);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+
+  // Key to trigger video replay when modal opens
+  const [videoKey, setVideoKey] = useState(0);
+  React.useEffect(() => {
+    if (isOpen && isVideo) {
+      setVideoKey(prev => prev + 1);
+    }
+  }, [isOpen, isVideo]);
 
   // Reset image preview when modal closes or player changes
   React.useEffect(() => {
@@ -249,97 +269,80 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
         <DialogContent
           className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto p-5 sm:p-7"
           onOpenAutoFocus={(e) => e.preventDefault()}
+          hideCloseButton
         >
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 sm:gap-3">
-              {isLoading ? (
-                <div className="flex items-center gap-3">
-                  {/* Avatar skeleton */}
-                  <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-700 dark:to-zinc-600 animate-pulse" />
-                  <div className="flex-1 min-w-0">
-                    {/* Name skeleton */}
-                    <div className="h-5 sm:h-6 w-28 sm:w-36 bg-zinc-200 dark:bg-zinc-700 rounded-md animate-pulse mb-2" />
-                    {/* Badge skeleton */}
-                    <div className="h-5 w-16 sm:w-20 bg-zinc-100 dark:bg-zinc-800 rounded-full animate-pulse" />
-                  </div>
-                </div>
-              ) : (!player && !initialData) ? (
-                <span>Player Not Found</span>
-              ) : (
-                <div className="flex items-center gap-3">
-                  {/* Clickable Avatar */}
-                  <div
-                    ref={avatarRef}
-                    className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-full border-2 border-zinc-200 dark:border-zinc-700 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={handleAvatarClick}
-                  >
-                    {displayImageUrl ? (
-                      <img
-                        src={displayImageUrl}
-                        alt={displayName}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-lg font-semibold bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                        {displayName?.substring(0, 2).toUpperCase()}
-                      </div>
-                    )}
-                    {/* Banned Stamp Overlay */}
-                    {displayIsBanned && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="absolute inset-0 bg-black/40 rounded-full" />
-                        <div className="relative rotate-[-20deg] bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded border-2 border-red-800 shadow-lg uppercase tracking-wider">
-                          Banned
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                      <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
-                        {displayName}
-                      </span>
-                      {displayIsBanned && (
-                        <Badge
-                          variant="destructive"
-                          className="bg-red-600 hover:bg-red-700 text-xs"
-                        >
-                          <Ban className="w-3 h-3 mr-0.5 sm:mr-1" />
-                          BANNED
-                        </Badge>
-                      )}
-                      {((player as any)?.hasRoyalPass || initialData?.hasRoyalPass) && (
-                        <Crown className="w-4 h-4 text-amber-500 crown-glow flex-shrink-0" />
-                      )}
-                      {isSuperAdmin && player?.isUCExempt && (
-                        <Badge
-                          variant="secondary"
-                          className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 text-xs"
-                        >
-                          <Shield className="w-3 h-3 mr-0.5 sm:mr-1" />
-                          UC EXEMPT
-                        </Badge>
-                      )}
-                      {isSuperAdmin && player?.isTrusted && (
-                        <Badge
-                          variant="secondary"
-                          className="bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-100 text-xs"
-                        >
-                          <Heart className="w-3 h-3 mr-0.5 sm:mr-1" />
-                          TRUSTED
-                        </Badge>
-                      )}
+          <DialogHeader className="text-center">
+            {isLoading ? (
+              <div className="flex flex-col items-center gap-2">
+                <DialogTitle className="sr-only">Loading player...</DialogTitle>
+                <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-zinc-200 dark:bg-zinc-700 animate-pulse" />
+                <div className="h-6 w-32 bg-zinc-200 dark:bg-zinc-700 rounded-md animate-pulse" />
+                <div className="h-5 w-16 bg-zinc-100 dark:bg-zinc-800 rounded-full animate-pulse" />
+              </div>
+            ) : (!player && !initialData) ? (
+              <DialogTitle className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
+                Player Not Found
+              </DialogTitle>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                {/* Clickable Avatar */}
+                <div
+                  ref={avatarRef}
+                  className="relative h-14 w-14 sm:h-16 sm:w-16 rounded-full border-2 border-zinc-200 dark:border-zinc-700 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={handleAvatarClick}
+                >
+                  {displayImageUrl ? (
+                    <img
+                      src={displayImageUrl}
+                      alt={displayName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-lg font-semibold bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                      {displayName?.substring(0, 2).toUpperCase()}
                     </div>
-                    <div className="flex justify-start mt-1">
-                      <CategoryBadge
-                        category={displayCategory}
-                        size="sm"
-                      />
+                  )}
+                  {displayIsBanned && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/40 rounded-full" />
+                      <div className="relative rotate-[-20deg] bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded border border-red-800 shadow-lg uppercase">
+                        Banned
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
-            </DialogTitle>
+                {/* Name + Crown */}
+                <DialogTitle className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-1.5">
+                  {displayName}
+                  {((player as any)?.hasRoyalPass || initialData?.hasRoyalPass) && (
+                    <Crown className="w-5 h-5 text-amber-500 crown-glow" />
+                  )}
+                </DialogTitle>
+                {/* Category Badge */}
+                <CategoryBadge category={displayCategory} size="sm" />
+                {/* Admin badges */}
+                <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                  {displayIsBanned && (
+                    <Badge variant="destructive" className="bg-red-600 hover:bg-red-700 text-[10px] px-1.5 py-0">
+                      <Ban className="w-2.5 h-2.5 mr-0.5" />
+                      BANNED
+                    </Badge>
+                  )}
+                  {isSuperAdmin && player?.isUCExempt && (
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 text-[10px] px-1.5 py-0">
+                      <Shield className="w-2.5 h-2.5 mr-0.5" />
+                      UC EXEMPT
+                    </Badge>
+                  )}
+                  {isSuperAdmin && player?.isTrusted && (
+                    <Badge variant="secondary" className="bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-100 text-[10px] px-1.5 py-0">
+                      <Heart className="w-2.5 h-2.5 mr-0.5" />
+                      TRUSTED
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
           </DialogHeader>
 
           {isLoading ? (
@@ -349,38 +352,77 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
               Player data could not be loaded
             </div>
           ) : (
-            <div className="space-y-5 sm:space-y-8 py-2">
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-                <div className="text-center p-4 sm:p-5 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
-                  <p className="text-2xl sm:text-3xl font-bold text-blue-600">
-                    {displayDeaths}
-                  </p>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">Matches</p>
-                </div>
-                <div className="text-center p-4 sm:p-5 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-900/30">
-                  <p className="text-2xl sm:text-3xl font-bold text-green-600">
-                    {displayKills}
-                  </p>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">Kills</p>
-                </div>
-                <div className="text-center p-4 sm:p-5 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
-                  <p className="text-2xl sm:text-3xl font-bold text-yellow-600">
-                    {displayKd.toFixed(2)}
-                  </p>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">K/D</p>
-                </div>
-                <div className="text-center p-4 sm:p-5 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-900/30">
-                  <p
-                    className={`text-2xl sm:text-3xl font-bold ${Number(displayBalance) >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                      }`}
-                  >
-                    {Math.floor(Number(displayBalance))} UC
-                  </p>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">Balance</p>
+            <div className="space-y-4 sm:space-y-5 py-2">
+              {/* Two column layout: Video | Stats */}
+              <div className="flex gap-4 sm:gap-5">
+                {/* Character Video/Image - Left */}
+                {characterImageUrl && (
+                  <div className="flex-shrink-0">
+                    <div className="relative w-20 sm:w-24 aspect-[9/16] rounded-xl overflow-hidden border-2 border-yellow-400/60 dark:border-yellow-500/60 shadow-md bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950">
+                      {isVideo ? (
+                        <video
+                          key={videoKey}
+                          ref={videoRef}
+                          src={characterImageUrl}
+                          autoPlay
+                          muted
+                          playsInline
+                          loop={false}
+                          poster={thumbnailUrl || undefined}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      ) : isAnimated ? (
+                        <img
+                          key={isOpen ? `gif-${id}` : undefined}
+                          src={characterImageUrl}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      ) : (
+                        <img
+                          src={characterImageUrl}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Stats Grid 2x2 - Right */}
+                <div className="flex-1 grid grid-cols-2 gap-2 sm:gap-3">
+                  <div className="text-center p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                    <p className="text-xl sm:text-2xl font-bold text-blue-600">
+                      {displayDeaths}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Matches</p>
+                  </div>
+                  <div className="text-center p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-900/30">
+                    <p className="text-xl sm:text-2xl font-bold text-green-600">
+                      {displayKills}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Kills</p>
+                  </div>
+                  <div className="text-center p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
+                    <p className="text-xl sm:text-2xl font-bold text-yellow-600">
+                      {displayKd.toFixed(2)}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">K/D</p>
+                  </div>
+                  <div className="text-center p-3 sm:p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-900/30">
+                    <p
+                      className={`text-xl sm:text-2xl font-bold ${Number(displayBalance) >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                        }`}
+                    >
+                      {Math.floor(Number(displayBalance))} UC
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Balance</p>
+                  </div>
                 </div>
               </div>
+
 
               {player?.isBanned && player?.playerBanned && (
                 <div className="bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 rounded-lg p-3 sm:p-4">
@@ -540,7 +582,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog >
 
       {(player || initialData) && (
         <UCTransferDialog
@@ -553,40 +595,43 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
               : getDisplayName(initialData?.displayName, initialData?.userName) || "Player"
           }
         />
-      )}
+      )
+      }
 
       {/* Image Preview Overlay - rendered via Portal to document.body to cover everything */}
-      {typeof document !== 'undefined' && createPortal(
-        <AnimatePresence>
-          {isImagePreviewOpen && displayImageUrl && (
-            <>
-              {/* Backdrop - covers entire page including modal */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-md"
-              />
-              {/* Image - centered, also click to close */}
-              <motion.div
-                ref={imagePreviewRef}
-                initial={{ scale: 0.15, opacity: 0, x: avatarPosition.x, y: avatarPosition.y }}
-                animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
-                exit={{ scale: 0.15, opacity: 0, x: avatarPosition.x, y: avatarPosition.y }}
-                transition={{ type: "spring", stiffness: 300, damping: 28 }}
-                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[10000] w-64 h-64 sm:w-80 sm:h-80 rounded-full border-4 border-white dark:border-zinc-800 shadow-2xl overflow-hidden"
-              >
-                <img
-                  src={displayImageUrl}
-                  alt={displayName}
-                  className="w-full h-full object-cover"
+      {
+        typeof document !== 'undefined' && createPortal(
+          <AnimatePresence>
+            {isImagePreviewOpen && displayImageUrl && (
+              <>
+                {/* Backdrop - covers entire page including modal */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-md"
                 />
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
+                {/* Image - centered, also click to close */}
+                <motion.div
+                  ref={imagePreviewRef}
+                  initial={{ scale: 0.15, opacity: 0, x: avatarPosition.x, y: avatarPosition.y }}
+                  animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
+                  exit={{ scale: 0.15, opacity: 0, x: avatarPosition.x, y: avatarPosition.y }}
+                  transition={{ type: "spring", stiffness: 300, damping: 28 }}
+                  className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[10000] w-64 h-64 sm:w-80 sm:h-80 rounded-full border-4 border-white dark:border-zinc-800 shadow-2xl overflow-hidden"
+                >
+                  <img
+                    src={displayImageUrl}
+                    alt={displayName}
+                    className="w-full h-full object-cover"
+                  />
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>,
+          document.body
+        )
+      }
     </>
   );
 }

@@ -519,6 +519,7 @@ model Gallery {
   isCharacterImg     Boolean       @default(false)
   isGlobalBackground Boolean       @default(false)
   isAnimated         Boolean       @default(false)
+  isVideo            Boolean       @default(false)
   thumbnailUrl       String?
 
   playerId String? @unique

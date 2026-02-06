@@ -451,16 +451,30 @@ export default function ProfilePage() {
                 {/* 9:16 Podium Preview - LEFT side */}
                 <ProfileImageSheet userName={user.userName} displayName={user.displayName || undefined}>
                     <div className="relative w-28 sm:w-36 aspect-[9/16] rounded-2xl border-[3px] border-yellow-400 dark:border-yellow-500 shadow-[0_0_25px_rgba(250,204,21,0.4)] bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 overflow-hidden cursor-pointer group hover:scale-105 transition-transform flex-shrink-0">
-                        {/* Character image or fallback gradient - supports animated GIFs */}
+                        {/* Character image/video or fallback gradient */}
                         {user.player?.characterImage?.publicUrl ? (
-                            user.player?.characterImage?.isAnimated ? (
-                                // Animated GIF - use img tag for one-time playback
+                            user.player?.characterImage?.isVideo ? (
+                                // Video - use video tag with no loop for single playback
+                                <video
+                                    key={user.player.characterImage.publicUrl}
+                                    src={user.player.characterImage.publicUrl}
+                                    autoPlay
+                                    muted
+                                    playsInline
+                                    loop={false}
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                    poster={user.player.characterImage.thumbnailUrl || undefined}
+                                />
+                            ) : user.player?.characterImage?.isAnimated ? (
+                                // Animated GIF - use img tag
                                 <img
+                                    key={user.player.characterImage.publicUrl}
                                     src={user.player.characterImage.publicUrl}
                                     alt=""
                                     className="absolute inset-0 w-full h-full object-cover"
                                 />
                             ) : (
+                                // Static image - use background-image
                                 <div
                                     className="absolute inset-0 bg-cover bg-center"
                                     style={{ backgroundImage: `url(${user.player.characterImage.publicUrl})` }}
