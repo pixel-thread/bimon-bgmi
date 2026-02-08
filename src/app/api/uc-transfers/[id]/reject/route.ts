@@ -65,10 +65,11 @@ export async function PATCH(
             });
 
             // Notify the requester
+            const rejecterName = transfer.toPlayer.user.displayName || transfer.toPlayer.user.userName;
             await tx.notification.create({
                 data: {
                     title: "UC Request Rejected",
-                    message: `${transfer.toPlayer.user.userName} rejected your request for ${transfer.amount} UC`,
+                    message: `${rejecterName} rejected your request for ${transfer.amount} UC`,
                     type: "uc_rejected",
                     playerId: transfer.fromPlayerId,
                     link: "/profile",
@@ -78,7 +79,7 @@ export async function PATCH(
             // Send push notification to requester (async, non-blocking)
             sendPushToPlayer(transfer.fromPlayerId, {
                 title: "UC Request Rejected ❌",
-                body: `${transfer.toPlayer.user.userName} rejected your request for ${transfer.amount} UC`,
+                body: `${rejecterName} rejected your request for ${transfer.amount} UC`,
                 url: "/profile",
             }).catch((error) => {
                 console.error("Failed to send push notification:", error);

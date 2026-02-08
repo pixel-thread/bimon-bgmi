@@ -102,24 +102,68 @@ export async function recordTournamentParticipation(
             };
         }
 
-        // Check if there are any tournaments between player's last participation and current
-        // This handles gaps in sequence IDs (e.g., deleted tournaments)
-        const tournamentsBetween = await prisma.tournamentSequence.count({
-            where: {
-                sequenceId: {
-                    gt: player.lastTournamentSeqId,
-                    lt: currentSeqId,
-                },
-            },
+        // Check if there are any COMPLETED tournaments in the CURRENT SEASON
+        // between player's last participation and current tournament
+        // This is more accurate than using sequence IDs which are global
+
+        // Get the last tournament's createdAt time
+        const lastTournamentSeq = await prisma.tournamentSequence.findUnique({
+            where: { sequenceId: player.lastTournamentSeqId },
+            select: { tournamentId: true },
         });
 
-        if (tournamentsBetween === 0) {
-            // No tournaments between - this is consecutive! Increment streak
+        const currentTournamentSeq = await prisma.tournamentSequence.findUnique({
+            where: { sequenceId: currentSeqId },
+            select: { tournamentId: true },
+        });
+
+        if (lastTournamentSeq && currentTournamentSeq) {
+            const lastTournament = await prisma.tournament.findUnique({
+                where: { id: lastTournamentSeq.tournamentId },
+                select: { createdAt: true },
+            });
+
+            const currentTournament = await prisma.tournament.findUnique({
+                where: { id: currentTournamentSeq.tournamentId },
+                select: { createdAt: true },
+            });
+
+            if (lastTournament && currentTournament && currentSeasonId) {
+                // Count completed tournaments in the same season between these two
+                const tournamentsBetween = await prisma.tournament.count({
+                    where: {
+                        seasonId: currentSeasonId,
+                        isWinnerDeclared: true,
+                        createdAt: {
+                            gt: lastTournament.createdAt,
+                            lt: currentTournament.createdAt,
+                        },
+                        id: {
+                            not: currentTournamentSeq.tournamentId, // Exclude current
+                        },
+                    },
+                });
+
+                if (tournamentsBetween === 0) {
+                    // No tournaments between in this season - this is consecutive! Increment streak
+                    newStreak = player.tournamentStreak + 1;
+                }
+                // Otherwise, player missed tournaments in this season - newStreak stays at 1
+            } else {
+                // Fallback: if we can't determine, assume consecutive
+                newStreak = player.tournamentStreak + 1;
+            }
+        } else {
+            // Fallback: if sequence data missing, assume consecutive
             newStreak = player.tournamentStreak + 1;
         }
-        // Otherwise, player missed tournaments - newStreak stays at 1
     }
     // If season changed, newStreak stays at 1 (reset)
+
+    // Log if streak is being reset unexpectedly (helps detect bugs)
+    if (newStreak === 1 && player.tournamentStreak > 1) {
+        console.warn(`[Streak] Player ${playerId} streak reset: ${player.tournamentStreak} → 1 (season changed: ${seasonChanged})`);
+    }
 
     // Check if reward should be given (only for RP holders)
     let rewardGiven = false;
@@ -199,31 +243,75 @@ export async function resetStreaksForNonParticipants(
     tournamentId: string,
     participantPlayerIds: string[]
 ): Promise<number> {
-    const currentSeqId = await prisma.tournamentSequence.findUnique({
-        where: { tournamentId },
-        select: { sequenceId: true },
+    // Get the current tournament's season
+    const tournament = await prisma.tournament.findUnique({
+        where: { id: tournamentId },
+        select: { seasonId: true, createdAt: true },
     });
 
-    if (!currentSeqId) {
+    if (!tournament?.seasonId) {
         return 0;
     }
 
     // Find all players who:
-    // 1. Had a lastTournamentSeqId (participated before)
-    // 2. Their lastTournamentSeqId is less than currentSeqId - 1 (missed this tournament)
-    // 3. Are NOT in the participant list
-    const result = await prisma.player.updateMany({
+    // 1. Have an active streak (> 0)
+    // 2. Are in the SAME season as this tournament
+    // 3. Are NOT in the participant list for this tournament
+    // 4. Their last tournament was BEFORE this one (in the same season)
+
+    // Get all players with active streaks in this season who didn't participate
+    const playersToReset = await prisma.player.findMany({
         where: {
             AND: [
-                { lastTournamentSeqId: { not: null } },
-                { lastTournamentSeqId: { lt: currentSeqId.sequenceId } },
-                { id: { notIn: participantPlayerIds } },
                 { tournamentStreak: { gt: 0 } },
+                { streakSeasonId: tournament.seasonId },
+                { id: { notIn: participantPlayerIds } },
+                { lastTournamentSeqId: { not: null } },
             ],
         },
-        data: {
-            tournamentStreak: 0,
-        },
+        select: { id: true, lastTournamentSeqId: true },
+    });
+
+    if (playersToReset.length === 0) {
+        return 0;
+    }
+
+    // For each player, verify they actually missed a tournament in their season
+    // by checking if there was a completed tournament in their season between their last and this one
+    const playerIdsToReset: string[] = [];
+
+    for (const player of playersToReset) {
+        if (!player.lastTournamentSeqId) continue;
+
+        // Get the player's last tournament
+        const lastSeq = await prisma.tournamentSequence.findUnique({
+            where: { sequenceId: player.lastTournamentSeqId },
+            select: { tournamentId: true },
+        });
+
+        if (!lastSeq) continue;
+
+        const lastTournament = await prisma.tournament.findUnique({
+            where: { id: lastSeq.tournamentId },
+            select: { createdAt: true },
+        });
+
+        if (!lastTournament) continue;
+
+        // Check if the current tournament is after their last one
+        if (tournament.createdAt > lastTournament.createdAt) {
+            // This player missed this tournament - reset their streak
+            playerIdsToReset.push(player.id);
+        }
+    }
+
+    if (playerIdsToReset.length === 0) {
+        return 0;
+    }
+
+    const result = await prisma.player.updateMany({
+        where: { id: { in: playerIdsToReset } },
+        data: { tournamentStreak: 0 },
     });
 
     return result.count;

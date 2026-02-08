@@ -59,7 +59,7 @@ export async function PATCH(
                 data: {
                     amount: transfer.amount,
                     type: "debit",
-                    description: `UC Transfer to ${transfer.fromPlayer.user.userName}`,
+                    description: `UC Transfer to ${transfer.fromPlayer.user.displayName || transfer.fromPlayer.user.userName}`,
                     playerId: transfer.toPlayerId,
                 },
             });
@@ -84,7 +84,7 @@ export async function PATCH(
                 data: {
                     amount: transfer.amount,
                     type: "credit",
-                    description: `UC Transfer from ${transfer.toPlayer.user.userName}`,
+                    description: `UC Transfer from ${transfer.toPlayer.user.displayName || transfer.toPlayer.user.userName}`,
                     playerId: transfer.fromPlayerId,
                 },
             });
@@ -111,10 +111,11 @@ export async function PATCH(
             });
 
             // Notify the requester
+            const approverName = transfer.toPlayer.user.displayName || transfer.toPlayer.user.userName;
             await tx.notification.create({
                 data: {
                     title: "UC Request Approved",
-                    message: `${transfer.toPlayer.user.userName} approved your request for ${transfer.amount} UC`,
+                    message: `${approverName} approved your request for ${transfer.amount} UC`,
                     type: "uc_approved",
                     playerId: transfer.fromPlayerId,
                     link: "/profile",
@@ -124,7 +125,7 @@ export async function PATCH(
             // Send push notification to requester (async, non-blocking)
             sendPushToPlayer(transfer.fromPlayerId, {
                 title: "UC Request Approved! ✅",
-                body: `${transfer.toPlayer.user.userName} approved your request for ${transfer.amount} UC`,
+                body: `${approverName} approved your request for ${transfer.amount} UC`,
                 url: "/profile",
             }).catch((error) => {
                 console.error("Failed to send push notification:", error);

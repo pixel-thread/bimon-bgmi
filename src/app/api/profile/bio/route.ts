@@ -20,12 +20,13 @@ export async function GET(req: NextRequest) {
 
         const player = await prisma.player.findUnique({
             where: { userId: user.id },
-            select: { bio: true },
+            select: { bio: true, category: true },
         });
 
         return SuccessResponse({
             data: {
                 bio: player?.bio || null,
+                category: player?.category || "NOOB",
             },
             message: "Bio fetched successfully",
         });

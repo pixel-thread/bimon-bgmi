@@ -497,27 +497,9 @@ export async function POST(
       await processReferralCommission(playerId);
     }
 
-    // Update tournament streaks for all participants
-    // This is fast since UC transfers are deferred to claim time
-    const { recordTournamentParticipation, resetStreaksForNonParticipants } = await import("@/src/services/player/tournamentStreak");
-
-    const participantPlayerIds = tournamentPlayers.map(p => p.playerId);
-    const STREAK_BATCH_SIZE = 10;
-
-    for (let i = 0; i < participantPlayerIds.length; i += STREAK_BATCH_SIZE) {
-      const batch = participantPlayerIds.slice(i, i + STREAK_BATCH_SIZE);
-      await Promise.all(
-        batch.map(playerId =>
-          recordTournamentParticipation(playerId, id).catch(err =>
-            console.error(`Failed streak update for ${playerId}:`, err)
-          )
-        )
-      );
-    }
-
-    // Reset streaks for players who missed this tournament
-    resetStreaksForNonParticipants(id, participantPlayerIds)
-      .catch(err => console.error("Failed to reset streaks for non-participants:", err));
+    // NOTE: Tournament streaks are NOT updated here anymore.
+    // Use the separate "Update Streaks" button after declaring winner.
+    // This decouples streak logic from winner declaration for better control.
 
     // Calculate total repeat winner tax contributions
     const taxTotals = aggregateTaxTotals(allTaxResults);

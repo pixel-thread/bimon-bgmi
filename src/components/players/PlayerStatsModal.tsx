@@ -380,7 +380,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                   </div>
                   {/* Bio/Message */}
                   <p className="text-xs sm:text-sm text-muted-foreground italic max-w-[200px] text-center mx-auto">
-                    "{(player as any)?.bio || `Nga u ${displayName} dei u Ge`}"
+                    "{(player as any)?.bio || `Nga u ${displayName} dei u ${displayCategory.charAt(0) + displayCategory.slice(1).toLowerCase()}`}"
                   </p>
                 </div>
               </div>

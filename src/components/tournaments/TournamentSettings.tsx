@@ -119,12 +119,33 @@ export function TournamentSettings() {
     },
   });
 
+  // Update streaks mutation
+  const { isPending: isUpdatingStreaks, mutate: updateStreaks } = useMutation({
+    mutationFn: () => http.post(`/admin/tournament/${tournamentId}/update-streaks`),
+    onSuccess: (data) => {
+      if (data.success) {
+        const result = data.data as { updated?: number; rewarded?: number } | undefined;
+        toast.success(`Streaks updated! ${result?.updated || 0} players, ${result?.rewarded || 0} rewards given.`);
+      } else {
+        toast.error(data.message || "Failed to update streaks");
+      }
+    },
+    onError: () => {
+      toast.error("Failed to update streaks");
+    },
+  });
+
   const handleUndoWinner = () => {
     if (!tournamentId || !tournament?.isWinnerDeclared) return;
 
     if (confirm("Are you sure you want to undo the winner declaration? This will:\n\n• Reverse all UC transactions\n• Delete winner records\n• Delete income records\n\nThis action cannot be easily undone!")) {
       undoWinner();
     }
+  };
+
+  const handleUpdateStreaks = () => {
+    if (!tournamentId || !tournament?.isWinnerDeclared) return;
+    updateStreaks();
   };
 
   return (
@@ -197,17 +218,30 @@ export function TournamentSettings() {
               ) : (
                 <>
                   <Button
+                    onClick={handleUpdateStreaks}
+                    disabled={isUpdatingStreaks}
+                    variant="outline"
+                    className="flex-1 gap-1.5 h-8 text-xs"
+                  >
+                    {isUpdatingStreaks ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trophy className="h-3.5 w-3.5" />
+                    )}
+                    {isUpdatingStreaks ? "Updating..." : "Update Streaks"}
+                  </Button>
+                  <Button
                     onClick={handleUndoWinner}
                     disabled={isUndoing}
                     variant="destructive"
-                    className="flex-1 gap-1.5 h-8 text-xs"
+                    className="gap-1.5 h-8 text-xs"
                   >
                     {isUndoing ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <Undo2 className="h-3.5 w-3.5" />
                     )}
-                    {isUndoing ? "Undoing..." : "Undo Winners"}
+                    {isUndoing ? "Undoing..." : "Undo"}
                   </Button>
                 </>
               )}

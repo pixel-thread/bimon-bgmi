@@ -64,6 +64,9 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         if (typeof window === "undefined") return;
         if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) return;
 
+        // Skip in development to reduce network noise
+        if (process.env.NODE_ENV === "development") return;
+
         // Check if already initialized
         if (posthog.__loaded) {
             setIsReady(true);

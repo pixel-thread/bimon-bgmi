@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
                 await tx.notification.create({
                     data: {
                         title: "UC Request",
-                        message: `${fromPlayer?.user.userName} requested ${amount} UC from you`,
+                        message: `${fromPlayer?.user.displayName || fromPlayer?.user.userName} requested ${amount} UC from you`,
                         type: "uc_request",
                         playerId: toPlayerId,
                         link: "/profile",
@@ -187,9 +187,10 @@ export async function POST(req: NextRequest) {
                 });
 
                 // Send push notification to recipient (async, non-blocking)
+                const senderName = fromPlayer?.user.displayName || fromPlayer?.user.userName;
                 const pushBody = message
-                    ? `${fromPlayer?.user.userName} requested ${amount} UC: "${message}"`
-                    : `${fromPlayer?.user.userName} requested ${amount} UC from you`;
+                    ? `${senderName} requested ${amount} UC: "${message}"`
+                    : `${senderName} requested ${amount} UC from you`;
                 sendPushToPlayer(toPlayerId, {
                     title: "UC Request",
                     body: pushBody,

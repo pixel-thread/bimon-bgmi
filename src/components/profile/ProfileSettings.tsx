@@ -147,15 +147,19 @@ export function ProfileSettings() {
         },
     });
 
-    // Fetch current bio
+    // Fetch current bio and category
     const { data: bioData, isSuccess: bioDataLoaded } = useQuery({
         queryKey: ["player-bio"],
-        queryFn: () => http.get<{ bio: string | null }>("/profile/bio"),
+        queryFn: () => http.get<{ bio: string | null; category: string }>("/profile/bio"),
         staleTime: 5 * 60 * 1000,
     });
 
-    // Get the default bio message
-    const defaultBio = user?.displayName ? `Nga u ${user.displayName} dei u Ge` : "";
+    // Format category for display (e.g., "LEGEND" -> "Legend")
+    const formatCategory = (cat: string) => cat.charAt(0) + cat.slice(1).toLowerCase();
+
+    // Get the default bio message with category
+    const playerCategory = bioData?.data?.category || "NOOB";
+    const defaultBio = user?.displayName ? `Nga u ${user.displayName} dei u ${formatCategory(playerCategory)}` : "";
 
     // The "original" bio is what's saved in DB, or the default if nothing saved
     const savedBio = bioData?.data?.bio;
