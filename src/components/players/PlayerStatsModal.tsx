@@ -99,16 +99,17 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
   const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
   const isOwnProfile = user?.playerId === id;
 
-  // Only fetch additional data for admins (they need isUCExempt, isTrusted, playerBanned details)
-  // Regular users can use initialData which already has all needed info (including matches)
+  // Always fetch individual player data when modal opens
+  // This ensures we get the real video URL, not the thumbnail from the list API
+  // (The list API sends thumbnails for positions >= 3 to reduce bandwidth)
   const { data: player, isLoading: isPlayerLoading } = usePlayer({
     id,
-    enabled: isAdmin && isOpen // Only fetch for admins when modal is open
+    enabled: isOpen
   });
 
   // Use initialData if available for instant display (it includes accurate matches from players list)
   const hasInitialData = !!initialData;
-  const isLoading = isAdmin ? (!hasInitialData && isPlayerLoading) : !hasInitialData;
+  const isLoading = !hasInitialData && isPlayerLoading;
 
   // Derived display values - use initialData for instant AND accurate display
   // Circle avatars: customProfileImageUrl > Clerk image (no character image)
@@ -116,10 +117,13 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
   const displayImageUrl = initialData?.profileImageUrl || (player as any)?.customProfileImageUrl || player?.clerkImageUrl || initialData?.imageUrl;
 
   // Character image/video data (for 9:16 preview)
-  const characterImageUrl = initialData?.characterImageUrl || (player as any)?.characterImage?.publicUrl;
-  const isVideo = initialData?.isVideo || (player as any)?.characterImage?.isVideo;
-  const isAnimated = initialData?.isAnimated || (player as any)?.characterImage?.isAnimated;
-  const thumbnailUrl = initialData?.thumbnailUrl || (player as any)?.characterImage?.thumbnailUrl;
+  // IMPORTANT: Prefer fetched player data over initialData for character images
+  // because the list API sends thumbnails for positions >= 3 to save bandwidth
+  // The individual player API returns the actual video URL
+  const characterImageUrl = (player as any)?.characterImage?.publicUrl || initialData?.characterImageUrl;
+  const isVideo = (player as any)?.characterImage?.isVideo || initialData?.isVideo;
+  const isAnimated = (player as any)?.characterImage?.isAnimated || initialData?.isAnimated;
+  const thumbnailUrl = (player as any)?.characterImage?.thumbnailUrl || initialData?.thumbnailUrl;
 
   // Stats from initialData (already accurate from players list API)
   const displayDeaths = initialData?.deaths ?? 0;
@@ -287,35 +291,77 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
               /* Mobile: 2-column grid when character image exists, centered flex when it doesn't, Desktop: centered flex */
               <div className={`${characterImageUrl ? 'grid grid-cols-2' : 'flex justify-center'} md:flex md:justify-center md:items-center gap-4 w-full`}>
                 {/* Character Video/Image */}
-                {characterImageUrl && (
+                {(characterImageUrl || (initialData?.hasRoyalPass && isPlayerLoading)) && (
                   <div className="flex justify-center items-center">
                     <div className="relative w-24 sm:w-28 md:w-32 aspect-[9/16] rounded-xl overflow-hidden border-2 border-yellow-400/60 dark:border-yellow-500/60 shadow-lg bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950">
-                      {isVideo ? (
-                        <video
-                          key={videoKey}
-                          ref={videoRef}
-                          src={characterImageUrl}
-                          autoPlay
-                          muted
-                          playsInline
-                          loop={false}
-                          poster={thumbnailUrl || undefined}
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      ) : isAnimated ? (
-                        <img
-                          key={isOpen ? `gif-${id}` : undefined}
-                          src={characterImageUrl}
-                          alt=""
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      ) : (
-                        <img
-                          src={characterImageUrl}
-                          alt=""
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      )}
+                      {/* Glowing initial - fades out when video loads */}
+                      <div
+                        className="absolute inset-0 flex items-center justify-center transition-opacity duration-500"
+                        style={{ opacity: (!player || isPlayerLoading) ? 1 : 0 }}
+                      >
+                        {/* Premium dark gradient background */}
+                        <div className="absolute inset-0 bg-gradient-to-b from-amber-950/20 via-slate-900 to-slate-950" />
+                        {/* Glowing initial letter */}
+                        <span
+                          className="relative z-10 text-5xl font-bold text-yellow-500 animate-pulse"
+                          style={{
+                            textShadow: '0 0 20px rgba(234, 179, 8, 0.6), 0 0 40px rgba(234, 179, 8, 0.4), 0 0 60px rgba(234, 179, 8, 0.2)'
+                          }}
+                        >
+                          {displayName?.charAt(0)?.toUpperCase() || '?'}
+                        </span>
+                      </div>
+
+                      {/* Video/Image content - fades in when loaded */}
+                      <div
+                        className="absolute inset-0 transition-opacity duration-500"
+                        style={{ opacity: (player && characterImageUrl) ? 1 : 0 }}
+                      >
+                        {isVideo ? (
+                          <video
+                            key={videoKey}
+                            ref={videoRef}
+                            src={characterImageUrl}
+                            autoPlay
+                            muted
+                            playsInline
+                            loop={false}
+                            poster={thumbnailUrl || undefined}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={(e) => {
+                              console.error('Video failed to load:', characterImageUrl);
+                              (e.target as HTMLVideoElement).style.display = 'none';
+                            }}
+                          />
+                        ) : isAnimated ? (
+                          <img
+                            key={isOpen ? `gif-${id}` : undefined}
+                            src={characterImageUrl}
+                            alt=""
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={(e) => {
+                              console.error('Animated image failed to load:', characterImageUrl);
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <img
+                            src={characterImageUrl}
+                            alt=""
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={(e) => {
+                              console.error('Image failed to load:', characterImageUrl);
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        )}
+                        {/* Fallback: show first letter of name when media fails */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <span className="text-4xl font-bold text-zinc-500/30">
+                            {displayName?.charAt(0)?.toUpperCase() || '?'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

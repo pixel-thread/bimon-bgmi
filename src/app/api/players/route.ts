@@ -170,11 +170,17 @@ export async function GET(req: NextRequest) {
     const startIndex = (page - 1) * PAGE_SIZE;
     const paginatedData = data.slice(startIndex, startIndex + PAGE_SIZE);
 
-    // Apply thumbnail optimization and remove internal fields
+    // Thumbnail optimization for list view performance
+    // For positions >= 3, replace video/animated content with static thumbnails
+    // This reduces bandwidth since the list view only shows character images in top 3 podium cards
+    // When a user clicks on a player, the modal will fetch full player data with the real video URL
     const sanitizedData = paginatedData.map(({ _kd, ...rest }, index) => {
       const globalIndex = startIndex + index;
-      if (globalIndex >= 3 && rest.isAnimated && rest.thumbnailUrl) {
-        return { ...rest, characterImageUrl: rest.thumbnailUrl, isAnimated: false };
+      const hasAnimatedContent = rest.isAnimated || rest.isVideo;
+      if (globalIndex >= 3 && hasAnimatedContent && rest.thumbnailUrl) {
+        // Send thumbnail for list view, mark as non-animated so list doesn't try to load video
+        // Modal will fetch individual player data with actual video URL
+        return { ...rest, characterImageUrl: rest.thumbnailUrl, isAnimated: false, isVideo: false };
       }
       return rest;
     });
