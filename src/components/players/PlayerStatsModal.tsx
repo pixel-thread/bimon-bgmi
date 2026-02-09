@@ -355,12 +355,6 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                             }}
                           />
                         )}
-                        {/* Fallback: show first letter of name when media fails */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <span className="text-4xl font-bold text-zinc-500/30">
-                            {displayName?.charAt(0)?.toUpperCase() || '?'}
-                          </span>
-                        </div>
                       </div>
                     </div>
                   </div>

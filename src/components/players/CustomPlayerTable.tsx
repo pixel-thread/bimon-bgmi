@@ -123,14 +123,14 @@ const PodiumCard = memo(function PodiumCard({
                 hover:scale-105 hover:shadow-xl
             `}
         >
-            {/* Background image, video, or animated GIF */}
-            {player.characterImageUrl || player.imageUrl ? (
+            {/* Background image, video, or animated GIF - ONLY use character image, no Clerk fallback */}
+            {player.characterImageUrl ? (
                 isVideo && mediaUrl ? (
                     // Video content - show thumbnail first, then video
                     <>
                         {/* Static thumbnail - shows immediately */}
                         <img
-                            src={player.thumbnailUrl || player.characterImageUrl || player.imageUrl || ''}
+                            src={player.thumbnailUrl || player.characterImageUrl || ''}
                             alt=""
                             loading="lazy"
                             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded ? 'opacity-0' : 'opacity-90'}`}
@@ -156,7 +156,7 @@ const PodiumCard = memo(function PodiumCard({
                     <>
                         {/* Static thumbnail - shows immediately, fades out when GIF loads */}
                         <img
-                            src={player.thumbnailUrl || player.characterImageUrl || player.imageUrl || ''}
+                            src={player.thumbnailUrl || player.characterImageUrl || ''}
                             alt=""
                             loading="lazy"
                             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded ? 'opacity-0' : 'opacity-90'}`}
@@ -174,7 +174,7 @@ const PodiumCard = memo(function PodiumCard({
                 ) : (
                     // Static image
                     <img
-                        src={player.characterImageUrl || player.imageUrl || ''}
+                        src={player.characterImageUrl || ''}
                         alt=""
                         loading="lazy"
                         decoding="async"
@@ -182,6 +182,7 @@ const PodiumCard = memo(function PodiumCard({
                     />
                 )
             ) : (
+                // No character image - show initials only (no Clerk image fallback)
                 <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-5xl sm:text-6xl font-bold text-zinc-300 dark:text-zinc-600 opacity-50">
                         {getDisplayName(player.displayName, player.userName).charAt(0).toUpperCase()}
