@@ -171,6 +171,7 @@ function WinnerRewardModal({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                onClick={(e) => e.stopPropagation()}
             >
                 <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}
@@ -309,6 +310,7 @@ function StreakRewardModal({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                onClick={(e) => e.stopPropagation()}
             >
                 <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}
@@ -451,6 +453,7 @@ function SoloSupportModal({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                onClick={(e) => e.stopPropagation()}
             >
                 <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}
@@ -564,6 +567,7 @@ function ReferralBonusModal({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                onClick={(e) => e.stopPropagation()}
             >
                 <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}
