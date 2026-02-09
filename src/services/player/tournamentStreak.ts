@@ -63,6 +63,7 @@ export async function recordTournamentParticipation(
     newStreak: number;
     rewardGiven: boolean;
     rewardAmount: number;
+    alreadyProcessed: boolean;
 }> {
     // Get or create tournament sequence
     const currentSeqId = await registerTournamentSequence(tournamentId);
@@ -94,11 +95,12 @@ export async function recordTournamentParticipation(
         // Same season - check if player missed any tournaments
 
         if (currentSeqId === player.lastTournamentSeqId) {
-            // Same tournament - don't change streak
+            // Same tournament - already processed, don't change streak
             return {
                 newStreak: player.tournamentStreak,
                 rewardGiven: false,
                 rewardAmount: 0,
+                alreadyProcessed: true,
             };
         }
 
@@ -196,6 +198,7 @@ export async function recordTournamentParticipation(
             newStreak: 0, // Reset after reward
             rewardGiven: true,
             rewardAmount: STREAK_REWARD_AMOUNT,
+            alreadyProcessed: false,
         };
     }
 
@@ -215,6 +218,7 @@ export async function recordTournamentParticipation(
         newStreak,
         rewardGiven: false,
         rewardAmount: 0,
+        alreadyProcessed: false,
     };
 }
 

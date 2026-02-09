@@ -51,6 +51,7 @@ export async function POST(
         // Process streak updates
         const results = {
             updated: 0,
+            skipped: 0, // Already processed for this tournament
             failed: 0,
             rewarded: 0,
             errors: [] as string[],
@@ -63,9 +64,13 @@ export async function POST(
                 batch.map(async (playerId) => {
                     try {
                         const result = await recordTournamentParticipation(playerId, tournamentId);
-                        results.updated++;
-                        if (result.rewardGiven) {
-                            results.rewarded++;
+                        if (result.alreadyProcessed) {
+                            results.skipped++;
+                        } else {
+                            results.updated++;
+                            if (result.rewardGiven) {
+                                results.rewarded++;
+                            }
                         }
                     } catch (error) {
                         results.failed++;
@@ -83,10 +88,13 @@ export async function POST(
         }
 
         return SuccessResponse({
-            message: `Streak update complete. Updated: ${results.updated}, Failed: ${results.failed}, Rewarded: ${results.rewarded}`,
+            message: results.updated === 0 && results.skipped > 0
+                ? "Streaks already up to date for this tournament"
+                : `Streak update complete. Updated: ${results.updated}, Rewarded: ${results.rewarded}`,
             data: {
                 totalParticipants: participantPlayerIds.length,
                 updated: results.updated,
+                skipped: results.skipped,
                 failed: results.failed,
                 rewarded: results.rewarded,
                 errors: results.errors.slice(0, 10), // Limit error messages

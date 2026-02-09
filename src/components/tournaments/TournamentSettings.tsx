@@ -124,8 +124,20 @@ export function TournamentSettings() {
     mutationFn: () => http.post(`/admin/tournament/${tournamentId}/update-streaks`),
     onSuccess: (data) => {
       if (data.success) {
-        const result = data.data as { updated?: number; rewarded?: number } | undefined;
-        toast.success(`Streaks updated! ${result?.updated || 0} players, ${result?.rewarded || 0} rewards given.`);
+        const result = data.data as { updated?: number; skipped?: number; rewarded?: number } | undefined;
+
+        if (result?.updated === 0 && (result?.skipped || 0) > 0) {
+          // All players were already processed
+          toast.info("✓ Streaks already up to date for this tournament", {
+            description: `${result.skipped} players were already processed`,
+          });
+        } else if (result?.updated && result.updated > 0) {
+          // Some players were updated
+          const rewardMsg = result.rewarded ? ` • ${result.rewarded} rewards given! 🎁` : "";
+          toast.success(`🔥 Streaks updated for ${result.updated} players${rewardMsg}`);
+        } else {
+          toast.success("Streaks processed");
+        }
       } else {
         toast.error(data.message || "Failed to update streaks");
       }
