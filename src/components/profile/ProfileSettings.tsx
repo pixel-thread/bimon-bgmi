@@ -168,11 +168,13 @@ export function ProfileSettings() {
 
     // Update bio when data is fetched - prefill with saved or default (only once)
     useEffect(() => {
-        if (!bioInitializedRef.current && bioDataLoaded && user?.displayName) {
+        if (!bioInitializedRef.current && bioDataLoaded && user?.displayName && bioData?.data) {
             bioInitializedRef.current = true;
-            setBio(savedBio ?? defaultBio);
+            const actualCategory = bioData.data.category || "NOOB";
+            const actualDefaultBio = `Nga u ${user.displayName} dei u ${formatCategory(actualCategory)}`;
+            setBio(bioData.data.bio ?? actualDefaultBio);
         }
-    }, [bioDataLoaded, savedBio, defaultBio, user?.displayName]);
+    }, [bioDataLoaded, bioData?.data, user?.displayName]);
 
     const { mutate: updateBio, isPending: isUpdatingBio } = useMutation({
         mutationFn: (data: { bio: string | null }) => http.patch("/profile/bio", data),
