@@ -577,7 +577,7 @@ export function ProfileImageSheet({ userName, displayName, className, children }
                                                 if (!hasRoyalPass) {
                                                     setIsRedirecting(true);
                                                     setTimeout(() => {
-                                                        router.push("/royal-pass");
+                                                        router.push("/royal-pass?highlight=character");
                                                     }, 500);
                                                     return;
                                                 }

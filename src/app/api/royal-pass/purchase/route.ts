@@ -21,13 +21,23 @@ export async function POST(req: NextRequest) {
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
 
-        // Check if already has RP
+        // Get active season
+        const activeSeason = await prisma.season.findFirst({
+            where: { status: "ACTIVE" },
+            select: { id: true },
+        });
+        const currentSeasonId = activeSeason?.id ?? null;
+
+        // Check if already has RP for the current season
         const existingRP = await prisma.royalPass.findFirst({
-            where: { playerId },
+            where: {
+                playerId,
+                ...(currentSeasonId ? { seasonId: currentSeasonId } : {}),
+            },
         });
 
         if (existingRP) {
-            return ErrorResponse({ message: "You already have Royal Pass!", status: 400 });
+            return ErrorResponse({ message: "You already have Royal Pass for this season!", status: 400 });
         }
 
         // Count total RP claimed to check if free offer applies
@@ -81,11 +91,12 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Create Royal Pass record
+        // Create Royal Pass record with seasonId
         operations.push(
             prisma.royalPass.create({
                 data: {
                     playerId,
+                    seasonId: currentSeasonId, // Track which season this RP is for
                     amount: actualPrice,
                     displayValue: 10, // Worth 10 UC
                     pricePaid: actualPrice * 100, // In paisa equivalent

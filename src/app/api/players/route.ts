@@ -43,6 +43,13 @@ export async function GET(req: NextRequest) {
       ];
     }
 
+    // Get active season for checking current-season RP
+    const activeSeason = await prisma.season.findFirst({
+      where: { status: "ACTIVE" },
+      select: { id: true },
+    });
+    const activeSeasonId = activeSeason?.id ?? null;
+
     // Fetch players with optimized includes
     const players = await prisma.player.findMany({
       where,
@@ -71,10 +78,8 @@ export async function GET(req: NextRequest) {
             thumbnailUrl: true,
           },
         },
-        _count: {
-          select: {
-            royalPasses: true,
-          },
+        royalPasses: {
+          select: { id: true, seasonId: true },
         },
         playerStats: {
           where: seasonId !== "all" ? { seasonId } : undefined,
@@ -114,13 +119,26 @@ export async function GET(req: NextRequest) {
         category,
         imageUrl: cachedImageUrl,
         profileImageUrl: player.customProfileImageUrl || cachedImageUrl,
-        characterImageUrl: (player.characterImageId && player.characterImageId !== "none")
+        // Only show character image if player has RP for current season
+        hasCurrentSeasonRP: activeSeasonId
+          ? player.royalPasses.some(rp => rp.seasonId === activeSeasonId)
+          : player.royalPasses.length > 0,
+        characterImageUrl: (player.characterImageId && player.characterImageId !== "none" &&
+          (activeSeasonId
+            ? player.royalPasses.some(rp => rp.seasonId === activeSeasonId)
+            : player.royalPasses.length > 0))
           ? player.characterImage?.publicUrl || null
           : null,
-        isAnimated: player.characterImage?.isAnimated || false,
-        isVideo: player.characterImage?.isVideo || false,
-        thumbnailUrl: player.characterImage?.thumbnailUrl || null,
-        hasRoyalPass: (player._count?.royalPasses || 0) > 0,
+        isAnimated: (activeSeasonId
+          ? player.royalPasses.some(rp => rp.seasonId === activeSeasonId)
+          : player.royalPasses.length > 0) ? (player.characterImage?.isAnimated || false) : false,
+        isVideo: (activeSeasonId
+          ? player.royalPasses.some(rp => rp.seasonId === activeSeasonId)
+          : player.royalPasses.length > 0) ? (player.characterImage?.isVideo || false) : false,
+        thumbnailUrl: (activeSeasonId
+          ? player.royalPasses.some(rp => rp.seasonId === activeSeasonId)
+          : player.royalPasses.length > 0) ? (player.characterImage?.thumbnailUrl || null) : null,
+        hasRoyalPass: player.royalPasses.length > 0,
         _kd: kd,
       };
     });

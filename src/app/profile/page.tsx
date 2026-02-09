@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
 import { Button } from "@/src/components/ui/button";
@@ -15,7 +16,7 @@ import { PromoterTab } from "@/src/components/profile/PromoterTab";
 import {
     Bell, Check, X, ArrowUpRight, ArrowDownLeft, Clock, DollarSign,
     User, Target, Swords, TrendingUp, TrendingDown, Minus, Settings,
-    Trophy, Calendar, Star, Medal, ShieldAlert, History, ChevronLeft, ChevronRight, ChevronDown, Loader2, Gift, ArrowLeft, Crown
+    Trophy, Calendar, Star, Medal, ShieldAlert, History, ChevronLeft, ChevronRight, ChevronDown, Loader2, Gift, ArrowLeft, Crown, Lock
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
@@ -95,14 +96,15 @@ export default function ProfilePage() {
     const { user, isAuthLoading } = useAuth();
     const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
     const queryClient = useQueryClient();
+    const router = useRouter();
     const playerId = user?.playerId;
     const userBalance = user?.player?.uc?.balance || 0;
 
     // Loading state
     const isPageLoading = isAuthLoading || !isClerkLoaded;
 
-    // Royal Pass status for Crown badge
-    const { hasRoyalPass } = useRoyalPass();
+    // Royal Pass status for Crown badge and character image lock
+    const { hasRoyalPass, hasCurrentSeasonRoyalPass } = useRoyalPass();
 
     // Get active season for filtered stats (always show current season stats)
     const { activeSeason } = useAppContext();
@@ -522,6 +524,24 @@ export default function ProfilePage() {
                                 {getDisplayName(user.displayName, user.userName)}
                             </p>
                         </div>
+
+                        {/* Locked overlay for past-season character images */}
+                        {user.player?.characterImage?.publicUrl && !hasCurrentSeasonRoyalPass && (
+                            <div
+                                className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 cursor-pointer"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push("/royal-pass?highlight=character");
+                                }}
+                            >
+                                <div className="bg-amber-500/20 p-3 rounded-full mb-2">
+                                    <Lock className="w-6 h-6 text-amber-400" />
+                                </div>
+                                <p className="text-[10px] text-amber-400 font-medium text-center px-2">
+                                    Get RP to unlock
+                                </p>
+                            </div>
+                        )}
 
                         {/* Hover overlay */}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">

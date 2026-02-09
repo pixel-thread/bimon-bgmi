@@ -43,8 +43,7 @@ export async function GET(req: NextRequest) {
                         select: { balance: true },
                     },
                     royalPasses: {
-                        select: { id: true },
-                        take: 1, // We just need to know if they have one
+                        select: { id: true, seasonId: true },
                     },
                 },
             }),
@@ -62,9 +61,11 @@ export async function GET(req: NextRequest) {
         }
 
         const hasRoyalPass = player.royalPasses.length > 0;
-
-        // Calculate streak info inline (no separate query needed)
+        // Check if player has RP for the current active season
         const currentSeasonId = activeSeason?.id ?? null;
+        const hasCurrentSeasonRoyalPass = currentSeasonId
+            ? player.royalPasses.some(rp => rp.seasonId === currentSeasonId)
+            : hasRoyalPass; // If no active season, fall back to hasRoyalPass
         const effectiveStreak = (currentSeasonId && player.streakSeasonId !== currentSeasonId)
             ? 0
             : player.tournamentStreak;
@@ -81,6 +82,7 @@ export async function GET(req: NextRequest) {
             data: {
                 currentBalance: player.uc?.balance ?? 0,
                 hasRoyalPass,
+                hasCurrentSeasonRoyalPass,
                 lostDiscount,
                 // Free offer info
                 freeOffer: {

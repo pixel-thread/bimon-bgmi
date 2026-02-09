@@ -46,6 +46,7 @@ interface PendingReferralBonusInfo {
 
 interface RoyalPassData {
     hasRoyalPass: boolean;
+    hasCurrentSeasonRoyalPass: boolean;
     currentBalance: number;
     lostDiscount?: boolean;
     freeOffer?: FreeOfferInfo;
@@ -134,6 +135,7 @@ export function useRoyalPass() {
 
     return {
         hasRoyalPass: data?.data?.hasRoyalPass ?? false,
+        hasCurrentSeasonRoyalPass: data?.data?.hasCurrentSeasonRoyalPass ?? false,
         currentBalance: data?.data?.currentBalance ?? 0,
         lostDiscount: data?.data?.lostDiscount ?? false,
         // Free offer info

@@ -197,6 +197,7 @@ model Season {
   teamStats         TeamStats[]
   teamPlayerStats   TeamPlayerStats[]
   matchPlayerPlayed MatchPlayerPlayed[]
+  royalPasses       RoyalPass[]
 
   @@unique([id, status]) // only one active season
   @@index([id])
@@ -843,6 +844,8 @@ model RoyalPass {
   id           String   @id @default(uuid())
   playerId     String
   player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  seasonId     String?  // Season when RP was purchased (for determining if RP is valid for current season)
+  season       Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   amount       Int      // UC amount purchased
   displayValue Int      // Displayed value (e.g., 10 when actually 5 UC)
   pricePaid    Int      // Price in paisa (₹1 = 100 paisa)
@@ -850,6 +853,7 @@ model RoyalPass {
   createdAt    DateTime @default(now())
 
   @@index([playerId])
+  @@index([seasonId])
   @@index([createdAt])
 }
 

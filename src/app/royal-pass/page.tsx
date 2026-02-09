@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useRoyalPass } from "@/src/hooks/royal-pass/useRoyalPass";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { Button } from "@/src/components/ui/button";
@@ -17,6 +17,7 @@ const RP_PRICE_FULL = 10; // Full price when discount lost
 
 export default function RoyalPassPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, isAuthLoading } = useAuth();
     const {
         currentBalance,
@@ -31,6 +32,22 @@ export default function RoyalPassPage() {
     const rpPrice = lostDiscount ? RP_PRICE_FULL : RP_PRICE_DISCOUNTED;
 
     const [isPurchasing, setIsPurchasing] = useState(false);
+    const [highlightCharacter, setHighlightCharacter] = useState(false);
+    const characterBenefitRef = useRef<HTMLLIElement>(null);
+
+    // Handle highlight=character query param
+    useEffect(() => {
+        const highlight = searchParams.get("highlight");
+        if (highlight === "character") {
+            setHighlightCharacter(true);
+            // Scroll to character benefit after a short delay to ensure render
+            setTimeout(() => {
+                characterBenefitRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 300);
+            // Remove highlight after animation
+            setTimeout(() => setHighlightCharacter(false), 3000);
+        }
+    }, [searchParams]);
 
     const handleBuyRP = async () => {
         // Skip balance check if free offer is active
@@ -239,7 +256,15 @@ export default function RoyalPassPage() {
                     <li>Your streak increases by 1</li>
                     <li>Pep shi tournament? Ka streak la resets sha 0</li>
                     <li>Khlem pep 8 tournament → Ioh 30 UC bonus!</li>
-                    <li className="text-amber-600 dark:text-amber-400">Upload custom character image for your podium card!</li>
+                    <li
+                        ref={characterBenefitRef}
+                        className={`text-amber-600 dark:text-amber-400 transition-all duration-500 ${highlightCharacter
+                                ? 'bg-amber-500/20 px-2 py-1 -mx-2 rounded-lg ring-2 ring-amber-500/50 animate-pulse font-semibold'
+                                : ''
+                            }`}
+                    >
+                        🎨 Upload custom character image/video for your podium card!
+                    </li>
                 </ul>
             </div>
         </div>

@@ -7,7 +7,7 @@
     "dev": "next dev --turbopack",
     "dev:clean": "rm -rf .next && npm run dev",
     "dev:clear-cache": "rm -rf .next && rm -rf node_modules/.cache && npm run dev",
-    "build": "node scripts/generate-version.js && next build --webpack",
+    "build": "node scripts/generate-version.js && node scripts/build.js",
     "build:version": "node scripts/generate-version.js",
     "build:production": "npm run build && npm run build:analyze",
     "build:analyze": "ANALYZE=true npm run build",
