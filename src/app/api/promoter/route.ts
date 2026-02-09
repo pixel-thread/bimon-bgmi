@@ -100,41 +100,48 @@ export async function GET(req: NextRequest) {
 }
 
 /**
- * POST /api/promoter - Enable promoter mode and set referral code
+ * POST /api/promoter - Enable promoter mode using username as referral code
  */
 export async function POST(req: NextRequest) {
     try {
         const user = await tokenMiddleware(req);
 
-        // Check if already a promoter
+        // Get user data including username
         const existingUser = await prisma.user.findUnique({
             where: { id: user.id },
-            select: { isPromoter: true },
+            select: { isPromoter: true, userName: true },
         });
 
-        if (existingUser?.isPromoter) {
+        if (!existingUser) {
+            return ErrorResponse({ message: "User not found", status: 404 });
+        }
+
+        if (existingUser.isPromoter) {
             return ErrorResponse({
                 message: "You are already a promoter",
                 status: 400,
             });
         }
 
-        const body = await req.json();
-        const { referralCode } = enablePromoterSchema.parse(body);
+        // Use username as referral code (lowercase)
+        const referralCode = existingUser.userName.toLowerCase();
 
-        // Check if code is already taken
-        const existingCode = await prisma.user.findUnique({
-            where: { referralCode },
+        // Check if code is already taken (shouldn't happen since usernames are unique, but just in case)
+        const existingCode = await prisma.user.findFirst({
+            where: {
+                referralCode,
+                id: { not: user.id }
+            },
         });
 
         if (existingCode) {
             return ErrorResponse({
-                message: "This referral code is already taken. Please choose another.",
+                message: "Referral code conflict. Please contact support.",
                 status: 409,
             });
         }
 
-        // Enable promoter mode
+        // Enable promoter mode with username as referral code
         await prisma.user.update({
             where: { id: user.id },
             data: {

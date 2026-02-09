@@ -2,11 +2,9 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
 import http from "@/src/utils/http";
 import { useAuth } from "@/src/hooks/context/auth/useAuth";
 import { Button } from "@/src/components/ui/button";
-import { Input } from "@/src/components/ui/input";
 import { Badge } from "@/src/components/ui/badge";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { toast } from "sonner";
@@ -17,9 +15,7 @@ import {
     Users,
     TrendingUp,
     Coins,
-    ExternalLink,
     Loader2,
-    AlertCircle,
 } from "lucide-react";
 
 interface PromoterData {
@@ -44,9 +40,7 @@ interface PromoterData {
 export function PromoterTab() {
     const { user, refreshAuth } = useAuth();
     const queryClient = useQueryClient();
-    const [referralCode, setReferralCode] = useState("");
     const [copied, setCopied] = useState(false);
-    const [codeError, setCodeError] = useState("");
 
     // Fetch promoter data
     const { data: promoterData, isLoading } = useQuery({
@@ -59,8 +53,7 @@ export function PromoterTab() {
 
     // Enable promoter mode mutation
     const { mutate: enablePromoter, isPending: isEnabling } = useMutation({
-        mutationFn: (data: { referralCode: string }) =>
-            http.post("/promoter", data),
+        mutationFn: () => http.post("/promoter", {}),
         onSuccess: () => {
             toast.success("You're now a promoter! Share your link to earn rewards.");
             queryClient.invalidateQueries({ queryKey: ["promoter-data"] });
@@ -68,44 +61,14 @@ export function PromoterTab() {
         },
         onError: (err: any) => {
             const message = err?.response?.data?.message || "Failed to enable promoter mode";
-            setCodeError(message);
             toast.error(message);
         },
     });
 
-    // Update referral code mutation
-    const { mutate: updateCode, isPending: isUpdating } = useMutation({
-        mutationFn: (data: { referralCode: string }) =>
-            http.patch("/promoter", data),
-        onSuccess: () => {
-            toast.success("Referral code updated!");
-            queryClient.invalidateQueries({ queryKey: ["promoter-data"] });
-        },
-        onError: (err: any) => {
-            const message = err?.response?.data?.message || "Failed to update code";
-            setCodeError(message);
-            toast.error(message);
-        },
-    });
-
-    // Validate referral code
-    const validateCode = (code: string): string => {
-        if (code.length < 3) return "Code must be at least 3 characters";
-        if (code.length > 20) return "Code must be at most 20 characters";
-        if (!/^[a-zA-Z0-9_-]+$/.test(code)) {
-            return "Code can only contain letters, numbers, underscores and dashes";
-        }
-        return "";
-    };
-
-    const handleEnablePromoter = () => {
-        const error = validateCode(referralCode);
-        if (error) {
-            setCodeError(error);
-            return;
-        }
-        setCodeError("");
-        enablePromoter({ referralCode: referralCode.toLowerCase() });
+    // Get preview referral link using username
+    const getPreviewReferralLink = () => {
+        const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+        return `${baseUrl}?ref=${user?.userName?.toLowerCase() || ""}`;
     };
 
     const getReferralLink = () => {
@@ -141,7 +104,7 @@ export function PromoterTab() {
         );
     }
 
-    // Not a promoter yet - show enable UI
+    // Not a promoter yet - show enable UI with username as default code
     if (!promoter?.isPromoter) {
         return (
             <div className="space-y-4">
@@ -162,34 +125,21 @@ export function PromoterTab() {
                             </div>
                         </div>
 
-                        <div className="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 space-y-3">
+                        <div className="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 space-y-2">
                             <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">
-                                Choose your referral code
+                                Your referral link
                             </label>
-                            <Input
-                                value={referralCode}
-                                onChange={(e) => {
-                                    setReferralCode(e.target.value);
-                                    setCodeError("");
-                                }}
-                                placeholder="e.g., bimon123"
-                                className={codeError ? "border-red-500" : ""}
-                            />
-                            {codeError && (
-                                <p className="text-xs text-red-500 flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" />
-                                    {codeError}
-                                </p>
-                            )}
+                            <div className="flex-1 bg-white/60 dark:bg-slate-900/60 rounded-lg px-3 py-2 text-sm font-mono truncate border border-slate-200 dark:border-slate-700">
+                                {getPreviewReferralLink()}
+                            </div>
                             <p className="text-xs text-muted-foreground">
-                                Your link will be: {typeof window !== "undefined" ? window.location.origin : ""}?ref=
-                                <span className="font-medium text-amber-600">{referralCode || "yourcode"}</span>
+                                Using your username <span className="font-medium text-amber-600">{user?.userName}</span> as referral code
                             </p>
                         </div>
 
                         <Button
-                            onClick={handleEnablePromoter}
-                            disabled={isEnabling || !referralCode.trim()}
+                            onClick={() => enablePromoter()}
+                            disabled={isEnabling}
                             className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
                         >
                             {isEnabling ? (
