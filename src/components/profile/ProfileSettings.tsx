@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
@@ -39,6 +39,7 @@ export function ProfileSettings() {
     // Bio editing state
     const [bio, setBio] = useState("");
     const [bioError, setBioError] = useState("");
+    const bioInitializedRef = useRef(false);
 
     // Calculate display name cooldown (1 week = 7 days)
     const displayNameCooldown = useMemo(() => {
@@ -165,9 +166,10 @@ export function ProfileSettings() {
     const savedBio = bioData?.data?.bio;
     const originalBio = savedBio ?? defaultBio;
 
-    // Update bio when data is fetched - prefill with saved or default
+    // Update bio when data is fetched - prefill with saved or default (only once)
     useEffect(() => {
-        if (bioDataLoaded && user?.displayName) {
+        if (!bioInitializedRef.current && bioDataLoaded && user?.displayName) {
+            bioInitializedRef.current = true;
             setBio(savedBio ?? defaultBio);
         }
     }, [bioDataLoaded, savedBio, defaultBio, user?.displayName]);
