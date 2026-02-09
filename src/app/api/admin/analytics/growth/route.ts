@@ -104,29 +104,35 @@ export async function GET(req: Request) {
             };
         }
 
-        // Build comparison chart data - align by day number (Day 1, Day 2, etc.)
+        // Build comparison chart data - cumulative new signups by day
         const maxDays = Math.max(currentMetrics.length, previousMetrics.length, periodDays);
         const comparisonData = [];
+        let currentCumulative = 0;
+        let previousCumulative = 0;
 
         for (let i = 0; i < maxDays; i++) {
             const currentDay = currentMetrics[i];
             const previousDay = previousMetrics[i];
 
+            // Add daily new users to running total
+            currentCumulative += currentDay?.newUsersToday || 0;
+            previousCumulative += previousDay?.newUsersToday || 0;
+
             comparisonData.push({
                 day: `Day ${i + 1}`,
                 dayNum: i + 1,
-                // Current period
-                currentUsers: currentDay?.totalUsers || 0,
+                // Current period - cumulative new signups
+                currentUsers: currentCumulative,
                 currentPlayers: currentDay?.totalPlayers || 0,
-                // Previous period  
-                previousUsers: previousDay?.totalUsers || 0,
+                // Previous period - cumulative new signups
+                previousUsers: previousCumulative,
                 previousPlayers: previousDay?.totalPlayers || 0,
                 currentDate: currentDay ? format(currentDay.date, "MMM d") : null,
                 previousDate: previousDay ? format(previousDay.date, "MMM d") : null,
             });
         }
 
-        // Get totals from latest day of each period
+        // Use the cumulative new signup totals we already calculated
         const currentLatest = currentMetrics[currentMetrics.length - 1];
         const previousLatest = previousMetrics[previousMetrics.length - 1];
 
@@ -135,13 +141,14 @@ export async function GET(req: Request) {
             growth,
             comparisonData,
             totals: {
-                currentUsers: currentLatest?.totalUsers || 0,
-                previousUsers: previousLatest?.totalUsers || 0,
+                // New signups count for each period
+                currentUsers: currentTotal,
+                previousUsers: previousTotal,
                 currentPlayers: currentLatest?.totalPlayers || 0,
                 previousPlayers: previousLatest?.totalPlayers || 0,
-                usersChange: previousLatest?.totalUsers
-                    ? Math.round(((currentLatest?.totalUsers || 0) - previousLatest.totalUsers) / previousLatest.totalUsers * 100)
-                    : 0,
+                usersChange: previousTotal > 0
+                    ? Math.round(((currentTotal - previousTotal) / previousTotal) * 100)
+                    : currentTotal > 0 ? 100 : 0,
                 playersChange: previousLatest?.totalPlayers
                     ? Math.round(((currentLatest?.totalPlayers || 0) - previousLatest.totalPlayers) / previousLatest.totalPlayers * 100)
                     : 0,

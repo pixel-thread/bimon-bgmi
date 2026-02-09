@@ -37,7 +37,7 @@ import {
     YAxis,
 } from "recharts";
 import { Skeleton } from "@/src/components/ui/skeleton";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Progress } from "@/src/components/ui/progress";
 import { useAuth } from "@clerk/nextjs";
@@ -108,7 +108,7 @@ type GrowthResponse = {
 
 const chartConfig: ChartConfig = {
     currentUsers: { label: "Users (This Period)", color: "#3b82f6" },
-    previousUsers: { label: "Users (Previous)", color: "#93c5fd" },
+    previousUsers: { label: "Users (Previous)", color: "#f97316" },
 };
 
 // Gradient stat card with large percentage
@@ -270,18 +270,27 @@ export default function AnalyticsPage() {
     const totalPlayers = stats?.players.total || 1;
     const categories = stats?.players.categories;
 
-    const triggerSnapshot = async () => {
+    const triggerSnapshot = async (silent = false) => {
         setIsRecording(true);
         try {
             const res = await fetch("/api/cron/record-daily-metrics");
             const data = await res.json();
-            alert(data.message);
+            if (!silent) alert(data.message);
         } catch {
-            alert("Failed to record snapshot");
+            if (!silent) alert("Failed to record snapshot");
         } finally {
             setIsRecording(false);
         }
     };
+
+    // Auto-record on page visit (runs once per page load)
+    const hasAutoRecorded = useRef(false);
+    useEffect(() => {
+        if (!hasAutoRecorded.current && isSignedIn && user) {
+            hasAutoRecorded.current = true;
+            triggerSnapshot(true); // Silent auto-record
+        }
+    }, [isSignedIn, user]);
 
     return (
         <div className="space-y-8 max-w-7xl mx-auto px-4 overflow-x-hidden">
@@ -302,7 +311,7 @@ export default function AnalyticsPage() {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={triggerSnapshot}
+                        onClick={() => triggerSnapshot(false)}
                         disabled={isRecording}
                         className="rounded-xl"
                     >
@@ -421,7 +430,7 @@ export default function AnalyticsPage() {
                                 </span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded-full bg-blue-300" />
+                                <div className="w-3 h-3 rounded-full bg-orange-500" />
                                 <span className="text-muted-foreground">
                                     Last {period} ({growth?.totals?.previousUsers || 0} users)
                                 </span>
@@ -450,8 +459,8 @@ export default function AnalyticsPage() {
                                         <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                                     </linearGradient>
                                     <linearGradient id="colorPreviousUsers" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#93c5fd" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#93c5fd" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" className="stroke-zinc-200 dark:stroke-zinc-800" vertical={false} />
@@ -481,7 +490,7 @@ export default function AnalyticsPage() {
                                     type="monotone"
                                     dataKey="previousUsers"
                                     name="Previous Period"
-                                    stroke="#93c5fd"
+                                    stroke="#f97316"
                                     fill="url(#colorPreviousUsers)"
                                     strokeWidth={2.5}
                                 />
