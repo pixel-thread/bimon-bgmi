@@ -14,9 +14,10 @@ const withPWA = withPWAInit({
   },
   // Workbox options for caching
   workboxOptions: {
-    // Automatically skipWaiting - new SW takes over immediately
-    // Combined with clientsClaim, this ensures all tabs get new code instantly
-    // The client-side hook will detect controllerchange and reload
+    // Update-on-navigation strategy:
+    // - New SW installs and takes control immediately (skipWaiting + clientsClaim)
+    // - But we DON'T reload immediately
+    // - Instead, we reload on the user's next navigation (feels natural)
     skipWaiting: true,
     clientsClaim: true,
     // Runtime caching for dynamic content

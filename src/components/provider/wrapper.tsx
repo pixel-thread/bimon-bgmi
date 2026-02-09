@@ -14,7 +14,7 @@ import { AdSenseScript } from "../common/AdSenseScript";
 import { PostHogProvider } from "./PostHogProvider";
 import { ErrorBoundary } from "../common/ErrorBoundary";
 import { useEffect, useState, Suspense } from "react";
-import { useServiceWorkerUpdate, setupChunkErrorHandler } from "@/src/hooks/useServiceWorkerUpdate";
+import { SilentPWAUpdater, setupGracefulErrorHandler } from "@/src/components/pwa/SilentUpdater";
 import { ReferralCapture } from "../common/ReferralCapture";
 import { StreakRewardBanner } from "../common/StreakRewardBanner";
 
@@ -53,12 +53,9 @@ function ClerkLoadingGate({ children }: { children: React.ReactNode }) {
 }
 
 function ClerkContent({ children }: { children: React.ReactNode }) {
-  // Detect service worker updates and auto-reload when new version is available
-  useServiceWorkerUpdate();
-
-  // Setup global error handler for chunk loading failures
+  // Setup global error handler for chunk loading failures (graceful, non-intrusive)
   useEffect(() => {
-    const cleanup = setupChunkErrorHandler();
+    const cleanup = setupGracefulErrorHandler();
     return cleanup;
   }, []);
 
@@ -81,6 +78,7 @@ function ClerkContent({ children }: { children: React.ReactNode }) {
                   <ErrorBoundary>{children}</ErrorBoundary>
                 </Layout>
                 <InstallPrompt />
+                <SilentPWAUpdater />
                 <AdSenseScript />
                 <StreakRewardBanner />
                 <Toaster richColors position="top-right" />
