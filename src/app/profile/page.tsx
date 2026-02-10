@@ -525,28 +525,38 @@ export default function ProfilePage() {
                             </p>
                         </div>
 
-                        {/* Locked overlay for past-season character images */}
-                        {user.player?.characterImage?.publicUrl && !hasCurrentSeasonRoyalPass && (
-                            <div
-                                className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 cursor-pointer"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    router.push("/royal-pass?highlight=character");
-                                }}
-                            >
-                                <div className="bg-amber-500/20 p-3 rounded-full mb-2">
-                                    <Lock className="w-6 h-6 text-amber-400" />
+                        {/* Locked overlay for non-RP holders */}
+                        {!hasCurrentSeasonRoyalPass && (
+                            <>
+                                {/* Blurred overlay on character image area - clicking redirects to RP page */}
+                                <div
+                                    className="absolute inset-0 bottom-[52px] bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 cursor-pointer"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        router.push("/royal-pass?highlight=character");
+                                    }}
+                                >
+                                    <p className="text-[10px] text-amber-400/70 font-medium text-center px-2">
+                                        Get RP to unlock
+                                    </p>
                                 </div>
-                                <p className="text-[10px] text-amber-400 font-medium text-center px-2">
-                                    Get RP to unlock
-                                </p>
-                            </div>
+                                {/* Lock icon - clicking opens the ProfileImageSheet (doesn't stopPropagation) */}
+                                <div
+                                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 cursor-pointer"
+                                >
+                                    <div className="bg-amber-500/20 p-3 rounded-full">
+                                        <Lock className="w-6 h-6 text-amber-400" />
+                                    </div>
+                                </div>
+                            </>
                         )}
 
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <span className="text-white text-xs font-medium">Tap to edit</span>
-                        </div>
+                        {/* Hover overlay - only for RP holders */}
+                        {hasCurrentSeasonRoyalPass && (
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                <span className="text-white text-xs font-medium">Tap to edit</span>
+                            </div>
+                        )}
                     </div>
                 </ProfileImageSheet>
 
