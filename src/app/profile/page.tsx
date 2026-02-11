@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import http from "@/src/utils/http";
@@ -116,6 +116,15 @@ export default function ProfilePage() {
     const [showUCHistory, setShowUCHistory] = useState(false);
     const [showUCWinsBreakdown, setShowUCWinsBreakdown] = useState(false);
     const [ucHistoryPage, setUcHistoryPage] = useState(1);
+
+    // Video ref for hover-to-replay on character image
+    const charVideoRef = useRef<HTMLVideoElement>(null);
+    const handleCharVideoHover = useCallback(() => {
+        if (charVideoRef.current && charVideoRef.current.paused) {
+            charVideoRef.current.currentTime = 0;
+            charVideoRef.current.play().catch(() => { });
+        }
+    }, []);
     const UC_HISTORY_PAGE_SIZE = 10;
 
     // Track if promoter tab has been visited (to show "New" badge)
@@ -462,12 +471,16 @@ export default function ProfilePage() {
             <div className="flex items-center gap-4">
                 {/* 9:16 Podium Preview - LEFT side */}
                 <ProfileImageSheet userName={user.userName} displayName={user.displayName || undefined}>
-                    <div className="relative w-28 sm:w-36 aspect-[9/16] rounded-2xl border-[3px] border-yellow-400 dark:border-yellow-500 shadow-[0_0_25px_rgba(250,204,21,0.4)] bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 overflow-hidden cursor-pointer group hover:scale-105 transition-transform flex-shrink-0">
+                    <div
+                        className="relative w-28 sm:w-36 aspect-[9/16] rounded-2xl border-[3px] border-yellow-400 dark:border-yellow-500 shadow-[0_0_25px_rgba(250,204,21,0.4)] bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 overflow-hidden cursor-pointer group hover:scale-105 transition-transform flex-shrink-0"
+                        onMouseEnter={user.player?.characterImage?.isVideo ? handleCharVideoHover : undefined}
+                    >
                         {/* Character image/video or fallback gradient */}
                         {user.player?.characterImage?.publicUrl ? (
                             user.player?.characterImage?.isVideo ? (
-                                // Video - use video tag with no loop for single playback
+                                // Video - use video tag with no loop for single playback, replays on hover
                                 <video
+                                    ref={charVideoRef}
                                     key={user.player.characterImage.publicUrl}
                                     src={user.player.characterImage.publicUrl}
                                     autoPlay
@@ -525,38 +538,10 @@ export default function ProfilePage() {
                             </p>
                         </div>
 
-                        {/* Locked overlay for non-RP holders */}
-                        {!hasCurrentSeasonRoyalPass && (
-                            <>
-                                {/* Blurred overlay on character image area - clicking redirects to RP page */}
-                                <div
-                                    className="absolute inset-0 bottom-[52px] bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 cursor-pointer"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        router.push("/royal-pass?highlight=character");
-                                    }}
-                                >
-                                    <p className="text-[10px] text-amber-400/70 font-medium text-center px-2">
-                                        Get RP to unlock
-                                    </p>
-                                </div>
-                                {/* Lock icon - clicking opens the ProfileImageSheet (doesn't stopPropagation) */}
-                                <div
-                                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 cursor-pointer"
-                                >
-                                    <div className="bg-amber-500/20 p-3 rounded-full">
-                                        <Lock className="w-6 h-6 text-amber-400" />
-                                    </div>
-                                </div>
-                            </>
-                        )}
-
-                        {/* Hover overlay - only for RP holders */}
-                        {hasCurrentSeasonRoyalPass && (
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                                <span className="text-white text-xs font-medium">Tap to edit</span>
-                            </div>
-                        )}
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <span className="text-white text-xs font-medium">Tap to edit</span>
+                        </div>
                     </div>
                 </ProfileImageSheet>
 
@@ -569,7 +554,7 @@ export default function ProfilePage() {
                         )}
                     </div>
                     <p className="text-sm text-muted-foreground">@{user.userName}</p>
-                    <p className="text-sm text-muted-foreground italic">"{playerBio || `Nga u ${getDisplayName(user.displayName, user.userName)} dei u ${formatCategory(playerCategory)}`}"</p>
+                    <p className="text-sm text-muted-foreground italic">"{playerBio || `Nga u ${getDisplayName(user.displayName, user.userName)} dei u ${getKdRank(kills, deaths).charAt(0).toUpperCase() + getKdRank(kills, deaths).slice(1)}`}"</p>
                     <p className="text-sm text-muted-foreground truncate">{user.email || "No email linked"}</p>
                     {/* Banned status */}
                     {banStatus.isBanned && (

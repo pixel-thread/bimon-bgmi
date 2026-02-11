@@ -26,6 +26,7 @@ import { UCTransferDialog } from "./UCTransferDialog";
 
 
 import { getDisplayName } from "@/src/utils/displayName";
+import { getKdRank } from "@/src/utils/categoryUtils";
 
 function ModalSkeleton() {
   return (
@@ -294,9 +295,9 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                 {(characterImageUrl || (initialData?.hasRoyalPass && isPlayerLoading)) && (
                   <div className="flex justify-center items-center">
                     <div className="relative w-24 sm:w-28 md:w-32 aspect-[9/16] rounded-xl overflow-hidden border-2 border-yellow-400/60 dark:border-yellow-500/60 shadow-lg bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950">
-                      {/* Glowing initial - fades out when video loads */}
+                      {/* Initials + progress bar loader - fades out when video loads */}
                       <div
-                        className="absolute inset-0 flex items-center justify-center transition-opacity duration-500"
+                        className="absolute inset-0 flex flex-col items-center justify-center gap-3 transition-opacity duration-500"
                         style={{ opacity: (!player || isPlayerLoading) ? 1 : 0 }}
                       >
                         {/* Premium dark gradient background */}
@@ -310,6 +311,25 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                         >
                           {displayName?.charAt(0)?.toUpperCase() || '?'}
                         </span>
+                        {/* Progress bar below initials */}
+                        <div className="relative z-10 w-3/5">
+                          <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                background: 'linear-gradient(90deg, transparent, rgba(234,179,8,0.8), rgba(251,191,36,1), rgba(234,179,8,0.8), transparent)',
+                                animation: 'charImageShimmer 1.5s ease-in-out infinite',
+                              }}
+                            />
+                          </div>
+                        </div>
+                        {/* Inline keyframes */}
+                        <style jsx>{`
+                          @keyframes charImageShimmer {
+                            0% { transform: translateX(-100%); }
+                            100% { transform: translateX(200%); }
+                          }
+                        `}</style>
                       </div>
 
                       {/* Video/Image content - fades in when loaded */}
@@ -420,7 +440,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                   </div>
                   {/* Bio/Message */}
                   <p className="text-xs sm:text-sm text-muted-foreground italic max-w-[200px] text-center mx-auto">
-                    "{(player as any)?.bio || `Nga u ${displayName} dei u ${displayCategory.charAt(0) + displayCategory.slice(1).toLowerCase()}`}"
+                    "{(player as any)?.bio || `Nga u ${displayName} dei u ${getKdRank(displayKills, displayDeaths).charAt(0).toUpperCase() + getKdRank(displayKills, displayDeaths).slice(1)}`}"
                   </p>
                 </div>
               </div>

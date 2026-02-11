@@ -160,7 +160,8 @@ export function ProfileSettings() {
 
     // Get the default bio message with category
     const playerCategory = bioData?.data?.category || "NOOB";
-    const defaultBio = user?.displayName ? `Nga u ${user.displayName} dei u ${formatCategory(playerCategory)}` : "";
+    const playerName = user?.displayName || user?.userName;
+    const defaultBio = playerName ? `Nga u ${playerName} dei u ${formatCategory(playerCategory)}` : "";
 
     // The "original" bio is what's saved in DB, or the default if nothing saved
     const savedBio = bioData?.data?.bio;
@@ -168,13 +169,13 @@ export function ProfileSettings() {
 
     // Update bio when data is fetched - prefill with saved or default (only once)
     useEffect(() => {
-        if (!bioInitializedRef.current && bioDataLoaded && user?.displayName && bioData?.data) {
+        if (!bioInitializedRef.current && bioDataLoaded && playerName && bioData?.data) {
             bioInitializedRef.current = true;
             const actualCategory = bioData.data.category || "NOOB";
-            const actualDefaultBio = `Nga u ${user.displayName} dei u ${formatCategory(actualCategory)}`;
+            const actualDefaultBio = `Nga u ${playerName} dei u ${formatCategory(actualCategory)}`;
             setBio(bioData.data.bio ?? actualDefaultBio);
         }
-    }, [bioDataLoaded, bioData?.data, user?.displayName]);
+    }, [bioDataLoaded, bioData?.data, playerName]);
 
     const { mutate: updateBio, isPending: isUpdatingBio } = useMutation({
         mutationFn: (data: { bio: string | null }) => http.patch("/profile/bio", data),

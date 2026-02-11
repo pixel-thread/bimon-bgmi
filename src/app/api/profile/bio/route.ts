@@ -4,6 +4,7 @@ import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { getCategoryFromKD, getCategoryLabel } from "@/src/utils/categoryUtils";
 
 const updateBioSchema = z.object({
     bio: z.string().max(100, "Bio must be at most 100 characters").optional().nullable(),
@@ -20,13 +21,26 @@ export async function GET(req: NextRequest) {
 
         const player = await prisma.player.findUnique({
             where: { userId: user.id },
-            select: { bio: true, category: true },
+            select: {
+                bio: true,
+                category: true,
+                playerStats: {
+                    select: { kills: true, deaths: true },
+                },
+            },
         });
+
+        // Compute real K/D-based category from stats
+        const totalKills = player?.playerStats?.reduce((sum, s) => sum + s.kills, 0) ?? 0;
+        const totalDeaths = player?.playerStats?.reduce((sum, s) => sum + s.deaths, 0) ?? 0;
+        const computedCategory = getCategoryLabel(getCategoryFromKD(totalKills, totalDeaths));
+        // Capitalize first letter for display (e.g., "bot" -> "Bot")
+        const displayCategory = computedCategory.charAt(0).toUpperCase() + computedCategory.slice(1);
 
         return SuccessResponse({
             data: {
                 bio: player?.bio || null,
-                category: player?.category || "NOOB",
+                category: displayCategory,
             },
             message: "Bio fetched successfully",
         });
