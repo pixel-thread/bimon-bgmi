@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/ca
 import { Badge } from "@/src/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs";
 import { Skeleton } from "@/src/components/ui/skeleton";
+import { Textarea } from "@/src/components/ui/textarea";
 import { ProfileSettings } from "@/src/components/profile/ProfileSettings";
 import { ProfileImageSheet } from "@/src/components/profile/ProfileImageSheet";
 import { AddBalanceDialog } from "@/src/components/profile/AddBalanceDialog";
@@ -38,6 +39,7 @@ type UCTransfer = {
     type: "REQUEST" | "SEND";
     status: "PENDING" | "APPROVED" | "REJECTED" | "COMPLETED";
     message?: string;
+    responseMessage?: string;
     fromPlayerId: string;
     fromPlayer: { user: { userName: string; displayName?: string | null } };
     toPlayerId: string;
@@ -267,9 +269,29 @@ export default function ProfilePage() {
         (t) => t.status === "PENDING" && t.type === "REQUEST" && t.toPlayerId === playerId
     );
 
+    // Response dialog state
+    const [responseDialog, setResponseDialog] = useState<{
+        isOpen: boolean;
+        transferId: string;
+        amount: number;
+        fromName: string;
+    } | null>(null);
+    const [responseMessage, setResponseMessage] = useState("");
+
+    const openResponseDialog = (transferId: string, amount: number, fromName: string) => {
+        setResponseDialog({ isOpen: true, transferId, amount, fromName });
+        setResponseMessage("");
+    };
+
+    const closeResponseDialog = () => {
+        setResponseDialog(null);
+        setResponseMessage("");
+    };
+
     // Approve mutation
     const { mutate: approveTransfer, isPending: isApproving } = useMutation({
-        mutationFn: (id: string) => http.patch(`/uc-transfers/${id}/approve`, {}),
+        mutationFn: ({ id, responseMessage }: { id: string; responseMessage?: string }) =>
+            http.patch(`/uc-transfers/${id}/approve`, { responseMessage }),
         onSuccess: (data) => {
             if (data.success) {
                 toast.success(data.message || "Transfer approved");
@@ -277,6 +299,7 @@ export default function ProfilePage() {
                 queryClient.invalidateQueries({ queryKey: ["uc-transfers-pending-count"] });
                 queryClient.invalidateQueries({ queryKey: ["notifications"] });
                 queryClient.invalidateQueries({ queryKey: ["player"] });
+                closeResponseDialog();
             } else {
                 toast.error(data.message || "Failed to approve");
             }
@@ -286,13 +309,15 @@ export default function ProfilePage() {
 
     // Reject mutation
     const { mutate: rejectTransfer, isPending: isRejecting } = useMutation({
-        mutationFn: (id: string) => http.patch(`/uc-transfers/${id}/reject`, {}),
+        mutationFn: ({ id, responseMessage }: { id: string; responseMessage?: string }) =>
+            http.patch(`/uc-transfers/${id}/reject`, { responseMessage }),
         onSuccess: (data) => {
             if (data.success) {
                 toast.success(data.message || "Transfer rejected");
                 queryClient.invalidateQueries({ queryKey: ["uc-transfers"] });
                 queryClient.invalidateQueries({ queryKey: ["uc-transfers-pending-count"] });
                 queryClient.invalidateQueries({ queryKey: ["notifications"] });
+                closeResponseDialog();
             } else {
                 toast.error(data.message || "Failed to reject");
             }
@@ -838,51 +863,26 @@ export default function ProfilePage() {
                                             <div key={notification.id} className={`p-3 rounded-xl backdrop-blur-sm border ${notification.isRead ? "bg-white/30 dark:bg-slate-800/30 border-white/10 dark:border-slate-700/30" : "bg-white/60 dark:bg-slate-800/60 border-white/30 dark:border-slate-700/50"}`}>
                                                 {/* For notifications with action buttons, use stacked layout on mobile */}
                                                 {notification.type === "uc_request" && pendingRequest ? (
-                                                    <div className="space-y-2">
-                                                        {/* Top row: icon + content + timestamp */}
-                                                        <div className="flex items-start gap-2.5">
-                                                            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-500/10">
-                                                                <Clock className="w-4 h-4 text-amber-500" />
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center justify-between gap-2">
-                                                                    <p className="font-medium text-sm">{notification.title}</p>
-                                                                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
-                                                                </div>
-                                                                <p className="text-xs text-muted-foreground">{notification.message}</p>
-                                                                {pendingRequest.message && (
-                                                                    <p className="text-xs text-violet-600 dark:text-violet-400 mt-0.5 italic">&quot;{pendingRequest.message}&quot;</p>
-                                                                )}
-                                                            </div>
+                                                    <div
+                                                        className="flex items-start gap-2.5 cursor-pointer"
+                                                        onClick={() => {
+                                                            const fromName = pendingRequest.fromPlayer.user.displayName || pendingRequest.fromPlayer.user.userName;
+                                                            openResponseDialog(pendingRequest.id, pendingRequest.amount, fromName);
+                                                        }}
+                                                    >
+                                                        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-500/10">
+                                                            <Clock className="w-4 h-4 text-amber-500" />
                                                         </div>
-                                                        {/* Bottom row: action buttons */}
-                                                        <div className="flex gap-2 pl-9 sm:pl-9">
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="h-8 flex-1 sm:flex-initial sm:px-4 border-emerald-500/50 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
-                                                                onClick={() => {
-                                                                    if (userBalance < pendingRequest.amount) {
-                                                                        toast.error(`Insufficient balance.`);
-                                                                        return;
-                                                                    }
-                                                                    approveTransfer(pendingRequest.id);
-                                                                }}
-                                                                disabled={isApproving || isRejecting || userBalance < pendingRequest.amount}
-                                                            >
-                                                                <Check className="w-3.5 h-3.5 mr-1" />
-                                                                Accept
-                                                            </Button>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="h-8 flex-1 sm:flex-initial sm:px-4 border-red-500/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
-                                                                onClick={() => rejectTransfer(pendingRequest.id)}
-                                                                disabled={isApproving || isRejecting}
-                                                            >
-                                                                <X className="w-3.5 h-3.5 mr-1" />
-                                                                Reject
-                                                            </Button>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <p className="font-medium text-sm">{notification.title}</p>
+                                                                <span className="text-[10px] text-muted-foreground whitespace-nowrap">{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
+                                                            </div>
+                                                            <p className="text-xs text-muted-foreground">{notification.message}</p>
+                                                            {pendingRequest.message && (
+                                                                <p className="text-xs text-violet-600 dark:text-violet-400 mt-0.5 italic">&quot;{pendingRequest.message}&quot;</p>
+                                                            )}
+                                                            <p className="text-xs text-blue-500 dark:text-blue-400 mt-1 font-medium">Tap to respond</p>
                                                         </div>
                                                     </div>
                                                 ) : (
@@ -1051,6 +1051,90 @@ export default function ProfilePage() {
                     <PromoterTab />
                 </TabsContent>
             </Tabs>
+
+            {/* Accept/Reject Response Modal */}
+            {responseDialog?.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={closeResponseDialog}>
+                    {/* Backdrop */}
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+                    {/* Modal */}
+                    <div
+                        className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-cyan-500/10 to-teal-500/10 dark:from-blue-600/15 dark:via-cyan-600/15 dark:to-teal-600/15" />
+                        <div className="absolute inset-0 backdrop-blur-3xl bg-white/80 dark:bg-slate-900/80" />
+                        <div className="relative p-5 space-y-4">
+                            {/* Header */}
+                            <div className="text-center space-y-1">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mx-auto mb-2">
+                                    <DollarSign className="w-5 h-5 text-white" />
+                                </div>
+                                <h3 className="font-semibold text-base">UC Request</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    {responseDialog.fromName} requested <span className="font-semibold text-foreground">{responseDialog.amount} UC</span>
+                                </p>
+                            </div>
+
+                            {/* Message input */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-muted-foreground">Message (optional)</label>
+                                <Textarea
+                                    placeholder="Add a note..."
+                                    value={responseMessage}
+                                    onChange={(e) => setResponseMessage(e.target.value)}
+                                    rows={2}
+                                    maxLength={200}
+                                    className="text-sm resize-none bg-white/60 dark:bg-slate-900/40 border-white/30 dark:border-slate-700/30 rounded-xl"
+                                />
+                            </div>
+
+                            {/* Action buttons */}
+                            <div className="flex gap-2.5 pt-1">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 h-10 rounded-xl border-red-500/30 text-red-600 hover:bg-red-50 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10"
+                                    onClick={() => {
+                                        rejectTransfer({
+                                            id: responseDialog.transferId,
+                                            responseMessage: responseMessage || undefined,
+                                        });
+                                    }}
+                                    disabled={isApproving || isRejecting}
+                                >
+                                    {isRejecting ? (
+                                        <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                                    ) : (
+                                        <X className="w-4 h-4 mr-1.5" />
+                                    )}
+                                    Reject
+                                </Button>
+                                <Button
+                                    className="flex-1 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    onClick={() => {
+                                        if (userBalance < (responseDialog.amount || 0)) {
+                                            toast.error(`Insufficient balance.`);
+                                            return;
+                                        }
+                                        approveTransfer({
+                                            id: responseDialog.transferId,
+                                            responseMessage: responseMessage || undefined,
+                                        });
+                                    }}
+                                    disabled={isApproving || isRejecting}
+                                >
+                                    {isApproving ? (
+                                        <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                                    ) : (
+                                        <Check className="w-4 h-4 mr-1.5" />
+                                    )}
+                                    Accept
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

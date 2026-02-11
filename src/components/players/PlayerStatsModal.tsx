@@ -482,7 +482,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                       : "text-red-600"
                       }`}
                   >
-                    {Math.floor(Number(displayBalance))} UC
+                    {Math.floor(Number(displayBalance)).toLocaleString()} UC
                   </p>
                   <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Balance</p>
                 </div>
@@ -621,7 +621,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                     size="sm"
                   >
                     <ArrowUpRight className="w-4 h-4 mr-1 sm:mr-1.5 flex-shrink-0" />
-                    Send / Request
+                    {(player?.user?.userName || initialData?.userName)?.toLowerCase() === "bimon" ? "Send UC" : "Send / Request"}
                   </Button>
                 )}
 
@@ -659,6 +659,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
               ? getDisplayName(player.user?.displayName, player.user?.userName) || "Player"
               : getDisplayName(initialData?.displayName, initialData?.userName) || "Player"
           }
+          disableRequest={(player?.user?.userName || initialData?.userName)?.toLowerCase() === "bimon"}
         />
       )
       }

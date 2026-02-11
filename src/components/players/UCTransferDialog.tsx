@@ -24,12 +24,13 @@ type Props = {
     onClose: () => void;
     toPlayerId: string;
     toPlayerName: string;
+    disableRequest?: boolean;
 };
 
-export function UCTransferDialog({ isOpen, onClose, toPlayerId, toPlayerName }: Props) {
+export function UCTransferDialog({ isOpen, onClose, toPlayerId, toPlayerName, disableRequest }: Props) {
     const [amount, setAmount] = useState("");
     const [message, setMessage] = useState("");
-    const [activeTab, setActiveTab] = useState<"send" | "request">("request");
+    const [activeTab, setActiveTab] = useState<"send" | "request">(disableRequest ? "send" : "request");
     const queryClient = useQueryClient();
     const { user } = useAuth();
     const userBalance = user?.player?.uc?.balance || 0;
@@ -54,7 +55,7 @@ export function UCTransferDialog({ isOpen, onClose, toPlayerId, toPlayerName }: 
     const handleClose = () => {
         setAmount("");
         setMessage("");
-        setActiveTab("request");
+        setActiveTab(disableRequest ? "send" : "request");
         onClose();
     };
 
@@ -86,22 +87,24 @@ export function UCTransferDialog({ isOpen, onClose, toPlayerId, toPlayerName }: 
                 </DialogHeader>
 
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "send" | "request")}>
-                    <TabsList className="grid w-full grid-cols-2 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl">
-                        <TabsTrigger
-                            value="request"
-                            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-blue-600 data-[state=active]:dark:text-blue-400 data-[state=active]:shadow-md rounded-lg font-medium"
-                        >
-                            <ArrowDownLeft className="w-4 h-4" />
-                            Request UC
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="send"
-                            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-green-600 data-[state=active]:dark:text-green-400 data-[state=active]:shadow-md rounded-lg font-medium"
-                        >
-                            <ArrowUpRight className="w-4 h-4" />
-                            Send UC
-                        </TabsTrigger>
-                    </TabsList>
+                    {!disableRequest && (
+                        <TabsList className="grid w-full grid-cols-2 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl">
+                            <TabsTrigger
+                                value="request"
+                                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-blue-600 data-[state=active]:dark:text-blue-400 data-[state=active]:shadow-md rounded-lg font-medium"
+                            >
+                                <ArrowDownLeft className="w-4 h-4" />
+                                Request UC
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="send"
+                                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:text-green-600 data-[state=active]:dark:text-green-400 data-[state=active]:shadow-md rounded-lg font-medium"
+                            >
+                                <ArrowUpRight className="w-4 h-4" />
+                                Send UC
+                            </TabsTrigger>
+                        </TabsList>
+                    )}
 
                     <TabsContent value="send" className="space-y-4 pt-4">
                         <p className="text-sm text-muted-foreground">
@@ -109,11 +112,13 @@ export function UCTransferDialog({ isOpen, onClose, toPlayerId, toPlayerName }: 
                         </p>
                     </TabsContent>
 
-                    <TabsContent value="request" className="space-y-4 pt-4">
-                        <p className="text-sm text-muted-foreground">
-                            Go to <Link href="/profile" className="text-blue-600 underline">profile page</Link> to approve.
-                        </p>
-                    </TabsContent>
+                    {!disableRequest && (
+                        <TabsContent value="request" className="space-y-4 pt-4">
+                            <p className="text-sm text-muted-foreground">
+                                Go to <Link href="/profile" className="text-blue-600 underline">profile page</Link> to approve.
+                            </p>
+                        </TabsContent>
+                    )}
                 </Tabs>
 
                 <div className="space-y-5 pt-4">

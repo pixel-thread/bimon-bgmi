@@ -153,8 +153,9 @@ model UCTransfer {
   amount       Int
   type         UCTransferType
   status       UCTransferStatus @default(PENDING)
-  message      String?
-  fromPlayerId String
+  message         String?
+  responseMessage String?
+  fromPlayerId    String
   fromPlayer   Player           @relation("UCTransferFrom", fields: [fromPlayerId], references: [id], onDelete: Cascade)
   toPlayerId   String
   toPlayer     Player           @relation("UCTransferTo", fields: [toPlayerId], references: [id], onDelete: Cascade)

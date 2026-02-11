@@ -15,6 +15,15 @@ export async function PATCH(
         const playerId = user?.playerId;
         const transferId = (await params).id;
 
+        // Parse optional response message
+        let responseMessage: string | undefined;
+        try {
+            const body = await req.json();
+            responseMessage = body?.responseMessage || undefined;
+        } catch {
+            // No body or invalid JSON is fine
+        }
+
         if (!playerId) {
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
@@ -46,7 +55,7 @@ export async function PATCH(
             // Update transfer status
             const updated = await tx.uCTransfer.update({
                 where: { id: transferId },
-                data: { status: "REJECTED" },
+                data: { status: "REJECTED", responseMessage },
             });
 
             // Update the original uc_request notification to show rejected state
@@ -66,10 +75,13 @@ export async function PATCH(
 
             // Notify the requester
             const rejecterName = transfer.toPlayer.user.displayName || transfer.toPlayer.user.userName;
+            const rejectMsg = responseMessage
+                ? `${rejecterName} rejected your request for ${transfer.amount} UC: "${responseMessage}"`
+                : `${rejecterName} rejected your request for ${transfer.amount} UC`;
             await tx.notification.create({
                 data: {
                     title: "UC Request Rejected",
-                    message: `${rejecterName} rejected your request for ${transfer.amount} UC`,
+                    message: rejectMsg,
                     type: "uc_rejected",
                     playerId: transfer.fromPlayerId,
                     link: "/profile",
@@ -79,7 +91,7 @@ export async function PATCH(
             // Send push notification to requester (async, non-blocking)
             sendPushToPlayer(transfer.fromPlayerId, {
                 title: "UC Request Rejected ❌",
-                body: `${rejecterName} rejected your request for ${transfer.amount} UC`,
+                body: rejectMsg,
                 url: "/profile",
             }).catch((error) => {
                 console.error("Failed to send push notification:", error);

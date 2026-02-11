@@ -16,6 +16,15 @@ export async function PATCH(
         const playerId = user?.playerId;
         const transferId = (await params).id;
 
+        // Parse optional response message
+        let responseMessage: string | undefined;
+        try {
+            const body = await req.json();
+            responseMessage = body?.responseMessage || undefined;
+        } catch {
+            // No body or invalid JSON is fine
+        }
+
         if (!playerId) {
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
@@ -92,7 +101,7 @@ export async function PATCH(
             // Update transfer status
             const updated = await tx.uCTransfer.update({
                 where: { id: transferId },
-                data: { status: "APPROVED" },
+                data: { status: "APPROVED", responseMessage },
             });
 
             // Update the original uc_request notification to show approved state
@@ -112,10 +121,13 @@ export async function PATCH(
 
             // Notify the requester
             const approverName = transfer.toPlayer.user.displayName || transfer.toPlayer.user.userName;
+            const approveMsg = responseMessage
+                ? `${approverName} approved your request for ${transfer.amount} UC: "${responseMessage}"`
+                : `${approverName} approved your request for ${transfer.amount} UC`;
             await tx.notification.create({
                 data: {
                     title: "UC Request Approved",
-                    message: `${approverName} approved your request for ${transfer.amount} UC`,
+                    message: approveMsg,
                     type: "uc_approved",
                     playerId: transfer.fromPlayerId,
                     link: "/profile",
@@ -125,7 +137,7 @@ export async function PATCH(
             // Send push notification to requester (async, non-blocking)
             sendPushToPlayer(transfer.fromPlayerId, {
                 title: "UC Request Approved! ✅",
-                body: `${approverName} approved your request for ${transfer.amount} UC`,
+                body: approveMsg,
                 url: "/profile",
             }).catch((error) => {
                 console.error("Failed to send push notification:", error);
