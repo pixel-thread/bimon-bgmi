@@ -124,17 +124,23 @@ export function TournamentSettings() {
     mutationFn: () => http.post(`/admin/tournament/${tournamentId}/update-streaks`),
     onSuccess: (data) => {
       if (data.success) {
-        const result = data.data as { updated?: number; skipped?: number; rewarded?: number } | undefined;
+        const result = data.data as { totalParticipants?: number; updated?: number; skipped?: number; failed?: number; rewarded?: number } | undefined;
+        const total = result?.totalParticipants || 0;
+        const updated = result?.updated || 0;
+        const skipped = result?.skipped || 0;
+        const failed = result?.failed || 0;
 
-        if (result?.updated === 0 && (result?.skipped || 0) > 0) {
+        if (updated === 0 && skipped > 0) {
           // All players were already processed
           toast.info("✓ Streaks already up to date for this tournament", {
-            description: `${result.skipped} players were already processed`,
+            description: `${total} players already processed`,
           });
-        } else if (result?.updated && result.updated > 0) {
+        } else if (updated > 0) {
           // Some players were updated
-          const rewardMsg = result.rewarded ? ` • ${result.rewarded} rewards given! 🎁` : "";
-          toast.success(`🔥 Streaks updated for ${result.updated} players${rewardMsg}`);
+          const rewardMsg = result?.rewarded ? ` • ${result.rewarded} rewards given! 🎁` : "";
+          const skippedMsg = skipped > 0 ? ` (${skipped} already processed)` : "";
+          const failedMsg = failed > 0 ? ` • ${failed} failed` : "";
+          toast.success(`🔥 Streaks updated for ${updated}/${total} players${skippedMsg}${rewardMsg}${failedMsg}`);
         } else {
           toast.success("Streaks processed");
         }

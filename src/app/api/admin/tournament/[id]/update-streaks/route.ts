@@ -40,9 +40,14 @@ export async function POST(
             },
         });
 
-        const participantPlayerIds = tournamentTeams.flatMap(team =>
+        // De-duplicate player IDs (a player could be connected to multiple teams
+        // if they were swapped between teams, causing duplicate processing)
+        const allPlayerIds = tournamentTeams.flatMap(team =>
             team.players.map(p => p.id)
         );
+        const participantPlayerIds = [...new Set(allPlayerIds)];
+
+        console.log(`[Streak Update] Tournament ${tournamentId}: ${allPlayerIds.length} total player-team entries, ${participantPlayerIds.length} unique players, ${tournamentTeams.length} teams`);
 
         if (participantPlayerIds.length === 0) {
             return ErrorResponse({ message: "No participants found in tournament" });
