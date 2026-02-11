@@ -12,6 +12,7 @@ import { BirthdayGiftModal, hasBirthdayPromptResponse, shouldShowBirthdayPublicl
 import { usePolls } from "@/src/hooks/poll/usePolls";
 import { useAuth as useAuthContext } from "@/src/hooks/context/auth/useAuth";
 import { BirthdayBanner } from "./BirthdayBanner";
+import { useRoyalPass } from "@/src/hooks/royal-pass/useRoyalPass";
 
 interface PendingRating {
   playerId: string;
@@ -30,6 +31,10 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
   const [showPollsBehindModal, setShowPollsBehindModal] = useState(false);
   const { getToken, isSignedIn } = useAuth();
   const { user } = useAuthContext();
+  const { pendingWinner, pendingSoloSupport, pendingReferralBonus, streak } = useRoyalPass();
+
+  // Hide rating modal when any claim modal is active to prevent accidental star presses
+  const hasActiveClaimModal = !!(pendingWinner || pendingSoloSupport || pendingReferralBonus || streak.pendingReward);
 
   // Birthday modal state
   const [showBirthdayModal, setShowBirthdayModal] = useState(false);
@@ -146,7 +151,7 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
         />
       )}
 
-      {showRatingModal && meritData?.pendingRatings && meritData.tournament && (
+      {showRatingModal && !hasActiveClaimModal && meritData?.pendingRatings && meritData.tournament && (
         <MeritRatingModal
           pendingRatings={meritData.pendingRatings}
           tournamentId={meritData.tournament.id}

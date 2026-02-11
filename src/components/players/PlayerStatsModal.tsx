@@ -141,12 +141,17 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
   const [avatarPosition, setAvatarPosition] = useState({ x: 0, y: 0 });
   const avatarRef = React.useRef<HTMLDivElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
+  const [videoReady, setVideoReady] = useState(false);
 
   // Key to trigger video replay when modal opens
   const [videoKey, setVideoKey] = useState(0);
   React.useEffect(() => {
     if (isOpen && isVideo) {
+      setVideoReady(false);
       setVideoKey(prev => prev + 1);
+    }
+    if (!isOpen) {
+      setVideoReady(false);
     }
   }, [isOpen, isVideo]);
 
@@ -298,7 +303,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                       {/* Initials + progress bar loader - fades out when video loads */}
                       <div
                         className="absolute inset-0 flex flex-col items-center justify-center gap-3 transition-opacity duration-500"
-                        style={{ opacity: (!player || isPlayerLoading) ? 1 : 0 }}
+                        style={{ opacity: (!player || isPlayerLoading || (isVideo && !videoReady)) ? 1 : 0 }}
                       >
                         {/* Premium dark gradient background */}
                         <div className="absolute inset-0 bg-gradient-to-b from-amber-950/20 via-slate-900 to-slate-950" />
@@ -333,49 +338,56 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                       </div>
 
                       {/* Video/Image content - fades in when loaded */}
-                      <div
-                        className="absolute inset-0 transition-opacity duration-500"
-                        style={{ opacity: (player && characterImageUrl) ? 1 : 0 }}
-                      >
-                        {isVideo ? (
-                          <video
-                            key={videoKey}
-                            ref={videoRef}
-                            src={characterImageUrl}
-                            autoPlay
-                            muted
-                            playsInline
-                            loop={false}
-                            poster={thumbnailUrl || undefined}
-                            className="absolute inset-0 w-full h-full object-cover"
-                            onError={(e) => {
-                              console.error('Video failed to load:', characterImageUrl);
-                              (e.target as HTMLVideoElement).style.display = 'none';
-                            }}
-                          />
-                        ) : isAnimated ? (
-                          <img
-                            key={isOpen ? `gif-${id}` : undefined}
-                            src={characterImageUrl}
-                            alt=""
-                            className="absolute inset-0 w-full h-full object-cover"
-                            onError={(e) => {
-                              console.error('Animated image failed to load:', characterImageUrl);
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <img
-                            src={characterImageUrl}
-                            alt=""
-                            className="absolute inset-0 w-full h-full object-cover"
-                            onError={(e) => {
-                              console.error('Image failed to load:', characterImageUrl);
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        )}
-                      </div>
+                      {/* Video/Image content - only render after player data loads so video doesn't autoplay behind loader */}
+                      {player && characterImageUrl && (
+                        <div
+                          className="absolute inset-0 transition-opacity duration-500"
+                          style={{ opacity: isVideo ? (videoReady ? 1 : 0) : 1 }}
+                        >
+                          {isVideo ? (
+                            <video
+                              key={videoKey}
+                              ref={videoRef}
+                              src={characterImageUrl}
+                              muted
+                              playsInline
+                              loop={false}
+                              poster={thumbnailUrl || undefined}
+                              className="absolute inset-0 w-full h-full object-cover"
+                              onLoadedData={(e) => {
+                                // Start playback only after buffered, then fade in
+                                setVideoReady(true);
+                                (e.target as HTMLVideoElement).play().catch(() => { });
+                              }}
+                              onError={(e) => {
+                                console.error('Video failed to load:', characterImageUrl);
+                                (e.target as HTMLVideoElement).style.display = 'none';
+                              }}
+                            />
+                          ) : isAnimated ? (
+                            <img
+                              key={isOpen ? `gif-${id}` : undefined}
+                              src={characterImageUrl}
+                              alt=""
+                              className="absolute inset-0 w-full h-full object-cover"
+                              onError={(e) => {
+                                console.error('Animated image failed to load:', characterImageUrl);
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <img
+                              src={characterImageUrl}
+                              alt=""
+                              className="absolute inset-0 w-full h-full object-cover"
+                              onError={(e) => {
+                                console.error('Image failed to load:', characterImageUrl);
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
