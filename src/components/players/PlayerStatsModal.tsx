@@ -152,7 +152,10 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
     if (isOpen && isRkoPlayer) {
       if (!rkoAudioRef.current) {
         rkoAudioRef.current = new Audio("/audio/rko.mp3");
-        rkoAudioRef.current.loop = true;
+        rkoAudioRef.current.loop = false;
+        rkoAudioRef.current.onended = () => {
+          setRkoMuted(true);
+        };
       }
       rkoAudioRef.current.muted = true;
       rkoAudioRef.current.currentTime = 0;
