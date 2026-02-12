@@ -112,6 +112,8 @@ export async function tokenMiddleware(
       // Allow merit ratings for players
     } else if (req.url.includes("/player/claim-") && reqMethod === "POST") {
       // Allow all claiming endpoints (streak, winner, solo support, referral bonus)
+    } else if (req.url.includes("/uc-transfers") && (reqMethod === "POST" || reqMethod === "PATCH")) {
+      // Allow UC transfer send/request and approve/reject for users
     } else {
       throw new Error("Long ki ba jai jai se: Permission Denied");
     }
