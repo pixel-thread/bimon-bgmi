@@ -625,7 +625,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                 )}
 
                 {/* UC Transfer - for PLAYER, ADMIN, SUPER_ADMIN roles, not viewing own profile */}
-                {(user?.role === "PLAYER" || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && !isOwnProfile && (
+                {(user?.role === "USER" || user?.role === "PLAYER" || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && !isOwnProfile && (
                   <Button
                     variant="outline"
                     className="w-full sm:w-auto text-sm border-green-600 text-green-600 hover:bg-green-50"
