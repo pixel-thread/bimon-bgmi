@@ -24,6 +24,7 @@ type PlayerT = {
     displayName?: string | null;
     category: string;
     matches: number;
+    deaths: number;
     kd: number;
     uc?: number;
     imageUrl?: string | null;
@@ -370,7 +371,7 @@ export function CustomPlayerTable({
             case "kills":
                 return player.kills || 0;
             case "matches":
-                return player.matches;
+                return player.deaths;
             case "balance":
                 return player.uc || 0;
             default:

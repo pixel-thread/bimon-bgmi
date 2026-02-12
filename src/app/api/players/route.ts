@@ -154,7 +154,7 @@ export async function GET(req: NextRequest) {
       switch (sortBy) {
         case "kd": aVal = a._kd; bVal = b._kd; break;
         case "kills": aVal = a.kills; bVal = b.kills; break;
-        case "matches": aVal = a.matches; bVal = b.matches; break;
+        case "matches": aVal = a.deaths; bVal = b.deaths; break;
         case "balance": aVal = a.uc; bVal = b.uc; break;
         default: aVal = a._kd; bVal = b._kd;
       }
