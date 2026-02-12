@@ -521,9 +521,13 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                       )}
                     </div>
                     {/* Bio/Message */}
-                    <p className="text-xs sm:text-sm text-muted-foreground italic max-w-[200px] text-center mx-auto">
-                      "{(player as any)?.bio || `Nga u ${displayName} dei u ${getKdRank(displayKills, displayDeaths).charAt(0).toUpperCase() + getKdRank(displayKills, displayDeaths).slice(1)}`}"
-                    </p>
+                    {isPlayerLoading && !player ? (
+                      <div className="h-4 w-36 bg-zinc-200/60 dark:bg-zinc-700/40 rounded mx-auto animate-pulse" />
+                    ) : (
+                      <p className="text-xs sm:text-sm text-muted-foreground italic max-w-[200px] text-center mx-auto">
+                        "{(player as any)?.bio || `Nga u ${displayName} dei u ${getKdRank(displayKills, displayDeaths).charAt(0).toUpperCase() + getKdRank(displayKills, displayDeaths).slice(1)}`}"
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
