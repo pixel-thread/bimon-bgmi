@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   Dialog,
@@ -12,7 +12,7 @@ import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
 import { CategoryBadge } from "@/src/components/ui/category-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
-import { History, Ban, AlertTriangle, CheckCircle, DollarSign, ArrowUpRight, Shield, Heart, User, Crown, Loader2 } from "lucide-react";
+import { History, Ban, AlertTriangle, CheckCircle, DollarSign, ArrowUpRight, Shield, Heart, User, Crown, Loader2, Volume2, VolumeX } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { usePlayer } from "@/src/hooks/player/usePlayer";
 import { usePlayerStats } from "@/src/hooks/player/usePlayerStats";
@@ -142,6 +142,47 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
   const avatarRef = React.useRef<HTMLDivElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const [videoReady, setVideoReady] = useState(false);
+
+  // 🐍 RKO Easter egg
+  const rkoAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [rkoMuted, setRkoMuted] = useState(true);
+  const isRkoPlayer = (player?.user?.userName || initialData?.userName)?.toLowerCase() === "badsnipe";
+
+  useEffect(() => {
+    if (isOpen && isRkoPlayer) {
+      if (!rkoAudioRef.current) {
+        rkoAudioRef.current = new Audio("/audio/rko.mp3");
+        rkoAudioRef.current.loop = true;
+      }
+      rkoAudioRef.current.muted = true;
+      rkoAudioRef.current.currentTime = 0;
+      rkoAudioRef.current.play().catch(() => { });
+      setRkoMuted(true);
+    } else {
+      if (rkoAudioRef.current) {
+        rkoAudioRef.current.pause();
+        rkoAudioRef.current.currentTime = 0;
+      }
+    }
+    return () => {
+      if (rkoAudioRef.current) {
+        rkoAudioRef.current.pause();
+        rkoAudioRef.current.currentTime = 0;
+      }
+    };
+  }, [isOpen, isRkoPlayer]);
+
+  const toggleRkoMute = useCallback(() => {
+    if (!rkoAudioRef.current) return;
+    const next = !rkoMuted;
+    setRkoMuted(next);
+    rkoAudioRef.current.muted = next;
+    if (!next) {
+      // Unmuting — restart from beginning so user hears full clip
+      rkoAudioRef.current.currentTime = 0;
+      rkoAudioRef.current.play().catch(() => { });
+    }
+  }, [rkoMuted]);
 
   // Key to trigger video replay when modal opens
   const [videoKey, setVideoKey] = useState(0);
@@ -280,7 +321,20 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
           className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto p-5 sm:p-7"
           onOpenAutoFocus={(e) => e.preventDefault()}
           hideCloseButton
+          style={isRkoPlayer && !rkoMuted ? {
+            animation: 'rkoShake 0.15s ease-in-out infinite',
+          } : undefined}
         >
+          {/* RKO red vignette overlay */}
+          {isRkoPlayer && !rkoMuted && (
+            <div
+              className="fixed inset-0 pointer-events-none rounded-lg z-[51] transition-opacity duration-500"
+              style={{
+                background: 'radial-gradient(ellipse at center, transparent 40%, rgba(220, 38, 38, 0.3) 100%)',
+                animation: 'rkoPulse 1s ease-in-out infinite',
+              }}
+            />
+          )}
           <DialogHeader className="text-center">
             {isLoading ? (
               <div className="flex flex-col items-center gap-2">
@@ -422,9 +476,29 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                   </div>
                   {/* Name + Crown */}
                   <DialogTitle className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-1.5 w-full">
-                    {displayName}
+                    <span
+                      style={isRkoPlayer && !rkoMuted ? {
+                        animation: 'rkoTextFlash 0.5s ease-in-out infinite',
+                        textShadow: '0 0 10px rgba(220, 38, 38, 0.8), 0 0 20px rgba(220, 38, 38, 0.4)',
+                      } : undefined}
+                    >
+                      {displayName}
+                    </span>
                     {((player as any)?.hasRoyalPass || initialData?.hasRoyalPass) && (
                       <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 crown-glow -translate-y-0.5" />
+                    )}
+                    {isRkoPlayer && (
+                      <button
+                        onClick={toggleRkoMute}
+                        className="ml-1 p-0.5 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                        title={rkoMuted ? "Unmute RKO" : "Mute RKO"}
+                      >
+                        {rkoMuted ? (
+                          <VolumeX className="w-4 h-4 text-zinc-400" />
+                        ) : (
+                          <Volume2 className="w-4 h-4 text-red-500 animate-pulse" />
+                        )}
+                      </button>
                     )}
                   </DialogTitle>
                   {/* Category Badge */}
@@ -469,25 +543,57 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
             <div className="space-y-4 sm:space-y-5 py-2">
               {/* Stats Grid - 2x2 on mobile, 4x1 on desktop */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
-                <div className="text-center p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                <motion.div
+                  animate={isRkoPlayer && !rkoMuted ? {
+                    rotate: [0, -8, 4, -2, 0],
+                    y: [0, 6, -3, 8, 0],
+                    x: [0, -4, 2, -1, 0],
+                  } : { rotate: 0, y: 0, x: 0 }}
+                  transition={isRkoPlayer && !rkoMuted ? { duration: 0.6, repeat: Infinity, repeatDelay: 0.3 } : { duration: 0.4, ease: 'easeOut' }}
+                  className="text-center p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30"
+                >
                   <p className="text-xl sm:text-2xl font-bold text-blue-600">
                     {displayDeaths}
                   </p>
                   <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Matches</p>
-                </div>
-                <div className="text-center p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-900/30">
+                </motion.div>
+                <motion.div
+                  animate={isRkoPlayer && !rkoMuted ? {
+                    rotate: [0, 6, -10, 3, 0],
+                    y: [0, -5, 10, -2, 0],
+                    x: [0, 3, -5, 2, 0],
+                  } : { rotate: 0, y: 0, x: 0 }}
+                  transition={isRkoPlayer && !rkoMuted ? { duration: 0.7, repeat: Infinity, repeatDelay: 0.2, delay: 0.1 } : { duration: 0.4, ease: 'easeOut' }}
+                  className="text-center p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-900/30"
+                >
                   <p className="text-xl sm:text-2xl font-bold text-green-600">
                     {displayKills}
                   </p>
                   <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Kills</p>
-                </div>
-                <div className="text-center p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
+                </motion.div>
+                <motion.div
+                  animate={isRkoPlayer && !rkoMuted ? {
+                    rotate: [0, 10, -6, 8, 0],
+                    y: [0, 8, -4, 12, 0],
+                    x: [0, -6, 3, -2, 0],
+                  } : { rotate: 0, y: 0, x: 0 }}
+                  transition={isRkoPlayer && !rkoMuted ? { duration: 0.55, repeat: Infinity, repeatDelay: 0.35, delay: 0.2 } : { duration: 0.4, ease: 'easeOut' }}
+                  className="text-center p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-100 dark:border-yellow-900/30"
+                >
                   <p className="text-xl sm:text-2xl font-bold text-yellow-600">
                     {displayKd.toFixed(2)}
                   </p>
                   <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">K/D</p>
-                </div>
-                <div className="text-center p-3 sm:p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-900/30">
+                </motion.div>
+                <motion.div
+                  animate={isRkoPlayer && !rkoMuted ? {
+                    rotate: [0, -5, 12, -7, 0],
+                    y: [0, 10, -6, 4, 0],
+                    x: [0, 5, -3, 6, 0],
+                  } : { rotate: 0, y: 0, x: 0 }}
+                  transition={isRkoPlayer && !rkoMuted ? { duration: 0.65, repeat: Infinity, repeatDelay: 0.15, delay: 0.3 } : { duration: 0.4, ease: 'easeOut' }}
+                  className="text-center p-3 sm:p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-900/30"
+                >
                   <p
                     className={`text-xl sm:text-2xl font-bold ${Number(displayBalance) >= 0
                       ? "text-green-600"
@@ -497,7 +603,7 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
                     {Math.floor(Number(displayBalance)).toLocaleString()} UC
                   </p>
                   <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Balance</p>
-                </div>
+                </motion.div>
               </div>
 
 
@@ -654,9 +760,31 @@ export function PlayerStatsModal({ isOpen, onClose, id, initialData }: Props) {
           )}
 
           <DialogFooter className="mt-5 sm:mt-8 pt-2">
-            <Button variant="outline" onClick={onClose} className="w-full sm:w-auto" tabIndex={-1}>
-              Close
-            </Button>
+            {isRkoPlayer && !rkoMuted ? (
+              <button
+                onClick={toggleRkoMute}
+                className="flex items-end justify-evenly w-full h-10 px-2 rounded-lg border transition-all duration-300 cursor-pointer border-red-500/50 bg-red-50 dark:bg-red-950/30 shadow-[0_0_12px_rgba(220,38,38,0.2)]"
+                title="Mute"
+              >
+                {Array.from({ length: 24 }, (_, i) => {
+                  const barVariant = (i % 5) + 1;
+                  const delayMs = (i * 50) % 300;
+                  return (
+                    <div
+                      key={i}
+                      className="w-[2px] sm:w-[3px] rounded-full bg-red-500"
+                      style={{
+                        animation: `rkoBar${barVariant} 0.4s ease-in-out ${delayMs}ms infinite alternate`,
+                      }}
+                    />
+                  );
+                })}
+              </button>
+            ) : (
+              <Button variant="outline" onClick={onClose} className="w-full sm:w-auto" tabIndex={-1}>
+                Close
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog >
