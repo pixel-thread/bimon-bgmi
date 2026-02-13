@@ -379,7 +379,14 @@ IMPORTANT:
 - Players in the same row belong to the same team
 - If uploading multiple images, combine ALL results into ONE JSON array
 - Flag any player with 10+ kills (unusual, double-check)
-- UNKNOWN PLAYERS: If you find players in the scoreboard who are NOT in my list, add them with "isUnknown": true
+
+🔍🔍🔍 UNKNOWN PLAYERS (VERY IMPORTANT - DO NOT SKIP):
+After matching all players from my list, check the scoreboard for ANY remaining players that you could NOT match to anyone in my list above.
+These are NEW players whose in-game names are different from the usernames I provided.
+- For EACH unmatched scoreboard player, add them to the JSON with "isUnknown": true
+- Use their EXACT scoreboard name (since they're not in my list)
+- This helps me identify new players I need to register
+- Example: if scoreboard shows "xXDarkKnight" but no one in my list matches → add {"name": "xXDarkKnight", "kills": 2, "position": 4, "isUnknown": true}
 
 Return format (MUST include all ${totalPlayers} players + any unknown):
 [
@@ -392,7 +399,7 @@ Return format (MUST include all ${totalPlayers} players + any unknown):
 After the JSON (ONLY show sections that have items):
 Players found: X/${totalPlayers}
 Players absent: X (list names)
-🆕 Unknown players: X (list names - players in scoreboard but not in my list)
+🆕 Unknown players: X (list names - players in scoreboard but NOT in my list)
 ⚠️ High kills (10+): player_name (X kills)
 ⚠️ Uncertain matches: scoreboard_name → matched_name`;
 

@@ -514,11 +514,20 @@ OUTPUT FORMAT:
       "players": [
         {"name": "player_i_saw", "kills": 5, "position": 1},
         {"name": "player_with_0_finishes", "kills": 0, "position": 3},
-        {"name": "player_NOT_in_any_image", "kills": null, "position": null}
+        {"name": "player_NOT_in_any_image", "kills": null, "position": null},
+        {"name": "unknown_scoreboard_name", "kills": 3, "position": 2, "isUnknown": true}
       ]
     }
   ]
 }
+
+🔍🔍🔍 UNKNOWN PLAYERS (VERY IMPORTANT - DO NOT SKIP):
+After matching all players from my list, check the scoreboard for ANY remaining players that you could NOT match to anyone in my list above.
+These are NEW players whose in-game names are different from the usernames I provided.
+- For EACH unmatched scoreboard player, add them to the JSON with "isUnknown": true
+- Use their EXACT scoreboard name (since they're not in my list)
+- Include them in EACH match where they appear
+- Example: if scoreboard shows "xXDarkKnight" but no one in my list matches → add {"name": "xXDarkKnight", "kills": 2, "position": 4, "isUnknown": true}
 
 RULES:
 1. Group images by #1 + #2 teams in LEFT panel
@@ -526,10 +535,11 @@ RULES:
 3. Use EXACT names from my list
 4. kills = finishes number you SEE; null if NOT FOUND
 5. position = team's rank (1-13)
+6. Add unmatched scoreboard players with "isUnknown": true
 
 BEFORE SUBMITTING: Double-check that absent players have null, not 0!
 
-Confirm: Match A: #1 team, #2 team, X found, Y absent (null)`;
+Confirm: Match A: #1 team, #2 team, X found, Y absent (null), Z unknown`;
 
         navigator.clipboard.writeText(prompt);
         toast.success("Prompt copied to clipboard!");
