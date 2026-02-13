@@ -117,7 +117,7 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
                             playerId: player.id,
                             name: player.name,
                             displayName: player.displayName ?? null,
-                            kills: playerStats?.kills === 0 ? "" : (playerStats?.kills ?? ""),
+                            kills: playerStats?.kills != null ? String(playerStats.kills) : "",
                             isAbsent: wasAbsent,
                         };
                     }),
@@ -350,57 +350,99 @@ export function BulkEditStatsDialog({ open, onOpenChange }: Props) {
         const totalTeams = teams.length;
         const totalPlayers = teams.reduce((acc, t) => acc + t.players.length, 0);
 
-        // Build player list with displayName for better scoreboard matching
-        const playerList = teams.flatMap(t => t.players.map(p => {
-            const displayName = p.displayName || p.name;
-            // If displayName differs from name, show both for context
-            return displayName !== p.name ? `${displayName} (userName: ${p.name})` : p.name;
-        }));
+        const prompt = `You are extracting stats from a BGMI (Battlegrounds Mobile India) match scoreboard.
 
-        const prompt = `Extract player names, kills (finishes), and team positions from this BGMI scoreboard.
+═══════════════════════════════════════
+1. SCOREBOARD LAYOUT (HOW TO READ)
+═══════════════════════════════════════
+Each scoreboard has TWO panels:
 
-Player names to match (USE THESE EXACT NAMES in output - use displayName if provided): 
-${playerList.join(", ")}
+LEFT PANEL: Shows #1 and #2 teams
+  - #1 team has a CROWN icon, #2 has a silver medal
+  - Each player row: [PlayerName] ... [N finishes] or [N finish]
+  - "finishes" = kills. Read the NUMBER before "finishes"/"finish"
 
-Total: ${totalTeams} teams, ${totalPlayers} players
+RIGHT PANEL: Shows positions #3 through #14 (scrollable)
+  - Each position block: big number on left, then player rows
+  - Each player row: [PlayerName] ... [N finishes]
 
-Teams and their players:
-${teams.map(t => `- ${t.name}: ${t.players.map(p => p.displayName || p.name).join(", ")}`).join("\n")}
+MULTIPLE IMAGES: The scoreboard scrolls, so you may receive 2-4 screenshots. They all belong to the SAME single match — combine them into ONE JSON array.
 
-IMPORTANT:
-- Return ALL ${totalPlayers} players from my list in the JSON
-- For players FOUND in scoreboard: include their kills and position
-- For players NOT FOUND in scoreboard (absent): set kills to null
-- Match scoreboard names to the player list above (ignore special characters/symbols when matching)
-- In the JSON output, use the EXACT name from MY list above, NOT the scoreboard name
-- Example: if scoreboard shows "ツREAL乂SNAR" and my list has "realxsnar", return "realxsnar"
-- Position = the rank number shown next to each team (1, 2, 3, etc.)
-- The crown icon = position 1
-- Players in the same row belong to the same team
-- If uploading multiple images, combine ALL results into ONE JSON array
-- Flag any player with 10+ kills (unusual, double-check)
+═══════════════════════════════════════
+2. HOW TO READ KILLS (VERY IMPORTANT)
+═══════════════════════════════════════
+- Look at the RIGHT side of each player row
+- You will see: "N finishes" or "N finish" (where N is a number)
+- The number N = kills for that player
+- "0 finishes" means the player played but got 0 kills
+- Common misread: the stylized font can make numbers hard to read. Double-check each one.
 
-🔍🔍🔍 UNKNOWN PLAYERS (VERY IMPORTANT - DO NOT SKIP):
-After matching all players from my list, check the scoreboard for ANY remaining players that you could NOT match to anyone in my list above.
-These are NEW players whose in-game names are different from the usernames I provided.
-- For EACH unmatched scoreboard player, add them to the JSON with "isUnknown": true
-- Use their EXACT scoreboard name (since they're not in my list)
-- This helps me identify new players I need to register
-- Example: if scoreboard shows "xXDarkKnight" but no one in my list matches → add {"name": "xXDarkKnight", "kills": 2, "position": 4, "isUnknown": true}
+═══════════════════════════════════════
+3. REGISTERED PLAYERS TO MATCH
+═══════════════════════════════════════
+${totalTeams} teams, ${totalPlayers} players:
+${teams.map(t => `• ${t.name}: ${t.players.map(p => p.displayName || p.name).join(", ")}`).join("\n")}
 
-Return format (MUST include all ${totalPlayers} players + any unknown):
+═══════════════════════════════════════
+4. NAME MATCHING RULES
+═══════════════════════════════════════
+BGMI names use heavy Unicode decoration. Strip these when matching:
+- Japanese/Chinese chars: 乂 乙 々 戦 威 挨 ツ り ﾑ 尺 ズ 亗 모
+- Symbols: £ ✓ ◈ ★ ꧁ ꧂ 乄
+- The CORE readable part is what matters
+- If a player has "(userName: xxx)" shown, try matching by userName too
+- In output, use the EXACT name from MY list, NOT the scoreboard's version
+- Example: if scoreboard shows "ツREAL乂SNAR" and my list has "ツREAL乂SNAR", return "ツREAL乂SNAR"
+
+═══════════════════════════════════════
+5. NULL vs 0 — CRITICAL DISTINCTION
+═══════════════════════════════════════
+- kills: 0 → Player IS VISIBLE in the scoreboard showing "0 finishes" (PRESENT)
+- kills: null → Player is NOT in ANY screenshot (ABSENT/didn't play)
+
+❌ WRONG: {"kills": 0} for a player you can't find → should be null
+✅ RIGHT: {"kills": 0} ONLY if you physically see them with "0 finishes"
+✅ RIGHT: {"kills": null} if you searched all images and didn't find them
+
+═══════════════════════════════════════
+6. STEP-BY-STEP WORKFLOW
+═══════════════════════════════════════
+  a) Read EVERY player visible in the images, noting: name, kills (N finishes), position (#)
+  b) Match each scoreboard name to my player list
+  c) For players in my list NOT found in any image → kills: null, position: null
+  d) For scoreboard players NOT matching anyone in my list → add with isUnknown: true
+  e) VERIFY: count how many players you marked present vs absent
+
+═══════════════════════════════════════
+7. OUTPUT FORMAT
+═══════════════════════════════════════
 [
-  {"name": "present_player", "kills": 5, "position": 1},
-  {"name": "absent_player", "kills": null, "position": null},
-  {"name": "unknown_scoreboard_name", "kills": 3, "position": 2, "isUnknown": true},
-  ...
+  {"name": "exact_name_from_my_list", "kills": 5, "position": 1},
+  {"name": "player_with_0_finishes", "kills": 0, "position": 3},
+  {"name": "NOT_found_in_any_image", "kills": null, "position": null},
+  {"name": "unknown_scoreboard_name", "kills": 3, "position": 2, "isUnknown": true}
 ]
 
-After the JSON (ONLY show sections that have items):
-Players found: X/${totalPlayers}
-Players absent: X (list names)
-🆕 Unknown players: X (list names - players in scoreboard but NOT in my list)
-⚠️ High kills (10+): player_name (X kills)
+═══════════════════════════════════════
+8. UNKNOWN PLAYERS (DO NOT SKIP)
+═══════════════════════════════════════
+After matching all my players, check for ANY remaining scoreboard players you couldn't match.
+- Add each with "isUnknown": true and their EXACT scoreboard name
+- Example: scoreboard shows "xXDarkKnight" with no match → {"name": "xXDarkKnight", "kills": 2, "position": 4, "isUnknown": true}
+
+═══════════════════════════════════════
+9. FINAL CHECKLIST (DO THIS BEFORE RESPONDING)
+═══════════════════════════════════════
+□ All ${totalPlayers} players from my list are included
+□ Absent players have kills: null (NOT 0)
+□ Present players with "0 finishes" have kills: 0
+□ Names in output match MY list exactly (not scoreboard versions)
+□ Positions are correct (1-14 range)
+□ Unknown scoreboard players included with isUnknown: true
+□ Re-read any kill counts you're unsure about — zoom in on the number before "finishes"
+
+After the JSON, confirm:
+Found: X/${totalPlayers} | Absent: Y | Unknown: Z
 ⚠️ Uncertain matches: scoreboard_name → matched_name`;
 
         navigator.clipboard.writeText(prompt);

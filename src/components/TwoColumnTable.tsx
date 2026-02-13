@@ -238,11 +238,7 @@ export default function TwoColumnTable({ teams }: TwoColumnTableProps) {
                 <td className="px-1 py-1.5 text-center align-middle text-zinc-500 tabular-nums font-mono text-xs">{team.matches}</td>
                 <td className="px-1 py-1.5 text-center align-middle text-zinc-300 font-medium tabular-nums font-mono text-xs">{team.pts}</td>
                 <td className="px-1 py-1.5 text-center align-middle text-zinc-400 tabular-nums font-mono text-xs">{team.kills}</td>
-                <td className="px-1 py-1.5 text-center align-middle">
-                  <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-400 font-bold tabular-nums font-mono text-xs border border-orange-500/20">
-                    {team.total}
-                  </span>
-                </td>
+                <td className="px-1 py-1.5 text-center align-middle text-orange-400 font-bold tabular-nums font-mono text-xs">{team.total}</td>
               </tr>
             );
           })}

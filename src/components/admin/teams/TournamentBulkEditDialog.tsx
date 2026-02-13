@@ -257,6 +257,53 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
         setMatchDataList(newData);
     };
 
+    // Compute change notes comparing new data against saved data
+    const computeChangeNotes = useCallback((newData: MatchData[]) => {
+        const changes: string[] = [];
+        for (let mIdx = 0; mIdx < newData.length && mIdx < initialMatchDataList.length; mIdx++) {
+            const newMatch = newData[mIdx];
+            const oldMatch = initialMatchDataList[mIdx];
+            if (!oldMatch) continue;
+
+            const matchChanges: string[] = [];
+            for (let tIdx = 0; tIdx < newMatch.teams.length && tIdx < oldMatch.teams.length; tIdx++) {
+                const newTeam = newMatch.teams[tIdx];
+                const oldTeam = oldMatch.teams[tIdx];
+                if (!oldTeam) continue;
+
+                // Position change
+                const oldPos = String(oldTeam.position || "");
+                const newPos = String(newTeam.position || "");
+                if (oldPos !== newPos) {
+                    matchChanges.push(`📍 ${newTeam.name}: Position ${oldPos || "?"} → ${newPos || "?"}`);
+                }
+
+                // Player changes
+                for (let pIdx = 0; pIdx < newTeam.players.length && pIdx < oldTeam.players.length; pIdx++) {
+                    const newPlayer = newTeam.players[pIdx];
+                    const oldPlayer = oldTeam.players[pIdx];
+                    if (!oldPlayer) continue;
+
+                    const oldKills = oldPlayer.kills === "" || oldPlayer.kills === null ? "" : String(oldPlayer.kills);
+                    const newKills = newPlayer.kills === "" || newPlayer.kills === null ? "" : String(newPlayer.kills);
+
+                    if (oldKills !== newKills) {
+                        matchChanges.push(`  🎯 ${newPlayer.displayName || newPlayer.name}: Kills ${oldKills || "-"} → ${newKills || "-"}`);
+                    }
+
+                    if (oldPlayer.isAbsent !== newPlayer.isAbsent) {
+                        matchChanges.push(`  👤 ${newPlayer.displayName || newPlayer.name}: ${oldPlayer.isAbsent ? "Absent → Present" : "Present → Absent"}`);
+                    }
+                }
+            }
+
+            if (matchChanges.length > 0) {
+                changes.push(...matchChanges);
+            }
+        }
+        return changes;
+    }, [initialMatchDataList]);
+
     // Swap match assignments
     const handleSwapMatches = () => {
         if (matchDataList.length < 2) return;
@@ -271,6 +318,7 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
         newData[1].topTeamsLabel = tempLabel;
 
         setMatchDataList(newData);
+        setChangeNotes(computeChangeNotes(newData)); // Recalculate notes after swap
         toast.success("Match data swapped!");
     };
 
@@ -381,58 +429,8 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
                 };
             });
 
-            // DEV: Log changes compared to PREVIOUS paste (not initial saved data)
-            // Only show change notes on second or subsequent pastes
-            if (hasPasted && matchDataList.length > 0) {
-                const changes: string[] = [];
-                for (let mIdx = 0; mIdx < newMatchDataList.length && mIdx < matchDataList.length; mIdx++) {
-                    const newMatch = newMatchDataList[mIdx];
-                    const oldMatch = matchDataList[mIdx]; // Compare to CURRENT data (previous paste)
-                    if (!oldMatch) continue;
-
-                    const matchChanges: string[] = [];
-                    for (let tIdx = 0; tIdx < newMatch.teams.length && tIdx < oldMatch.teams.length; tIdx++) {
-                        const newTeam = newMatch.teams[tIdx];
-                        const oldTeam = oldMatch.teams[tIdx];
-                        if (!oldTeam) continue;
-
-                        // Position change - normalize to strings for comparison
-                        const oldPos = String(oldTeam.position || "");
-                        const newPos = String(newTeam.position || "");
-                        if (oldPos !== newPos) {
-                            matchChanges.push(`📍 ${newTeam.name}: Position ${oldPos || "?"} → ${newPos || "?"}`);
-                        }
-
-                        // Player changes
-                        for (let pIdx = 0; pIdx < newTeam.players.length && pIdx < oldTeam.players.length; pIdx++) {
-                            const newPlayer = newTeam.players[pIdx];
-                            const oldPlayer = oldTeam.players[pIdx];
-                            if (!oldPlayer) continue;
-
-                            // Use same normalization as hasDataChanges
-                            const oldKills = oldPlayer.kills === "" || oldPlayer.kills === null ? "" : String(oldPlayer.kills);
-                            const newKills = newPlayer.kills === "" || newPlayer.kills === null ? "" : String(newPlayer.kills);
-
-                            if (oldKills !== newKills) {
-                                matchChanges.push(`  🎯 ${newPlayer.displayName || newPlayer.name}: Kills ${oldKills || "-"} → ${newKills || "-"}`);
-                            }
-
-                            if (oldPlayer.isAbsent !== newPlayer.isAbsent) {
-                                matchChanges.push(`  👤 ${newPlayer.displayName || newPlayer.name}: ${oldPlayer.isAbsent ? "Absent → Present" : "Present → Absent"}`);
-                            }
-                        }
-                    }
-
-                    if (matchChanges.length > 0) {
-                        changes.push(...matchChanges);
-                    }
-                }
-
-                // Store in state for UI display
-                setChangeNotes(changes);
-            } else {
-                setChangeNotes([]);
-            }
+            // Compute and store change notes (always compare against saved data)
+            setChangeNotes(computeChangeNotes(newMatchDataList));
 
             // Mark that first paste has happened
             setHasPasted(true);
@@ -482,64 +480,111 @@ export function TournamentBulkEditDialog({ open, onOpenChange }: Props) {
         const totalTeams = allTeams.size;
         const numMatches = matchDataList.length;
 
-        const prompt = `Extract player stats from ${numMatches} BGMI match scoreboards.
+        const prompt = `You are extracting stats from ${numMatches} BGMI (Battlegrounds Mobile India) match scoreboard screenshots.
 
-REGISTERED PLAYERS (${totalTeams} teams, ${totalPlayers} players):
+═══════════════════════════════════════
+1. SCOREBOARD LAYOUT (HOW TO READ)
+═══════════════════════════════════════
+Each scoreboard has TWO panels:
+
+LEFT PANEL: Shows #1 and #2 teams
+  - #1 team has a CROWN icon, #2 has a silver medal
+  - Each player row: [PlayerName] ... [N finishes] or [N finish]
+  - "finishes" = kills. Read the NUMBER before "finishes"/"finish"
+
+RIGHT PANEL: Shows positions #3 through #14 (scrollable)
+  - Each position block: big number on left, then player rows
+  - Each player row: [PlayerName] ... [N finishes]
+
+MULTIPLE IMAGES per match: The scoreboard scrolls, so one match may have 2-4 screenshots. Images showing the SAME #1 and #2 teams (same players, same kills) belong to the SAME match.
+
+═══════════════════════════════════════
+2. HOW TO READ KILLS (VERY IMPORTANT)
+═══════════════════════════════════════
+- Look at the RIGHT side of each player row
+- You will see: "N finishes" or "N finish" (where N is a number)
+- The number N = kills for that player
+- "0 finishes" means the player played but got 0 kills
+- Common misread: the stylized font can make numbers hard to read. Double-check each one.
+
+═══════════════════════════════════════
+3. REGISTERED PLAYERS TO MATCH
+═══════════════════════════════════════
+${totalTeams} teams, ${totalPlayers} players:
 ${Array.from(allTeams.entries()).map(([name, players]) => `• ${name}: ${players.join(", ")}`).join("\n")}
 
-HOW TO GROUP MATCHES:
-- Look at LEFT side of scoreboard - shows Position #1 and #2 teams
-- Images with SAME #1 and #2 teams (same names + same kills) = SAME MATCH
+═══════════════════════════════════════
+4. NAME MATCHING RULES
+═══════════════════════════════════════
+BGMI names use heavy Unicode decoration. Strip these when matching:
+- Japanese/Chinese chars: 乂 乙 々 戦 威 挨 ツ り ﾑ 尺 ズ 亗 모
+- Symbols: £ ✓ ◈ ★ ꧁ ꧂ 乄
+- The CORE readable part is what matters
+- Example: scoreboard "乙ïMINING" → match to "乙ïMINING" in my list
+- Example: scoreboard "ツREAL乂SNAR" → match to "ツREAL乂SNAR" in my list  
+- If a player has "(userName: xxx)" shown, try matching by userName too
+- In output, use the EXACT name from MY list, NOT the scoreboard's version
 
-⚠️⚠️⚠️ CRITICAL - NULL vs 0 (READ CAREFULLY):
-- kills: 0 = Player IS in scoreboard with 0 finishes (PRESENT)
-- kills: null = Player is NOT in ANY scoreboard image (ABSENT)
+═══════════════════════════════════════
+5. NULL vs 0 — CRITICAL DISTINCTION
+═══════════════════════════════════════
+- kills: 0 → Player IS VISIBLE in the scoreboard showing "0 finishes" (PRESENT)
+- kills: null → Player is NOT in ANY screenshot for this match (ABSENT/didn't play)
 
-CHECK EACH PLAYER:
-1. Search ALL images for this player's name
-2. Found with "0" finishes? → kills: 0 (they played but got 0 kills)
-3. Found with N finishes? → kills: N
-4. NOT found in ANY image? → kills: null (they didn't play this match)
+❌ WRONG: {"kills": 0} for a player you can't find → should be null
+✅ RIGHT: {"kills": 0} ONLY if you physically see them with "0 finishes"
+✅ RIGHT: {"kills": null} if you searched all images and didn't find them
 
-❌ WRONG: {"name": "MissingPlayer", "kills": 0} ← Don't use 0 for missing players!
-✅ RIGHT: {"name": "MissingPlayer", "kills": null} ← Use null for missing players
-✅ RIGHT: {"name": "FoundPlayer", "kills": 0} ← Use 0 only if you SEE them with 0
+═══════════════════════════════════════
+6. STEP-BY-STEP WORKFLOW
+═══════════════════════════════════════
+For EACH match group:
+  a) Identify which images belong together (same #1 and #2 teams)
+  b) Read EVERY player visible in those images, noting: name, kills (N finishes), position (#)
+  c) Match each scoreboard name to my player list
+  d) For players in my list NOT found in any image → kills: null, position: null
+  e) For scoreboard players NOT matching anyone in my list → add with isUnknown: true
+  f) VERIFY: count how many players you marked present vs absent. For ${totalPlayers} players, typically 30-40 are present and 0-14 are absent (the ones not in the match)
 
-OUTPUT FORMAT:
+═══════════════════════════════════════
+7. OUTPUT FORMAT
+═══════════════════════════════════════
 {
   "matches": [
     {
       "identifier": "A",
-      "topTeams": "#1 Team (Xkills), #2 Team (Ykills)",
+      "topTeams": "#1 PlayerName1 (Nkills) #2 PlayerName2 (Nkills)",
       "players": [
-        {"name": "player_i_saw", "kills": 5, "position": 1},
+        {"name": "exact_name_from_my_list", "kills": 5, "position": 1},
         {"name": "player_with_0_finishes", "kills": 0, "position": 3},
-        {"name": "player_NOT_in_any_image", "kills": null, "position": null},
+        {"name": "NOT_found_in_any_image", "kills": null, "position": null},
         {"name": "unknown_scoreboard_name", "kills": 3, "position": 2, "isUnknown": true}
       ]
     }
   ]
 }
 
-🔍🔍🔍 UNKNOWN PLAYERS (VERY IMPORTANT - DO NOT SKIP):
-After matching all players from my list, check the scoreboard for ANY remaining players that you could NOT match to anyone in my list above.
-These are NEW players whose in-game names are different from the usernames I provided.
-- For EACH unmatched scoreboard player, add them to the JSON with "isUnknown": true
-- Use their EXACT scoreboard name (since they're not in my list)
-- Include them in EACH match where they appear
-- Example: if scoreboard shows "xXDarkKnight" but no one in my list matches → add {"name": "xXDarkKnight", "kills": 2, "position": 4, "isUnknown": true}
+═══════════════════════════════════════
+8. UNKNOWN PLAYERS (DO NOT SKIP)
+═══════════════════════════════════════
+After matching all my players, check for ANY remaining scoreboard players you couldn't match.
+- Add each with "isUnknown": true and their EXACT scoreboard name
+- Example: scoreboard shows "xXDarkKnight" with no match → {"name": "xXDarkKnight", "kills": 2, "position": 4, "isUnknown": true}
 
-RULES:
-1. Group images by #1 + #2 teams in LEFT panel
-2. Include ALL ${totalPlayers} players in EACH match output
-3. Use EXACT names from my list
-4. kills = finishes number you SEE; null if NOT FOUND
-5. position = team's rank (1-13)
-6. Add unmatched scoreboard players with "isUnknown": true
+═══════════════════════════════════════
+9. FINAL CHECKLIST (DO THIS BEFORE RESPONDING)
+═══════════════════════════════════════
+□ Each match has ALL ${totalPlayers} players from my list
+□ Absent players have kills: null (NOT 0)
+□ Present players with "0 finishes" have kills: 0
+□ Names in output match MY list exactly (not scoreboard versions)
+□ Positions are correct (1-14 range)
+□ Unknown scoreboard players included with isUnknown: true
+□ Re-read any kill counts you're unsure about — zoom in on the number before "finishes"
 
-BEFORE SUBMITTING: Double-check that absent players have null, not 0!
-
-Confirm: Match A: #1 team, #2 team, X found, Y absent (null), Z unknown`;
+After the JSON, confirm:
+Match A: #1 team, #2 team | Found: X, Absent: Y, Unknown: Z
+Match B: #1 team, #2 team | Found: X, Absent: Y, Unknown: Z`;
 
         navigator.clipboard.writeText(prompt);
         toast.success("Prompt copied to clipboard!");
@@ -580,6 +625,7 @@ Confirm: Match A: #1 team, #2 team, X found, Y absent (null), Z unknown`;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["teams"] });
+            queryClient.invalidateQueries({ queryKey: ["teams-selected-matches"] });
             toast.success("All matches saved successfully!");
             onOpenChange(false);
         },
