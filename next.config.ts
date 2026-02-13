@@ -23,16 +23,16 @@ const withPWA = withPWAInit({
     // Runtime caching for dynamic content
     runtimeCaching: [
       {
-        // Cache JS files - NetworkFirst to always prefer fresh code
-        // Falls back to cache only when offline (3 second timeout)
+        // Cache JS files with StaleWhileRevalidate - serve cached instantly,
+        // update in background. This is critical for offline: JS loads from
+        // cache immediately even after app kill + no internet
         urlPattern: /^https?:\/\/.*\.js$/i,
-        handler: "NetworkFirst",
+        handler: "StaleWhileRevalidate",
         options: {
           cacheName: "js-assets",
-          networkTimeoutSeconds: 3,
           expiration: {
-            maxEntries: 100,
-            maxAgeSeconds: 60 * 60 * 2, // 2 hours (reduced from 1 day to prevent stale code)
+            maxEntries: 200,
+            maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
           },
         },
       },
@@ -55,21 +55,23 @@ const withPWA = withPWAInit({
         options: {
           cacheName: "images",
           expiration: {
-            maxEntries: 100,
+            maxEntries: 200,
             maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
           },
         },
       },
       {
-        // Cache page navigations - show cached version, update in background
-        urlPattern: ({ request }) => request.mode === "navigate",
-        handler: "NetworkFirst",
+        // PAGE NAVIGATIONS - StaleWhileRevalidate is the key to real PWA feel:
+        // - Serves cached page INSTANTLY (even offline, even after app kill)
+        // - Updates cache in background when online
+        // - Falls back to offline.html only if page was NEVER visited before
+        urlPattern: ({ request }: { request: Request }) => request.mode === "navigate",
+        handler: "StaleWhileRevalidate",
         options: {
           cacheName: "pages",
-          networkTimeoutSeconds: 3,
           expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 60 * 60, // 1 hour (reduced from 1 day for fresher content)
+            maxEntries: 200,
+            maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days - survive app kills
           },
         },
       },

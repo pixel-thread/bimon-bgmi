@@ -15,6 +15,7 @@ import { PostHogProvider } from "./PostHogProvider";
 import { ErrorBoundary } from "../common/ErrorBoundary";
 import { useEffect, useState, Suspense } from "react";
 import { SilentPWAUpdater, setupGracefulErrorHandler } from "@/src/components/pwa/SilentUpdater";
+import { OfflineIndicator } from "@/src/components/pwa/OfflineIndicator";
 import { ReferralCapture } from "../common/ReferralCapture";
 import { StreakRewardBanner } from "../common/StreakRewardBanner";
 
@@ -79,6 +80,7 @@ function ClerkContent({ children }: { children: React.ReactNode }) {
                 </Layout>
                 <InstallPrompt />
                 <SilentPWAUpdater />
+                <OfflineIndicator />
                 <AdSenseScript />
                 <StreakRewardBanner />
                 <Toaster richColors position="top-right" />

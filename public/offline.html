@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#0a0a0a">
   <title>PUBGMI</title>
   <link rel="icon" href="/favicon.ico">
+  <link rel="manifest" href="/manifest.json">
   <style>
     * {
       margin: 0;
@@ -14,88 +15,105 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --bg: #0a0a0a;
+      --surface: rgba(255, 255, 255, 0.04);
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --text: #ffffff;
+      --text-muted: #888;
+      --amber: #f59e0b;
+      --amber-dim: rgba(245, 158, 11, 0.15);
+    }
+
     body {
       min-height: 100vh;
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: #0a0a0a;
+      background: var(--bg);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      color: #fff;
+      color: var(--text);
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      overflow: hidden;
     }
 
-    .container {
-      text-align: center;
-      padding: 2rem;
-      max-width: 320px;
+    /* Ambient background glow */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 20%, rgba(245, 158, 11, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 70% 80%, rgba(245, 158, 11, 0.02) 0%, transparent 50%);
+      z-index: 0;
+      pointer-events: none;
     }
 
-    .logo {
-      width: 100px;
-      height: 100px;
-      margin: 0 auto 1.5rem;
-      background: #000;
-      border-radius: 16px;
+    .page {
+      flex: 1;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2);
+      position: relative;
+      z-index: 1;
+      padding: 2rem 1.5rem;
     }
 
-    .logo img {
+    /* Animated wifi icon */
+    .icon-container {
       width: 80px;
-      height: auto;
-    }
-
-    .logo-text {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #f59e0b;
-      text-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
-    }
-
-    .status {
+      height: 80px;
+      border-radius: 20px;
+      background: var(--amber-dim);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
+      animation: pulse-glow 3s ease-in-out infinite;
     }
 
-    .offline-icon {
-      width: 20px;
-      height: 20px;
-      opacity: 0.6;
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.1); }
+      50% { box-shadow: 0 0 20px 5px rgba(245, 158, 11, 0.08); }
+    }
+
+    .icon-container svg {
+      width: 36px;
+      height: 36px;
+      color: var(--amber);
     }
 
     h1 {
-      font-size: 1.125rem;
-      font-weight: 500;
-      color: #fff;
-      opacity: 0.9;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.375rem;
     }
 
-    p {
+    .subtitle {
       font-size: 0.875rem;
-      color: #666;
-      margin-top: 0.25rem;
+      color: var(--text-muted);
       line-height: 1.5;
+      text-align: center;
+      max-width: 280px;
     }
 
     .actions {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      margin-top: 1.5rem;
+      margin-top: 2rem;
+      width: 100%;
+      max-width: 280px;
     }
 
     .btn {
       padding: 0.875rem 1.5rem;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 0.9375rem;
       font-weight: 600;
       cursor: pointer;
@@ -104,6 +122,7 @@
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .btn-primary {
@@ -112,18 +131,8 @@
     }
 
     .btn-primary:active {
-      transform: scale(0.98);
+      transform: scale(0.97);
       opacity: 0.9;
-    }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.08);
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .btn-secondary:active {
-      background: rgba(255, 255, 255, 0.12);
     }
 
     .spinner {
@@ -132,7 +141,7 @@
       border: 2px solid transparent;
       border-top-color: currentColor;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.6s linear infinite;
       display: none;
     }
 
@@ -145,113 +154,167 @@
     }
 
     @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
+      to { transform: rotate(360deg); }
     }
 
-    .hint {
-      margin-top: 2rem;
-      font-size: 0.75rem;
-      color: #444;
+    /* Connection status indicator */
+    .status-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 0.75rem 1rem;
+      padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+      background: var(--surface);
+      border-top: 1px solid var(--surface-border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      z-index: 10;
     }
 
-    /* Auto-retry indicator */
-    .auto-retry {
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ef4444;
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    .status-dot.online {
+      background: #22c55e;
+      animation: none;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Reconnecting state */
+    .reconnecting {
       display: none;
       margin-top: 1rem;
       font-size: 0.8125rem;
-      color: #666;
+      color: var(--amber);
+      animation: fade-pulse 1.5s ease-in-out infinite;
     }
 
-    .auto-retry.active {
-      display: block;
+    .reconnecting.active {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    @keyframes fade-pulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    /* Light theme support */
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f5f5f5;
+        --surface: rgba(0, 0, 0, 0.03);
+        --surface-border: rgba(0, 0, 0, 0.06);
+        --text: #18181b;
+        --text-muted: #71717a;
+        --amber-dim: rgba(245, 158, 11, 0.1);
+      }
+
+      body::before {
+        background: radial-gradient(circle at 30% 20%, rgba(245, 158, 11, 0.05) 0%, transparent 50%);
+      }
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <div class="logo">
-      <span class="logo-text">PUBGMI</span>
-    </div>
-
-    <div class="status">
-      <svg class="offline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path
-          d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.58 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" />
+  <div class="page">
+    <div class="icon-container">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+        <path d="M10.71 5.05A16 16 0 0 1 22.56 9"></path>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
       </svg>
-      <h1>You're offline</h1>
     </div>
 
-    <p>Check your connection and try again</p>
+    <h1>No Connection</h1>
+    <p class="subtitle">Visit a page while online first, and it'll be available offline next time</p>
 
     <div class="actions">
       <button class="btn btn-primary" id="retryBtn" onclick="retryConnection()">
         <span class="spinner"></span>
-        <span class="btn-text">Try Again</span>
+        <span class="btn-text">Retry Connection</span>
       </button>
     </div>
 
-    <p class="auto-retry" id="autoRetry">Retrying automatically...</p>
+    <div class="reconnecting" id="reconnecting">
+      <span class="spinner" style="display:block;width:14px;height:14px;border-width:1.5px"></span>
+      Reconnecting...
+    </div>
+  </div>
 
-    <p class="hint">The app will reconnect when you're back online</p>
+  <div class="status-bar">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">Offline</span>
   </div>
 
   <script>
-    let retryCount = 0;
-    let retryTimeout = null;
-
     function retryConnection() {
-      const btn = document.getElementById('retryBtn');
+      var btn = document.getElementById('retryBtn');
       btn.classList.add('loading');
-      
-      // Try to fetch a small resource to check connectivity
-      fetch('/manifest.json', { cache: 'no-store' })
-        .then(response => {
-          if (response.ok) {
-            // We're back online, reload the page
-            window.location.reload();
-          } else {
-            throw new Error('Still offline');
-          }
-        })
-        .catch(() => {
-          btn.classList.remove('loading');
-          // Show feedback
-          retryCount++;
-          if (retryCount >= 3) {
-            document.getElementById('autoRetry').classList.add('active');
-            scheduleAutoRetry();
-          }
-        });
-    }
 
-    function scheduleAutoRetry() {
-      if (retryTimeout) return;
-      
-      retryTimeout = setTimeout(() => {
-        retryTimeout = null;
-        if (!navigator.onLine) {
-          scheduleAutoRetry();
-        } else {
-          retryConnection();
-        }
+      fetch('/', { cache: 'no-store', mode: 'no-cors' })
+        .then(function () {
+          window.location.href = '/';
+        })
+        .catch(function () {
+          btn.classList.remove('loading');
+        });
+
+      // Timeout fallback
+      setTimeout(function () {
+        btn.classList.remove('loading');
       }, 5000);
     }
 
-    // Auto-reload when connection is restored
-    window.addEventListener('online', () => {
-      window.location.reload();
+    // Auto-reconnect when connection is restored
+    window.addEventListener('online', function () {
+      var dot = document.getElementById('statusDot');
+      var text = document.getElementById('statusText');
+      dot.classList.add('online');
+      text.textContent = 'Back online — reloading...';
+
+      setTimeout(function () {
+        window.location.href = '/';
+      }, 500);
     });
 
-    // Check connection status periodically
-    if (!navigator.onLine) {
-      scheduleAutoRetry();
-    }
+    // Periodic check
+    var checkInterval = setInterval(function () {
+      if (navigator.onLine) {
+        document.getElementById('reconnecting').classList.add('active');
+        fetch('/', { cache: 'no-store', mode: 'no-cors' })
+          .then(function () {
+            window.location.href = '/';
+          })
+          .catch(function () {
+            document.getElementById('reconnecting').classList.remove('active');
+          });
+      }
+    }, 5000);
   </script>
 </body>
 
 </html>
-</CodeContent>
-<parameter name="EmptyFile">false
