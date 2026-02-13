@@ -27,7 +27,10 @@ export async function GET(req: NextRequest) {
             },
             include: {
                 fromPlayer: {
-                    include: { user: { select: { userName: true, displayName: true } } },
+                    include: {
+                        user: { select: { userName: true, displayName: true } },
+                        uc: { select: { balance: true } },
+                    },
                 },
                 toPlayer: {
                     include: { user: { select: { userName: true, displayName: true } } },

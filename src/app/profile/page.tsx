@@ -41,7 +41,7 @@ type UCTransfer = {
     message?: string;
     responseMessage?: string;
     fromPlayerId: string;
-    fromPlayer: { user: { userName: string; displayName?: string | null } };
+    fromPlayer: { user: { userName: string; displayName?: string | null }; uc?: { balance: number } | null };
     toPlayerId: string;
     toPlayer: { user: { userName: string; displayName?: string | null } };
     createdAt: string;
@@ -165,7 +165,7 @@ export default function ProfilePage() {
     });
 
     // Fetch notifications
-    const { data: notificationsData } = useQuery({
+    const { data: notificationsData, isLoading: isNotificationsLoading } = useQuery({
         queryKey: ["notifications"],
         queryFn: () => http.get<{ notifications: Notification[]; unreadCount: number }>("/notifications"),
         enabled: !!playerId,
@@ -275,11 +275,13 @@ export default function ProfilePage() {
         transferId: string;
         amount: number;
         fromName: string;
+        fromUcBalance: number;
+        fromMessage?: string;
     } | null>(null);
     const [responseMessage, setResponseMessage] = useState("");
 
-    const openResponseDialog = (transferId: string, amount: number, fromName: string) => {
-        setResponseDialog({ isOpen: true, transferId, amount, fromName });
+    const openResponseDialog = (transferId: string, amount: number, fromName: string, fromUcBalance: number, fromMessage?: string) => {
+        setResponseDialog({ isOpen: true, transferId, amount, fromName, fromUcBalance, fromMessage });
         setResponseMessage("");
     };
 
@@ -847,7 +849,21 @@ export default function ProfilePage() {
                                     </Button>
                                 )}
                             </div>
-                            {notifications.length === 0 ? (
+                            {isNotificationsLoading ? (
+                                <div className="space-y-2">
+                                    {[...Array(2)].map((_, i) => (
+                                        <div key={i} className="p-3 rounded-xl bg-white/30 dark:bg-slate-800/30">
+                                            <div className="flex items-start gap-2.5">
+                                                <Skeleton className="h-7 w-7 rounded-full flex-shrink-0" />
+                                                <div className="flex-1 space-y-1">
+                                                    <Skeleton className="h-4 w-32" />
+                                                    <Skeleton className="h-3 w-full" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : notifications.length === 0 ? (
                                 <p className="text-center text-muted-foreground py-6 text-sm">No notifications yet</p>
                             ) : notifications.filter(n => !n.isRead).length === 0 ? (
                                 <p className="text-center text-muted-foreground py-6 text-sm">All caught up! 🎉</p>
@@ -867,7 +883,8 @@ export default function ProfilePage() {
                                                         className="flex items-start gap-2.5 cursor-pointer"
                                                         onClick={() => {
                                                             const fromName = pendingRequest.fromPlayer.user.displayName || pendingRequest.fromPlayer.user.userName;
-                                                            openResponseDialog(pendingRequest.id, pendingRequest.amount, fromName);
+                                                            const fromUcBalance = pendingRequest.fromPlayer.uc?.balance ?? 0;
+                                                            openResponseDialog(pendingRequest.id, pendingRequest.amount, fromName, fromUcBalance, pendingRequest.message);
                                                         }}
                                                     >
                                                         <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-500/10">
@@ -879,9 +896,6 @@ export default function ProfilePage() {
                                                                 <span className="text-[10px] text-muted-foreground whitespace-nowrap">{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
                                                             </div>
                                                             <p className="text-xs text-muted-foreground">{notification.message}</p>
-                                                            {pendingRequest.message && (
-                                                                <p className="text-xs text-violet-600 dark:text-violet-400 mt-0.5 italic">&quot;{pendingRequest.message}&quot;</p>
-                                                            )}
                                                             <p className="text-xs text-blue-500 dark:text-blue-400 mt-1 font-medium">Tap to respond</p>
                                                         </div>
                                                     </div>
@@ -1074,13 +1088,19 @@ export default function ProfilePage() {
                                 <p className="text-sm text-muted-foreground">
                                     {responseDialog.fromName} requested <span className="font-semibold text-foreground">{responseDialog.amount} UC</span>
                                 </p>
+                                <p className="text-xs text-muted-foreground">
+                                    {responseDialog.fromName}&apos;s balance: <span className={`font-semibold ${responseDialog.fromUcBalance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{responseDialog.fromUcBalance} UC</span>
+                                </p>
+                                {responseDialog.fromMessage && (
+                                    <p className="text-xs text-violet-600 dark:text-violet-400 mt-1 italic">&quot;{responseDialog.fromMessage}&quot;</p>
+                                )}
                             </div>
 
                             {/* Message input */}
                             <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-muted-foreground">Message (optional)</label>
                                 <Textarea
-                                    placeholder="Add a note..."
+                                    placeholder="Nga jwa sarong rei ia ki mynduk"
                                     value={responseMessage}
                                     onChange={(e) => setResponseMessage(e.target.value)}
                                     rows={2}
