@@ -75,3 +75,49 @@ export async function POST(req: Request) {
         return handleApiErrors(error);
     }
 }
+
+export async function DELETE() {
+    try {
+        const { userId } = await auth();
+        if (!userId) {
+            return ErrorResponse({ message: "Unauthorized", status: 401 });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            include: {
+                player: {
+                    include: {
+                        characterImage: true,
+                    }
+                }
+            },
+        });
+
+        if (!user?.playerId) {
+            return ErrorResponse({ message: "Player not found", status: 404 });
+        }
+
+        const characterImage = user.player?.characterImage;
+        if (!characterImage) {
+            return ErrorResponse({ message: "No character image to remove", status: 404 });
+        }
+
+        // Disconnect character image from player
+        await prisma.player.update({
+            where: { id: user.playerId },
+            data: { characterImage: { disconnect: true } },
+        });
+
+        // Delete the gallery entry
+        await prisma.gallery.delete({
+            where: { id: characterImage.id },
+        });
+
+        return SuccessResponse({
+            message: "Character image removed successfully",
+        });
+    } catch (error) {
+        return handleApiErrors(error);
+    }
+}

@@ -5,6 +5,7 @@ export async function getProfileImages() {
         where: {
             isCharacterImg: true,
             status: "ACTIVE",
+            player: { is: null }, // Only show admin-uploaded images, not user character images
         },
         orderBy: { id: "desc" },
     });

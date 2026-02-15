@@ -18,7 +18,7 @@ import http from "@/src/utils/http";
 import axiosInstance from "@/src/utils/api";
 import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
-import { Camera, CloudUpload, ImageIcon, Loader2, Trash2, User, Check, X, RefreshCw, Copy, HelpCircle, Video, Crown } from "lucide-react";
+import { Camera, ImageIcon, Loader2, Trash2, User, Check, X, RefreshCw, Copy, HelpCircle, Video, Crown } from "lucide-react";
 import Image from "next/image";
 import { useDialogBackHandler } from "@/src/hooks/useDialogBackHandler";
 import { compressProfileImage, compressCharacterImage } from "@/src/utils/image/compressImage";
@@ -38,6 +38,7 @@ type ImageSettings = {
     customImageId: string | null;
     customImage: ProfileImage | null;
     uploadedImageUrl: string | null;
+    hasCharacterImage: boolean;
 };
 
 interface ProfileImageSheetProps {
@@ -56,11 +57,9 @@ export function ProfileImageSheet({ userName, displayName, className, children }
     const [isUploading, setIsUploading] = useState(false);
     const [isCompressing, setIsCompressing] = useState(false);
     const [isConvertingGif, setIsConvertingGif] = useState(false);
-    const [showGallery, setShowGallery] = useState(false);
-    const [showUploadChoice, setShowUploadChoice] = useState(false);
+
     const [uploadTargetType, setUploadTargetType] = useState<"profile" | "character">("profile");
-    const [pendingImageId, setPendingImageId] = useState<string | null>(null);
-    const [pendingAction, setPendingAction] = useState<"upload" | "remove" | "gallery" | null>(null);
+    const [pendingAction, setPendingAction] = useState<"upload" | "remove" | "removeCharacter" | null>(null);
     const [promptData, setPromptData] = useState(() => generateRandomPrompt());
     const [isCopied, setIsCopied] = useState(false);
     const [isRegenerating, setIsRegenerating] = useState(false);
@@ -83,15 +82,7 @@ export function ProfileImageSheet({ userName, displayName, className, children }
         queryFn: () => http.get<ImageSettings>("/profile/image"),
     });
 
-    // Fetch available profile images (only when gallery is shown)
-    const { data: imagesData, isLoading: imagesLoading } = useQuery({
-        queryKey: ["profile-images"],
-        queryFn: () => http.get<ProfileImage[]>("/profile/images"),
-        enabled: showGallery,
-    });
-
     const settings = settingsData?.data;
-    const availableImages = imagesData?.data || [];
 
     // Update mutation
     const { mutate: updateImage, isPending } = useMutation({
@@ -103,8 +94,6 @@ export function ProfileImageSheet({ userName, displayName, className, children }
                 queryClient.invalidateQueries({ queryKey: ["profile-image-settings"] });
                 queryClient.invalidateQueries({ queryKey: ["auth"] });
                 setIsOpen(false);
-                setShowGallery(false);
-                setPendingImageId(null);
                 setPendingAction(null);
             } else {
                 toast.error(response.message || "Failed to update image");
@@ -118,12 +107,6 @@ export function ProfileImageSheet({ userName, displayName, className, children }
     });
 
     const handleOpenChange = useCallback((open: boolean) => {
-        if (!open) {
-            // Reset state when closing
-            setShowGallery(false);
-            setShowUploadChoice(false);
-            setPendingImageId(null);
-        }
         handleOpenChangeWithBack(open);
     }, [handleOpenChangeWithBack]);
 
@@ -305,26 +288,30 @@ export function ProfileImageSheet({ userName, displayName, className, children }
         }
     };
 
-    // Handle remove (revert to Google image)
+    // Handle remove profile image (revert to Google image)
     const handleRemove = () => {
         setPendingAction("remove");
         updateImage({ imageType: "google" });
     };
 
-    // Select from gallery
-    const handleSelectFromGallery = (imageId: string) => {
-        setPendingImageId(imageId);
-    };
+    // Handle remove character image
+    const { mutate: deleteCharacterImage, isPending: isDeletingCharacter } = useMutation({
+        mutationFn: () => axiosInstance.delete("/profile/character-image"),
+        onSuccess: () => {
+            toast.success("Character image removed!");
+            queryClient.invalidateQueries({ queryKey: ["profile-image-settings"] });
+            queryClient.invalidateQueries({ queryKey: ["auth"] });
+            setPendingAction(null);
+        },
+        onError: () => {
+            toast.error("Failed to remove character image");
+            setPendingAction(null);
+        },
+    });
 
-    // Confirm gallery selection
-    const handleConfirmGallerySelection = () => {
-        if (pendingImageId) {
-            setPendingAction("gallery");
-            updateImage({
-                imageType: "custom",
-                customImageId: pendingImageId,
-            });
-        }
+    const handleRemoveCharacter = () => {
+        setPendingAction("removeCharacter");
+        deleteCharacterImage();
     };
 
     // Get current display image for the clickable avatar
@@ -389,7 +376,7 @@ export function ProfileImageSheet({ userName, displayName, className, children }
         );
     };
 
-    const isProcessing = isPending || isUploading || isCompressing || isConvertingGif;
+    const isProcessing = isPending || isUploading || isCompressing || isConvertingGif || isDeletingCharacter;
 
     return (
         <>
@@ -423,343 +410,196 @@ export function ProfileImageSheet({ userName, displayName, className, children }
 
             {/* Bottom Sheet */}
             <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-                <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
+                <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto max-w-md mx-auto">
                     <SheetHeader className="text-center pb-2">
                         <SheetTitle>Profile Picture</SheetTitle>
                         <SheetDescription>
-                            {showGallery
-                                ? "Select an image from the gallery"
-                                : showUploadChoice
-                                    ? "What type of image are you uploading?"
-                                    : "Choose how you want to change your profile picture"}
+                            Choose how you want to change your profile picture
                         </SheetDescription>
                     </SheetHeader>
 
-                    <AnimatePresence mode="wait">
-                        {showGallery ? (
-                            <motion.div
-                                key="gallery"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                className="pt-2 pb-6 space-y-4"
+                    <div className="pt-2 pb-6 space-y-2">
+                        {/* Profile Image option */}
+                        <div className="w-full flex items-center rounded-xl border border-muted">
+                            <button
+                                onClick={() => {
+                                    setUploadTargetType("profile");
+                                    setTimeout(() => fileInputRef.current?.click(), 50);
+                                }}
+                                disabled={isProcessing}
+                                className="flex items-center gap-4 p-4 flex-1 hover:opacity-80 transition-opacity disabled:opacity-50"
                             >
-                                {/* Back button */}
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                        setShowGallery(false);
-                                        setPendingImageId(null);
-                                    }}
-                                    className="text-muted-foreground"
-                                >
-                                    ← Back to options
-                                </Button>
-
-                                {/* Gallery grid */}
-                                {imagesLoading ? (
-                                    <div className="grid grid-cols-4 gap-3">
-                                        {[...Array(8)].map((_, i) => (
-                                            <Skeleton key={i} className="aspect-square rounded-xl" />
-                                        ))}
-                                    </div>
-                                ) : availableImages.length === 0 ? (
-                                    <p className="text-center text-muted-foreground py-8">
-                                        No gallery images available
+                                <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+                                    {(isCompressing || isUploading) && uploadTargetType === "profile" ? (
+                                        <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                                    ) : (
+                                        <User className="w-5 h-5 text-blue-500" />
+                                    )}
+                                </div>
+                                <div className="text-left flex-1">
+                                    <p className="font-medium">
+                                        {(isCompressing || isUploading) && uploadTargetType === "profile"
+                                            ? (isCompressing ? "Compressing..." : "Uploading...")
+                                            : "Profile Image"}
                                     </p>
-                                ) : (
-                                    <div className="grid grid-cols-4 gap-3">
-                                        {availableImages.map((img) => (
-                                            <button
-                                                key={img.id}
-                                                onClick={() => handleSelectFromGallery(img.id)}
-                                                className={cn(
-                                                    "relative aspect-square rounded-xl overflow-hidden border-2 transition-all",
-                                                    pendingImageId === img.id
-                                                        ? "border-primary ring-2 ring-primary/30 scale-95"
-                                                        : "border-transparent hover:border-muted-foreground/25"
-                                                )}
-                                            >
-                                                <Image
-                                                    src={img.publicUrl}
-                                                    alt={img.name}
-                                                    fill
-                                                    className="object-cover"
-                                                />
-                                                {pendingImageId === img.id && (
-                                                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                                        <Check className="h-6 w-6 text-primary" />
-                                                    </div>
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Confirm button */}
-                                {pendingImageId && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="pt-2"
-                                    >
-                                        <Button
-                                            className="w-full"
-                                            onClick={handleConfirmGallerySelection}
-                                            disabled={isPending}
-                                        >
-                                            {isPending ? (
-                                                <>
-                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                    Saving...
-                                                </>
-                                            ) : (
-                                                "Use This Image"
-                                            )}
-                                        </Button>
-                                    </motion.div>
-                                )}
-                            </motion.div>
-                        ) : showUploadChoice ? (
-                            <motion.div
-                                key="uploadChoice"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                className="pt-2 pb-6 space-y-3"
-                            >
-                                {/* Back button */}
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setShowUploadChoice(false)}
-                                    className="text-muted-foreground"
+                                    <p className="text-sm text-muted-foreground">
+                                        {(isCompressing || isUploading) && uploadTargetType === "profile"
+                                            ? "Please wait..."
+                                            : "Your account avatar (circle)"}
+                                    </p>
+                                </div>
+                            </button>
+                            {settings?.imageType === "uploaded" && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleRemove(); }}
+                                    disabled={isProcessing}
+                                    className="p-2 rounded-full hover:bg-red-500/10 transition-colors mr-2"
+                                    title="Remove profile image"
                                 >
-                                    ← Back to options
-                                </Button>
+                                    {pendingAction === "remove" ? (
+                                        <Loader2 className="w-4 h-4 text-red-500 animate-spin" />
+                                    ) : (
+                                        <Trash2 className="w-4 h-4 text-red-500" />
+                                    )}
+                                </button>
+                            )}
+                        </div>
 
-                                {/* Profile Image option */}
+                        {/* Character Image option - RP Only */}
+                        <div className="w-full rounded-xl border border-muted bg-amber-500/[0.02]">
+                            {/* Main upload row */}
+                            <div className="flex items-center p-4">
                                 <button
                                     onClick={() => {
-                                        setUploadTargetType("profile");
+                                        if (!hasRoyalPass) {
+                                            setIsRedirecting(true);
+                                            setTimeout(() => {
+                                                router.push("/royal-pass?highlight=character");
+                                            }, 500);
+                                            return;
+                                        }
+                                        setUploadTargetType("character");
                                         setTimeout(() => fileInputRef.current?.click(), 50);
                                     }}
-                                    disabled={isProcessing}
-                                    className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors disabled:opacity-50 border border-muted"
+                                    disabled={isProcessing || isRedirecting}
+                                    className={cn(
+                                        "flex items-center gap-4 flex-1 hover:opacity-80 transition-opacity disabled:opacity-50",
+                                        !hasRoyalPass && !isRedirecting && "opacity-50"
+                                    )}
                                 >
-                                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
-                                        {(isCompressing || isUploading) && uploadTargetType === "profile" ? (
-                                            <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500/20 to-amber-500/20 flex items-center justify-center shrink-0">
+                                        {isRedirecting ? (
+                                            <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                                        ) : isConvertingGif && uploadTargetType === "character" ? (
+                                            <Video className="w-5 h-5 text-amber-500 animate-pulse" />
+                                        ) : (isCompressing || isUploading) && uploadTargetType === "character" ? (
+                                            <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
                                         ) : (
-                                            <User className="w-5 h-5 text-blue-500" />
-                                        )}
-                                    </div>
-                                    <div className="text-left flex-1">
-                                        <p className="font-medium">
-                                            {(isCompressing || isUploading) && uploadTargetType === "profile"
-                                                ? (isCompressing ? "Compressing..." : "Uploading...")
-                                                : "Profile Image"}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {(isCompressing || isUploading) && uploadTargetType === "profile"
-                                                ? "Please wait..."
-                                                : "Your account avatar (circle)"}
-                                        </p>
-                                    </div>
-                                </button>
-
-                                {/* Character Image option - RP Only */}
-                                <div className="w-full rounded-xl border border-muted">
-                                    <div className="flex items-center gap-4 p-4">
-                                        <button
-                                            onClick={() => {
-                                                if (!hasRoyalPass) {
-                                                    setIsRedirecting(true);
-                                                    setTimeout(() => {
-                                                        router.push("/royal-pass?highlight=character");
-                                                    }, 500);
-                                                    return;
-                                                }
-                                                setUploadTargetType("character");
-                                                setTimeout(() => fileInputRef.current?.click(), 50);
-                                            }}
-                                            disabled={isProcessing || isRedirecting}
-                                            className={cn(
-                                                "flex items-center gap-4 flex-1 hover:opacity-80 transition-opacity disabled:opacity-50",
-                                                !hasRoyalPass && !isRedirecting && "opacity-50"
-                                            )}
-                                        >
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500/20 to-amber-500/20 flex items-center justify-center">
-                                                {isRedirecting ? (
-                                                    <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
-                                                ) : isConvertingGif && uploadTargetType === "character" ? (
-                                                    <Video className="w-5 h-5 text-amber-500 animate-pulse" />
-                                                ) : (isCompressing || isUploading) && uploadTargetType === "character" ? (
-                                                    <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
-                                                ) : (
-                                                    <ImageIcon className="w-5 h-5 text-amber-500" />
-                                                )}
-                                            </div>
-                                            <div className="text-left">
-                                                <p className="font-medium flex items-center gap-2">
-                                                    {isRedirecting
-                                                        ? "Redirecting..."
-                                                        : (isCompressing || isUploading || isConvertingGif) && uploadTargetType === "character"
-                                                            ? (isConvertingGif ? "Converting to GIF..." : isCompressing ? "Compressing..." : "Uploading...")
-                                                            : "Character Image"}
-                                                    <Crown className="w-4 h-4 text-amber-500" />
-                                                </p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {isRedirecting
-                                                        ? "Taking you to Royal Pass..."
-                                                        : (isCompressing || isUploading || isConvertingGif) && uploadTargetType === "character"
-                                                            ? "Please wait..."
-                                                            : "Image or video for podium card"}
-                                                </p>
-                                            </div>
-                                        </button>
-                                        {/* AI Prompt icons - visible for all users */}
-                                        <div className="flex items-center gap-1">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setIsRegenerating(true);
-                                                    setPromptData(generateRandomPrompt());
-                                                    setIsCopied(false);
-                                                    setTimeout(() => setIsRegenerating(false), 300);
-                                                }}
-                                                className="p-2 rounded-full hover:bg-purple-500/10 transition-colors"
-                                                title="Generate new AI prompt"
-                                            >
-                                                <RefreshCw className={cn(
-                                                    "w-4 h-4 text-purple-500 transition-transform",
-                                                    isRegenerating && "animate-spin"
-                                                )} />
-                                            </button>
-                                            <button
-                                                onClick={async (e) => {
-                                                    e.stopPropagation();
-                                                    try {
-                                                        await navigator.clipboard.writeText(promptData.prompt);
-                                                        setIsCopied(true);
-                                                        toast.success("AI prompt copied!");
-                                                        setTimeout(() => setIsCopied(false), 2000);
-                                                    } catch {
-                                                        toast.error("Failed to copy");
-                                                    }
-                                                }}
-                                                className={cn(
-                                                    "p-2 rounded-full transition-colors",
-                                                    isCopied ? "bg-green-500/20" : "hover:bg-purple-500/10"
-                                                )}
-                                                title="Copy AI prompt"
-                                            >
-                                                {isCopied ? (
-                                                    <Check className="w-4 h-4 text-green-500" />
-                                                ) : (
-                                                    <Copy className="w-4 h-4 text-purple-500" />
-                                                )}
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setShowTutorialModal(true);
-                                                }}
-                                                className="p-2 rounded-full hover:bg-purple-500/10 transition-colors"
-                                                title="How to use AI prompt"
-                                            >
-                                                <HelpCircle className="w-4 h-4 text-purple-500" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="options"
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 20 }}
-                                className="pt-2 pb-6 space-y-2"
-                            >
-                                {/* Upload option - now shows choice first */}
-                                <button
-                                    onClick={() => setShowUploadChoice(true)}
-                                    disabled={isProcessing}
-                                    className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors disabled:opacity-50"
-                                >
-                                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
-                                        {isCompressing || isUploading ? (
-                                            <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
-                                        ) : (
-                                            <CloudUpload className="w-5 h-5 text-blue-500" />
+                                            <ImageIcon className="w-5 h-5 text-amber-500" />
                                         )}
                                     </div>
                                     <div className="text-left">
-                                        <p className="font-medium">
-                                            {isCompressing ? "Compressing..." : isUploading ? "Uploading..." : "Upload Photo"}
+                                        <p className="font-medium flex items-center gap-2">
+                                            {isRedirecting
+                                                ? "Redirecting..."
+                                                : (isCompressing || isUploading || isConvertingGif) && uploadTargetType === "character"
+                                                    ? (isConvertingGif ? "Converting to GIF..." : isCompressing ? "Compressing..." : "Uploading...")
+                                                    : "Character Image"}
+                                            <Crown className="w-4 h-4 text-amber-500" />
                                         </p>
                                         <p className="text-sm text-muted-foreground">
-                                            Choose from your device
+                                            {isRedirecting
+                                                ? "Taking you to Royal Pass..."
+                                                : (isCompressing || isUploading || isConvertingGif) && uploadTargetType === "character"
+                                                    ? "Please wait..."
+                                                    : "Image or video for podium card"}
                                         </p>
                                     </div>
                                 </button>
-
-                                {/* Choose from gallery */}
-                                <button
-                                    onClick={() => setShowGallery(true)}
-                                    disabled={isProcessing}
-                                    className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors disabled:opacity-50"
-                                >
-                                    <div className="w-12 h-12 rounded-full bg-violet-500/10 flex items-center justify-center">
-                                        <ImageIcon className="w-5 h-5 text-violet-500" />
-                                    </div>
-                                    <div className="text-left">
-                                        <p className="font-medium">Choose from Gallery</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            Select from available images
-                                        </p>
-                                    </div>
-                                </button>
-
-                                {/* Remove option - only show if current image is not google */}
-                                {settings?.imageType !== "google" && (
+                                {settings?.hasCharacterImage && (
                                     <button
-                                        onClick={handleRemove}
-                                        disabled={isProcessing}
-                                        className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                                        onClick={(e) => { e.stopPropagation(); handleRemoveCharacter(); }}
+                                        disabled={isProcessing || isDeletingCharacter}
+                                        className="p-2 rounded-full hover:bg-red-500/10 transition-colors ml-auto shrink-0"
+                                        title="Remove character image"
                                     >
-                                        <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
-                                            {pendingAction === "remove" ? (
-                                                <Loader2 className="w-5 h-5 text-red-500 animate-spin" />
-                                            ) : (
-                                                <Trash2 className="w-5 h-5 text-red-500" />
-                                            )}
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="font-medium text-red-600 dark:text-red-400">Remove Photo</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                Use Google account picture
-                                            </p>
-                                        </div>
+                                        {pendingAction === "removeCharacter" ? (
+                                            <Loader2 className="w-4 h-4 text-red-500 animate-spin" />
+                                        ) : (
+                                            <Trash2 className="w-4 h-4 text-red-500" />
+                                        )}
                                     </button>
                                 )}
+                            </div>
+                            {/* AI Prompt tools - integrated row */}
+                            <div className="flex items-center justify-end gap-2 px-4 pb-4">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsRegenerating(true);
+                                        setPromptData(generateRandomPrompt());
+                                        setIsCopied(false);
+                                        setTimeout(() => setIsRegenerating(false), 300);
+                                    }}
+                                    className="p-1 px-2.5 h-8 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 transition-colors flex items-center gap-2 group"
+                                    title="Generate new AI prompt"
+                                >
+                                    <RefreshCw className={cn(
+                                        "w-3.5 h-3.5 text-purple-600 transition-transform",
+                                        isRegenerating && "animate-spin"
+                                    )} />
+                                    <span className="text-[10px] font-medium text-purple-600">New Prompt</span>
+                                </button>
+                                <button
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        try {
+                                            await navigator.clipboard.writeText(promptData.prompt);
+                                            setIsCopied(true);
+                                            toast.success("AI prompt copied!");
+                                            setTimeout(() => setIsCopied(false), 2000);
+                                        } catch {
+                                            toast.error("Failed to copy");
+                                        }
+                                    }}
+                                    className={cn(
+                                        "p-2 rounded-full transition-colors",
+                                        isCopied ? "bg-green-500/20" : "hover:bg-purple-500/10"
+                                    )}
+                                    title="Copy AI prompt"
+                                >
+                                    {isCopied ? (
+                                        <Check className="w-4 h-4 text-green-500" />
+                                    ) : (
+                                        <Copy className="w-4 h-4 text-purple-500" />
+                                    )}
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowTutorialModal(true);
+                                    }}
+                                    className="p-2 rounded-full hover:bg-purple-500/10 transition-colors"
+                                    title="How to use AI prompt"
+                                >
+                                    <HelpCircle className="w-4 h-4 text-purple-500" />
+                                </button>
+                            </div>
+                        </div>
 
-                                {/* Cancel button */}
-                                <div className="pt-2">
-                                    <Button
-                                        variant="ghost"
-                                        className="w-full"
-                                        onClick={() => setIsOpen(false)}
-                                        disabled={isProcessing}
-                                    >
-                                        Cancel
-                                    </Button>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence >
+
+                        {/* Cancel button */}
+                        <div className="pt-2">
+                            <Button
+                                variant="ghost"
+                                className="w-full"
+                                onClick={() => setIsOpen(false)}
+                                disabled={isProcessing}
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
                 </SheetContent >
             </Sheet >
 

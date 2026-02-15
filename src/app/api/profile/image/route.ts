@@ -21,9 +21,13 @@ export async function GET(req: NextRequest) {
             return ErrorResponse({ message: "User not found", status: 404 });
         }
 
-        // Get player
+        // Get player with character image info
         const player = await prisma.player.findUnique({
             where: { userId: user.id },
+            select: {
+                customProfileImageUrl: true,
+                characterImageId: true,
+            },
         });
 
         if (!player) {
@@ -41,6 +45,7 @@ export async function GET(req: NextRequest) {
             data: {
                 imageType,
                 uploadedImageUrl: player.customProfileImageUrl,
+                hasCharacterImage: !!player.characterImageId,
             },
             message: "Profile image settings fetched",
         });
