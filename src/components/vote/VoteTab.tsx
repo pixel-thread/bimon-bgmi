@@ -170,15 +170,6 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
       {shouldShowPolls && !shouldShowSkeleton && (
         <>
           <NotificationPromptBanner />
-          {/* Show birthday banner if sharing publicly, otherwise show job board */}
-          {showBirthdayBanner ? (
-            <BirthdayBanner
-              dateOfBirth={userDateOfBirth!}
-              playerName={user?.displayName || user?.userName || "Player"}
-            />
-          ) : (
-            <JobBoardBanner />
-          )}
           <PollVotingInterface
             readOnly={readOnly}
             showAdminActions={false}
@@ -187,6 +178,17 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
             description="Vote on active tournament polls"
             forcePublic={true}
           />
+          {/* Banners below polls to prevent layout shift from skeleton → full height */}
+          <div className="mt-6">
+            {showBirthdayBanner ? (
+              <BirthdayBanner
+                dateOfBirth={userDateOfBirth!}
+                playerName={user?.displayName || user?.userName || "Player"}
+              />
+            ) : (
+              <JobBoardBanner />
+            )}
+          </div>
         </>
       )}
     </div>
@@ -196,4 +198,3 @@ const VoteTabComponent: React.FC<VoteTabProps> = ({ readOnly = false }) => {
 export const VoteTab = React.memo(VoteTabComponent);
 
 VoteTab.displayName = "VoteTab";
-

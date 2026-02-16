@@ -13,7 +13,7 @@ import { Button } from "@/src/components/ui/button";
 import { Label } from "@/src/components/ui/label";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
-import { Plus, Trash2, Trophy, Loader2, Coins, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Trophy, Loader2, Coins, ChevronDown, Undo2 } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
     Collapsible,
@@ -55,6 +55,7 @@ type Props = {
     teamRankings: TeamRanking[];
     prizePoolMeta?: PrizePoolMeta;
     isLoadingRankings?: boolean;
+    isWinnerDeclared?: boolean;
 };
 
 const getOrdinal = (n: number) => {
@@ -82,10 +83,38 @@ export function DeclareWinnerDialog({
     teamRankings,
     prizePoolMeta,
     isLoadingRankings = false,
+    isWinnerDeclared = false,
 }: Props) {
     const [placementCount, setPlacementCount] = useState(2);
     const queryClient = useQueryClient();
     const { seasonId } = useSeasonStore();
+
+    // Undo winner declaration mutation
+    const { isPending: isUndoing, mutate: undoWinner } = useMutation({
+        mutationFn: () => http.post(`/admin/tournament/${tournamentId}/undo-winner`),
+        onSuccess: (data) => {
+            if (data.success) {
+                toast.success("Winner declaration undone! UC transactions have been reversed.");
+                handleClose();
+                queryClient.invalidateQueries({ queryKey: ["tournament", tournamentId] });
+                queryClient.invalidateQueries({ queryKey: ["tournaments"] });
+                queryClient.invalidateQueries({ queryKey: ["tournament-winners"] });
+                queryClient.invalidateQueries({ queryKey: ["tournament-rankings"] });
+                queryClient.invalidateQueries({ queryKey: ["solo-tax-pool"] });
+            } else {
+                toast.error(data.message || "Failed to undo winner declaration");
+            }
+        },
+        onError: () => {
+            toast.error("Failed to undo winner declaration");
+        },
+    });
+
+    const handleUndoWinner = () => {
+        if (confirm("Are you sure you want to undo the winner declaration? This will:\n\n• Reverse all UC transactions\n• Delete winner records\n• Delete income records\n\nThis action cannot be easily undone!")) {
+            undoWinner();
+        }
+    };
 
     // Fetch bonus pool from solo tax (accumulated from previous solo winners)
     const { data: bonusPoolData } = useQuery({
@@ -355,10 +384,13 @@ export function DeclareWinnerDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Trophy className="h-5 w-5 text-yellow-500" />
-                        Declare Winners & Distribute UC
+                        {isWinnerDeclared ? "Tournament Results" : "Declare Winners & Distribute UC"}
                     </DialogTitle>
                     <DialogDescription>
-                        Declare winners and distribute UC for <span className="font-medium">{tournamentName}</span>.
+                        {isWinnerDeclared
+                            ? <>Results for <span className="font-medium">{tournamentName}</span>.</>
+                            : <>Declare winners and distribute UC for <span className="font-medium">{tournamentName}</span>.</>
+                        }
                     </DialogDescription>
                 </DialogHeader>
 
@@ -655,48 +687,66 @@ export function DeclareWinnerDialog({
                         )}
                     </div>
 
-                    {/* Placement Controls */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        {placementCount < teamRankings.length && placementCount < 10 && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={addPlacement}
-                                className="gap-1 text-xs h-8"
-                            >
-                                <Plus className="h-3.5 w-3.5" />
-                                Add {getOrdinal(placementCount + 1)} Place
-                            </Button>
-                        )}
-                        {placementCount > 2 && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={removePlacement}
-                                className="gap-1 text-xs h-8 text-destructive hover:text-destructive"
-                            >
-                                <Trash2 className="h-3.5 w-3.5" />
-                                Remove {getOrdinal(placementCount)} Place
-                            </Button>
-                        )}
-                    </div>
+                    {/* Placement Controls - only when declaring */}
+                    {!isWinnerDeclared && (
+                        <div className="flex flex-wrap items-center gap-2">
+                            {placementCount < teamRankings.length && placementCount < 10 && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addPlacement}
+                                    className="gap-1 text-xs h-8"
+                                >
+                                    <Plus className="h-3.5 w-3.5" />
+                                    Add {getOrdinal(placementCount + 1)} Place
+                                </Button>
+                            )}
+                            {placementCount > 2 && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={removePlacement}
+                                    className="gap-1 text-xs h-8 text-destructive hover:text-destructive"
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    Remove {getOrdinal(placementCount)} Place
+                                </Button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <DialogFooter>
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={isPending || teamRankings.length === 0}
-                        className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
-                    >
-                        {isPending ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                            <Trophy className="w-4 h-4 mr-2" />
-                        )}
-                        {prizePool > 0 ? "Declare & Distribute" : "Declare Winners"}
-                    </Button>
+                    {isWinnerDeclared ? (
+                        <Button
+                            onClick={handleUndoWinner}
+                            disabled={isUndoing}
+                            variant="destructive"
+                            className="w-full gap-1.5"
+                        >
+                            {isUndoing ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Undo2 className="h-4 w-4" />
+                            )}
+                            {isUndoing ? "Undoing Declaration..." : "Undo Declaration"}
+                        </Button>
+                    ) : (
+                        <Button
+                            onClick={handleSubmit}
+                            disabled={isPending || teamRankings.length === 0}
+                            className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
+                        >
+                            {isPending ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                                <Trophy className="w-4 h-4 mr-2" />
+                            )}
+                            {prizePool > 0 ? "Declare & Distribute" : "Declare Winners"}
+                        </Button>
+                    )}
                 </DialogFooter>
             </DialogContent>
-        </Dialog >
+        </Dialog>
     );
 }

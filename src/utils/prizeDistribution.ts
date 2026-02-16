@@ -5,7 +5,7 @@
  * Tier thresholds determine the number of winners and distribution percentages.
  * 
  * Rules:
- * 1. Org = 15%, Fund = 4% (fixed across all tiers)
+ * 1. Org = 10%, Fund = 4% (fixed across all tiers)
  * 2. UC-exempt players count in prize pool, but their entry fee is subtracted from Org
  * 3. Org minimum = ₹20
  * 4. Org should always be > Fund (take from Fund if needed)
@@ -70,17 +70,17 @@ const TIER_CONFIGS: PrizeTierConfig[] = [
         level: 1,
         minPool: 0,
         maxPool: 1199,
-        orgFeePercent: 15,
+        orgFeePercent: 10,
         fundPercent: 4,
         winnerCount: 2,
-        percentages: [52, 29], // ~81% to winners (remaining after 15% org + 4% fund)
+        percentages: [57, 29], // ~86% to winners (remaining after 10% org + 4% fund)
         description: "Top 2 paid",
     },
     {
         level: 2,
         minPool: 1200,
         maxPool: 3000,
-        orgFeePercent: 15,
+        orgFeePercent: 10,
         fundPercent: 4,
         winnerCount: 3,
         // 3rd place gets fixed refund, remaining split between 1st and 2nd
@@ -91,7 +91,7 @@ const TIER_CONFIGS: PrizeTierConfig[] = [
         level: 3,
         minPool: 3001,
         maxPool: 5000,
-        orgFeePercent: 15,
+        orgFeePercent: 10,
         fundPercent: 4,
         winnerCount: 4,
         // 4th place gets fixed refund, remaining split among top 3
@@ -102,7 +102,7 @@ const TIER_CONFIGS: PrizeTierConfig[] = [
         level: 4,
         minPool: 5001,
         maxPool: null,
-        orgFeePercent: 15,
+        orgFeePercent: 10,
         fundPercent: 4,
         winnerCount: 5,
         // 5th place gets fixed refund, remaining split among top 4

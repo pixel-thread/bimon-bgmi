@@ -25,7 +25,6 @@ import {
   Loader2,
   ImagePlus,
   Globe,
-  Undo2,
   ChevronDown,
   Trophy,
 } from "lucide-react";
@@ -95,29 +94,10 @@ export function TournamentSettings() {
       toast.error("Please select a tournament first");
       return;
     }
-    if (tournament?.isWinnerDeclared) {
-      toast.error("Winners have already been declared for this tournament");
-      return;
-    }
     setShowDeclareWinnerModal(true);
   };
 
-  // Undo winner declaration mutation
-  const { isPending: isUndoing, mutate: undoWinner } = useMutation({
-    mutationFn: () => http.post(`/admin/tournament/${tournamentId}/undo-winner`),
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success("Winner declaration undone! UC transactions have been reversed.");
-        queryClient.invalidateQueries({ queryKey: ["tournament", tournamentId] });
-        queryClient.invalidateQueries({ queryKey: ["tournaments"] });
-      } else {
-        toast.error(data.message || "Failed to undo winner declaration");
-      }
-    },
-    onError: () => {
-      toast.error("Failed to undo winner declaration");
-    },
-  });
+
 
   // Update streaks mutation
   const { isPending: isUpdatingStreaks, mutate: updateStreaks } = useMutation({
@@ -153,13 +133,7 @@ export function TournamentSettings() {
     },
   });
 
-  const handleUndoWinner = () => {
-    if (!tournamentId || !tournament?.isWinnerDeclared) return;
 
-    if (confirm("Are you sure you want to undo the winner declaration? This will:\n\n• Reverse all UC transactions\n• Delete winner records\n• Delete income records\n\nThis action cannot be easily undone!")) {
-      undoWinner();
-    }
-  };
 
   const handleUpdateStreaks = () => {
     if (!tournamentId || !tournament?.isWinnerDeclared) return;
@@ -224,44 +198,32 @@ export function TournamentSettings() {
           {/* Actions - only show when tournament selected */}
           {tournamentId && (
             <div className="flex gap-2">
-              {!tournament?.isWinnerDeclared ? (
+              <Button
+                onClick={handleDeclareWinnersClick}
+                variant="outline"
+                className="flex-1 gap-1.5 h-8 text-xs"
+              >
+                {tournament?.isWinnerDeclared ? (
+                  <Trophy className="h-3.5 w-3.5" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5" />
+                )}
+                {tournament?.isWinnerDeclared ? "View Results" : "Declare Winners"}
+              </Button>
+              {tournament?.isWinnerDeclared && (
                 <Button
-                  onClick={handleDeclareWinnersClick}
+                  onClick={handleUpdateStreaks}
+                  disabled={isUpdatingStreaks}
                   variant="outline"
                   className="flex-1 gap-1.5 h-8 text-xs"
                 >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Declare Winners
+                  {isUpdatingStreaks ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trophy className="h-3.5 w-3.5" />
+                  )}
+                  {isUpdatingStreaks ? "Updating..." : "Update Streaks"}
                 </Button>
-              ) : (
-                <>
-                  <Button
-                    onClick={handleUpdateStreaks}
-                    disabled={isUpdatingStreaks}
-                    variant="outline"
-                    className="flex-1 gap-1.5 h-8 text-xs"
-                  >
-                    {isUpdatingStreaks ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Trophy className="h-3.5 w-3.5" />
-                    )}
-                    {isUpdatingStreaks ? "Updating..." : "Update Streaks"}
-                  </Button>
-                  <Button
-                    onClick={handleUndoWinner}
-                    disabled={isUndoing}
-                    variant="destructive"
-                    className="gap-1.5 h-8 text-xs"
-                  >
-                    {isUndoing ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Undo2 className="h-3.5 w-3.5" />
-                    )}
-                    {isUndoing ? "Undoing..." : "Undo"}
-                  </Button>
-                </>
               )}
             </div>
           )}
@@ -303,6 +265,7 @@ export function TournamentSettings() {
           teamRankings={teamRankings}
           prizePoolMeta={prizePoolMeta}
           isLoadingRankings={isLoadingRankings}
+          isWinnerDeclared={tournament?.isWinnerDeclared || false}
         />
       )}
     </div>
