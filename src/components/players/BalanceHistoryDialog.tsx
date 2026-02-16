@@ -133,6 +133,18 @@ export function BalanceHistoryDialog({
     [],
   );
 
+  // Clear all state when playerId changes to prevent stale data from previous player showing
+  const prevPlayerIdRef = useRef(playerId);
+  useEffect(() => {
+    if (prevPlayerIdRef.current !== playerId) {
+      prevPlayerIdRef.current = playerId;
+      setBalanceHistory([]);
+      setDisplayedHistory([]);
+      setTotalHistory(0);
+      setHistoryPage(1);
+    }
+  }, [playerId]);
+
   // Use a ref to track current page to avoid dependency issues
   const historyPageRef = useRef(historyPage);
   historyPageRef.current = historyPage;
@@ -142,6 +154,10 @@ export function BalanceHistoryDialog({
       if (reset) {
         setIsLoadingBalanceHistory(true);
         setHistoryPage(1);
+        // Clear old data immediately so stale data from previous player is never shown
+        setBalanceHistory([]);
+        setDisplayedHistory([]);
+        setTotalHistory(0);
       } else {
         setIsLoadingMoreHistory(true);
       }
