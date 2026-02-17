@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { useUser } from "@clerk/nextjs";
@@ -24,6 +24,43 @@ export default function OnboardingPage() {
     const [userNameError, setUserNameError] = useState("");
     const [displayNameError, setDisplayNameError] = useState("");
     const [isUserNameAutoFilled, setIsUserNameAutoFilled] = useState(false);
+    const [isCheckingIGN, setIsCheckingIGN] = useState(false);
+    const ignCheckTimer = useRef<NodeJS.Timeout | null>(null);
+
+    // Debounced check for duplicate displayName after paste
+    const checkDuplicateIGN = useCallback((name: string) => {
+        // Clear any pending check
+        if (ignCheckTimer.current) {
+            clearTimeout(ignCheckTimer.current);
+        }
+
+        // Skip check for empty/short names
+        if (!name || name.length < 2) {
+            setIsCheckingIGN(false);
+            return;
+        }
+
+        setIsCheckingIGN(true);
+        ignCheckTimer.current = setTimeout(async () => {
+            try {
+                const res = await http.get<{ data: { isTaken: boolean } }>(`/onboarding/check-ign?displayName=${encodeURIComponent(name)}`);
+                if (res.data?.data?.isTaken) {
+                    setDisplayNameError("This Game Name is already taken by another player.");
+                }
+            } catch {
+                // Silently fail - backend will catch it on submit
+            } finally {
+                setIsCheckingIGN(false);
+            }
+        }, 500);
+    }, []);
+
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => {
+            if (ignCheckTimer.current) clearTimeout(ignCheckTimer.current);
+        };
+    }, []);
 
 
 
@@ -157,7 +194,13 @@ export default function OnboardingPage() {
                         {/* Display Name (BGMI IGN) - Primary field */}
                         <GameNameInput
                             value={displayName}
-                            onChange={setDisplayName}
+                            onChange={(val) => {
+                                setDisplayName(val);
+                                // Trigger duplicate check when a valid name is pasted
+                                if (val.length >= 2) {
+                                    checkDuplicateIGN(val);
+                                }
+                            }}
                             error={displayNameError}
                             onErrorChange={setDisplayNameError}
                             disabled={isPending}
@@ -206,7 +249,7 @@ export default function OnboardingPage() {
 
                         <Button
                             type="submit"
-                            disabled={isPending || !userName.trim() || !displayName.trim() || !!displayNameError}
+                            disabled={isPending || !userName.trim() || !displayName.trim() || !!displayNameError || isCheckingIGN}
                             className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-2.5"
                         >
                             {isPending ? (

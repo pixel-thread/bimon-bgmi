@@ -358,7 +358,7 @@ function UserCard({
       {/* Welcome message */}
       <div className="text-center mb-8">
         <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-2">
-          Welcome back, {username}!
+          {isNewUser ? "Welcome" : "Welcome back"}, {username}!
         </h2>
         <p className="text-slate-600 dark:text-slate-400">{email}</p>
       </div>

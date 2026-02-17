@@ -66,6 +66,25 @@ export async function POST(req: Request) {
             });
         }
 
+        // Check if displayName (BGMI IGN) is already taken (case-insensitive)
+        const existingDisplayName = await prisma.user.findFirst({
+            where: {
+                displayName: {
+                    equals: displayName,
+                    mode: "insensitive",
+                },
+                id: { not: user.id },
+            },
+            select: { id: true },
+        });
+
+        if (existingDisplayName) {
+            return ErrorResponse({
+                message: "This Game Name is already taken by another player.",
+                status: 409,
+            });
+        }
+
         // Get or create active season
         let activeSeason = await getActiveSeason();
         if (!activeSeason) {
