@@ -325,7 +325,7 @@ export default function Navigation() {
                             <FiMenu className="h-6 w-6 text-gray-900 dark:text-white" />
                         )}
                     </motion.div>
-                    {(hasPendingRequests || showPromoterNew) && !isOpen && (
+                    {hasPendingRequests && !isOpen && (
                         <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-red-500"></span>
                     )}
                 </motion.button>
@@ -508,7 +508,7 @@ export default function Navigation() {
                                                         </span>
                                                     )}
                                                 </div>
-                                                {!isNavigatingToProfile && (hasPendingRequests || showPromoterNew) && (
+                                                {!isNavigatingToProfile && hasPendingRequests && (
                                                     <span className="h-2 w-2 rounded-full animate-pulse flex-shrink-0 bg-red-500"></span>
                                                 )}
                                             </motion.button>
