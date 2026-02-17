@@ -10,6 +10,7 @@ import {
   FiAward,
   FiCheckSquare,
   FiImage,
+  FiCode,
 } from "react-icons/fi";
 import { GamepadIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -112,6 +113,7 @@ const TournamentNavigation = () => {
       hasNotification: hasUnplayedGames,
     },
     { href: "/tournament/winners", label: "Winners", icon: FiAward },
+    { href: "/tournament/dev-apps", label: "Dev Apps", icon: FiCode },
   ];
 
   return (
