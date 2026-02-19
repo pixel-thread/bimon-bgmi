@@ -132,7 +132,8 @@ export async function recordTournamentParticipation(
 
             if (lastTournament && currentTournament && currentSeasonId) {
                 // Count completed tournaments in the same season between these two
-                const tournamentsBetween = await prisma.tournament.count({
+                // that the player was NOT a participant in (i.e., actually missed)
+                const missedTournaments = await prisma.tournament.count({
                     where: {
                         seasonId: currentSeasonId,
                         isWinnerDeclared: true,
@@ -143,14 +144,24 @@ export async function recordTournamentParticipation(
                         id: {
                             not: currentTournamentSeq.tournamentId, // Exclude current
                         },
+                        // Only count tournaments the player was NOT on any team for
+                        NOT: {
+                            team: {
+                                some: {
+                                    players: {
+                                        some: { id: playerId },
+                                    },
+                                },
+                            },
+                        },
                     },
                 });
 
-                if (tournamentsBetween === 0) {
-                    // No tournaments between in this season - this is consecutive! Increment streak
+                if (missedTournaments === 0) {
+                    // Player didn't miss any tournaments between - this is consecutive! Increment streak
                     newStreak = player.tournamentStreak + 1;
                 }
-                // Otherwise, player missed tournaments in this season - newStreak stays at 1
+                // Otherwise, player missed tournaments they should have been in - newStreak stays at 1
             } else {
                 // Fallback: if we can't determine, assume consecutive
                 newStreak = player.tournamentStreak + 1;
