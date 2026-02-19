@@ -3,7 +3,7 @@ import { tokenMiddleware } from "@/src/utils/middleware/tokenMiddleware";
 import { handleApiErrors } from "@/src/utils/errors/handleApiErrors";
 import { ErrorResponse, SuccessResponse } from "@/src/utils/next-response";
 import { NextRequest } from "next/server";
-import { STREAK_REWARD_THRESHOLD, getPlayerStreakInfo } from "@/src/services/player/tournamentStreak";
+import { STREAK_REWARD_THRESHOLD, STREAK_REWARD_AMOUNT, getPlayerStreakInfo } from "@/src/services/player/tournamentStreak";
 
 const RP_PRICE_DISCOUNTED = 5; // UC cost with 50% discount
 const RP_PRICE_FULL = 10; // Full UC cost (no discount)
@@ -118,6 +118,22 @@ export async function POST(req: NextRequest) {
 
         await prisma.$transaction(operations);
 
+        // Retroactively grant streak reward if player already passed the threshold
+        // This handles the case where a player built streak >= 8 without RP,
+        // then bought RP — they should get the pending reward now
+        let retroactiveStreakReward = false;
+        if (streakInfo.currentStreak >= STREAK_REWARD_THRESHOLD) {
+            await prisma.player.update({
+                where: { id: playerId },
+                data: {
+                    tournamentStreak: 0, // Reset streak after reward
+                    pendingStreakReward: STREAK_REWARD_AMOUNT, // Player must claim this
+                    lastStreakRewardAt: new Date(),
+                },
+            });
+            retroactiveStreakReward = true;
+        }
+
         return SuccessResponse({
             message: isFreeOffer
                 ? `🎉 Royal Pass claimed FREE! (${totalRPClaimed + 1}/${FREE_RP_LIMIT})`
@@ -127,6 +143,7 @@ export async function POST(req: NextRequest) {
                 newBalance: currentBalance - actualPrice,
                 wasFree: isFreeOffer,
                 lostDiscount,
+                retroactiveStreakReward,
             },
         });
     } catch (error) {
