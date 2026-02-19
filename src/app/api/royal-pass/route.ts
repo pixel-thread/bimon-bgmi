@@ -1,0 +1,56 @@
+import { prisma } from "@/lib/database";
+import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
+import { getCurrentUser } from "@/lib/auth";
+
+/**
+ * GET /api/royal-pass
+ * Fetches Royal Pass status for the current user's player.
+ */
+export async function GET() {
+    try {
+        const user = await getCurrentUser();
+        if (!user) {
+            return ErrorResponse({ message: "Unauthorized", status: 401 });
+        }
+
+        const player = await prisma.player.findUnique({
+            where: { userId: user.id },
+            include: {
+                streak: true,
+                pendingRewards: {
+                    orderBy: { createdAt: "desc" },
+                    take: 20,
+                },
+            },
+        });
+
+        if (!player) {
+            return ErrorResponse({ message: "Player not found", status: 404 });
+        }
+
+        const hasRoyalPass = player.hasRoyalPass ?? false;
+        const currentStreak = player.streak?.currentStreak ?? 0;
+        const nextRewardAt = 8; // Streak milestone for RP reward
+
+        const data = {
+            hasRoyalPass,
+            currentStreak,
+            nextRewardAt,
+            totalRewards: player.pendingRewards.filter((r) => !r.isPending).length,
+            pendingRewards: player.pendingRewards.map((r) => ({
+                id: r.id,
+                type: r.type,
+                amount: r.amount,
+                isPending: r.isPending,
+                createdAt: r.createdAt,
+            })),
+        };
+
+        return SuccessResponse({ data, cache: CACHE.SHORT });
+    } catch (error) {
+        return ErrorResponse({
+            message: "Failed to fetch Royal Pass",
+            error,
+        });
+    }
+}

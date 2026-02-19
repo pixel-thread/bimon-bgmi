@@ -1,0 +1,938 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  PLAYER
+  USER
+}
+
+enum SeasonStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum PlayerCategory {
+  BOT
+  ULTRA_NOOB
+  NOOB
+  PRO
+  ULTRA_PRO
+  LEGEND
+}
+
+enum Vote {
+  IN
+  OUT
+  SOLO
+}
+
+enum TeamType {
+  SOLO
+  DUO
+  TRIO
+  SQUAD
+  DYNAMIC
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  DELETED
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+enum UCTransferStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum UCTransferType {
+  REQUEST
+  SEND
+}
+
+enum RewardType {
+  WINNER
+  SOLO_SUPPORT
+  REFERRAL
+  STREAK
+}
+
+enum ReferralStatus {
+  PENDING
+  QUALIFIED
+  PAID
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum JobType {
+  CREATE_TEAMS_BY_POLL
+}
+
+enum GalleryStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// ─────────────────────────────────────
+// CORE IDENTITY
+// ─────────────────────────────────────
+
+/// Core user identity — linked to Clerk auth.
+/// Contains account-level data only.
+model User {
+  id          String    @id @default(uuid())
+  clerkId     String    @unique
+  email       String?   @unique
+  username    String    @unique
+  imageUrl    String?
+  role        Role      @default(USER)
+  isOnboarded Boolean   @default(false)
+  dateOfBirth DateTime?
+  isInternal  Boolean   @default(false)
+  isVerified  Boolean   @default(false)
+
+  usernameLastChangeAt DateTime @default(now())
+
+  // Promoter
+  isPromoter       Boolean @default(false)
+  referralCode     String? @unique
+  promoterEarnings Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  player         Player?
+  notifications  Notification[]
+  referralsGiven Referral[] @relation("PromoterReferrals")
+
+  @@index([isOnboarded])
+}
+
+/// Game identity — created when a user joins as a player.
+/// All game-related attributes belong here.
+model Player {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // BGMI identity
+  displayName             String?
+  displayNameLastChangeAt DateTime?
+  bio                     String?  @db.VarChar(100)
+  characterImageId        String?  @unique
+  customProfileImageUrl   String?
+
+  // Game attributes
+  category          PlayerCategory @default(NOOB)
+  isBanned          Boolean        @default(false)
+  isUCExempt        Boolean        @default(false)
+  isTrusted         Boolean        @default(false)
+  meritScore        Int            @default(100)
+  isSoloRestricted  Boolean        @default(false)
+  soloMatchesNeeded Int            @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  characterImage Gallery? @relation(fields: [characterImageId], references: [id], onDelete: SetNull)
+  seasons        Season[] @relation("PlayerSeason")
+
+  wallet           Wallet?
+  ban              PlayerBan?
+  streak           PlayerStreak?
+  pendingRewards   PendingReward[]
+  playerStats      PlayerStats[]
+  teams            Team[]
+  matches          Match[]
+  pollVotes        PlayerPollVote[]
+  polls            Poll[]
+  matchesPlayed    MatchPlayerPlayed[]
+  teamStats        TeamStats[]
+  teamPlayerStats  TeamPlayerStats[]
+  transactions     Transaction[]
+  ucTransfersFrom  UCTransfer[]        @relation("UCTransferFrom")
+  ucTransfersTo    UCTransfer[]        @relation("UCTransferTo")
+  pushSubscriptions PushSubscription[]
+  jobListing       PlayerJobListing?
+  meritRatingsGiven    PlayerMeritRating[] @relation("MeritGiven")
+  meritRatingsReceived PlayerMeritRating[] @relation("MeritReceived")
+  referral         Referral?
+  royalPasses      RoyalPass[]
+  gameScores       GameScore[]
+
+  @@index([userId])
+  @@index([category])
+}
+
+// ─────────────────────────────────────
+// ECONOMY
+// ─────────────────────────────────────
+
+/// UC balance — one per player.
+model Wallet {
+  id       String @id @default(uuid())
+  balance  Int    @default(0)
+  playerId String @unique
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// UC transfer between players.
+model UCTransfer {
+  id              String           @id @default(uuid())
+  amount          Int
+  type            UCTransferType
+  status          UCTransferStatus @default(PENDING)
+  message         String?
+  responseMessage String?
+  fromPlayerId    String
+  fromPlayer      Player           @relation("UCTransferFrom", fields: [fromPlayerId], references: [id], onDelete: Cascade)
+  toPlayerId      String
+  toPlayer        Player           @relation("UCTransferTo", fields: [toPlayerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fromPlayerId])
+  @@index([toPlayerId])
+  @@index([status])
+}
+
+/// Ledger of all UC credits and debits.
+model Transaction {
+  id          String          @id @default(uuid())
+  amount      Int
+  type        TransactionType
+  description String
+  playerId    String
+  player      Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([playerId])
+}
+
+/// Pending rewards (winner prizes, solo support, referrals, streaks).
+/// Extracted from Player to keep the model clean.
+model PendingReward {
+  id        String     @id @default(uuid())
+  playerId  String
+  player    Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  type      RewardType
+  amount    Int
+  message   String?
+  details   Json?
+  position  Int?
+  isClaimed Boolean    @default(false)
+  claimedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([playerId, isClaimed])
+  @@index([type])
+}
+
+/// Accumulated solo tax for next tournament bonus pool.
+model SoloTaxPool {
+  id        String   @id @default(uuid())
+  amount    Int      @default(0)
+  donorName String?
+  seasonId  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([seasonId])
+}
+
+// ─────────────────────────────────────
+// PLAYER TRACKING
+// ─────────────────────────────────────
+
+/// Player ban info — separate from Player for clean separation.
+model PlayerBan {
+  id          String    @id @default(uuid())
+  playerId    String    @unique
+  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  banReason   String?   @default("")
+  bannedAt    DateTime?
+  banDuration Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Tournament streak tracking — one per player, resets each season.
+model PlayerStreak {
+  id                  String    @id @default(uuid())
+  playerId            String    @unique
+  player              Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  currentStreak       Int       @default(0)
+  seasonId            String?
+  lastTournamentSeqId Int?
+  lastRewardAt        DateTime?
+  pendingReward       Int?
+
+  updatedAt DateTime @updatedAt
+}
+
+/// Merit ratings between players after tournaments.
+model PlayerMeritRating {
+  id           String @id @default(uuid())
+  fromPlayerId String
+  toPlayerId   String
+  rating       Int // 1=🤡 2=😠 3=😐 4=😊 5=🔥
+  tournamentId String
+  seasonId     String?
+
+  fromPlayer Player @relation("MeritGiven", fields: [fromPlayerId], references: [id], onDelete: Cascade)
+  toPlayer   Player @relation("MeritReceived", fields: [toPlayerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([fromPlayerId, toPlayerId, tournamentId])
+  @@index([toPlayerId])
+  @@index([tournamentId])
+  @@index([seasonId])
+}
+
+// ─────────────────────────────────────
+// SEASONS & TOURNAMENTS
+// ─────────────────────────────────────
+
+model Season {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  status      SeasonStatus @default(ACTIVE)
+  createdBy   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  players           Player[]            @relation("PlayerSeason")
+  playerStats       PlayerStats[]
+  tournaments       Tournament[]
+  teams             Team[]
+  matches           Match[]
+  teamStats         TeamStats[]
+  teamPlayerStats   TeamPlayerStats[]
+  matchPlayerPlayed MatchPlayerPlayed[]
+  royalPasses       RoyalPass[]
+
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+model Tournament {
+  id               String   @id @default(uuid())
+  name             String
+  description      String?
+  startDate        DateTime @default(now())
+  endDate          DateTime?
+  fee              Int?
+  seasonId         String?
+  createdBy        String?
+  isWinnerDeclared Boolean  @default(false)
+  status           Status   @default(ACTIVE)
+  galleryId        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  season  Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  gallery Gallery? @relation(fields: [galleryId], references: [id], onDelete: SetNull)
+
+  teams             Team[]
+  matches           Match[]
+  winners           TournamentWinner[]
+  teamStats         TeamStats[]
+  poll              Poll?
+  recentMatchGroups RecentMatchGroup[]
+  matchPlayerPlayed MatchPlayerPlayed[]
+  income            Income[]
+
+  @@index([seasonId])
+  @@index([status])
+  @@index([startDate])
+}
+
+model Match {
+  id           String @id @default(uuid())
+  matchNumber  Int    @default(autoincrement())
+  tournamentId String
+  seasonId     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tournament        Tournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  season            Season?             @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  teams             Team[]
+  players           Player[]
+  playerStats       PlayerStats[]
+  teamStats         TeamStats[]
+  teamPlayerStats   TeamPlayerStats[]
+  matchPlayerPlayed MatchPlayerPlayed[]
+
+  @@index([tournamentId])
+  @@index([seasonId])
+}
+
+model TournamentWinner {
+  id            String  @id @default(uuid())
+  amount        Int     @default(0)
+  position      Int
+  isDistributed Boolean @default(false)
+  teamId        String  @unique
+  tournamentId  String
+
+  team       Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([tournamentId, teamId])
+}
+
+model TournamentSequence {
+  id           String @id @default(uuid())
+  tournamentId String @unique
+  sequenceId   Int    @unique @default(autoincrement())
+
+  createdAt DateTime @default(now())
+
+  @@index([sequenceId])
+}
+
+// ─────────────────────────────────────
+// TEAMS & STATS
+// ─────────────────────────────────────
+
+model Team {
+  id           String  @id @default(uuid())
+  name         String
+  teamNumber   Int
+  tournamentId String?
+  seasonId     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tournament        Tournament?         @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  season            Season?             @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  players           Player[]
+  matches           Match[]
+  teamStats         TeamStats[]
+  playerStats       PlayerStats[]
+  teamPlayerStats   TeamPlayerStats[]
+  matchPlayerPlayed MatchPlayerPlayed[]
+  tournamentWinner  TournamentWinner[]
+
+  @@index([tournamentId])
+  @@index([seasonId])
+}
+
+model TeamStats {
+  id           String @id @default(uuid())
+  matchId      String
+  teamId       String
+  position     Int    @default(0)
+  seasonId     String?
+  tournamentId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  match           Match             @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  team            Team              @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  season          Season?           @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  tournament      Tournament?       @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  playersStats    PlayerStats[]
+  players         Player[]
+  teamPlayerStats TeamPlayerStats[]
+
+  @@unique([teamId, matchId])
+  @@index([matchId])
+  @@index([seasonId])
+  @@index([tournamentId])
+  @@index([teamId])
+}
+
+model TeamPlayerStats {
+  id          String @id @default(uuid())
+  playerId    String
+  teamId      String
+  matchId     String
+  teamStatsId String
+  kills       Int    @default(0)
+  deaths      Int    @default(0)
+  seasonId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  player    Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  match     Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  teamStats TeamStats @relation(fields: [teamStatsId], references: [id], onDelete: Cascade)
+  season    Season?   @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+
+  @@unique([playerId, teamId, matchId])
+  @@index([playerId])
+  @@index([teamId])
+  @@index([matchId])
+  @@index([teamStatsId])
+}
+
+model PlayerStats {
+  id       String @id @default(uuid())
+  playerId String
+  kills    Int    @default(0)
+  deaths   Int    @default(0)
+  seasonId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  player    Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  season    Season?     @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  teamStats TeamStats[]
+  teams     Team[]
+  matches   Match[]
+
+  @@unique([seasonId, playerId])
+  @@index([seasonId])
+  @@index([playerId])
+}
+
+model MatchPlayerPlayed {
+  id           String @id @default(uuid())
+  matchId      String
+  playerId     String
+  tournamentId String
+  seasonId     String?
+  teamId       String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  match      Match      @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player     Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  season     Season?    @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  team       Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, seasonId, createdAt(sort: Desc)])
+  @@index([teamId, tournamentId])
+  @@index([tournamentId])
+}
+
+// ─────────────────────────────────────
+// POLLS & VOTING
+// ─────────────────────────────────────
+
+model Poll {
+  id           String    @id @default(uuid())
+  question     String
+  days         String    @default("Monday")
+  teamType     TeamType  @default(DUO)
+  isActive     Boolean   @default(true)
+  startDate    DateTime  @default(now())
+  endDate      DateTime?
+  tournamentId String    @unique
+  luckyVoterId String?
+
+  createdAt DateTime @default(now())
+
+  tournament Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  options    PollOption[]
+  votes      PlayerPollVote[]
+  players    Player[]
+}
+
+model PollOption {
+  id     String @id @default(uuid())
+  name   String
+  vote   Vote
+  pollId String
+  poll   Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model PlayerPollVote {
+  id       String @id @default(uuid())
+  playerId String
+  pollId   String
+  vote     Vote
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  poll   Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([playerId, pollId])
+}
+
+// ─────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────
+
+/// Notifications — tied to User (not Player) so admins can receive them too.
+model Notification {
+  id     String  @id @default(uuid())
+  userId String
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title  String
+  message String
+  type   String
+  link   String?
+  isRead Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+}
+
+model PushSubscription {
+  id       String @id @default(uuid())
+  endpoint String @unique
+  p256dh   String
+  auth     String
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([playerId])
+}
+
+// ─────────────────────────────────────
+// MEDIA & GALLERY
+// ─────────────────────────────────────
+
+model Gallery {
+  id                 String        @id @default(uuid())
+  imageId            String        @unique
+  name               String
+  path               String
+  fullPath           String
+  publicUrl          String
+  status             GalleryStatus @default(ACTIVE)
+  isCharacterImg     Boolean       @default(false)
+  isGlobalBackground Boolean       @default(false)
+  isAnimated         Boolean       @default(false)
+  isVideo            Boolean       @default(false)
+  thumbnailUrl       String?
+
+  playerId String? @unique
+  player   Player?
+
+  tournaments Tournament[]
+}
+
+model RecentMatchGroup {
+  id              String @id @default(uuid())
+  tournamentId    String
+  tournamentTitle String
+  deletionMarker  Int
+
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  tournament Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  images     RecentMatchImage[]
+
+  @@index([deletionMarker])
+  @@index([tournamentId])
+}
+
+model RecentMatchImage {
+  id          String @id @default(uuid())
+  matchNumber Int
+  imageUrl    String
+  imagePath   String
+  groupId     String
+  group       RecentMatchGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([groupId])
+  @@index([matchNumber])
+}
+
+// ─────────────────────────────────────
+// FINANCE & PAYMENTS
+// ─────────────────────────────────────
+
+model Income {
+  id             String      @id @default(uuid())
+  amount         Int // Changed from Float — financial amounts in smallest unit
+  description    String
+  tournamentId   String?
+  tournamentName String?
+  parentId       String?
+  isSubIncome    Boolean     @default(false)
+  createdBy      String
+
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  parent     Income?     @relation("IncomeChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children   Income[]    @relation("IncomeChildren")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tournamentId])
+  @@index([parentId])
+  @@index([createdAt])
+}
+
+model Payment {
+  id                String @id @default(uuid())
+  razorpayOrderId   String @unique
+  razorpayPaymentId String? @unique
+  amount            Int // in paisa
+  currency          String @default("INR")
+  status            String @default("created")
+  userId            String
+  playerId          String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([playerId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────
+// REFERRALS & ROYAL PASS
+// ─────────────────────────────────────
+
+model Referral {
+  id                   String         @id @default(uuid())
+  promoterId           String
+  promoter             User           @relation("PromoterReferrals", fields: [promoterId], references: [id], onDelete: Cascade)
+  referredPlayerId     String         @unique
+  referredPlayer       Player         @relation(fields: [referredPlayerId], references: [id], onDelete: Cascade)
+  status               ReferralStatus @default(PENDING)
+  tournamentsCompleted Int            @default(0)
+  qualifiedAt          DateTime?
+  paidAt               DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([promoterId])
+  @@index([status])
+}
+
+model RoyalPass {
+  id           String  @id @default(uuid())
+  playerId     String
+  seasonId     String?
+  amount       Int
+  displayValue Int
+  pricePaid    Int
+  promoCode    String?
+
+  player Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  season Season? @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([playerId])
+  @@index([seasonId])
+  @@index([createdAt])
+}
+
+// ─────────────────────────────────────
+// JOBS & LISTINGS
+// ─────────────────────────────────────
+
+model PlayerJobListing {
+  id             String   @id @default(uuid())
+  playerId       String   @unique
+  player         Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  category       String
+  category2      String?
+  customCategory String?
+  title          String   @db.VarChar(50)
+  description    String?  @db.VarChar(150)
+  phoneNumber    String
+  experience     String?
+  location       String?  @db.VarChar(50)
+  availability   String?
+  workingHours   Json?
+  imageUrls      String[]
+  isActive       Boolean  @default(true)
+  likeCount      Int      @default(0)
+  dislikeCount   Int      @default(0)
+  isJobBanned    Boolean  @default(false)
+
+  reactions JobListingReaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([category])
+}
+
+model JobListingReaction {
+  id           String @id @default(uuid())
+  listingId    String
+  playerId     String
+  reactionType String
+
+  listing PlayerJobListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([listingId, playerId])
+  @@index([listingId])
+  @@index([playerId])
+}
+
+model JobCategory {
+  id   String @id @default(uuid())
+  name String @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([name])
+}
+
+// ─────────────────────────────────────
+// BACKGROUND JOBS
+// ─────────────────────────────────────
+
+model Job {
+  id       String    @id @default(uuid())
+  type     JobType
+  status   JobStatus @default(PENDING)
+  progress String?
+  result   Json?
+  error    String?
+  pollId   String?
+  createdBy String
+
+  createdAt   DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  @@index([pollId])
+  @@index([status])
+  @@index([type])
+}
+
+// ─────────────────────────────────────
+// GAMES & ANALYTICS
+// ─────────────────────────────────────
+
+model GameScore {
+  playerId     String   @unique
+  highScore    Int
+  lastPlayedAt DateTime
+  player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+}
+
+model Rule {
+  id        String @id @default(uuid())
+  title     String
+  content   String
+  order     Int    @default(0)
+  createdBy String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+}
+
+model AppSetting {
+  id    String @id @default(uuid())
+  key   String @unique
+  value String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DailyMetrics {
+  id   String   @id @default(uuid())
+  date DateTime @unique
+
+  // User metrics
+  totalUsers          Int @default(0)
+  totalOnboardedUsers Int @default(0)
+  newUsersToday       Int @default(0)
+
+  // Player metrics
+  totalPlayers   Int @default(0)
+  activePlayers  Int @default(0)
+  bannedPlayers  Int @default(0)
+
+  // Category breakdown
+  botPlayers       Int @default(0)
+  ultraNoobPlayers Int @default(0)
+  noobPlayers      Int @default(0)
+  proPlayers       Int @default(0)
+  ultraProPlayers  Int @default(0)
+  legendPlayers    Int @default(0)
+
+  // Tournament/Match
+  totalTournaments  Int @default(0)
+  activeTournaments Int @default(0)
+  totalMatches      Int @default(0)
+  totalTeams        Int @default(0)
+
+  // UC Economy
+  totalUCInCirculation Int @default(0)
+  totalTransactions    Int @default(0)
+  pendingUCTransfers   Int @default(0)
+
+  // Engagement
+  pushSubscribers    Int @default(0)
+  totalNotifications Int @default(0)
+
+  // Income
+  totalIncome    Int @default(0)
+  totalPrizePool Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([date])
+}
