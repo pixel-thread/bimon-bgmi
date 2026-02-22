@@ -108,8 +108,8 @@ export default function WalletPage() {
                                 </span>
                                 <p
                                     className={`text-4xl font-bold ${(wallet?.balance ?? 0) < 0
-                                            ? "text-danger"
-                                            : "text-foreground"
+                                        ? "text-danger"
+                                        : "text-foreground"
                                         }`}
                                 >
                                     {(wallet?.balance ?? 0).toLocaleString()} UC
@@ -169,8 +169,8 @@ export default function WalletPage() {
                                     >
                                         <div
                                             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${tx.type === "CREDIT"
-                                                    ? "bg-success/10"
-                                                    : "bg-danger/10"
+                                                ? "bg-success/10"
+                                                : "bg-danger/10"
                                                 }`}
                                         >
                                             {tx.type === "CREDIT" ? (
@@ -189,12 +189,12 @@ export default function WalletPage() {
                                         </div>
                                         <span
                                             className={`shrink-0 text-sm font-semibold ${tx.type === "CREDIT"
-                                                    ? "text-success"
-                                                    : "text-danger"
+                                                ? "text-success"
+                                                : "text-danger"
                                                 }`}
                                         >
                                             {tx.type === "CREDIT" ? "+" : "-"}
-                                            {tx.amount} UC
+                                            {tx.amount.toLocaleString()} UC
                                         </span>
                                     </div>
                                 ))}

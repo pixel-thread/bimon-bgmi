@@ -2,25 +2,22 @@
 
 import { useInfiniteQuery } from "@tanstack/react-query";
 import {
-    Card,
-    CardBody,
     Chip,
     Avatar,
-    Input,
     Button,
     Skeleton,
 } from "@heroui/react";
 import {
     Users,
-    Search,
     Crown,
-    ShieldBan,
     ChevronsDown,
     AlertCircle,
-    Wallet,
 } from "lucide-react";
 import { useState } from "react";
 import { motion } from "motion/react";
+import { PlayerDetailModal } from "@/components/dashboard/player-detail-modal";
+import { usePlayerFilters } from "@/hooks/use-player-filters";
+import { PlayerFiltersBar } from "@/components/players/player-filters-bar";
 
 interface PlayerDTO {
     id: string;
@@ -40,12 +37,12 @@ interface PlayersResponse {
 }
 
 const categoryColors: Record<string, "warning" | "primary" | "success" | "secondary" | "danger" | "default"> = {
-    S: "warning",
-    A: "primary",
-    B: "success",
-    C: "secondary",
-    D: "danger",
-    Unranked: "default",
+    LEGEND: "warning",
+    ULTRA_PRO: "primary",
+    PRO: "success",
+    NOOB: "default",
+    ULTRA_NOOB: "secondary",
+    BOT: "danger",
 };
 
 /**
@@ -53,18 +50,20 @@ const categoryColors: Record<string, "warning" | "primary" | "success" | "second
  * Shows all players with balance, category, ban status.
  */
 export default function AdminPlayersPage() {
-    const [search, setSearch] = useState("");
-    const [tier, setTier] = useState("All");
+    const filters = usePlayerFilters();
+    const { search, tier, sortBy, sortOrder, season } = filters;
+    const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
     const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
         useInfiniteQuery<PlayersResponse>({
-            queryKey: ["admin-players", { search, tier }],
+            queryKey: ["admin-players", { search, tier, sortBy, sortOrder, season }],
             queryFn: async ({ pageParam }) => {
                 const params = new URLSearchParams({
                     search,
                     tier,
-                    sortBy: "name",
-                    sortOrder: "asc",
+                    sortBy,
+                    sortOrder,
+                    ...(season ? { season } : {}),
                     limit: "30",
                     ...(pageParam ? { cursor: pageParam as string } : {}),
                 });
@@ -89,35 +88,8 @@ export default function AdminPlayersPage() {
                 </p>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-2">
-                <Input
-                    placeholder="Search players..."
-                    value={search}
-                    onValueChange={setSearch}
-                    startContent={<Search className="h-4 w-4 text-default-400" />}
-                    classNames={{
-                        inputWrapper: "bg-default-100 border-none shadow-none max-w-xs",
-                    }}
-                    size="sm"
-                    isClearable
-                    onClear={() => setSearch("")}
-                />
-                <div className="flex gap-1">
-                    {["All", "S", "A", "B", "C", "D"].map((t) => (
-                        <Button
-                            key={t}
-                            size="sm"
-                            variant={tier === t ? "solid" : "flat"}
-                            color={tier === t ? "primary" : "default"}
-                            onPress={() => setTier(t)}
-                            className="min-w-0 px-3 text-xs"
-                        >
-                            {t}
-                        </Button>
-                    ))}
-                </div>
-            </div>
+            {/* Search + Filters */}
+            <PlayerFiltersBar {...filters} />
 
             {error && (
                 <div className="flex items-center gap-2 rounded-lg bg-danger-50 p-4 text-sm text-danger dark:bg-danger-50/10">
@@ -159,7 +131,10 @@ export default function AdminPlayersPage() {
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: i * 0.01 }}
                             >
-                                <div className="flex items-center gap-3 rounded-lg px-4 py-2.5 transition-colors hover:bg-default-100">
+                                <div
+                                    className="flex cursor-pointer items-center gap-3 rounded-lg px-4 py-2.5 transition-colors hover:bg-default-100"
+                                    onClick={() => setSelectedPlayerId(p.id)}
+                                >
                                     {/* Avatar */}
                                     <div className="relative shrink-0">
                                         <Avatar
@@ -204,10 +179,10 @@ export default function AdminPlayersPage() {
                                     {/* Balance */}
                                     <span
                                         className={`hidden w-20 text-right text-sm font-medium sm:block ${p.balance < 0
-                                                ? "text-danger"
-                                                : p.balance > 0
-                                                    ? "text-success"
-                                                    : "text-foreground/40"
+                                            ? "text-danger"
+                                            : p.balance > 0
+                                                ? "text-success"
+                                                : "text-foreground/40"
                                             }`}
                                     >
                                         {p.balance} UC
@@ -247,6 +222,13 @@ export default function AdminPlayersPage() {
                     )}
                 </div>
             )}
+
+            {/* Player detail modal */}
+            <PlayerDetailModal
+                playerId={selectedPlayerId}
+                isOpen={!!selectedPlayerId}
+                onClose={() => setSelectedPlayerId(null)}
+            />
         </div>
     );
 }

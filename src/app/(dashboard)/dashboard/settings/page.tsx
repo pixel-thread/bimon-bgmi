@@ -28,9 +28,9 @@ export default function SettingsPage() {
     return (
         <div className="mx-auto max-w-xl space-y-6">
             <div>
-                <h1 className="text-xl font-bold">Settings</h1>
+                <h1 className="text-xl font-bold">Operations</h1>
                 <p className="text-sm text-foreground/50">
-                    App preferences and configuration
+                    Tournament lifecycle & app configuration
                 </p>
             </div>
 

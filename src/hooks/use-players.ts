@@ -5,6 +5,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 export interface PlayerDTO {
     id: string;
     displayName: string | null;
+    bio: string | null;
     username: string;
     imageUrl: string | null;
     category: string;
@@ -44,6 +45,7 @@ interface UsePlayersOptions {
     tier?: string;
     sortBy?: string;
     sortOrder?: "asc" | "desc";
+    season?: string;
     limit?: number;
 }
 
@@ -56,16 +58,18 @@ export function usePlayers({
     tier = "All",
     sortBy = "kd",
     sortOrder = "desc",
+    season = "",
     limit = 20,
 }: UsePlayersOptions = {}) {
     return useInfiniteQuery<PlayersResponse>({
-        queryKey: ["players", { search, tier, sortBy, sortOrder }],
+        queryKey: ["players", { search, tier, sortBy, sortOrder, season }],
         queryFn: async ({ pageParam }) => {
             const params = new URLSearchParams({
                 search,
                 tier,
                 sortBy,
                 sortOrder,
+                ...(season ? { season } : {}),
                 limit: String(limit),
                 ...(pageParam ? { cursor: pageParam as string } : {}),
             });

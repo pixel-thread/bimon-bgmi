@@ -81,99 +81,102 @@ export const PodiumCard = memo(function PodiumCard({
     const thumbnailUrl = charImg?.thumbnailUrl;
 
     return (
-        <div
-            onClick={() => onPlayerClick(player.id)}
-            onMouseEnter={isVideo ? handleMouseEnter : undefined}
-            className={`
-        ${config.size} ${config.mt} ${config.order} relative cursor-pointer group
-        rounded-2xl ${config.border} ${config.glow}
-        bg-gradient-to-b ${config.bg}
-        overflow-hidden transition-all duration-200
-        hover:scale-105 hover:shadow-xl
-      `}
-        >
-            {/* Character image / video / GIF */}
-            {charImg?.url ? (
-                isVideo && mediaUrl ? (
-                    <>
-                        {thumbnailUrl && (
-                            <img
-                                src={thumbnailUrl}
-                                alt=""
-                                className="absolute inset-0 h-full w-full object-cover opacity-90"
+        <div className={`${config.mt} ${config.order} flex flex-col items-center gap-2`}>
+            {/* Card */}
+            <div
+                onClick={() => onPlayerClick(player.id)}
+                onMouseEnter={isVideo ? handleMouseEnter : undefined}
+                className={`
+                    ${config.size} relative cursor-pointer group
+                    rounded-2xl ${config.border} ${config.glow}
+                    bg-gradient-to-b ${config.bg}
+                    overflow-hidden transition-all duration-200
+                    hover:scale-105 hover:shadow-xl
+                `}
+            >
+                {/* Character image / video / GIF */}
+                {charImg?.url ? (
+                    isVideo && mediaUrl ? (
+                        <>
+                            {thumbnailUrl && (
+                                <img
+                                    src={thumbnailUrl}
+                                    alt=""
+                                    className="absolute inset-0 h-full w-full object-cover opacity-90"
+                                />
+                            )}
+                            <video
+                                ref={videoRef}
+                                src={mediaUrl}
+                                muted
+                                loop
+                                playsInline
+                                preload="none"
+                                poster={thumbnailUrl || undefined}
+                                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mediaLoaded ? "opacity-90" : "opacity-0"
+                                    }`}
+                                onCanPlay={() => setMediaLoaded(true)}
                             />
-                        )}
-                        <video
-                            ref={videoRef}
-                            src={mediaUrl}
-                            muted
-                            loop
-                            playsInline
-                            preload="none"
-                            poster={thumbnailUrl || undefined}
-                            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mediaLoaded ? "opacity-90" : "opacity-0"
-                                }`}
-                            onCanPlay={() => setMediaLoaded(true)}
-                        />
-                    </>
-                ) : isAnimated && mediaUrl ? (
-                    <>
-                        {thumbnailUrl && (
+                        </>
+                    ) : isAnimated && mediaUrl ? (
+                        <>
+                            {thumbnailUrl && (
+                                <img
+                                    src={thumbnailUrl}
+                                    alt=""
+                                    className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mediaLoaded ? "opacity-0" : "opacity-90"
+                                        }`}
+                                />
+                            )}
                             <img
-                                src={thumbnailUrl}
+                                src={mediaUrl}
                                 alt=""
-                                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mediaLoaded ? "opacity-0" : "opacity-90"
+                                loading="lazy"
+                                onLoad={() => setMediaLoaded(true)}
+                                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mediaLoaded ? "opacity-90" : "opacity-0"
                                     }`}
                             />
-                        )}
+                        </>
+                    ) : (
                         <img
-                            src={mediaUrl}
+                            src={charImg.url}
                             alt=""
                             loading="lazy"
-                            onLoad={() => setMediaLoaded(true)}
-                            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mediaLoaded ? "opacity-90" : "opacity-0"
-                                }`}
+                            decoding="async"
+                            className="absolute inset-0 h-full w-full object-cover opacity-90"
                         />
-                    </>
+                    )
                 ) : (
-                    <img
-                        src={charImg.url}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        className="absolute inset-0 h-full w-full object-cover opacity-90"
-                    />
-                )
-            ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-3xl font-bold text-white/20">
-                        {getDisplayName(player.displayName, player.username)
-                            .charAt(0)
-                            .toUpperCase()}
-                    </span>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-3xl font-bold text-white/20">
+                            {getDisplayName(player.displayName, player.username)
+                                .charAt(0)
+                                .toUpperCase()}
+                        </span>
+                    </div>
+                )}
+
+                {/* Position badge */}
+                <div className="absolute left-1.5 top-1.5">
+                    <Icon className={`h-5 w-5 drop-shadow-lg ${config.iconColor}`} />
                 </div>
-            )}
-
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-            {/* Position badge */}
-            <div className="absolute left-1.5 top-1.5">
-                <Icon className={`h-5 w-5 drop-shadow-lg ${config.iconColor}`} />
             </div>
 
-            {/* Player info */}
-            <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-1 p-2">
+            {/* Player info — below the card */}
+            <div
+                className="flex flex-col items-center gap-0.5 cursor-pointer"
+                onClick={() => onPlayerClick(player.id)}
+            >
                 <Avatar
                     src={player.imageUrl || undefined}
                     name={getDisplayName(player.displayName, player.username)}
                     size="sm"
                     className="h-8 w-8 ring-2 ring-background"
                 />
-                <p className="max-w-full truncate px-1 text-[10px] font-bold text-white drop-shadow-lg sm:text-xs">
+                <p className="max-w-[100px] truncate text-[11px] font-bold text-foreground sm:text-xs">
                     {getDisplayName(player.displayName, player.username)}
                 </p>
-                <p className="text-[9px] font-medium text-white/70">
+                <p className="text-[10px] font-medium text-foreground/50">
                     KD {displayKd}
                 </p>
             </div>

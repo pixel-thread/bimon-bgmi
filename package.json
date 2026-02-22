@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:generate": "prisma generate --schema=prisma-db/schema.prisma",
+    "postinstall": "prisma generate --schema=prisma-db/schema.prisma"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.38.0",
@@ -14,10 +16,12 @@
     "@heroui/system": "^2.4.27",
     "@heroui/theme": "^2.4.26",
     "@hookform/resolvers": "^5.2.2",
+    "@prisma/adapter-pg": "^7.4.0",
     "@prisma/client": "^7.4.0",
     "@serwist/next": "^9.5.6",
     "@tanstack/react-query": "^5.90.21",
-    "framer-motion": "^12.34.2",
+    "cloudinary": "^2.9.0",
+    "html2canvas-pro": "^1.6.7",
     "lucide-react": "^0.574.0",
     "motion": "^12.34.2",
     "next": "16.1.6",

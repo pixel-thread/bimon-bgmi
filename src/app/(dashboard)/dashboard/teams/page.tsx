@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Card,
     CardBody,
@@ -12,6 +12,12 @@ import {
     Input,
     Select,
     SelectItem,
+    Button,
+    Modal,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
 } from "@heroui/react";
 import {
     Users,
@@ -21,9 +27,24 @@ import {
     Medal,
     Crown,
     AlertCircle,
+    Plus,
+    ArrowLeftRight,
+    Pencil,
+    Trash2,
+    BarChart3,
+    TableProperties,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "motion/react";
+import { toast } from "sonner";
+import { CreateTeamModal } from "@/components/dashboard/teams/create-team-modal";
+import { SwapPlayersModal } from "@/components/dashboard/teams/swap-players-modal";
+import { BulkEditStatsModal } from "@/components/dashboard/teams/bulk-edit-stats-modal";
+import { StandingsModal } from "@/components/dashboard/teams/standings-modal";
+import { SlotsModal } from "@/components/dashboard/teams/slots-modal";
+import { EditTeamModal } from "@/components/dashboard/teams/edit-team-modal";
+
+// ─── Types ────────────────────────────────────────────────────
 
 interface TeamPlayer {
     id: string;
@@ -51,6 +72,20 @@ interface TournamentOption {
     name: string;
 }
 
+interface SeasonOption {
+    id: string;
+    name: string;
+    isCurrent: boolean;
+}
+
+interface MatchOption {
+    id: string;
+    matchNumber: number;
+    teamCount: number;
+}
+
+// ─── Constants ────────────────────────────────────────────────
+
 const categoryColors: Record<string, "warning" | "primary" | "success" | "secondary" | "danger" | "default"> = {
     LEGEND: "warning",
     ULTRA_PRO: "primary",
@@ -66,89 +101,323 @@ const positionLabels: Record<number, { label: string; color: string }> = {
     3: { label: "🥉 3rd", color: "text-amber-700" },
 };
 
+// ─── Page Component ───────────────────────────────────────────
+
 /**
- * /dashboard/teams — Admin teams viewer by tournament.
+ * /dashboard/teams — Admin teams management.
+ * Features: season/tournament/match selectors, create team, swap players,
+ * bulk edit stats, delete match, team cards with winner info.
  */
 export default function TeamsPage() {
+    // Filter state
+    const [seasonId, setSeasonId] = useState("");
     const [tournamentId, setTournamentId] = useState("");
+    const [matchId, setMatchId] = useState("all");
     const [search, setSearch] = useState("");
 
-    // Fetch tournaments for selector
-    const { data: tournaments } = useQuery<TournamentOption[]>({
-        queryKey: ["tournament-list-brief"],
+    // Modal state
+    const [showCreateTeam, setShowCreateTeam] = useState(false);
+    const [showSwapPlayers, setShowSwapPlayers] = useState(false);
+    const [showBulkEdit, setShowBulkEdit] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showStandings, setShowStandings] = useState(false);
+    const [showSlots, setShowSlots] = useState(false);
+    const [editTeam, setEditTeam] = useState<TeamDTO | null>(null);
+
+    const queryClient = useQueryClient();
+
+    // ── Data queries ──────────────────────────────────────────
+
+    const { data: seasons = [] } = useQuery<SeasonOption[]>({
+        queryKey: ["seasons"],
         queryFn: async () => {
-            const res = await fetch("/api/tournaments?limit=50");
-            if (!res.ok) throw new Error("Failed");
+            const res = await fetch("/api/seasons");
+            if (!res.ok) return [];
+            const json = await res.json();
+            return json.data ?? [];
+        },
+        staleTime: 5 * 60_000,
+    });
+
+    const { data: globalBg } = useQuery<{ publicUrl: string } | null>({
+        queryKey: ["global-background"],
+        queryFn: async () => {
+            const res = await fetch("/api/gallery/global-background");
+            if (!res.ok) return null;
+            const json = await res.json();
+            return json.data ?? null;
+        },
+        staleTime: 5 * 60_000,
+    });
+
+    // Auto-select current season on load
+    useEffect(() => {
+        if (seasons.length > 0 && !seasonId) {
+            const current = seasons.find((s) => s.isCurrent);
+            setSeasonId(current?.id ?? seasons[0].id);
+        }
+    }, [seasons, seasonId]);
+
+    const { data: tournaments = [] } = useQuery<TournamentOption[]>({
+        queryKey: ["tournaments-brief", seasonId],
+        queryFn: async () => {
+            const url = seasonId
+                ? `/api/tournaments?limit=50&seasonId=${seasonId}`
+                : "/api/tournaments?limit=50";
+            const res = await fetch(url);
+            if (!res.ok) return [];
             const json = await res.json();
             return json.data.map((t: { id: string; name: string }) => ({
                 id: t.id,
                 name: t.name,
             }));
         },
-        staleTime: 60 * 1000,
+        staleTime: 60_000,
+        enabled: !!seasonId,
     });
 
-    // Fetch teams for selected tournament
-    const { data: teams, isLoading, error } = useQuery<TeamDTO[]>({
-        queryKey: ["teams", tournamentId],
+    // Auto-select latest tournament when tournaments load
+    useEffect(() => {
+        if (tournaments.length > 0 && !tournamentId) {
+            setTournamentId(tournaments[0].id);
+        }
+    }, [tournaments, tournamentId]);
+
+    const { data: matches = [] } = useQuery<MatchOption[]>({
+        queryKey: ["matches-brief", tournamentId],
         queryFn: async () => {
-            const res = await fetch(`/api/teams?tournamentId=${tournamentId}`);
+            const res = await fetch(`/api/matches?tournamentId=${tournamentId}`);
+            if (!res.ok) return [];
+            const json = await res.json();
+            return (json.data ?? []).map((m: { id: string; matchNumber: number }) => ({
+                id: m.id,
+                matchNumber: m.matchNumber,
+                teamCount: 0,
+            }));
+        },
+        enabled: !!tournamentId,
+        staleTime: 30_000,
+    });
+
+    const { data: teams, isLoading, error } = useQuery<TeamDTO[]>({
+        queryKey: ["teams", tournamentId, matchId],
+        queryFn: async () => {
+            let url = `/api/teams?tournamentId=${tournamentId}`;
+            if (matchId && matchId !== "all") url += `&matchId=${matchId}`;
+            const res = await fetch(url);
             if (!res.ok) throw new Error("Failed");
             const json = await res.json();
             return json.data;
         },
         enabled: !!tournamentId,
-        staleTime: 30 * 1000,
+        staleTime: 30_000,
     });
 
-    const filteredTeams = teams?.filter((t) => {
-        if (!search) return true;
-        const q = search.toLowerCase();
-        return (
-            t.name.toLowerCase().includes(q) ||
-            t.players.some(
-                (p) =>
-                    (p.displayName?.toLowerCase().includes(q)) ||
-                    p.username.toLowerCase().includes(q)
-            )
-        );
+    // ── Derived state ─────────────────────────────────────────
+
+    const filteredTeams = useMemo(() => {
+        if (!teams) return [];
+        return teams.filter((t) => {
+            if (!search) return true;
+            const q = search.toLowerCase();
+            return (
+                t.name.toLowerCase().includes(q) ||
+                t.players.some(
+                    (p) =>
+                        p.displayName?.toLowerCase().includes(q) ||
+                        p.username.toLowerCase().includes(q)
+                )
+            );
+        });
+    }, [teams, search]);
+
+    const existingPlayerIds = useMemo(
+        () => (teams ?? []).flatMap((t) => t.players.map((p) => p.id)),
+        [teams]
+    );
+
+    const selectedMatch = useMemo(
+        () => matches.find((m) => m.id === matchId),
+        [matches, matchId]
+    );
+
+    // ── Delete match mutation ─────────────────────────────────
+
+    const { mutate: deleteMatch, isPending: isDeleting } = useMutation({
+        mutationFn: async () => {
+            const res = await fetch(`/api/matches/${matchId}`, { method: "DELETE" });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.message || "Failed");
+            return json;
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Match deleted");
+            setMatchId("all");
+            queryClient.invalidateQueries({ queryKey: ["teams"] });
+            queryClient.invalidateQueries({ queryKey: ["matches-brief"] });
+            setShowDeleteConfirm(false);
+        },
+        onError: (err: Error) => toast.error(err.message),
     });
+
+    // ── Handlers ──────────────────────────────────────────────
+
+    function handleSeasonChange(keys: "all" | Set<string | number>) {
+        const val = Array.from(keys as Set<string>)[0] as string;
+        setSeasonId(val || "");
+        setTournamentId("");
+        setMatchId("all");
+    }
+
+    function handleTournamentChange(keys: "all" | Set<string | number>) {
+        const val = Array.from(keys as Set<string>)[0] as string;
+        setTournamentId(val || "");
+        setMatchId("all");
+    }
+
+    function handleMatchChange(keys: "all" | Set<string | number>) {
+        const val = Array.from(keys as Set<string>)[0] as string;
+        setMatchId(val || "");
+    }
+
+    // ── Render ────────────────────────────────────────────────
 
     return (
         <div className="space-y-6">
-            <div>
+            {/* Header + Filters */}
+            <div className="space-y-2">
                 <h1 className="text-xl font-bold">Teams</h1>
-                <p className="text-sm text-foreground/50">
-                    View team compositions by tournament
-                </p>
-            </div>
 
-            {/* Tournament selector */}
-            <div className="flex flex-wrap items-center gap-2">
-                <Select
-                    placeholder="Select tournament"
-                    selectedKeys={tournamentId ? [tournamentId] : []}
-                    onSelectionChange={(keys) => {
-                        const val = Array.from(keys)[0] as string;
-                        setTournamentId(val || "");
-                    }}
-                    classNames={{
-                        trigger: "bg-default-100 border-none shadow-none max-w-xs",
-                    }}
-                    size="sm"
-                >
-                    {(tournaments ?? []).map((t) => (
-                        <SelectItem key={t.id}>{t.name}</SelectItem>
-                    ))}
-                </Select>
+                {/* Row 1: Tournament (70%) + Season (30%) */}
+                <div className="flex gap-2">
+                    <div className="flex-[7]">
+                        <Select
+                            placeholder="Tournament"
+                            size="sm"
+                            selectedKeys={tournamentId ? [tournamentId] : []}
+                            onSelectionChange={handleTournamentChange}
+                            classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
+                            aria-label="Tournament"
+                        >
+                            {tournaments.map((t) => (
+                                <SelectItem key={t.id} textValue={t.name}>{t.name}</SelectItem>
+                            ))}
+                        </Select>
+                    </div>
+                    {seasons.length > 0 && (
+                        <div className="flex-[3]">
+                            <Select
+                                placeholder="Season"
+                                size="sm"
+                                selectedKeys={seasonId ? [seasonId] : []}
+                                onSelectionChange={handleSeasonChange}
+                                classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
+                                aria-label="Season"
+                            >
+                                {seasons.map((s) => (
+                                    <SelectItem key={s.id} textValue={`${s.name}${s.isCurrent ? " ✦" : ""}`}>
+                                        {s.name}{s.isCurrent ? " ✦" : ""}
+                                    </SelectItem>
+                                ))}
+                            </Select>
+                        </div>
+                    )}
+                </div>
+
+                {/* Row 2: Match + Action Buttons */}
+                {tournamentId && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                        <Select
+                            placeholder="Match"
+                            size="sm"
+                            selectedKeys={matchId ? [matchId] : []}
+                            onSelectionChange={handleMatchChange}
+                            classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
+                            aria-label="Match"
+                            className="w-[105px] min-w-[105px]"
+                        >
+                            {[
+                                <SelectItem key="all" textValue="All Matches">All Matches</SelectItem>,
+                                ...matches.map((m) => (
+                                    <SelectItem key={m.id} textValue={`Match ${m.matchNumber}`}>
+                                        Match {m.matchNumber}
+                                    </SelectItem>
+                                )),
+                            ]}
+                        </Select>
+                        <Divider orientation="vertical" className="h-5 mx-0.5" />
+                        <Button
+                            size="sm"
+                            color="primary"
+                            variant="flat"
+                            isIconOnly
+                            onPress={() => setShowCreateTeam(true)}
+                            isDisabled={!matchId || matchId === "all"}
+                            className="h-8 w-8 min-w-8"
+                        >
+                            <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="flat"
+                            isIconOnly
+                            onPress={() => setShowSwapPlayers(true)}
+                            className="h-8 w-8 min-w-8"
+                        >
+                            <ArrowLeftRight className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="flat"
+                            isIconOnly
+                            onPress={() => setShowBulkEdit(true)}
+                            className="h-8 w-8 min-w-8"
+                        >
+                            <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="flat"
+                            isIconOnly
+                            onPress={() => setShowStandings(true)}
+                            className="h-8 w-8 min-w-8"
+                        >
+                            <BarChart3 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="flat"
+                            isIconOnly
+                            onPress={() => setShowSlots(true)}
+                            className="h-8 w-8 min-w-8"
+                        >
+                            <TableProperties className="h-3.5 w-3.5" />
+                        </Button>
+                        {matchId && matchId !== "all" && (
+                            <Button
+                                size="sm"
+                                variant="flat"
+                                color="danger"
+                                isIconOnly
+                                onPress={() => setShowDeleteConfirm(true)}
+                                className="h-8 w-8 min-w-8"
+                            >
+                                <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                        )}
+                    </div>
+                )}
+
+                {/* Row 3: Full-width Search */}
                 {tournamentId && (
                     <Input
-                        placeholder="Search teams or players..."
+                        placeholder="Search teams..."
                         value={search}
                         onValueChange={setSearch}
-                        startContent={<Search className="h-4 w-4 text-default-400" />}
+                        startContent={<Search className="h-3.5 w-3.5 text-default-400" />}
                         classNames={{
-                            inputWrapper: "bg-default-100 border-none shadow-none max-w-xs",
+                            inputWrapper: "bg-default-100 border-none shadow-none h-9",
+                            input: "text-sm",
                         }}
                         size="sm"
                         isClearable
@@ -185,7 +454,7 @@ export default function TeamsPage() {
             {/* Team cards */}
             {filteredTeams && (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {filteredTeams.length === 0 ? (
+                    {filteredTeams.length === 0 && !isLoading ? (
                         <div className="col-span-full flex flex-col items-center gap-3 rounded-xl bg-default-100 py-12 text-center">
                             <Users className="h-10 w-10 text-foreground/20" />
                             <p className="text-sm text-foreground/50">No teams found</p>
@@ -204,14 +473,17 @@ export default function TeamsPage() {
                                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                                                 {team.teamNumber}
                                             </span>
-                                            <h3 className="text-sm font-semibold">{team.name}</h3>
+                                            <h3 className="text-sm font-semibold truncate max-w-[200px]">
+                                                {team.players?.length > 0
+                                                    ? team.players.map(p => p.displayName || p.username).join(", ")
+                                                    : team.name}
+                                            </h3>
                                         </div>
                                         {team.winner && (
                                             <div className="flex items-center gap-1">
                                                 <Medal className="h-3.5 w-3.5 text-warning" />
                                                 <span
-                                                    className={`text-xs font-semibold ${positionLabels[team.winner.position]?.color ?? ""
-                                                        }`}
+                                                    className={`text-xs font-semibold ${positionLabels[team.winner.position]?.color ?? ""}`}
                                                 >
                                                     {positionLabels[team.winner.position]?.label ??
                                                         `#${team.winner.position}`}
@@ -248,17 +520,25 @@ export default function TeamsPage() {
                                                 <Chip
                                                     size="sm"
                                                     variant="flat"
-                                                    color={
-                                                        categoryColors[player.category] ?? "default"
-                                                    }
+                                                    color={categoryColors[player.category] ?? "default"}
                                                     className="text-[10px]"
                                                 >
                                                     {player.category.replace("_", " ")}
                                                 </Chip>
                                             </div>
                                         ))}
-                                        <div className="text-xs text-foreground/30">
-                                            {team.matchCount} matches played
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-xs text-foreground/30">
+                                                {team.matchCount} matches played
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                variant="light"
+                                                isIconOnly
+                                                onPress={() => setEditTeam(team)}
+                                            >
+                                                <Pencil className="h-3.5 w-3.5" />
+                                            </Button>
                                         </div>
                                     </CardBody>
                                 </Card>
@@ -266,6 +546,107 @@ export default function TeamsPage() {
                         ))
                     )}
                 </div>
+            )}
+
+            {/* ── Modals ── */}
+
+            {/* Create Team */}
+            <CreateTeamModal
+                isOpen={showCreateTeam}
+                onClose={() => setShowCreateTeam(false)}
+                tournamentId={tournamentId}
+                matchId={matchId}
+                existingPlayerIds={existingPlayerIds}
+            />
+
+            {/* Swap Players */}
+            <SwapPlayersModal
+                isOpen={showSwapPlayers}
+                onClose={() => setShowSwapPlayers(false)}
+                tournamentId={tournamentId}
+                teams={(teams ?? []).map((t) => ({
+                    id: t.id,
+                    name: t.name,
+                    teamNumber: t.teamNumber,
+                    players: t.players.map((p) => ({
+                        id: p.id,
+                        displayName: p.displayName,
+                        username: p.username,
+                        imageUrl: p.imageUrl,
+                    })),
+                }))}
+            />
+
+            {/* Bulk Edit Stats */}
+            <BulkEditStatsModal
+                isOpen={showBulkEdit}
+                onClose={() => setShowBulkEdit(false)}
+                tournamentId={tournamentId}
+                matchId={matchId}
+                matches={matches}
+            />
+
+            {/* Overall Standings */}
+            <StandingsModal
+                isOpen={showStandings}
+                onClose={() => setShowStandings(false)}
+                tournamentId={tournamentId}
+                teams={teams ?? []}
+                tournamentTitle={tournaments.find((t) => t.id === tournamentId)?.name ?? ""}
+                seasonName={seasons.find((s) => s.id === seasonId)?.name ?? ""}
+                backgroundImage={globalBg?.publicUrl || "/images/image.webp"}
+            />
+
+            {/* Slots Export */}
+            <SlotsModal
+                isOpen={showSlots}
+                onClose={() => setShowSlots(false)}
+                tournamentTitle={tournaments.find((t) => t.id === tournamentId)?.name ?? ""}
+                teams={teams ?? []}
+                seasonName={seasons.find((s) => s.id === seasonId)?.name ?? ""}
+                backgroundImage={globalBg?.publicUrl || "/images/image.webp"}
+            />
+
+            {/* Delete Match Confirmation */}
+            <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} size="sm">
+                <ModalContent>
+                    <ModalHeader>Delete Match?</ModalHeader>
+                    <ModalBody>
+                        <p className="text-sm text-foreground/60">
+                            This will permanently delete Match #{selectedMatch?.matchNumber} and all
+                            associated team stats, player stats, and records. This cannot be undone.
+                        </p>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button
+                            variant="flat"
+                            onPress={() => setShowDeleteConfirm(false)}
+                            size="sm"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            color="danger"
+                            onPress={() => deleteMatch()}
+                            isLoading={isDeleting}
+                            size="sm"
+                        >
+                            Delete
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            {/* Edit Team Modal */}
+            {editTeam && (
+                <EditTeamModal
+                    isOpen={!!editTeam}
+                    onClose={() => setEditTeam(null)}
+                    teamId={editTeam.id}
+                    teamName={editTeam.name}
+                    teamNumber={editTeam.teamNumber}
+                    initialPlayers={editTeam.players}
+                />
             )}
         </div>
     );

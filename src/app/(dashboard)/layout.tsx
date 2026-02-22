@@ -1,5 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
+import { Header } from "@/components/layout/header";
+import { MobileNav } from "@/components/layout/mobile-nav";
 
 /**
  * Route group: (dashboard)
@@ -15,14 +17,22 @@ export default async function DashboardLayout({
     await requireAdmin();
 
     return (
-        <div className="flex min-h-dvh">
-            <AdminSidebar />
-            <div className="flex flex-1 flex-col">
-                <header className="flex h-14 items-center border-b border-divider px-4 lg:px-6">
-                    <h1 className="text-base font-semibold">Admin Panel</h1>
-                </header>
-                <main className="flex-1 p-4 md:p-6">{children}</main>
+        <div className="flex min-h-dvh flex-col">
+            {/* Mobile header with hamburger — hidden on desktop */}
+            <div className="lg:hidden">
+                <Header />
             </div>
+            <div className="flex flex-1">
+                <AdminSidebar />
+                <div className="flex flex-1 flex-col">
+                    <header className="hidden h-14 items-center border-b border-divider px-4 lg:flex lg:px-6">
+                        <h1 className="text-base font-semibold">Admin Panel</h1>
+                    </header>
+                    <main className="flex-1 p-4 pb-20 sm:pb-4 md:p-6">{children}</main>
+                </div>
+            </div>
+            <MobileNav />
         </div>
     );
 }
+

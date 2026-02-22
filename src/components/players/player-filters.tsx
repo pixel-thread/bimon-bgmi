@@ -3,8 +3,17 @@
 import { Input, Select, SelectItem, Button } from "@heroui/react";
 import { Search, ArrowUpDown, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-const tiers = ["All", "S", "A", "B", "C", "D", "Unranked"];
+const tiers = [
+    { value: "All", label: "All" },
+    { value: "LEGEND", label: "Legend" },
+    { value: "ULTRA_PRO", label: "Ultra Pro" },
+    { value: "PRO", label: "Pro" },
+    { value: "NOOB", label: "Noob" },
+    { value: "ULTRA_NOOB", label: "Ultra Noob" },
+    { value: "BOT", label: "Bot" },
+];
 
 const sortOptions = [
     { label: "K/D Ratio", value: "kd" },
@@ -37,6 +46,17 @@ export function PlayerFilters({
 }: PlayerFiltersProps) {
     const [showFilters, setShowFilters] = useState(false);
 
+    // Lazy-load category counts only when filter panel is opened
+    const { data: counts } = useQuery<Record<string, number>>({
+        queryKey: ["player-counts"],
+        queryFn: async () => {
+            const res = await fetch("/api/players/counts");
+            return res.json();
+        },
+        enabled: showFilters,
+        staleTime: 60 * 1000,
+    });
+
     return (
         <div className="space-y-3">
             {/* Search + toggle */}
@@ -48,7 +68,8 @@ export function PlayerFilters({
                     startContent={<Search className="h-4 w-4 text-default-400" />}
                     classNames={{
                         inputWrapper:
-                            "bg-default-100 border-none shadow-none hover:bg-default-200 transition-colors",
+                            "bg-default-100 border-none shadow-none hover:bg-default-200 transition-colors !outline-none !ring-0 focus-within:!outline-none focus-within:!ring-0 focus-within:!border-none data-[focus=true]:!outline-none data-[focus=true]:!ring-0 data-[focus-within=true]:!outline-none data-[focus-within=true]:!ring-0",
+                        input: "!outline-none !ring-0 focus:!outline-none focus:!ring-0",
                     }}
                     size="sm"
                     isClearable
@@ -68,22 +89,32 @@ export function PlayerFilters({
 
             {/* Expandable filters */}
             {showFilters && (
-                <div className="flex flex-wrap items-center gap-2">
-                    {/* Tier chips */}
-                    <div className="flex flex-wrap gap-1">
-                        {tiers.map((t) => (
-                            <Button
-                                key={t}
-                                size="sm"
-                                variant={tier === t ? "solid" : "flat"}
-                                color={tier === t ? "primary" : "default"}
-                                onPress={() => onTierChange(t)}
-                                className="min-w-0 px-3 text-xs"
-                            >
-                                {t}
-                            </Button>
-                        ))}
-                    </div>
+                <div className="flex items-center gap-2">
+                    {/* Category dropdown */}
+                    <Select
+                        selectedKeys={[tier]}
+                        onSelectionChange={(keys) => {
+                            const key = Array.from(keys)[0] as string;
+                            if (key) onTierChange(key);
+                        }}
+                        size="sm"
+                        className="w-44"
+                        classNames={{
+                            trigger: "bg-default-100 border-none shadow-none min-h-8 h-8",
+                        }}
+                        aria-label="Category"
+                    >
+                        {tiers.map((t) => {
+                            const label = counts
+                                ? `${t.label} (${counts[t.value] ?? 0})`
+                                : t.label;
+                            return (
+                                <SelectItem key={t.value} textValue={label}>
+                                    {label}
+                                </SelectItem>
+                            );
+                        })}
+                    </Select>
 
                     {/* Sort */}
                     <div className="ml-auto flex items-center gap-2">

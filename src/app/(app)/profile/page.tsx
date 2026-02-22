@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     Card,
     CardBody,
@@ -8,6 +9,7 @@ import {
     Chip,
     Divider,
     Skeleton,
+    Button,
 } from "@heroui/react";
 import {
     Target,
@@ -21,8 +23,14 @@ import {
     Shield,
     User,
     AlertCircle,
+    Camera,
+    Loader2,
+    ImagePlus,
+    LogOut,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { CategoryBadge } from "@/components/ui/category-badge";
+import { useClerk } from "@clerk/nextjs";
 
 interface ProfileData {
     id: string;
@@ -33,6 +41,7 @@ interface ProfileData {
     player: {
         id: string;
         displayName: string | null;
+        bio: string | null;
         category: string;
         hasRoyalPass: boolean;
         isBanned: boolean;
@@ -63,6 +72,15 @@ interface ProfileData {
  * Shows character hero, stats grid, wallet balance, and streak info.
  */
 export default function ProfilePage() {
+    const queryClient = useQueryClient();
+    const clerk = useClerk();
+    const profileInputRef = useRef<HTMLInputElement>(null);
+    const characterInputRef = useRef<HTMLInputElement>(null);
+    const [uploadingProfile, setUploadingProfile] = useState(false);
+    const [uploadingCharacter, setUploadingCharacter] = useState(false);
+    const [previewProfileUrl, setPreviewProfileUrl] = useState<string | null>(null);
+    const [previewCharacter, setPreviewCharacter] = useState<{ url: string; isVideo: boolean } | null>(null);
+
     const { data: profile, isLoading, error } = useQuery<ProfileData>({
         queryKey: ["profile"],
         queryFn: async () => {
@@ -109,27 +127,122 @@ export default function ProfilePage() {
             <div className="space-y-4">
                 {/* Hero card */}
                 <Card className="overflow-hidden border border-divider">
-                    <div className="relative h-40 w-full">
-                        {player?.characterImage?.url ? (
-                            <img
-                                src={player.characterImage.url}
-                                alt=""
-                                className="h-full w-full object-cover"
-                            />
+                    <div className="relative h-96 w-full group">
+                        {(previewCharacter?.url || player?.characterImage?.url) ? (
+                            (previewCharacter?.isVideo || (!previewCharacter && player?.characterImage?.isVideo)) ? (
+                                <video
+                                    src={previewCharacter?.url || player?.characterImage?.url}
+                                    autoPlay
+                                    muted
+                                    playsInline
+                                    className="h-full w-full object-cover"
+                                    style={{ objectPosition: "50% 25%" }}
+                                />
+                            ) : (
+                                <img
+                                    src={previewCharacter?.url || player?.characterImage?.url}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                    style={{ objectPosition: "50% 25%" }}
+                                />
+                            )
                         ) : (
                             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
                                 <User className="h-16 w-16 text-primary/30" />
                             </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+                        {/* Character image upload overlay */}
+                        <input
+                            ref={characterInputRef}
+                            type="file"
+                            accept="image/*,video/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setUploadingCharacter(true);
+                                try {
+                                    const fd = new FormData();
+                                    fd.append("image", file);
+                                    const res = await fetch("/api/profile/upload-character-image", {
+                                        method: "POST",
+                                        body: fd,
+                                    });
+                                    if (res.ok) {
+                                        // Instant preview
+                                        const localUrl = URL.createObjectURL(file);
+                                        setPreviewCharacter({ url: localUrl, isVideo: file.type.startsWith("video/") });
+                                        queryClient.invalidateQueries({ queryKey: ["profile"] });
+                                    }
+                                } finally {
+                                    setUploadingCharacter(false);
+                                    e.target.value = "";
+                                }
+                            }}
+                        />
+                        <button
+                            onClick={() => characterInputRef.current?.click()}
+                            disabled={uploadingCharacter}
+                            className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition-opacity hover:bg-black/70 disabled:opacity-50"
+                        >
+                            {uploadingCharacter ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                                <ImagePlus className="h-3.5 w-3.5" />
+                            )}
+                            {uploadingCharacter ? "Uploading..." : "Change"}
+                        </button>
 
                         {/* Profile info */}
                         <div className="absolute bottom-3 left-4 flex items-end gap-3">
-                            <Avatar
-                                src={profile.imageUrl || undefined}
-                                name={name}
-                                className="h-16 w-16 ring-2 ring-background"
-                            />
+                            {/* Profile image with upload */}
+                            <div className="relative">
+                                <Avatar
+                                    src={previewProfileUrl || profile.imageUrl || undefined}
+                                    name={name}
+                                    className="h-16 w-16 ring-2 ring-background"
+                                />
+                                <input
+                                    ref={profileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        setUploadingProfile(true);
+                                        try {
+                                            const fd = new FormData();
+                                            fd.append("image", file);
+                                            const res = await fetch("/api/profile/upload-profile-image", {
+                                                method: "POST",
+                                                body: fd,
+                                            });
+                                            if (res.ok) {
+                                                // Instant preview
+                                                setPreviewProfileUrl(URL.createObjectURL(file));
+                                                queryClient.invalidateQueries({ queryKey: ["profile"] });
+                                            }
+                                        } finally {
+                                            setUploadingProfile(false);
+                                            e.target.value = "";
+                                        }
+                                    }}
+                                />
+                                <button
+                                    onClick={() => profileInputRef.current?.click()}
+                                    disabled={uploadingProfile}
+                                    className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white shadow-sm transition-transform hover:scale-110 disabled:opacity-50"
+                                >
+                                    {uploadingProfile ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                        <Camera className="h-3 w-3" />
+                                    )}
+                                </button>
+                            </div>
                             <div className="pb-0.5">
                                 <div className="flex items-center gap-2">
                                     <h1 className="text-xl font-bold text-white drop-shadow">
@@ -142,13 +255,10 @@ export default function ProfilePage() {
                                 <div className="flex items-center gap-2 text-sm">
                                     <span className="text-white/60">@{profile.username}</span>
                                     {player && (
-                                        <Chip
+                                        <CategoryBadge
+                                            category={player.category}
                                             size="sm"
-                                            variant="flat"
-                                            className="bg-white/10 text-white backdrop-blur-sm"
-                                        >
-                                            {player.category}
-                                        </Chip>
+                                        />
                                     )}
                                     {profile.role !== "PLAYER" && (
                                         <Chip
@@ -161,6 +271,11 @@ export default function ProfilePage() {
                                         </Chip>
                                     )}
                                 </div>
+                                {player?.bio && (
+                                    <p className="mt-1 text-xs italic text-white/60">
+                                        {player.bio}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -183,25 +298,19 @@ export default function ProfilePage() {
                         {[
                             {
                                 label: "K/D Ratio",
-                                value: isFinite(stats.kd) ? stats.kd.toFixed(2) : "0.00",
+                                value: isFinite(stats.kd ?? 0) ? (stats.kd ?? 0).toFixed(2) : "0.00",
                                 icon: Target,
                                 color: "text-primary",
                             },
                             {
                                 label: "Total Kills",
-                                value: stats.kills.toLocaleString(),
+                                value: (stats.kills ?? 0).toLocaleString(),
                                 icon: Swords,
                                 color: "text-danger",
                             },
                             {
-                                label: "Deaths",
-                                value: stats.deaths.toLocaleString(),
-                                icon: Skull,
-                                color: "text-foreground/50",
-                            },
-                            {
                                 label: "Matches",
-                                value: stats.matches.toLocaleString(),
+                                value: (stats.matches ?? 0).toLocaleString(),
                                 icon: Gamepad2,
                                 color: "text-success",
                             },
@@ -228,46 +337,20 @@ export default function ProfilePage() {
                     </div>
                 )}
 
-                {/* Wallet + Streak row */}
-                {player && (
-                    <div className="grid grid-cols-2 gap-3">
-                        {/* Wallet */}
-                        <Card className="border border-divider">
-                            <CardBody className="p-3">
-                                <div className="flex items-center gap-2">
-                                    <Wallet className="h-4 w-4 text-warning" />
-                                    <span className="text-xs text-foreground/50">Balance</span>
-                                </div>
-                                <p
-                                    className={`mt-1 text-xl font-bold ${player.wallet.balance < 0
-                                            ? "text-danger"
-                                            : "text-foreground"
-                                        }`}
-                                >
-                                    {player.wallet.balance} UC
-                                </p>
-                            </CardBody>
-                        </Card>
 
-                        {/* Streak */}
-                        <Card className="border border-divider">
-                            <CardBody className="p-3">
-                                <div className="flex items-center gap-2">
-                                    <Flame className="h-4 w-4 text-orange-500" />
-                                    <span className="text-xs text-foreground/50">Streak</span>
-                                </div>
-                                <div className="mt-1 flex items-baseline gap-2">
-                                    <p className="text-xl font-bold">
-                                        {player.streak?.current ?? 0}
-                                    </p>
-                                    <span className="text-xs text-foreground/40">
-                                        best: {player.streak?.longest ?? 0}
-                                    </span>
-                                </div>
-                            </CardBody>
-                        </Card>
-                    </div>
-                )}
+                {/* Sign Out */}
+                <div className="mt-6 pb-20 sm:pb-4">
+                    <Button
+                        color="danger"
+                        variant="flat"
+                        fullWidth
+                        startContent={<LogOut className="h-4 w-4" />}
+                        onPress={() => clerk.signOut({ redirectUrl: "/" })}
+                    >
+                        Sign Out
+                    </Button>
+                </div>
+
             </div>
         </div>
     );

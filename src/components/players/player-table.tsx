@@ -1,6 +1,7 @@
 "use client";
 
 import { Avatar, Chip, Button } from "@heroui/react";
+import { CategoryBadge } from "@/components/ui/category-badge";
 import {
     Target,
     Gamepad2,
@@ -20,17 +21,7 @@ function getDisplayName(
     return displayName || username;
 }
 
-function getCategoryColor(category: string) {
-    const colors: Record<string, "warning" | "primary" | "success" | "secondary" | "danger" | "default"> = {
-        S: "warning",
-        A: "primary",
-        B: "success",
-        C: "secondary",
-        D: "danger",
-        Unranked: "default",
-    };
-    return colors[category] || "default";
-}
+
 
 interface PlayerTableProps {
     players: PlayerDTO[];
@@ -77,7 +68,10 @@ export function PlayerTable({
                         <div
                             key={player.id}
                             onClick={() => onPlayerClick(player.id)}
-                            className="group flex cursor-pointer items-center gap-3 rounded-lg px-4 py-2.5 transition-colors hover:bg-default-100 active:bg-default-200"
+                            className={`group flex cursor-pointer items-center gap-3 rounded-lg px-4 py-2.5 transition-colors ${player.hasRoyalPass
+                                    ? "bg-yellow-500/5 hover:bg-yellow-500/10 active:bg-yellow-500/15"
+                                    : "hover:bg-default-100 active:bg-default-200"
+                                }`}
                         >
                             {/* Rank */}
                             <span className="w-8 text-center text-xs font-medium text-foreground/40">
@@ -93,29 +87,24 @@ export function PlayerTable({
                                         size="sm"
                                         className="h-9 w-9"
                                     />
-                                    {player.hasRoyalPass && (
-                                        <Crown className="absolute -right-0.5 -top-0.5 h-3 w-3 text-yellow-500" />
-                                    )}
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="truncate text-sm font-medium">
+                                    <p className="flex items-center gap-1 truncate text-sm font-medium">
                                         {getDisplayName(player.displayName, player.username)}
+                                        {player.hasRoyalPass && (
+                                            <Crown className="h-3.5 w-3.5 shrink-0 text-yellow-500" />
+                                        )}
                                     </p>
-                                    <p className="truncate text-xs text-foreground/40 sm:hidden">
-                                        KD {displayKd} · {player.stats.kills} kills
-                                    </p>
+                                    <span className="sm:hidden">
+                                        <CategoryBadge category={player.category} size="sm" />
+                                    </span>
                                 </div>
                             </div>
 
                             {/* Tier chip */}
-                            <Chip
-                                size="sm"
-                                variant="flat"
-                                color={getCategoryColor(player.category)}
-                                className="hidden sm:flex"
-                            >
-                                {player.category}
-                            </Chip>
+                            <span className="hidden sm:inline-flex">
+                                <CategoryBadge category={player.category} size="sm" />
+                            </span>
 
                             {/* Stats - desktop */}
                             <div className="hidden w-16 text-right sm:block">
@@ -137,10 +126,10 @@ export function PlayerTable({
                                 <div className="hidden w-20 text-right sm:block">
                                     <span
                                         className={`text-sm font-medium ${player.balance < 0
-                                                ? "text-danger"
-                                                : player.balance > 0
-                                                    ? "text-success"
-                                                    : "text-foreground/40"
+                                            ? "text-danger"
+                                            : player.balance > 0
+                                                ? "text-success"
+                                                : "text-foreground/40"
                                             }`}
                                     >
                                         {player.balance}
@@ -148,15 +137,10 @@ export function PlayerTable({
                                 </div>
                             )}
 
-                            {/* Mobile tier badge */}
-                            <Chip
-                                size="sm"
-                                variant="dot"
-                                color={getCategoryColor(player.category)}
-                                className="sm:hidden"
-                            >
-                                {player.category}
-                            </Chip>
+                            {/* Mobile KD badge */}
+                            <span className="text-sm font-semibold text-foreground/70 sm:hidden">
+                                {displayKd}
+                            </span>
                         </div>
                     );
                 })}
@@ -179,31 +163,7 @@ export function PlayerTable({
                 </div>
             )}
 
-            {/* Super admin balance summary */}
-            {isSuperAdmin && meta && (
-                <div className="flex items-center justify-center gap-4 pt-2 text-xs">
-                    <div className="flex items-center gap-1.5 rounded-lg bg-default-100 px-3 py-1.5">
-                        <Wallet className="h-3 w-3 text-default-400" />
-                        <span className="text-foreground/50">Total:</span>
-                        <span
-                            className={`font-semibold ${(meta.totalBalance ?? 0) >= 0
-                                    ? "text-success"
-                                    : "text-danger"
-                                }`}
-                        >
-                            {(meta.totalBalance ?? 0).toLocaleString()} UC
-                        </span>
-                    </div>
-                    {(meta.negativeBalance ?? 0) < 0 && (
-                        <div className="flex items-center gap-1.5 rounded-lg bg-danger-50 px-3 py-1.5 dark:bg-danger-50/10">
-                            <span className="text-foreground/50">Negative:</span>
-                            <span className="font-semibold text-danger">
-                                {(meta.negativeBalance ?? 0).toLocaleString()} UC
-                            </span>
-                        </div>
-                    )}
-                </div>
-            )}
+
         </div>
     );
 }

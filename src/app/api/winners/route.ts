@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
                             select: {
                                 id: true,
                                 displayName: true,
+                                customProfileImageUrl: true,
                                 user: {
                                     select: {
                                         username: true,
@@ -54,11 +55,11 @@ export async function GET(request: NextRequest) {
                 id: p.id,
                 displayName: p.displayName,
                 username: p.user.username,
-                imageUrl: p.user.imageUrl,
+                imageUrl: p.customProfileImageUrl || p.user.imageUrl,
             })),
         }));
 
-        return SuccessResponse({ data, cache: CACHE.SHORT });
+        return SuccessResponse({ data, cache: CACHE.MEDIUM });
     } catch (error) {
         return ErrorResponse({ message: "Failed to fetch winners", error });
     }

@@ -33,13 +33,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return (
         <ClerkProvider>
             <QueryClientProvider client={queryClient}>
-                <HeroUIProvider>
-                    <ThemeProvider
-                        attribute="class"
-                        defaultTheme="dark"
-                        enableSystem
-                        disableTransitionOnChange
-                    >
+                <ThemeProvider
+                    attribute="class"
+                    defaultTheme="dark"
+                    enableSystem
+                    disableTransitionOnChange
+                >
+                    <HeroUIProvider>
                         {children}
                         <Toaster
                             position="top-center"
@@ -47,8 +47,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
                             closeButton
                             theme="dark"
                         />
-                    </ThemeProvider>
-                </HeroUIProvider>
+                    </HeroUIProvider>
+                </ThemeProvider>
             </QueryClientProvider>
         </ClerkProvider>
     );

@@ -34,6 +34,19 @@ export function getCategoryFromKD(kills: number, deaths: number): PlayerTier {
 }
 
 /**
+ * Get player category/tier from a pre-computed KD value.
+ * Use this when you only have the KD number (no kills/deaths).
+ */
+export function getCategoryFromKDValue(kd: number): PlayerTier {
+    if (kd >= KD_THRESHOLDS.LEGEND) return 'LEGEND';
+    if (kd >= KD_THRESHOLDS.ULTRA_PRO) return 'ULTRA_PRO';
+    if (kd >= KD_THRESHOLDS.PRO) return 'PRO';
+    if (kd >= KD_THRESHOLDS.NOOB) return 'NOOB';
+    if (kd >= KD_THRESHOLDS.ULTRA_NOOB) return 'ULTRA_NOOB';
+    return 'BOT';
+}
+
+/**
  * Get human-readable category label.
  */
 export function getCategoryLabel(category: PlayerTier): string {

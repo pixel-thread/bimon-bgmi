@@ -28,7 +28,7 @@ interface DashboardStats {
     tournaments: { active: number; total: number };
     polls: { active: number };
     economy: { totalBalance: number };
-    matches: { recentGroups: number };
+    matches: { total: number };
 }
 
 /**
@@ -186,7 +186,7 @@ export default function AnalyticsPage() {
                                                 Recent Match Groups
                                             </span>
                                             <span className="font-semibold">
-                                                {data.matches.recentGroups}
+                                                {data.matches.total}
                                             </span>
                                         </div>
                                     </CardBody>

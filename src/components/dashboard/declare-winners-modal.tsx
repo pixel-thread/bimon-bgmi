@@ -1,0 +1,580 @@
+"use client";
+
+import { useState, useMemo, useEffect } from "react";
+import {
+    Modal,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+    Button,
+    Chip,
+    Spinner,
+    Tabs,
+    Tab,
+} from "@heroui/react";
+import { Trophy, Plus, Trash2, Coins, ChevronDown, Undo2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+    getPrizeDistribution,
+    getTierInfo,
+    getTeamSize,
+    getFinalDistribution,
+} from "@/lib/logic/prizeDistribution";
+
+// ─── Types ───────────────────────────────────────────────────
+type TeamRanking = {
+    teamId: string;
+    name: string;
+    total: number;
+    kills: number;
+    pts: number;
+    players: { id: string; name: string }[];
+};
+
+type RankingsMeta = {
+    entryFee: number;
+    totalPlayers: number;
+    prizePool: number;
+    teamType: string;
+    isWinnerDeclared: boolean;
+};
+
+type TaxPreviewData = Record<string, {
+    previousWins: number;
+    totalWins: number;
+    taxRate: number;
+    taxPercentage: string;
+    repeatWinnerTaxRate: number;
+    soloTaxRate: number;
+    isSolo: boolean;
+    matchesPlayed: number;
+    totalMatches: number;
+    participationRate: number;
+}>;
+
+type Props = {
+    isOpen: boolean;
+    onClose: () => void;
+    tournamentId: string;
+    tournamentName: string;
+    isWinnerDeclared: boolean;
+    seasonId?: string;
+};
+
+const getMedal = (i: number) => ["🥇", "🥈", "🥉", "🏅", "🎖️"][i] ?? "🎖️";
+const getOrdinal = (n: number) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+
+const SOFTENING_FACTOR = 0.5;
+
+export function DeclareWinnersModal({
+    isOpen,
+    onClose,
+    tournamentId,
+    tournamentName,
+    isWinnerDeclared,
+    seasonId,
+}: Props) {
+    const queryClient = useQueryClient();
+    const [placementCount, setPlacementCount] = useState(2);
+    const [poolOpen, setPoolOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<string>("simple");
+
+    // Fetch rankings (always)
+    const { data: rankingsData, isLoading } = useQuery<{
+        data: TeamRanking[];
+        meta: RankingsMeta;
+    }>({
+        queryKey: ["tournament-rankings", tournamentId],
+        queryFn: async () => {
+            const res = await fetch(`/api/tournaments/${tournamentId}/rankings`);
+            if (!res.ok) throw new Error("Failed");
+            return res.json();
+        },
+        enabled: isOpen && !!tournamentId,
+    });
+
+    const rankings = rankingsData?.data ?? [];
+    const meta = rankingsData?.meta;
+    const entryFee = meta?.entryFee ?? 0;
+    const totalPlayers = meta?.totalPlayers ?? 0;
+    const teamSize = getTeamSize(meta?.teamType ?? "DUO");
+
+    // Fetch solo tax pool (only in detailed)
+    const { data: bonusPoolData } = useQuery<{ amount: number; donorName: string | null }>({
+        queryKey: ["solo-tax-pool", seasonId],
+        queryFn: async () => {
+            if (!seasonId) return { amount: 0, donorName: null };
+            const res = await fetch(`/api/solo-tax-pool?seasonId=${seasonId}`);
+            if (!res.ok) return { amount: 0, donorName: null };
+            const json = await res.json();
+            return json.data || { amount: 0, donorName: null };
+        },
+        enabled: isOpen && !!seasonId && activeTab === "detailed",
+    });
+
+    const bonusPool = activeTab === "detailed" ? (bonusPoolData?.amount || 0) : 0;
+    const basePrizePool = meta?.prizePool ?? 0;
+    const prizePool = basePrizePool + bonusPool;
+
+    // Auto-set placement count from tier
+    useEffect(() => {
+        if (isOpen && basePrizePool > 0) {
+            const tier = getTierInfo(basePrizePool);
+            setPlacementCount(Math.min(tier.winnerCount, rankings.length || tier.winnerCount));
+        }
+    }, [isOpen, basePrizePool, rankings.length]);
+
+    // Get player IDs for tax preview
+    const topTeamPlayerIds = useMemo(() => {
+        const ids: string[] = [];
+        rankings.slice(0, placementCount).forEach(team => {
+            team.players?.forEach(p => ids.push(p.id));
+        });
+        return ids;
+    }, [rankings, placementCount]);
+
+    // Fetch tax preview (only in detailed tab)
+    const { data: taxPreviewRes, isLoading: taxLoading } = useQuery<{ data: TaxPreviewData }>({
+        queryKey: ["tax-preview", tournamentId, topTeamPlayerIds.join(",")],
+        queryFn: async () => {
+            const res = await fetch(
+                `/api/tournaments/${tournamentId}/tax-preview?playerIds=${topTeamPlayerIds.join(",")}`
+            );
+            if (!res.ok) return { data: {} };
+            return res.json();
+        },
+        enabled: isOpen && activeTab === "detailed" && topTeamPlayerIds.length > 0,
+    });
+
+    const taxPreview = taxPreviewRes?.data || {};
+
+    // Prize distribution
+    const distribution = useMemo(
+        () => prizePool > 0 ? getFinalDistribution(prizePool, entryFee, teamSize, 0) : null,
+        [prizePool, entryFee, teamSize]
+    );
+
+    const baseDist = useMemo(
+        () => prizePool > 0 ? getPrizeDistribution(prizePool, entryFee, teamSize) : null,
+        [prizePool, entryFee, teamSize]
+    );
+
+    // Helper: per-player base amount
+    const getPerPlayerAmount = (position: number, playerCount: number) => {
+        if (playerCount === 0) return 0;
+        return Math.floor((baseDist?.prizes.get(position)?.amount ?? 0) / playerCount);
+    };
+
+    // Helper: participation-adjusted amounts
+    const getParticipationAdjustedAmounts = (
+        players: { id: string; name: string }[], basePerPlayer: number
+    ) => {
+        const result = new Map<string, {
+            base: number; adjusted: number; bonus: number; penalty: number;
+            matchesPlayed: number; totalMatches: number; rate: number;
+        }>();
+        if (players.length === 0 || basePerPlayer === 0) return result;
+
+        const rates = players.map(p => {
+            const tax = taxPreview[p.id];
+            return { id: p.id, rate: tax?.participationRate ?? 1, matchesPlayed: tax?.matchesPlayed ?? 0, totalMatches: tax?.totalMatches ?? 1 };
+        });
+        const first = rates[0];
+        if (!first || first.totalMatches === 0) {
+            for (const p of players) result.set(p.id, { base: basePerPlayer, adjusted: basePerPlayer, bonus: 0, penalty: 0, matchesPlayed: 0, totalMatches: 0, rate: 1 });
+            return result;
+        }
+        const avgRate = rates.reduce((s, r) => s + r.rate, 0) / players.length;
+        for (const r of rates) {
+            const adj = Math.floor((r.rate - avgRate) * basePerPlayer * SOFTENING_FACTOR);
+            result.set(r.id, { base: basePerPlayer, adjusted: basePerPlayer + adj, bonus: adj > 0 ? adj : 0, penalty: adj < 0 ? -adj : 0, matchesPlayed: r.matchesPlayed, totalMatches: r.totalMatches, rate: r.rate });
+        }
+        return result;
+    };
+
+    // Helper: tax-adjusted amount
+    const getTaxedAmount = (playerId: string, baseAmount: number) => {
+        const tax = taxPreview[playerId];
+        if (!tax || tax.taxRate === 0) return baseAmount;
+        return Math.floor(baseAmount * (1 - tax.taxRate));
+    };
+
+    // Calculate tax totals (detailed only)
+    const taxTotals = useMemo(() => {
+        if (activeTab !== "detailed") return { total: 0, repeatTax: 0, soloTax: 0, fundContribution: 0, orgContribution: 0, soloToLosers: 0, soloToPool: 0 };
+        let totalRepeatTax = 0, totalSoloTax = 0;
+        rankings.slice(0, placementCount).forEach((team, idx) => {
+            const playerCount = team.players?.length || 0;
+            if (playerCount === 0) return;
+            const perPlayer = getPerPlayerAmount(idx + 1, playerCount);
+            const pa = getParticipationAdjustedAmounts(team.players || [], perPlayer);
+            team.players?.forEach(p => {
+                const tax = taxPreview[p.id];
+                if (!tax) return;
+                const adj = pa.get(p.id)?.adjusted ?? perPlayer;
+                if (tax.repeatWinnerTaxRate > 0) totalRepeatTax += Math.floor(adj * tax.repeatWinnerTaxRate);
+                if (tax.soloTaxRate > 0) totalSoloTax += Math.floor(adj * tax.soloTaxRate);
+            });
+        });
+        const total = totalRepeatTax + totalSoloTax;
+        return { total, repeatTax: totalRepeatTax, soloTax: totalSoloTax, fundContribution: Math.floor(totalRepeatTax * 0.60), orgContribution: Math.ceil(totalRepeatTax * 0.40), soloToLosers: Math.floor(totalSoloTax * 0.60), soloToPool: Math.ceil(totalSoloTax * 0.40) };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [taxPreview, rankings, placementCount, baseDist, activeTab]);
+
+    const organizerAmount = distribution?.finalOrgAmount ?? 0;
+
+    // Declare mutation
+    const declare = useMutation({
+        mutationFn: async () => {
+            const placements = Array.from({ length: placementCount }, (_, i) => ({
+                position: i + 1, amount: baseDist?.prizes.get(i + 1)?.amount ?? 0,
+            }));
+            const res = await fetch(`/api/tournaments/${tournamentId}/declare-winners`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ placements }),
+            });
+            if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed"); }
+        },
+        onSuccess: () => {
+            toast.success("Winners declared & UC distributed!");
+            queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
+            queryClient.invalidateQueries({ queryKey: ["tournament-rankings"] });
+            queryClient.invalidateQueries({ queryKey: ["solo-tax-pool"] });
+            onClose();
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+
+    // Undo mutation
+    const undo = useMutation({
+        mutationFn: async () => {
+            const res = await fetch(`/api/tournaments/${tournamentId}/undo-winner`, { method: "POST" });
+            if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed"); }
+        },
+        onSuccess: () => {
+            toast.success("Winner declaration undone!");
+            queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
+            queryClient.invalidateQueries({ queryKey: ["tournament-rankings"] });
+            queryClient.invalidateQueries({ queryKey: ["solo-tax-pool"] });
+            onClose();
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+
+    // ─── Render helpers ──────────────────────────────────────
+    const renderTeamCard = (team: TeamRanking, idx: number, detailed: boolean) => {
+        const playerCount = team.players?.length || 0;
+        const teamPrize = baseDist?.prizes.get(idx + 1)?.amount ?? 0;
+        const perPlayer = getPerPlayerAmount(idx + 1, playerCount);
+
+        return (
+            <div
+                key={team.teamId}
+                className={`rounded-lg border p-3 ${idx === 0 ? "border-warning/40 bg-warning/[0.04]" :
+                        idx === 1 ? "border-foreground/15 bg-foreground/[0.02]" :
+                            idx === 2 ? "border-orange-500/30 bg-orange-500/[0.03]" :
+                                "border-divider"
+                    }`}
+            >
+                <div className="flex items-center gap-3">
+                    <span className="text-xl shrink-0">{getMedal(idx)}</span>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                            {team.players?.map(p => p.name).join(", ") || team.name || "No players"}
+                        </p>
+                        <p className="text-xs text-foreground/40">
+                            {team.total} pts • {team.kills} kills
+                        </p>
+                    </div>
+                    {teamPrize > 0 && (
+                        <div className="text-right shrink-0">
+                            <Chip size="sm" color="success" variant="flat" className="font-semibold">
+                                ₹{teamPrize.toLocaleString()}
+                            </Chip>
+                            {playerCount > 1 && (
+                                <p className="text-[10px] text-foreground/30 mt-0.5">₹{perPlayer}/player</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* Per-player details (detailed tab only) */}
+                {detailed && teamPrize > 0 && playerCount > 0 && (
+                    <div className="mt-2 pt-2 border-t border-dashed border-divider space-y-1.5">
+                        {taxLoading ? (
+                            <div className="flex justify-center py-1"><Spinner size="sm" /></div>
+                        ) : (
+                            team.players?.map(p => {
+                                const tax = taxPreview[p.id];
+                                const pa = getParticipationAdjustedAmounts(team.players || [], perPlayer).get(p.id);
+                                const afterParticipation = pa?.adjusted ?? perPlayer;
+                                const finalAmount = getTaxedAmount(p.id, afterParticipation);
+                                const taxDeduction = afterParticipation - finalAmount;
+
+                                return (
+                                    <div key={p.id} className="text-xs space-y-0.5">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="font-medium">{p.name}</span>
+                                            {pa && pa.totalMatches > 0 && (
+                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${pa.rate >= 1 ? "bg-success/10 text-success" :
+                                                        pa.rate >= 0.5 ? "bg-warning/10 text-warning" :
+                                                            "bg-danger/10 text-danger"
+                                                    }`}>
+                                                    {pa.matchesPlayed}/{pa.totalMatches} matches
+                                                </span>
+                                            )}
+                                            {tax?.isSolo && (
+                                                <span className="bg-secondary/10 text-secondary px-1.5 py-0.5 rounded text-[10px] font-medium">SOLO</span>
+                                            )}
+                                            {tax?.repeatWinnerTaxRate && tax.repeatWinnerTaxRate > 0 && (
+                                                <span className="text-warning text-[10px]">🔄 {tax.totalWins} wins</span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center justify-between text-foreground/50">
+                                            <div className="flex items-center gap-1">
+                                                <span>₹{perPlayer}</span>
+                                                {pa && pa.bonus > 0 && <span className="text-success">+{pa.bonus}</span>}
+                                                {pa && pa.penalty > 0 && <span className="text-warning">-{pa.penalty}</span>}
+                                                {taxDeduction > 0 && <span className="text-danger">-{taxDeduction} tax</span>}
+                                                <span className="mx-0.5">→</span>
+                                            </div>
+                                            <span className={`font-semibold ${pa && pa.bonus > 0 ? "text-success" :
+                                                    pa && pa.penalty > 0 ? "text-warning" :
+                                                        "text-foreground"
+                                                }`}>
+                                                ₹{finalAmount}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} placement="center" size="lg" scrollBehavior="inside">
+            <ModalContent>
+                <ModalHeader className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-warning" />
+                    <div>
+                        <p>{isWinnerDeclared ? "Tournament Results" : "Declare Winners & Distribute UC"}</p>
+                        <p className="text-xs font-normal text-foreground/50">{tournamentName}</p>
+                    </div>
+                </ModalHeader>
+
+                <ModalBody className="gap-3">
+                    {isLoading ? (
+                        <div className="flex justify-center py-8"><Spinner /></div>
+                    ) : rankings.length === 0 ? (
+                        <div className="text-center py-8 text-foreground/40 text-sm">
+                            No team stats found for this tournament.
+                        </div>
+                    ) : (
+                        <>
+                            {/* Tabs: Simple / Detailed */}
+                            <Tabs
+                                selectedKey={activeTab}
+                                onSelectionChange={(key) => setActiveTab(key as string)}
+                                variant="bordered"
+                                size="sm"
+                                fullWidth
+                                classNames={{ tabList: "w-full" }}
+                            >
+                                <Tab key="simple" title="Simple" />
+                                <Tab key="detailed" title="Detailed Preview" />
+                            </Tabs>
+
+                            {/* ─ Prize Pool (Detailed only) ─ */}
+                            {activeTab === "detailed" && prizePool > 0 && baseDist && distribution && (
+                                <div className="rounded-lg border border-success/30 bg-gradient-to-br from-success/5 to-success/10">
+                                    <button
+                                        onClick={() => setPoolOpen(!poolOpen)}
+                                        className="w-full p-3 flex items-center justify-between hover:bg-success/5 rounded-lg transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <Coins className="h-4 w-4 text-success" />
+                                            <span className="font-semibold text-success text-sm">Prize Pool</span>
+                                            <Chip size="sm" color="success" variant="flat">₹{prizePool.toLocaleString()}</Chip>
+                                        </div>
+                                        <ChevronDown className={`h-4 w-4 text-foreground/30 transition-transform duration-200 ${poolOpen ? "rotate-180" : ""}`} />
+                                    </button>
+
+                                    {poolOpen && (
+                                        <div className="px-4 pb-3 space-y-2">
+                                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                                                <span className="text-foreground/40">Entry Fee:</span>
+                                                <span className="font-medium">₹{entryFee}</span>
+                                                <span className="text-foreground/40">Players:</span>
+                                                <span className="font-medium">{totalPlayers}</span>
+                                                {bonusPool > 0 && (
+                                                    <>
+                                                        <span className="text-foreground/40">Base Pool:</span>
+                                                        <span className="font-medium">₹{basePrizePool.toLocaleString()}</span>
+                                                        <span className="text-foreground/40">🎁 Bonus:</span>
+                                                        <span className="font-medium text-secondary">+₹{bonusPool.toLocaleString()}</span>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            <div className="pt-2 border-t border-success/20 space-y-0.5 text-xs">
+                                                {Array.from(baseDist.prizes.entries())
+                                                    .sort(([a], [b]) => a - b)
+                                                    .map(([pos, prize]) => {
+                                                        const team = rankings[pos - 1];
+                                                        let teamTax = 0;
+                                                        if (team?.players) {
+                                                            const perPlayer = getPerPlayerAmount(pos, team.players.length);
+                                                            const pa = getParticipationAdjustedAmounts(team.players, perPlayer);
+                                                            team.players.forEach(p => {
+                                                                const tax = taxPreview[p.id];
+                                                                if (tax) {
+                                                                    const adj = pa.get(p.id)?.adjusted ?? perPlayer;
+                                                                    if (tax.repeatWinnerTaxRate > 0) teamTax += Math.floor(adj * tax.repeatWinnerTaxRate);
+                                                                    if (tax.soloTaxRate > 0) teamTax += Math.floor(adj * tax.soloTaxRate);
+                                                                }
+                                                            });
+                                                        }
+                                                        const label = prize.isFixed ? `${getOrdinal(pos)} (refund)` : `${getOrdinal(pos)} (${prize.percentage}%)`;
+                                                        return (
+                                                            <div key={pos} className="flex justify-between">
+                                                                <span>{getMedal(pos - 1)} {label}:</span>
+                                                                <span className="font-medium">
+                                                                    {teamTax > 0 ? (
+                                                                        <>
+                                                                            <span className="text-foreground/30 line-through mr-1">₹{prize.amount.toLocaleString()}</span>
+                                                                            <span className="text-warning">-₹{teamTax}</span>
+                                                                            <span className="mx-0.5">=</span>
+                                                                            <span>₹{(prize.amount - teamTax).toLocaleString()}</span>
+                                                                        </>
+                                                                    ) : <>₹{prize.amount.toLocaleString()}</>}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
+
+                                                <div className="flex justify-between text-foreground/50">
+                                                    <span>💼 Org ({baseDist.tier.orgFeePercent}%):</span>
+                                                    <span className="font-medium text-foreground">
+                                                        {taxTotals.orgContribution > 0 ? (
+                                                            <>
+                                                                <span className="text-foreground/30">₹{organizerAmount.toLocaleString()}</span>
+                                                                <span className="text-success"> +₹{taxTotals.orgContribution}</span>
+                                                                <span className="mx-0.5">=</span>
+                                                                <span>₹{(organizerAmount + taxTotals.orgContribution).toLocaleString()}</span>
+                                                            </>
+                                                        ) : <>₹{organizerAmount.toLocaleString()}</>}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex justify-between text-foreground/50">
+                                                    <span>🏦 Fund ({baseDist.tier.fundPercent}%):</span>
+                                                    <span className="font-medium text-foreground">
+                                                        {taxTotals.fundContribution > 0 ? (
+                                                            <>
+                                                                <span className="text-foreground/30">₹{distribution.finalFundAmount.toLocaleString()}</span>
+                                                                <span className="text-success"> +₹{taxTotals.fundContribution}</span>
+                                                                <span className="mx-0.5">=</span>
+                                                                <span>₹{(distribution.finalFundAmount + taxTotals.fundContribution).toLocaleString()}</span>
+                                                            </>
+                                                        ) : <>₹{distribution.finalFundAmount.toLocaleString()}</>}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {taxTotals.total > 0 && (
+                                                <div className="mt-2 pt-2 border-t border-dashed border-success/20 space-y-1 opacity-80 italic">
+                                                    {taxTotals.repeatTax > 0 && (
+                                                        <p className="text-[10px] text-warning">
+                                                            Note: ₹{taxTotals.repeatTax} Repeat Winner Tax → Org (₹{taxTotals.orgContribution}) & Fund (₹{taxTotals.fundContribution}).
+                                                        </p>
+                                                    )}
+                                                    {taxTotals.soloTax > 0 && (
+                                                        <p className="text-[10px] text-secondary">
+                                                            Note: ₹{taxTotals.soloTax} Solo Tax → Loser Support (₹{taxTotals.soloToLosers}) & Next Pool (₹{taxTotals.soloToPool}).
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ─ Simple tab: just show prize pool chip ─ */}
+                            {activeTab === "simple" && basePrizePool > 0 && baseDist && (
+                                <div className="flex items-center gap-2 text-sm text-foreground/60">
+                                    <Coins className="h-4 w-4 text-success" />
+                                    <span>Prize Pool:</span>
+                                    <Chip size="sm" color="success" variant="flat" className="font-semibold">
+                                        ₹{basePrizePool.toLocaleString()}
+                                    </Chip>
+                                    <span className="text-xs text-foreground/30">
+                                        ({baseDist.tier.winnerCount} winners)
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* ─ Team Rankings ─ */}
+                            <div>
+                                <p className="text-xs font-semibold text-foreground/40 uppercase tracking-wider mb-2">
+                                    Rankings (Top {placementCount})
+                                </p>
+                                <div className="space-y-2">
+                                    {rankings.slice(0, placementCount).map((team, idx) =>
+                                        renderTeamCard(team, idx, activeTab === "detailed")
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Add/Remove placement controls */}
+                            {!isWinnerDeclared && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {placementCount < rankings.length && placementCount < 10 && (
+                                        <Button size="sm" variant="flat" startContent={<Plus className="h-3.5 w-3.5" />}
+                                            onPress={() => setPlacementCount(c => c + 1)} className="gap-1 text-xs h-8">
+                                            Add {getOrdinal(placementCount + 1)} Place
+                                        </Button>
+                                    )}
+                                    {placementCount > 2 && (
+                                        <Button size="sm" variant="flat" color="danger" startContent={<Trash2 className="h-3.5 w-3.5" />}
+                                            onPress={() => setPlacementCount(c => c - 1)} className="gap-1 text-xs h-8">
+                                            Remove {getOrdinal(placementCount)} Place
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    )}
+                </ModalBody>
+
+                <ModalFooter>
+                    <Button variant="flat" onPress={onClose}>Close</Button>
+                    {isWinnerDeclared ? (
+                        <Button color="danger" variant="flat" isLoading={undo.isPending}
+                            startContent={<Undo2 className="h-4 w-4" />}
+                            onPress={() => { if (confirm("Undo winner declaration? This will reverse UC transactions.")) undo.mutate(); }}>
+                            Undo Declaration
+                        </Button>
+                    ) : (
+                        <Button className="bg-gradient-to-r from-warning to-[#f97316] text-white font-semibold"
+                            isLoading={declare.isPending} isDisabled={rankings.length === 0}
+                            startContent={<Trophy className="h-4 w-4" />}
+                            onPress={() => declare.mutate()}>
+                            {prizePool > 0 ? "Declare & Distribute" : "Declare Winners"}
+                        </Button>
+                    )}
+                </ModalFooter>
+            </ModalContent>
+        </Modal>
+    );
+}

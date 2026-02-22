@@ -20,7 +20,7 @@ interface DashboardStats {
     tournaments: { active: number; total: number };
     polls: { active: number };
     economy: { totalBalance: number };
-    matches: { recentGroups: number };
+    matches: { total: number };
 }
 
 const statIconMap = {
@@ -77,7 +77,7 @@ export default function DashboardPage() {
             },
             {
                 label: "Recent Matches",
-                value: data.matches.recentGroups.toString(),
+                value: data.matches.total.toString(),
             },
             {
                 label: "Banned Players",

@@ -51,7 +51,7 @@ export default function RoyalPassPage() {
     });
 
     return (
-        <div className="space-y-6">
+        <div className="mx-auto w-full max-w-2xl space-y-6 px-4 py-6 pb-24 sm:pb-6">
             {/* Header */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-yellow-500/20 via-amber-500/10 to-yellow-500/20 p-6">
                 <Crown className="absolute -right-4 -top-4 h-28 w-28 rotate-12 text-yellow-500/10" />
@@ -89,8 +89,8 @@ export default function RoyalPassPage() {
                     >
                         <Card
                             className={`border ${data.hasRoyalPass
-                                    ? "border-yellow-500/30 bg-gradient-to-br from-yellow-500/10 to-yellow-500/5"
-                                    : "border-divider"
+                                ? "border-yellow-500/30 bg-gradient-to-br from-yellow-500/10 to-yellow-500/5"
+                                : "border-divider"
                                 }`}
                         >
                             <CardBody className="space-y-4 p-4">

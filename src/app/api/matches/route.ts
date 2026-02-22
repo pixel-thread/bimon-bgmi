@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
                                     select: {
                                         id: true,
                                         displayName: true,
+                                        customProfileImageUrl: true,
                                         user: {
                                             select: {
                                                 username: true,
@@ -63,9 +64,9 @@ export async function GET(request: NextRequest) {
                     id: tps.player.id,
                     displayName: tps.player.displayName,
                     username: tps.player.user.username,
-                    imageUrl: tps.player.user.imageUrl,
+                    imageUrl: tps.player.customProfileImageUrl || tps.player.user.imageUrl,
                     kills: tps.kills,
-                    deaths: tps.deaths,
+                    present: tps.present,
                 })),
             })),
         }));

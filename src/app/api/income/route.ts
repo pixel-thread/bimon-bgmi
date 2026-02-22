@@ -49,7 +49,7 @@ export async function GET() {
             children: i.children,
         }));
 
-        return SuccessResponse({ data, cache: CACHE.SHORT });
+        return SuccessResponse({ data, cache: CACHE.MEDIUM });
     } catch (error) {
         return ErrorResponse({ message: "Failed to fetch income", error });
     }

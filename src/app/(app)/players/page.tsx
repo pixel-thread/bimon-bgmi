@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { usePlayers, flattenPlayers } from "@/hooks/use-players";
-import { PlayerFilters } from "@/components/players/player-filters";
+import { usePlayerFilters } from "@/hooks/use-player-filters";
+import { PlayerFiltersBar } from "@/components/players/player-filters-bar";
 import { PlayerPodium } from "@/components/players/player-podium";
 import { PlayerTable } from "@/components/players/player-table";
 import { PlayerStatsModal } from "@/components/players/player-stats-modal";
 import { PlayersSkeleton } from "@/components/players/players-skeleton";
+import { useAuthUser } from "@/hooks/use-auth-user";
+import { Wallet } from "lucide-react";
 
 /**
  * /players — Main players page.
@@ -18,16 +20,13 @@ export default function PlayersPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const playerId = searchParams.get("player") ?? "";
-
-    // Filter state
-    const [search, setSearch] = useState("");
-    const [tier, setTier] = useState("All");
-    const [sortBy, setSortBy] = useState("kd");
-    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+    const filters = usePlayerFilters();
+    const { search, tier, sortBy, sortOrder, season } = filters;
 
     // Fetch players
-    const query = usePlayers({ search, tier, sortBy, sortOrder });
+    const query = usePlayers({ search, tier, sortBy, sortOrder, season });
     const { players, meta } = flattenPlayers(query.data);
+    const { isSuperAdmin } = useAuthUser();
     const isLoading = query.isLoading;
 
     // Show podium only when no search filter is active and sorted by KD desc
@@ -58,17 +57,33 @@ export default function PlayersPage() {
     return (
         <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
             <div className="space-y-6">
-                {/* Filters */}
-                <PlayerFilters
-                    search={search}
-                    onSearchChange={setSearch}
-                    tier={tier}
-                    onTierChange={setTier}
-                    sortBy={sortBy}
-                    onSortByChange={setSortBy}
-                    sortOrder={sortOrder}
-                    onSortOrderChange={setSortOrder}
-                />
+                <PlayerFiltersBar {...filters} />
+
+                {/* UC Balance Summary — super admin only */}
+                {isSuperAdmin && meta && (meta.totalBalance != null) && (
+                    <div className="flex items-center justify-center gap-4 text-xs">
+                        <div className="flex items-center gap-1.5 rounded-lg bg-default-100 px-3 py-1.5">
+                            <Wallet className="h-3 w-3 text-default-400" />
+                            <span className="text-foreground/50">Total:</span>
+                            <span
+                                className={`font-semibold ${(meta.totalBalance ?? 0) >= 0
+                                    ? "text-success"
+                                    : "text-danger"
+                                    }`}
+                            >
+                                {(meta.totalBalance ?? 0).toLocaleString()} UC
+                            </span>
+                        </div>
+                        {(meta.negativeBalance ?? 0) < 0 && (
+                            <div className="flex items-center gap-1.5 rounded-lg bg-danger-50 px-3 py-1.5 dark:bg-danger-50/10">
+                                <span className="text-foreground/50">Negative:</span>
+                                <span className="font-semibold text-danger">
+                                    {(meta.negativeBalance ?? 0).toLocaleString()} UC
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Content */}
                 {isLoading ? (

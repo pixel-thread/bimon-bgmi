@@ -18,34 +18,23 @@ export async function GET() {
             include: {
                 player: {
                     include: {
+                        wallet: { select: { balance: true } },
+                        streak: { select: { current: true, longest: true } },
+                        characterImage: {
+                            select: {
+                                publicUrl: true,
+                                thumbnailUrl: true,
+                                isAnimated: true,
+                                isVideo: true,
+                            },
+                        },
                         stats: {
                             take: 1,
                             orderBy: { createdAt: "desc" },
                             select: {
                                 kills: true,
-                                deaths: true,
                                 matches: true,
                                 kd: true,
-                            },
-                        },
-                        wallet: {
-                            select: {
-                                balance: true,
-                            },
-                        },
-                        streak: {
-                            select: {
-                                current: true,
-                                longest: true,
-                                lastTournamentId: true,
-                            },
-                        },
-                        characterImage: {
-                            select: {
-                                url: true,
-                                thumbnailUrl: true,
-                                isAnimated: true,
-                                isVideo: true,
                             },
                         },
                     },
@@ -58,38 +47,47 @@ export async function GET() {
         }
 
         const player = user.player;
+        const latestStats = player?.stats[0];
+
         const data = {
             id: user.id,
             clerkId: user.clerkId,
             username: user.username,
             email: user.email,
-            imageUrl: user.imageUrl,
+            imageUrl: player?.customProfileImageUrl || user.imageUrl,
             role: user.role,
             player: player
                 ? {
                     id: player.id,
-                    displayName: player.displayName,
+                    displayName: player.displayName || user.username,
+                    bio: player.bio || `nga u ${player.displayName || user.username} dei u ${player.category}`,
                     category: player.category,
                     hasRoyalPass: player.hasRoyalPass,
                     isBanned: player.isBanned,
-                    characterImage: player.characterImage,
-                    stats: player.stats[0]
+                    characterImage: player.characterImage
                         ? {
-                            kills: player.stats[0].kills,
-                            deaths: player.stats[0].deaths,
-                            matches: player.stats[0].matches,
-                            kd: Number(player.stats[0].kd),
+                            url: player.characterImage.publicUrl,
+                            thumbnailUrl: player.characterImage.thumbnailUrl,
+                            isAnimated: player.characterImage.isAnimated,
+                            isVideo: player.characterImage.isVideo,
                         }
                         : null,
-                    wallet: {
-                        balance: player.wallet?.balance ?? 0,
-                    },
+                    stats: latestStats
+                        ? {
+                            kills: latestStats.kills,
+                            matches: latestStats.matches,
+                            kd: latestStats.kd,
+                        }
+                        : null,
+                    wallet: player.wallet
+                        ? { balance: player.wallet.balance }
+                        : { balance: 0 },
                     streak: player.streak
                         ? {
                             current: player.streak.current,
                             longest: player.streak.longest,
                         }
-                        : null,
+                        : { current: 0, longest: 0 },
                 }
                 : null,
         };

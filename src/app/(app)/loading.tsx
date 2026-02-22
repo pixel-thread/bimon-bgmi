@@ -1,27 +1,16 @@
-import { Skeleton } from "@heroui/react";
-
 /**
  * Loading state for the app route group.
- * Shows skeleton placeholders while pages load.
+ * Uses plain CSS skeletons to avoid hydration issues.
  */
 export default function AppLoading() {
     return (
-        <div className="space-y-6 p-4">
-            {/* Header skeleton */}
-            <div className="space-y-2">
-                <Skeleton className="h-6 w-48 rounded-lg" />
-                <Skeleton className="h-4 w-32 rounded-lg" />
+        <div className="mx-auto max-w-4xl space-y-6 p-4 animate-pulse">
+            <div className="h-8 w-48 rounded-lg bg-default-200" />
+            <div className="grid gap-4 sm:grid-cols-2">
+                <div className="h-32 rounded-xl bg-default-200" />
+                <div className="h-32 rounded-xl bg-default-200" />
             </div>
-
-            {/* Content skeleton */}
-            <div className="space-y-3">
-                <Skeleton className="h-32 w-full rounded-xl" />
-                <div className="grid gap-3 sm:grid-cols-2">
-                    <Skeleton className="h-24 rounded-xl" />
-                    <Skeleton className="h-24 rounded-xl" />
-                </div>
-                <Skeleton className="h-64 w-full rounded-xl" />
-            </div>
+            <div className="h-64 w-full rounded-xl bg-default-200" />
         </div>
     );
 }

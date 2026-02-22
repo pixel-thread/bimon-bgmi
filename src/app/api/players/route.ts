@@ -2,10 +2,11 @@ import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth";
 import { type NextRequest } from "next/server";
+import { getCategoryFromKDValue } from "@/lib/logic/categoryUtils";
 
 /**
  * GET /api/players
- * Fetches paginated players with stats, wallet, and character image.
+ * Fetches paginated players with stats and wallet.
  * Supports search, tier filter, sorting, and cursor-based pagination.
  */
 export async function GET(request: NextRequest) {
@@ -18,6 +19,7 @@ export async function GET(request: NextRequest) {
         const sortOrder = (searchParams.get("sortOrder") ?? "desc") as
             | "asc"
             | "desc";
+        const season = searchParams.get("season") ?? "";
         const cursor = searchParams.get("cursor");
         const limit = Math.min(
             Number(searchParams.get("limit") ?? "20"),
@@ -31,7 +33,6 @@ export async function GET(request: NextRequest) {
 
         if (search) {
             where.OR = [
-                { displayName: { contains: search, mode: "insensitive" } },
                 { user: { username: { contains: search, mode: "insensitive" } } },
             ];
         }
@@ -42,17 +43,22 @@ export async function GET(request: NextRequest) {
 
         // Build orderBy
         const orderByMap: Record<string, unknown> = {
-            kd: { stats: { some: { kd: sortOrder } } },
-            kills: { stats: { some: { kills: sortOrder } } },
-            matches: { stats: { some: { matches: sortOrder } } },
-            name: { displayName: sortOrder },
+            kd: { stats: { _count: sortOrder } },
+            kills: { stats: { _count: sortOrder } },
+            matches: { stats: { _count: sortOrder } },
+            name: { user: { username: sortOrder } },
             balance: { wallet: { balance: sortOrder } },
         };
 
         // Default fallback for ordering
         const orderBy = orderByMap[sortBy] ?? { createdAt: "desc" };
 
-        // Fetch players using cursor-based pagination
+        // Determine if we can sort via Prisma or need JS sort
+        const prismaSort = sortBy === "name"
+            ? { user: { username: sortOrder } }
+            : null;
+
+        // Fetch players
         const players = await prisma.player.findMany({
             where,
             include: {
@@ -63,12 +69,13 @@ export async function GET(request: NextRequest) {
                     },
                 },
                 stats: {
-                    take: 1,
-                    orderBy: { createdAt: "desc" },
+                    ...(season
+                        ? { where: { seasonId: season } }
+                        : { take: 1, orderBy: { createdAt: "desc" as const } }
+                    ),
                     select: {
                         id: true,
                         kills: true,
-                        deaths: true,
                         matches: true,
                         kd: true,
                     },
@@ -80,72 +87,101 @@ export async function GET(request: NextRequest) {
                 },
                 characterImage: {
                     select: {
-                        url: true,
-                        thumbnailUrl: true,
+                        publicUrl: true,
                         isAnimated: true,
                         isVideo: true,
+                        thumbnailUrl: true,
                     },
                 },
             },
-            take: limit + 1, // fetch one extra for nextCursor
-            ...(cursor && {
-                cursor: { id: cursor },
-                skip: 1,
-            }),
-            orderBy: typeof orderBy === "object" ? orderBy as any : { createdAt: "desc" },
+            ...(prismaSort
+                ? {
+                    take: limit + 1,
+                    ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+                    orderBy: prismaSort as any,
+                }
+                : {}), // fetch all for JS sort
         });
 
-        // Determine if there are more results
-        const hasMore = players.length > limit;
-        const results = hasMore ? players.slice(0, limit) : players;
-        const nextCursor = hasMore ? results[results.length - 1]?.id : null;
+        // Flatten the data — compute category from K/D (always fresh)
+        const allData = players.map((p) => {
+            const kd = Number(p.stats[0]?.kd ?? 0);
+            return {
+                id: p.id,
+                displayName: p.displayName,
+                bio: p.bio || `nga u ${p.displayName || p.user.username} dei u ${getCategoryFromKDValue(kd)}`,
+                username: p.user.username,
+                imageUrl: p.customProfileImageUrl || p.user.imageUrl,
+                category: getCategoryFromKDValue(kd),
+                isBanned: p.isBanned,
+                stats: { kills: p.stats[0]?.kills ?? 0, matches: p.stats[0]?.matches ?? 0, kd },
+                balance: p.wallet?.balance ?? 0,
+                hasRoyalPass: p.hasRoyalPass,
+                characterImage: p.characterImage
+                    ? {
+                        url: p.characterImage.publicUrl,
+                        isAnimated: p.characterImage.isAnimated,
+                        isVideo: p.characterImage.isVideo,
+                        thumbnailUrl: p.characterImage.thumbnailUrl,
+                    }
+                    : null,
+            };
+        });
 
-        // Flatten the data for the client
-        const data = results.map((p) => ({
-            id: p.id,
-            displayName: p.displayName,
-            username: p.user.username,
-            imageUrl: p.user.imageUrl,
-            category: p.category,
-            isBanned: p.isBanned,
-            characterImage: p.characterImage
-                ? {
-                    url: p.characterImage.url,
-                    thumbnailUrl: p.characterImage.thumbnailUrl,
-                    isAnimated: p.characterImage.isAnimated,
-                    isVideo: p.characterImage.isVideo,
-                }
-                : null,
-            stats: p.stats[0]
-                ? {
-                    kills: p.stats[0].kills,
-                    deaths: p.stats[0].deaths,
-                    matches: p.stats[0].matches,
-                    kd: Number(p.stats[0].kd),
-                }
-                : { kills: 0, deaths: 0, matches: 0, kd: 0 },
-            balance: p.wallet?.balance ?? 0,
-            hasRoyalPass: p.hasRoyalPass,
-        }));
+        let data;
+        let hasMore: boolean;
+        let nextCursor: string | null;
+
+        if (prismaSort) {
+            // Prisma already sorted & paginated
+            hasMore = allData.length > limit;
+            data = hasMore ? allData.slice(0, limit) : allData;
+            nextCursor = hasMore ? data[data.length - 1]?.id : null;
+        } else {
+            // JS sort for kd/kills/matches/balance
+            const sortKey = sortBy as "kd" | "kills" | "matches" | "balance";
+            allData.sort((a, b) => {
+                const aVal = sortKey === "balance" ? a.balance : a.stats[sortKey as keyof typeof a.stats] as number;
+                const bVal = sortKey === "balance" ? b.balance : b.stats[sortKey as keyof typeof b.stats] as number;
+                return sortOrder === "desc" ? bVal - aVal : aVal - bVal;
+            });
+
+            // Manual cursor-based pagination
+            let startIdx = 0;
+            if (cursor) {
+                const cursorIdx = allData.findIndex((p) => p.id === cursor);
+                startIdx = cursorIdx >= 0 ? cursorIdx + 1 : 0;
+            }
+            const slice = allData.slice(startIdx, startIdx + limit + 1);
+            hasMore = slice.length > limit;
+            data = hasMore ? slice.slice(0, limit) : slice;
+            nextCursor = hasMore ? data[data.length - 1]?.id : null;
+        }
 
         // Check if the requester is admin for meta data
         const user = await getCurrentUser();
-        const isAdmin =
-            user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
 
         const meta: Record<string, unknown> = {
             hasMore,
             nextCursor,
-            count: results.length,
+            count: data.length,
         };
 
-        // Add balance totals for super admins
+        // Add balance totals for super admins (exclude admin wallets)
         if (user?.role === "SUPER_ADMIN") {
+            const adminFilter = {
+                player: {
+                    user: {
+                        role: { notIn: ["SUPER_ADMIN" as const, "ADMIN" as const] },
+                    },
+                },
+            };
             const aggregations = await prisma.wallet.aggregate({
+                where: adminFilter,
                 _sum: { balance: true },
             });
             const negativeSum = await prisma.wallet.aggregate({
-                where: { balance: { lt: 0 } },
+                where: { ...adminFilter, balance: { lt: 0 } },
                 _sum: { balance: true },
             });
             meta.totalBalance = aggregations._sum.balance ?? 0;

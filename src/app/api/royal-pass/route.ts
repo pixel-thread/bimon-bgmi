@@ -46,7 +46,7 @@ export async function GET() {
             })),
         };
 
-        return SuccessResponse({ data, cache: CACHE.SHORT });
+        return SuccessResponse({ data, cache: CACHE.MEDIUM });
     } catch (error) {
         return ErrorResponse({
             message: "Failed to fetch Royal Pass",

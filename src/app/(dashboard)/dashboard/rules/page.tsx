@@ -1,152 +1,263 @@
 "use client";
 
-import { Card, CardBody, CardHeader, Divider, Chip, BookOpen } from "@heroui/react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-    BookOpen as BookOpenIcon,
-    CheckCircle,
+    Card,
+    CardBody,
+    Button,
+    Skeleton,
+    Modal,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+    Input,
+    Textarea,
+    useDisclosure,
+} from "@heroui/react";
+import {
+    BookOpen,
+    Plus,
+    Pencil,
+    Trash2,
+    GripVertical,
     AlertCircle,
-    Shield,
-    Trophy,
-    Coins,
-    Zap,
-    Users,
-    Ban,
-    FileText,
 } from "lucide-react";
 import { motion } from "motion/react";
 
-/**
- * /dashboard/rules — Admin rules board.
- * Shows official rules categorized, same content as the public rules page
- * but in the admin layout.
- */
-
-const rulesSections = [
-    {
-        title: "Tournament Rules",
-        icon: Trophy,
-        color: "text-primary",
-        rules: [
-            "All players must register before tournament start",
-            "Teams are generated via polls — IN/OUT/SOLO votes",
-            "No late entries after team generation",
-            "Admin's decision on disputes is final",
-            "AFK players may be replaced or penalized",
-        ],
-    },
-    {
-        title: "Scoring System",
-        icon: Zap,
-        color: "text-success",
-        rules: [
-            "Kills and deaths are tracked per match per player",
-            "Team placement determines position points",
-            "Stats contribute to player tier (LEGEND→BOT)",
-            "Seasonal stats reset each season",
-        ],
-    },
-    {
-        title: "Economy (UC)",
-        icon: Coins,
-        color: "text-warning",
-        rules: [
-            "Prize pool = Entry × Players - Organizer Fee (10%)",
-            "Fund contribution: 4% of prize pool",
-            "Winner distribution: 1st > 2nd > 3rd proportional split",
-            "Solo tax applies to SOLO vote players",
-            "UC wallet tracks all credit/debit transactions",
-        ],
-    },
-    {
-        title: "Streaks & Rewards",
-        icon: Zap,
-        color: "text-secondary",
-        rules: [
-            "IN vote + tournament participation = streak +1",
-            "Missing a tournament resets streak to 0",
-            "Royal Pass holders get rewards at streak 8",
-            "Merit system rewards consistent players",
-        ],
-    },
-    {
-        title: "Fair Play",
-        icon: Shield,
-        color: "text-primary",
-        rules: [
-            "No cheating, hacking, or exploiting glitches",
-            "No abusive language toward other players",
-            "Report issues to admins, not in public chat",
-            "Screen recording encouraged for disputes",
-        ],
-    },
-    {
-        title: "Bans & Penalties",
-        icon: Ban,
-        color: "text-danger",
-        rules: [
-            "Cheating = permanent ban",
-            "AFK in 2+ matches = temporary ban",
-            "Repeated toxic behavior = escalating penalties",
-            "Banned players' UC is frozen, not forfeited",
-        ],
-    },
-    {
-        title: "Teams",
-        icon: Users,
-        color: "text-foreground/60",
-        rules: [
-            "Team sizes: Duos, Trios, or Quads based on poll type",
-            "Teams are balanced by player category/tier",
-            "Back-to-back teammate prevention is enforced",
-            "Team numbers are assigned randomly",
-        ],
-    },
-];
+interface Rule {
+    id: string;
+    title: string;
+    content: string;
+    order: number;
+    createdAt: string;
+    updatedAt: string;
+}
 
 export default function AdminRulesPage() {
+    const queryClient = useQueryClient();
+    const { isOpen, onOpen, onClose } = useDisclosure();
+    const [editingRule, setEditingRule] = useState<Rule | null>(null);
+    const [title, setTitle] = useState("");
+    const [content, setContent] = useState("");
+
+    const { data: rules = [], isLoading } = useQuery<Rule[]>({
+        queryKey: ["rules"],
+        queryFn: async () => {
+            const res = await fetch("/api/rules");
+            if (!res.ok) throw new Error("Failed");
+            const json = await res.json();
+            return json.data;
+        },
+    });
+
+    const saveRule = useMutation({
+        mutationFn: async () => {
+            const url = editingRule ? `/api/rules/${editingRule.id}` : "/api/rules";
+            const method = editingRule ? "PUT" : "POST";
+            const res = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title,
+                    content,
+                    order: editingRule ? editingRule.order : rules.length + 1,
+                }),
+            });
+            if (!res.ok) throw new Error("Failed");
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["rules"] });
+            handleClose();
+        },
+    });
+
+    const deleteRule = useMutation({
+        mutationFn: async (id: string) => {
+            const res = await fetch(`/api/rules/${id}`, { method: "DELETE" });
+            if (!res.ok) throw new Error("Failed");
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["rules"] });
+        },
+    });
+
+    const deleteAll = useMutation({
+        mutationFn: async () => {
+            const res = await fetch("/api/rules", { method: "DELETE" });
+            if (!res.ok) throw new Error("Failed");
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["rules"] });
+        },
+    });
+
+    const handleOpen = (rule?: Rule) => {
+        if (rule) {
+            setEditingRule(rule);
+            setTitle(rule.title);
+            setContent(rule.content);
+        } else {
+            setEditingRule(null);
+            setTitle("");
+            setContent("");
+        }
+        onOpen();
+    };
+
+    const handleClose = () => {
+        setEditingRule(null);
+        setTitle("");
+        setContent("");
+        onClose();
+    };
+
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-xl font-bold">Rules</h1>
-                <p className="text-sm text-foreground/50">
-                    Official tournament rules and guidelines
-                </p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-xl font-bold">Rules</h1>
+                    <p className="text-sm text-foreground/50">
+                        Manage tournament rules and guidelines
+                    </p>
+                </div>
+                <div className="flex gap-2">
+                    {rules.length > 0 && (
+                        <Button
+                            size="sm"
+                            variant="flat"
+                            color="danger"
+                            startContent={<Trash2 className="h-3.5 w-3.5" />}
+                            onPress={() => {
+                                if (confirm("Delete ALL rules?")) deleteAll.mutate();
+                            }}
+                            isLoading={deleteAll.isPending}
+                        >
+                            Clear All
+                        </Button>
+                    )}
+                    <Button
+                        size="sm"
+                        color="primary"
+                        startContent={<Plus className="h-3.5 w-3.5" />}
+                        onPress={() => handleOpen()}
+                    >
+                        Add Rule
+                    </Button>
+                </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-                {rulesSections.map((section, i) => {
-                    const Icon = section.icon;
-                    return (
-                        <motion.div
-                            key={section.title}
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.03 }}
+            {isLoading && (
+                <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                        <Skeleton key={i} className="h-20 w-full rounded-xl" />
+                    ))}
+                </div>
+            )}
+
+            {!isLoading && rules.length === 0 && (
+                <Card className="border border-divider">
+                    <CardBody className="flex flex-col items-center gap-3 py-12">
+                        <BookOpen className="h-10 w-10 text-foreground/15" />
+                        <p className="text-sm text-foreground/40">No rules yet</p>
+                        <Button
+                            size="sm"
+                            color="primary"
+                            startContent={<Plus className="h-3.5 w-3.5" />}
+                            onPress={() => handleOpen()}
                         >
-                            <Card className="border border-divider h-full">
-                                <CardHeader className="gap-2 pb-1">
-                                    <Icon className={`h-4 w-4 ${section.color}`} />
-                                    <h3 className="text-sm font-semibold">{section.title}</h3>
-                                </CardHeader>
-                                <Divider />
-                                <CardBody className="pt-2">
-                                    <ul className="space-y-1.5">
-                                        {section.rules.map((rule, j) => (
-                                            <li
-                                                key={j}
-                                                className="flex items-start gap-2 text-xs text-foreground/60"
-                                            >
-                                                <CheckCircle className="mt-0.5 h-3 w-3 shrink-0 text-success/50" />
-                                                {rule}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </CardBody>
-                            </Card>
-                        </motion.div>
-                    );
-                })}
+                            Create First Rule
+                        </Button>
+                    </CardBody>
+                </Card>
+            )}
+
+            <div className="space-y-2">
+                {rules.map((rule, i) => (
+                    <motion.div
+                        key={rule.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                    >
+                        <Card className="border border-divider">
+                            <CardBody className="flex flex-row items-start gap-3 p-3">
+                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                                    {i + 1}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-semibold">{rule.title}</p>
+                                    <p className="mt-0.5 line-clamp-2 text-xs text-foreground/50">
+                                        {rule.content}
+                                    </p>
+                                </div>
+                                <div className="flex shrink-0 gap-1">
+                                    <Button
+                                        isIconOnly
+                                        size="sm"
+                                        variant="light"
+                                        onPress={() => handleOpen(rule)}
+                                    >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <Button
+                                        isIconOnly
+                                        size="sm"
+                                        variant="light"
+                                        color="danger"
+                                        isLoading={deleteRule.isPending}
+                                        onPress={() => {
+                                            if (confirm(`Delete "${rule.title}"?`))
+                                                deleteRule.mutate(rule.id);
+                                        }}
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                </div>
+                            </CardBody>
+                        </Card>
+                    </motion.div>
+                ))}
             </div>
+
+            {/* Add/Edit Rule Modal */}
+            <Modal isOpen={isOpen} onClose={handleClose} placement="center" size="lg">
+                <ModalContent>
+                    <ModalHeader>
+                        {editingRule ? "Edit Rule" : "Add Rule"}
+                    </ModalHeader>
+                    <ModalBody className="gap-4">
+                        <Input
+                            label="Title"
+                            placeholder="e.g. Tournament Rules"
+                            value={title}
+                            onValueChange={setTitle}
+                        />
+                        <Textarea
+                            label="Content"
+                            placeholder="Enter the rule details..."
+                            value={content}
+                            onValueChange={setContent}
+                            minRows={4}
+                            maxRows={10}
+                        />
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="flat" onPress={handleClose}>
+                            Cancel
+                        </Button>
+                        <Button
+                            color="primary"
+                            isLoading={saveRule.isPending}
+                            isDisabled={!title.trim() || !content.trim()}
+                            onPress={() => saveRule.mutate()}
+                        >
+                            {editingRule ? "Save" : "Create"}
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </div>
     );
 }

@@ -1,5 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { cache } from "react";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/database";
 
 /**
@@ -21,18 +22,42 @@ export const getCurrentUser = cache(async () => {
         },
     });
 
-    return user;
+    if (!user) return null;
+
+    return {
+        id: user.id,
+        clerkId: user.clerkId,
+        username: user.username,
+        email: user.email,
+        imageUrl: user.imageUrl,
+        role: user.role,
+        isOnboarded: user.isOnboarded,
+        player: user.player
+            ? {
+                id: user.player.id,
+                displayName: user.player.displayName || user.username,
+                category: user.player.category,
+                isBanned: user.player.isBanned,
+                wallet: user.player.wallet
+                    ? {
+                        id: user.player.wallet.id,
+                        balance: user.player.wallet.balance,
+                    }
+                    : { id: "", balance: 0 },
+            }
+            : null,
+    };
 });
 
 /**
  * Require an authenticated admin user.
- * Throws if not authenticated or not an admin.
+ * Redirects to /sign-in if not authenticated, throws if not admin.
  */
 export const requireAdmin = cache(async () => {
     const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
+    if (!user) redirect("/sign-in");
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
-        throw new Error("Forbidden: Admin access required");
+        redirect("/");
     }
     return user;
 });
@@ -42,9 +67,9 @@ export const requireAdmin = cache(async () => {
  */
 export const requireSuperAdmin = cache(async () => {
     const user = await getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
+    if (!user) redirect("/sign-in");
     if (user.role !== "SUPER_ADMIN") {
-        throw new Error("Forbidden: Super Admin access required");
+        redirect("/");
     }
     return user;
 });

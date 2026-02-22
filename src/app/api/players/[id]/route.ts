@@ -1,0 +1,153 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/database";
+import { getCategoryFromKDValue } from "@/lib/logic/categoryUtils";
+import { requireAdmin } from "@/lib/auth";
+
+const VALID_CATEGORIES = ["BOT", "ULTRA_NOOB", "NOOB", "PRO", "ULTRA_PRO", "LEGEND"] as const;
+
+/**
+ * GET /api/players/[id]
+ * Fetch full player details for admin modal.
+ */
+export async function GET(
+    _req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+
+        const player = await prisma.player.findUnique({
+            where: { id },
+            include: {
+                user: {
+                    select: {
+                        username: true,
+                        email: true,
+                        imageUrl: true,
+                    },
+                },
+                wallet: {
+                    select: { balance: true },
+                },
+                stats: {
+                    take: 1,
+                    orderBy: { createdAt: "desc" },
+                    select: {
+                        kills: true,
+                        matches: true,
+                        kd: true,
+                    },
+                },
+                streak: {
+                    select: {
+                        current: true,
+                        longest: true,
+                    },
+                },
+                ban: {
+                    select: {
+                        banReason: true,
+                        bannedAt: true,
+                        banDuration: true,
+                    },
+                },
+            },
+        });
+
+        if (!player) {
+            return NextResponse.json(
+                { error: "Player not found" },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json({
+            id: player.id,
+            displayName: player.displayName,
+            username: player.user.username,
+            email: player.user.email,
+            imageUrl: player.customProfileImageUrl || player.user.imageUrl,
+            category: getCategoryFromKDValue(Number(player.stats[0]?.kd ?? 0)),
+            isBanned: player.isBanned,
+            hasRoyalPass: player.hasRoyalPass,
+            isUCExempt: player.isUCExempt,
+            isTrusted: player.isTrusted,
+            bio: player.bio,
+            createdAt: player.createdAt,
+            balance: player.wallet?.balance ?? 0,
+            stats: player.stats[0]
+                ? {
+                    kills: player.stats[0].kills,
+                    matches: player.stats[0].matches,
+                    kd: Number(player.stats[0].kd),
+                }
+                : { kills: 0, matches: 0, kd: 0 },
+            streak: player.streak
+                ? { current: player.streak.current, longest: player.streak.longest }
+                : { current: 0, longest: 0 },
+            ban: player.ban
+                ? {
+                    reason: player.ban.banReason,
+                    bannedAt: player.ban.bannedAt,
+                    duration: player.ban.banDuration,
+                }
+                : null,
+        });
+    } catch (error) {
+        console.error("Failed to fetch player:", error);
+        return NextResponse.json(
+            { error: "Failed to fetch player" },
+            { status: 500 }
+        );
+    }
+}
+
+/**
+ * PATCH /api/players/[id]
+ * Update player fields (e.g., category override).
+ */
+export async function PATCH(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const admin = await requireAdmin();
+        if (!admin) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const { id } = await params;
+        const body = await req.json();
+
+        const updateData: Record<string, unknown> = {};
+
+        // Category override
+        if (body.category) {
+            if (!VALID_CATEGORIES.includes(body.category)) {
+                return NextResponse.json(
+                    { error: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(", ")}` },
+                    { status: 400 }
+                );
+            }
+            updateData.category = body.category;
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+        }
+
+        const updated = await prisma.player.update({
+            where: { id },
+            data: updateData,
+            select: { id: true, category: true },
+        });
+
+        return NextResponse.json({ data: updated });
+    } catch (error) {
+        console.error("Failed to update player:", error);
+        return NextResponse.json(
+            { error: "Failed to update player" },
+            { status: 500 }
+        );
+    }
+}

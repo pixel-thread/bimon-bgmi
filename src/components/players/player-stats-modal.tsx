@@ -1,27 +1,28 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
     Modal,
     ModalContent,
-    ModalHeader,
     ModalBody,
     Avatar,
-    Chip,
-    Progress,
-    Divider,
+    Button,
 } from "@heroui/react";
+import { CategoryBadge } from "@/components/ui/category-badge";
 import {
     Target,
     Gamepad2,
-    Skull,
-    Trophy,
     Swords,
     Crown,
-    TrendingUp,
+    Wallet,
     X,
+    Loader2,
 } from "lucide-react";
 import type { PlayerDTO } from "@/hooks/use-players";
+import { useAuthUser } from "@/hooks/use-auth-user";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
+import { UCTransferDialog } from "./uc-transfer-dialog";
 
 function getDisplayName(
     displayName: string | null,
@@ -36,23 +37,27 @@ interface PlayerStatsModalProps {
     player: PlayerDTO | null;
 }
 
-/**
- * Player stats modal with character image hero, stats grid, and category badge.
- */
 export function PlayerStatsModal({
     isOpen,
     onClose,
     player,
 }: PlayerStatsModalProps) {
+    const { user } = useAuthUser();
+    const router = useRouter();
+    const [showUCTransfer, setShowUCTransfer] = useState(false);
+    const [imageLoaded, setImageLoaded] = useState(false);
+
+    // Reset image loaded state when player changes
+    useEffect(() => {
+        setImageLoaded(false);
+    }, [player?.id]);
+
     if (!player) return null;
 
+    const isOwnProfile = user?.player?.id === player.id;
+    const name = getDisplayName(player.displayName, player.username);
     const { stats, characterImage } = player;
     const kd = isFinite(stats.kd) ? stats.kd.toFixed(2) : "0.00";
-    const winRate =
-        stats.matches > 0
-            ? ((stats.kills / Math.max(stats.matches, 1)) * 10).toFixed(1)
-            : "0.0";
-    const name = getDisplayName(player.displayName, player.username);
 
     const statCards = [
         {
@@ -63,123 +68,200 @@ export function PlayerStatsModal({
         },
         {
             label: "Total Kills",
-            value: stats.kills.toLocaleString(),
+            value: (stats.kills ?? 0).toLocaleString(),
             icon: Swords,
             color: "text-danger",
         },
         {
-            label: "Deaths",
-            value: stats.deaths.toLocaleString(),
-            icon: Skull,
-            color: "text-foreground/60",
-        },
-        {
             label: "Matches",
-            value: stats.matches.toLocaleString(),
+            value: (stats.matches ?? 0).toLocaleString(),
             icon: Gamepad2,
             color: "text-success",
+        },
+        {
+            label: "Balance",
+            value: `${player.balance.toLocaleString()} UC`,
+            icon: Wallet,
+            color: "text-warning",
         },
     ];
 
     return (
-        <Modal
-            isOpen={isOpen}
-            onClose={onClose}
-            size="md"
-            scrollBehavior="inside"
-            classNames={{
-                base: "bg-background border border-divider",
-                backdrop: "bg-black/60 backdrop-blur-sm",
-            }}
-        >
-            <ModalContent>
-                {/* Hero section */}
-                <div className="relative h-48 w-full overflow-hidden rounded-t-xl">
-                    {characterImage?.url ? (
-                        <img
-                            src={characterImage.url}
-                            alt=""
-                            className="h-full w-full object-cover"
-                        />
-                    ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                            <span className="text-6xl font-bold text-primary/30">
-                                {name.charAt(0).toUpperCase()}
-                            </span>
-                        </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <>
+            <Modal
+                isOpen={isOpen}
+                onClose={onClose}
+                size="md"
+                scrollBehavior="inside"
+                hideCloseButton
+                motionProps={{
+                    variants: {
+                        enter: {
+                            y: 0,
+                            opacity: 1,
+                            transition: { duration: 0.3, ease: "easeOut" },
+                        },
+                        exit: {
+                            y: 50,
+                            opacity: 0,
+                            transition: { duration: 0.2, ease: "easeIn" },
+                        },
+                    },
+                    initial: { y: 100, opacity: 0 },
+                }}
+                classNames={{
+                    base: "bg-background border border-divider",
+                    backdrop: "bg-black/60 backdrop-blur-sm",
+                }}
+            >
+                <ModalContent className="!overflow-hidden">
+                    {/* Custom close button */}
+                    <button
+                        onClick={onClose}
+                        className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
 
-                    {/* Player info overlay */}
-                    <div className="absolute bottom-4 left-4 flex items-end gap-3">
-                        <Avatar
-                            src={player.imageUrl || undefined}
-                            name={name}
-                            className="h-14 w-14 ring-2 ring-background"
-                        />
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h2 className="text-lg font-bold text-white drop-shadow">
-                                    {name}
-                                </h2>
-                                {player.hasRoyalPass && (
-                                    <Crown className="h-4 w-4 text-yellow-400" />
+                    {/* Hero section */}
+                    <div className="relative h-96 w-full overflow-hidden">
+                        {characterImage?.url ? (
+                            <>
+                                {!imageLoaded && (
+                                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-default-100">
+                                        <Loader2 className="h-8 w-8 animate-spin text-foreground/30" />
+                                    </div>
+                                )}
+                                {characterImage.isVideo ? (
+                                    <video
+                                        src={characterImage.url}
+                                        autoPlay
+                                        muted
+                                        playsInline
+                                        className="h-full w-full object-cover"
+                                        style={{ objectPosition: "50% 25%" }}
+                                        onLoadedData={() => setImageLoaded(true)}
+                                    />
+                                ) : (
+                                    <img
+                                        src={characterImage.url}
+                                        alt=""
+                                        className="h-full w-full object-cover"
+                                        style={{ objectPosition: "50% 25%" }}
+                                        onLoad={() => setImageLoaded(true)}
+                                    />
+                                )}
+                            </>
+                        ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/60 to-primary/30">
+                                <span className="text-6xl font-bold text-white/20">
+                                    {name.charAt(0).toUpperCase()}
+                                </span>
+                            </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+
+                        {/* Player info overlay */}
+                        <div className="absolute bottom-4 left-4 flex items-end gap-3">
+                            <Avatar
+                                src={player.imageUrl || undefined}
+                                name={name}
+                                className="h-14 w-14 ring-2 ring-background"
+                            />
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h2
+                                        className="text-lg font-bold text-white"
+                                        style={{
+                                            textShadow:
+                                                "0 1px 8px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.6)",
+                                        }}
+                                    >
+                                        {name}
+                                    </h2>
+                                    {player.hasRoyalPass && (
+                                        <Crown className="h-4 w-4 text-yellow-400" />
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <CategoryBadge
+                                        category={player.category}
+                                        size="sm"
+                                    />
+                                </div>
+                                {player.bio && (
+                                    <p className="mt-0.5 text-[10px] italic text-foreground/60">
+                                        &ldquo;{player.bio}&rdquo;
+                                    </p>
                                 )}
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Chip
-                                    size="sm"
-                                    variant="flat"
-                                    className="bg-white/10 text-white backdrop-blur-sm"
+                        </div>
+                    </div>
+
+                    <ModalBody className="space-y-4 px-4 pb-6 pt-4">
+                        {/* Stats grid */}
+                        <div className="grid grid-cols-2 gap-3">
+                            {statCards.map((stat) => (
+                                <motion.div
+                                    key={stat.label}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.1 }}
+                                    className="rounded-xl border border-divider bg-default-100 p-3"
                                 >
-                                    {player.category} Tier
-                                </Chip>
-                            </div>
+                                    <div className="flex items-center gap-2">
+                                        <stat.icon
+                                            className={`h-4 w-4 ${stat.color}`}
+                                        />
+                                        <span className="text-xs text-foreground/50">
+                                            {stat.label}
+                                        </span>
+                                    </div>
+                                    <p className="mt-1 text-xl font-bold">
+                                        {stat.value}
+                                    </p>
+                                </motion.div>
+                            ))}
                         </div>
-                    </div>
-                </div>
 
-                <ModalBody className="space-y-4 px-4 pb-6 pt-4">
-                    {/* Stats grid */}
-                    <div className="grid grid-cols-2 gap-3">
-                        {statCards.map((stat) => (
-                            <motion.div
-                                key={stat.label}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
-                                className="rounded-xl bg-default-100 p-3"
+                        {/* Action button */}
+                        {isOwnProfile ? (
+                            <Button
+                                color="primary"
+                                variant="flat"
+                                fullWidth
+                                onPress={() => {
+                                    onClose();
+                                    router.push("/profile");
+                                }}
+                                className="font-medium"
                             >
-                                <div className="flex items-center gap-2">
-                                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                                    <span className="text-xs text-foreground/50">
-                                        {stat.label}
-                                    </span>
-                                </div>
-                                <p className="mt-1 text-xl font-bold">{stat.value}</p>
-                            </motion.div>
-                        ))}
-                    </div>
+                                View Profile
+                            </Button>
+                        ) : (
+                            <Button
+                                color="primary"
+                                variant="flat"
+                                fullWidth
+                                onPress={() => setShowUCTransfer(true)}
+                                className="font-medium"
+                            >
+                                Send / Request UC
+                            </Button>
+                        )}
+                    </ModalBody>
+                </ModalContent>
+            </Modal>
 
-                    {/* K/D Progress */}
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                            <span className="text-foreground/50">
-                                Kill/Death Performance
-                            </span>
-                            <span className="font-semibold text-primary">{kd}</span>
-                        </div>
-                        <Progress
-                            value={Math.min(Number(kd) * 20, 100)}
-                            color="primary"
-                            size="sm"
-                            classNames={{
-                                track: "bg-default-100",
-                            }}
-                        />
-                    </div>
-                </ModalBody>
-            </ModalContent>
-        </Modal>
+            {/* UC Transfer Dialog */}
+            {!isOwnProfile && (
+                <UCTransferDialog
+                    isOpen={showUCTransfer}
+                    onClose={() => setShowUCTransfer(false)}
+                    toPlayerId={player.id}
+                    toPlayerName={name}
+                />
+            )}
+        </>
     );
 }

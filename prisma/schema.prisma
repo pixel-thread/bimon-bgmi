@@ -1,3 +1,8 @@
+// ════════════════════════════════════════════════════════════════
+//  PUBGMI — Tournament Management Platform
+//  Prisma Schema v2
+// ════════════════════════════════════════════════════════════════
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -6,20 +11,13 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─────────────────────────────────────
-// ENUMS
-// ─────────────────────────────────────
+// ─── Enums ───────────────────────────────────────────────────
 
 enum Role {
   SUPER_ADMIN
   ADMIN
   PLAYER
   USER
-}
-
-enum SeasonStatus {
-  ACTIVE
-  INACTIVE
 }
 
 enum PlayerCategory {
@@ -31,10 +29,15 @@ enum PlayerCategory {
   LEGEND
 }
 
-enum Vote {
-  IN
-  OUT
-  SOLO
+enum SeasonStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TournamentStatus {
+  ACTIVE
+  INACTIVE
+  DELETED
 }
 
 enum TeamType {
@@ -45,10 +48,10 @@ enum TeamType {
   DYNAMIC
 }
 
-enum Status {
-  ACTIVE
-  INACTIVE
-  DELETED
+enum Vote {
+  IN
+  OUT
+  SOLO
 }
 
 enum TransactionType {
@@ -81,6 +84,11 @@ enum ReferralStatus {
   PAID
 }
 
+enum GalleryStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum JobStatus {
   PENDING
   PROCESSING
@@ -92,29 +100,23 @@ enum JobType {
   CREATE_TEAMS_BY_POLL
 }
 
-enum GalleryStatus {
-  ACTIVE
-  INACTIVE
-}
+// ─── Core Identity ───────────────────────────────────────────
 
-// ─────────────────────────────────────
-// CORE IDENTITY
-// ─────────────────────────────────────
-
-/// Core user identity — linked to Clerk auth.
-/// Contains account-level data only.
+/// Account-level user identity linked to Clerk.
 model User {
-  id          String    @id @default(uuid())
-  clerkId     String    @unique
-  email       String?   @unique
-  username    String    @unique
-  imageUrl    String?
-  role        Role      @default(USER)
+  id       String  @id @default(uuid())
+  clerkId  String  @unique
+  email    String? @unique
+  username String  @unique
+  imageUrl String?
+  role     Role    @default(USER)
+
   isOnboarded Boolean   @default(false)
-  dateOfBirth DateTime?
   isInternal  Boolean   @default(false)
   isVerified  Boolean   @default(false)
+  dateOfBirth DateTime?
 
+  // Username history
   usernameLastChangeAt DateTime @default(now())
 
   // Promoter
@@ -125,7 +127,6 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
   player         Player?
   notifications  Notification[]
   referralsGiven Referral[] @relation("PromoterReferrals")
@@ -134,7 +135,6 @@ model User {
 }
 
 /// Game identity — created when a user joins as a player.
-/// All game-related attributes belong here.
 model Player {
   id     String @id @default(uuid())
   userId String @unique
@@ -155,44 +155,46 @@ model Player {
   meritScore        Int            @default(100)
   isSoloRestricted  Boolean        @default(false)
   soloMatchesNeeded Int            @default(0)
+  hasRoyalPass      Boolean        @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  characterImage Gallery? @relation(fields: [characterImageId], references: [id], onDelete: SetNull)
-  seasons        Season[] @relation("PlayerSeason")
-
-  wallet           Wallet?
-  ban              PlayerBan?
-  streak           PlayerStreak?
-  pendingRewards   PendingReward[]
-  playerStats      PlayerStats[]
-  teams            Team[]
-  matches          Match[]
-  pollVotes        PlayerPollVote[]
-  polls            Poll[]
-  matchesPlayed    MatchPlayerPlayed[]
-  teamStats        TeamStats[]
-  teamPlayerStats  TeamPlayerStats[]
-  transactions     Transaction[]
-  ucTransfersFrom  UCTransfer[]        @relation("UCTransferFrom")
-  ucTransfersTo    UCTransfer[]        @relation("UCTransferTo")
+  characterImage    Gallery?           @relation(fields: [characterImageId], references: [id], onDelete: SetNull)
+  seasons           Season[]           @relation("PlayerSeason")
+  wallet            Wallet?
+  ban               PlayerBan?
+  streak            PlayerStreak?
+  stats             PlayerStats[]
+  pendingRewards    PendingReward[]
+  teams             Team[]
+  matches           Match[]
+  pollVotes         PlayerPollVote[]
+  polls             Poll[]
+  matchesPlayed     MatchPlayerPlayed[]
+  teamStats         TeamStats[]
+  teamPlayerStats   TeamPlayerStats[]
+  transactions      Transaction[]
+  ucTransfersFrom   UCTransfer[]       @relation("UCTransferFrom")
+  ucTransfersTo     UCTransfer[]       @relation("UCTransferTo")
   pushSubscriptions PushSubscription[]
-  jobListing       PlayerJobListing?
+  jobListing        PlayerJobListing?
   meritRatingsGiven    PlayerMeritRating[] @relation("MeritGiven")
   meritRatingsReceived PlayerMeritRating[] @relation("MeritReceived")
-  referral         Referral?
-  royalPasses      RoyalPass[]
-  gameScores       GameScore[]
+  referral          Referral?
+  royalPasses       RoyalPass[]
+  notifications     Notification[]
+  gameScores        GameScore[]
+  jobReactions      JobListingReaction[]
 
   @@index([userId])
   @@index([category])
+  @@index([isBanned])
+  @@index([userId, isBanned])
 }
 
-// ─────────────────────────────────────
-// ECONOMY
-// ─────────────────────────────────────
+// ─── Economy ─────────────────────────────────────────────────
 
 /// UC balance — one per player.
 model Wallet {
@@ -203,27 +205,6 @@ model Wallet {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-/// UC transfer between players.
-model UCTransfer {
-  id              String           @id @default(uuid())
-  amount          Int
-  type            UCTransferType
-  status          UCTransferStatus @default(PENDING)
-  message         String?
-  responseMessage String?
-  fromPlayerId    String
-  fromPlayer      Player           @relation("UCTransferFrom", fields: [fromPlayerId], references: [id], onDelete: Cascade)
-  toPlayerId      String
-  toPlayer        Player           @relation("UCTransferTo", fields: [toPlayerId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([fromPlayerId])
-  @@index([toPlayerId])
-  @@index([status])
 }
 
 /// Ledger of all UC credits and debits.
@@ -238,10 +219,32 @@ model Transaction {
   createdAt DateTime @default(now())
 
   @@index([playerId])
+  @@index([playerId, createdAt(sort: Desc)])
 }
 
-/// Pending rewards (winner prizes, solo support, referrals, streaks).
-/// Extracted from Player to keep the model clean.
+/// UC transfer between players.
+model UCTransfer {
+  id              String           @id @default(uuid())
+  amount          Int
+  type            UCTransferType
+  status          UCTransferStatus @default(PENDING)
+  message         String?
+  responseMessage String?
+  fromPlayerId    String
+  toPlayerId      String
+
+  fromPlayer Player @relation("UCTransferFrom", fields: [fromPlayerId], references: [id], onDelete: Cascade)
+  toPlayer   Player @relation("UCTransferTo", fields: [toPlayerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fromPlayerId])
+  @@index([toPlayerId])
+  @@index([status])
+}
+
+/// Pending rewards (winner, solo support, referral, streak).
 model PendingReward {
   id        String     @id @default(uuid())
   playerId  String
@@ -260,10 +263,10 @@ model PendingReward {
   @@index([type])
 }
 
-/// Accumulated solo tax for next tournament bonus pool.
+/// Accumulated solo tax for next tournament bonus.
 model SoloTaxPool {
-  id        String   @id @default(uuid())
-  amount    Int      @default(0)
+  id        String  @id @default(uuid())
+  amount    Int     @default(0)
   donorName String?
   seasonId  String?
 
@@ -273,11 +276,9 @@ model SoloTaxPool {
   @@index([seasonId])
 }
 
-// ─────────────────────────────────────
-// PLAYER TRACKING
-// ─────────────────────────────────────
+// ─── Player Tracking ─────────────────────────────────────────
 
-/// Player ban info — separate from Player for clean separation.
+/// Player ban details — separate from Player for clean separation.
 model PlayerBan {
   id          String    @id @default(uuid())
   playerId    String    @unique
@@ -290,16 +291,17 @@ model PlayerBan {
   updatedAt DateTime @updatedAt
 }
 
-/// Tournament streak tracking — one per player, resets each season.
+/// Tournament streak — one per player, resets each season.
 model PlayerStreak {
-  id                  String    @id @default(uuid())
-  playerId            String    @unique
-  player              Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  currentStreak       Int       @default(0)
-  seasonId            String?
-  lastTournamentSeqId Int?
-  lastRewardAt        DateTime?
-  pendingReward       Int?
+  id               String    @id @default(uuid())
+  playerId         String    @unique
+  player           Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  current          Int       @default(0)
+  longest          Int       @default(0)
+  seasonId         String?
+  lastTournamentId String?
+  lastRewardAt     DateTime?
+  pendingReward    Int?
 
   updatedAt DateTime @updatedAt
 }
@@ -309,7 +311,7 @@ model PlayerMeritRating {
   id           String @id @default(uuid())
   fromPlayerId String
   toPlayerId   String
-  rating       Int // 1=🤡 2=😠 3=😐 4=😊 5=🔥
+  rating       Int
   tournamentId String
   seasonId     String?
 
@@ -324,9 +326,7 @@ model PlayerMeritRating {
   @@index([seasonId])
 }
 
-// ─────────────────────────────────────
-// SEASONS & TOURNAMENTS
-// ─────────────────────────────────────
+// ─── Seasons & Tournaments ───────────────────────────────────
 
 model Season {
   id          String       @id @default(uuid())
@@ -341,8 +341,8 @@ model Season {
   updatedAt DateTime @updatedAt
 
   players           Player[]            @relation("PlayerSeason")
-  playerStats       PlayerStats[]
   tournaments       Tournament[]
+  playerStats       PlayerStats[]
   teams             Team[]
   matches           Match[]
   teamStats         TeamStats[]
@@ -355,16 +355,16 @@ model Season {
 }
 
 model Tournament {
-  id               String   @id @default(uuid())
+  id               String           @id @default(uuid())
   name             String
   description      String?
-  startDate        DateTime @default(now())
+  startDate        DateTime         @default(now())
   endDate          DateTime?
   fee              Int?
   seasonId         String?
   createdBy        String?
-  isWinnerDeclared Boolean  @default(false)
-  status           Status   @default(ACTIVE)
+  isWinnerDeclared Boolean          @default(false)
+  status           TournamentStatus @default(ACTIVE)
   galleryId        String?
 
   createdAt DateTime @default(now())
@@ -381,6 +381,7 @@ model Tournament {
   recentMatchGroups RecentMatchGroup[]
   matchPlayerPlayed MatchPlayerPlayed[]
   income            Income[]
+  sequence          TournamentSequence?
 
   @@index([seasonId])
   @@index([status])
@@ -388,8 +389,8 @@ model Tournament {
 }
 
 model Match {
-  id           String @id @default(uuid())
-  matchNumber  Int    @default(autoincrement())
+  id           String  @id @default(uuid())
+  matchNumber  Int
   tournamentId String
   seasonId     String?
 
@@ -406,6 +407,7 @@ model Match {
   matchPlayerPlayed MatchPlayerPlayed[]
 
   @@index([tournamentId])
+  @@index([tournamentId, matchNumber])
   @@index([seasonId])
 }
 
@@ -430,14 +432,14 @@ model TournamentSequence {
   tournamentId String @unique
   sequenceId   Int    @unique @default(autoincrement())
 
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
 
   @@index([sequenceId])
 }
 
-// ─────────────────────────────────────
-// TEAMS & STATS
-// ─────────────────────────────────────
+// ─── Teams & Stats ───────────────────────────────────────────
 
 model Team {
   id           String  @id @default(uuid())
@@ -490,13 +492,13 @@ model TeamStats {
 }
 
 model TeamPlayerStats {
-  id          String @id @default(uuid())
+  id          String  @id @default(uuid())
   playerId    String
   teamId      String
   matchId     String
   teamStatsId String
-  kills       Int    @default(0)
-  deaths      Int    @default(0)
+  kills       Int     @default(0)
+  present     Boolean @default(true)
   seasonId    String?
 
   createdAt DateTime @default(now())
@@ -515,11 +517,14 @@ model TeamPlayerStats {
   @@index([teamStatsId])
 }
 
+/// Aggregate stats per player per season.
+/// `matches` = number of times the player appeared on the scoreboard.
 model PlayerStats {
   id       String @id @default(uuid())
   playerId String
   kills    Int    @default(0)
-  deaths   Int    @default(0)
+  matches  Int    @default(0)
+  kd       Float  @default(0)
   seasonId String?
 
   createdAt DateTime @default(now())
@@ -529,11 +534,12 @@ model PlayerStats {
   season    Season?     @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   teamStats TeamStats[]
   teams     Team[]
-  matches   Match[]
+  matchList Match[]
 
   @@unique([seasonId, playerId])
   @@index([seasonId])
   @@index([playerId])
+  @@index([playerId, createdAt(sort: Desc)])
 }
 
 model MatchPlayerPlayed {
@@ -558,9 +564,7 @@ model MatchPlayerPlayed {
   @@index([tournamentId])
 }
 
-// ─────────────────────────────────────
-// POLLS & VOTING
-// ─────────────────────────────────────
+// ─── Polls & Voting ──────────────────────────────────────────
 
 model Poll {
   id           String    @id @default(uuid())
@@ -586,7 +590,8 @@ model PollOption {
   name   String
   vote   Vote
   pollId String
-  poll   Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  poll Poll @relation(fields: [pollId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 }
@@ -605,24 +610,26 @@ model PlayerPollVote {
   @@unique([playerId, pollId])
 }
 
-// ─────────────────────────────────────
-// NOTIFICATIONS
-// ─────────────────────────────────────
+// ─── Notifications ───────────────────────────────────────────
 
-/// Notifications — tied to User (not Player) so admins can receive them too.
 model Notification {
-  id     String  @id @default(uuid())
-  userId String
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title  String
+  id      String  @id @default(uuid())
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title   String
   message String
-  type   String
-  link   String?
-  isRead Boolean @default(false)
+  type    String
+  link    String?
+  isRead  Boolean @default(false)
+
+  // Optional player link for player-specific notifications
+  playerId String?
+  player   Player? @relation(fields: [playerId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
   @@index([userId, isRead])
+  @@index([playerId])
 }
 
 model PushSubscription {
@@ -639,9 +646,7 @@ model PushSubscription {
   @@index([playerId])
 }
 
-// ─────────────────────────────────────
-// MEDIA & GALLERY
-// ─────────────────────────────────────
+// ─── Media & Gallery ─────────────────────────────────────────
 
 model Gallery {
   id                 String        @id @default(uuid())
@@ -669,9 +674,9 @@ model RecentMatchGroup {
   tournamentTitle String
   deletionMarker  Int
 
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
-  tournament Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  tournament Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   images     RecentMatchImage[]
 
   @@index([deletionMarker])
@@ -684,7 +689,8 @@ model RecentMatchImage {
   imageUrl    String
   imagePath   String
   groupId     String
-  group       RecentMatchGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  group RecentMatchGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -692,18 +698,16 @@ model RecentMatchImage {
   @@index([matchNumber])
 }
 
-// ─────────────────────────────────────
-// FINANCE & PAYMENTS
-// ─────────────────────────────────────
+// ─── Finance ─────────────────────────────────────────────────
 
 model Income {
-  id             String      @id @default(uuid())
-  amount         Int // Changed from Float — financial amounts in smallest unit
+  id             String  @id @default(uuid())
+  amount         Int
   description    String
   tournamentId   String?
   tournamentName String?
   parentId       String?
-  isSubIncome    Boolean     @default(false)
+  isSubIncome    Boolean @default(false)
   createdBy      String
 
   tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
@@ -719,12 +723,12 @@ model Income {
 }
 
 model Payment {
-  id                String @id @default(uuid())
-  razorpayOrderId   String @unique
+  id                String  @id @default(uuid())
+  razorpayOrderId   String  @unique
   razorpayPaymentId String? @unique
   amount            Int // in paisa
-  currency          String @default("INR")
-  status            String @default("created")
+  currency          String  @default("INR")
+  status            String  @default("created")
   userId            String
   playerId          String
 
@@ -736,9 +740,7 @@ model Payment {
   @@index([status])
 }
 
-// ─────────────────────────────────────
-// REFERRALS & ROYAL PASS
-// ─────────────────────────────────────
+// ─── Referrals & Royal Pass ──────────────────────────────────
 
 model Referral {
   id                   String         @id @default(uuid())
@@ -777,9 +779,7 @@ model RoyalPass {
   @@index([createdAt])
 }
 
-// ─────────────────────────────────────
-// JOBS & LISTINGS
-// ─────────────────────────────────────
+// ─── Jobs & Listings ─────────────────────────────────────────
 
 model PlayerJobListing {
   id             String   @id @default(uuid())
@@ -817,6 +817,7 @@ model JobListingReaction {
   reactionType String
 
   listing PlayerJobListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  player  Player           @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -834,18 +835,16 @@ model JobCategory {
   @@index([name])
 }
 
-// ─────────────────────────────────────
-// BACKGROUND JOBS
-// ─────────────────────────────────────
+// ─── Background Jobs ─────────────────────────────────────────
 
 model Job {
-  id       String    @id @default(uuid())
-  type     JobType
-  status   JobStatus @default(PENDING)
-  progress String?
-  result   Json?
-  error    String?
-  pollId   String?
+  id        String    @id @default(uuid())
+  type      JobType
+  status    JobStatus @default(PENDING)
+  progress  String?
+  result    Json?
+  error     String?
+  pollId    String?
   createdBy String
 
   createdAt   DateTime  @default(now())
@@ -858,15 +857,14 @@ model Job {
   @@index([type])
 }
 
-// ─────────────────────────────────────
-// GAMES & ANALYTICS
-// ─────────────────────────────────────
+// ─── Games & Analytics ───────────────────────────────────────
 
 model GameScore {
   playerId     String   @unique
   highScore    Int
   lastPlayedAt DateTime
-  player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 }
 
 model Rule {
@@ -895,17 +893,17 @@ model DailyMetrics {
   id   String   @id @default(uuid())
   date DateTime @unique
 
-  // User metrics
+  // Users
   totalUsers          Int @default(0)
   totalOnboardedUsers Int @default(0)
   newUsersToday       Int @default(0)
 
-  // Player metrics
-  totalPlayers   Int @default(0)
-  activePlayers  Int @default(0)
-  bannedPlayers  Int @default(0)
+  // Players
+  totalPlayers  Int @default(0)
+  activePlayers Int @default(0)
+  bannedPlayers Int @default(0)
 
-  // Category breakdown
+  // Categories
   botPlayers       Int @default(0)
   ultraNoobPlayers Int @default(0)
   noobPlayers      Int @default(0)
@@ -913,13 +911,13 @@ model DailyMetrics {
   ultraProPlayers  Int @default(0)
   legendPlayers    Int @default(0)
 
-  // Tournament/Match
+  // Tournaments
   totalTournaments  Int @default(0)
   activeTournaments Int @default(0)
   totalMatches      Int @default(0)
   totalTeams        Int @default(0)
 
-  // UC Economy
+  // Economy
   totalUCInCirculation Int @default(0)
   totalTransactions    Int @default(0)
   pendingUCTransfers   Int @default(0)
@@ -928,7 +926,7 @@ model DailyMetrics {
   pushSubscribers    Int @default(0)
   totalNotifications Int @default(0)
 
-  // Income
+  // Finance
   totalIncome    Int @default(0)
   totalPrizePool Int @default(0)
 
