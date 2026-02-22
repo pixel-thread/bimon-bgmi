@@ -105,10 +105,11 @@ export function Header() {
                 isMenuOpen={isMenuOpen}
                 onMenuOpenChange={setIsMenuOpen}
                 maxWidth="xl"
+                position="static"
                 classNames={{
-                    base: "bg-background/60 backdrop-blur-xl border-b border-divider",
+                    base: "!fixed !top-0 !left-0 !right-0 !z-40 bg-background/60 backdrop-blur-xl border-b border-divider",
                     wrapper: "px-4 sm:px-6",
-                    menu: "!w-[280px] !max-w-[280px] border-r border-divider shadow-xl !bg-background !backdrop-blur-none !backdrop-saturate-100 !overflow-y-auto",
+                    menu: "!fixed !top-[var(--navbar-height)] !h-[calc(100dvh-var(--navbar-height))] !w-[280px] !max-w-[280px] border-r border-divider shadow-xl !bg-background/60 !backdrop-blur-xl !backdrop-saturate-150 !overflow-y-auto",
                 }}
                 isBordered
             >

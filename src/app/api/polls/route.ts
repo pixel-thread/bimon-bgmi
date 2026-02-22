@@ -27,6 +27,7 @@ export async function GET(request: Request) {
                         id: true,
                         name: true,
                         fee: true,
+                        seasonId: true,
                     },
                 },
                 options: {
@@ -41,7 +42,20 @@ export async function GET(request: Request) {
                         id: true,
                         playerId: true,
                         vote: true,
+                        createdAt: true,
+                        player: {
+                            select: {
+                                displayName: true,
+                                user: {
+                                    select: {
+                                        username: true,
+                                        imageUrl: true,
+                                    },
+                                },
+                            },
+                        },
                     },
+                    orderBy: { createdAt: "desc" },
                 },
             },
             orderBy: { createdAt: "desc" },
@@ -62,6 +76,8 @@ export async function GET(request: Request) {
                 days: poll.days,
                 teamType: poll.teamType,
                 tournament: poll.tournament,
+                luckyVoterId: poll.luckyVoterId,
+                options: poll.options,
                 isActive: poll.isActive,
                 createdAt: poll.createdAt,
                 totalVotes,
@@ -72,10 +88,16 @@ export async function GET(request: Request) {
                     totalVotes > 0 ? Math.round((inVotes / totalVotes) * 100) : 0,
                 userVote,
                 hasVoted: !!userVote,
+                playersVotes: poll.votes.map((v) => ({
+                    playerId: v.playerId,
+                    vote: v.vote,
+                    displayName: v.player.displayName ?? v.player.user?.username ?? "Unknown",
+                    imageUrl: v.player.user?.imageUrl ?? "",
+                })),
             };
         });
 
-        return SuccessResponse({ data, cache: CACHE.SHORT });
+        return SuccessResponse({ data: { polls: data, currentPlayerId: playerId ?? null }, cache: CACHE.SHORT });
     } catch (error) {
         return ErrorResponse({ message: "Failed to fetch polls", error });
     }
@@ -108,9 +130,9 @@ export async function POST(request: Request) {
                 tournamentId,
                 options: {
                     create: [
-                        { name: "IN", vote: "IN" },
-                        { name: "OUT", vote: "OUT" },
-                        { name: "SOLO", vote: "SOLO" },
+                        { name: "Nga Leh 😎", vote: "IN" },
+                        { name: "Leh rei, I'm ge 🏳️‍🌈", vote: "OUT" },
+                        { name: "Nga Leh solo 🫩", vote: "SOLO" },
                     ],
                 },
             },

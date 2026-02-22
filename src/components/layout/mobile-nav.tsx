@@ -12,6 +12,7 @@ import {
 import { useUser } from "@clerk/nextjs";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { type LucideIcon } from "lucide-react";
+import { sidebarItems } from "./admin-sidebar";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -55,8 +56,54 @@ export function MobileNav() {
         setNavigatingTo(null);
     }, [pathname]);
 
+    // Remember the last dashboard page visited (persisted via localStorage)
+    const [lastDashboard, setLastDashboard] = useState<{ label: string; icon: LucideIcon; href: string }>(() => {
+        if (typeof window === "undefined") return { label: "Admin", icon: LayoutDashboard, href: "/dashboard" };
+        try {
+            const saved = localStorage.getItem("lastDashboardPage");
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // Restore icon from sidebarItems
+                let icon: LucideIcon = LayoutDashboard;
+                for (const section of sidebarItems) {
+                    for (const item of section.items) {
+                        if (parsed.href === item.href || (item.href !== "/dashboard" && parsed.href?.startsWith(item.href))) {
+                            icon = item.icon;
+                            break;
+                        }
+                    }
+                }
+                return { label: parsed.label || "Admin", icon, href: parsed.href || "/dashboard" };
+            }
+        } catch { }
+        return { label: "Admin", icon: LayoutDashboard, href: "/dashboard" };
+    });
+
+    // Update when on a dashboard page
+    useEffect(() => {
+        if (pathname.startsWith("/dashboard")) {
+            const sub = pathname.split("/")[2];
+            const label = sub ? sub.charAt(0).toUpperCase() + sub.slice(1) : "Admin";
+
+            let icon: LucideIcon = LayoutDashboard;
+            for (const section of sidebarItems) {
+                for (const item of section.items) {
+                    if (pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))) {
+                        icon = item.icon;
+                        break;
+                    }
+                }
+            }
+
+            setLastDashboard({ label, icon, href: pathname });
+            try {
+                localStorage.setItem("lastDashboardPage", JSON.stringify({ label, href: pathname }));
+            } catch { }
+        }
+    }, [pathname]);
+
     const allTabs = isAdmin
-        ? [{ label: "Admin", href: "/dashboard", icon: LayoutDashboard }, ...tabs]
+        ? [{ label: lastDashboard.label, href: lastDashboard.href, icon: lastDashboard.icon }, ...tabs]
         : tabs;
 
     const initials = user?.firstName?.[0] || user?.username?.[0]?.toUpperCase() || "?";

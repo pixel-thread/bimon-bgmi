@@ -6,6 +6,7 @@ import { type NextRequest } from "next/server";
 /**
  * POST /api/polls/vote
  * Cast or update a vote on a poll (IN/OUT/SOLO).
+ * Optimized: runs player + poll lookups in parallel.
  */
 export async function POST(request: NextRequest) {
     try {
@@ -27,11 +28,29 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Find the player
-        const user = await prisma.user.findUnique({
-            where: { clerkId: userId },
-            select: { player: { select: { id: true } } },
-        });
+        // Run player + poll lookups in parallel (saves ~100ms)
+        const [user, poll] = await Promise.all([
+            prisma.user.findUnique({
+                where: { clerkId: userId },
+                select: {
+                    player: {
+                        select: {
+                            id: true,
+                            isBanned: true,
+                        },
+                    },
+                },
+            }),
+            prisma.poll.findUnique({
+                where: { id: pollId },
+                select: {
+                    id: true,
+                    isActive: true,
+                    luckyVoterId: true,
+                    tournament: { select: { fee: true, seasonId: true } },
+                },
+            }),
+        ]);
 
         if (!user?.player) {
             return ErrorResponse({
@@ -40,12 +59,12 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        const playerId = user.player.id;
-
-        // Check poll is active
-        const poll = await prisma.poll.findUnique({
-            where: { id: pollId },
-        });
+        if (user.player.isBanned) {
+            return ErrorResponse({
+                message: "Banned players cannot vote",
+                status: 403,
+            });
+        }
 
         if (!poll || !poll.isActive) {
             return ErrorResponse({
@@ -53,6 +72,8 @@ export async function POST(request: NextRequest) {
                 status: 404,
             });
         }
+
+        const playerId = user.player.id;
 
         // Upsert the vote
         const result = await prisma.playerPollVote.upsert({
@@ -72,9 +93,31 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        // Lucky voter lottery — 15% chance, only for IN/SOLO, only if no winner yet
+        let isLuckyVoter = poll.luckyVoterId === playerId;
+        const entryFee = poll.tournament?.fee ?? 0;
+
+        if (
+            !isLuckyVoter &&
+            !poll.luckyVoterId &&
+            (vote === "IN" || vote === "SOLO") &&
+            entryFee > 0
+        ) {
+            const roll = Math.floor(Math.random() * 100);
+            if (roll < 15) {
+                await prisma.poll.update({
+                    where: { id: pollId },
+                    data: { luckyVoterId: playerId },
+                });
+                isLuckyVoter = true;
+            }
+        }
+
         return SuccessResponse({
-            data: { id: result.id, vote: result.vote },
-            message: "Vote cast successfully",
+            data: { id: result.id, vote: result.vote, isLuckyVoter },
+            message: isLuckyVoter
+                ? "🎉 Congratulations! You won FREE ENTRY!"
+                : "Vote cast successfully",
         });
     } catch (error) {
         return ErrorResponse({ message: "Failed to cast vote", error });

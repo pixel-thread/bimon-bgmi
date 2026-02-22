@@ -22,7 +22,7 @@ export default async function DashboardLayout({
             <div className="lg:hidden">
                 <Header />
             </div>
-            <div className="flex flex-1">
+            <div className="flex flex-1 pt-16 lg:pt-0">
                 <AdminSidebar />
                 <div className="flex flex-1 flex-col">
                     <header className="hidden h-14 items-center border-b border-divider px-4 lg:flex lg:px-6">

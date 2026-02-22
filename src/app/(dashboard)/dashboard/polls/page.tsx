@@ -87,7 +87,7 @@ export default function PollsAdminPage() {
         queryFn: async () => {
             const res = await fetch(`/api/polls?seasonId=${currentSeasonId}`);
             if (!res.ok) throw new Error("Failed");
-            return (await res.json()).data;
+            return (await res.json()).data.polls;
         },
         staleTime: 30 * 1000,
         enabled: !!currentSeasonId,
@@ -99,7 +99,7 @@ export default function PollsAdminPage() {
         queryFn: async () => {
             const res = await fetch(`/api/polls?all=true&seasonId=${currentSeasonId}`);
             if (!res.ok) throw new Error("Failed");
-            return (await res.json()).data;
+            return (await res.json()).data.polls;
         },
         staleTime: 30 * 1000,
         enabled: !!currentSeasonId && (filter === "all" || filter === "closed"),

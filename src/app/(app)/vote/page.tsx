@@ -10,8 +10,11 @@ import { Vote, AlertCircle } from "lucide-react";
  * Shows active polls, lets users vote IN/OUT/SOLO.
  */
 export default function VotePage() {
-    const { data: polls, isLoading, error } = usePolls();
+    const { data, isLoading, error, refetch } = usePolls();
     const voteMutation = useVote();
+
+    const polls = data?.polls;
+    const currentPlayerId = data?.currentPlayerId ?? undefined;
 
     function handleVote(pollId: string, vote: "IN" | "OUT" | "SOLO") {
         voteMutation.mutate({ pollId, vote });
@@ -74,6 +77,8 @@ export default function VotePage() {
                                 poll={poll}
                                 onVote={handleVote}
                                 isVoting={voteMutation.isPending}
+                                currentPlayerId={currentPlayerId}
+                                onRefetch={() => refetch()}
                             />
                         ))
                     )}

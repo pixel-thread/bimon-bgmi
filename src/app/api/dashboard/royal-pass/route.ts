@@ -83,13 +83,11 @@ export async function GET(request: Request) {
             : [];
         const rewardMap = new Map(streakRewards.map((s) => [s.playerId, s]));
 
-        // UC Rewarded = 30 UC per completed streak cycle + pending rewards
+        // UC Rewarded = only claimed rewards (lastRewardAt set, no pending)
         const rpStreaks = streakRewards.filter((s) =>
             currentSeasonPasses.some((rp) => rp.playerId === s.playerId)
         );
-        const claimedRewards = rpStreaks.filter((s) => s.lastRewardAt).length * 30;
-        const pendingRewards = rpStreaks.reduce((sum, s) => sum + (s.pendingReward ?? 0), 0);
-        const ucRewarded = claimedRewards + pendingRewards;
+        const ucRewarded = rpStreaks.filter((s) => s.lastRewardAt && !s.pendingReward).length * 30;
 
         const data = {
             passes: royalPasses.map((rp) => {

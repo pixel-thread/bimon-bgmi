@@ -32,8 +32,8 @@ interface TournamentOption {
     fee: number;
 }
 
-const TEAM_TYPES = ["SOLO", "DUO", "TRIO", "SQUAD", "DYNAMIC"];
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const TEAM_TYPES = ["DYNAMIC", "SOLO", "DUO", "TRIO", "SQUAD"];
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 interface PollFormModalProps {
     isOpen: boolean;
@@ -47,7 +47,7 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
 
     const [question, setQuestion] = useState("");
     const [days, setDays] = useState("Monday");
-    const [teamType, setTeamType] = useState("DUO");
+    const [teamType, setTeamType] = useState("DYNAMIC");
     const [tournamentId, setTournamentId] = useState("");
     const [isActive, setIsActive] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -75,7 +75,7 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
         } else {
             setQuestion("");
             setDays("Monday");
-            setTeamType("DUO");
+            setTeamType("DYNAMIC");
             setTournamentId("");
             setIsActive(true);
         }

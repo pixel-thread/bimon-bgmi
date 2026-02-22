@@ -11,7 +11,9 @@ export interface PollDTO {
         id: string;
         name: string;
         fee: number | null;
+        seasonId: string | null;
     };
+    luckyVoterId: string | null;
     isActive: boolean;
     createdAt: string;
     totalVotes: number;
@@ -21,13 +23,24 @@ export interface PollDTO {
     inPercentage: number;
     userVote: "IN" | "OUT" | "SOLO" | null;
     hasVoted: boolean;
+    playersVotes: {
+        playerId: string;
+        vote: string;
+        displayName: string;
+        imageUrl: string;
+    }[];
+    options: {
+        id: string;
+        name: string;
+        vote: string;
+    }[];
 }
 
 /**
  * Fetch active polls with vote data.
  */
 export function usePolls() {
-    return useQuery<PollDTO[]>({
+    return useQuery<{ polls: PollDTO[]; currentPlayerId: string | null }>({
         queryKey: ["polls"],
         queryFn: async () => {
             const res = await fetch("/api/polls");
@@ -64,43 +77,46 @@ export function useVote() {
         },
         onMutate: async ({ pollId, vote }) => {
             await queryClient.cancelQueries({ queryKey: ["polls"] });
-            const previous = queryClient.getQueryData<PollDTO[]>(["polls"]);
+            const previous = queryClient.getQueryData<{ polls: PollDTO[]; currentPlayerId: string | null }>(["polls"]);
 
-            queryClient.setQueryData<PollDTO[]>(["polls"], (old) => {
+            queryClient.setQueryData<{ polls: PollDTO[]; currentPlayerId: string | null }>(["polls"], (old) => {
                 if (!old) return old;
-                return old.map((poll) => {
-                    if (poll.id !== pollId) return poll;
+                return {
+                    ...old,
+                    polls: old.polls.map((poll) => {
+                        if (poll.id !== pollId) return poll;
 
-                    let { inVotes, outVotes, soloVotes } = poll;
+                        let { inVotes, outVotes, soloVotes } = poll;
 
-                    // Remove previous vote
-                    if (poll.hasVoted) {
-                        if (poll.userVote === "IN") inVotes--;
-                        if (poll.userVote === "OUT") outVotes--;
-                        if (poll.userVote === "SOLO") soloVotes--;
-                    }
+                        // Remove previous vote
+                        if (poll.hasVoted) {
+                            if (poll.userVote === "IN") inVotes--;
+                            if (poll.userVote === "OUT") outVotes--;
+                            if (poll.userVote === "SOLO") soloVotes--;
+                        }
 
-                    // Add new vote
-                    if (vote === "IN") inVotes++;
-                    else if (vote === "OUT") outVotes++;
-                    else soloVotes++;
+                        // Add new vote
+                        if (vote === "IN") inVotes++;
+                        else if (vote === "OUT") outVotes++;
+                        else soloVotes++;
 
-                    const totalVotes = inVotes + outVotes + soloVotes;
+                        const totalVotes = inVotes + outVotes + soloVotes;
 
-                    return {
-                        ...poll,
-                        userVote: vote,
-                        hasVoted: true,
-                        inVotes,
-                        outVotes,
-                        soloVotes,
-                        totalVotes,
-                        inPercentage:
-                            totalVotes > 0
-                                ? Math.round((inVotes / totalVotes) * 100)
-                                : 0,
-                    };
-                });
+                        return {
+                            ...poll,
+                            userVote: vote,
+                            hasVoted: true,
+                            inVotes,
+                            outVotes,
+                            soloVotes,
+                            totalVotes,
+                            inPercentage:
+                                totalVotes > 0
+                                    ? Math.round((inVotes / totalVotes) * 100)
+                                    : 0,
+                        };
+                    }),
+                };
             });
 
             return { previous };
