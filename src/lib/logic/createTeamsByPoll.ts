@@ -263,8 +263,9 @@ export async function createTeamsByPoll({
     const result = await prisma.$transaction(
         async (tx) => {
             // Create match
+            const existingMatchCount = await tx.match.count({ where: { tournamentId } });
             const match = await tx.match.create({
-                data: { tournamentId, seasonId },
+                data: { tournamentId, seasonId, matchNumber: existingMatchCount + 1 },
             });
 
             // Create teams in batches
