@@ -81,13 +81,13 @@ export function UCTransferDialog({
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={handleClose} placement="center" size="sm">
+        <Modal isOpen={isOpen} onClose={handleClose} placement="center" size="md" scrollBehavior="outside">
             <ModalContent>
                 <ModalHeader className="flex flex-col items-center gap-1 pb-0">
                     <span className="text-lg font-bold">{toPlayerName}</span>
                 </ModalHeader>
 
-                <ModalBody className="gap-4 pt-4">
+                <ModalBody className="gap-4 px-5 pt-4">
                     <Tabs
                         selectedKey={activeTab}
                         onSelectionChange={(key) => setActiveTab(key as string)}
