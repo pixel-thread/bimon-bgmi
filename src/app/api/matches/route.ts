@@ -51,24 +51,60 @@ export async function GET(request: NextRequest) {
             orderBy: { matchNumber: "asc" },
         });
 
+        // Get all team rosters for this tournament (to show absent players too)
+        const tournamentTeams = await prisma.team.findMany({
+            where: { tournamentId },
+            select: {
+                id: true,
+                players: {
+                    select: {
+                        id: true,
+                        displayName: true,
+                        customProfileImageUrl: true,
+                        user: { select: { username: true, imageUrl: true } },
+                    },
+                },
+            },
+        });
+        const teamRosterMap = new Map(tournamentTeams.map(t => [t.id, t.players]));
+
         const data = matches.map((match) => ({
             id: match.id,
             matchNumber: match.matchNumber,
             createdAt: match.createdAt,
-            teams: match.teamStats.map((ts) => ({
-                teamId: ts.team.id,
-                teamName: ts.team.name,
-                teamNumber: ts.team.teamNumber,
-                position: ts.position,
-                players: ts.teamPlayerStats.map((tps) => ({
+            teams: match.teamStats.map((ts) => {
+                // Players who have TPS records (present)
+                const tpsPlayers = ts.teamPlayerStats.map((tps) => ({
                     id: tps.player.id,
                     displayName: tps.player.displayName,
                     username: tps.player.user.username,
                     imageUrl: tps.player.customProfileImageUrl || tps.player.user.imageUrl,
                     kills: tps.kills,
                     present: tps.present,
-                })),
-            })),
+                }));
+                const presentIds = new Set(tpsPlayers.map(p => p.id));
+
+                // Add absent players from team roster
+                const roster = teamRosterMap.get(ts.team.id) || [];
+                const absentPlayers = roster
+                    .filter(p => !presentIds.has(p.id))
+                    .map(p => ({
+                        id: p.id,
+                        displayName: p.displayName,
+                        username: p.user.username,
+                        imageUrl: p.customProfileImageUrl || p.user.imageUrl,
+                        kills: 0,
+                        present: false,
+                    }));
+
+                return {
+                    teamId: ts.team.id,
+                    teamName: ts.team.name,
+                    teamNumber: ts.team.teamNumber,
+                    position: ts.position,
+                    players: [...tpsPlayers, ...absentPlayers],
+                };
+            }),
         }));
 
         return SuccessResponse({ data, cache: CACHE.SHORT });

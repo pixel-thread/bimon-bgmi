@@ -155,7 +155,7 @@ export function BulkEditStatsModal({
                         name: p.displayName || p.username,
                         displayName: p.displayName,
                         username: p.username,
-                        kills: p.kills ? String(p.kills) : "",
+                        kills: p.kills != null && p.kills !== undefined ? String(p.kills) : "",
                         isAbsent: !p.present,
                     })),
                 })),
@@ -171,8 +171,8 @@ export function BulkEditStatsModal({
 
     // ── Detect changes ──
     const hasChanges = useMemo(() => {
-        return JSON.stringify(matchDataList) !== JSON.stringify(initialMatchDataList);
-    }, [matchDataList, initialMatchDataList]);
+        return changeNotes.length > 0;
+    }, [changeNotes]);
 
     // ── Compute change notes ──
     const computeChangeNotes = useCallback((newData: EditableMatch[]) => {
@@ -213,6 +213,7 @@ export function BulkEditStatsModal({
         match.teams = teams;
         newData[matchIdx] = match;
         setMatchDataList(newData);
+        setChangeNotes(computeChangeNotes(newData));
     };
 
     const handleKillsChange = (matchIdx: number, teamIdx: number, playerIdx: number, value: string) => {
@@ -227,6 +228,7 @@ export function BulkEditStatsModal({
         match.teams = teams;
         newData[matchIdx] = match;
         setMatchDataList(newData);
+        setChangeNotes(computeChangeNotes(newData));
     };
 
     const handleToggleAbsent = (matchIdx: number, teamIdx: number, playerIdx: number) => {
@@ -237,13 +239,20 @@ export function BulkEditStatsModal({
         const players = [...team.players];
         const p = { ...players[playerIdx] };
         p.isAbsent = !p.isAbsent;
-        if (p.isAbsent) p.kills = "";
+        if (p.isAbsent) {
+            p.kills = "";
+        } else {
+            // Restore original kills value when marking present again
+            const origPlayer = initialMatchDataList[matchIdx]?.teams[teamIdx]?.players[playerIdx];
+            if (origPlayer) p.kills = origPlayer.kills;
+        }
         players[playerIdx] = p;
         team.players = players;
         teams[teamIdx] = team;
         match.teams = teams;
         newData[matchIdx] = match;
         setMatchDataList(newData);
+        setChangeNotes(computeChangeNotes(newData));
     };
 
     const handleSwapMatches = () => {
