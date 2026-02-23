@@ -44,7 +44,7 @@ export function usePlayerFilters(): PlayerFilters {
 
     const onFilterOpen = useCallback(() => setFilterOpened(true), []);
 
-    // Fetch seasons — only after popover has been opened
+    // Fetch seasons — eagerly on mount so stats default to active season
     const { data: seasons = [] } = useQuery<SeasonDTO[]>({
         queryKey: ["seasons"],
         queryFn: async () => {
@@ -54,7 +54,6 @@ export function usePlayerFilters(): PlayerFilters {
             return json.data ?? [];
         },
         staleTime: 5 * 60 * 1000,
-        enabled: filterOpened,
     });
 
     // Fetch tier counts — only after popover has been opened

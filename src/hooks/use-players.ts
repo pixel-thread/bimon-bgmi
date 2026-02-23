@@ -82,6 +82,7 @@ export function usePlayers({
         getNextPageParam: (lastPage) =>
             lastPage.meta.hasMore ? lastPage.meta.nextCursor : undefined,
         staleTime: 60 * 1000,
+        enabled: !!season, // Wait for season to be set before fetching
     });
 }
 

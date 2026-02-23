@@ -93,9 +93,24 @@ export async function GET(request: NextRequest) {
 
         // Batch compute stats from TeamPlayerStats (source of truth)
         const playerIds = players.map((p) => p.id);
+
+        // Default to active season if none specified
+        let seasonId = season;
+        if (!seasonId) {
+            const activeSeason = await prisma.season.findFirst({
+                where: { status: "ACTIVE" },
+                select: { id: true },
+            });
+            if (activeSeason) seasonId = activeSeason.id;
+        }
+
+        const tpsWhere: Record<string, unknown> = { playerId: { in: playerIds } };
+        if (seasonId) {
+            tpsWhere.seasonId = seasonId;
+        }
         const tpsAgg = await prisma.teamPlayerStats.groupBy({
             by: ["playerId"],
-            where: { playerId: { in: playerIds } },
+            where: tpsWhere,
             _count: { matchId: true },
             _sum: { kills: true },
         });
