@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -71,6 +72,9 @@ export async function POST(
                         },
                     },
                 },
+                teamPlayerStats: {
+                    select: { kills: true },
+                },
             },
         });
 
@@ -85,15 +89,17 @@ export async function POST(
 
         const teamMap = new Map<string, TeamAgg>();
         for (const stat of teamStats) {
-            const k = stat.kills ?? 0, p = stat.placement ?? 0, t = k + p;
+            const kills = stat.teamPlayerStats.reduce((sum, ps) => sum + (ps.kills ?? 0), 0);
+            const p = stat.position ?? 0;
+            const t = kills + p;
             const existing = teamMap.get(stat.teamId);
             if (existing) {
-                existing.kills += k; existing.pts += p; existing.total += t;
+                existing.kills += kills; existing.pts += p; existing.total += t;
                 if (p === 1) existing.chickenDinners++;
                 existing.lastMatchPosition = p; // latest stat overwrites
             } else {
                 teamMap.set(stat.teamId, {
-                    teamId: stat.teamId, total: t, kills: k, pts: p,
+                    teamId: stat.teamId, total: t, kills, pts: p,
                     players: stat.team.players.map((p2) => ({
                         playerId: p2.id,
                         name: p2.displayName || "Unknown",
@@ -195,7 +201,7 @@ export async function POST(
             playerId: string;
             finalAmount: number;
             message: string;
-            details: Record<string, unknown>;
+            details: Prisma.InputJsonValue;
             taxResult: TaxResult;
             soloTaxResult: SoloTaxResult;
         }
@@ -261,7 +267,7 @@ export async function POST(
                             soloTax: soloTaxResult.taxAmount,
                             wasRepeatWinner: taxResult.winCount > 1,
                             wasSolo: soloTaxResult.isSolo,
-                        },
+                        } as Prisma.InputJsonValue,
                         taxResult,
                         soloTaxResult,
                     });
@@ -525,8 +531,8 @@ async function getPlayerLosses(seasonId: string): Promise<{ lossAmount: number; 
             for (const tx of player.transactions) {
                 const isSeasonTx = tNames.some((n) => tx.description.includes(n));
                 if (!isSeasonTx) continue;
-                if (tx.type === "debit" && tx.description.toLowerCase().includes("entry")) fees += tx.amount;
-                else if (tx.type === "credit" && tx.description.toLowerCase().includes("prize")) prizes += tx.amount;
+                if (tx.type === "DEBIT" && tx.description.toLowerCase().includes("entry")) fees += tx.amount;
+                else if (tx.type === "CREDIT" && tx.description.toLowerCase().includes("prize")) prizes += tx.amount;
             }
             const loss = fees - prizes;
             if (loss > 0) playerLosses.set(player.id, loss);

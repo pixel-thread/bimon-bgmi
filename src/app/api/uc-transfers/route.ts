@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
         const toPlayer = await prisma.player.findUnique({
             where: { id: toPlayerId },
-            include: { wallet: true, user: { select: { id: true, username: true, displayName: true } } },
+            include: { wallet: true, user: { select: { id: true, username: true } } },
         });
         if (!toPlayer) {
             return NextResponse.json({ error: "Recipient not found" }, { status: 404 });
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
         const fromPlayer = await prisma.player.findUnique({
             where: { id: playerId },
-            include: { wallet: true, user: { select: { id: true, username: true, displayName: true } } },
+            include: { wallet: true, user: { select: { id: true, username: true } } },
         });
         if (!fromPlayer) {
             return NextResponse.json({ error: "Sender not found" }, { status: 404 });

@@ -34,12 +34,12 @@ export async function PATCH(
             include: {
                 fromPlayer: {
                     include: {
-                        user: { select: { id: true, username: true, displayName: true } },
+                        user: { select: { id: true, username: true } },
                     },
                 },
                 toPlayer: {
                     include: {
-                        user: { select: { id: true, username: true, displayName: true } },
+                        user: { select: { id: true, username: true } },
                     },
                 },
             },

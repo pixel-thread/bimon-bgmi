@@ -321,11 +321,9 @@ export default function JobsPage() {
                         setFilterCategory(val || "all");
                     }}
                     className="w-36"
+                    items={[{ key: "all", label: "All" }, ...JOB_CATEGORIES.map((c) => ({ key: c, label: c }))]}
                 >
-                    <SelectItem key="all">All</SelectItem>
-                    {JOB_CATEGORIES.map((c) => (
-                        <SelectItem key={c}>{c}</SelectItem>
-                    ))}
+                    {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
                 </Select>
             </div>
 
@@ -412,8 +410,8 @@ export default function JobsPage() {
                                                     })
                                                 }
                                                 className={`flex items-center gap-1 rounded-full px-2 py-1 text-[11px] transition-colors ${listing.userReaction === "like"
-                                                        ? "bg-success/20 text-success"
-                                                        : "bg-foreground/5 text-foreground/40 hover:bg-success/10"
+                                                    ? "bg-success/20 text-success"
+                                                    : "bg-foreground/5 text-foreground/40 hover:bg-success/10"
                                                     }`}
                                             >
                                                 <ThumbsUp
@@ -434,8 +432,8 @@ export default function JobsPage() {
                                                     })
                                                 }
                                                 className={`flex items-center gap-1 rounded-full px-2 py-1 text-[11px] transition-colors ${listing.userReaction === "dislike"
-                                                        ? "bg-danger/20 text-danger"
-                                                        : "bg-foreground/5 text-foreground/40 hover:bg-danger/10"
+                                                    ? "bg-danger/20 text-danger"
+                                                    : "bg-foreground/5 text-foreground/40 hover:bg-danger/10"
                                                     }`}
                                             >
                                                 <ThumbsDown

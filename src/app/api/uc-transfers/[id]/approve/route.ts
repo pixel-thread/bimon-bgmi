@@ -35,13 +35,13 @@ export async function PATCH(
                 fromPlayer: {
                     include: {
                         wallet: true,
-                        user: { select: { id: true, username: true, displayName: true } },
+                        user: { select: { id: true, username: true } },
                     },
                 },
                 toPlayer: {
                     include: {
                         wallet: true,
-                        user: { select: { id: true, username: true, displayName: true } },
+                        user: { select: { id: true, username: true } },
                     },
                 },
             },

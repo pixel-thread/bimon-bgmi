@@ -4,7 +4,7 @@ import { getCategoryFromKD, getCategoryScore } from "./categoryUtils";
 interface PlayerStat {
   seasonId?: string | null;
   kills: number;
-  deaths: number;
+  kd: number;
 }
 
 /**
@@ -42,44 +42,36 @@ export function computeWeightedScore(
     // Use previous season stats for first 5 tournaments of a new season
     if (tournamentCountInSeason < 5 && previousSeasonId) {
       // Try previous season first
-      stats = p.playerStats.find((s: PlayerStat) => s.seasonId === previousSeasonId);
+      stats = p.stats.find((s: PlayerStat) => s.seasonId === previousSeasonId);
 
       // If no stats in previous season, find most recent season with actual data
-      if (!stats || (stats.kills === 0 && stats.deaths === 0)) {
-        // Find the most recent season where player has actual stats (non-zero)
-        const seasonWithStats = p.playerStats
-          .filter((s: PlayerStat) => s.seasonId !== currentSeasonId && (s.kills > 0 || s.deaths > 0))
+      if (!stats || (stats.kills === 0 && stats.kd === 0)) {
+        const seasonWithStats = p.stats
+          .filter((s: PlayerStat) => s.seasonId !== currentSeasonId && (s.kills > 0 || s.kd > 0))
           .sort((a: PlayerStat, b: PlayerStat) => {
-            // Sort by kills+deaths descending as a proxy for recency/activity
-            // (since we don't have season dates in playerStats)
-            return (b.kills + b.deaths) - (a.kills + a.deaths);
+            return (b.kills + b.kd) - (a.kills + a.kd);
           })[0];
 
         if (seasonWithStats) {
           stats = seasonWithStats;
         } else {
-          // No historical stats at all, use current season
-          stats = p.playerStats.find((s: PlayerStat) => s.seasonId === currentSeasonId);
+          stats = p.stats.find((s: PlayerStat) => s.seasonId === currentSeasonId);
         }
       }
     } else {
-      stats = p.playerStats.find((s: PlayerStat) => s.seasonId === currentSeasonId);
+      stats = p.stats.find((s: PlayerStat) => s.seasonId === currentSeasonId);
     }
   } else {
     const id = seasonIdOrConfig || "";
-    stats = p.playerStats.find((s: PlayerStat) => s.seasonId === id);
+    stats = p.stats.find((s: PlayerStat) => s.seasonId === id);
   }
 
-  const kills = stats?.kills ?? 0;
-  const deaths = stats?.deaths ?? 0;
+  const kd = stats?.kd ?? 0;
 
   // KD score (normalized 0-100, capped at KD of 3.0)
-  // Handle edge cases: 0 deaths = KD is kills, 0 kills and 0 deaths = 0
-  const kd = deaths === 0 ? (kills > 0 ? kills : 0) : kills / deaths;
   const kdScore = Math.min(kd / 3.0, 1) * 100;
 
   // Wins score (each win = 15 points, capped at 100)
-  // 1st = 2 points, 2nd = 1 point (from recentWins calculation)
   const winsScore = Math.min((p.recentWins ?? 0) * 15, 100);
 
   // Weighted formula: 70% KD + 30% Wins
@@ -95,15 +87,13 @@ export function computeWeightedScoreLegacy(
   seasonId?: string
 ): number {
   const id = seasonId || "";
-  const stats = p.playerStats.find((s: { seasonId?: string | null }) => s.seasonId === id);
+  const stats = p.stats.find((s: { seasonId?: string | null }) => s.seasonId === id);
   const kills = stats?.kills ?? 0;
-  const deaths = stats?.deaths ?? 0;
+  const kd = stats?.kd ?? 0;
 
-  // Handle edge cases: 0 deaths = KD is kills, 0 kills and 0 deaths = 0
-  const kd = deaths === 0 ? (kills > 0 ? kills : 0) : kills / deaths;
   const kdScore = Math.min(kd / 3.0, 1) * 100;
 
-  const category = getCategoryFromKD(kills, deaths);
+  const category = getCategoryFromKD(kills, kills > 0 ? kills / (kd || 1) : 0);
   const categoryScore = getCategoryScore(category);
 
   // Without wins, redistribute weights: 60% KD + 40% Category

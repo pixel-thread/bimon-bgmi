@@ -14,18 +14,16 @@ export type PlayerWithWeightT = PlayerWithStatsT & {
     weightedScore: number;
 };
 
-export type PlayerStatsT = Prisma.PlayerStatsGetPayload<{
-    include: { matches: true };
-}>;
+export type PlayerStatsT = Prisma.PlayerStatsGetPayload<{}>;
 
 // ─── Tournament Types ───
 
 export type TournamentT = Prisma.TournamentGetPayload<{
-    include: { pollVote: true };
+    include: { poll: true };
 }>;
 
 export type TournamentWithTeamsT = Prisma.TournamentGetPayload<{
-    include: { teams: { include: { players: true } }; pollVote: true };
+    include: { teams: { include: { players: true } }; poll: true };
 }>;
 
 // ─── Wallet Types ───

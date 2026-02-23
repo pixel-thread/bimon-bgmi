@@ -5,7 +5,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { PostHogProvider } from "@/components/providers/posthog-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
     const [queryClient] = useState(
@@ -40,7 +41,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
                     disableTransitionOnChange
                 >
                     <HeroUIProvider>
-                        {children}
+                        <Suspense fallback={null}>
+                            <PostHogProvider>
+                                {children}
+                            </PostHogProvider>
+                        </Suspense>
                         <Toaster
                             position="top-center"
                             richColors

@@ -37,11 +37,11 @@ export function assignPlayersToTeamsBalanced(
 
     team.players.push(player);
     team.totalKills +=
-      player.playerStats.find((p) => p.seasonId === seasonId)?.kills ?? 0;
+      player.stats.find((p) => p.seasonId === seasonId)?.kills ?? 0;
     team.totalDeaths +=
-      player.playerStats.find((p) => p.seasonId === seasonId)?.deaths ?? 0;
+      player.stats.find((p) => p.seasonId === seasonId)?.matches ?? 0;
     team.totalWins += 0; // TODO:
-    // player.playerStats.find((p) => p.seasonId === seasonId)?.wins ?? 0;
+    // player.stats.find((p) => p.seasonId === seasonId)?.wins ?? 0;
     // @ts-expect-error weightedScore is not in PlayerWithStatsT but added at runtime
     team.weightedScore += player.weightedScore;
 
@@ -177,13 +177,13 @@ export function createBalancedDuos(
 
   // Build team stats from pairings
   for (const { strong, weak } of shuffledPairings) {
-    const strongStats = strong.playerStats.find((p) => p.seasonId === seasonId);
-    const weakStats = weak.playerStats.find((p) => p.seasonId === seasonId);
+    const strongStats = strong.stats.find((p) => p.seasonId === seasonId);
+    const weakStats = weak.stats.find((p) => p.seasonId === seasonId);
 
     teams.push({
       players: [strong, weak],
       totalKills: (strongStats?.kills ?? 0) + (weakStats?.kills ?? 0),
-      totalDeaths: (strongStats?.deaths ?? 0) + (weakStats?.deaths ?? 0),
+      totalDeaths: (strongStats?.matches ?? 0) + (weakStats?.matches ?? 0),
       totalWins: 0,
       // @ts-expect-error weightedScore is added at runtime
       weightedScore: (strong.weightedScore ?? 0) + (weak.weightedScore ?? 0),
@@ -268,14 +268,14 @@ export function createBalancedTrios(
     usedMediumIndices.add(mediumIdx);
     usedWeakIndices.add(weakIdx);
 
-    const strongStats = strong.playerStats.find((p) => p.seasonId === seasonId);
-    const mediumStats = medium.playerStats.find((p) => p.seasonId === seasonId);
-    const weakStats = weak.playerStats.find((p) => p.seasonId === seasonId);
+    const strongStats = strong.stats.find((p) => p.seasonId === seasonId);
+    const mediumStats = medium.stats.find((p) => p.seasonId === seasonId);
+    const weakStats = weak.stats.find((p) => p.seasonId === seasonId);
 
     teams.push({
       players: [strong, medium, weak],
       totalKills: (strongStats?.kills ?? 0) + (mediumStats?.kills ?? 0) + (weakStats?.kills ?? 0),
-      totalDeaths: (strongStats?.deaths ?? 0) + (mediumStats?.deaths ?? 0) + (weakStats?.deaths ?? 0),
+      totalDeaths: (strongStats?.matches ?? 0) + (mediumStats?.matches ?? 0) + (weakStats?.matches ?? 0),
       totalWins: 0,
       // @ts-expect-error weightedScore is added at runtime
       weightedScore: (strong.weightedScore ?? 0) + (medium.weightedScore ?? 0) + (weak.weightedScore ?? 0),
@@ -370,15 +370,15 @@ export function createBalancedQuads(
     usedIdx3.add(idx3);
     usedIdx4.add(idx4);
 
-    const stats1 = p1.playerStats.find((p) => p.seasonId === seasonId);
-    const stats2 = p2.playerStats.find((p) => p.seasonId === seasonId);
-    const stats3 = p3.playerStats.find((p) => p.seasonId === seasonId);
-    const stats4 = p4.playerStats.find((p) => p.seasonId === seasonId);
+    const stats1 = p1.stats.find((p) => p.seasonId === seasonId);
+    const stats2 = p2.stats.find((p) => p.seasonId === seasonId);
+    const stats3 = p3.stats.find((p) => p.seasonId === seasonId);
+    const stats4 = p4.stats.find((p) => p.seasonId === seasonId);
 
     teams.push({
       players: [p1, p2, p3, p4],
       totalKills: (stats1?.kills ?? 0) + (stats2?.kills ?? 0) + (stats3?.kills ?? 0) + (stats4?.kills ?? 0),
-      totalDeaths: (stats1?.deaths ?? 0) + (stats2?.deaths ?? 0) + (stats3?.deaths ?? 0) + (stats4?.deaths ?? 0),
+      totalDeaths: (stats1?.matches ?? 0) + (stats2?.matches ?? 0) + (stats3?.matches ?? 0) + (stats4?.matches ?? 0),
       totalWins: 0,
       // @ts-expect-error weightedScore is added at runtime
       weightedScore: (p1.weightedScore ?? 0) + (p2.weightedScore ?? 0) + (p3.weightedScore ?? 0) + (p4.weightedScore ?? 0),

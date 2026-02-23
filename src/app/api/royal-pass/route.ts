@@ -29,19 +29,19 @@ export async function GET() {
         }
 
         const hasRoyalPass = player.hasRoyalPass ?? false;
-        const currentStreak = player.streak?.currentStreak ?? 0;
+        const currentStreak = player.streak?.current ?? 0;
         const nextRewardAt = 8; // Streak milestone for RP reward
 
         const data = {
             hasRoyalPass,
             currentStreak,
             nextRewardAt,
-            totalRewards: player.pendingRewards.filter((r) => !r.isPending).length,
+            totalRewards: player.pendingRewards.filter((r) => r.isClaimed).length,
             pendingRewards: player.pendingRewards.map((r) => ({
                 id: r.id,
                 type: r.type,
                 amount: r.amount,
-                isPending: r.isPending,
+                isPending: !r.isClaimed,
                 createdAt: r.createdAt,
             })),
         };

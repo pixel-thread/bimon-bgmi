@@ -341,7 +341,7 @@ export async function createTeamsByPoll({
                     await tx.transaction.createMany({
                         data: playersToCharge.map((player) => ({
                             amount: entryFee,
-                            type: "debit" as const,
+                            type: "DEBIT" as const,
                             description: `Entry fee for ${tournamentName}`,
                             playerId: player.id,
                         })),
