@@ -132,12 +132,19 @@ export function Header() {
                             <NavbarItem key={item.href} isActive={isActive}>
                                 <Link
                                     href={item.href}
+                                    onClick={() => {
+                                        if (!isActive) setNavigatingTo(item.href);
+                                    }}
                                     className={`flex items-center gap-1.5 text-sm transition-colors ${isActive
                                         ? "font-semibold text-primary"
                                         : "text-foreground/70 hover:text-foreground"
                                         }`}
                                 >
-                                    <item.icon className="h-4 w-4" />
+                                    {navigatingTo === item.href && !isActive ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <item.icon className="h-4 w-4" />
+                                    )}
                                     {item.label === "Wallet" ? (
                                         <span className={
                                             (balance ?? 0) > 0 ? "text-success" : (balance ?? 0) < 0 ? "text-danger" : ""
@@ -154,12 +161,19 @@ export function Header() {
                                 <NavbarItem key={item.href} isActive={isActive}>
                                     <Link
                                         href={item.href}
+                                        onClick={() => {
+                                            if (!isActive) setNavigatingTo(item.href);
+                                        }}
                                         className={`flex items-center gap-1.5 text-sm transition-colors ${isActive
                                             ? "font-semibold text-primary"
                                             : "text-foreground/70 hover:text-foreground"
                                             }`}
                                     >
-                                        <item.icon className="h-4 w-4" />
+                                        {navigatingTo === item.href && !isActive ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <item.icon className="h-4 w-4" />
+                                        )}
                                         {item.label}
                                     </Link>
                                 </NavbarItem>
@@ -228,9 +242,16 @@ export function Header() {
                             <NavbarItem>
                                 <Link
                                     href="/royal-pass"
+                                    onClick={() => {
+                                        if (!pathname.startsWith("/royal-pass")) setNavigatingTo("/royal-pass");
+                                    }}
                                     className="flex items-center justify-center rounded-full p-1.5 text-yellow-500 transition-opacity hover:opacity-80"
                                 >
-                                    <Crown className="h-5 w-5" />
+                                    {navigatingTo === "/royal-pass" && !pathname.startsWith("/royal-pass") ? (
+                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                    ) : (
+                                        <Crown className="h-5 w-5" />
+                                    )}
                                 </Link>
                             </NavbarItem>
                             <NavbarItem className="hidden sm:flex">
@@ -313,13 +334,20 @@ export function Header() {
                                     <NavbarMenuItem key={item.href}>
                                         <Link
                                             href={item.href}
-                                            onClick={() => setIsMenuOpen(false)}
+                                            onClick={() => {
+                                                if (!isActive) setNavigatingTo(item.href);
+                                                else setIsMenuOpen(false);
+                                            }}
                                             className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-colors ${isActive
                                                 ? "bg-primary/10 font-semibold text-primary"
                                                 : "text-foreground/70 hover:bg-default-100"
                                                 }`}
                                         >
-                                            <item.icon className="h-5 w-5" />
+                                            {navigatingTo === item.href && !isActive ? (
+                                                <Loader2 className="h-5 w-5 animate-spin" />
+                                            ) : (
+                                                <item.icon className="h-5 w-5" />
+                                            )}
                                             {item.label}
                                             {item.label === "Notifications" && unreadCount > 0 && (
                                                 <span className="ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
@@ -341,13 +369,20 @@ export function Header() {
                                 <div className="mt-1 border-t border-divider pt-2">
                                     <Link
                                         href="/settings"
-                                        onClick={() => setIsMenuOpen(false)}
+                                        onClick={() => {
+                                            if (!pathname.startsWith("/settings")) setNavigatingTo("/settings");
+                                            else setIsMenuOpen(false);
+                                        }}
                                         className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-colors ${pathname.startsWith("/settings")
                                             ? "bg-primary/10 font-semibold text-primary"
                                             : "text-foreground/70 hover:bg-default-100"
                                             }`}
                                     >
-                                        <Settings className="h-5 w-5" />
+                                        {navigatingTo === "/settings" && !pathname.startsWith("/settings") ? (
+                                            <Loader2 className="h-5 w-5 animate-spin" />
+                                        ) : (
+                                            <Settings className="h-5 w-5" />
+                                        )}
                                         Settings
                                     </Link>
                                 </div>

@@ -179,6 +179,7 @@ function PollOptionRow({
     percentage,
     voters,
     theme,
+    currentPlayerId,
     onClick,
 }: {
     label: string;
@@ -189,8 +190,16 @@ function PollOptionRow({
     percentage: number;
     voters: PollDTO["playersVotes"];
     theme: PollTheme | null;
+    currentPlayerId?: string;
     onClick: () => void;
 }) {
+    // Put current user first so their avatar always shows
+    const displayVoters = useMemo(() => {
+        if (!currentPlayerId || voters.length === 0) return voters;
+        const me = voters.find((v) => v.playerId === currentPlayerId);
+        if (!me) return voters;
+        return [me, ...voters.filter((v) => v.playerId !== currentPlayerId)];
+    }, [voters, currentPlayerId]);
     return (
         <button
             type="button"
@@ -248,8 +257,8 @@ function PollOptionRow({
                 {voteCount > 0 && (
                     <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
                         {voters.length > 0 && (
-                            <div className="flex -space-x-2">
-                                {voters.slice(0, 2).map((v) => (
+                            <div className="flex -space-x-1.5">
+                                {displayVoters.slice(0, 2).map((v) => (
                                     <Avatar
                                         key={v.playerId}
                                         src={v.imageUrl}
@@ -260,7 +269,7 @@ function PollOptionRow({
                                 ))}
                             </div>
                         )}
-                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
                             {voteCount}
                         </span>
                     </div>
@@ -655,6 +664,7 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                             percentage={Math.round((opt.count / maxCount) * 100)}
                             voters={votersByVote[opt.vote] ?? []}
                             theme={theme}
+                            currentPlayerId={currentPlayerId}
                             onClick={() => {
                                 if (poll.userVote !== opt.vote) onVote(poll.id, opt.vote);
                             }}

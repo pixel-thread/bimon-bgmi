@@ -46,6 +46,7 @@ export async function GET(request: Request) {
                         player: {
                             select: {
                                 displayName: true,
+                                customProfileImageUrl: true,
                                 user: {
                                     select: {
                                         username: true,
@@ -93,7 +94,7 @@ export async function GET(request: Request) {
                     vote: v.vote,
                     createdAt: v.createdAt,
                     displayName: v.player.displayName ?? v.player.user?.username ?? "Unknown",
-                    imageUrl: v.player.user?.imageUrl ?? "",
+                    imageUrl: v.player.customProfileImageUrl ?? v.player.user?.imageUrl ?? "",
                 })),
             };
         });
