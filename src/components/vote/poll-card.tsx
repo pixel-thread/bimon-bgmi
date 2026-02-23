@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
-import { Chip, Avatar } from "@heroui/react";
-import { Users } from "lucide-react";
+import { Chip, Avatar, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
+import { Users, ChevronRight, ArrowLeft, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import type { PollDTO } from "@/hooks/use-polls";
 import { getPollTheme, getLuckyWinnerTheme, type PollTheme } from "./pollTheme";
@@ -13,7 +13,10 @@ import { getPrizeDistribution, getTeamSize } from "@/utils/prizeDistribution";
 interface PollCardProps {
     poll: PollDTO;
     onVote: (pollId: string, vote: "IN" | "OUT" | "SOLO") => void;
-    isVoting: boolean;
+    /** The poll currently being voted on (undefined if idle) */
+    votingPollId?: string;
+    /** The vote option being submitted */
+    votingVote?: "IN" | "OUT" | "SOLO";
     currentPlayerId?: string;
     onRefetch?: () => void;
 }
@@ -287,10 +290,193 @@ function PollOptionRow({
     );
 }
 
+/* ─── Voters Dialog (v1-style) ──────────────────────────────── */
+
+function VotersDialog({
+    isOpen,
+    onClose,
+    poll,
+    votersByVote,
+    selectedGroup,
+    onSelectGroup,
+    teamType,
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    poll: PollDTO;
+    votersByVote: Record<string, PollDTO["playersVotes"]>;
+    selectedGroup: "IN" | "OUT" | "SOLO" | null;
+    onSelectGroup: (g: "IN" | "OUT" | "SOLO" | null) => void;
+    teamType: string;
+}) {
+    const groups = (["IN", "OUT", "SOLO"] as const).map((voteType) => {
+        const voters = votersByVote[voteType] ?? [];
+        return { voteType, voters, count: voters.length };
+    });
+    const maxCount = Math.max(...groups.map((g) => g.count), 1);
+
+    // Waiting player logic — most recent IN voters who are leftovers
+    const waitingPlayerIds = useMemo(() => {
+        const teamSizeMap: Record<string, number> = { SOLO: 1, DUO: 2, TRIO: 3, SQUAD: 4 };
+        const size = teamSizeMap[teamType] ?? 2;
+        if (size <= 1) return new Set<string>();
+        const inVoters = [...(votersByVote["IN"] ?? [])]
+            .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        const leftover = inVoters.length % size;
+        if (leftover === 0) return new Set<string>();
+        const ids = new Set<string>();
+        // Last N voters (most recent) are the ones waiting
+        for (let i = inVoters.length - leftover; i < inVoters.length; i++) {
+            ids.add(inVoters[i].playerId);
+        }
+        return ids;
+    }, [votersByVote, teamType]);
+
+    const selectedVoters = selectedGroup ? (votersByVote[selectedGroup] ?? []) : [];
+    const getLabel = (v: string) => v === "IN" ? "Nga Leh 😎" : v === "OUT" ? "Leh rei, I'm ge 🏳️‍🌈" : "Nga Leh solo 🫩";
+    const getColor = (v: string) => v === "IN" ? "bg-emerald-500" : v === "OUT" ? "bg-red-500" : "bg-amber-500";
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} placement="center" size="md" scrollBehavior="inside">
+            <ModalContent>
+                <ModalHeader className="flex items-center gap-2 text-base pb-1">
+                    <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+                        <Users className="w-3.5 h-3.5 text-white" />
+                    </div>
+                    {poll.tournament?.name || poll.question}
+                </ModalHeader>
+                <ModalBody className="px-4 py-3">
+                    {!selectedGroup ? (
+                        /* ── Overview: vote groups ── */
+                        <div className="space-y-3">
+                            <p className="text-xs text-foreground/50">
+                                {poll.totalVotes} total vote{poll.totalVotes !== 1 ? "s" : ""}
+                            </p>
+                            {groups.map(({ voteType, voters, count }) => {
+                                if (count === 0) return null;
+                                const pct = Math.round((count / maxCount) * 100);
+                                return (
+                                    <div key={voteType} className="rounded-xl border border-divider p-4 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="font-medium text-sm">{getLabel(voteType)}</h4>
+                                            <span className="text-sm text-foreground/50">{count} vote{count !== 1 ? "s" : ""}</span>
+                                        </div>
+                                        <div className="w-full h-2 bg-default-200 rounded-full overflow-hidden">
+                                            <motion.div
+                                                className={`h-full rounded-full ${getColor(voteType)}`}
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${pct}%` }}
+                                                transition={{ duration: 0.5, ease: "easeOut" }}
+                                            />
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex -space-x-2">
+                                                {voters.slice(0, 4).map((v) => (
+                                                    <Avatar
+                                                        key={v.playerId}
+                                                        src={v.imageUrl}
+                                                        name={v.displayName}
+                                                        size="sm"
+                                                        className="w-6 h-6 border-2 border-background"
+                                                    />
+                                                ))}
+                                                {count > 4 && (
+                                                    <div className="w-6 h-6 rounded-full bg-default-200 flex items-center justify-center text-[10px] font-medium border-2 border-background">
+                                                        +{count - 4}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => onSelectGroup(voteType)}
+                                                className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                                            >
+                                                <Users className="w-3.5 h-3.5" />
+                                                See all {count} voters
+                                                <ChevronRight className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        /* ── Drill-down: voter list ── */
+                        <div className="space-y-2">
+                            <p className="text-xs text-foreground/50 mb-2">
+                                Voters for &quot;{getLabel(selectedGroup)}&quot;
+                            </p>
+                            <div className="space-y-1">
+                                {selectedVoters.map((v, i) => (
+                                    <div
+                                        key={v.playerId}
+                                        className="flex items-center gap-3 p-2.5 rounded-lg bg-default-50 hover:bg-default-100 transition-colors"
+                                    >
+                                        <span className="text-[10px] font-mono text-foreground/30 w-4 text-right">
+                                            {i + 1}
+                                        </span>
+                                        <Avatar
+                                            src={v.imageUrl}
+                                            name={v.displayName}
+                                            size="sm"
+                                            className="w-8 h-8 flex-shrink-0"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium truncate flex items-center gap-1.5">
+                                                {v.displayName}
+                                                {selectedGroup === "IN" && waitingPlayerIds.has(v.playerId) && (
+                                                    <span title="Waiting for more players">
+                                                        <Clock className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
+                                                    </span>
+                                                )}
+                                            </p>
+                                            {v.createdAt && (
+                                                <p className="text-[11px] text-foreground/40">
+                                                    {new Date(v.createdAt).toLocaleString("en-US", {
+                                                        day: "numeric",
+                                                        month: "short",
+                                                        hour: "numeric",
+                                                        minute: "2-digit",
+                                                        second: "2-digit",
+                                                        hour12: true,
+                                                    })}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </ModalBody>
+                <ModalFooter>
+                    {selectedGroup ? (
+                        <Button
+                            variant="flat"
+                            className="w-full"
+                            startContent={<ArrowLeft className="w-4 h-4" />}
+                            onPress={() => onSelectGroup(null)}
+                        >
+                            Back
+                        </Button>
+                    ) : (
+                        <Button variant="flat" className="w-full" onPress={onClose}>
+                            Close
+                        </Button>
+                    )}
+                </ModalFooter>
+            </ModalContent>
+        </Modal>
+    );
+}
+
 /* ─── Main Poll Card ────────────────────────────────────────── */
 
-export function PollCard({ poll, onVote, isVoting, currentPlayerId, onRefetch }: PollCardProps) {
+export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayerId, onRefetch }: PollCardProps) {
+    const isThisPollVoting = votingPollId === poll.id;
     const { tournament } = poll;
+    const [showVoters, setShowVoters] = useState(false);
+    const [selectedVoteGroup, setSelectedVoteGroup] = useState<"IN" | "OUT" | "SOLO" | null>(null);
 
     // Marquee for long titles
     const titleRef = useRef<HTMLHeadingElement>(null);
@@ -307,13 +493,15 @@ export function PollCard({ poll, onVote, isVoting, currentPlayerId, onRefetch }:
     const prizePool = entryFee * participantCount;
     const hasPrizePool = prizePool > 0;
 
-    // Dynamic team type
+    // Dynamic team type — based on IN votes only (SOLO players play alone)
     const effectiveTeamType = useMemo(() => {
         if (poll.teamType !== "DYNAMIC") return poll.teamType;
-        if (participantCount < 48) return "DUO";
-        if (participantCount < 60) return "TRIO";
-        return "SQUAD";
-    }, [poll.teamType, participantCount]);
+        // Pick TRIO or SQUAD based on fewest leftover IN players
+        const inCount = poll.inVotes;
+        const trioLeftover = inCount % 3;
+        const squadLeftover = inCount % 4;
+        return squadLeftover <= trioLeftover ? "SQUAD" : "TRIO";
+    }, [poll.teamType, poll.inVotes]);
 
     // Theme
     const isLuckyVoter = !!currentPlayerId && poll.luckyVoterId === currentPlayerId;
@@ -461,8 +649,8 @@ export function PollCard({ poll, onVote, isVoting, currentPlayerId, onRefetch }:
                             key={opt.vote}
                             label={opt.label}
                             isSelected={poll.userVote === opt.vote}
-                            isLoading={isVoting && poll.userVote !== opt.vote}
-                            disabled={!poll.isActive}
+                            isLoading={isThisPollVoting && votingVote === opt.vote}
+                            disabled={!poll.isActive || (isThisPollVoting && votingVote !== opt.vote)}
                             voteCount={opt.count}
                             percentage={Math.round((opt.count / maxCount) * 100)}
                             voters={votersByVote[opt.vote] ?? []}
@@ -477,9 +665,9 @@ export function PollCard({ poll, onVote, isVoting, currentPlayerId, onRefetch }:
                 {/* ─── Footer ─── */}
                 {poll.totalVotes > 0 && (
                     <div
-                        className={`px-6 pb-6 transition-all duration-700 ease-in-out ${theme ? theme.footer : ""}`}
+                        className={`px-6 pb-5 transition-all duration-700 ease-in-out ${theme ? theme.footer : ""}`}
                     >
-                        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
                             <span className="flex items-center space-x-1">
                                 <Users className="w-4 h-4" />
                                 <span>
@@ -500,8 +688,29 @@ export function PollCard({ poll, onVote, isVoting, currentPlayerId, onRefetch }:
                                 )}
                             </span>
                         </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowVoters(true)}
+                            className="w-full text-center font-medium py-2.5 px-4 rounded-xl transition-all border shadow-sm cursor-pointer text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:shadow-md"
+                        >
+                            <span className="flex items-center justify-center gap-2">
+                                <Users className="w-4 h-4" />
+                                View all votes
+                            </span>
+                        </button>
                     </div>
                 )}
+
+                {/* ─── Voters Dialog ─── */}
+                <VotersDialog
+                    isOpen={showVoters}
+                    onClose={() => { setShowVoters(false); setSelectedVoteGroup(null); }}
+                    poll={poll}
+                    votersByVote={votersByVote}
+                    selectedGroup={selectedVoteGroup}
+                    onSelectGroup={setSelectedVoteGroup}
+                    teamType={effectiveTeamType}
+                />
             </div>
         </motion.div>
     );

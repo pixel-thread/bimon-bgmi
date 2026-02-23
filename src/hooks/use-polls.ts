@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useUser } from "@clerk/nextjs";
 
 export interface PollDTO {
     id: string;
@@ -26,6 +27,7 @@ export interface PollDTO {
     playersVotes: {
         playerId: string;
         vote: string;
+        createdAt: string;
         displayName: string;
         imageUrl: string;
     }[];
@@ -43,7 +45,7 @@ export function usePolls() {
     return useQuery<{ polls: PollDTO[]; currentPlayerId: string | null }>({
         queryKey: ["polls"],
         queryFn: async () => {
-            const res = await fetch("/api/polls");
+            const res = await fetch(`/api/polls?_t=${Date.now()}`);
             if (!res.ok) throw new Error("Failed to fetch polls");
             const json = await res.json();
             return json.data;
@@ -54,10 +56,12 @@ export function usePolls() {
 
 /**
  * Cast a vote on a poll (IN/OUT/SOLO).
- * Optimistically updates the UI.
+ * Optimistically updates vote counts AND the playersVotes list.
+ * Exposes `variables` so callers can check which poll/vote is pending.
  */
 export function useVote() {
     const queryClient = useQueryClient();
+    const { user: clerkUser } = useUser();
 
     return useMutation({
         mutationFn: async ({
@@ -81,6 +85,7 @@ export function useVote() {
 
             queryClient.setQueryData<{ polls: PollDTO[]; currentPlayerId: string | null }>(["polls"], (old) => {
                 if (!old) return old;
+                const currentPlayerId = old.currentPlayerId;
                 return {
                     ...old,
                     polls: old.polls.map((poll) => {
@@ -102,6 +107,24 @@ export function useVote() {
 
                         const totalVotes = inVotes + outVotes + soloVotes;
 
+                        // Optimistically update playersVotes array
+                        let playersVotes = [...poll.playersVotes];
+                        if (currentPlayerId) {
+                            playersVotes = playersVotes.filter(
+                                (v) => v.playerId !== currentPlayerId
+                            );
+                            playersVotes.push({
+                                playerId: currentPlayerId,
+                                vote,
+                                createdAt: new Date().toISOString(),
+                                displayName:
+                                    clerkUser?.fullName ||
+                                    clerkUser?.username ||
+                                    "You",
+                                imageUrl: clerkUser?.imageUrl || "",
+                            });
+                        }
+
                         return {
                             ...poll,
                             userVote: vote,
@@ -110,6 +133,7 @@ export function useVote() {
                             outVotes,
                             soloVotes,
                             totalVotes,
+                            playersVotes,
                             inPercentage:
                                 totalVotes > 0
                                     ? Math.round((inVotes / totalVotes) * 100)

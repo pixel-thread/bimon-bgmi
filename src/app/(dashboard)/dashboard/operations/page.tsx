@@ -86,8 +86,28 @@ export default function OperationsPage() {
     // Create tournament form
     const [tName, setTName] = useState("");
     const [tDescription, setTDescription] = useState("");
-    const [tFee, setTFee] = useState("");
+    const [tFee, setTFee] = useState("30");
     const [tSeasonId, setTSeasonId] = useState("");
+    const [showDesc, setShowDesc] = useState(false);
+
+    // Auto-fill create form when modal opens
+    const openCreateModal = () => {
+        // Auto-generate next tournament name
+        const pattern = /^Lehkai sngewtynnad\s+(\d+)$/i;
+        let maxNum = 0;
+        for (const t of tournaments) {
+            const m = t.name.match(pattern);
+            if (m) maxNum = Math.max(maxNum, parseInt(m[1]));
+        }
+        setTName(`Lehkai sngewtynnad ${maxNum + 1}`);
+        setTFee("30");
+        // Auto-select current season
+        const current = seasons.find((s) => s.isCurrent);
+        setTSeasonId(current?.id ?? seasons[0]?.id ?? "");
+        setTDescription("");
+        setShowDesc(false);
+        createModal.onOpen();
+    };
 
     // Create season form
     const [sName, setSName] = useState("");
@@ -189,7 +209,7 @@ export default function OperationsPage() {
             toast.success("Tournament created!");
             queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
             createModal.onClose();
-            setTName(""); setTDescription(""); setTFee("");
+            setTName(""); setTDescription(""); setTFee("30");
             if (data?.data?.id) setSelectedId(data.data.id);
         },
         onError: (err: Error) => toast.error(err.message),
@@ -358,7 +378,7 @@ export default function OperationsPage() {
                         size="sm"
                         color="primary"
                         startContent={<Plus className="h-3.5 w-3.5" />}
-                        onPress={createModal.onOpen}
+                        onPress={openCreateModal}
                     >
                         New
                     </Button>
@@ -682,13 +702,6 @@ export default function OperationsPage() {
                             onValueChange={setTName}
                             isRequired
                         />
-                        <Textarea
-                            label="Description"
-                            placeholder="Optional description"
-                            value={tDescription}
-                            onValueChange={setTDescription}
-                            minRows={2}
-                        />
                         <Input
                             label="Entry Fee (UC)"
                             placeholder="0"
@@ -696,21 +709,28 @@ export default function OperationsPage() {
                             onValueChange={setTFee}
                             type="number"
                         />
-                        {seasons.length > 0 && (
-                            <Select
-                                label="Season"
-                                placeholder="Select season"
-                                selectedKeys={tSeasonId ? [tSeasonId] : []}
-                                onSelectionChange={(keys) =>
-                                    setTSeasonId(Array.from(keys)[0] as string || "")
+                        {showDesc ? (
+                            <Textarea
+                                label="Description"
+                                placeholder="Optional description"
+                                value={tDescription}
+                                onValueChange={setTDescription}
+                                minRows={2}
+                                endContent={
+                                    <button onClick={() => setShowDesc(false)} className="text-foreground/40 hover:text-foreground">
+                                        <X className="h-3.5 w-3.5" />
+                                    </button>
                                 }
+                            />
+                        ) : (
+                            <Button
+                                size="sm"
+                                variant="light"
+                                className="self-start text-foreground/40"
+                                onPress={() => setShowDesc(true)}
                             >
-                                {seasons.map((s) => (
-                                    <SelectItem key={s.id}>
-                                        {s.name} {s.isCurrent ? "(Current)" : ""}
-                                    </SelectItem>
-                                ))}
-                            </Select>
+                                + Add description
+                            </Button>
                         )}
                     </ModalBody>
                     <ModalFooter>

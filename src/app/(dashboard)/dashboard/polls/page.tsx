@@ -55,6 +55,21 @@ const TEAM_SIZE_MAP: Record<string, 1 | 2 | 3 | 4> = {
 };
 
 /**
+ * For DYNAMIC: pick TRIO or SQUAD based on which has fewer leftover players.
+ * If tied, prefer SQUAD (bigger teams = fewer games).
+ */
+function getDynamicGroupSize(playerCount: number): 3 | 4 {
+    const trioLeftover = playerCount % 3;
+    const squadLeftover = playerCount % 4;
+    return squadLeftover <= trioLeftover ? 4 : 3;
+}
+
+function resolveGroupSize(teamType: string, inVotes: number): 1 | 2 | 3 | 4 {
+    if (teamType === "DYNAMIC") return getDynamicGroupSize(inVotes);
+    return TEAM_SIZE_MAP[teamType] ?? 2;
+}
+
+/**
  * /dashboard/polls — Admin polls overview.
  */
 export default function PollsAdminPage() {
@@ -85,7 +100,7 @@ export default function PollsAdminPage() {
     const { data: activePolls, isLoading: activeLoading, error: activeError } = useQuery<PollDTO[]>({
         queryKey: ["admin-polls", "active", currentSeasonId],
         queryFn: async () => {
-            const res = await fetch(`/api/polls?seasonId=${currentSeasonId}`);
+            const res = await fetch(`/api/polls?seasonId=${currentSeasonId}&_t=${Date.now()}`);
             if (!res.ok) throw new Error("Failed");
             return (await res.json()).data.polls;
         },
@@ -97,7 +112,7 @@ export default function PollsAdminPage() {
     const { data: allPolls, isLoading: allLoading, error: allError } = useQuery<PollDTO[]>({
         queryKey: ["admin-polls", "all", currentSeasonId],
         queryFn: async () => {
-            const res = await fetch(`/api/polls?all=true&seasonId=${currentSeasonId}`);
+            const res = await fetch(`/api/polls?all=true&seasonId=${currentSeasonId}&_t=${Date.now()}`);
             if (!res.ok) throw new Error("Failed");
             return (await res.json()).data.polls;
         },
@@ -147,7 +162,7 @@ export default function PollsAdminPage() {
                     pollId: poll.id,
                     tournamentId: poll.tournament.id,
                     seasonId: currentSeason.id,
-                    groupSize: TEAM_SIZE_MAP[poll.teamType] ?? 2,
+                    groupSize: resolveGroupSize(poll.teamType, poll.inVotes),
                     entryFee: poll.tournament.fee ?? 0,
                 }),
             });
@@ -190,7 +205,7 @@ export default function PollsAdminPage() {
                     pollId: activePoll.id,
                     tournamentId: activePoll.tournament.id,
                     seasonId: currentSeason.id,
-                    groupSize: TEAM_SIZE_MAP[activePoll.teamType] ?? 2,
+                    groupSize: resolveGroupSize(activePoll.teamType, activePoll.inVotes),
                     entryFee: activePoll.tournament.fee ?? 0,
                     previewTeams,
                 }),

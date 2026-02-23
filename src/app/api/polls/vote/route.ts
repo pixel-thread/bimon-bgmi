@@ -75,6 +75,13 @@ export async function POST(request: NextRequest) {
 
         const playerId = user.player.id;
 
+        // Check if this is a first-time vote or a change
+        const existingVote = await prisma.playerPollVote.findUnique({
+            where: { playerId_pollId: { playerId, pollId } },
+            select: { id: true },
+        });
+        const isFirstVote = !existingVote;
+
         // Upsert the vote
         const result = await prisma.playerPollVote.upsert({
             where: {
@@ -93,11 +100,12 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        // Lucky voter lottery — 15% chance, only for IN/SOLO, only if no winner yet
+        // Lucky voter lottery — 15% chance, only on FIRST vote, only for IN/SOLO, only if no winner yet
         let isLuckyVoter = poll.luckyVoterId === playerId;
         const entryFee = poll.tournament?.fee ?? 0;
 
         if (
+            isFirstVote &&
             !isLuckyVoter &&
             !poll.luckyVoterId &&
             (vote === "IN" || vote === "SOLO") &&

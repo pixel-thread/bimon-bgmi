@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { CategoryBadge } from "@/components/ui/category-badge";
 
 interface PlayerDetailModalProps {
     playerId: string | null;
@@ -61,14 +62,7 @@ interface Transaction {
     createdAt: string;
 }
 
-const categoryColors: Record<string, "warning" | "primary" | "success" | "secondary" | "danger" | "default"> = {
-    S: "warning",
-    A: "primary",
-    B: "success",
-    C: "secondary",
-    D: "danger",
-    NOOB: "default",
-};
+
 
 export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailModalProps) {
     const queryClient = useQueryClient();
@@ -174,9 +168,12 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                 size="md"
                             />
                             <div>
-                                <h2 className="text-lg font-bold">
-                                    {player?.displayName || player?.username}
-                                </h2>
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-lg font-bold">
+                                        {player?.displayName || player?.username}
+                                    </h2>
+                                    {player?.category && <CategoryBadge category={player.category} size="sm" />}
+                                </div>
                                 <p className="text-xs text-foreground/50">
                                     @{player?.username} · {player?.email}
                                 </p>
@@ -226,15 +223,8 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                             {/* Stats cards */}
                             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                                 <div className="rounded-xl bg-default-100 p-3 text-center">
-                                    <p className="text-xs text-foreground/50">Category</p>
-                                    <Chip
-                                        size="sm"
-                                        variant="flat"
-                                        color={categoryColors[player?.category ?? ""] ?? "default"}
-                                        className="mt-1"
-                                    >
-                                        {player?.category}
-                                    </Chip>
+                                    <p className="text-xs text-foreground/50">Kills</p>
+                                    <p className="mt-1 text-lg font-bold">{player?.stats.kills}</p>
                                 </div>
                                 <div className="rounded-xl bg-default-100 p-3 text-center">
                                     <p className="text-xs text-foreground/50">K/D</p>
@@ -249,7 +239,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                 <div className="rounded-xl bg-default-100 p-3 text-center">
                                     <p className="text-xs text-foreground/50">Streak</p>
                                     <p className="mt-1 text-lg font-bold">
-                                        {player?.streak.current}/{player?.streak.longest}
+                                        {player?.streak.current}/8
                                     </p>
                                 </div>
                             </div>

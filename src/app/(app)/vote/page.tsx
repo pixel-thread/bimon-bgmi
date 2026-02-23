@@ -15,6 +15,8 @@ export default function VotePage() {
 
     const polls = data?.polls;
     const currentPlayerId = data?.currentPlayerId ?? undefined;
+    const pendingPollId = voteMutation.isPending ? voteMutation.variables?.pollId : undefined;
+    const pendingVote = voteMutation.isPending ? voteMutation.variables?.vote : undefined;
 
     function handleVote(pollId: string, vote: "IN" | "OUT" | "SOLO") {
         voteMutation.mutate({ pollId, vote });
@@ -76,7 +78,8 @@ export default function VotePage() {
                                 key={poll.id}
                                 poll={poll}
                                 onVote={handleVote}
-                                isVoting={voteMutation.isPending}
+                                votingPollId={pendingPollId}
+                                votingVote={pendingVote}
                                 currentPlayerId={currentPlayerId}
                                 onRefetch={() => refetch()}
                             />

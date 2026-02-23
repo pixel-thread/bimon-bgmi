@@ -68,18 +68,6 @@ export async function GET(request: NextRequest) {
                         imageUrl: true,
                     },
                 },
-                stats: {
-                    ...(season
-                        ? { where: { seasonId: season } }
-                        : { take: 1, orderBy: { createdAt: "desc" as const } }
-                    ),
-                    select: {
-                        id: true,
-                        kills: true,
-                        matches: true,
-                        kd: true,
-                    },
-                },
                 wallet: {
                     select: {
                         balance: true,
@@ -103,9 +91,20 @@ export async function GET(request: NextRequest) {
                 : {}), // fetch all for JS sort
         });
 
+        // Batch compute stats from TeamPlayerStats (source of truth)
+        const playerIds = players.map((p) => p.id);
+        const tpsAgg = await prisma.teamPlayerStats.groupBy({
+            by: ["playerId"],
+            where: { playerId: { in: playerIds } },
+            _count: { matchId: true },
+            _sum: { kills: true },
+        });
+        const statsMap = new Map(tpsAgg.map((s) => [s.playerId, { kills: s._sum.kills ?? 0, matches: s._count.matchId }]));
+
         // Flatten the data — compute category from K/D (always fresh)
         const allData = players.map((p) => {
-            const kd = Number(p.stats[0]?.kd ?? 0);
+            const st = statsMap.get(p.id) ?? { kills: 0, matches: 0 };
+            const kd = st.matches > 0 ? st.kills / st.matches : 0;
             return {
                 id: p.id,
                 displayName: p.displayName,
@@ -114,7 +113,7 @@ export async function GET(request: NextRequest) {
                 imageUrl: p.customProfileImageUrl || p.user.imageUrl,
                 category: getCategoryFromKDValue(kd),
                 isBanned: p.isBanned,
-                stats: { kills: p.stats[0]?.kills ?? 0, matches: p.stats[0]?.matches ?? 0, kd },
+                stats: { kills: st.kills, matches: st.matches, kd: Number(kd.toFixed(2)) },
                 balance: p.wallet?.balance ?? 0,
                 hasRoyalPass: p.hasRoyalPass,
                 characterImage: p.characterImage

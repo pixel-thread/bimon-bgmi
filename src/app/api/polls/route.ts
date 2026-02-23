@@ -91,6 +91,7 @@ export async function GET(request: Request) {
                 playersVotes: poll.votes.map((v) => ({
                     playerId: v.playerId,
                     vote: v.vote,
+                    createdAt: v.createdAt,
                     displayName: v.player.displayName ?? v.player.user?.username ?? "Unknown",
                     imageUrl: v.player.user?.imageUrl ?? "",
                 })),
@@ -99,6 +100,7 @@ export async function GET(request: Request) {
 
         return SuccessResponse({ data: { polls: data, currentPlayerId: playerId ?? null }, cache: CACHE.SHORT });
     } catch (error) {
+        console.error("[GET /api/polls] Error:", error);
         return ErrorResponse({ message: "Failed to fetch polls", error });
     }
 }

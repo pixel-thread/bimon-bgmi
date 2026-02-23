@@ -29,15 +29,6 @@ export async function GET(
                 wallet: {
                     select: { balance: true },
                 },
-                stats: {
-                    take: 1,
-                    orderBy: { createdAt: "desc" },
-                    select: {
-                        kills: true,
-                        matches: true,
-                        kd: true,
-                    },
-                },
                 streak: {
                     select: {
                         current: true,
@@ -61,13 +52,23 @@ export async function GET(
             );
         }
 
+        // Compute stats from TeamPlayerStats (source of truth)
+        const statsAgg = await prisma.teamPlayerStats.aggregate({
+            where: { playerId: id },
+            _count: { matchId: true },
+            _sum: { kills: true },
+        });
+        const totalMatches = statsAgg._count.matchId;
+        const totalKills = statsAgg._sum.kills ?? 0;
+        const totalKd = totalMatches > 0 ? totalKills / totalMatches : 0;
+
         return NextResponse.json({
             id: player.id,
             displayName: player.displayName,
             username: player.user.username,
             email: player.user.email,
             imageUrl: player.customProfileImageUrl || player.user.imageUrl,
-            category: getCategoryFromKDValue(Number(player.stats[0]?.kd ?? 0)),
+            category: getCategoryFromKDValue(totalKd),
             isBanned: player.isBanned,
             hasRoyalPass: player.hasRoyalPass,
             isUCExempt: player.isUCExempt,
@@ -75,13 +76,11 @@ export async function GET(
             bio: player.bio,
             createdAt: player.createdAt,
             balance: player.wallet?.balance ?? 0,
-            stats: player.stats[0]
-                ? {
-                    kills: player.stats[0].kills,
-                    matches: player.stats[0].matches,
-                    kd: Number(player.stats[0].kd),
-                }
-                : { kills: 0, matches: 0, kd: 0 },
+            stats: {
+                kills: totalKills,
+                matches: totalMatches,
+                kd: Number(totalKd.toFixed(2)),
+            },
             streak: player.streak
                 ? { current: player.streak.current, longest: player.streak.longest }
                 : { current: 0, longest: 0 },

@@ -29,15 +29,6 @@ export async function GET() {
                                 isVideo: true,
                             },
                         },
-                        stats: {
-                            orderBy: { createdAt: "desc" },
-                            select: {
-                                kills: true,
-                                matches: true,
-                                kd: true,
-                                seasonId: true,
-                            },
-                        },
                     },
                 },
             },
@@ -52,13 +43,16 @@ export async function GET() {
         // Compute detailed stats
         let detailedStats = null;
         if (player) {
-            const allStats = player.stats;
-
-            // Aggregate basic stats across all seasons
-            const totalKills = allStats.reduce((sum, s) => sum + s.kills, 0);
-            const totalMatches = allStats.reduce((sum, s) => sum + s.matches, 0);
+            // Compute stats from TeamPlayerStats (source of truth)
+            const statsAgg = await prisma.teamPlayerStats.aggregate({
+                where: { playerId: player.id },
+                _count: { matchId: true },
+                _sum: { kills: true },
+            });
+            const totalKills = statsAgg._sum.kills ?? 0;
+            const totalMatches = statsAgg._count.matchId;
             const kd = totalMatches > 0 ? totalKills / totalMatches : 0;
-            const seasonsPlayed = allStats.length;
+            const seasonsPlayed = await prisma.playerStats.count({ where: { playerId: player.id } });
 
             // Get team placements for wins/top10 and UC placements
             const teamPlacements = await prisma.teamStats.findMany({
