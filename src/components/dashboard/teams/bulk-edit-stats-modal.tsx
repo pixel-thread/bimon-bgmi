@@ -757,7 +757,7 @@ Match B: #1 team, #2 team | Found: X, Absent: Y, Unknown: Z`;
                                                 )}
                                             </div>
 
-                                            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                                            <div className={`space-y-2 overflow-y-auto ${changeNotes.length > 0 ? "max-h-[40vh] lg:max-h-[50vh]" : "max-h-[55vh] lg:max-h-[65vh]"}`}>
                                                 {matchData.teams.map((team, teamIdx) => {
                                                     const hasData = team.position !== "" || team.players.some((p) => p.kills !== "");
                                                     return (

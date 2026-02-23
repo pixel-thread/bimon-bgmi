@@ -27,6 +27,14 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
+  icons: {
+    icon: [
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     type: "website",
     siteName: "PUBGMI",
@@ -36,15 +44,24 @@ export const metadata: Metadata = {
     },
     description:
       "Manage BGMI tournaments, teams, UC economy, and player stats.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "PUBGMI — Tournament Manager",
+      },
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: {
       default: "PUBGMI — Tournament Manager",
       template: "%s | PUBGMI",
     },
     description:
       "Manage BGMI tournaments, teams, UC economy, and player stats.",
+    images: ["/og-image.png"],
   },
 };
 
