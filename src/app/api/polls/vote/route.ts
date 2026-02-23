@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
             },
             update: {
                 vote,
+                createdAt: new Date(),
             },
         });
 
