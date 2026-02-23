@@ -196,8 +196,12 @@ export function BulkEditStatsModal({
                     if (!op) continue;
                     const ok = op.kills === "" ? "" : String(op.kills);
                     const nk = np.kills === "" ? "" : String(np.kills);
-                    if (ok !== nk) changes.push(`  🎯 ${np.displayName || np.name}: Kills ${ok || "-"} → ${nk || "-"}`);
-                    if (op.isAbsent !== np.isAbsent) changes.push(`  👤 ${np.displayName || np.name}: ${op.isAbsent ? "Absent → Present" : "Present → Absent"}`);
+                    if (ok !== nk) {
+                        changes.push(`🎯 M${newMatch.matchNumber} ${np.displayName || np.name}: Kills ${ok || "–"} → ${nk || "–"}`);
+                    }
+                    if (op.isAbsent !== np.isAbsent) {
+                        changes.push(`👤 M${newMatch.matchNumber} ${np.displayName || np.name}: ${op.isAbsent ? "Absent → Present" : "Present → Absent"}`);
+                    }
                 }
             }
         }
@@ -552,18 +556,26 @@ Match B: #1 team, #2 team | Found: X, Absent: Y, Unknown: Z`;
                 const playerMap = matchPlayerMaps[matchIdx];
                 const teamPositions = new Map<string, number>();
 
-                // Reset all players to absent, then fill from AI
+                // Keep original player state, only update from AI data
                 const newTeams = matchData.teams.map((team) => ({
                     ...team,
                     position: "" as string,
-                    players: team.players.map((p) => ({ ...p, kills: "" as string, isAbsent: true })),
+                    players: team.players.map((p) => ({ ...p })),
                 }));
 
+                // Track which players the AI explicitly marked as absent (kills: null)
+                const absentPlayerIds = new Set<string>();
+
                 aiGroup.players.forEach((aiPlayer) => {
-                    if (aiPlayer.isUnknown || aiPlayer.kills === null) {
-                        if (aiPlayer.isUnknown && aiPlayer.kills !== null) {
+                    if (aiPlayer.isUnknown) {
+                        if (aiPlayer.kills !== null) {
                             newUnknownPlayers.push({ name: aiPlayer.name, kills: aiPlayer.kills, matchIdx });
                         }
+                        return;
+                    }
+
+                    // kills: null means AI didn't find this player — keep original state
+                    if (aiPlayer.kills === null) {
                         return;
                     }
 
