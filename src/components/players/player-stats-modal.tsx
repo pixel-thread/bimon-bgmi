@@ -92,6 +92,7 @@ export function PlayerStatsModal({
                 isOpen={isOpen}
                 onClose={onClose}
                 size="md"
+                placement="center"
                 scrollBehavior="inside"
                 hideCloseButton
                 motionProps={{
@@ -124,7 +125,7 @@ export function PlayerStatsModal({
                     </button>
 
                     {/* Hero section */}
-                    <div className="relative h-96 w-full overflow-hidden">
+                    <div className="relative h-72 w-full overflow-hidden">
                         {characterImage?.url ? (
                             <>
                                 {!imageLoaded && (
