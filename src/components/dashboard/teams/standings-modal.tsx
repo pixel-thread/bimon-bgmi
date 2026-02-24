@@ -114,6 +114,7 @@ export function StandingsModal({
         // Helper: compute standings for a subset of matches
         function computeRanking(matches: MatchData[]): Map<string, StandingRow> {
             const map = new Map<string, StandingRow>();
+            const totalMatchCount = matches.length;
             for (const match of matches) {
                 for (const t of match.teams) {
                     let row = map.get(t.teamId);
@@ -125,7 +126,7 @@ export function StandingsModal({
                             totalKills: 0,
                             placementPts: 0,
                             wins: 0,
-                            matchCount: 0,
+                            matchCount: totalMatchCount,
                             lastMatchPosition: 99,
                             positions: [],
                             playerNames: t.players.map((p) => p.displayName || p.username),
@@ -139,7 +140,6 @@ export function StandingsModal({
                     row.placementPts += pts;
                     row.totalPoints += pts + kills;
                     if (t.position === 1) row.wins++;
-                    row.matchCount++;
                     row.positions.push(t.position);
                     row.lastMatchPosition = t.position;
                 }

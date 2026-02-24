@@ -91,6 +91,11 @@ export async function POST(request: NextRequest) {
         });
 
         // 4. Create TeamStats + TeamPlayerStats for this match
+        const targetMatch = await prisma.match.findUnique({
+            where: { id: matchId },
+            select: { matchNumber: true },
+        });
+
         const teamStats = await prisma.teamStats.create({
             data: {
                 teamId: team.id,
@@ -124,6 +129,51 @@ export async function POST(request: NextRequest) {
             })),
         });
 
+        // 6. Propagate team to all matches with higher matchNumber
+        let propagatedCount = 0;
+        if (targetMatch) {
+            const higherMatches = await prisma.match.findMany({
+                where: {
+                    tournamentId,
+                    matchNumber: { gt: targetMatch.matchNumber },
+                },
+                select: { id: true, matchNumber: true },
+                orderBy: { matchNumber: "asc" },
+            });
+
+            for (const hm of higherMatches) {
+                // Connect team to this match
+                await prisma.match.update({
+                    where: { id: hm.id },
+                    data: { teams: { connect: { id: team.id } } },
+                });
+
+                const hmTeamStats = await prisma.teamStats.create({
+                    data: {
+                        teamId: team.id,
+                        matchId: hm.id,
+                        position: 0,
+                        tournamentId,
+                        ...(tournament.seasonId ? { seasonId: tournament.seasonId } : {}),
+                    },
+                });
+
+                await prisma.teamPlayerStats.createMany({
+                    data: playerIds.map((playerId) => ({
+                        playerId,
+                        teamId: team.id,
+                        matchId: hm.id,
+                        teamStatsId: hmTeamStats.id,
+                        kills: 0,
+                        present: true,
+                        ...(tournament.seasonId ? { seasonId: tournament.seasonId } : {}),
+                    })),
+                });
+
+                propagatedCount++;
+            }
+        }
+
         // 6. UC deduction (optional)
         const entryFee = tournament.fee || 0;
         if (deductUC && entryFee > 0) {
@@ -152,11 +202,16 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        const baseMsg = deductUC && entryFee > 0
+            ? `Team created. ${entryFee} UC debited from each player.`
+            : "Team created successfully";
+        const propagateMsg = propagatedCount > 0
+            ? ` Also added to ${propagatedCount} more match${propagatedCount > 1 ? "es" : ""}.`
+            : "";
+
         return SuccessResponse({
             data: { id: team.id, name: team.name, teamNumber: team.teamNumber },
-            message: deductUC && entryFee > 0
-                ? `Team created. ${entryFee} UC debited from each player.`
-                : "Team created successfully",
+            message: baseMsg + propagateMsg,
         });
     } catch (error) {
         return ErrorResponse({ message: "Failed to create team", error });

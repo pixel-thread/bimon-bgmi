@@ -99,6 +99,7 @@ export function BulkEditStatsModal({
     const [hasInitialized, setHasInitialized] = useState(false);
     const [unknownPlayers, setUnknownPlayers] = useState<Array<{ name: string; kills: number; matchIdx: number }>>([]);
     const [changeNotes, setChangeNotes] = useState<string[]>([]);
+    const [isFirstPaste, setIsFirstPaste] = useState(true);
 
     // ── Fetch match data ──
     const { data: allMatches, isLoading } = useQuery<MatchData[]>({
@@ -123,6 +124,7 @@ export function BulkEditStatsModal({
             setShowMatchSelector(false);
             setUnknownPlayers([]);
             setChangeNotes([]);
+            setIsFirstPaste(true);
             return;
         }
         if (isAllMode) {
@@ -602,7 +604,15 @@ Match B: #1 team, #2 team | Found: X, Absent: Y, Unknown: Z`;
                 };
             });
 
-            setChangeNotes(computeChangeNotes(newMatchDataList));
+            // On first paste, don't flood with change notes — only show unknown players
+            if (isFirstPaste) {
+                setChangeNotes([]);
+                setIsFirstPaste(false);
+                // Update initialMatchDataList so subsequent edits show real diffs
+                setInitialMatchDataList(JSON.parse(JSON.stringify(newMatchDataList)));
+            } else {
+                setChangeNotes(computeChangeNotes(newMatchDataList));
+            }
             setMatchDataList(newMatchDataList);
             setUnknownPlayers(newUnknownPlayers);
             toast.success(`Applied data for ${Math.min(matchGroups.length, matchDataList.length)} match(es)!`);
