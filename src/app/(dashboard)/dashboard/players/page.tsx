@@ -8,6 +8,7 @@ import {
     Skeleton,
 } from "@heroui/react";
 import {
+    Wallet,
     Users,
     Crown,
     ChevronsDown,
@@ -33,7 +34,7 @@ interface PlayerDTO {
 
 interface PlayersResponse {
     data: PlayerDTO[];
-    meta: { hasMore: boolean; nextCursor: string | null };
+    meta: { hasMore: boolean; nextCursor: string | null; totalBalance?: number; negativeBalance?: number };
 }
 
 const categoryColors: Record<string, "warning" | "primary" | "success" | "secondary" | "danger" | "default"> = {
@@ -78,6 +79,7 @@ export default function AdminPlayersPage() {
         });
 
     const players = data?.pages.flatMap((p) => p.data) ?? [];
+    const meta = data?.pages[0]?.meta;
 
     return (
         <div className="space-y-6">
@@ -90,6 +92,32 @@ export default function AdminPlayersPage() {
 
             {/* Search + Filters */}
             <PlayerFiltersBar {...filters} />
+
+            {/* UC Balance Summary */}
+            {meta && meta.totalBalance != null && (
+                <div className="flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-1.5 rounded-lg bg-default-100 px-3 py-1.5">
+                        <Wallet className="h-3 w-3 text-default-400" />
+                        <span className="text-foreground/50">Total:</span>
+                        <span
+                            className={`font-semibold ${(meta.totalBalance ?? 0) >= 0
+                                ? "text-success"
+                                : "text-danger"
+                                }`}
+                        >
+                            {(meta.totalBalance ?? 0).toLocaleString()} UC
+                        </span>
+                    </div>
+                    {(meta.negativeBalance ?? 0) < 0 && (
+                        <div className="flex items-center gap-1.5 rounded-lg bg-danger-50 px-3 py-1.5 dark:bg-danger-50/10">
+                            <span className="text-foreground/50">Negative:</span>
+                            <span className="font-semibold text-danger">
+                                {(meta.negativeBalance ?? 0).toLocaleString()} UC
+                            </span>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {error && (
                 <div className="flex items-center gap-2 rounded-lg bg-danger-50 p-4 text-sm text-danger dark:bg-danger-50/10">
