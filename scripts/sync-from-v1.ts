@@ -1,291 +1,127 @@
 /**
- * Full Data Migration: V1 DB → V2 DB
- *
- * Connects to both databases and copies all tables in dependency order.
- * Uses upserts (insert ... ON CONFLICT DO NOTHING) for idempotency.
- * Safe to run multiple times.
+ * Sync missing data from v1 database to v2 database.
+ * Syncs: _PlayerToTeam join table + Transaction records.
  *
  * Usage: npx tsx scripts/sync-from-v1.ts
  */
 
-import "dotenv/config";
 import pg from "pg";
+import { config } from "dotenv";
 
-// V1 connection (password has @ char, so use config object)
-const V1_CONFIG = {
-    host: "aws-1-ap-south-1.pooler.supabase.com",
-    port: 5432,
-    database: "postgres",
-    user: "postgres.jxoeyaonjosetunwvvym",
-    password: "123Clashofclan@",
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-    max: 3,
-};
+config();
+
+const V1_URL =
+    "postgresql://postgres.jxoeyaonjosetunwvvym:123Clashofclan%40@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true";
 const V2_URL = process.env.DATABASE_URL!;
 
-// Tables in dependency order (parents first, children after)
-const TABLES = [
-    // 1. No dependencies
-    "AppSetting",
-    "Rule",
-    "JobCategory",
-    "Gallery",
-    "DailyMetrics",
-    "SoloTaxPool",
-
-    // 2. Depends on Gallery
-    "User",
-
-    // 3. Depends on User
-    "Player",
-    "Notification",
-
-    // 4. Depends on Player
-    "Wallet",
-    "PlayerBan",
-    "PlayerStreak",
-    "PushSubscription",
-    "PlayerJobListing",
-    "GameScore",
-
-    // 5. Depends on User + Player
-    "Referral",
-
-    // 6. Depends on Player (self-ref)
-    "PlayerMeritRating",
-
-    // 7. No FK or depends on Gallery
-    "Season",
-
-    // 8. Depends on Season + Player
-    "RoyalPass",
-
-    // 9. Depends on Season
-    "Tournament",
-
-    // 10. Depends on Tournament
-    "TournamentSequence",
-    "Match",
-    "Poll",
-
-    // 11. Depends on Tournament/Season
-    "Team",
-
-    // 12. Depends on Poll
-    "PollOption",
-
-    // 13. Depends on Poll + Player
-    "PlayerPollVote",
-
-    // 14. Depends on Team + Tournament
-    "TournamentWinner",
-
-    // 15. Depends on Match + Team + Tournament
-    "TeamStats",
-
-    // 16. Depends on TeamStats + Team + Player + Match
-    "TeamPlayerStats",
-
-    // 17. Depends on Player + Team + Match
-    "PlayerStats",
-
-    // 18. Depends on Player + Match + Tournament + Team
-    "MatchPlayerPlayed",
-
-    // 19. Depends on Player
-    "Transaction",
-    "PendingReward",
-
-    // 20. Depends on Player (from/to)
-    "UCTransfer",
-
-    // 21. Depends on Tournament
-    "Income",
-    "RecentMatchGroup",
-
-    // 22. Depends on RecentMatchGroup
-    "RecentMatchImage",
-
-    // 23. Depends on Player
-    "Payment",
-
-    // 24. Depends on JobCategory
-    "Job",
-
-    // 25. Depends on PlayerJobListing + Player
-    "JobListingReaction",
-];
-
-// ── Migration ────────────────────────────────────────────────
 async function main() {
-    console.log("🚀 Starting V1 → V2 data migration...\n");
+    console.log("🔗 Connecting to V1 (source)...");
+    const v1 = new pg.Client({ connectionString: V1_URL });
+    await v1.connect();
 
-    const v1 = new pg.Pool(V1_CONFIG);
-    const v2 = new pg.Pool({ connectionString: V2_URL });
+    console.log("🔗 Connecting to V2 (destination)...");
+    const v2 = new pg.Client({ connectionString: V2_URL });
+    await v2.connect();
 
-    try {
-        // Test connections
-        await v1.query("SELECT 1");
-        console.log("✅ Connected to V1 database");
-        await v2.query("SELECT 1");
-        console.log("✅ Connected to V2 database\n");
+    // ─── 1. Sync _PlayerToTeam join table ───────────────────────
+    console.log("\n📋 Syncing _PlayerToTeam...");
+    const v1PT = await v1.query(`SELECT "A", "B" FROM "_PlayerToTeam"`);
+    const v2PT = await v2.query(`SELECT "A", "B" FROM "_PlayerToTeam"`);
+    const v2PTSet = new Set(v2PT.rows.map((r) => `${r.A}|${r.B}`));
+    const missingPT = v1PT.rows.filter((r) => !v2PTSet.has(`${r.A}|${r.B}`));
+    console.log(`   V1: ${v1PT.rows.length}, V2: ${v2PT.rows.length}, Missing: ${missingPT.length}`);
 
-        let totalMigrated = 0;
-        let totalSkipped = 0;
+    if (missingPT.length > 0) {
+        // Validate FK references exist in V2
+        const ptPlayerIds = [...new Set(missingPT.map((r) => r.A))];
+        const ptTeamIds = [...new Set(missingPT.map((r) => r.B))];
+        const v2PTPlayers = await v2.query(`SELECT id FROM "Player" WHERE id = ANY($1)`, [ptPlayerIds]);
+        const v2PTTeams = await v2.query(`SELECT id FROM "Team" WHERE id = ANY($1)`, [ptTeamIds]);
+        const v2PSet = new Set(v2PTPlayers.rows.map((r) => r.id));
+        const v2TSet = new Set(v2PTTeams.rows.map((r) => r.id));
+        const validPT = missingPT.filter((r) => v2PSet.has(r.A) && v2TSet.has(r.B));
+        const skippedPT = missingPT.length - validPT.length;
+        if (skippedPT > 0) console.log(`   ⚠️  Skipping ${skippedPT} (FK missing in V2)`);
 
-        for (const table of TABLES) {
-            try {
-                // Check if table exists in v1
-                const tableCheck = await v1.query(
-                    `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = $1)`,
-                    [table]
-                );
-
-                if (!tableCheck.rows[0].exists) {
-                    // Try quoted name
-                    const quotedCheck = await v1.query(
-                        `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = $1)`,
-                        [`"${table}"`]
-                    );
-                    if (!quotedCheck.rows[0].exists) {
-                        console.log(`⏭️  ${table} — table not found in V1, skipping`);
-                        continue;
-                    }
-                }
-
-                // Get row count from v1
-                const v1Count = await v1.query(`SELECT COUNT(*) as cnt FROM "${table}"`);
-                const sourceCount = parseInt(v1Count.rows[0].cnt);
-
-                if (sourceCount === 0) {
-                    console.log(`⏭️  ${table} — 0 rows in V1, skipping`);
-                    continue;
-                }
-
-                // Get existing count in v2
-                const v2Count = await v2.query(`SELECT COUNT(*) as cnt FROM "${table}"`);
-                const destCount = parseInt(v2Count.rows[0].cnt);
-
-                if (destCount >= sourceCount) {
-                    console.log(`✅ ${table} — already synced (${destCount} rows)`);
-                    totalSkipped += destCount;
-                    continue;
-                }
-
-                // Get columns from BOTH databases and use intersection
-                const v1ColInfo = await v1.query(
-                    `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 ORDER BY ordinal_position`,
-                    [table]
-                );
-                const v1Columns = new Set(v1ColInfo.rows.map((r: { column_name: string }) => r.column_name));
-
-                const v2ColInfo = await v2.query(
-                    `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 ORDER BY ordinal_position`,
-                    [table]
-                );
-                const v2Columns = new Set(v2ColInfo.rows.map((r: { column_name: string }) => r.column_name));
-
-                // Only use columns that exist in BOTH databases
-                const columns = [...v1Columns].filter((c) => v2Columns.has(c));
-
-                if (columns.length === 0) {
-                    console.log(`⚠️  ${table} — no common columns found, skipping`);
-                    continue;
-                }
-
-                const skippedCols = [...v1Columns].filter((c) => !v2Columns.has(c));
-                if (skippedCols.length > 0) {
-                    console.log(`  ℹ️  ${table}: skipping v1-only columns: ${skippedCols.join(', ')}`);
-                }
-
-                // Fetch all rows from v1
-                const colList = columns.map((c: string) => `"${c}"`).join(", ");
-                const v1Data = await v1.query(`SELECT ${colList} FROM "${table}" ORDER BY "createdAt" ASC`).catch(async () => {
-                    // If createdAt doesn't exist, fetch without ordering
-                    return await v1.query(`SELECT ${colList} FROM "${table}"`);
-                });
-
-                if (v1Data.rows.length === 0) {
-                    console.log(`⏭️  ${table} — no data to migrate`);
-                    continue;
-                }
-
-                // Batch insert into v2 with ON CONFLICT DO NOTHING
-                const BATCH_SIZE = 100;
-                let inserted = 0;
-                let fkErrors = 0;
-                let otherErrors = 0;
-
-                for (let i = 0; i < v1Data.rows.length; i += BATCH_SIZE) {
-                    const batch = v1Data.rows.slice(i, i + BATCH_SIZE);
-
-                    for (const row of batch) {
-                        const values = columns.map((_: string, idx: number) => `$${idx + 1}`).join(", ");
-                        const rowValues = columns.map((c: string) => row[c]);
-
-                        try {
-                            await v2.query(
-                                `INSERT INTO "${table}" (${colList}) VALUES (${values}) ON CONFLICT DO NOTHING`,
-                                rowValues
-                            );
-                            inserted++;
-                        } catch (err: unknown) {
-                            const pgErr = err as { code?: string; detail?: string };
-                            if (pgErr.code === "23503") { fkErrors++; continue; }
-                            if (pgErr.code === "23505") continue;
-                            otherErrors++;
-                            if (otherErrors <= 3) console.error(`    ⚠️  ${table}:`, pgErr.detail || (err as Error).message);
-                        }
-                    }
-
-                    // Progress for large tables
-                    if (v1Data.rows.length > 500 && i % 500 === 0 && i > 0) {
-                        process.stdout.write(`  ... ${i}/${v1Data.rows.length}\r`);
-                    }
-                }
-
-                const newTotal = parseInt((await v2.query(`SELECT COUNT(*) as cnt FROM "${table}"`)).rows[0].cnt);
-                const migrated = newTotal - destCount;
-                const suffix = fkErrors > 0 ? ` (${fkErrors} FK skipped)` : '';
-                console.log(`📦 ${table} — migrated ${migrated} new rows (${newTotal} total)${suffix}`);
-                totalMigrated += migrated;
-
-            } catch (err) {
-                console.error(`❌ ${table} — error:`, (err as Error).message);
+        if (validPT.length > 0) {
+            const batchSize = 100;
+            for (let i = 0; i < validPT.length; i += batchSize) {
+                const batch = validPT.slice(i, i + batchSize);
+                const values = batch.map((_, idx) => `($${idx * 2 + 1}, $${idx * 2 + 2})`).join(", ");
+                const params = batch.flatMap((r) => [r.A, r.B]);
+                await v2.query(`INSERT INTO "_PlayerToTeam" ("A", "B") VALUES ${values} ON CONFLICT DO NOTHING`, params);
             }
+            console.log(`   ✅ Inserted ${validPT.length} player-team associations`);
         }
-
-        // Fix autoincrement sequences
-        console.log("\n🔧 Fixing sequences...");
-        const sequences = await v2.query(
-            `SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public'`
-        );
-        for (const seq of sequences.rows) {
-            try {
-                // Extract table and column from sequence name
-                const seqName = seq.sequence_name;
-                // Typical format: TableName_columnName_seq
-                const tableName = seqName.replace(/_[^_]+_seq$/, '');
-                const colName = seqName.replace(/^[^_]+_/, '').replace(/_seq$/, '');
-
-                await v2.query(
-                    `SELECT setval('"${seqName}"', COALESCE((SELECT MAX("${colName}") FROM "${tableName}"), 1), true)`
-                ).catch(() => { /* ignore if table/col doesn't match */ });
-            } catch { /* ignore */ }
-        }
-
-        console.log(`\n✅ Migration complete!`);
-        console.log(`   Migrated: ${totalMigrated} rows`);
-        console.log(`   Skipped (already synced): ${totalSkipped} rows`);
-
-    } finally {
-        await v1.end();
-        await v2.end();
+    } else {
+        console.log("   ✅ Already in sync!");
     }
+
+    // ─── 2. Sync Transaction records ────────────────────────────
+    console.log("\n📋 Syncing Transaction records...");
+
+    // V1 transactions have: id, amount, type (string: "credit"/"debit"), description, timestamp, playerId
+    // V2 transactions have: id, amount, type (enum: CREDIT/DEBIT), description, createdAt, playerId
+    const v1Txns = await v1.query(`SELECT id, amount, type, description, timestamp, "playerId" FROM "Transaction"`);
+    const v2TxnIds = await v2.query(`SELECT id FROM "Transaction"`);
+    const v2TxnIdSet = new Set(v2TxnIds.rows.map((r) => r.id));
+
+    const missingTxns = v1Txns.rows.filter((r) => !v2TxnIdSet.has(r.id));
+    console.log(`   V1: ${v1Txns.rows.length}, V2: ${v2TxnIds.rows.length}, Missing: ${missingTxns.length}`);
+
+    // Verify referenced players exist in V2
+    const missingPlayerIds = [...new Set(missingTxns.map((r) => r.playerId))];
+    const v2Players = await v2.query(`SELECT id FROM "Player" WHERE id = ANY($1)`, [missingPlayerIds]);
+    const v2PlayerIdSet = new Set(v2Players.rows.map((r) => r.id));
+
+    const validTxns = missingTxns.filter((r) => v2PlayerIdSet.has(r.playerId));
+    const skipped = missingTxns.length - validTxns.length;
+    if (skipped > 0) {
+        console.log(`   ⚠️  Skipping ${skipped} transactions (Player doesn't exist in V2)`);
+    }
+
+    if (validTxns.length > 0) {
+        console.log(`   ✏️  Inserting ${validTxns.length} transactions...`);
+
+        // Convert v1 type (lowercase string) to v2 type (uppercase enum)
+        const batchSize = 50;
+        for (let i = 0; i < validTxns.length; i += batchSize) {
+            const batch = validTxns.slice(i, i + batchSize);
+            const values = batch
+                .map((_, idx) => {
+                    const base = idx * 6;
+                    return `($${base + 1}, $${base + 2}, $${base + 3}::"TransactionType", $${base + 4}, $${base + 5}, $${base + 6})`;
+                })
+                .join(", ");
+            const params = batch.flatMap((r) => [
+                r.id,
+                r.amount,
+                r.type === "credit" ? "CREDIT" : r.type === "debit" ? "DEBIT" : r.type.toUpperCase(),
+                r.description,
+                r.timestamp,
+                r.playerId,
+            ]);
+
+            await v2.query(
+                `INSERT INTO "Transaction" (id, amount, type, description, "createdAt", "playerId") VALUES ${values} ON CONFLICT (id) DO NOTHING`,
+                params
+            );
+        }
+        console.log(`   ✅ Inserted ${validTxns.length} transactions`);
+    } else {
+        console.log("   ✅ Transactions already in sync!");
+    }
+
+    // ─── Summary ────────────────────────────────────────────────
+    const v2TxnAfter = await v2.query(`SELECT COUNT(*) FROM "Transaction"`);
+    console.log(`\n📊 After sync: V2 has ${v2TxnAfter.rows[0].count} transactions`);
+
+    await v1.end();
+    await v2.end();
+    console.log("\n✅ Done!");
 }
 
-main().catch((e) => {
-    console.error("❌ Migration failed:", e);
+main().catch((err) => {
+    console.error("❌ Error:", err);
     process.exit(1);
 });

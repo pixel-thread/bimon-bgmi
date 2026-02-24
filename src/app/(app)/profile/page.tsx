@@ -599,7 +599,7 @@ export default function ProfilePage() {
                 {ignTutorial.Modal}
 
                 {/* Sign Out */}
-                <div className="mt-6 pb-20 sm:pb-4">
+                <div className="mt-6 pb-20 lg:pb-4">
                     <Button
                         color="danger" variant="flat" fullWidth
                         startContent={<LogOut className="h-4 w-4" />}

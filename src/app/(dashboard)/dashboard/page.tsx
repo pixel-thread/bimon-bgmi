@@ -16,7 +16,6 @@ import {
     Wallet,
     Gamepad2,
     ShieldBan,
-    BarChart3,
     AlertCircle,
     UsersRound,
 } from "lucide-react";
@@ -28,7 +27,6 @@ interface DashboardStats {
     tournaments: { active: number; total: number };
     polls: { active: number };
     economy: { totalBalance: number };
-    matches: { total: number };
     teams: { avgPerTournament: number } | undefined;
 }
 
@@ -149,7 +147,6 @@ export default function DashboardPage() {
                         {[
                             { label: "Active Tournaments", value: data.tournaments.active.toString(), icon: Trophy, color: "text-warning" },
                             { label: "Active Polls", value: data.polls.active.toString(), icon: Vote, color: "text-secondary" },
-                            { label: "Total Matches", value: data.matches.total.toLocaleString(), icon: BarChart3, color: "text-primary" },
                             { label: "Banned Players", value: data.players.banned.toString(), icon: ShieldBan, color: "text-danger" },
                         ].map((stat, i) => (
                             <motion.div

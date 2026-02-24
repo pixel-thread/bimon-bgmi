@@ -36,7 +36,6 @@ export async function GET(request: NextRequest) {
             seasonTournaments,
             activePollCount,
             walletAgg,
-            totalMatches,
             bannedCount,
         ] = await Promise.all([
             prisma.user.count(),
@@ -46,11 +45,6 @@ export async function GET(request: NextRequest) {
             prisma.tournament.count({ where: tournamentWhere }),
             prisma.poll.count({ where: { isActive: true } }),
             prisma.wallet.aggregate({ _sum: { balance: true } }),
-            prisma.match.count({
-                where: seasonId
-                    ? { teams: { some: { tournament: { seasonId } } } }
-                    : {},
-            }),
             prisma.player.count({ where: { isBanned: true } }),
         ]);
 
@@ -116,9 +110,6 @@ export async function GET(request: NextRequest) {
             },
             economy: {
                 totalBalance: walletAgg._sum.balance ?? 0,
-            },
-            matches: {
-                total: totalMatches,
             },
             teams: {
                 avgPerTournament: avgPlayersPerTournament,

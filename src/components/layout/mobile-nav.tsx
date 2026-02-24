@@ -84,7 +84,18 @@ export function MobileNav() {
     useEffect(() => {
         if (pathname.startsWith("/dashboard")) {
             const sub = pathname.split("/")[2];
-            const label = sub ? sub.charAt(0).toUpperCase() + sub.slice(1) : "Admin";
+            // Use the sidebar item's real label, shortened for nav
+            let label = sub ? sub.charAt(0).toUpperCase() + sub.slice(1) : "Admin";
+            for (const section of sidebarItems) {
+                for (const item of section.items) {
+                    if (pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))) {
+                        // Use last word of multi-word labels (e.g. "Player Insights" → "Insights")
+                        const words = item.label.split(" ");
+                        label = words.length > 1 ? words[words.length - 1] : item.label;
+                        break;
+                    }
+                }
+            }
 
             let icon: LucideIcon = LayoutDashboard;
             for (const section of sidebarItems) {
@@ -110,7 +121,7 @@ export function MobileNav() {
     const initials = user?.firstName?.[0] || user?.username?.[0]?.toUpperCase() || "?";
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-divider bg-background/80 backdrop-blur-xl sm:hidden">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-divider bg-background/80 backdrop-blur-xl lg:hidden">
             <div className="mx-auto flex max-w-lg items-center justify-around">
                 {allTabs.map((tab) => {
                     const isActive = pathname.startsWith(tab.href);
@@ -154,7 +165,7 @@ export function MobileNav() {
                                     strokeWidth={isActive ? 2.5 : 1.5}
                                 />
                             ) : null}
-                            <span className={`${isActive ? "font-semibold" : "font-normal"} ${tab.label === "__wallet__"
+                            <span className={`${tab.label !== "__wallet__" ? "max-w-[64px] truncate" : ""} ${isActive ? "font-semibold" : "font-normal"} ${tab.label === "__wallet__"
                                 ? (balance ?? 0) > 0 ? "text-success" : (balance ?? 0) < 0 ? "text-danger" : ""
                                 : ""
                                 }`}>

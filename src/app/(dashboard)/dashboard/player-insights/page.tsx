@@ -190,7 +190,7 @@ export default function PlayerInsightsPage() {
             ) : data ? (
                 <>
                     {/* Biggest Losers & Winners — side by side */}
-                    <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="grid min-w-0 gap-4 lg:grid-cols-2">
                         {/* Biggest Losers */}
                         <motion.div
                             key={`losers-${effectiveSeasonId}`}
@@ -209,15 +209,15 @@ export default function PlayerInsightsPage() {
                                         </p>
                                     ) : (
                                         <div className="overflow-x-auto">
-                                            <table className="w-full text-sm">
+                                            <table className="w-full text-xs sm:text-sm">
                                                 <thead>
                                                     <tr className="border-b border-divider text-foreground/40">
-                                                        <th className="px-3 py-2 text-left font-medium">Rank</th>
-                                                        <th className="px-3 py-2 text-left font-medium">Player</th>
-                                                        <th className="px-3 py-2 text-center font-medium">Tournaments</th>
-                                                        <th className="px-3 py-2 text-right font-medium">Entry Fees</th>
-                                                        <th className="px-3 py-2 text-right font-medium">Prizes</th>
-                                                        <th className="px-3 py-2 text-right font-medium">Loss</th>
+                                                        <th className="px-1.5 py-2 text-left font-medium sm:px-3">Rank</th>
+                                                        <th className="px-1.5 py-2 text-left font-medium sm:px-3">Player</th>
+                                                        <th className="px-1.5 py-2 text-center font-medium sm:px-3">Played</th>
+                                                        <th className="hidden px-3 py-2 text-right font-medium sm:table-cell">Entry Fees</th>
+                                                        <th className="hidden px-3 py-2 text-right font-medium sm:table-cell">Prizes</th>
+                                                        <th className="px-1.5 py-2 text-right font-medium sm:px-3">Loss</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -226,22 +226,22 @@ export default function PlayerInsightsPage() {
                                                             key={entry.id}
                                                             className="border-b border-divider/50 transition-colors hover:bg-default-100/50"
                                                         >
-                                                            <td className="px-3 py-2.5 text-center text-sm">
+                                                            <td className="px-1.5 py-2.5 text-center sm:px-3">
                                                                 {rankEmoji(entry.rank)}
                                                             </td>
-                                                            <td className="max-w-[140px] truncate px-3 py-2.5 font-medium">
+                                                            <td className="max-w-[100px] truncate px-1.5 py-2.5 font-medium sm:max-w-[140px] sm:px-3">
                                                                 {entry.name}
                                                             </td>
-                                                            <td className="px-3 py-2.5 text-center text-foreground/60">
+                                                            <td className="px-1.5 py-2.5 text-center text-foreground/60 sm:px-3">
                                                                 {entry.tournaments}
                                                             </td>
-                                                            <td className="px-3 py-2.5 text-right text-foreground/60">
+                                                            <td className="hidden px-3 py-2.5 text-right text-foreground/60 sm:table-cell">
                                                                 ₹{entry.entryFees.toLocaleString()}
                                                             </td>
-                                                            <td className="px-3 py-2.5 text-right text-foreground/60">
+                                                            <td className="hidden px-3 py-2.5 text-right text-foreground/60 sm:table-cell">
                                                                 ₹{entry.prizes.toLocaleString()}
                                                             </td>
-                                                            <td className="px-3 py-2.5 text-right font-bold text-danger">
+                                                            <td className="px-1.5 py-2.5 text-right font-bold text-danger sm:px-3">
                                                                 -₹{entry.loss.toLocaleString()}
                                                             </td>
                                                         </tr>
@@ -273,15 +273,15 @@ export default function PlayerInsightsPage() {
                                         </p>
                                     ) : (
                                         <div className="overflow-x-auto">
-                                            <table className="w-full text-sm">
+                                            <table className="w-full text-xs sm:text-sm">
                                                 <thead>
                                                     <tr className="border-b border-divider text-foreground/40">
-                                                        <th className="px-3 py-2 text-left font-medium">Rank</th>
-                                                        <th className="px-3 py-2 text-left font-medium">Player</th>
-                                                        <th className="px-3 py-2 text-center font-medium">Tournaments</th>
-                                                        <th className="px-3 py-2 text-right font-medium">Entry Fees</th>
-                                                        <th className="px-3 py-2 text-right font-medium">Prizes</th>
-                                                        <th className="px-3 py-2 text-right font-medium">Profit</th>
+                                                        <th className="px-1.5 py-2 text-left font-medium sm:px-3">Rank</th>
+                                                        <th className="px-1.5 py-2 text-left font-medium sm:px-3">Player</th>
+                                                        <th className="px-1.5 py-2 text-center font-medium sm:px-3">Played</th>
+                                                        <th className="hidden px-3 py-2 text-right font-medium sm:table-cell">Entry Fees</th>
+                                                        <th className="hidden px-3 py-2 text-right font-medium sm:table-cell">Prizes</th>
+                                                        <th className="px-1.5 py-2 text-right font-medium sm:px-3">Profit</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -290,22 +290,22 @@ export default function PlayerInsightsPage() {
                                                             key={entry.id}
                                                             className="border-b border-divider/50 transition-colors hover:bg-default-100/50"
                                                         >
-                                                            <td className="px-3 py-2.5 text-center text-sm">
+                                                            <td className="px-1.5 py-2.5 text-center sm:px-3">
                                                                 {rankEmoji(entry.rank)}
                                                             </td>
-                                                            <td className="max-w-[140px] truncate px-3 py-2.5 font-medium">
+                                                            <td className="max-w-[100px] truncate px-1.5 py-2.5 font-medium sm:max-w-[140px] sm:px-3">
                                                                 {entry.name}
                                                             </td>
-                                                            <td className="px-3 py-2.5 text-center text-foreground/60">
+                                                            <td className="px-1.5 py-2.5 text-center text-foreground/60 sm:px-3">
                                                                 {entry.tournaments}
                                                             </td>
-                                                            <td className="px-3 py-2.5 text-right text-foreground/60">
+                                                            <td className="hidden px-3 py-2.5 text-right text-foreground/60 sm:table-cell">
                                                                 ₹{entry.entryFees.toLocaleString()}
                                                             </td>
-                                                            <td className="px-3 py-2.5 text-right text-foreground/60">
+                                                            <td className="hidden px-3 py-2.5 text-right text-foreground/60 sm:table-cell">
                                                                 ₹{entry.prizes.toLocaleString()}
                                                             </td>
-                                                            <td className="px-3 py-2.5 text-right font-bold text-success">
+                                                            <td className="px-1.5 py-2.5 text-right font-bold text-success sm:px-3">
                                                                 +₹{entry.profit.toLocaleString()}
                                                             </td>
                                                         </tr>

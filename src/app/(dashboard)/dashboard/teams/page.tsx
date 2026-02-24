@@ -241,6 +241,31 @@ export default function TeamsPage() {
         [matches, matchId]
     );
 
+    // ── Create match mutation ─────────────────────────────────
+
+    const { mutate: createMatch, isPending: isCreating } = useMutation({
+        mutationFn: async () => {
+            const res = await fetch("/api/matches", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tournamentId }),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.message || "Failed");
+            return json;
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Match created");
+            queryClient.invalidateQueries({ queryKey: ["matches-brief"] });
+            queryClient.invalidateQueries({ queryKey: ["teams"] });
+            // Auto-select the newly created match
+            if (data.data?.id) {
+                setMatchId(data.data.id);
+            }
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+
     // ── Delete match mutation ─────────────────────────────────
 
     const { mutate: deleteMatch, isPending: isDeleting } = useMutation({
@@ -277,6 +302,10 @@ export default function TeamsPage() {
 
     function handleMatchChange(keys: "all" | Set<string | number>) {
         const val = Array.from(keys as Set<string>)[0] as string;
+        if (val === "create-new") {
+            createMatch();
+            return;
+        }
         setMatchId(val || "");
     }
 
@@ -335,6 +364,7 @@ export default function TeamsPage() {
                             classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
                             aria-label="Match"
                             className="w-[105px] min-w-[105px]"
+                            isLoading={isCreating}
                         >
                             {[
                                 <SelectItem key="all" textValue="All Matches">All Matches</SelectItem>,
@@ -343,6 +373,16 @@ export default function TeamsPage() {
                                         Match {m.matchNumber}
                                     </SelectItem>
                                 )),
+                                <SelectItem
+                                    key="create-new"
+                                    textValue="+ New"
+                                    className="text-success data-[hover=true]:text-success"
+                                >
+                                    <span className="flex items-center gap-1 whitespace-nowrap">
+                                        <Plus className="h-3 w-3" />
+                                        New
+                                    </span>
+                                </SelectItem>,
                             ]}
                         </Select>
                         <Divider orientation="vertical" className="h-5 mx-0.5" />

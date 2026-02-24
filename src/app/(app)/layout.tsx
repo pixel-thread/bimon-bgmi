@@ -17,7 +17,7 @@ export default function AppLayout({
         <OnboardingGuard>
             <div className="flex min-h-dvh flex-col">
                 <Header />
-                <main className="flex-1 pt-16 pb-16 sm:pb-0">{children}</main>
+                <main className="flex-1 pt-16 pb-16 lg:pb-0">{children}</main>
                 <MobileNav />
             </div>
         </OnboardingGuard>

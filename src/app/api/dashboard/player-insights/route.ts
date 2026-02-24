@@ -66,7 +66,6 @@ export async function GET(req: NextRequest) {
             }
         }
 
-        const tournamentNames = tournaments.map((t) => t.name);
         const tournamentIds = tournaments.map((t) => t.id);
 
         // Get all teams in these tournaments with their players
@@ -103,6 +102,7 @@ export async function GET(req: NextRequest) {
             }
         }
 
+
         // Get all player IDs involved
         const allPlayerIds = Array.from(playerTournamentCount.keys());
 
@@ -135,33 +135,88 @@ export async function GET(req: NextRequest) {
             },
         });
 
-        // Calculate per-player: entry fees and prizes for THIS season's tournaments
-        // Also track org-given UC (credits not from tournament prizes)
+        // Calculate per-player entry fees directly from tournament fees × team membership
+        // This is more reliable than parsing transactions (which can have duplicates, refunds, etc.)
         const playerFees = new Map<string, number>();
+        const tournamentFeeMap = new Map<string, number>();
+        for (const t of tournaments) {
+            tournamentFeeMap.set(t.id, t.fee ?? 0);
+        }
+
+        for (const team of teams) {
+            const fee = tournamentFeeMap.get(team.tournamentId!) || 0;
+            for (const player of team.players) {
+                playerFees.set(player.id, (playerFees.get(player.id) || 0) + fee);
+            }
+        }
+
+        // Subtract free entries for lucky voters
+        const luckyVoterPolls = await prisma.poll.findMany({
+            where: {
+                luckyVoterId: { not: null },
+                tournamentId: { in: tournamentIds },
+            },
+            select: {
+                luckyVoterId: true,
+                tournament: { select: { fee: true } },
+            },
+        });
+        for (const poll of luckyVoterPolls) {
+            if (poll.luckyVoterId) {
+                const currentFee = playerFees.get(poll.luckyVoterId) || 0;
+                playerFees.set(
+                    poll.luckyVoterId,
+                    currentFee - (poll.tournament?.fee ?? 0)
+                );
+            }
+        }
+
+        // Subtract fees for UC-exempt players
+        const ucExemptPlayers = await prisma.player.findMany({
+            where: { isUCExempt: true, id: { in: allPlayerIds } },
+            select: { id: true },
+        });
+        const exemptIds = new Set(ucExemptPlayers.map((p) => p.id));
+        if (exemptIds.size > 0) {
+            for (const team of teams) {
+                const fee = tournamentFeeMap.get(team.tournamentId!) || 0;
+                for (const player of team.players) {
+                    if (exemptIds.has(player.id)) {
+                        playerFees.set(
+                            player.id,
+                            (playerFees.get(player.id) || 0) - fee
+                        );
+                    }
+                }
+            }
+        }
+
+        // Calculate total entry fees collected
+        let totalEntryFeesCollected = 0;
+        for (const [, fee] of playerFees) {
+            totalEntryFeesCollected += fee;
+        }
+
+        // Calculate prizes from transactions (prizes vary by placement, so transactions are needed)
         const playerPrizes = new Map<string, number>();
 
         // Org economy: categorize non-tournament credits
         const orgCategories = new Map<string, { total: number; count: number; players: Set<string> }>();
         let totalOrgGiven = 0;
-        let totalEntryFeesCollected = 0;
         let totalPrizesDistributed = 0;
 
         for (const tx of transactions) {
             const desc = tx.description.toLowerCase();
 
-            // Check if this is a season tournament transaction
-            const isSeasonTx = tournamentNames.some((name) =>
-                tx.description.includes(name)
+            // Check if this is a season tournament transaction using exact matching
+            const isSeasonTx = tournaments.some(
+                (t) => tx.description === `Entry fee for ${t.name}` ||
+                    tx.description.endsWith(`: ${t.name}`)
             );
 
-            if (isSeasonTx && tx.type === "DEBIT" && desc.includes("entry")) {
-                // Tournament entry fee
-                playerFees.set(
-                    tx.playerId,
-                    (playerFees.get(tx.playerId) || 0) + tx.amount
-                );
-                totalEntryFeesCollected += tx.amount;
-            } else if (isSeasonTx && tx.type === "CREDIT" && (desc.includes("prize") || desc.includes("place"))) {
+            const typeLC = tx.type.toLowerCase();
+
+            if (isSeasonTx && typeLC === "credit" && (desc.includes("prize") || desc.includes("place"))) {
                 // Tournament prize
                 playerPrizes.set(
                     tx.playerId,
@@ -175,9 +230,10 @@ export async function GET(req: NextRequest) {
         for (const tx of allCredits) {
             const desc = tx.description.toLowerCase();
 
-            // Skip tournament prizes (already counted above)
-            const isSeasonTx = tournamentNames.some((name) =>
-                tx.description.includes(name)
+            // Skip tournament prizes (already counted above) — use exact matching
+            const isSeasonTx = tournaments.some(
+                (t) => tx.description === `Entry fee for ${t.name}` ||
+                    tx.description.endsWith(`: ${t.name}`)
             );
             if (isSeasonTx && (desc.includes("prize") || desc.includes("place"))) continue;
 
@@ -201,17 +257,7 @@ export async function GET(req: NextRequest) {
             totalOrgGiven += tx.amount;
         }
 
-        // Lucky Voters: free entries = waived tournament fees (no transaction, calculated from Poll data)
-        const luckyVoterPolls = await prisma.poll.findMany({
-            where: {
-                luckyVoterId: { not: null },
-                tournamentId: { in: tournamentIds },
-            },
-            select: {
-                luckyVoterId: true,
-                tournament: { select: { fee: true } },
-            },
-        });
+        // Lucky Voters: free entries = waived tournament fees (reuse luckyVoterPolls from earlier)
         if (luckyVoterPolls.length > 0) {
             const luckyData = { total: 0, count: luckyVoterPolls.length, players: new Set<string>() };
             for (const poll of luckyVoterPolls) {
@@ -322,22 +368,18 @@ export async function GET(req: NextRequest) {
         });
         const totalOrgShare = orgIncomeRecords.reduce((sum, r) => sum + r.amount, 0);
 
-        // UC Exempt: waived entry fees for exempt players
-        const ucExemptPlayers = await prisma.player.findMany({
-            where: { isUCExempt: true },
-            select: { id: true },
-        });
+        // UC Exempt: waived entry fees for exempt players (reuse ucExemptPlayers from earlier)
         let totalUCExemptCost = 0;
-        if (ucExemptPlayers.length > 0) {
-            const exemptIds = ucExemptPlayers.map((p) => p.id);
+        if (exemptIds.size > 0) {
+            const exemptIdArray = Array.from(exemptIds);
             const exemptTeams = await prisma.team.findMany({
                 where: {
                     tournamentId: { in: tournamentIds },
-                    players: { some: { id: { in: exemptIds } } },
+                    players: { some: { id: { in: exemptIdArray } } },
                 },
                 select: {
                     tournament: { select: { fee: true } },
-                    players: { where: { id: { in: exemptIds } }, select: { id: true } },
+                    players: { where: { id: { in: exemptIdArray } }, select: { id: true } },
                 },
             });
             for (const team of exemptTeams) {
@@ -347,7 +389,7 @@ export async function GET(req: NextRequest) {
                 orgCategories.set("UC Exempt", {
                     total: totalUCExemptCost,
                     count: exemptTeams.length,
-                    players: new Set(exemptIds),
+                    players: new Set(exemptIdArray),
                 });
                 totalOrgGiven += totalUCExemptCost;
             }

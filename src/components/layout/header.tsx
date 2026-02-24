@@ -126,7 +126,7 @@ export function Header() {
         <>
             {/* Backdrop overlay — fades in/out smoothly */}
             <div
-                className={`fixed inset-0 left-[280px] z-[39] bg-black/40 backdrop-blur-sm sm:hidden transition-opacity duration-300 ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+                className={`fixed inset-0 left-[280px] z-[39] bg-black/40 backdrop-blur-sm lg:hidden transition-opacity duration-300 ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
                     }`}
                 onClick={() => setIsMenuOpen(false)}
             />
@@ -146,7 +146,7 @@ export function Header() {
             >
                 {/* Logo */}
                 <NavbarContent justify="start">
-                    <NavbarMenuToggle className="sm:hidden" />
+                    <NavbarMenuToggle className="lg:hidden" />
                     <NavbarBrand>
                         <span className="text-lg font-bold tracking-tight">PUBGMI</span>
                     </NavbarBrand>
@@ -154,7 +154,7 @@ export function Header() {
 
 
                 {/* Desktop Nav */}
-                <NavbarContent className="hidden gap-3 sm:flex" justify="center">
+                <NavbarContent className="hidden gap-3 lg:flex" justify="center">
                     {navItems.map((item) => {
                         const isActive = pathname.startsWith(item.href);
                         return (
@@ -283,7 +283,7 @@ export function Header() {
                                     )}
                                 </Link>
                             </NavbarItem>
-                            <NavbarItem className="hidden sm:flex">
+                            <NavbarItem className="hidden lg:flex">
                                 <Link href="/profile" className="block">
                                     {user?.imageUrl ? (
                                         // eslint-disable-next-line @next/next/no-img-element

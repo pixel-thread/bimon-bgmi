@@ -54,7 +54,7 @@ export default async function DashboardLayout({
                     <header className="hidden h-14 items-center border-b border-divider px-4 lg:flex lg:px-6">
                         <h1 className="text-base font-semibold">Admin Panel</h1>
                     </header>
-                    <main className="flex-1 p-4 pb-20 sm:pb-4 md:p-6">{children}</main>
+                    <main className="flex-1 p-4 pb-20 lg:pb-4 md:p-6">{children}</main>
                 </div>
             </div>
             <MobileNav />
