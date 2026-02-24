@@ -48,6 +48,7 @@ export function MobileNav() {
             const json = await res.json();
             return json.data || {};
         },
+        enabled: !!user,
         staleTime: 5 * 60 * 1000,
     });
 

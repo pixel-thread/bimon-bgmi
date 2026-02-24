@@ -99,7 +99,7 @@ export async function GET(request: Request) {
             };
         });
 
-        return SuccessResponse({ data: { polls: data, currentPlayerId: playerId ?? null }, cache: CACHE.SHORT });
+        return SuccessResponse({ data: { polls: data, currentPlayerId: playerId ?? null }, cache: CACHE.NONE });
     } catch (error) {
         console.error("[GET /api/polls] Error:", error);
         return ErrorResponse({ message: "Failed to fetch polls", error });

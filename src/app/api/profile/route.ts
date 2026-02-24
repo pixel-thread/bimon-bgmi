@@ -162,7 +162,7 @@ export async function GET() {
                 : null,
         };
 
-        return SuccessResponse({ data, cache: CACHE.SHORT });
+        return SuccessResponse({ data, cache: CACHE.NONE });
     } catch (error) {
         return ErrorResponse({ message: "Failed to fetch profile", error });
     }
