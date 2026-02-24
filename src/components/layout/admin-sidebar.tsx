@@ -12,7 +12,6 @@ import {
     Swords,
     DollarSign,
     Shield,
-    Bell,
     Gamepad2,
     BookOpen,
     Briefcase,
@@ -63,7 +62,6 @@ const sidebarItems: SidebarSection[] = [
             { label: "Analytics", href: "/dashboard/analytics", icon: Target },
             { label: "Royal Pass", href: "/dashboard/royal-pass", icon: Crown },
             { label: "Income", href: "/dashboard/income", icon: DollarSign },
-            { label: "Notifications", href: "/dashboard/notifications", icon: Bell },
         ],
     },
     {
