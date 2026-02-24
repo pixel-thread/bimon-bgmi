@@ -1,7 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardBody, Skeleton } from "@heroui/react";
+import {
+    Card,
+    CardBody,
+    CardHeader,
+    Divider,
+    Skeleton,
+} from "@heroui/react";
 import {
     Users,
     Trophy,
@@ -11,6 +17,7 @@ import {
     ShieldBan,
     BarChart3,
     AlertCircle,
+    TrendingUp,
 } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -35,7 +42,7 @@ const statIconMap = {
 };
 
 /**
- * /dashboard — Admin overview with key stats.
+ * /dashboard — Admin overview with key stats and analytics.
  */
 export default function DashboardPage() {
     const { data, isLoading, error } = useQuery<DashboardStats>({
@@ -137,6 +144,123 @@ export default function DashboardPage() {
                         );
                     })}
             </div>
+
+            {/* Detailed Analytics Cards */}
+            {!isLoading && data && (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {/* Players overview */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
+                        <Card className="border border-divider">
+                            <CardHeader className="gap-2 pb-2">
+                                <Users className="h-4 w-4 text-primary" />
+                                <h3 className="text-sm font-semibold">Players</h3>
+                            </CardHeader>
+                            <Divider />
+                            <CardBody className="space-y-3 pt-3">
+                                <div className="flex items-baseline justify-between">
+                                    <span className="text-3xl font-bold">
+                                        {data.players.total}
+                                    </span>
+                                    <span className="text-xs text-foreground/40">
+                                        total players
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between rounded-lg bg-default-100 px-3 py-1.5 text-xs">
+                                    <span className="text-foreground/50">Active</span>
+                                    <span className="font-semibold text-success">
+                                        {data.players.total - data.players.banned}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between rounded-lg bg-danger-50/50 px-3 py-1.5 text-xs dark:bg-danger-50/10">
+                                    <span className="text-foreground/50">Banned</span>
+                                    <span className="font-semibold text-danger">
+                                        {data.players.banned}
+                                    </span>
+                                </div>
+                            </CardBody>
+                        </Card>
+                    </motion.div>
+
+                    {/* Tournaments overview */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.05 }}
+                    >
+                        <Card className="border border-divider">
+                            <CardHeader className="gap-2 pb-2">
+                                <Trophy className="h-4 w-4 text-warning" />
+                                <h3 className="text-sm font-semibold">Tournaments</h3>
+                            </CardHeader>
+                            <Divider />
+                            <CardBody className="space-y-3 pt-3">
+                                <div className="flex items-baseline justify-between">
+                                    <span className="text-3xl font-bold">
+                                        {data.tournaments.total}
+                                    </span>
+                                    <span className="text-xs text-foreground/40">
+                                        total tournaments
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between rounded-lg bg-success-50/50 px-3 py-1.5 text-xs dark:bg-success-50/10">
+                                    <span className="text-foreground/50">Active</span>
+                                    <span className="font-semibold text-success">
+                                        {data.tournaments.active}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between rounded-lg bg-default-100 px-3 py-1.5 text-xs">
+                                    <span className="text-foreground/50">Active Polls</span>
+                                    <span className="font-semibold">
+                                        {data.polls.active}
+                                    </span>
+                                </div>
+                            </CardBody>
+                        </Card>
+                    </motion.div>
+
+                    {/* Economy overview */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                    >
+                        <Card className="border border-divider">
+                            <CardHeader className="gap-2 pb-2">
+                                <Wallet className="h-4 w-4 text-success" />
+                                <h3 className="text-sm font-semibold">Economy</h3>
+                            </CardHeader>
+                            <Divider />
+                            <CardBody className="space-y-3 pt-3">
+                                <div className="flex items-baseline justify-between">
+                                    <span className="text-3xl font-bold">
+                                        {data.economy.totalBalance.toLocaleString()}
+                                    </span>
+                                    <span className="text-xs text-foreground/40">
+                                        total UC
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between rounded-lg bg-default-100 px-3 py-1.5 text-xs">
+                                    <span className="text-foreground/50">Users</span>
+                                    <span className="font-semibold">
+                                        {data.users.total}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between rounded-lg bg-default-100 px-3 py-1.5 text-xs">
+                                    <span className="text-foreground/50">
+                                        Recent Match Groups
+                                    </span>
+                                    <span className="font-semibold">
+                                        {data.matches.total}
+                                    </span>
+                                </div>
+                            </CardBody>
+                        </Card>
+                    </motion.div>
+                </div>
+            )}
         </div>
     );
 }

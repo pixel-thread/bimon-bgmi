@@ -6,7 +6,6 @@ import {
     BarChart3,
     Users,
     Trophy,
-    Target,
     Vote,
     Settings,
     Swords,
@@ -16,9 +15,6 @@ import {
     BookOpen,
     Briefcase,
     Crown,
-    Star,
-    Gift,
-    TrendingDown,
     Loader2,
 } from "lucide-react";
 import { useAuthUser } from "@/hooks/use-auth-user";
@@ -59,7 +55,6 @@ const sidebarItems: SidebarSection[] = [
         section: "Insights",
         superAdminOnly: true,
         items: [
-            { label: "Analytics", href: "/dashboard/analytics", icon: Target },
             { label: "Royal Pass", href: "/dashboard/royal-pass", icon: Crown },
             { label: "Income", href: "/dashboard/income", icon: DollarSign },
         ],
