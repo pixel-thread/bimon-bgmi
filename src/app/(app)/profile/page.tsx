@@ -510,8 +510,8 @@ export default function ProfilePage() {
 
                                     {/* Game Name */}
                                     <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <p className="text-xs text-foreground/40">Game Name</p>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <label className="text-sm font-medium text-foreground/70">Game Name</label>
                                             {ignTutorial.HelpButton}
                                         </div>
                                         <GameNameInput
@@ -521,7 +521,23 @@ export default function ProfilePage() {
                                             onErrorChange={setIgnError}
                                             disabled={saving}
                                         />
-                                        <p className="text-[10px] text-foreground/30 mt-1">Leave empty to keep current name</p>
+                                        <p className="mt-2 text-xs text-foreground/40">
+                                            <button
+                                                type="button"
+                                                onClick={ignTutorial.openModal}
+                                                className="text-primary hover:underline font-medium"
+                                            >
+                                                Kumno ban copy?
+                                            </button>
+                                            {" / "}
+                                            <button
+                                                type="button"
+                                                onClick={ignTutorial.openModal}
+                                                className="text-primary hover:underline font-medium"
+                                            >
+                                                Need help?
+                                            </button>
+                                        </p>
                                     </div>
 
                                     {/* Bio */}
