@@ -94,13 +94,12 @@ export function Header() {
 
     return (
         <>
-            {/* Backdrop overlay — blurs page and closes menu on tap */}
-            {isMenuOpen && (
-                <div
-                    className="fixed inset-0 left-[280px] z-[39] bg-black/40 backdrop-blur-sm sm:hidden"
-                    onClick={() => setIsMenuOpen(false)}
-                />
-            )}
+            {/* Backdrop overlay — fades in/out smoothly */}
+            <div
+                className={`fixed inset-0 left-[280px] z-[39] bg-black/40 backdrop-blur-sm sm:hidden transition-opacity duration-300 ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+                    }`}
+                onClick={() => setIsMenuOpen(false)}
+            />
             <Navbar
                 isMenuOpen={isMenuOpen}
                 onMenuOpenChange={setIsMenuOpen}
@@ -109,7 +108,8 @@ export function Header() {
                 classNames={{
                     base: "!fixed !top-0 !left-0 !right-0 !z-40 bg-background/60 backdrop-blur-xl border-b border-divider",
                     wrapper: "px-4 sm:px-6",
-                    menu: "!fixed !top-[var(--navbar-height)] !h-[calc(100dvh-var(--navbar-height))] !w-[280px] !max-w-[280px] border-r border-divider shadow-xl !bg-background/60 !backdrop-blur-xl !backdrop-saturate-150 !overflow-y-auto",
+                    menu: `!fixed !top-[var(--navbar-height)] !h-[calc(100dvh-var(--navbar-height))] !w-[280px] !max-w-[280px] border-r border-divider shadow-xl !bg-background/60 !backdrop-blur-xl !backdrop-saturate-150 !overflow-y-auto transition-transform duration-300 ease-out ${isMenuOpen ? "!translate-x-0" : "!-translate-x-full"
+                        }`,
                 }}
                 isBordered
             >

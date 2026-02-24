@@ -275,11 +275,6 @@ export default function ProfilePage() {
                                 <div className="flex items-center gap-1.5 mt-0.5">
                                     <span className="text-sm text-white/50">@{profile.username}</span>
                                     {player && <CategoryBadge category={player.category} size="sm" />}
-                                    {profile.role !== "PLAYER" && (
-                                        <Chip size="sm" variant="flat" color="primary" startContent={<Shield className="h-3 w-3" />}>
-                                            {profile.role}
-                                        </Chip>
-                                    )}
                                 </div>
                             </div>
                         </div>
