@@ -61,15 +61,15 @@ export default function LuckyVoterPage() {
         },
     });
 
-    const [selectedTournament, setSelectedTournament] = useState<string>("all");
+    const [selectedSeason, setSelectedSeason] = useState<string>("all");
 
-    // Derive unique tournaments for the selector
-    const tournaments = useMemo(() => {
+    // Derive unique seasons for the selector
+    const seasons = useMemo(() => {
         if (!data) return [];
         const seen = new Map<string, string>();
         for (const w of data.winners) {
-            if (!seen.has(w.tournamentId)) {
-                seen.set(w.tournamentId, w.tournamentName);
+            if (w.seasonId && !seen.has(w.seasonId)) {
+                seen.set(w.seasonId, w.seasonName);
             }
         }
         return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
@@ -78,9 +78,9 @@ export default function LuckyVoterPage() {
     // Filtered winners + stats
     const filteredWinners = useMemo(() => {
         if (!data) return [];
-        if (selectedTournament === "all") return data.winners;
-        return data.winners.filter((w) => w.tournamentId === selectedTournament);
-    }, [data, selectedTournament]);
+        if (selectedSeason === "all") return data.winners;
+        return data.winners.filter((w) => w.seasonId === selectedSeason);
+    }, [data, selectedSeason]);
 
     const filteredStats = useMemo(() => {
         return {
@@ -185,20 +185,20 @@ export default function LuckyVoterPage() {
                 </motion.div>
             </div>
 
-            {/* Tournament Filter */}
+            {/* Season Filter */}
             <Select
-                label="Tournament"
-                selectedKeys={[selectedTournament]}
-                onChange={(e) => setSelectedTournament(e.target.value || "all")}
+                label="Season"
+                selectedKeys={[selectedSeason]}
+                onChange={(e) => setSelectedSeason(e.target.value || "all")}
                 size="sm"
                 className="max-w-xs"
                 classNames={{ trigger: "border border-divider" }}
                 variant="bordered"
             >
                 {[
-                    <SelectItem key="all">All Tournaments</SelectItem>,
-                    ...tournaments.map((t) => (
-                        <SelectItem key={t.id}>{t.name}</SelectItem>
+                    <SelectItem key="all">All Seasons</SelectItem>,
+                    ...seasons.map((s) => (
+                        <SelectItem key={s.id}>{s.name}</SelectItem>
                     )),
                 ]}
             </Select>

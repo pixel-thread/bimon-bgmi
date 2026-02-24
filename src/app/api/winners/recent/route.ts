@@ -12,7 +12,6 @@ export async function GET() {
         const tournaments = await prisma.tournament.findMany({
             where: {
                 isWinnerDeclared: true,
-                status: "ACTIVE",
             },
             orderBy: { startDate: "desc" },
             take: 6,

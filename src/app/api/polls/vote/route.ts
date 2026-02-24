@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        // Lucky voter lottery — 15% chance, only on FIRST vote, only for IN/SOLO, only if no winner yet
+        // Lucky voter lottery — weighted by losses: biggest losers get highest chance
         let isLuckyVoter = poll.luckyVoterId === playerId;
         const entryFee = poll.tournament?.fee ?? 0;
 
@@ -112,8 +112,53 @@ export async function POST(request: NextRequest) {
             (vote === "IN" || vote === "SOLO") &&
             entryFee > 0
         ) {
+            // Calculate this player's loss in the current season
+            const seasonId = poll.tournament?.seasonId;
+            let lossChance = 5; // base 5% for everyone
+
+            if (seasonId) {
+                // Get total fees paid in this season (team count × fee per tournament)
+                const seasonTeams = await prisma.team.findMany({
+                    where: {
+                        seasonId,
+                        players: { some: { id: playerId } },
+                        tournament: { fee: { gt: 0 } },
+                    },
+                    select: {
+                        tournament: { select: { fee: true } },
+                    },
+                });
+                const totalFeesPaid = seasonTeams.reduce(
+                    (sum, t) => sum + (t.tournament?.fee ?? 0),
+                    0
+                );
+
+                // Get total prizes won in this season
+                const prizeTransactions = await prisma.transaction.findMany({
+                    where: {
+                        playerId,
+                        type: "CREDIT",
+                        description: { contains: "place" },
+                    },
+                    select: { amount: true },
+                });
+                const totalPrizes = prizeTransactions.reduce(
+                    (sum, t) => sum + t.amount,
+                    0
+                );
+
+                // Net loss (positive = losing money)
+                const netLoss = totalFeesPaid - totalPrizes;
+
+                // Scale chance: 5% base → up to 40% for biggest losers
+                // Every 30 UC of loss adds ~5% chance, capped at 40%
+                if (netLoss > 0) {
+                    lossChance = Math.min(40, 5 + Math.floor(netLoss / 30) * 5);
+                }
+            }
+
             const roll = Math.floor(Math.random() * 100);
-            if (roll < 15) {
+            if (roll < lossChance) {
                 await prisma.poll.update({
                     where: { id: pollId },
                     data: { luckyVoterId: playerId },
