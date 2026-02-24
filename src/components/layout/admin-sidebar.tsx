@@ -16,6 +16,8 @@ import {
     Crown,
     Loader2,
     ChevronDown,
+    Eye,
+    Clover,
 } from "lucide-react";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { useState, useEffect, useCallback } from "react";
@@ -55,7 +57,9 @@ const sidebarItems: SidebarSection[] = [
         section: "Insights",
         superAdminOnly: true,
         items: [
+            { label: "Player Insights", href: "/dashboard/player-insights", icon: Eye },
             { label: "Royal Pass", href: "/dashboard/royal-pass", icon: Crown },
+            { label: "Lucky Voters", href: "/dashboard/lucky-voters", icon: Clover },
             { label: "Income", href: "/dashboard/income", icon: DollarSign },
         ],
     },

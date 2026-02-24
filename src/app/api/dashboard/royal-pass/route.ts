@@ -73,21 +73,30 @@ export async function GET(request: Request) {
         const ucCollected = currentSeasonPasses.reduce((sum, rp) => sum + rp.amount, 0);
         const paidPurchases = currentSeasonPasses.filter((rp) => rp.pricePaid > 0).length;
 
-        // UC Rewarded & per-player UC earned from PlayerStreak
+        // UC Rewarded — count from actual Transaction records (CREDIT with "streak" in desc)
         const allRpPlayerIds = [...new Set(royalPasses.map((rp) => rp.playerId))];
-        const streakRewards = allRpPlayerIds.length > 0
-            ? await prisma.playerStreak.findMany({
-                where: { playerId: { in: allRpPlayerIds } },
-                select: { playerId: true, pendingReward: true, lastRewardAt: true },
+        const streakTransactions = allRpPlayerIds.length > 0
+            ? await prisma.transaction.findMany({
+                where: {
+                    playerId: { in: allRpPlayerIds },
+                    type: "CREDIT",
+                    description: { contains: "Streak", mode: "insensitive" },
+                },
+                select: { playerId: true, amount: true },
             })
             : [];
-        const rewardMap = new Map(streakRewards.map((s) => [s.playerId, s]));
 
-        // UC Rewarded = only claimed rewards (lastRewardAt set, no pending)
-        const rpStreaks = streakRewards.filter((s) =>
-            currentSeasonPasses.some((rp) => rp.playerId === s.playerId)
-        );
-        const ucRewarded = rpStreaks.filter((s) => s.lastRewardAt && !s.pendingReward).length * 30;
+        // Per-player UC earned from streak rewards
+        const ucEarnedMap = new Map<string, number>();
+        for (const tx of streakTransactions) {
+            ucEarnedMap.set(tx.playerId, (ucEarnedMap.get(tx.playerId) || 0) + tx.amount);
+        }
+
+        // UC Rewarded = only for current season RP holders
+        const currentSeasonPlayerIds = new Set(currentSeasonPasses.map((rp) => rp.playerId));
+        const ucRewarded = streakTransactions
+            .filter((tx) => currentSeasonPlayerIds.has(tx.playerId))
+            .reduce((sum, tx) => sum + tx.amount, 0);
 
         const data = {
             passes: royalPasses.map((rp) => {
@@ -104,13 +113,7 @@ export async function GET(request: Request) {
                     pricePaid: rp.pricePaid,
                     promoCode: rp.promoCode,
                     streak: rp.player.streak?.current ?? 0,
-                    ucEarned: (() => {
-                        const s = rewardMap.get(rp.playerId);
-                        if (!s) return 0;
-                        // Only count as earned when claimed (lastRewardAt set, pendingReward null)
-                        if (s.lastRewardAt && !s.pendingReward) return 30;
-                        return 0;
-                    })(),
+                    ucEarned: ucEarnedMap.get(rp.playerId) || 0,
                     seasonName: rp.season?.name ?? "None",
                     createdAt: rp.createdAt,
                 };
