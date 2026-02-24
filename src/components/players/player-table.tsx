@@ -81,7 +81,7 @@ export function PlayerTable({
                             key={player.id}
                             onClick={() => onPlayerClick(player.id)}
                             className={`group flex cursor-pointer items-center gap-3 rounded-lg px-4 py-2.5 transition-colors ${player.hasRoyalPass
-                                ? "bg-yellow-500/5 hover:bg-yellow-500/10 active:bg-yellow-500/15"
+                                ? "bg-amber-500/10 hover:bg-amber-500/20 active:bg-amber-500/25"
                                 : "hover:bg-default-100 active:bg-default-200"
                                 }`}
                         >

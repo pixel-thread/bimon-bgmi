@@ -142,6 +142,7 @@ export function Header() {
                         }`,
                 }}
                 isBordered
+                shouldHideOnScroll
             >
                 {/* Logo */}
                 <NavbarContent justify="start">
