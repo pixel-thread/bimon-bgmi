@@ -45,25 +45,42 @@ function getDisplayName(
     return displayName || username;
 }
 
+function getSortMetric(player: PlayerDTO, sortBy: string): { label: string; value: string } {
+    switch (sortBy) {
+        case "balance":
+            return { label: "UC", value: player.balance.toLocaleString() };
+        case "kills":
+            return { label: "Kills", value: player.stats.kills.toLocaleString() };
+        case "matches":
+            return { label: "Matches", value: player.stats.matches.toLocaleString() };
+        case "kd":
+        default: {
+            const kd = player.stats.kd;
+            return { label: "KD", value: isFinite(kd) ? kd.toFixed(2) : "0.00" };
+        }
+    }
+}
+
 interface PodiumCardProps {
     player: PlayerDTO;
     position: 1 | 2 | 3;
     onPlayerClick: (id: string) => void;
+    sortBy?: string;
 }
 
 /**
- * A single podium card showing character image, position badge, name and K/D.
+ * A single podium card showing character image, position badge, name and metric.
  * Memoized to prevent video/GIF re-renders.
  */
 export const PodiumCard = memo(function PodiumCard({
     player,
     position,
     onPlayerClick,
+    sortBy = "kd",
 }: PodiumCardProps) {
     const config = positionConfig[position];
     const Icon = config.icon;
-    const kdValue = player.stats.kd;
-    const displayKd = isFinite(kdValue) ? kdValue.toFixed(2) : "0.00";
+    const metric = getSortMetric(player, sortBy);
     const videoRef = useRef<HTMLVideoElement>(null);
     const [mediaLoaded, setMediaLoaded] = useState(false);
 
@@ -177,7 +194,7 @@ export const PodiumCard = memo(function PodiumCard({
                     {getDisplayName(player.displayName, player.username)}
                 </p>
                 <p className="text-[10px] font-medium text-foreground/50">
-                    KD {displayKd}
+                    {metric.label} {metric.value}
                 </p>
             </div>
         </div>
@@ -190,9 +207,11 @@ export const PodiumCard = memo(function PodiumCard({
 export function PlayerPodium({
     players,
     onPlayerClick,
+    sortBy = "kd",
 }: {
     players: PlayerDTO[];
     onPlayerClick: (id: string) => void;
+    sortBy?: string;
 }) {
     if (players.length < 3) return null;
 
@@ -204,6 +223,7 @@ export function PlayerPodium({
                     player={players[pos - 1]}
                     position={pos as 1 | 2 | 3}
                     onPlayerClick={onPlayerClick}
+                    sortBy={sortBy}
                 />
             ))}
         </div>

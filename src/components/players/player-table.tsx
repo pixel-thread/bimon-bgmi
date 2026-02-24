@@ -1,18 +1,11 @@
 "use client";
 
-import { Avatar, Chip, Button } from "@heroui/react";
+import { Avatar } from "@heroui/react";
 import { CategoryBadge } from "@/components/ui/category-badge";
-import {
-    Target,
-    Gamepad2,
-    Skull,
-    Loader2,
-    ChevronsDown,
-    Wallet,
-    Crown,
-} from "lucide-react";
+import { Loader2, Crown } from "lucide-react";
 import type { PlayerDTO, PlayersMeta } from "@/hooks/use-players";
 import { useAuthUser } from "@/hooks/use-auth-user";
+import { useRef, useEffect } from "react";
 
 function getDisplayName(
     displayName: string | null,
@@ -20,8 +13,6 @@ function getDisplayName(
 ): string {
     return displayName || username;
 }
-
-
 
 interface PlayerTableProps {
     players: PlayerDTO[];
@@ -31,6 +22,7 @@ interface PlayerTableProps {
     fetchNextPage: () => void;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
+    sortBy?: string;
 }
 
 export function PlayerTable({
@@ -41,8 +33,28 @@ export function PlayerTable({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    sortBy = "kd",
 }: PlayerTableProps) {
-    const { isAdmin, isSuperAdmin } = useAuthUser();
+    const { isAdmin } = useAuthUser();
+    const sentinelRef = useRef<HTMLDivElement>(null);
+
+    // Auto-fetch next page when sentinel enters viewport
+    useEffect(() => {
+        const sentinel = sentinelRef.current;
+        if (!sentinel) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+                    fetchNextPage();
+                }
+            },
+            { rootMargin: "200px" }
+        );
+
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
     return (
         <div className="space-y-2">
@@ -69,8 +81,8 @@ export function PlayerTable({
                             key={player.id}
                             onClick={() => onPlayerClick(player.id)}
                             className={`group flex cursor-pointer items-center gap-3 rounded-lg px-4 py-2.5 transition-colors ${player.hasRoyalPass
-                                    ? "bg-yellow-500/5 hover:bg-yellow-500/10 active:bg-yellow-500/15"
-                                    : "hover:bg-default-100 active:bg-default-200"
+                                ? "bg-yellow-500/5 hover:bg-yellow-500/10 active:bg-yellow-500/15"
+                                : "hover:bg-default-100 active:bg-default-200"
                                 }`}
                         >
                             {/* Rank */}
@@ -137,33 +149,31 @@ export function PlayerTable({
                                 </div>
                             )}
 
-                            {/* Mobile KD badge */}
+                            {/* Mobile stat badge — shows current sort metric */}
                             <span className="text-sm font-semibold text-foreground/70 sm:hidden">
-                                {displayKd}
+                                {sortBy === "balance" ? (
+                                    <span className={player.balance < 0 ? "text-danger" : player.balance > 0 ? "text-success" : ""}>
+                                        {player.balance.toLocaleString()} UC
+                                    </span>
+                                ) : sortBy === "kills" ? (
+                                    `${player.stats.kills} K`
+                                ) : sortBy === "matches" ? (
+                                    `${player.stats.matches} M`
+                                ) : (
+                                    displayKd
+                                )}
                             </span>
                         </div>
                     );
                 })}
             </div>
 
-            {/* Load more */}
-            {hasNextPage && (
-                <div className="flex justify-center pt-2">
-                    <Button
-                        size="sm"
-                        variant="flat"
-                        isLoading={isFetchingNextPage}
-                        onPress={() => fetchNextPage()}
-                        startContent={
-                            !isFetchingNextPage && <ChevronsDown className="h-4 w-4" />
-                        }
-                    >
-                        {isFetchingNextPage ? "Loading..." : "Load More"}
-                    </Button>
-                </div>
-            )}
-
-
+            {/* Infinite scroll sentinel */}
+            <div ref={sentinelRef} className="flex justify-center py-4">
+                {isFetchingNextPage && (
+                    <Loader2 className="h-5 w-5 animate-spin text-foreground/30" />
+                )}
+            </div>
         </div>
     );
 }

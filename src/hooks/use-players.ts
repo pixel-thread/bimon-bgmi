@@ -59,7 +59,7 @@ export function usePlayers({
     sortBy = "kd",
     sortOrder = "desc",
     season = "",
-    limit = 20,
+    limit = 10,
 }: UsePlayersOptions = {}) {
     return useInfiniteQuery<PlayersResponse>({
         queryKey: ["players", { search, tier, sortBy, sortOrder, season }],

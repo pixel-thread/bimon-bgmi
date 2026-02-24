@@ -29,9 +29,8 @@ export default function PlayersPage() {
     const { isSuperAdmin } = useAuthUser();
     const isLoading = query.isLoading;
 
-    // Show podium only when no search filter is active and sorted by KD desc
-    const showPodium =
-        !search && tier === "All" && sortBy === "kd" && sortOrder === "desc";
+    // Show podium when no search/tier filter is active and sorted desc
+    const showPodium = !search && tier === "All" && sortOrder === "desc";
 
     // Players for the table (skip first 3 if podium is shown)
     const tablePlayers = showPodium ? players.slice(3) : players;
@@ -95,6 +94,7 @@ export default function PlayersPage() {
                             <PlayerPodium
                                 players={players.slice(0, 3)}
                                 onPlayerClick={handlePlayerClick}
+                                sortBy={sortBy}
                             />
                         )}
 
@@ -107,6 +107,7 @@ export default function PlayersPage() {
                             fetchNextPage={() => query.fetchNextPage()}
                             hasNextPage={query.hasNextPage}
                             isFetchingNextPage={query.isFetchingNextPage}
+                            sortBy={sortBy}
                         />
                     </>
                 )}

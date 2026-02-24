@@ -147,7 +147,7 @@ export function PlayerFiltersBar({
                                     const val = Array.from(keys)[0] as string;
                                     if (val) {
                                         setSortBy(val);
-                                        setSortOrder(val === "name" ? "asc" : "desc");
+                                        setSortOrder("desc");
                                     }
                                 }}
                                 aria-label="Sort by"
@@ -156,7 +156,6 @@ export function PlayerFiltersBar({
                                 <SelectItem key="balance">Balance (UC)</SelectItem>
                                 <SelectItem key="matches">Matches Played</SelectItem>
                                 <SelectItem key="kills">Total Kills</SelectItem>
-                                <SelectItem key="name">Name</SelectItem>
                             </Select>
                         </div>
 
