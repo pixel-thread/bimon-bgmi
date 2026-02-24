@@ -568,7 +568,7 @@ export default function ProfilePage() {
                                             size="sm" color="primary"
                                             onPress={handleSaveProfile}
                                             isLoading={saving}
-                                            isDisabled={!!ignError || (newIGN === (player.displayName || profile.username) && newBio === (player.bio || ""))}
+                                            isDisabled={!!ignError || !newIGN.trim() || (newIGN === (player.displayName || profile.username) && newBio === (player.bio || ""))}
                                         >
                                             Save
                                         </Button>
