@@ -4,8 +4,8 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
 
 /**
- * GET /api/admins?role=ALL|SUPER_ADMIN|ADMIN|PLAYER|USER&search=xxx
- * Fetches users. Only accessible by super admins.
+ * GET /api/admins?role=ALL&search=xxx&cursor=xxx&limit=10
+ * Fetches users with cursor-based pagination. Super admin only.
  */
 export async function GET(request: NextRequest) {
     try {
@@ -26,6 +26,8 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const roleFilter = searchParams.get("role") || "ALL";
         const search = searchParams.get("search") || "";
+        const cursor = searchParams.get("cursor") || undefined;
+        const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 50);
 
         const where: any = {};
         if (roleFilter && roleFilter !== "ALL") {
@@ -41,12 +43,15 @@ export async function GET(request: NextRequest) {
 
         const users = await prisma.user.findMany({
             where,
+            take: limit + 1, // fetch one extra to determine if there's a next page
+            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
             select: {
                 id: true,
                 username: true,
                 email: true,
                 imageUrl: true,
                 role: true,
+                isOnboarded: true,
                 createdAt: true,
                 player: {
                     select: {
@@ -61,15 +66,67 @@ export async function GET(request: NextRequest) {
             ],
         });
 
-        return SuccessResponse({ data: users, cache: CACHE.NONE });
+        const hasMore = users.length > limit;
+        const items = hasMore ? users.slice(0, limit) : users;
+        const nextCursor = hasMore ? items[items.length - 1].id : null;
+
+        return SuccessResponse({
+            data: { items, nextCursor, hasMore },
+            cache: CACHE.NONE,
+        });
     } catch (error) {
         return ErrorResponse({ message: "Failed to fetch users", error });
     }
 }
 
 /**
- * DELETE /api/admins
- * Deletes a user and all related data. Super admin only.
+ * PATCH /api/admins — Update a user's role. Super admin only.
+ */
+export async function PATCH(request: NextRequest) {
+    try {
+        const { userId } = await auth();
+        if (!userId) {
+            return ErrorResponse({ message: "Unauthorized", status: 401 });
+        }
+
+        const currentUser = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true, role: true },
+        });
+
+        if (!currentUser || currentUser.role !== "SUPER_ADMIN") {
+            return ErrorResponse({ message: "Forbidden", status: 403 });
+        }
+
+        const { userId: targetUserId, role } = await request.json();
+        if (!targetUserId || !role) {
+            return ErrorResponse({ message: "userId and role are required", status: 400 });
+        }
+
+        const validRoles = ["SUPER_ADMIN", "ADMIN", "PLAYER", "USER"];
+        if (!validRoles.includes(role)) {
+            return ErrorResponse({ message: "Invalid role", status: 400 });
+        }
+
+        // Prevent changing own role
+        if (targetUserId === currentUser.id) {
+            return ErrorResponse({ message: "Cannot change your own role", status: 400 });
+        }
+
+        const updated = await prisma.user.update({
+            where: { id: targetUserId },
+            data: { role },
+            select: { id: true, username: true, role: true },
+        });
+
+        return SuccessResponse({ data: updated });
+    } catch (error) {
+        return ErrorResponse({ message: "Failed to update role", error });
+    }
+}
+
+/**
+ * DELETE /api/admins — Delete a user and all data. Super admin only.
  */
 export async function DELETE(request: NextRequest) {
     try {
@@ -92,7 +149,6 @@ export async function DELETE(request: NextRequest) {
             return ErrorResponse({ message: "userId is required", status: 400 });
         }
 
-        // Prevent deleting yourself
         if (targetUserId === currentUser.id) {
             return ErrorResponse({ message: "Cannot delete yourself", status: 400 });
         }
@@ -111,11 +167,9 @@ export async function DELETE(request: NextRequest) {
             return ErrorResponse({ message: "User not found", status: 404 });
         }
 
-        // If user has a player, delete player data first (cascades handle most)
         if (targetUser.player) {
             const playerId = targetUser.player.id;
 
-            // Delete related records that might not cascade
             await prisma.$transaction([
                 prisma.teamPlayerStats.deleteMany({ where: { playerId } }),
                 prisma.playerStats.deleteMany({ where: { playerId } }),
@@ -128,30 +182,16 @@ export async function DELETE(request: NextRequest) {
                 prisma.playerMeritRating.deleteMany({ where: { OR: [{ fromPlayerId: playerId }, { toPlayerId: playerId }] } }),
             ]);
 
-            // Delete wallet
             await prisma.wallet.deleteMany({ where: { playerId } });
-
-            // Delete streak and ban
             await prisma.playerStreak.deleteMany({ where: { playerId } });
             await prisma.playerBan.deleteMany({ where: { playerId } });
-
-            // Delete job listing
             await prisma.playerJobListing.deleteMany({ where: { playerId } });
-
-            // Delete referral
             await prisma.referral.deleteMany({ where: { referredPlayerId: playerId } });
-
-            // Delete the player (this will cascade to remove from teams, matches, etc.)
             await prisma.player.delete({ where: { id: playerId } });
         }
 
-        // Delete notifications
         await prisma.notification.deleteMany({ where: { userId: targetUserId } });
-
-        // Delete referrals given
         await prisma.referral.deleteMany({ where: { promoterId: targetUserId } });
-
-        // Delete the user
         await prisma.user.delete({ where: { id: targetUserId } });
 
         return SuccessResponse({ data: { deleted: targetUser.username } });

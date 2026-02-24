@@ -1,7 +1,7 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
     Card,
     CardBody,
@@ -17,6 +17,7 @@ import {
     ModalFooter,
     Button,
     useDisclosure,
+    Chip,
 } from "@heroui/react";
 import {
     Shield,
@@ -27,6 +28,7 @@ import {
     AlertTriangle,
     User,
     Users,
+    Loader2,
 } from "lucide-react";
 
 interface UserData {
@@ -35,11 +37,18 @@ interface UserData {
     email: string | null;
     imageUrl: string | null;
     role: string;
+    isOnboarded: boolean;
     createdAt: string;
     player: {
         id: string;
         displayName: string | null;
     } | null;
+}
+
+interface UsersResponse {
+    items: UserData[];
+    nextCursor: string | null;
+    hasMore: boolean;
 }
 
 const ROLES = [
@@ -64,34 +73,92 @@ const roleLabels: Record<string, string> = {
     USER: "User",
 };
 
-const roleIcons: Record<string, React.ReactNode> = {
-    SUPER_ADMIN: <Crown className="h-3 w-3" />,
-    ADMIN: <Shield className="h-3 w-3" />,
-    PLAYER: <User className="h-3 w-3" />,
-    USER: <Users className="h-3 w-3" />,
-};
-
 export default function AdminsPage() {
     const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [roleFilter, setRoleFilter] = useState("ALL");
-    const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
-    const { isOpen, onOpen, onClose } = useDisclosure();
-    const queryClient = useQueryClient();
 
-    const { data, isLoading, error } = useQuery<UserData[]>({
-        queryKey: ["admins", roleFilter, search],
-        queryFn: async () => {
+    // Role change state
+    const [roleTarget, setRoleTarget] = useState<UserData | null>(null);
+    const [newRole, setNewRole] = useState("");
+    const roleModal = useDisclosure();
+
+    // Delete state
+    const [deleteTarget, setDeleteTarget] = useState<UserData | null>(null);
+    const deleteModal = useDisclosure();
+
+    const queryClient = useQueryClient();
+    const observerRef = useRef<IntersectionObserver | null>(null);
+
+    // Debounce search
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    const {
+        data,
+        isLoading,
+        error,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useInfiniteQuery<UsersResponse>({
+        queryKey: ["admins", roleFilter, debouncedSearch],
+        queryFn: async ({ pageParam }) => {
             const params = new URLSearchParams();
             if (roleFilter) params.set("role", roleFilter);
-            if (search) params.set("search", search);
+            if (debouncedSearch) params.set("search", debouncedSearch);
+            if (pageParam) params.set("cursor", pageParam as string);
+            params.set("limit", "10");
             const res = await fetch(`/api/admins?${params}`);
             if (!res.ok) throw new Error("Failed");
             const json = await res.json();
             return json.data;
         },
-        staleTime: 30 * 1000,
+        initialPageParam: undefined as string | undefined,
+        getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     });
 
+    // Infinite scroll observer
+    const lastItemRef = useCallback(
+        (node: HTMLDivElement | null) => {
+            if (isFetchingNextPage) return;
+            if (observerRef.current) observerRef.current.disconnect();
+            observerRef.current = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && hasNextPage) {
+                    fetchNextPage();
+                }
+            });
+            if (node) observerRef.current.observe(node);
+        },
+        [isFetchingNextPage, hasNextPage, fetchNextPage],
+    );
+
+    const allUsers = data?.pages.flatMap((p) => p.items) ?? [];
+
+    // Role change mutation
+    const roleMutation = useMutation({
+        mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+            const res = await fetch("/api/admins", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId, role }),
+            });
+            if (!res.ok) {
+                const json = await res.json();
+                throw new Error(json.message || "Failed");
+            }
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["admins"] });
+            roleModal.onClose();
+            setRoleTarget(null);
+        },
+    });
+
+    // Delete mutation
     const deleteMutation = useMutation({
         mutationFn: async (userId: string) => {
             const res = await fetch("/api/admins", {
@@ -101,26 +168,26 @@ export default function AdminsPage() {
             });
             if (!res.ok) {
                 const json = await res.json();
-                throw new Error(json.message || "Failed to delete");
+                throw new Error(json.message || "Failed");
             }
             return res.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["admins"] });
-            onClose();
-            setUserToDelete(null);
+            deleteModal.onClose();
+            setDeleteTarget(null);
         },
     });
 
-    const handleDeleteClick = (user: UserData) => {
-        setUserToDelete(user);
-        onOpen();
+    const handleRoleClick = (user: UserData) => {
+        setRoleTarget(user);
+        setNewRole(user.role);
+        roleModal.onOpen();
     };
 
-    const confirmDelete = () => {
-        if (userToDelete) {
-            deleteMutation.mutate(userToDelete.id);
-        }
+    const handleDeleteClick = (user: UserData) => {
+        setDeleteTarget(user);
+        deleteModal.onOpen();
     };
 
     return (
@@ -167,32 +234,21 @@ export default function AdminsPage() {
             )}
 
             {isLoading && (
-                <div className="space-y-2">
+                <div className="space-y-0 rounded-xl border border-divider overflow-hidden">
                     {[1, 2, 3, 4, 5].map((i) => (
-                        <Skeleton key={i} className="h-16 w-full rounded-xl" />
+                        <Skeleton key={i} className="h-14 w-full" />
                     ))}
                 </div>
             )}
 
-            {/* Count */}
-            {data && (
-                <p className="text-xs text-foreground/40">{data.length} users</p>
-            )}
-
             {/* User list */}
-            {data && data.length === 0 && (
-                <div className="flex flex-col items-center gap-3 rounded-xl bg-default-100 py-12 text-center">
-                    <Users className="h-10 w-10 text-foreground/20" />
-                    <p className="text-sm text-foreground/50">No users found</p>
-                </div>
-            )}
-
-            {data && data.length > 0 && (
+            {allUsers.length > 0 && (
                 <Card className="border border-divider overflow-hidden">
                     <CardBody className="p-0">
-                        {data.map((user, i) => (
+                        {allUsers.map((user, i) => (
                             <div
                                 key={user.id}
+                                ref={i === allUsers.length - 1 ? lastItemRef : undefined}
                                 className={`flex items-center gap-2.5 px-3 py-2.5 ${i > 0 ? "border-t border-divider" : ""}`}
                             >
                                 <Avatar
@@ -207,16 +263,24 @@ export default function AdminsPage() {
                                     </p>
                                     <p className="truncate text-xs text-foreground/40">
                                         @{user.username}
-                                        {user.email && <span className="hidden sm:inline"> · {user.email}</span>}
+                                        {!user.isOnboarded && (
+                                            <span className="text-foreground/20"> · not onboarded</span>
+                                        )}
                                     </p>
                                 </div>
-                                <span className={`shrink-0 text-[10px] font-semibold uppercase tracking-wider ${user.role === "SUPER_ADMIN" ? "text-warning" :
-                                    user.role === "ADMIN" ? "text-primary" :
-                                        user.role === "PLAYER" ? "text-success" :
-                                            "text-foreground/30"
-                                    }`}>
-                                    {roleLabels[user.role]}
-                                </span>
+                                <button
+                                    onClick={() => handleRoleClick(user)}
+                                    className="shrink-0"
+                                >
+                                    <Chip
+                                        size="sm"
+                                        variant="flat"
+                                        color={roleColors[user.role] || "default"}
+                                        className="cursor-pointer text-[10px]"
+                                    >
+                                        {roleLabels[user.role]}
+                                    </Chip>
+                                </button>
                                 <Button
                                     isIconOnly
                                     size="sm"
@@ -229,34 +293,103 @@ export default function AdminsPage() {
                                 </Button>
                             </div>
                         ))}
+                        {isFetchingNextPage && (
+                            <div className="flex items-center justify-center py-4 border-t border-divider">
+                                <Loader2 className="h-4 w-4 animate-spin text-foreground/30" />
+                            </div>
+                        )}
                     </CardBody>
                 </Card>
             )}
 
+            {!isLoading && allUsers.length === 0 && !error && (
+                <div className="flex flex-col items-center gap-3 rounded-xl bg-default-100 py-12 text-center">
+                    <Users className="h-10 w-10 text-foreground/20" />
+                    <p className="text-sm text-foreground/50">No users found</p>
+                </div>
+            )}
+
+            {/* Role change modal */}
+            <Modal isOpen={roleModal.isOpen} onClose={roleModal.onClose} size="sm">
+                <ModalContent>
+                    <ModalHeader className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-primary" />
+                        Change Role
+                    </ModalHeader>
+                    <ModalBody>
+                        {roleTarget && (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <Avatar
+                                        src={roleTarget.imageUrl || undefined}
+                                        name={roleTarget.username}
+                                        size="sm"
+                                    />
+                                    <div>
+                                        <p className="text-sm font-medium">{roleTarget.player?.displayName || roleTarget.username}</p>
+                                        <p className="text-xs text-foreground/40">@{roleTarget.username}</p>
+                                    </div>
+                                </div>
+                                <Select
+                                    label="Role"
+                                    size="sm"
+                                    selectedKeys={[newRole]}
+                                    onSelectionChange={(keys) => {
+                                        const val = Array.from(keys)[0] as string;
+                                        if (val) setNewRole(val);
+                                    }}
+                                >
+                                    {ROLES.filter((r) => r.key !== "ALL").map((r) => (
+                                        <SelectItem key={r.key}>{r.label}</SelectItem>
+                                    ))}
+                                </Select>
+                            </div>
+                        )}
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="light" onPress={roleModal.onClose} size="sm">
+                            Cancel
+                        </Button>
+                        <Button
+                            color="primary"
+                            size="sm"
+                            isLoading={roleMutation.isPending}
+                            isDisabled={newRole === roleTarget?.role}
+                            onPress={() => {
+                                if (roleTarget) {
+                                    roleMutation.mutate({ userId: roleTarget.id, role: newRole });
+                                }
+                            }}
+                        >
+                            Save
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
             {/* Delete confirmation modal */}
-            <Modal isOpen={isOpen} onClose={onClose} size="sm">
+            <Modal isOpen={deleteModal.isOpen} onClose={deleteModal.onClose} size="sm">
                 <ModalContent>
                     <ModalHeader className="flex items-center gap-2 text-danger">
                         <AlertTriangle className="h-5 w-5" />
                         Delete User
                     </ModalHeader>
                     <ModalBody>
-                        {userToDelete && (
+                        {deleteTarget && (
                             <div className="space-y-3">
                                 <p className="text-sm">
                                     Are you sure you want to delete{" "}
-                                    <span className="font-bold">{userToDelete.username}</span>?
+                                    <span className="font-bold">@{deleteTarget.username}</span>?
                                 </p>
                                 <div className="rounded-lg bg-danger-50 p-3 text-xs text-danger dark:bg-danger-50/10">
                                     <p className="font-semibold">⚠️ This action is irreversible!</p>
                                     <p className="mt-1">
-                                        This will permanently delete the user and ALL associated data including:
+                                        All data will be permanently deleted:
                                     </p>
                                     <ul className="mt-1 list-inside list-disc space-y-0.5">
                                         <li>Player profile & stats</li>
-                                        <li>Wallet & transaction history</li>
+                                        <li>Wallet & transactions</li>
                                         <li>Team & match records</li>
-                                        <li>Poll votes & notifications</li>
                                         <li>Streaks & rewards</li>
                                     </ul>
                                 </div>
@@ -264,16 +397,12 @@ export default function AdminsPage() {
                         )}
                     </ModalBody>
                     <ModalFooter>
-                        <Button
-                            variant="light"
-                            onPress={onClose}
-                            size="sm"
-                        >
+                        <Button variant="light" onPress={deleteModal.onClose} size="sm">
                             Cancel
                         </Button>
                         <Button
                             color="danger"
-                            onPress={confirmDelete}
+                            onPress={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
                             isLoading={deleteMutation.isPending}
                             size="sm"
                         >
