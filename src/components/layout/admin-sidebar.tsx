@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
     BarChart3,
     Users,
-    Trophy,
     Vote,
     Settings,
     Swords,
@@ -16,9 +15,10 @@ import {
     Briefcase,
     Crown,
     Loader2,
+    ChevronDown,
 } from "lucide-react";
 import { useAuthUser } from "@/hooks/use-auth-user";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface SidebarItem {
     label: string;
@@ -74,11 +74,6 @@ export function AdminSidebar() {
     const { isSuperAdmin } = useAuthUser();
     const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
 
-    // Clear loading when pathname changes (navigation complete)
-    useEffect(() => {
-        setNavigatingTo(null);
-    }, [pathname]);
-
     // Filter sections and items by permission
     const filteredSections = sidebarItems
         .filter((section) => !section.superAdminOnly || isSuperAdmin)
@@ -87,6 +82,42 @@ export function AdminSidebar() {
             items: section.items.filter((item) => !item.superAdminOnly || isSuperAdmin),
         }))
         .filter((section) => section.items.length > 0);
+
+    // Check if a section contains the active page
+    const sectionHasActive = useCallback((section: SidebarSection) => {
+        return section.items.some(
+            (item) =>
+                pathname === item.href ||
+                (item.href !== "/dashboard" && pathname.startsWith(item.href))
+        );
+    }, [pathname]);
+
+    // Initialize collapsed state — expand sections with active items
+    const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+        const initial: Record<string, boolean> = {};
+        for (const section of sidebarItems) {
+            initial[section.section] = !sectionHasActive(section);
+        }
+        return initial;
+    });
+
+    // Clear loading when pathname changes (navigation complete)
+    useEffect(() => {
+        setNavigatingTo(null);
+    }, [pathname]);
+
+    // Auto-expand section when navigating to it
+    useEffect(() => {
+        for (const section of filteredSections) {
+            if (sectionHasActive(section) && collapsed[section.section]) {
+                setCollapsed((prev) => ({ ...prev, [section.section]: false }));
+            }
+        }
+    }, [pathname]);
+
+    const toggleSection = (sectionName: string) => {
+        setCollapsed((prev) => ({ ...prev, [sectionName]: !prev[sectionName] }));
+    };
 
     return (
         <aside className="hidden w-64 shrink-0 border-r border-divider bg-background/50 lg:block">
@@ -101,46 +132,67 @@ export function AdminSidebar() {
                 </div>
 
                 {/* Nav sections */}
-                <nav className="flex-1 space-y-6 overflow-y-auto p-4">
-                    {filteredSections.map((section) => (
-                        <div key={section.section}>
-                            <h3 className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
-                                {section.section}
-                            </h3>
-                            <ul className="space-y-0.5">
-                                {section.items.map((item) => {
-                                    const isActive =
-                                        pathname === item.href ||
-                                        (item.href !== "/dashboard" &&
-                                            pathname.startsWith(item.href));
-                                    const isLoading = navigatingTo === item.href && !isActive;
-                                    return (
-                                        <li key={item.href}>
-                                            <Link
-                                                href={item.href}
-                                                onClick={() => {
-                                                    if (!isActive) setNavigatingTo(item.href);
-                                                }}
-                                                className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm transition-all ${isActive
-                                                    ? "bg-primary/10 font-medium text-primary"
-                                                    : "text-foreground/60 hover:bg-default-100 hover:text-foreground"
-                                                    }`}
-                                            >
-                                                {isLoading ? (
-                                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                                                ) : (
-                                                    <item.icon className="h-4 w-4 shrink-0" />
-                                                )}
-                                                {item.label}
-                                            </Link>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </div>
-                    ))}
+                <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+                    {filteredSections.map((section) => {
+                        const isCollapsed = collapsed[section.section] ?? false;
+                        const hasActive = sectionHasActive(section);
+
+                        return (
+                            <div key={section.section}>
+                                <button
+                                    onClick={() => toggleSection(section.section)}
+                                    className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 mb-1 transition-colors hover:bg-default-100 ${hasActive ? "text-foreground/60" : "text-foreground/40"
+                                        }`}
+                                >
+                                    <span className="text-[11px] font-semibold uppercase tracking-wider">
+                                        {section.section}
+                                    </span>
+                                    <ChevronDown
+                                        className={`h-3 w-3 transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""
+                                            }`}
+                                    />
+                                </button>
+                                <div
+                                    className={`overflow-hidden transition-all duration-200 ${isCollapsed ? "max-h-0 opacity-0" : "max-h-96 opacity-100"
+                                        }`}
+                                >
+                                    <ul className="space-y-0.5 pb-3">
+                                        {section.items.map((item) => {
+                                            const isActive =
+                                                pathname === item.href ||
+                                                (item.href !== "/dashboard" &&
+                                                    pathname.startsWith(item.href));
+                                            const isLoading = navigatingTo === item.href && !isActive;
+                                            return (
+                                                <li key={item.href}>
+                                                    <Link
+                                                        href={item.href}
+                                                        onClick={() => {
+                                                            if (!isActive) setNavigatingTo(item.href);
+                                                        }}
+                                                        className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm transition-all ${isActive
+                                                            ? "bg-primary/10 font-medium text-primary"
+                                                            : "text-foreground/60 hover:bg-default-100 hover:text-foreground"
+                                                            }`}
+                                                    >
+                                                        {isLoading ? (
+                                                            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                                                        ) : (
+                                                            <item.icon className="h-4 w-4 shrink-0" />
+                                                        )}
+                                                        {item.label}
+                                                    </Link>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </nav>
             </div>
         </aside>
     );
 }
+

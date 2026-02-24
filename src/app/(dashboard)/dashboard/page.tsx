@@ -20,6 +20,7 @@ import {
     TrendingUp,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { useAuthUser } from "@/hooks/use-auth-user";
 
 interface DashboardStats {
     players: { total: number; banned: number };
@@ -45,6 +46,7 @@ const statIconMap = {
  * /dashboard — Admin overview with key stats and analytics.
  */
 export default function DashboardPage() {
+    const { isSuperAdmin } = useAuthUser();
     const { data, isLoading, error } = useQuery<DashboardStats>({
         queryKey: ["dashboard-stats"],
         queryFn: async () => {
@@ -145,8 +147,8 @@ export default function DashboardPage() {
                     })}
             </div>
 
-            {/* Detailed Analytics Cards */}
-            {!isLoading && data && (
+            {/* Detailed Analytics Cards — Super Admin only */}
+            {!isLoading && data && isSuperAdmin && (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {/* Players overview */}
                     <motion.div
