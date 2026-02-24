@@ -13,7 +13,6 @@ import {
     DollarSign,
     Shield,
     Bell,
-    Image,
     Gamepad2,
     BookOpen,
     Briefcase,
@@ -71,7 +70,6 @@ const sidebarItems: SidebarSection[] = [
         section: "Admin",
         items: [
             { label: "Admins", href: "/dashboard/admins", icon: Shield, superAdminOnly: true },
-            { label: "Gallery", href: "/dashboard/gallery", icon: Image },
         ],
     },
 ];
