@@ -111,7 +111,7 @@ export default function DashboardPage() {
             )}
 
             {isLoading ? (
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {Array.from({ length: 8 }).map((_, i) => (
                         <Skeleton key={i} className="h-24 rounded-xl" />
                     ))}
@@ -119,11 +119,11 @@ export default function DashboardPage() {
             ) : data ? (
                 <>
                     {/* Primary stats */}
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                         {[
-                            { label: "Total Players", value: data.players.total.toLocaleString(), icon: Users, color: "text-primary" },
+                            { label: "Players", value: data.players.total.toLocaleString(), icon: Users, color: "text-primary" },
                             { label: "Tournaments", value: data.tournaments.total.toLocaleString(), icon: Gamepad2, color: "text-warning" },
-                            { label: "Avg Players / Tourney", value: (data.teams?.avgPerTournament ?? 0).toString(), icon: UsersRound, color: "text-secondary" },
+                            { label: "Avg / Tourney", value: (data.teams?.avgPerTournament ?? 0).toString(), icon: UsersRound, color: "text-secondary" },
                         ].map((stat, i) => (
                             <motion.div
                                 key={stat.label}
@@ -132,12 +132,12 @@ export default function DashboardPage() {
                                 transition={{ delay: i * 0.03 }}
                             >
                                 <Card className="border border-divider">
-                                    <CardBody className="p-4">
-                                        <div className="flex items-center gap-2">
-                                            <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                                            <span className="text-xs text-foreground/50">{stat.label}</span>
+                                    <CardBody className="p-3">
+                                        <div className="flex items-center gap-1.5">
+                                            <stat.icon className={`h-3.5 w-3.5 ${stat.color}`} />
+                                            <span className="text-[11px] text-foreground/50">{stat.label}</span>
                                         </div>
-                                        <p className="mt-2 text-2xl font-bold">{stat.value}</p>
+                                        <p className="mt-1.5 text-xl font-bold">{stat.value}</p>
                                     </CardBody>
                                 </Card>
                             </motion.div>
@@ -145,7 +145,7 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Secondary stats */}
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         {[
                             { label: "Active Tournaments", value: data.tournaments.active.toString(), icon: Trophy, color: "text-warning" },
                             { label: "Active Polls", value: data.polls.active.toString(), icon: Vote, color: "text-secondary" },
