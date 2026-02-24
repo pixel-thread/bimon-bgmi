@@ -172,10 +172,6 @@ export const PodiumCard = memo(function PodiumCard({
                     </div>
                 )}
 
-                {/* Position badge */}
-                <div className="absolute left-1.5 top-1.5">
-                    <Icon className={`h-5 w-5 drop-shadow-lg ${config.iconColor}`} />
-                </div>
             </div>
 
             {/* Player info — below the card */}
