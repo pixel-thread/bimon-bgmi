@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
         const tournamentWhere = seasonId ? { seasonId } : {};
 
         const [
-            totalPlayers,
             totalUsers,
             activeTournaments,
             seasonTournaments,
@@ -40,7 +39,6 @@ export async function GET(request: NextRequest) {
             totalMatches,
             bannedCount,
         ] = await Promise.all([
-            prisma.player.count(),
             prisma.user.count(),
             prisma.tournament.count({
                 where: { status: "ACTIVE", ...tournamentWhere },
@@ -63,35 +61,34 @@ export async function GET(request: NextRequest) {
         })).map(t => t.id);
 
         let avgPlayersPerTournament = 0;
+        let seasonPlayerCount = 0;
         if (tournamentIds.length > 0) {
-            const playerCounts = await prisma.teamPlayerStats.groupBy({
-                by: ["teamId"],
-                where: {
-                    team: { tournamentId: { in: tournamentIds } },
-                },
-                _count: { playerId: true },
-            });
-
-            // Group by tournament to get unique players per tournament
+            // Get all player-team participations for this season
             const teamsWithTournament = await prisma.team.findMany({
                 where: { tournamentId: { in: tournamentIds } },
                 select: { id: true, tournamentId: true },
             });
             const teamToTournament = new Map(teamsWithTournament.map(t => [t.id, t.tournamentId]));
 
-            const perTournament = new Map<string, Set<string>>();
-            // Get actual player IDs per tournament
             const allTps = await prisma.teamPlayerStats.findMany({
                 where: { team: { tournamentId: { in: tournamentIds } } },
                 select: { playerId: true, teamId: true },
             });
+
+            // Unique players across the entire season
+            const seasonPlayers = new Set<string>();
+            const perTournament = new Map<string, Set<string>>();
+
             for (const tps of allTps) {
+                seasonPlayers.add(tps.playerId);
                 const tid = teamToTournament.get(tps.teamId);
                 if (tid) {
                     if (!perTournament.has(tid)) perTournament.set(tid, new Set());
                     perTournament.get(tid)!.add(tps.playerId);
                 }
             }
+
+            seasonPlayerCount = seasonPlayers.size;
 
             let totalUniquePlayersAllTournaments = 0;
             for (const players of perTournament.values()) {
@@ -104,7 +101,7 @@ export async function GET(request: NextRequest) {
 
         const data = {
             players: {
-                total: totalPlayers,
+                total: seasonPlayerCount,
                 banned: bannedCount,
             },
             users: {

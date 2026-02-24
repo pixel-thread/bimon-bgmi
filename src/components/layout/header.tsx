@@ -117,8 +117,7 @@ export function Header() {
 
 
     const handleSignOut = async () => {
-        await signOut();
-        router.push("/");
+        await signOut({ redirectUrl: "/" });
     };
 
     const initials = user?.firstName?.[0] || user?.username?.[0]?.toUpperCase() || "?";
@@ -148,9 +147,7 @@ export function Header() {
                 <NavbarContent justify="start">
                     <NavbarMenuToggle className="sm:hidden" />
                     <NavbarBrand>
-                        <Link href="/" className="flex items-center gap-2">
-                            <span className="text-lg font-bold tracking-tight">PUBGMI</span>
-                        </Link>
+                        <span className="text-lg font-bold tracking-tight">PUBGMI</span>
                     </NavbarBrand>
                 </NavbarContent>
 

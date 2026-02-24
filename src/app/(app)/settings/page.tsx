@@ -213,7 +213,7 @@ export default function SettingsPage() {
                 transition={{ delay: 0.3 }}
             >
                 <button
-                    onClick={() => signOut({ redirectUrl: "/sign-in" })}
+                    onClick={() => signOut({ redirectUrl: "/" })}
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-danger/20 bg-danger/5 px-4 py-3 text-sm font-medium text-danger transition-colors hover:bg-danger/10"
                 >
                     <LogOut className="h-4 w-4" />
