@@ -60,7 +60,7 @@ export function Header() {
     const pathname = usePathname();
     const isDashboard = pathname.startsWith("/dashboard");
     const router = useRouter();
-    const { isAdmin, isSignedIn, balance } = useAuthUser();
+    const { isAdmin, isSuperAdmin, isSignedIn, balance } = useAuthUser();
     const { user } = useUser();
     const { signOut } = useClerk();
 
@@ -277,41 +277,48 @@ export function Header() {
                 {/* Mobile menu */}
                 <NavbarMenu className="pt-4">
                     {pathname.startsWith("/dashboard") ? (
-                        /* Admin dashboard view — show sidebar items */
+                        /* Admin dashboard view — show sidebar items filtered by role */
                         <>
-                            {sidebarItems.map((section) => (
-                                <NavbarMenuItem key={section.section}>
-                                    <h3 className="mb-1 mt-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
-                                        {section.section}
-                                    </h3>
-                                    {section.items.map((item) => {
-                                        const isActive =
-                                            pathname === item.href ||
-                                            (item.href !== "/dashboard" && pathname.startsWith(item.href));
-                                        return (
-                                            <Link
-                                                key={item.href}
-                                                href={item.href}
-                                                onClick={() => {
-                                                    if (!isActive) setNavigatingTo(item.href);
-                                                    else setIsMenuOpen(false);
-                                                }}
-                                                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${isActive
-                                                    ? "bg-primary/10 font-semibold text-primary"
-                                                    : "text-foreground/70 hover:bg-default-100"
-                                                    }`}
-                                            >
-                                                {navigatingTo === item.href && !isActive ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <item.icon className="h-4 w-4" />
-                                                )}
-                                                {item.label}
-                                            </Link>
-                                        );
-                                    })}
-                                </NavbarMenuItem>
-                            ))}
+                            {sidebarItems
+                                .filter((section) => !section.superAdminOnly || isSuperAdmin)
+                                .map((section) => ({
+                                    ...section,
+                                    items: section.items.filter((item) => !item.superAdminOnly || isSuperAdmin),
+                                }))
+                                .filter((section) => section.items.length > 0)
+                                .map((section) => (
+                                    <NavbarMenuItem key={section.section}>
+                                        <h3 className="mb-1 mt-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
+                                            {section.section}
+                                        </h3>
+                                        {section.items.map((item) => {
+                                            const isActive =
+                                                pathname === item.href ||
+                                                (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                                            return (
+                                                <Link
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    onClick={() => {
+                                                        if (!isActive) setNavigatingTo(item.href);
+                                                        else setIsMenuOpen(false);
+                                                    }}
+                                                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${isActive
+                                                        ? "bg-primary/10 font-semibold text-primary"
+                                                        : "text-foreground/70 hover:bg-default-100"
+                                                        }`}
+                                                >
+                                                    {navigatingTo === item.href && !isActive ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <item.icon className="h-4 w-4" />
+                                                    )}
+                                                    {item.label}
+                                                </Link>
+                                            );
+                                        })}
+                                    </NavbarMenuItem>
+                                ))}
                             {/* Quick link back to main app */}
                             <NavbarMenuItem>
                                 <div className="mt-3 border-t border-divider pt-3">
