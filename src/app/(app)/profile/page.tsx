@@ -315,7 +315,6 @@ export default function ProfilePage() {
                             <div className="text-center">
                                 <div className="flex items-center justify-center gap-2 mb-1">
                                     <p className="text-xs text-foreground/50 font-medium uppercase tracking-wide">K/D Ratio</p>
-                                    <CategoryBadge category={player!.category} size="sm" />
                                 </div>
                                 <div className="flex items-baseline justify-center gap-2">
                                     <span className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
