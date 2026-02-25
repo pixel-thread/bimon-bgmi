@@ -318,16 +318,17 @@ export default function TeamsPage() {
                 <h1 className="text-xl font-bold">Teams</h1>
 
                 {/* Season + Tournament side by side */}
-                <div className="flex gap-2">
+                <div className="flex gap-2" style={{ overflow: 'hidden', maxWidth: '100%' }}>
                     {seasons.length > 0 && (
                         <Select
                             placeholder="Season"
                             size="sm"
                             selectedKeys={seasonId ? [seasonId] : []}
                             onSelectionChange={handleSeasonChange}
-                            classNames={{ trigger: "bg-default-100 border-none shadow-none max-w-full", value: "text-foreground truncate" }}
+                            classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
                             aria-label="Season"
-                            className="w-[40%] min-w-0"
+                            className="min-w-0"
+                            style={{ width: '40%', maxWidth: '40%' }}
                         >
                             {seasons.map((s) => (
                                 <SelectItem key={s.id} textValue={`${s.name}${s.isCurrent ? " ✦" : ""}`}>
@@ -341,9 +342,10 @@ export default function TeamsPage() {
                         size="sm"
                         selectedKeys={tournamentId ? [tournamentId] : []}
                         onSelectionChange={handleTournamentChange}
-                        classNames={{ trigger: "bg-default-100 border-none shadow-none max-w-full", value: "text-foreground truncate" }}
+                        classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
                         aria-label="Tournament"
                         className="flex-1 min-w-0"
+                        style={{ maxWidth: seasons.length > 0 ? '60%' : '100%' }}
                         popoverProps={{ className: "min-w-[280px]" }}
                     >
                         {tournaments.map((t) => (
@@ -469,10 +471,17 @@ export default function TeamsPage() {
                             >
                                 <Card className="border border-divider" style={{ overflow: 'hidden', maxWidth: '100%' }}>
                                     <CardHeader className="justify-between pb-1 gap-2" style={{ overflow: 'hidden' }}>
-                                        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                                        <div className="flex items-center gap-2 min-w-0" style={{ overflow: 'hidden', flex: 1 }}>
                                             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                                                 {team.teamNumber}
                                             </span>
+                                            <div className="overflow-x-auto min-w-0 flex-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+                                                <h3 className="text-sm font-semibold whitespace-nowrap">
+                                                    {team.players?.length > 0
+                                                        ? team.players.map(p => p.displayName || p.username).join(", ")
+                                                        : team.name}
+                                                </h3>
+                                            </div>
                                         </div>
                                         {team.winner && (
                                             <div className="flex items-center gap-1 shrink-0">
