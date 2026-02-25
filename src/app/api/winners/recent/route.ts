@@ -92,10 +92,16 @@ export async function GET() {
                 firstPlaceCount: counts.first,
                 secondPlaceCount: counts.second,
                 thirdPlaceCount: counts.third,
-                totalPlacements:
-                    counts.first * 3 + counts.second * 2 + counts.third,
+                totalPlacements: counts.first + counts.second + counts.third,
             }))
-            .sort((a, b) => b.totalPlacements - a.totalPlacements);
+            .sort((a, b) => {
+                // Sort by total placements first, then by 1st > 2nd > 3rd as tiebreakers
+                const diff = b.totalPlacements - a.totalPlacements;
+                if (diff !== 0) return diff;
+                if (b.firstPlaceCount !== a.firstPlaceCount) return b.firstPlaceCount - a.firstPlaceCount;
+                if (b.secondPlaceCount !== a.secondPlaceCount) return b.secondPlaceCount - a.secondPlaceCount;
+                return b.thirdPlaceCount - a.thirdPlaceCount;
+            });
 
         // 4. Calculate total funds from Income records with "Fund" description
         const fundIncome = await prisma.income.aggregate({
