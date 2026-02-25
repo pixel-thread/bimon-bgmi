@@ -473,11 +473,6 @@ export default function TeamsPage() {
                                             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                                                 {team.teamNumber}
                                             </span>
-                                            <h3 className="text-sm font-semibold truncate">
-                                                {team.players?.length > 0
-                                                    ? team.players.map(p => p.displayName || p.username).join(", ")
-                                                    : team.name}
-                                            </h3>
                                         </div>
                                         {team.winner && (
                                             <div className="flex items-center gap-1 shrink-0">
