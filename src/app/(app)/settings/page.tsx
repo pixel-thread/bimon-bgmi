@@ -65,7 +65,7 @@ export default function SettingsPage() {
                             <h2 className="text-sm font-semibold">Promoter / Referral</h2>
                         </div>
                         <p className="text-xs text-foreground/50">
-                            Share your referral link to invite new players and earn rewards.
+                            Share your link to invite friends to PUBGMI.
                         </p>
                         <div className="flex items-center gap-2">
                             <div className="flex-1 truncate rounded-lg bg-default-100 px-3 py-2 text-xs text-foreground/70">
