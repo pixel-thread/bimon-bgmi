@@ -6,6 +6,11 @@ import { type NextRequest } from "next/server";
 /**
  * GET /api/transactions
  * Fetches the current user's transaction history.
+ *
+ * Query params:
+ *  - limit: number of items per page (default 10, max 100)
+ *  - cursor: cursor for pagination
+ *  - seasonId: filter by season date range (optional)
  */
 export async function GET(request: NextRequest) {
     try {
@@ -15,8 +20,9 @@ export async function GET(request: NextRequest) {
         }
 
         const { searchParams } = request.nextUrl;
-        const limit = Math.min(Number(searchParams.get("limit") ?? "30"), 100);
+        const limit = Math.min(Number(searchParams.get("limit") ?? "10"), 100);
         const cursor = searchParams.get("cursor");
+        const seasonId = searchParams.get("seasonId");
 
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
@@ -27,8 +33,26 @@ export async function GET(request: NextRequest) {
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
 
+        // Build date filter from season
+        let dateFilter: { gte?: Date; lte?: Date } | undefined;
+        if (seasonId) {
+            const season = await prisma.season.findUnique({
+                where: { id: seasonId },
+                select: { startDate: true, endDate: true },
+            });
+            if (season) {
+                dateFilter = { gte: season.startDate };
+                if (season.endDate) {
+                    dateFilter.lte = season.endDate;
+                }
+            }
+        }
+
         const transactions = await prisma.transaction.findMany({
-            where: { playerId: user.player.id },
+            where: {
+                playerId: user.player.id,
+                ...(dateFilter && { createdAt: dateFilter }),
+            },
             orderBy: { createdAt: "desc" },
             take: limit + 1,
             ...(cursor && { cursor: { id: cursor }, skip: 1 }),

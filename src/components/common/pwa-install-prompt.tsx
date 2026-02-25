@@ -10,54 +10,72 @@ interface BeforeInstallPromptEvent extends Event {
 const DISMISS_KEY = "pwa-install-dismissed";
 const DISMISS_DAYS = 7;
 
+function isDismissed(): boolean {
+    try {
+        const dismissedAt = localStorage.getItem(DISMISS_KEY);
+        if (!dismissedAt) return false;
+        const dismissedDate = new Date(parseInt(dismissedAt));
+        const now = new Date();
+        const diffDays =
+            (now.getTime() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
+        return diffDays < DISMISS_DAYS;
+    } catch {
+        return false;
+    }
+}
+
+function isAndroidMobile(): boolean {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent.toLowerCase();
+    // Must be Android AND a mobile device (not desktop Chrome/Brave/Edge)
+    return /android/.test(ua) && /mobile/.test(ua);
+}
+
+function isStandalone(): boolean {
+    if (typeof window === "undefined") return false;
+    return (
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as unknown as { standalone?: boolean }).standalone ===
+        true
+    );
+}
+
+// Store the deferred prompt globally so it survives React re-renders
+let globalDeferredPrompt: BeforeInstallPromptEvent | null = null;
+
+// Listen for the event at module level (runs once)
+if (typeof window !== "undefined") {
+    window.addEventListener("beforeinstallprompt", (e: Event) => {
+        e.preventDefault();
+        globalDeferredPrompt = e as BeforeInstallPromptEvent;
+    });
+}
+
 export function PwaInstallPrompt() {
-    const [deferredPrompt, setDeferredPrompt] =
-        useState<BeforeInstallPromptEvent | null>(null);
-    const [isAndroid, setIsAndroid] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
-    const [isInstalled, setIsInstalled] = useState(false);
 
     useEffect(() => {
-        // Check if Android
-        const ua = navigator.userAgent.toLowerCase();
-        const android = /android/.test(ua);
-        setIsAndroid(android);
+        // Only show on Android mobile, not installed, not dismissed
+        if (!isAndroidMobile() || isStandalone() || isDismissed()) return;
 
-        if (!android) return;
-
-        // Check if already installed as PWA
-        const isStandalone =
-            window.matchMedia("(display-mode: standalone)").matches ||
-            (window.navigator as unknown as { standalone?: boolean }).standalone === true;
-        if (isStandalone) {
-            setIsInstalled(true);
+        // Check if we already have a deferred prompt
+        if (globalDeferredPrompt) {
+            setIsVisible(true);
             return;
         }
 
-        // Check if dismissed recently
-        const dismissedAt = localStorage.getItem(DISMISS_KEY);
-        if (dismissedAt) {
-            const dismissedDate = new Date(parseInt(dismissedAt));
-            const now = new Date();
-            const diffDays =
-                (now.getTime() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
-            if (diffDays < DISMISS_DAYS) return;
-        }
-
-        // Listen for beforeinstallprompt
+        // Also listen in case it fires after mount
         const handler = (e: Event) => {
             e.preventDefault();
-            setDeferredPrompt(e as BeforeInstallPromptEvent);
+            globalDeferredPrompt = e as BeforeInstallPromptEvent;
             setIsVisible(true);
         };
 
         window.addEventListener("beforeinstallprompt", handler);
 
-        // Also listen for app installed
         const installedHandler = () => {
-            setIsInstalled(true);
             setIsVisible(false);
-            setDeferredPrompt(null);
+            globalDeferredPrompt = null;
         };
         window.addEventListener("appinstalled", installedHandler);
 
@@ -68,21 +86,25 @@ export function PwaInstallPrompt() {
     }, []);
 
     const handleInstall = useCallback(async () => {
-        if (!deferredPrompt) return;
-        await deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
+        if (!globalDeferredPrompt) return;
+        await globalDeferredPrompt.prompt();
+        const { outcome } = await globalDeferredPrompt.userChoice;
         if (outcome === "accepted") {
             setIsVisible(false);
-            setDeferredPrompt(null);
+            globalDeferredPrompt = null;
         }
-    }, [deferredPrompt]);
+    }, []);
 
     const handleDismiss = useCallback(() => {
         setIsVisible(false);
-        localStorage.setItem(DISMISS_KEY, Date.now().toString());
+        try {
+            localStorage.setItem(DISMISS_KEY, Date.now().toString());
+        } catch {
+            // localStorage not available
+        }
     }, []);
 
-    if (!isAndroid || !isVisible || isInstalled) return null;
+    if (!isVisible) return null;
 
     return (
         <div

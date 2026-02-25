@@ -1,13 +1,15 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
     Card,
     CardBody,
     CardHeader,
     Divider,
     Skeleton,
-    Button,
+    Select,
+    SelectItem,
 } from "@heroui/react";
 import {
     Wallet as WalletIcon,
@@ -15,9 +17,8 @@ import {
     ArrowDownLeft,
     Clock,
     AlertCircle,
-    ChevronsDown,
+    Loader2,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 
 interface TransactionDTO {
@@ -37,10 +38,20 @@ interface WalletData {
     balance: number;
 }
 
+interface SeasonDTO {
+    id: string;
+    name: string;
+    status: string;
+}
+
 /**
  * /wallet — Full wallet page with balance + transaction history.
+ * Supports season filter and infinite scroll (10 at a time).
  */
 export default function WalletPage() {
+    const [selectedSeason, setSelectedSeason] = useState<string>("all");
+    const loadMoreRef = useRef<HTMLDivElement>(null);
+
     // Balance
     const { data: wallet, isLoading: isLoadingWallet } = useQuery<WalletData>({
         queryKey: ["wallet"],
@@ -53,7 +64,19 @@ export default function WalletPage() {
         staleTime: 30 * 1000,
     });
 
-    // Transactions
+    // Seasons
+    const { data: seasons } = useQuery<SeasonDTO[]>({
+        queryKey: ["seasons"],
+        queryFn: async () => {
+            const res = await fetch("/api/seasons");
+            if (!res.ok) throw new Error("Failed");
+            const json = await res.json();
+            return json.data ?? [];
+        },
+        staleTime: 5 * 60 * 1000,
+    });
+
+    // Transactions with infinite scroll
     const {
         data: txData,
         isLoading: isLoadingTx,
@@ -62,11 +85,14 @@ export default function WalletPage() {
         hasNextPage,
         isFetchingNextPage,
     } = useInfiniteQuery<TransactionsResponse>({
-        queryKey: ["transactions"],
+        queryKey: ["transactions", selectedSeason],
         queryFn: async ({ pageParam }) => {
             const params = new URLSearchParams({
-                limit: "30",
+                limit: "10",
                 ...(pageParam ? { cursor: pageParam as string } : {}),
+                ...(selectedSeason !== "all"
+                    ? { seasonId: selectedSeason }
+                    : {}),
             });
             const res = await fetch(`/api/transactions?${params}`);
             if (!res.ok) throw new Error("Failed to fetch");
@@ -79,6 +105,29 @@ export default function WalletPage() {
     });
 
     const transactions = txData?.pages.flatMap((p) => p.data) ?? [];
+
+    // Auto-load next page on scroll (IntersectionObserver)
+    const handleIntersection = useCallback(
+        (entries: IntersectionObserverEntry[]) => {
+            if (
+                entries[0].isIntersecting &&
+                hasNextPage &&
+                !isFetchingNextPage
+            ) {
+                fetchNextPage();
+            }
+        },
+        [hasNextPage, isFetchingNextPage, fetchNextPage]
+    );
+
+    useEffect(() => {
+        if (!loadMoreRef.current) return;
+        const observer = new IntersectionObserver(handleIntersection, {
+            threshold: 0.1,
+        });
+        observer.observe(loadMoreRef.current);
+        return () => observer.disconnect();
+    }, [handleIntersection]);
 
     return (
         <div className="mx-auto max-w-lg px-4 py-6 sm:px-6">
@@ -108,8 +157,8 @@ export default function WalletPage() {
                                 </span>
                                 <p
                                     className={`text-4xl font-bold ${(wallet?.balance ?? 0) < 0
-                                        ? "text-danger"
-                                        : "text-foreground"
+                                            ? "text-danger"
+                                            : "text-foreground"
                                         }`}
                                 >
                                     {(wallet?.balance ?? 0).toLocaleString()} UC
@@ -121,8 +170,38 @@ export default function WalletPage() {
 
                 {/* Transaction history */}
                 <Card className="border border-divider">
-                    <CardHeader className="pb-2">
-                        <h3 className="text-sm font-semibold">Transaction History</h3>
+                    <CardHeader className="flex items-center justify-between pb-2">
+                        <h3 className="text-sm font-semibold">
+                            Transaction History
+                        </h3>
+                        {/* Season filter */}
+                        {seasons && seasons.length > 0 && (
+                            <Select
+                                size="sm"
+                                variant="flat"
+                                aria-label="Filter by season"
+                                selectedKeys={[selectedSeason]}
+                                onSelectionChange={(keys) => {
+                                    const val = Array.from(keys)[0] as string;
+                                    if (val) setSelectedSeason(val);
+                                }}
+                                classNames={{
+                                    base: "w-36",
+                                    trigger:
+                                        "h-7 min-h-7 text-[11px] bg-default-100",
+                                    value: "text-[11px]",
+                                }}
+                            >
+                                {[
+                                    { id: "all", name: "All Seasons" },
+                                    ...seasons,
+                                ].map((s) => (
+                                    <SelectItem key={s.id}>
+                                        {s.name}
+                                    </SelectItem>
+                                ))}
+                            </Select>
+                        )}
                     </CardHeader>
                     <Divider />
                     <CardBody className="p-0">
@@ -151,14 +230,18 @@ export default function WalletPage() {
                             </div>
                         )}
 
-                        {!isLoadingTx && transactions.length === 0 && !error && (
-                            <div className="flex flex-col items-center gap-3 py-8 text-center">
-                                <Clock className="h-8 w-8 text-foreground/20" />
-                                <p className="text-sm text-foreground/40">
-                                    No transactions yet
-                                </p>
-                            </div>
-                        )}
+                        {!isLoadingTx &&
+                            transactions.length === 0 &&
+                            !error && (
+                                <div className="flex flex-col items-center gap-3 py-8 text-center">
+                                    <Clock className="h-8 w-8 text-foreground/20" />
+                                    <p className="text-sm text-foreground/40">
+                                        {selectedSeason !== "all"
+                                            ? "No transactions this season"
+                                            : "No transactions yet"}
+                                    </p>
+                                </div>
+                            )}
 
                         {transactions.length > 0 && (
                             <div className="divide-y divide-divider">
@@ -169,8 +252,8 @@ export default function WalletPage() {
                                     >
                                         <div
                                             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${tx.type === "CREDIT"
-                                                ? "bg-success/10"
-                                                : "bg-danger/10"
+                                                    ? "bg-success/10"
+                                                    : "bg-danger/10"
                                                 }`}
                                         >
                                             {tx.type === "CREDIT" ? (
@@ -184,13 +267,15 @@ export default function WalletPage() {
                                                 {tx.description}
                                             </p>
                                             <p className="text-xs text-foreground/40">
-                                                {new Date(tx.createdAt).toLocaleDateString()}
+                                                {new Date(
+                                                    tx.createdAt
+                                                ).toLocaleDateString()}
                                             </p>
                                         </div>
                                         <span
                                             className={`shrink-0 text-sm font-semibold ${tx.type === "CREDIT"
-                                                ? "text-success"
-                                                : "text-danger"
+                                                    ? "text-success"
+                                                    : "text-danger"
                                                 }`}
                                         >
                                             {tx.type === "CREDIT" ? "+" : "-"}
@@ -199,23 +284,21 @@ export default function WalletPage() {
                                     </div>
                                 ))}
 
-                                {hasNextPage && (
-                                    <div className="flex justify-center py-3">
-                                        <Button
-                                            size="sm"
-                                            variant="light"
-                                            isLoading={isFetchingNextPage}
-                                            onPress={() => fetchNextPage()}
-                                            startContent={
-                                                !isFetchingNextPage && (
-                                                    <ChevronsDown className="h-4 w-4" />
-                                                )
-                                            }
-                                        >
-                                            Load More
-                                        </Button>
-                                    </div>
-                                )}
+                                {/* Infinite scroll trigger */}
+                                <div
+                                    ref={loadMoreRef}
+                                    className="flex justify-center py-3"
+                                >
+                                    {isFetchingNextPage && (
+                                        <Loader2 className="h-4 w-4 animate-spin text-foreground/30" />
+                                    )}
+                                    {!hasNextPage &&
+                                        transactions.length > 0 && (
+                                            <p className="text-[10px] text-foreground/25">
+                                                All transactions loaded
+                                            </p>
+                                        )}
+                                </div>
                             </div>
                         )}
                     </CardBody>
