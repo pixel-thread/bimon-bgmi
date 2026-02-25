@@ -1,7 +1,7 @@
 "use client";
 
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
     Card,
     CardBody,
@@ -88,7 +88,7 @@ export default function AdminsPage() {
     const deleteModal = useDisclosure();
 
     const queryClient = useQueryClient();
-    const observerRef = useRef<IntersectionObserver | null>(null);
+    const loadMoreRef = useRef<HTMLDivElement>(null);
 
     // Debounce search
     useEffect(() => {
@@ -120,20 +120,21 @@ export default function AdminsPage() {
         getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     });
 
-    // Infinite scroll observer
-    const lastItemRef = useCallback(
-        (node: HTMLDivElement | null) => {
-            if (isFetchingNextPage) return;
-            if (observerRef.current) observerRef.current.disconnect();
-            observerRef.current = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting && hasNextPage) {
+    // Auto-load next page when sentinel enters viewport
+    useEffect(() => {
+        const sentinel = loadMoreRef.current;
+        if (!sentinel || !hasNextPage) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
                     fetchNextPage();
                 }
-            });
-            if (node) observerRef.current.observe(node);
-        },
-        [isFetchingNextPage, hasNextPage, fetchNextPage],
-    );
+            },
+            { rootMargin: "200px" },
+        );
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
     const allUsers = data?.pages.flatMap((p) => p.items) ?? [];
 
@@ -300,8 +301,12 @@ export default function AdminsPage() {
                             )}
                         </CardBody>
                     </Card>
-                    {/* Scroll sentinel — outside the overflow-hidden card */}
-                    {hasNextPage && <div ref={lastItemRef} className="h-1" />}
+                    {/* Infinite scroll sentinel — always rendered */}
+                    <div ref={loadMoreRef} className="flex justify-center py-3">
+                        {isFetchingNextPage && (
+                            <Loader2 className="h-4 w-4 animate-spin text-foreground/30" />
+                        )}
+                    </div>
                 </>
             )}
 
