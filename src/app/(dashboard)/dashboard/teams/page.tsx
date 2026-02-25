@@ -318,7 +318,7 @@ export default function TeamsPage() {
                 <h1 className="text-xl font-bold">Teams</h1>
 
                 {/* Season + Tournament side by side */}
-                <div className="flex gap-2" style={{ overflow: 'hidden', maxWidth: '100%' }}>
+                <div className="flex gap-2 w-full">
                     {seasons.length > 0 && (
                         <Select
                             placeholder="Season"
@@ -327,8 +327,7 @@ export default function TeamsPage() {
                             onSelectionChange={handleSeasonChange}
                             classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
                             aria-label="Season"
-                            className="min-w-0"
-                            style={{ width: '40%', maxWidth: '40%' }}
+                            className="w-auto shrink-0"
                         >
                             {seasons.map((s) => (
                                 <SelectItem key={s.id} textValue={`${s.name}${s.isCurrent ? " ✦" : ""}`}>
@@ -345,8 +344,7 @@ export default function TeamsPage() {
                         classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
                         aria-label="Tournament"
                         className="flex-1 min-w-0"
-                        style={{ maxWidth: seasons.length > 0 ? '60%' : '100%' }}
-                        popoverProps={{ className: "min-w-[280px]" }}
+                        popoverProps={{ className: "min-w-[360px]" }}
                     >
                         {tournaments.map((t) => (
                             <SelectItem key={t.id} textValue={t.name}>{t.name}</SelectItem>
@@ -475,8 +473,8 @@ export default function TeamsPage() {
                                             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                                                 {team.teamNumber}
                                             </span>
-                                            <div className="overflow-x-auto min-w-0 flex-1" style={{ WebkitOverflowScrolling: 'touch' }}>
-                                                <h3 className="text-sm font-semibold whitespace-nowrap">
+                                            <div className="min-w-0 flex-1 overflow-hidden" style={{ maxWidth: '160px' }}>
+                                                <h3 className="text-sm font-semibold truncate">
                                                     {team.players?.length > 0
                                                         ? team.players.map(p => p.displayName || p.username).join(", ")
                                                         : team.name}
