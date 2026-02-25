@@ -146,17 +146,6 @@ export async function GET(request: NextRequest) {
         }
         if (bonusTotal > 0) deductions.push({ category: "Bonus", total: bonusTotal, count: bonusCount });
 
-        // Admin manual credits (UC given to players by admin)
-        let adminTotal = 0, adminCount = 0;
-        for (const tx of seasonCredits) {
-            const d = tx.description.toLowerCase();
-            if (d.includes("admin adjustment") && tx.amount > 0) {
-                adminTotal += tx.amount;
-                adminCount++;
-            }
-        }
-        if (adminTotal > 0) deductions.push({ category: "Admin Credits", total: adminTotal, count: adminCount });
-
         // Lucky Voters for this season
         const luckyPolls = await prisma.poll.findMany({
             where: {
