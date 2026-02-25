@@ -312,7 +312,7 @@ export default function TeamsPage() {
     // ── Render ────────────────────────────────────────────────
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 overflow-x-hidden">
             {/* Header + Filters */}
             <div className="space-y-2">
                 <h1 className="text-xl font-bold">Teams</h1>
@@ -343,7 +343,8 @@ export default function TeamsPage() {
                         onSelectionChange={handleTournamentChange}
                         classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
                         aria-label="Tournament"
-                        className="flex-1"
+                        className="flex-1 min-w-0"
+                        popoverProps={{ className: "min-w-[280px]" }}
                     >
                         {tournaments.map((t) => (
                             <SelectItem key={t.id} textValue={t.name}>{t.name}</SelectItem>
@@ -353,7 +354,7 @@ export default function TeamsPage() {
 
                 {/* Match + Action Buttons — same row */}
                 {tournamentId && (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 overflow-x-auto">
                         <Select
                             placeholder="Match"
                             size="sm"
@@ -452,7 +453,7 @@ export default function TeamsPage() {
 
             {/* Team cards */}
             {filteredTeams && (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 overflow-hidden">
                     {filteredTeams.length === 0 && !isLoading ? (
                         <div className="col-span-full flex flex-col items-center gap-3 rounded-xl bg-default-100 py-12 text-center">
                             <Users className="h-10 w-10 text-foreground/20" />
@@ -466,9 +467,9 @@ export default function TeamsPage() {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.02 }}
                             >
-                                <Card className="border border-divider">
-                                    <CardHeader className="justify-between pb-1">
-                                        <div className="flex items-center gap-2">
+                                <Card className="border border-divider overflow-hidden">
+                                    <CardHeader className="justify-between pb-1 min-w-0">
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
                                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                                                 {team.teamNumber}
                                             </span>
@@ -505,7 +506,7 @@ export default function TeamsPage() {
                                         {team.players.map((player) => (
                                             <div
                                                 key={player.id}
-                                                className="flex items-center gap-2"
+                                                className="flex items-center gap-2 min-w-0"
                                             >
                                                 <Avatar
                                                     src={player.imageUrl || undefined}
@@ -520,7 +521,7 @@ export default function TeamsPage() {
                                                     size="sm"
                                                     variant="flat"
                                                     color={categoryColors[player.category] ?? "default"}
-                                                    className="text-[10px]"
+                                                    className="text-[10px] shrink-0"
                                                 >
                                                     {player.category.replace("_", " ")}
                                                 </Chip>
