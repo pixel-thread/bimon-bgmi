@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Rajdhani } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { RouteTracker } from "@/components/common/route-tracker";
 import "./globals.css";
 
 const rajdhani = Rajdhani({
@@ -84,7 +85,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${rajdhani.variable} font-sans antialiased`}>
-        <Providers>{children}</Providers>
+        <Providers>
+          <RouteTracker />
+          {children}
+        </Providers>
       </body>
     </html>
   );

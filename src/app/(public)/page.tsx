@@ -1,6 +1,7 @@
 import { Swords } from "lucide-react";
 import Link from "next/link";
 import { HeroCTA, HeroHeading } from "@/components/landing/hero-cta";
+import { LastRouteRedirector } from "@/components/common/last-route-redirector";
 
 /**
  * Public landing page — / route.
@@ -8,6 +9,7 @@ import { HeroCTA, HeroHeading } from "@/components/landing/hero-cta";
 export default function HomePage() {
     return (
         <div className="min-h-dvh bg-background text-foreground">
+            <LastRouteRedirector />
             {/* Hero */}
             <section className="relative overflow-hidden px-4 pb-20 pt-20 sm:px-6 sm:pt-28">
                 {/* Animated background blobs */}
