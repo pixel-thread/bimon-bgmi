@@ -199,7 +199,7 @@ export function PlayerStatsModal({
                         </div>
                     </div>
 
-                    <ModalBody className="space-y-4 px-4 pb-6 pt-4">
+                    <ModalBody className="space-y-4 px-4 pb-6 pt-0">
                         {/* Stats grid */}
                         <div className="grid grid-cols-2 gap-3">
                             {statCards.map((stat) => (
