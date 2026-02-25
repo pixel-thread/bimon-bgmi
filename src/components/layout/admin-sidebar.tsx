@@ -18,6 +18,7 @@ import {
     ChevronDown,
     Eye,
     Clover,
+    Star,
 } from "lucide-react";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { useState, useEffect, useCallback } from "react";
@@ -50,6 +51,7 @@ const sidebarItems: SidebarSection[] = [
         items: [
             { label: "Polls", href: "/dashboard/polls", icon: Vote },
             { label: "Job Listings", href: "/dashboard/job-listings", icon: Briefcase },
+            { label: "Merit", href: "/dashboard/merit", icon: Star, superAdminOnly: true },
             { label: "Rules", href: "/dashboard/rules", icon: BookOpen },
         ],
     },

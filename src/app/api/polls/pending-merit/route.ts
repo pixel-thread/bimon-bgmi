@@ -19,6 +19,14 @@ export async function GET() {
             return SuccessResponse({ data: { pending: [], tournamentId: null, tournamentName: null } });
         }
 
+        // Check if merit system is enabled
+        const config = await prisma.appConfig.findUnique({
+            where: { key: "merit_rating_enabled" },
+        });
+        if (config?.value !== "true") {
+            return SuccessResponse({ data: { pending: [], tournamentId: null, tournamentName: null } });
+        }
+
         const playerId = user.player.id;
 
         // Find last completed tournament this player participated in
