@@ -68,7 +68,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
     const queryClient = useQueryClient();
     const [ucAmount, setUcAmount] = useState("");
     const [ucType, setUcType] = useState<"CREDIT" | "DEBIT">("CREDIT");
-    const [ucDescription, setUcDescription] = useState("");
+    const [ucDescription, setUcDescription] = useState("UC Top-up");
     const [banReason, setBanReason] = useState("");
     const [activeTab, setActiveTab] = useState<"overview" | "transactions">("overview");
 
@@ -110,7 +110,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
             queryClient.invalidateQueries({ queryKey: ["admin-player-transactions", playerId] });
             queryClient.invalidateQueries({ queryKey: ["admin-players"] });
             setUcAmount("");
-            setUcDescription("");
+            setUcDescription("UC Top-up");
         },
     });
 

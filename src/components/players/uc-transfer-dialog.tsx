@@ -31,7 +31,7 @@ export function UCTransferDialog({
     toPlayerName,
 }: UCTransferDialogProps) {
     const [amount, setAmount] = useState("");
-    const [message, setMessage] = useState("UC Top-up");
+    const [message, setMessage] = useState("");
     const [activeTab, setActiveTab] = useState<string>("request");
     const queryClient = useQueryClient();
     const { balance } = useAuthUser();
@@ -61,7 +61,7 @@ export function UCTransferDialog({
 
     const handleClose = () => {
         setAmount("");
-        setMessage("UC Top-up");
+        setMessage("");
         setActiveTab("request");
         onClose();
     };
@@ -182,32 +182,6 @@ export function UCTransferDialog({
                         }
                     />
 
-                    {/* Quick message suggestions */}
-                    <div>
-                        <p className="text-xs text-foreground/40 mb-1.5">Quick message</p>
-                        <div className="flex flex-wrap gap-1.5">
-                            {[
-                                "Prize 🏆",
-                                "Bonus 🎁",
-                                "Refund 💰",
-                                "Streak Reward 🔥",
-                                "RP Reward 👑",
-                                "Promo",
-                                "Compensation",
-                            ].map((msg) => (
-                                <button
-                                    key={msg}
-                                    onClick={() => setMessage(message === msg ? "" : msg)}
-                                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${message === msg
-                                        ? "bg-primary text-primary-foreground border-primary"
-                                        : "border-divider text-foreground/50 hover:border-foreground/30 hover:bg-default-100"
-                                        }`}
-                                >
-                                    {msg}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
 
                     <Textarea
                         label="Message (optional)"
