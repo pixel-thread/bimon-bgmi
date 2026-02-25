@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
             orderBy: [
                 { role: "asc" },
                 { createdAt: "desc" },
+                { id: "asc" },
             ],
         });
 
