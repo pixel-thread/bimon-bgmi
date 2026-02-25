@@ -133,42 +133,15 @@ export function UCTransferDialog({
                         </p>
                     )}
 
-                    {/* Suggested amounts */}
-                    <div className="flex flex-wrap gap-2">
-                        {[5, 10, 20, 50, 100].map((v) => {
-                            const disabled = activeTab === "send" && v > balance;
-                            return (
-                                <button
-                                    key={v}
-                                    onClick={() => !disabled && setAmount(String(v))}
-                                    disabled={disabled}
-                                    className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${amount === String(v)
-                                        ? activeTab === "send"
-                                            ? "bg-success text-success-foreground border-success shadow-sm"
-                                            : "bg-primary text-primary-foreground border-primary shadow-sm"
-                                        : disabled
-                                            ? "border-divider text-foreground/20 cursor-not-allowed"
-                                            : "border-divider text-foreground/60 hover:border-foreground/30 hover:bg-default-100"
-                                        }`}
-                                >
-                                    {v} UC
-                                </button>
-                            );
-                        })}
-                    </div>
-
                     <Input
                         inputMode="numeric"
                         pattern="[0-9]*"
                         label="Amount"
-                        placeholder="0"
+                        placeholder="Enter amount"
                         value={amount}
                         onValueChange={(v) => setAmount(v.replace(/\D/g, ""))}
-                        endContent={<span className="text-foreground/40 text-sm font-medium">UC</span>}
-                        classNames={{
-                            input: "text-xl font-bold text-center",
-                            inputWrapper: "h-14",
-                        }}
+                        endContent={<span className="text-foreground/40 text-xs font-medium">UC</span>}
+                        size="sm"
                         isInvalid={
                             activeTab === "send" &&
                             !!amount &&
@@ -182,14 +155,37 @@ export function UCTransferDialog({
                         }
                     />
 
+                    <div className="flex gap-1.5">
+                        {[5, 10, 20, 50, 100].map((v) => {
+                            const disabled = activeTab === "send" && v > balance;
+                            return (
+                                <button
+                                    key={v}
+                                    onClick={() => !disabled && setAmount(String(v))}
+                                    disabled={disabled}
+                                    className={`flex-1 py-1 rounded-lg text-xs font-medium transition-colors ${amount === String(v)
+                                            ? activeTab === "send"
+                                                ? "bg-success/15 text-success"
+                                                : "bg-primary/15 text-primary"
+                                            : disabled
+                                                ? "text-foreground/15 cursor-not-allowed"
+                                                : "text-foreground/40 hover:bg-default-100 hover:text-foreground/60"
+                                        }`}
+                                >
+                                    {v}
+                                </button>
+                            );
+                        })}
+                    </div>
 
                     <Textarea
                         label="Message (optional)"
                         placeholder="Add a note..."
                         value={message}
                         onValueChange={setMessage}
-                        minRows={2}
-                        maxRows={3}
+                        size="sm"
+                        minRows={1}
+                        maxRows={2}
                     />
                 </ModalBody>
 
