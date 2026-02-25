@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 
 /**
  * GET /api/notifications
- * Fetches the current user's notifications from the last 7 days + unread count + pending UC requests.
+ * Fetches the current user's notifications from the last 7 days + unread count + pending UC requests + unclaimed rewards.
  */
 export async function GET() {
     try {
@@ -24,7 +24,7 @@ export async function GET() {
 
         const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-        const [notifications, unreadCount, pendingRequests] = await Promise.all([
+        const [notifications, unreadCount, pendingRequests, unclaimedRewards] = await Promise.all([
             prisma.notification.findMany({
                 where: {
                     userId: user.id,
@@ -61,10 +61,21 @@ export async function GET() {
                     orderBy: { createdAt: "desc" },
                 })
                 : [],
+            // Fetch unclaimed rewards for this player
+            user.player
+                ? prisma.pendingReward.findMany({
+                    where: {
+                        playerId: user.player.id,
+                        isClaimed: false,
+                    },
+                    orderBy: { createdAt: "desc" },
+                    take: 20,
+                })
+                : [],
         ]);
 
         return SuccessResponse({
-            data: { notifications, unreadCount, pendingRequests },
+            data: { notifications, unreadCount, pendingRequests, unclaimedRewards },
         });
     } catch (error) {
         console.error("Error fetching notifications:", error);

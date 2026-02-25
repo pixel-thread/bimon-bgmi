@@ -105,14 +105,19 @@ export function Header() {
         queryKey: ["notification-count"],
         queryFn: async () => {
             const res = await fetch("/api/notifications");
-            if (!res.ok) return { unreadCount: 0 };
+            if (!res.ok) return { unreadCount: 0, unclaimedRewardCount: 0 };
             const json = await res.json();
-            return { unreadCount: json.data?.unreadCount ?? 0 };
+            return {
+                unreadCount: json.data?.unreadCount ?? 0,
+                unclaimedRewardCount: json.data?.unclaimedRewards?.length ?? 0,
+            };
         },
         enabled: isSignedIn,
         staleTime: Infinity,
     });
     const unreadCount = notifData?.unreadCount ?? 0;
+    const unclaimedRewardCount = notifData?.unclaimedRewardCount ?? 0;
+    const totalActionCount = unreadCount + unclaimedRewardCount;
 
 
 
@@ -146,7 +151,12 @@ export function Header() {
             >
                 {/* Logo */}
                 <NavbarContent justify="start">
-                    <NavbarMenuToggle className="lg:hidden" />
+                    <div className="relative lg:hidden">
+                        <NavbarMenuToggle />
+                        {totalActionCount > 0 && (
+                            <span className="absolute right-0 top-0 z-10 h-2 w-2 rounded-full bg-danger pointer-events-none" />
+                        )}
+                    </div>
                     <NavbarBrand>
                         <span className="text-lg font-bold tracking-tight">PUBGMI</span>
                     </NavbarBrand>
@@ -221,7 +231,7 @@ export function Header() {
                                 >
                                     More
                                     <ChevronDown className="h-3.5 w-3.5" />
-                                    {unreadCount > 0 && (
+                                    {totalActionCount > 0 && (
                                         <span className="absolute -right-2 -top-1 h-2 w-2 rounded-full bg-danger" />
                                     )}
                                 </button>
@@ -240,9 +250,9 @@ export function Header() {
                                         >
                                             <item.icon className="h-4 w-4" />
                                             {item.label}
-                                            {item.label === "Notifications" && unreadCount > 0 && (
+                                            {item.label === "Notifications" && totalActionCount > 0 && (
                                                 <span className="ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                                                    {unreadCount}
+                                                    {totalActionCount}
                                                 </span>
                                             )}
                                         </Link>
@@ -403,9 +413,9 @@ export function Header() {
                                                 <item.icon className="h-5 w-5" />
                                             )}
                                             {item.label}
-                                            {item.label === "Notifications" && unreadCount > 0 && (
+                                            {item.label === "Notifications" && totalActionCount > 0 && (
                                                 <span className="ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                                                    {unreadCount}
+                                                    {totalActionCount}
                                                 </span>
                                             )}
                                         </Link>

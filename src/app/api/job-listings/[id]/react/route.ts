@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 
-const DISLIKE_BAN_THRESHOLD = 10;
+const DISLIKE_BAN_THRESHOLD = 5;
 
 /**
  * POST /api/job-listings/[id]/react

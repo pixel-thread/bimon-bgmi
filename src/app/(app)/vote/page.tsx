@@ -2,12 +2,14 @@
 
 import { usePolls, useVote } from "@/hooks/use-polls";
 import { PollCard } from "@/components/vote/poll-card";
-import { Skeleton, Card, CardBody } from "@heroui/react";
+import { MeritRatingSection } from "@/components/vote/merit-rating-gate";
+import { VotePageJobListings } from "@/components/vote/vote-page-jobs";
+import { Skeleton, Card, CardBody, Divider } from "@heroui/react";
 import { Vote, AlertCircle } from "lucide-react";
 
 /**
  * /vote — Tournament voting page.
- * Shows active polls, lets users vote IN/OUT/SOLO.
+ * Merit rating section on top, polls below, then community job listings.
  */
 export default function VotePage() {
     const { data, isLoading, error, refetch } = usePolls();
@@ -34,6 +36,10 @@ export default function VotePage() {
                 </p>
             </div>
 
+            {/* ── Merit Rating (non-blocking, above polls) ────── */}
+            <MeritRatingSection />
+
+            {/* ── Polls ──────────────────────────────────────── */}
             {isLoading && (
                 <div className="space-y-4">
                     {[1, 2].map((i) => (
@@ -87,6 +93,13 @@ export default function VotePage() {
                     )}
                 </div>
             )}
+
+            {/* ── Divider ────────────────────────────────────── */}
+            <Divider className="my-8" />
+
+            {/* ── Job Listings ────────────────────────────────── */}
+            <VotePageJobListings />
         </div>
     );
 }
+
