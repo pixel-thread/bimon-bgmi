@@ -145,14 +145,14 @@ export function Header() {
                     wrapper: "px-4 sm:px-6",
                     menu: `!fixed !top-[var(--navbar-height)] !h-[calc(100dvh-var(--navbar-height))] !w-[280px] !max-w-[280px] border-r border-divider shadow-xl !bg-background/60 !backdrop-blur-xl !backdrop-saturate-150 !overflow-y-auto transition-transform duration-300 ease-out ${isMenuOpen ? "!translate-x-0" : "!-translate-x-full"
                         }`,
+                    toggle: "w-10 h-10",
                 }}
                 isBordered
-                shouldHideOnScroll
             >
                 {/* Logo */}
                 <NavbarContent justify="start">
                     <div className="relative lg:hidden">
-                        <NavbarMenuToggle />
+                        <NavbarMenuToggle aria-label={isMenuOpen ? "Close menu" : "Open menu"} />
                         {totalActionCount > 0 && (
                             <span className="absolute right-0 top-0 z-10 h-2 w-2 rounded-full bg-danger pointer-events-none" />
                         )}
