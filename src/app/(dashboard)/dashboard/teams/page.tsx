@@ -317,20 +317,8 @@ export default function TeamsPage() {
             <div className="space-y-2">
                 <h1 className="text-xl font-bold">Teams</h1>
 
-                {/* Row 1: Tournament + Season — stacked on mobile */}
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
-                    <Select
-                        placeholder="Tournament"
-                        size="sm"
-                        selectedKeys={tournamentId ? [tournamentId] : []}
-                        onSelectionChange={handleTournamentChange}
-                        classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
-                        aria-label="Tournament"
-                    >
-                        {tournaments.map((t) => (
-                            <SelectItem key={t.id} textValue={t.name}>{t.name}</SelectItem>
-                        ))}
-                    </Select>
+                {/* Season + Tournament side by side */}
+                <div className="flex gap-2">
                     {seasons.length > 0 && (
                         <Select
                             placeholder="Season"
@@ -339,7 +327,7 @@ export default function TeamsPage() {
                             onSelectionChange={handleSeasonChange}
                             classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
                             aria-label="Season"
-                            className="sm:w-40"
+                            className="w-[40%] min-w-[100px]"
                         >
                             {seasons.map((s) => (
                                 <SelectItem key={s.id} textValue={`${s.name}${s.isCurrent ? " ✦" : ""}`}>
@@ -348,11 +336,24 @@ export default function TeamsPage() {
                             ))}
                         </Select>
                     )}
+                    <Select
+                        placeholder="Tournament"
+                        size="sm"
+                        selectedKeys={tournamentId ? [tournamentId] : []}
+                        onSelectionChange={handleTournamentChange}
+                        classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
+                        aria-label="Tournament"
+                        className="flex-1"
+                    >
+                        {tournaments.map((t) => (
+                            <SelectItem key={t.id} textValue={t.name}>{t.name}</SelectItem>
+                        ))}
+                    </Select>
                 </div>
 
-                {/* Row 2: Match + Action Buttons */}
+                {/* Match + Action Buttons — same row */}
                 {tournamentId && (
-                    <div className="flex flex-wrap items-center gap-1.5 pb-1">
+                    <div className="flex items-center gap-1.5">
                         <Select
                             placeholder="Match"
                             size="sm"
@@ -360,8 +361,8 @@ export default function TeamsPage() {
                             onSelectionChange={handleMatchChange}
                             classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
                             aria-label="Match"
-                            className="w-full min-w-0 sm:w-[120px] sm:min-w-[120px]"
                             isLoading={isCreating}
+                            className="w-[120px] min-w-[120px]"
                         >
                             {[
                                 <SelectItem key="all" textValue="All Matches">All Matches</SelectItem>,
@@ -382,71 +383,31 @@ export default function TeamsPage() {
                                 </SelectItem>,
                             ]}
                         </Select>
-                        <div className="flex items-center gap-1.5">
-                            <Button
-                                size="sm"
-                                color="primary"
-                                variant="flat"
-                                isIconOnly
-                                onPress={() => setShowCreateTeam(true)}
-                                isDisabled={!matchId || matchId === "all"}
-                                className="h-8 w-8 min-w-8"
-                            >
-                                <Plus className="h-3.5 w-3.5" />
+                        <Divider orientation="vertical" className="h-5" />
+                        <Button size="sm" color="primary" variant="flat" isIconOnly onPress={() => setShowCreateTeam(true)} isDisabled={!matchId || matchId === "all"} className="h-8 w-8 min-w-8 shrink-0">
+                            <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="sm" variant="flat" isIconOnly onPress={() => setShowSwapPlayers(true)} className="h-8 w-8 min-w-8 shrink-0">
+                            <ArrowLeftRight className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="sm" variant="flat" isIconOnly onPress={() => setShowBulkEdit(true)} className="h-8 w-8 min-w-8 shrink-0">
+                            <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="sm" variant="flat" isIconOnly onPress={() => setShowStandings(true)} className="h-8 w-8 min-w-8 shrink-0">
+                            <BarChart3 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="sm" variant="flat" isIconOnly onPress={() => setShowSlots(true)} className="h-8 w-8 min-w-8 shrink-0">
+                            <TableProperties className="h-3.5 w-3.5" />
+                        </Button>
+                        {matchId && matchId !== "all" && (
+                            <Button size="sm" variant="flat" color="danger" isIconOnly onPress={() => setShowDeleteConfirm(true)} className="h-8 w-8 min-w-8 shrink-0">
+                                <Trash2 className="h-3.5 w-3.5" />
                             </Button>
-                            <Button
-                                size="sm"
-                                variant="flat"
-                                isIconOnly
-                                onPress={() => setShowSwapPlayers(true)}
-                                className="h-8 w-8 min-w-8"
-                            >
-                                <ArrowLeftRight className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="flat"
-                                isIconOnly
-                                onPress={() => setShowBulkEdit(true)}
-                                className="h-8 w-8 min-w-8"
-                            >
-                                <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="flat"
-                                isIconOnly
-                                onPress={() => setShowStandings(true)}
-                                className="h-8 w-8 min-w-8"
-                            >
-                                <BarChart3 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="flat"
-                                isIconOnly
-                                onPress={() => setShowSlots(true)}
-                                className="h-8 w-8 min-w-8"
-                            >
-                                <TableProperties className="h-3.5 w-3.5" />
-                            </Button>
-                            {matchId && matchId !== "all" && (
-                                <Button
-                                    size="sm"
-                                    variant="flat"
-                                    color="danger"
-                                    isIconOnly
-                                    onPress={() => setShowDeleteConfirm(true)}
-                                    className="h-8 w-8 min-w-8"
-                                >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                            )}
-                        </div>
+                        )}
                     </div>
                 )}
 
-                {/* Row 3: Full-width Search */}
+                {/* Search */}
                 {tournamentId && (
                     <Input
                         placeholder="Search teams..."

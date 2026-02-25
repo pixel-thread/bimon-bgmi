@@ -14,10 +14,12 @@ import {
     Check,
     ChevronRight,
     Shield,
+    BarChart3,
 } from "lucide-react";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
 import { motion } from "motion/react";
+import Link from "next/link";
 
 /**
  * /settings — App settings page.
@@ -35,11 +37,10 @@ export default function SettingsPage() {
 
     // Generate referral link from username
     const referralCode = user?.username || "...";
-    const referralPath = `/join?ref=${referralCode}`;
+    const siteUrl = typeof window !== "undefined" ? window.location.origin : "bimon-bgmi.vercel.app";
 
     const copyReferralLink = () => {
-        const fullLink = `${window.location.origin}${referralPath}`;
-        navigator.clipboard.writeText(fullLink);
+        navigator.clipboard.writeText(`${siteUrl} — Referral: ${referralCode}`);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
@@ -62,14 +63,14 @@ export default function SettingsPage() {
                     <CardBody className="gap-3 p-4">
                         <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-primary" />
-                            <h2 className="text-sm font-semibold">Promoter / Referral</h2>
+                            <h2 className="text-sm font-semibold">Invite Friends</h2>
                         </div>
                         <p className="text-xs text-foreground/50">
-                            Share your link to invite friends to PUBGMI.
+                            Share the link below and tell them your referral code.
                         </p>
                         <div className="flex items-center gap-2">
                             <div className="flex-1 truncate rounded-lg bg-default-100 px-3 py-2 text-xs text-foreground/70">
-                                {referralPath}
+                                {siteUrl}
                             </div>
                             <button
                                 onClick={copyReferralLink}
@@ -82,9 +83,18 @@ export default function SettingsPage() {
                                 )}
                             </button>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-foreground/40">
-                            <Shield className="h-3 w-3" />
-                            Referral code: <span className="font-medium text-foreground/60">{referralCode}</span>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-xs text-foreground/40">
+                                <Shield className="h-3 w-3" />
+                                Your code: <span className="font-medium text-foreground/60">{referralCode}</span>
+                            </div>
+                            <Link
+                                href="/promoter"
+                                className="flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary transition-colors hover:bg-primary/20"
+                            >
+                                <BarChart3 className="h-3 w-3" />
+                                Track
+                            </Link>
                         </div>
                     </CardBody>
                 </Card>
