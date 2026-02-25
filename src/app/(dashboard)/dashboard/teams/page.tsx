@@ -468,22 +468,22 @@ export default function TeamsPage() {
                                 transition={{ delay: i * 0.02 }}
                             >
                                 <Card className="border border-divider overflow-hidden">
-                                    <CardHeader className="justify-between pb-1 min-w-0">
-                                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                                    <CardHeader className="justify-between pb-1 overflow-hidden gap-2">
+                                        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                                                 {team.teamNumber}
                                             </span>
-                                            <h3 className="text-sm font-semibold truncate max-w-[55vw] sm:max-w-[200px]">
+                                            <h3 className="text-sm font-semibold truncate">
                                                 {team.players?.length > 0
                                                     ? team.players.map(p => p.displayName || p.username).join(", ")
                                                     : team.name}
                                             </h3>
                                         </div>
                                         {team.winner && (
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-1 shrink-0">
                                                 <Medal className="h-3.5 w-3.5 text-warning" />
                                                 <span
-                                                    className={`text-xs font-semibold ${positionLabels[team.winner.position]?.color ?? ""}`}
+                                                    className={`text-xs font-semibold whitespace-nowrap ${positionLabels[team.winner.position]?.color ?? ""}`}
                                                 >
                                                     {positionLabels[team.winner.position]?.label ??
                                                         `#${team.winner.position}`}
