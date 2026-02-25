@@ -144,32 +144,32 @@ export default function WinnersPage() {
                                                     {i + 1}
                                                 </span>
 
-                                                {/* Name */}
-                                                <span className="flex-1 truncate text-sm font-medium">
-                                                    {player.name}
-                                                </span>
-
-                                                {/* Medal badges */}
-                                                <div className="flex items-center gap-1.5">
-                                                    {player.firstPlaceCount > 0 && (
-                                                        <span className="inline-flex items-center gap-1 rounded-full bg-default-100 px-2 py-0.5 text-xs font-semibold">
-                                                            🥇 {player.firstPlaceCount}
-                                                        </span>
-                                                    )}
-                                                    {player.secondPlaceCount > 0 && (
-                                                        <span className="inline-flex items-center gap-1 rounded-full bg-default-100 px-2 py-0.5 text-xs font-semibold">
-                                                            🥈 {player.secondPlaceCount}
-                                                        </span>
-                                                    )}
-                                                    {player.thirdPlaceCount > 0 && (
-                                                        <span className="inline-flex items-center gap-1 rounded-full bg-default-100 px-2 py-0.5 text-xs font-semibold">
-                                                            🥉 {player.thirdPlaceCount}
-                                                        </span>
-                                                    )}
+                                                {/* Name + Medal badges */}
+                                                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                                                    <span className="break-all text-sm font-medium">
+                                                        {player.name}
+                                                    </span>
+                                                    <div className="flex items-center gap-1.5">
+                                                        {player.firstPlaceCount > 0 && (
+                                                            <span className="inline-flex items-center gap-1 rounded-full bg-default-100 px-2 py-0.5 text-xs font-semibold">
+                                                                🥇 {player.firstPlaceCount}
+                                                            </span>
+                                                        )}
+                                                        {player.secondPlaceCount > 0 && (
+                                                            <span className="inline-flex items-center gap-1 rounded-full bg-default-100 px-2 py-0.5 text-xs font-semibold">
+                                                                🥈 {player.secondPlaceCount}
+                                                            </span>
+                                                        )}
+                                                        {player.thirdPlaceCount > 0 && (
+                                                            <span className="inline-flex items-center gap-1 rounded-full bg-default-100 px-2 py-0.5 text-xs font-semibold">
+                                                                🥉 {player.thirdPlaceCount}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
 
                                                 {/* Total */}
-                                                <span className="ml-1 w-6 text-right text-sm font-bold text-foreground/70">
+                                                <span className="ml-1 w-6 shrink-0 text-right text-sm font-bold text-foreground/70">
                                                     {player.totalPlacements}
                                                 </span>
                                             </div>
