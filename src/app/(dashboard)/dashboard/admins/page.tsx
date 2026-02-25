@@ -243,63 +243,66 @@ export default function AdminsPage() {
 
             {/* User list */}
             {allUsers.length > 0 && (
-                <Card className="border border-divider overflow-hidden">
-                    <CardBody className="p-0">
-                        {allUsers.map((user, i) => (
-                            <div
-                                key={user.id}
-                                ref={i === allUsers.length - 1 ? lastItemRef : undefined}
-                                className={`flex items-center gap-2.5 px-3 py-2.5 ${i > 0 ? "border-t border-divider" : ""}`}
-                            >
-                                <Avatar
-                                    src={user.imageUrl || undefined}
-                                    name={user.username}
-                                    size="sm"
-                                    className="shrink-0 h-8 w-8"
-                                />
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-medium">
-                                        {user.player?.displayName || user.username}
-                                    </p>
-                                    <p className="truncate text-xs text-foreground/40">
-                                        @{user.username}
-                                        {!user.isOnboarded && (
-                                            <span className="text-foreground/20"> · not onboarded</span>
-                                        )}
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => handleRoleClick(user)}
-                                    className="shrink-0"
+                <>
+                    <Card className="border border-divider overflow-hidden">
+                        <CardBody className="p-0">
+                            {allUsers.map((user, i) => (
+                                <div
+                                    key={user.id}
+                                    className={`flex items-center gap-2.5 px-3 py-2.5 ${i > 0 ? "border-t border-divider" : ""}`}
                                 >
-                                    <Chip
+                                    <Avatar
+                                        src={user.imageUrl || undefined}
+                                        name={user.username}
                                         size="sm"
-                                        variant="flat"
-                                        color={roleColors[user.role] || "default"}
-                                        className="cursor-pointer text-[10px]"
+                                        className="shrink-0 h-8 w-8"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-medium">
+                                            {user.player?.displayName || user.username}
+                                        </p>
+                                        <p className="truncate text-xs text-foreground/40">
+                                            @{user.username}
+                                            {!user.isOnboarded && (
+                                                <span className="text-foreground/20"> · not onboarded</span>
+                                            )}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => handleRoleClick(user)}
+                                        className="shrink-0"
                                     >
-                                        {roleLabels[user.role]}
-                                    </Chip>
-                                </button>
-                                <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="light"
-                                    color="danger"
-                                    onPress={() => handleDeleteClick(user)}
-                                    className="shrink-0 min-w-6 w-6 h-6"
-                                >
-                                    <Trash2 className="h-3 w-3" />
-                                </Button>
-                            </div>
-                        ))}
-                        {isFetchingNextPage && (
-                            <div className="flex items-center justify-center py-4 border-t border-divider">
-                                <Loader2 className="h-4 w-4 animate-spin text-foreground/30" />
-                            </div>
-                        )}
-                    </CardBody>
-                </Card>
+                                        <Chip
+                                            size="sm"
+                                            variant="flat"
+                                            color={roleColors[user.role] || "default"}
+                                            className="cursor-pointer text-[10px]"
+                                        >
+                                            {roleLabels[user.role]}
+                                        </Chip>
+                                    </button>
+                                    <Button
+                                        isIconOnly
+                                        size="sm"
+                                        variant="light"
+                                        color="danger"
+                                        onPress={() => handleDeleteClick(user)}
+                                        className="shrink-0 min-w-6 w-6 h-6"
+                                    >
+                                        <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            ))}
+                            {isFetchingNextPage && (
+                                <div className="flex items-center justify-center py-4 border-t border-divider">
+                                    <Loader2 className="h-4 w-4 animate-spin text-foreground/30" />
+                                </div>
+                            )}
+                        </CardBody>
+                    </Card>
+                    {/* Scroll sentinel — outside the overflow-hidden card */}
+                    {hasNextPage && <div ref={lastItemRef} className="h-1" />}
+                </>
             )}
 
             {!isLoading && allUsers.length === 0 && !error && (
