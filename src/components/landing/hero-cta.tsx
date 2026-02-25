@@ -29,7 +29,7 @@ export function HeroHeading() {
 
     if (!isLoaded) {
         return (
-            <h1 className="mt-8 text-5xl font-extrabold tracking-tight sm:text-6xl">
+            <h1 className="mt-8 text-5xl font-extrabold tracking-tight text-center sm:text-6xl">
                 Welcome to{" "}
                 <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
                     PUBGMI
@@ -39,7 +39,7 @@ export function HeroHeading() {
     }
 
     return (
-        <h1 className="mt-8 text-5xl font-extrabold tracking-tight sm:text-6xl">
+        <h1 className="mt-8 text-5xl font-extrabold tracking-tight text-center sm:text-6xl">
             {isSignedIn ? (
                 <>
                     Welcome back{" "}
