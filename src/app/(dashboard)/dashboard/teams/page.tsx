@@ -317,45 +317,42 @@ export default function TeamsPage() {
             <div className="space-y-2">
                 <h1 className="text-xl font-bold">Teams</h1>
 
-                {/* Row 1: Tournament (70%) + Season (30%) */}
-                <div className="flex gap-2">
-                    <div className="flex-[7]">
+                {/* Row 1: Tournament + Season — stacked on mobile */}
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+                    <Select
+                        placeholder="Tournament"
+                        size="sm"
+                        selectedKeys={tournamentId ? [tournamentId] : []}
+                        onSelectionChange={handleTournamentChange}
+                        classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
+                        aria-label="Tournament"
+                    >
+                        {tournaments.map((t) => (
+                            <SelectItem key={t.id} textValue={t.name}>{t.name}</SelectItem>
+                        ))}
+                    </Select>
+                    {seasons.length > 0 && (
                         <Select
-                            placeholder="Tournament"
+                            placeholder="Season"
                             size="sm"
-                            selectedKeys={tournamentId ? [tournamentId] : []}
-                            onSelectionChange={handleTournamentChange}
+                            selectedKeys={seasonId ? [seasonId] : []}
+                            onSelectionChange={handleSeasonChange}
                             classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
-                            aria-label="Tournament"
+                            aria-label="Season"
+                            className="sm:w-40"
                         >
-                            {tournaments.map((t) => (
-                                <SelectItem key={t.id} textValue={t.name}>{t.name}</SelectItem>
+                            {seasons.map((s) => (
+                                <SelectItem key={s.id} textValue={`${s.name}${s.isCurrent ? " ✦" : ""}`}>
+                                    {s.name}{s.isCurrent ? " ✦" : ""}
+                                </SelectItem>
                             ))}
                         </Select>
-                    </div>
-                    {seasons.length > 0 && (
-                        <div className="flex-[3]">
-                            <Select
-                                placeholder="Season"
-                                size="sm"
-                                selectedKeys={seasonId ? [seasonId] : []}
-                                onSelectionChange={handleSeasonChange}
-                                classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
-                                aria-label="Season"
-                            >
-                                {seasons.map((s) => (
-                                    <SelectItem key={s.id} textValue={`${s.name}${s.isCurrent ? " ✦" : ""}`}>
-                                        {s.name}{s.isCurrent ? " ✦" : ""}
-                                    </SelectItem>
-                                ))}
-                            </Select>
-                        </div>
                     )}
                 </div>
 
                 {/* Row 2: Match + Action Buttons */}
                 {tournamentId && (
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                    <div className="flex flex-wrap items-center gap-1.5 pb-1">
                         <Select
                             placeholder="Match"
                             size="sm"
@@ -363,7 +360,7 @@ export default function TeamsPage() {
                             onSelectionChange={handleMatchChange}
                             classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
                             aria-label="Match"
-                            className="w-[105px] min-w-[105px]"
+                            className="w-full min-w-0 sm:w-[120px] sm:min-w-[120px]"
                             isLoading={isCreating}
                         >
                             {[
@@ -385,66 +382,67 @@ export default function TeamsPage() {
                                 </SelectItem>,
                             ]}
                         </Select>
-                        <Divider orientation="vertical" className="h-5 mx-0.5" />
-                        <Button
-                            size="sm"
-                            color="primary"
-                            variant="flat"
-                            isIconOnly
-                            onPress={() => setShowCreateTeam(true)}
-                            isDisabled={!matchId || matchId === "all"}
-                            className="h-8 w-8 min-w-8"
-                        >
-                            <Plus className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="flat"
-                            isIconOnly
-                            onPress={() => setShowSwapPlayers(true)}
-                            className="h-8 w-8 min-w-8"
-                        >
-                            <ArrowLeftRight className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="flat"
-                            isIconOnly
-                            onPress={() => setShowBulkEdit(true)}
-                            className="h-8 w-8 min-w-8"
-                        >
-                            <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="flat"
-                            isIconOnly
-                            onPress={() => setShowStandings(true)}
-                            className="h-8 w-8 min-w-8"
-                        >
-                            <BarChart3 className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="flat"
-                            isIconOnly
-                            onPress={() => setShowSlots(true)}
-                            className="h-8 w-8 min-w-8"
-                        >
-                            <TableProperties className="h-3.5 w-3.5" />
-                        </Button>
-                        {matchId && matchId !== "all" && (
+                        <div className="flex items-center gap-1.5">
+                            <Button
+                                size="sm"
+                                color="primary"
+                                variant="flat"
+                                isIconOnly
+                                onPress={() => setShowCreateTeam(true)}
+                                isDisabled={!matchId || matchId === "all"}
+                                className="h-8 w-8 min-w-8"
+                            >
+                                <Plus className="h-3.5 w-3.5" />
+                            </Button>
                             <Button
                                 size="sm"
                                 variant="flat"
-                                color="danger"
                                 isIconOnly
-                                onPress={() => setShowDeleteConfirm(true)}
+                                onPress={() => setShowSwapPlayers(true)}
                                 className="h-8 w-8 min-w-8"
                             >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <ArrowLeftRight className="h-3.5 w-3.5" />
                             </Button>
-                        )}
+                            <Button
+                                size="sm"
+                                variant="flat"
+                                isIconOnly
+                                onPress={() => setShowBulkEdit(true)}
+                                className="h-8 w-8 min-w-8"
+                            >
+                                <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="flat"
+                                isIconOnly
+                                onPress={() => setShowStandings(true)}
+                                className="h-8 w-8 min-w-8"
+                            >
+                                <BarChart3 className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="flat"
+                                isIconOnly
+                                onPress={() => setShowSlots(true)}
+                                className="h-8 w-8 min-w-8"
+                            >
+                                <TableProperties className="h-3.5 w-3.5" />
+                            </Button>
+                            {matchId && matchId !== "all" && (
+                                <Button
+                                    size="sm"
+                                    variant="flat"
+                                    color="danger"
+                                    isIconOnly
+                                    onPress={() => setShowDeleteConfirm(true)}
+                                    className="h-8 w-8 min-w-8"
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -513,7 +511,7 @@ export default function TeamsPage() {
                                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                                                 {team.teamNumber}
                                             </span>
-                                            <h3 className="text-sm font-semibold truncate max-w-[200px]">
+                                            <h3 className="text-sm font-semibold truncate max-w-[55vw] sm:max-w-[200px]">
                                                 {team.players?.length > 0
                                                     ? team.players.map(p => p.displayName || p.username).join(", ")
                                                     : team.name}
