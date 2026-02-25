@@ -141,7 +141,7 @@ export default function MeritPage() {
         },
         onSuccess: (_, enabled) => {
             toast.success(
-                enabled ? "Merit system enabled" : "Merit system disabled"
+                enabled ? "Merit ban enforcement enabled" : "Merit ban enforcement disabled"
             );
             queryClient.invalidateQueries({ queryKey: ["dashboard-merit"] });
         },
@@ -184,11 +184,11 @@ export default function MeritPage() {
                                         }`} />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-semibold">Merit Rating System</p>
+                                    <p className="text-sm font-semibold">Merit Ban Enforcement</p>
                                     <p className="text-xs text-foreground/40">
                                         {isEnabled
-                                            ? "Players must rate teammates before voting"
-                                            : "Merit rating is currently disabled"}
+                                            ? "Low merit scores will trigger bans/restrictions"
+                                            : "Bans from low merit scores are disabled"}
                                     </p>
                                 </div>
                             </div>

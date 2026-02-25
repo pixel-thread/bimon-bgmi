@@ -19,13 +19,9 @@ export async function GET() {
             return SuccessResponse({ data: { pending: [], tournamentId: null, tournamentName: null } });
         }
 
-        // Check if merit system is enabled
-        const config = await prisma.appConfig.findUnique({
-            where: { key: "merit_rating_enabled" },
-        });
-        if (config?.value !== "true") {
-            return SuccessResponse({ data: { pending: [], tournamentId: null, tournamentName: null } });
-        }
+        // Rating is always required after winner declaration.
+        // The "merit_rating_enabled" toggle only controls whether low scores
+        // trigger bans/penalties — it does NOT skip the rating step.
 
         const playerId = user.player.id;
 
