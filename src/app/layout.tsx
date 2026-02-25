@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Rajdhani } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { RouteTracker } from "@/components/common/route-tracker";
+import { PwaInstallPrompt } from "@/components/common/pwa-install-prompt";
 import "./globals.css";
 
 const rajdhani = Rajdhani({
@@ -87,6 +88,7 @@ export default function RootLayout({
       <body className={`${rajdhani.variable} font-sans antialiased`}>
         <Providers>
           <RouteTracker />
+          <PwaInstallPrompt />
           {children}
         </Providers>
       </body>
