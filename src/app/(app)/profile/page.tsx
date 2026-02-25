@@ -108,6 +108,7 @@ export default function ProfilePage() {
     const [ignError, setIgnError] = useState("");
     const [saving, setSaving] = useState(false);
     const ignTutorial = useIGNTutorial();
+    const [showRPModal, setShowRPModal] = useState(false);
 
     const { data: profile, isLoading, error } = useQuery<ProfileData>({
         queryKey: ["profile"],
@@ -224,12 +225,20 @@ export default function ProfilePage() {
                                     if (res.ok) {
                                         setPreviewCharacter({ url: URL.createObjectURL(file), isVideo: file.type.startsWith("video/") });
                                         queryClient.invalidateQueries({ queryKey: ["profile"] });
+                                    } else if (res.status === 403) {
+                                        toast.error("Royal Pass required to upload a character image");
                                     }
                                 } finally { setUploadingCharacter(false); e.target.value = ""; }
                             }}
                         />
                         <button
-                            onClick={() => characterInputRef.current?.click()}
+                            onClick={() => {
+                                if (!player?.hasRoyalPass) {
+                                    setShowRPModal(true);
+                                    return;
+                                }
+                                characterInputRef.current?.click();
+                            }}
                             disabled={uploadingCharacter}
                             className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 disabled:opacity-50"
                         >
@@ -597,6 +606,98 @@ export default function ProfilePage() {
                 )}
 
                 {ignTutorial.Modal}
+
+                {/* Royal Pass Purchase Modal */}
+                <AnimatePresence>
+                    {showRPModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                                onClick={() => setShowRPModal(false)}
+                            />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                className="relative w-full max-w-sm rounded-2xl border border-yellow-500/30 bg-gradient-to-b from-yellow-950/90 to-background/95 p-6 shadow-2xl shadow-yellow-500/10 backdrop-blur-xl"
+                            >
+                                <div className="text-center space-y-4">
+                                    {/* Badge */}
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-500 text-white text-xs font-bold animate-pulse shadow-lg shadow-red-500/30">
+                                            🔥 50% OFF
+                                        </span>
+                                    </div>
+
+                                    <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg shadow-yellow-500/30 mx-auto">
+                                        <Crown className="h-8 w-8 text-black" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-yellow-400">Royal Pass</h3>
+                                        <div className="flex items-center justify-center gap-2 mt-2">
+                                            <span className="text-foreground/40 line-through text-lg">20 UC</span>
+                                            <span className="text-2xl font-black text-yellow-400">10 UC</span>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2 text-left text-sm">
+                                        <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 px-3 py-2">
+                                            <ImagePlus className="h-4 w-4 text-yellow-400 shrink-0" />
+                                            <span className="text-foreground/80">Custom character image</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 px-3 py-2">
+                                            <Flame className="h-4 w-4 text-yellow-400 shrink-0" />
+                                            <span className="text-foreground/80">Streak bonus rewards (₹30 UC)</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 px-3 py-2">
+                                            <Crown className="h-4 w-4 text-yellow-400 shrink-0" />
+                                            <span className="text-foreground/80">Crown badge on profile</span>
+                                        </div>
+                                    </div>
+                                    {player?.wallet && player.wallet.balance < 10 && (
+                                        <p className="text-xs text-red-400">
+                                            You need {10 - player.wallet.balance} more UC (Balance: {player.wallet.balance} UC)
+                                        </p>
+                                    )}
+                                    <div className="flex gap-2 pt-2">
+                                        <Button
+                                            variant="flat"
+                                            className="flex-1"
+                                            onPress={() => setShowRPModal(false)}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-bold"
+                                            isDisabled={!player?.wallet || player.wallet.balance < 10}
+                                            onPress={async () => {
+                                                try {
+                                                    const res = await fetch("/api/royal-pass/buy", { method: "POST" });
+                                                    const json = await res.json();
+                                                    if (res.ok) {
+                                                        toast.success("Royal Pass activated! 👑");
+                                                        setShowRPModal(false);
+                                                        await queryClient.invalidateQueries({ queryKey: ["profile"] });
+                                                        // Auto-open gallery picker after RP purchase
+                                                        setTimeout(() => characterInputRef.current?.click(), 500);
+                                                    } else {
+                                                        toast.error(json.message || "Purchase failed");
+                                                    }
+                                                } catch {
+                                                    toast.error("Network error");
+                                                }
+                                            }}
+                                        >
+                                            👑 Buy for 10 UC
+                                        </Button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
 
                 {/* Sign Out */}
                 <div className="mt-6 pb-20 lg:pb-4">

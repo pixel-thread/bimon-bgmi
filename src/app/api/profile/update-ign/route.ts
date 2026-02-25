@@ -3,9 +3,14 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
 
+const NAME_CHANGE_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
+const NAME_CHANGE_FEE = 1; // UC
+
 /**
  * POST /api/profile/update-ign
  * Updates the current player's display name (IGN) and/or bio.
+ * - Display name change: free once per week, 1 UC to break cooldown.
+ * - Bio change: always free.
  */
 export async function POST(req: NextRequest) {
     try {
@@ -17,6 +22,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const displayName = body.displayName?.trim();
         const bio = typeof body.bio === "string" ? body.bio.trim() : undefined;
+        const forceChange = body.forceChange === true; // client confirms paying 1 UC
 
         // Validate displayName if provided
         if (displayName) {
@@ -35,15 +41,49 @@ export async function POST(req: NextRequest) {
 
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
-            select: { player: { select: { id: true } } },
+            select: {
+                player: {
+                    select: {
+                        id: true,
+                        displayName: true,
+                        displayNameLastChangeAt: true,
+                        wallet: { select: { id: true, balance: true } },
+                    },
+                },
+            },
         });
 
         if (!user?.player) {
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
 
-        // Check for duplicate IGN if displayName is being changed
-        if (displayName) {
+        // Check cooldown if display name is being changed
+        let nameChangeFee = 0;
+        if (displayName && displayName !== user.player.displayName) {
+            const lastChange = user.player.displayNameLastChangeAt;
+            if (lastChange) {
+                const elapsed = Date.now() - new Date(lastChange).getTime();
+                if (elapsed < NAME_CHANGE_COOLDOWN_MS) {
+                    const remainingMs = NAME_CHANGE_COOLDOWN_MS - elapsed;
+                    const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+
+                    if (!forceChange) {
+                        // Tell client about cooldown — they can choose to pay
+                        return ErrorResponse({
+                            message: `Name change on cooldown (${remainingDays}d left). Pay ${NAME_CHANGE_FEE} UC to change now.`,
+                            status: 429,
+                        });
+                    }
+
+                    // Player chose to pay — check wallet
+                    if (!user.player.wallet || user.player.wallet.balance < NAME_CHANGE_FEE) {
+                        return ErrorResponse({ message: "Not enough UC to break cooldown", status: 400 });
+                    }
+                    nameChangeFee = NAME_CHANGE_FEE;
+                }
+            }
+
+            // Check for duplicate IGN
             const existing = await prisma.player.findFirst({
                 where: {
                     displayName: { equals: displayName, mode: "insensitive" },
@@ -57,20 +97,46 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        const updateData: Record<string, string> = {};
-        if (displayName) updateData.displayName = displayName;
+        const updateData: Record<string, unknown> = {};
+        if (displayName && displayName !== user.player.displayName) {
+            updateData.displayName = displayName;
+            updateData.displayNameLastChangeAt = new Date();
+        }
         if (bio !== undefined) updateData.bio = bio;
 
         if (Object.keys(updateData).length === 0) {
             return SuccessResponse({ message: "Nothing to update" });
         }
 
-        await prisma.player.update({
-            where: { id: user.player.id },
-            data: updateData,
+        // Atomic: update player + charge UC if breaking cooldown
+        const player = user.player!;
+        await prisma.$transaction(async (tx) => {
+            await tx.player.update({
+                where: { id: player.id },
+                data: updateData,
+            });
+
+            if (nameChangeFee > 0 && player.wallet) {
+                await tx.wallet.update({
+                    where: { id: player.wallet.id },
+                    data: { balance: { decrement: nameChangeFee } },
+                });
+                await tx.transaction.create({
+                    data: {
+                        playerId: player.id,
+                        amount: nameChangeFee,
+                        type: "DEBIT",
+                        description: "Name Change Fee",
+                    },
+                });
+            }
         });
 
-        return SuccessResponse({ message: "Profile updated" });
+        return SuccessResponse({
+            message: nameChangeFee > 0
+                ? `Game Name updated (${nameChangeFee} UC charged)`
+                : "Profile updated",
+        });
     } catch (error) {
         return ErrorResponse({ message: "Failed to update profile", error });
     }

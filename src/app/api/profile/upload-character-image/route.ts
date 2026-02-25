@@ -35,6 +35,7 @@ export async function POST(req: Request) {
                     select: {
                         id: true,
                         characterImageId: true,
+                        hasRoyalPass: true,
                     },
                 },
             },
@@ -42,6 +43,13 @@ export async function POST(req: Request) {
 
         if (!user?.player) {
             return NextResponse.json({ error: "Player not found" }, { status: 404 });
+        }
+
+        if (!user.player.hasRoyalPass) {
+            return NextResponse.json(
+                { error: "Royal Pass required to upload a character image" },
+                { status: 403 }
+            );
         }
 
         // Convert file to base64 data URI

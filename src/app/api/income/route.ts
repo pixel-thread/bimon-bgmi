@@ -157,6 +157,18 @@ export async function GET(request: NextRequest) {
         const luckyTotal = luckyPolls.reduce((sum, p) => sum + (p.tournament?.fee ?? 0), 0);
         if (luckyTotal > 0) deductions.push({ category: "Lucky Voters", total: luckyTotal, count: luckyPolls.length });
 
+        // Name Change Fees (income from players breaking cooldown)
+        const nameChangeFees = await prisma.transaction.aggregate({
+            where: {
+                type: "DEBIT",
+                description: "Name Change Fee",
+                createdAt: { gte: seasonStart, lte: seasonEnd },
+            },
+            _sum: { amount: true },
+            _count: true,
+        });
+        const nameChangeIncome = nameChangeFees._sum.amount ?? 0;
+
         // Royal Pass purchase income
         const rpPurchases = await prisma.royalPass.aggregate({
             where: { seasonId, pricePaid: { gt: 0 } },
@@ -168,7 +180,7 @@ export async function GET(request: NextRequest) {
 
         deductions.sort((a, b) => b.total - a.total);
         const totalDeductions = deductions.reduce((sum, d) => sum + d.total, 0);
-        const netProfit = totalOrgIncome + rpIncome - totalDeductions;
+        const netProfit = totalOrgIncome + rpIncome + nameChangeIncome - totalDeductions;
 
         return SuccessResponse({
             data: {
@@ -177,6 +189,8 @@ export async function GET(request: NextRequest) {
                     totalOrgIncome,
                     rpIncome,
                     rpPurchaseCount,
+                    nameChangeIncome,
+                    nameChangeCount: nameChangeFees._count ?? 0,
                     totalDeductions,
                     netProfit,
                     deductions,
