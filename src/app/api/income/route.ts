@@ -82,9 +82,22 @@ export async function GET(request: NextRequest) {
             .filter((r) => r.description.toLowerCase().startsWith("org"))
             .reduce((sum, r) => sum + r.amount, 0);
 
-        // Deductions from CREDIT transactions for season tournaments
-        const allCredits = await prisma.transaction.findMany({
-            where: { type: "CREDIT" },
+        // Get season date range for scoping deductions
+        const season = await prisma.season.findUnique({
+            where: { id: seasonId },
+            select: { startDate: true, endDate: true },
+        });
+
+        // Deductions from CREDIT transactions scoped to this season's date range
+        const seasonStart = season?.startDate ?? new Date(0);
+        const seasonEnd = season?.endDate ?? new Date();
+
+        const seasonCredits = await prisma.transaction.findMany({
+            where: {
+                type: "CREDIT",
+                createdAt: { gte: seasonStart, lte: seasonEnd },
+                amount: { lte: 10000 }, // exclude obviously test transactions
+            },
             select: { amount: true, description: true, playerId: true },
         });
 
@@ -92,7 +105,7 @@ export async function GET(request: NextRequest) {
 
         // RP Rewards (streak)
         let rpRewardTotal = 0, rpRewardCount = 0;
-        for (const tx of allCredits) {
+        for (const tx of seasonCredits) {
             if (tx.description.toLowerCase().includes("streak")) {
                 rpRewardTotal += tx.amount;
                 rpRewardCount++;
@@ -102,7 +115,7 @@ export async function GET(request: NextRequest) {
 
         // Promotions
         let promoTotal = 0, promoCount = 0;
-        for (const tx of allCredits) {
+        for (const tx of seasonCredits) {
             const d = tx.description.toLowerCase();
             if (d.includes("promo") && !d.includes("razorpay")) {
                 promoTotal += tx.amount;
@@ -113,7 +126,7 @@ export async function GET(request: NextRequest) {
 
         // Referral Bonus
         let refTotal = 0, refCount = 0;
-        for (const tx of allCredits) {
+        for (const tx of seasonCredits) {
             const d = tx.description.toLowerCase();
             if (d.includes("referral") || d.includes("refer")) {
                 refTotal += tx.amount;
@@ -124,7 +137,7 @@ export async function GET(request: NextRequest) {
 
         // Bonus (exclude streak — already counted as RP Rewards, and exclude referral)
         let bonusTotal = 0, bonusCount = 0;
-        for (const tx of allCredits) {
+        for (const tx of seasonCredits) {
             const d = tx.description.toLowerCase();
             if (d.includes("bonus") && !d.includes("referral") && !d.includes("refer") && !d.includes("streak")) {
                 bonusTotal += tx.amount;
@@ -132,6 +145,17 @@ export async function GET(request: NextRequest) {
             }
         }
         if (bonusTotal > 0) deductions.push({ category: "Bonus", total: bonusTotal, count: bonusCount });
+
+        // Admin manual credits (UC given to players by admin)
+        let adminTotal = 0, adminCount = 0;
+        for (const tx of seasonCredits) {
+            const d = tx.description.toLowerCase();
+            if (d.includes("admin adjustment") && tx.amount > 0) {
+                adminTotal += tx.amount;
+                adminCount++;
+            }
+        }
+        if (adminTotal > 0) deductions.push({ category: "Admin Credits", total: adminTotal, count: adminCount });
 
         // Lucky Voters for this season
         const luckyPolls = await prisma.poll.findMany({

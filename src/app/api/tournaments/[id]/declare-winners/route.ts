@@ -281,6 +281,9 @@ export async function POST(
         }
 
         // ── 5. Atomic transaction ────────────────────────────
+        // Winners, PendingRewards, Income, and tournament status are ALL inside
+        // the transaction so they can't get out of sync (previously income was
+        // outside and got lost on timeouts).
         const createdWinners = await prisma.$transaction(async (tx) => {
             const winners = [];
 
@@ -313,45 +316,56 @@ export async function POST(
                 winners.push(winner);
             }
 
+            // Income records with tax contributions (INSIDE transaction)
+            if (prizePool > 0) {
+                const distribution = getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount);
+                const taxTotals = aggregateTaxTotals(allTaxResults);
+
+                let fundWithTax = distribution.finalFundAmount + taxTotals.fundContribution;
+                let orgWithTax = distribution.finalOrgAmount + taxTotals.orgContribution;
+
+                // Enforce: Org must always be >= Fund (tax split can flip them)
+                if (fundWithTax > orgWithTax && orgWithTax > 0) {
+                    const combined = fundWithTax + orgWithTax;
+                    orgWithTax = Math.ceil(combined / 2);
+                    fundWithTax = combined - orgWithTax;
+                }
+
+                if (fundWithTax > 0) {
+                    await tx.income.create({
+                        data: {
+                            amount: fundWithTax,
+                            description: taxTotals.fundContribution > 0
+                                ? `Fund - ${tournament.name} (incl. ₹${taxTotals.fundContribution} repeat winner tax)`
+                                : `Fund - ${tournament.name}`,
+                            tournamentId: id, tournamentName: tournament.name, createdBy: "system",
+                        },
+                    });
+                }
+                if (orgWithTax > 0) {
+                    await tx.income.create({
+                        data: {
+                            amount: orgWithTax,
+                            description: taxTotals.orgContribution > 0
+                                ? `Org - ${tournament.name} (incl. ₹${taxTotals.orgContribution} repeat winner tax)`
+                                : `Org - ${tournament.name}`,
+                            tournamentId: id, tournamentName: tournament.name, createdBy: "system",
+                        },
+                    });
+                }
+            }
+
+            // Mark tournament completed (INSIDE transaction)
+            await tx.tournament.update({
+                where: { id },
+                data: { isWinnerDeclared: true, status: "INACTIVE" },
+            });
+
             return winners;
-        }, { timeout: 15000, maxWait: 20000 });
+        }, { timeout: 30000, maxWait: 35000 });
 
-        // ── 6. Post-transaction: Income, solo tax, merit, referrals ──
-        // (Done outside main transaction for speed — these are idempotent-ish)
-
-        // Income records with tax contributions
-        if (prizePool > 0) {
-            const distribution = getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount);
-            const taxTotals = aggregateTaxTotals(allTaxResults);
-
-            const fundWithTax = distribution.finalFundAmount + taxTotals.fundContribution;
-            const orgWithTax = distribution.finalOrgAmount + taxTotals.orgContribution;
-
-            const incomeOps = [];
-            if (fundWithTax > 0) {
-                incomeOps.push(prisma.income.create({
-                    data: {
-                        amount: fundWithTax,
-                        description: taxTotals.fundContribution > 0
-                            ? `Fund - ${tournament.name} (incl. ₹${taxTotals.fundContribution} repeat winner tax)`
-                            : `Fund - ${tournament.name}`,
-                        tournamentId: id, tournamentName: tournament.name, createdBy: "system",
-                    },
-                }));
-            }
-            if (orgWithTax > 0) {
-                incomeOps.push(prisma.income.create({
-                    data: {
-                        amount: orgWithTax,
-                        description: taxTotals.orgContribution > 0
-                            ? `Org - ${tournament.name} (incl. ₹${taxTotals.orgContribution} repeat winner tax)`
-                            : `Org - ${tournament.name}`,
-                        tournamentId: id, tournamentName: tournament.name, createdBy: "system",
-                    },
-                }));
-            }
-            await Promise.all(incomeOps);
-        }
+        // ── 6. Post-transaction: Solo tax distribution ────────
+        // (Outside transaction — needs winners committed first for loser calc)
 
         // Solo tax distribution
         const totalSoloTax = allSoloTaxResults.reduce((s, r) => s + r.taxAmount, 0);
@@ -368,36 +382,30 @@ export async function POST(
             });
             const donorName = soloWinnerNames.map((p) => p.displayName || "Unknown").join(", ");
 
-            if (loserTiers.length > 0 && taxDist.loserAmount > 0) {
+            if (taxDist.loserAmount > 0 && loserTiers.length > 0) {
                 const tierDistribution = calculateTierDistribution(taxDist.loserAmount, loserTiers);
-                const canDistribute = tierDistribution.every((t) => t.perPlayer >= 1);
 
-                if (!canDistribute) {
-                    // Too small — 100% to pool
-                    await addToSoloTaxPool(tournament.seasonId, totalSoloTax, donorName);
-                } else {
-                    // Distribute to losers via PendingReward
-                    const loserRewardOps = [];
-                    for (const tier of tierDistribution) {
-                        if (tier.perPlayer > 0) {
-                            for (const loserId of tier.playerIds) {
-                                loserRewardOps.push(prisma.pendingReward.create({
-                                    data: {
-                                        playerId: loserId,
-                                        type: "SOLO_SUPPORT",
-                                        amount: tier.perPlayer,
-                                        message: getLoserSupportMessage(donorName, tournament.name),
-                                    },
-                                }));
-                            }
+                // Distribute to losers via PendingReward
+                const loserRewardOps = [];
+                for (const tier of tierDistribution) {
+                    if (tier.perPlayer > 0) {
+                        for (const loserId of tier.playerIds) {
+                            loserRewardOps.push(prisma.pendingReward.create({
+                                data: {
+                                    playerId: loserId,
+                                    type: "SOLO_SUPPORT",
+                                    amount: tier.perPlayer,
+                                    message: getLoserSupportMessage(donorName, tournament.name),
+                                },
+                            }));
                         }
                     }
-                    await Promise.all(loserRewardOps);
+                }
+                await Promise.all(loserRewardOps);
 
-                    // 40% to bonus pool
-                    if (taxDist.poolAmount > 0) {
-                        await addToSoloTaxPool(tournament.seasonId, taxDist.poolAmount, donorName);
-                    }
+                // 40% to bonus pool
+                if (taxDist.poolAmount > 0) {
+                    await addToSoloTaxPool(tournament.seasonId, taxDist.poolAmount, donorName);
                 }
             } else {
                 // No losers — 100% to pool
@@ -411,12 +419,6 @@ export async function POST(
         // NOTE: Merit reset + referral commissions are now handled
         // by the separate "Process Rewards" button (/api/tournaments/[id]/post-declare)
         // to keep the declare-winners flow fast.
-
-        // Mark tournament completed
-        await prisma.tournament.update({
-            where: { id },
-            data: { isWinnerDeclared: true, status: "INACTIVE" },
-        });
 
         return NextResponse.json({
             success: true,
