@@ -312,7 +312,7 @@ export default function TeamsPage() {
     // ── Render ────────────────────────────────────────────────
 
     return (
-        <div className="space-y-6 overflow-x-hidden">
+        <div className="space-y-6" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
             {/* Header + Filters */}
             <div className="space-y-2">
                 <h1 className="text-xl font-bold">Teams</h1>
@@ -325,9 +325,9 @@ export default function TeamsPage() {
                             size="sm"
                             selectedKeys={seasonId ? [seasonId] : []}
                             onSelectionChange={handleSeasonChange}
-                            classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
+                            classNames={{ trigger: "bg-default-100 border-none shadow-none max-w-full", value: "text-foreground truncate" }}
                             aria-label="Season"
-                            className="w-[40%] min-w-[100px]"
+                            className="w-[40%] min-w-0"
                         >
                             {seasons.map((s) => (
                                 <SelectItem key={s.id} textValue={`${s.name}${s.isCurrent ? " ✦" : ""}`}>
@@ -341,7 +341,7 @@ export default function TeamsPage() {
                         size="sm"
                         selectedKeys={tournamentId ? [tournamentId] : []}
                         onSelectionChange={handleTournamentChange}
-                        classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
+                        classNames={{ trigger: "bg-default-100 border-none shadow-none max-w-full", value: "text-foreground truncate" }}
                         aria-label="Tournament"
                         className="flex-1 min-w-0"
                         popoverProps={{ className: "min-w-[280px]" }}
@@ -467,8 +467,8 @@ export default function TeamsPage() {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.02 }}
                             >
-                                <Card className="border border-divider overflow-hidden">
-                                    <CardHeader className="justify-between pb-1 overflow-hidden gap-2">
+                                <Card className="border border-divider" style={{ overflow: 'hidden', maxWidth: '100%' }}>
+                                    <CardHeader className="justify-between pb-1 gap-2" style={{ overflow: 'hidden' }}>
                                         <div className="flex items-center gap-2 min-w-0 overflow-hidden">
                                             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                                                 {team.teamNumber}
