@@ -294,11 +294,6 @@ export default function AdminsPage() {
                                     </Button>
                                 </div>
                             ))}
-                            {isFetchingNextPage && (
-                                <div className="flex items-center justify-center py-4 border-t border-divider">
-                                    <Loader2 className="h-4 w-4 animate-spin text-foreground/30" />
-                                </div>
-                            )}
                         </CardBody>
                     </Card>
                     {/* Infinite scroll sentinel — always rendered */}
