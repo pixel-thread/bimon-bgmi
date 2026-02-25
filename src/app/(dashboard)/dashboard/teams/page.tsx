@@ -344,7 +344,7 @@ export default function TeamsPage() {
                         classNames={{ trigger: "bg-default-100 border-none shadow-none", value: "text-foreground" }}
                         aria-label="Tournament"
                         className="flex-1 min-w-0"
-                        popoverProps={{ className: "min-w-[360px]" }}
+                        popoverProps={{ className: "w-fit" }}
                     >
                         {tournaments.map((t) => (
                             <SelectItem key={t.id} textValue={t.name}>{t.name}</SelectItem>
@@ -473,7 +473,7 @@ export default function TeamsPage() {
                                             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                                                 {team.teamNumber}
                                             </span>
-                                            <div className="min-w-0 flex-1 overflow-hidden" style={{ maxWidth: '160px' }}>
+                                            <div className="min-w-0 flex-1 overflow-hidden" style={{ maxWidth: '120px' }}>
                                                 <h3 className="text-sm font-semibold truncate">
                                                     {team.players?.length > 0
                                                         ? team.players.map(p => p.displayName || p.username).join(", ")
