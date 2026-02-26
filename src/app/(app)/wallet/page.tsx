@@ -55,9 +55,20 @@ export default function WalletPage() {
         staleTime: 30 * 1000,
     });
 
+    // Current season
+    const { data: currentSeasonId } = useQuery<string | null>({
+        queryKey: ["current-season"],
+        queryFn: async () => {
+            const res = await fetch("/api/seasons");
+            if (!res.ok) return null;
+            const json = await res.json();
+            const current = (json.data ?? []).find((s: { isCurrent: boolean }) => s.isCurrent);
+            return current?.id ?? null;
+        },
+        staleTime: 5 * 60 * 1000,
+    });
 
-
-    // Transactions with infinite scroll
+    // Transactions with infinite scroll (filtered to current season)
     const {
         data: txData,
         isLoading: isLoadingTx,
@@ -66,11 +77,12 @@ export default function WalletPage() {
         hasNextPage,
         isFetchingNextPage,
     } = useInfiniteQuery<TransactionsResponse>({
-        queryKey: ["transactions"],
+        queryKey: ["transactions", currentSeasonId],
         queryFn: async ({ pageParam }) => {
             const params = new URLSearchParams({
                 limit: "10",
                 ...(pageParam ? { cursor: pageParam as string } : {}),
+                ...(currentSeasonId ? { seasonId: currentSeasonId } : {}),
             });
             const res = await fetch(`/api/transactions?${params}`);
             if (!res.ok) throw new Error("Failed to fetch");
