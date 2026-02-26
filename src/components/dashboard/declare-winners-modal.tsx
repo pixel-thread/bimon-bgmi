@@ -275,27 +275,54 @@ export function DeclareWinnersModal({
     }, [taxPreviewRes, activeTab]);
 
     const organizerAmount = distribution?.finalOrgAmount ?? 0;
+    // Declare: runs all 3 steps (declare → streaks → process rewards)
+    const [declareStatus, setDeclareStatus] = useState<{
+        step: string;
+        error?: string;
+        done?: boolean;
+    } | null>(null);
 
-    // Declare mutation
     const declare = useMutation({
         mutationFn: async () => {
+            // Step 1: Declare winners
+            setDeclareStatus({ step: "Declaring winners..." });
             const placements = Array.from({ length: placementCount }, (_, i) => ({
                 position: i + 1, amount: baseDist?.prizes.get(i + 1)?.amount ?? 0,
             }));
-            const res = await fetch(`/api/tournaments/${tournamentId}/declare-winners`, {
+            const res1 = await fetch(`/api/tournaments/${tournamentId}/declare-winners`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ placements }),
             });
-            if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed"); }
+            if (!res1.ok) { const d = await res1.json(); throw new Error(d.error || "Declare failed"); }
+
+            // Step 2: Update streaks
+            setDeclareStatus({ step: "Updating streaks..." });
+            const res2 = await fetch(`/api/tournaments/${tournamentId}/update-streaks`, { method: "POST" });
+            if (!res2.ok) {
+                const d = await res2.json();
+                setDeclareStatus({ step: "Streaks failed", error: d.error || "Unknown error" });
+                // Don't throw — declaration succeeded, just log the error
+            }
+
+            // Step 3: Process rewards (merit + referrals)
+            setDeclareStatus({ step: "Processing rewards..." });
+            const res3 = await fetch(`/api/tournaments/${tournamentId}/post-declare`, { method: "POST" });
+            if (!res3.ok) {
+                const d = await res3.json();
+                setDeclareStatus({ step: "Rewards failed", error: d.error || "Unknown error" });
+            }
         },
         onSuccess: async () => {
-            toast.success("Winners declared & UC distributed!");
+            setDeclareStatus({ step: "Done!", done: true });
+            toast.success("Winners declared, streaks updated & rewards processed!");
             await queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
             await queryClient.invalidateQueries({ queryKey: ["tournament-rankings"] });
             queryClient.invalidateQueries({ queryKey: ["solo-tax-pool"] });
-            onClose();
+            setTimeout(() => { setDeclareStatus(null); onClose(); }, 1000);
         },
-        onError: (err: Error) => toast.error(err.message),
+        onError: (err: Error) => {
+            setDeclareStatus({ step: "Failed", error: err.message });
+        },
     });
 
     // Undo mutation
@@ -611,22 +638,34 @@ export function DeclareWinnersModal({
                     )}
                 </ModalBody>
 
-                <ModalFooter>
-                    <Button variant="flat" onPress={onClose}>Close</Button>
-                    {isWinnerDeclared ? (
-                        <Button color="danger" variant="flat" isLoading={undo.isPending}
-                            startContent={<Undo2 className="h-4 w-4" />}
-                            onPress={() => { if (confirm("Undo winner declaration? This will reverse UC transactions.")) undo.mutate(); }}>
-                            Undo Declaration
-                        </Button>
-                    ) : (
-                        <Button className="bg-gradient-to-r from-warning to-[#f97316] text-white font-semibold"
-                            isLoading={declare.isPending} isDisabled={rankings.length === 0}
-                            startContent={<Trophy className="h-4 w-4" />}
-                            onPress={() => declare.mutate()}>
-                            {prizePool > 0 ? "Declare & Distribute" : "Declare Winners"}
-                        </Button>
+                <ModalFooter className="flex-col items-stretch gap-2">
+                    {declareStatus && (
+                        <div className={`text-xs text-center px-3 py-1.5 rounded-lg ${declareStatus.error ? "bg-danger/10 text-danger" :
+                                declareStatus.done ? "bg-success/10 text-success" :
+                                    "bg-warning/10 text-warning"
+                            }`}>
+                            {declareStatus.done ? "✅ " : declareStatus.error ? "❌ " : "⏳ "}
+                            {declareStatus.step}
+                            {declareStatus.error && <span className="block text-[10px] opacity-80 mt-0.5">{declareStatus.error}</span>}
+                        </div>
                     )}
+                    <div className="flex justify-end gap-2">
+                        <Button variant="flat" onPress={onClose}>Close</Button>
+                        {isWinnerDeclared ? (
+                            <Button color="danger" variant="flat" isLoading={undo.isPending}
+                                startContent={<Undo2 className="h-4 w-4" />}
+                                onPress={() => { if (confirm("Undo winner declaration? This will reverse UC transactions.")) undo.mutate(); }}>
+                                Undo Declaration
+                            </Button>
+                        ) : (
+                            <Button className="bg-gradient-to-r from-warning to-[#f97316] text-white font-semibold"
+                                isLoading={declare.isPending} isDisabled={rankings.length === 0}
+                                startContent={<Trophy className="h-4 w-4" />}
+                                onPress={() => declare.mutate()}>
+                                {declare.isPending ? (declareStatus?.step || "Processing...") : prizePool > 0 ? "Declare & Distribute" : "Declare Winners"}
+                            </Button>
+                        )}
+                    </div>
                 </ModalFooter>
             </ModalContent>
         </Modal>
