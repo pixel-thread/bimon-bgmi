@@ -86,7 +86,7 @@ export function HeroCTA() {
                 <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
                 <>
-                    {isSignedIn ? "Get Started" : "Sign In"}
+                    {isSignedIn ? "Vote" : "Sign In"}
                     <ChevronRight className="h-4 w-4" />
                 </>
             )}
