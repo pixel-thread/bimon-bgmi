@@ -3,7 +3,6 @@ import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { getTaxRate } from "@/lib/logic/repeatWinnerTax";
 import { getSoloTaxRate } from "@/lib/logic/soloTax";
-import { getTierInfo } from "@/lib/logic/prizeDistribution";
 
 /**
  * GET /api/tournaments/[id]/tax-preview?playerIds=id1,id2,...
@@ -53,7 +52,7 @@ export async function GET(
 
         // Step 2: Parallel fetch using flat matchId filter (works for migrated data)
         const [recentWins, playerMatchCounts, teamPlayerData] = await Promise.all([
-            getPlayerRecentWins(playerIds, tournament.seasonId || "", 6),
+            getPlayerRecentWins(playerIds, tournament.seasonId || "", 6, id),
             // Count matches per player using flat matchId filter (no nested relation)
             prisma.teamPlayerStats.groupBy({
                 by: ["playerId"],
@@ -140,20 +139,23 @@ export async function GET(
 
 // Reuse the same logic from declare-winners
 async function getPlayerRecentWins(
-    playerIds: string[], seasonId: string, limit: number
+    playerIds: string[], seasonId: string, limit: number,
+    excludeTournamentId?: string
 ): Promise<Map<string, number>> {
     if (!playerIds.length) return new Map();
 
-    const where: { isWinnerDeclared: boolean; seasonId?: string } = { isWinnerDeclared: true };
+    const where: { isWinnerDeclared: boolean; seasonId?: string; id?: { not: string } } = { isWinnerDeclared: true };
     if (seasonId) where.seasonId = seasonId;
+    if (excludeTournamentId) where.id = { not: excludeTournamentId };
 
     const recent = await prisma.tournament.findMany({
         where,
         orderBy: { createdAt: "desc" },
         take: limit,
-        include: {
+        select: {
+            id: true,
             winners: {
-                select: { teamId: true, position: true },
+                select: { teamId: true },
             },
         },
     });
@@ -161,20 +163,11 @@ async function getPlayerRecentWins(
     const counts = new Map<string, number>();
     for (const pid of playerIds) counts.set(pid, 0);
 
-    // Collect all winning team IDs
+    // Collect ALL winning team IDs (any position that received UC counts)
     const winningTeamIds = new Set<string>();
-    const teamTournamentMap = new Map<string, { fee: number; maxWinPos: number }>();
-
     for (const t of recent) {
-        const pool = (t.fee || 50) * 16;
-        const tier = getTierInfo(pool);
-        const maxWinPos = tier.level === 1 ? tier.winnerCount : tier.winnerCount - 1;
-
         for (const w of t.winners) {
-            if (w.position <= maxWinPos) {
-                winningTeamIds.add(w.teamId);
-                teamTournamentMap.set(w.teamId, { fee: t.fee || 0, maxWinPos });
-            }
+            winningTeamIds.add(w.teamId);
         }
     }
 

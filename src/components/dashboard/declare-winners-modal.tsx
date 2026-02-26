@@ -39,6 +39,7 @@ type RankingsMeta = {
     prizePool: number;
     teamType: string;
     isWinnerDeclared: boolean;
+    ucExemptCount: number;
 };
 
 type TaxPreviewData = Record<string, {
@@ -104,6 +105,7 @@ export function DeclareWinnersModal({
     const entryFee = meta?.entryFee ?? 0;
     const totalPlayers = meta?.totalPlayers ?? 0;
     const teamSize = getTeamSize(meta?.teamType ?? "DUO");
+    const ucExemptCount = meta?.ucExemptCount ?? 0;
 
     // Fetch solo tax pool (only in detailed)
     const { data: bonusPoolData } = useQuery<{ amount: number; donorName: string | null }>({
@@ -156,8 +158,8 @@ export function DeclareWinnersModal({
 
     // Prize distribution
     const distribution = useMemo(
-        () => prizePool > 0 ? getFinalDistribution(prizePool, entryFee, teamSize, 0) : null,
-        [prizePool, entryFee, teamSize]
+        () => prizePool > 0 ? getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount) : null,
+        [prizePool, entryFee, teamSize, ucExemptCount]
     );
 
     const baseDist = useMemo(
@@ -277,9 +279,9 @@ export function DeclareWinnersModal({
             <div
                 key={team.teamId}
                 className={`rounded-lg border p-3 ${idx === 0 ? "border-warning/40 bg-warning/[0.04]" :
-                        idx === 1 ? "border-foreground/15 bg-foreground/[0.02]" :
-                            idx === 2 ? "border-orange-500/30 bg-orange-500/[0.03]" :
-                                "border-divider"
+                    idx === 1 ? "border-foreground/15 bg-foreground/[0.02]" :
+                        idx === 2 ? "border-orange-500/30 bg-orange-500/[0.03]" :
+                            "border-divider"
                     }`}
             >
                 <div className="flex items-center gap-3">
@@ -323,8 +325,8 @@ export function DeclareWinnersModal({
                                             <span className="font-medium">{p.name}</span>
                                             {pa && pa.totalMatches > 0 && (
                                                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${pa.rate >= 1 ? "bg-success/10 text-success" :
-                                                        pa.rate >= 0.5 ? "bg-warning/10 text-warning" :
-                                                            "bg-danger/10 text-danger"
+                                                    pa.rate >= 0.5 ? "bg-warning/10 text-warning" :
+                                                        "bg-danger/10 text-danger"
                                                     }`}>
                                                     {pa.matchesPlayed}/{pa.totalMatches} matches
                                                 </span>
@@ -345,8 +347,8 @@ export function DeclareWinnersModal({
                                                 <span className="mx-0.5">→</span>
                                             </div>
                                             <span className={`font-semibold ${pa && pa.bonus > 0 ? "text-success" :
-                                                    pa && pa.penalty > 0 ? "text-warning" :
-                                                        "text-foreground"
+                                                pa && pa.penalty > 0 ? "text-warning" :
+                                                    "text-foreground"
                                                 }`}>
                                                 ₹{finalAmount}
                                             </span>
@@ -465,14 +467,24 @@ export function DeclareWinnersModal({
                                                 <div className="flex justify-between text-foreground/50">
                                                     <span>💼 Org ({baseDist.tier.orgFeePercent}%):</span>
                                                     <span className="font-medium text-foreground">
-                                                        {taxTotals.orgContribution > 0 ? (
-                                                            <>
-                                                                <span className="text-foreground/30">₹{organizerAmount.toLocaleString()}</span>
-                                                                <span className="text-success"> +₹{taxTotals.orgContribution}</span>
-                                                                <span className="mx-0.5">=</span>
-                                                                <span>₹{(organizerAmount + taxTotals.orgContribution).toLocaleString()}</span>
-                                                            </>
-                                                        ) : <>₹{organizerAmount.toLocaleString()}</>}
+                                                        {(() => {
+                                                            const parts: React.ReactNode[] = [];
+                                                            const exemptCost = distribution?.ucExemptCost ?? 0;
+                                                            if (exemptCost > 0) {
+                                                                parts.push(<span key="raw" className="text-foreground/30">₹{baseDist.orgFee.toLocaleString()}</span>);
+                                                                parts.push(<span key="exempt" className="text-danger"> -₹{exemptCost}</span>);
+                                                            }
+                                                            if (taxTotals.orgContribution > 0) {
+                                                                if (exemptCost === 0) parts.push(<span key="base" className="text-foreground/30">₹{organizerAmount.toLocaleString()}</span>);
+                                                                parts.push(<span key="tax" className="text-success"> +₹{taxTotals.orgContribution}</span>);
+                                                            }
+                                                            if (parts.length > 0) {
+                                                                parts.push(<span key="eq" className="mx-0.5">=</span>);
+                                                                parts.push(<span key="total">₹{(organizerAmount + taxTotals.orgContribution).toLocaleString()}</span>);
+                                                                return <>{parts}</>;
+                                                            }
+                                                            return <>₹{organizerAmount.toLocaleString()}</>;
+                                                        })()}
                                                     </span>
                                                 </div>
 

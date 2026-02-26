@@ -5,7 +5,6 @@ import { getCurrentUser } from "@/lib/auth";
 import {
     getFinalDistribution,
     getTeamSize,
-    getTierInfo,
 } from "@/lib/logic/prizeDistribution";
 import {
     calculateRepeatWinnerTax,
@@ -441,21 +440,23 @@ function getOrdinal(n: number): string {
 
 /** Count recent wins per player in last N season tournaments */
 async function getPlayerRecentWins(
-    playerIds: string[], seasonId: string, limit: number
+    playerIds: string[], seasonId: string, limit: number,
+    excludeTournamentId?: string
 ): Promise<Map<string, number>> {
     if (!playerIds.length) return new Map();
 
-    const where: { isWinnerDeclared: boolean; seasonId?: string } = { isWinnerDeclared: true };
+    const where: { isWinnerDeclared: boolean; seasonId?: string; id?: { not: string } } = { isWinnerDeclared: true };
     if (seasonId) where.seasonId = seasonId;
+    if (excludeTournamentId) where.id = { not: excludeTournamentId };
 
     const recent = await prisma.tournament.findMany({
         where,
         orderBy: { createdAt: "desc" },
         take: limit,
         select: {
-            id: true, fee: true,
+            id: true,
             winners: {
-                select: { teamId: true, position: true },
+                select: { teamId: true },
             },
         },
     });
@@ -463,18 +464,11 @@ async function getPlayerRecentWins(
     const counts = new Map<string, number>();
     for (const pid of playerIds) counts.set(pid, 0);
 
-    // Collect all winning team IDs
+    // Collect ALL winning team IDs (any position that received UC counts)
     const winningTeamIds = new Set<string>();
-
     for (const t of recent) {
-        const pool = (t.fee || 50) * 16;
-        const tier = getTierInfo(pool);
-        const maxWinPos = tier.level === 1 ? tier.winnerCount : tier.winnerCount - 1;
-
         for (const w of t.winners) {
-            if (w.position <= maxWinPos) {
-                winningTeamIds.add(w.teamId);
-            }
+            winningTeamIds.add(w.teamId);
         }
     }
 

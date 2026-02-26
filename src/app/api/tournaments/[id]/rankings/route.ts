@@ -51,6 +51,7 @@ export async function GET(
                             select: {
                                 id: true,
                                 displayName: true,
+                                isUCExempt: true,
                                 user: { select: { username: true } },
                             },
                         },
@@ -64,6 +65,7 @@ export async function GET(
                             select: {
                                 id: true,
                                 displayName: true,
+                                isUCExempt: true,
                                 user: { select: { username: true } },
                             },
                         },
@@ -84,6 +86,7 @@ export async function GET(
 
         // Track all unique players across all teams for prize pool
         const allPlayerIds = new Set<string>();
+        const ucExemptPlayerIds = new Set<string>();
 
         for (const stat of teamStats) {
             const kills = stat.teamPlayerStats.reduce((sum, ps) => sum + ps.kills, 0);
@@ -114,6 +117,7 @@ export async function GET(
                 for (const p of stat.team.players) {
                     playerMap.set(p.id, p.displayName || p.user?.username || "Unknown");
                     allPlayerIds.add(p.id);
+                    if (p.isUCExempt) ucExemptPlayerIds.add(p.id);
                 }
 
                 // Then add from teamPlayerStats (catches migrated data without team.players)
@@ -122,6 +126,7 @@ export async function GET(
                         playerMap.set(ps.player.id, ps.player.displayName || ps.player.user?.username || "Unknown");
                     }
                     allPlayerIds.add(ps.playerId);
+                    if (ps.player.isUCExempt) ucExemptPlayerIds.add(ps.playerId);
                 }
 
                 const players = Array.from(playerMap.entries()).map(([pId, name]) => ({ id: pId, name }));
@@ -155,6 +160,7 @@ export async function GET(
                 prizePool: (tournament.fee ?? 0) * allPlayerIds.size,
                 teamType: avgTeamSize === 1 ? "SOLO" : avgTeamSize === 2 ? "DUO" : avgTeamSize === 3 ? "TRIO" : "SQUAD",
                 isWinnerDeclared: tournament.isWinnerDeclared,
+                ucExemptCount: ucExemptPlayerIds.size,
             },
         });
     } catch (error) {
