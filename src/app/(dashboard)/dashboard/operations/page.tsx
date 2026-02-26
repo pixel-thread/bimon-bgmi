@@ -39,6 +39,7 @@ import { motion } from "motion/react";
 import { toast } from "sonner";
 import { DeclareWinnersModal } from "@/components/dashboard/declare-winners-modal";
 import Image from "next/image";
+import { useAuthUser } from "@/hooks/use-auth-user";
 
 // ─── Types ───────────────────────────────────────────────────
 interface TournamentDTO {
@@ -71,6 +72,7 @@ export default function OperationsPage() {
     const createModal = useDisclosure();
     const seasonModal = useDisclosure();
     const winnersModal = useDisclosure();
+    const { isSuperAdmin } = useAuthUser();
 
     const [selectedId, setSelectedId] = useState("");
     const [seasonId, setSeasonId] = useState("");
@@ -398,8 +400,8 @@ export default function OperationsPage() {
                 </Select>
             )}
 
-            {/* Selected Tournament Details */}
-            {selected && (
+            {/* Selected Tournament Details — super admin only */}
+            {selected && isSuperAdmin && (
                 <motion.div
                     key={selected.id}
                     initial={{ opacity: 0, y: 8 }}
