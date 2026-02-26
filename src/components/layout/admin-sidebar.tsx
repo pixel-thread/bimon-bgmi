@@ -41,15 +41,15 @@ const sidebarItems: SidebarSection[] = [
         section: "Tournament",
         items: [
             { label: "Dashboard", href: "/dashboard", icon: BarChart3 },
-            { label: "Players", href: "/dashboard/players", icon: Users, superAdminOnly: true },
-            { label: "Operations", href: "/dashboard/operations", icon: Settings },
             { label: "Teams", href: "/dashboard/teams", icon: Swords },
+            { label: "Players", href: "/dashboard/players", icon: Users, superAdminOnly: true },
+            { label: "Polls", href: "/dashboard/polls", icon: Vote },
+            { label: "Operations", href: "/dashboard/operations", icon: Settings, superAdminOnly: true },
         ],
     },
     {
         section: "Platform",
         items: [
-            { label: "Polls", href: "/dashboard/polls", icon: Vote },
             { label: "Job Listings", href: "/dashboard/job-listings", icon: Briefcase },
             { label: "Merit", href: "/dashboard/merit", icon: Star, superAdminOnly: true },
             { label: "Rules", href: "/dashboard/rules", icon: BookOpen },

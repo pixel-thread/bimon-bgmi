@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { PollTeamsPreviewModal } from "@/components/dashboard/polls/PollTeamsPreviewModal";
 import { PollFormModal } from "@/components/dashboard/polls/PollFormModal";
 import { useQueryClient } from "@tanstack/react-query";
@@ -84,6 +85,7 @@ export default function PollsAdminPage() {
     const [formOpen, setFormOpen] = useState(false);
     const [editingPoll, setEditingPoll] = useState<PollDTO | null>(null);
     const queryClient = useQueryClient();
+    const router = useRouter();
 
     const { data: seasons } = useQuery<{ id: string; name: string; isCurrent: boolean }[]>({
         queryKey: ["seasons"],
@@ -217,6 +219,10 @@ export default function PollsAdminPage() {
 
             setJobStatus("completed");
             toast.success(`Created ${json.data.teamsCreated} teams with ${json.data.playersAssigned} players`);
+            setTimeout(() => {
+                setPreviewOpen(false);
+                router.push("/dashboard/teams");
+            }, 1000);
         } catch (err: any) {
             setJobStatus("failed");
             toast.error(err.message);
