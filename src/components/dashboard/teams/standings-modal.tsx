@@ -197,6 +197,23 @@ export function StandingsModal({
             return;
         }
 
+        // Pre-fetch background image as data URL to bypass CORS in html2canvas
+        let bgDataUrl = backgroundImage;
+        if (backgroundImage && !backgroundImage.startsWith("data:")) {
+            try {
+                const imgRes = await fetch(backgroundImage);
+                const blob = await imgRes.blob();
+                bgDataUrl = await new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.readAsDataURL(blob);
+                });
+            } catch {
+                // Fall back to original URL if fetch fails
+                console.warn("Failed to pre-fetch background image, using original URL");
+            }
+        }
+
         // Clone the element so we can strip out mobile view without touching the original
         const clone = element.cloneNode(true) as HTMLElement;
         clone.removeAttribute("id");
@@ -216,11 +233,11 @@ export function StandingsModal({
         // Remove floating controls from clone
         clone.querySelectorAll(".floating-controls").forEach((el) => el.remove());
 
-        // Style the clone for 1280x720 desktop capture
+        // Style the clone for 1280x720 desktop capture (use data URL for background)
         clone.style.cssText = `
             width: 1280px; height: 720px; min-height: 720px;
             display: flex; align-items: center; justify-content: center;
-            background-image: url(${backgroundImage});
+            background-image: url(${bgDataUrl});
             background-size: cover; background-position: center;
             position: relative; overflow: hidden;
         `;
@@ -238,6 +255,7 @@ export function StandingsModal({
                 backgroundColor: null,
                 scale: 2,
                 useCORS: true,
+                allowTaint: true,
                 width: 1280,
                 height: 720,
                 scrollX: 0,
@@ -297,7 +315,7 @@ export function StandingsModal({
             document.body.removeChild(tempContainer);
             setIsSharing(false);
         }
-    }, [tournamentTitle]);
+    }, [tournamentTitle, backgroundImage]);
 
     if (!isOpen) return null;
 

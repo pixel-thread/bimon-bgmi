@@ -68,6 +68,22 @@ export function SlotsModal({
             return;
         }
 
+        // Pre-fetch background image as data URL to bypass CORS in html2canvas
+        let bgDataUrl = backgroundImage;
+        if (backgroundImage && !backgroundImage.startsWith("data:") && !backgroundImage.startsWith("/")) {
+            try {
+                const imgRes = await fetch(backgroundImage);
+                const blob = await imgRes.blob();
+                bgDataUrl = await new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.readAsDataURL(blob);
+                });
+            } catch {
+                console.warn("Failed to pre-fetch background image, using original URL");
+            }
+        }
+
         // Create temp container for screenshot
         const tempContainer = document.createElement("div");
         tempContainer.style.cssText = `
@@ -76,7 +92,7 @@ export function SlotsModal({
             left: -9999px;
             top: 0;
             overflow: hidden;
-            background-image: url(${backgroundImage});
+            background-image: url(${bgDataUrl});
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -94,6 +110,7 @@ export function SlotsModal({
                 backgroundColor: null,
                 scale: 2,
                 useCORS: true,
+                allowTaint: true,
                 scrollX: 0,
                 scrollY: 0,
                 ignoreElements: (el) => el.classList.contains("floating-controls"),
@@ -154,7 +171,7 @@ export function SlotsModal({
             document.body.removeChild(tempContainer);
             setIsSharing(false);
         }
-    }, [tournamentTitle]);
+    }, [tournamentTitle, backgroundImage]);
 
     if (!isOpen) return null;
 
