@@ -43,9 +43,20 @@ export async function GET() {
         // Compute detailed stats
         let detailedStats = null;
         if (player) {
+            // Default to active season
+            const activeSeason = await prisma.season.findFirst({
+                where: { status: "ACTIVE" },
+                select: { id: true },
+            });
+            const seasonId = activeSeason?.id;
+
+            // Build season filter for queries
+            const tpsSeasonFilter = seasonId ? { seasonId } : {};
+            const tsSeasonFilter = seasonId ? { seasonId } : {};
+
             // Compute stats from TeamPlayerStats (source of truth)
             const statsAgg = await prisma.teamPlayerStats.aggregate({
-                where: { playerId: player.id },
+                where: { playerId: player.id, ...tpsSeasonFilter },
                 _count: { matchId: true },
                 _sum: { kills: true },
             });
@@ -58,6 +69,7 @@ export async function GET() {
             const teamPlacements = await prisma.teamStats.findMany({
                 where: {
                     players: { some: { id: player.id } },
+                    ...tsSeasonFilter,
                 },
                 select: { position: true, tournamentId: true },
             });
@@ -79,7 +91,7 @@ export async function GET() {
 
             // Best match kills from TeamPlayerStats
             const bestKillRecord = await prisma.teamPlayerStats.findFirst({
-                where: { playerId: player.id },
+                where: { playerId: player.id, ...tpsSeasonFilter },
                 orderBy: { kills: "desc" },
                 select: { kills: true },
             });
@@ -87,7 +99,7 @@ export async function GET() {
 
             // Last match kills for K/D trend
             const lastTwoMatches = await prisma.teamPlayerStats.findMany({
-                where: { playerId: player.id },
+                where: { playerId: player.id, ...tpsSeasonFilter },
                 orderBy: { createdAt: "desc" },
                 take: 2,
                 select: { kills: true },
