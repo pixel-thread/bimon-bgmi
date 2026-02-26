@@ -146,3 +146,42 @@ body {
     left: 150%;
   }
 }
+
+/* 🐍 RKO Easter Egg Animations */
+@keyframes rkoShake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-3px, 2px) rotate(-0.5deg); }
+  40% { transform: translate(3px, -2px) rotate(0.5deg); }
+  60% { transform: translate(-2px, -1px) rotate(-0.3deg); }
+  80% { transform: translate(2px, 1px) rotate(0.3deg); }
+}
+
+@keyframes rkoTextFlash {
+  0%, 100% { color: inherit; }
+  50% { color: #dc2626; }
+}
+
+@keyframes rkoBar1 {
+  0% { height: 6px; }
+  100% { height: 22px; }
+}
+
+@keyframes rkoBar2 {
+  0% { height: 14px; }
+  100% { height: 28px; }
+}
+
+@keyframes rkoBar3 {
+  0% { height: 8px; }
+  100% { height: 24px; }
+}
+
+@keyframes rkoBar4 {
+  0% { height: 18px; }
+  100% { height: 12px; }
+}
+
+@keyframes rkoBar5 {
+  0% { height: 4px; }
+  100% { height: 20px; }
+}
