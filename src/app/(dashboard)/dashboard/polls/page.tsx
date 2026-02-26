@@ -42,6 +42,7 @@ interface PollDTO {
     soloVotes: number;
     totalVotes: number;
     createdAt: string;
+    options?: { id: string; name: string; vote: string }[];
     tournament?: { id: string; name: string; fee: number };
 }
 

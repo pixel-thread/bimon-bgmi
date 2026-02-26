@@ -17,12 +17,19 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Vote, Loader2 } from "lucide-react";
 
+interface PollOptionDTO {
+    id: string;
+    name: string;
+    vote: string;
+}
+
 interface PollDTO {
     id: string;
     question: string;
     days: string;
     teamType: string;
     isActive: boolean;
+    options?: PollOptionDTO[];
     tournament?: { id: string; name: string; fee: number };
 }
 
@@ -50,6 +57,7 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
     const [teamType, setTeamType] = useState("DYNAMIC");
     const [tournamentId, setTournamentId] = useState("");
     const [isActive, setIsActive] = useState(true);
+    const [options, setOptions] = useState<PollOptionDTO[]>([]);
     const [saving, setSaving] = useState(false);
 
     // Load tournaments for select
@@ -72,12 +80,14 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
             setTeamType(poll.teamType);
             setTournamentId(poll.tournament?.id ?? "");
             setIsActive(poll.isActive);
+            setOptions(poll.options?.map(o => ({ ...o })) ?? []);
         } else {
             setQuestion("");
             setDays("Monday");
             setTeamType("DYNAMIC");
             setTournamentId("");
             setIsActive(true);
+            setOptions([]);
         }
     }, [poll, isOpen]);
 
@@ -103,7 +113,7 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
         setSaving(true);
         try {
             const body = isEdit
-                ? { id: poll!.id, question, days, teamType, isActive }
+                ? { id: poll!.id, question, days, teamType, isActive, options: options.map(o => ({ id: o.id, name: o.name })) }
                 : { question, days, teamType, tournamentId };
 
             const res = await fetch("/api/polls", {
@@ -123,7 +133,13 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
         } finally {
             setSaving(false);
         }
-    }, [isEdit, poll, question, days, teamType, tournamentId, isActive, onSaved, onClose]);
+    }, [isEdit, poll, question, days, teamType, tournamentId, isActive, options, onSaved, onClose]);
+
+    const handleOptionNameChange = useCallback((optionId: string, newName: string) => {
+        setOptions(prev => prev.map(o => o.id === optionId ? { ...o, name: newName } : o));
+    }, []);
+
+    const VOTE_LABEL: Record<string, string> = { IN: "IN 😎", OUT: "OUT 🏳️", SOLO: "SOLO 🫩" };
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="md" placement="center">
@@ -213,6 +229,22 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
                                 isSelected={isActive}
                                 onValueChange={setIsActive}
                             />
+                        </div>
+                    )}
+
+                    {/* Editable poll options (edit mode only) */}
+                    {isEdit && options.length > 0 && (
+                        <div className="space-y-2">
+                            <p className="text-xs font-medium text-foreground/50">Answer Options</p>
+                            {options.map((opt) => (
+                                <Input
+                                    key={opt.id}
+                                    label={VOTE_LABEL[opt.vote] ?? opt.vote}
+                                    value={opt.name}
+                                    onValueChange={(v) => handleOptionNameChange(opt.id, v)}
+                                    size="sm"
+                                />
+                            ))}
                         </div>
                     )}
                 </ModalBody>

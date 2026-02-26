@@ -163,7 +163,7 @@ export async function PATCH(request: Request) {
         }
 
         const body = await request.json();
-        const { id, question, days, teamType, isActive } = body;
+        const { id, question, days, teamType, isActive, options } = body;
 
         if (!id) {
             return ErrorResponse({ message: "id is required", status: 400 });
@@ -175,16 +175,50 @@ export async function PATCH(request: Request) {
         if (teamType !== undefined) updateData.teamType = teamType;
         if (isActive !== undefined) updateData.isActive = isActive;
 
-        if (Object.keys(updateData).length === 0) {
-            return ErrorResponse({ message: "No fields to update", status: 400 });
-        }
+        // Update poll + options in a transaction
+        const poll = await prisma.$transaction(async (tx) => {
+            // Update poll fields if any
+            let updatedPoll;
+            if (Object.keys(updateData).length > 0) {
+                updatedPoll = await tx.poll.update({
+                    where: { id },
+                    data: updateData,
+                    include: {
+                        tournament: { select: { id: true, name: true, fee: true } },
+                        options: { select: { id: true, name: true, vote: true } },
+                    },
+                });
+            } else {
+                updatedPoll = await tx.poll.findUniqueOrThrow({
+                    where: { id },
+                    include: {
+                        tournament: { select: { id: true, name: true, fee: true } },
+                        options: { select: { id: true, name: true, vote: true } },
+                    },
+                });
+            }
 
-        const poll = await prisma.poll.update({
-            where: { id },
-            data: updateData,
-            include: {
-                tournament: { select: { id: true, name: true, fee: true } },
-            },
+            // Update option names if provided
+            if (options && Array.isArray(options)) {
+                for (const opt of options) {
+                    if (opt.id && opt.name !== undefined) {
+                        await tx.pollOption.update({
+                            where: { id: opt.id },
+                            data: { name: opt.name },
+                        });
+                    }
+                }
+                // Re-fetch to get updated options
+                updatedPoll = await tx.poll.findUniqueOrThrow({
+                    where: { id },
+                    include: {
+                        tournament: { select: { id: true, name: true, fee: true } },
+                        options: { select: { id: true, name: true, vote: true } },
+                    },
+                });
+            }
+
+            return updatedPoll;
         });
 
         return SuccessResponse({ data: poll });
