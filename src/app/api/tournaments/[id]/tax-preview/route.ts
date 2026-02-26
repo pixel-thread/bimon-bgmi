@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
-import { getTaxRate } from "@/lib/logic/repeatWinnerTax";
-import { getSoloTaxRate } from "@/lib/logic/soloTax";
+import { getTaxRate, calculateRepeatWinnerTax, aggregateTaxTotals } from "@/lib/logic/repeatWinnerTax";
+import { getSoloTaxRate, calculateSoloTax } from "@/lib/logic/soloTax";
+import { getFinalDistribution, getTeamSize } from "@/lib/logic/prizeDistribution";
 
 /**
- * GET /api/tournaments/[id]/tax-preview?playerIds=id1,id2,...
+ * GET /api/tournaments/[id]/tax-preview?playerIds=id1,id2,...&placements=pos:amount:p1|p2,pos:amount:p1|p2
  *
  * Returns tax preview data for winning players:
  * - Previous wins + tax rate (repeat winner tax)
  * - Solo status + solo tax rate
  * - Match participation rate
+ * - Exact taxTotals matching declare-winners logic
  */
 export async function GET(
     req: NextRequest,
@@ -33,6 +35,9 @@ export async function GET(
             return NextResponse.json({ data: {} });
         }
 
+        // Parse placements: "pos:amount:p1|p2,pos:amount:p1|p2"
+        const placementsParam = req.nextUrl.searchParams.get("placements");
+
         const tournament = await prisma.tournament.findUnique({
             where: { id },
             select: { id: true, seasonId: true, fee: true },
@@ -48,7 +53,6 @@ export async function GET(
         })).map(m => m.id);
 
         const totalMatches = matchIds.length;
-        console.log("[tax-preview v3] matchIds:", matchIds.length, "playerIds:", playerIds.length);
 
         // Step 2: Parallel fetch using flat matchId filter (works for migrated data)
         const [recentWins, playerMatchCounts, teamPlayerData] = await Promise.all([
@@ -93,7 +97,7 @@ export async function GET(
             playerSoloMap.set(tp.playerId, teamSize === 1);
         }
 
-        // Build result
+        // Build per-player result
         const result: Record<string, {
             previousWins: number;
             totalWins: number;
@@ -130,7 +134,64 @@ export async function GET(
             };
         }
 
-        return NextResponse.json({ data: result });
+        // Calculate exact tax totals using same logic as declare-winners
+        let calculatedTaxTotals: { totalTax: number; orgContribution: number; fundContribution: number } | null = null;
+        let calculatedSoloTax = 0;
+
+        if (placementsParam) {
+            const SOFTENING_FACTOR = 0.5;
+            const allTaxResults: { playerId: string; originalAmount: number; taxAmount: number; netAmount: number; taxRate: number; winCount: number }[] = [];
+            let totalSoloTaxAmount = 0;
+
+            // Parse "pos:amount:p1|p2,pos:amount:p1|p2"
+            const placements = placementsParam.split(",").map(s => {
+                const [pos, amt, pids] = s.split(":");
+                return { position: parseInt(pos), amount: parseInt(amt), playerIds: pids?.split("|") || [] };
+            });
+
+            for (const placement of placements) {
+                const teamPlayers = placement.playerIds;
+                if (placement.amount <= 0 || teamPlayers.length === 0) continue;
+
+                const basePerPlayer = Math.floor(placement.amount / teamPlayers.length);
+
+                // Participation adjustment (same as declare-winners)
+                const rates = teamPlayers.map(pid => {
+                    const played = matchesPlayedMap.get(pid) || 0;
+                    return { playerId: pid, rate: totalMatches > 0 ? played / totalMatches : 1 };
+                });
+                const avgRate = rates.reduce((s, r) => s + r.rate, 0) / teamPlayers.length;
+
+                const adjustedAmounts = new Map<string, number>();
+                for (const r of rates) {
+                    const adj = Math.floor((r.rate - avgRate) * basePerPlayer * SOFTENING_FACTOR);
+                    adjustedAmounts.set(r.playerId, basePerPlayer + adj);
+                }
+
+                for (const pid of teamPlayers) {
+                    const adjustedAmount = adjustedAmounts.get(pid) || basePerPlayer;
+                    const previousWins = recentWins.get(pid) || 0;
+                    const taxResult = calculateRepeatWinnerTax(pid, adjustedAmount, previousWins + 1);
+                    allTaxResults.push(taxResult);
+
+                    // Solo tax
+                    const isSolo = playerSoloMap.get(pid) || false;
+                    const soloResult = calculateSoloTax(pid, taxResult.netAmount, isSolo);
+                    if (soloResult.isSolo) totalSoloTaxAmount += soloResult.taxAmount;
+                }
+            }
+
+            calculatedTaxTotals = aggregateTaxTotals(allTaxResults);
+            calculatedSoloTax = totalSoloTaxAmount;
+        }
+
+        return NextResponse.json({
+            data: result,
+            ...(calculatedTaxTotals ? {
+                taxTotals: calculatedTaxTotals,
+                soloTaxTotal: calculatedSoloTax,
+            } : {}),
+        });
     } catch (error) {
         console.error("Error fetching tax preview:", error);
         return NextResponse.json({ error: "Failed" }, { status: 500 });

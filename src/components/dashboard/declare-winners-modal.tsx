@@ -141,22 +141,7 @@ export function DeclareWinnersModal({
         return ids;
     }, [rankings, placementCount]);
 
-    // Fetch tax preview (only in detailed tab)
-    const { data: taxPreviewRes, isLoading: taxLoading } = useQuery<{ data: TaxPreviewData }>({
-        queryKey: ["tax-preview", tournamentId, topTeamPlayerIds.join(",")],
-        queryFn: async () => {
-            const res = await fetch(
-                `/api/tournaments/${tournamentId}/tax-preview?playerIds=${topTeamPlayerIds.join(",")}`
-            );
-            if (!res.ok) return { data: {} };
-            return res.json();
-        },
-        enabled: isOpen && activeTab === "detailed" && topTeamPlayerIds.length > 0,
-    });
-
-    const taxPreview = taxPreviewRes?.data || {};
-
-    // Prize distribution
+    // Prize distribution (must be before placementsParam which uses baseDist)
     const distribution = useMemo(
         () => prizePool > 0 ? getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount) : null,
         [prizePool, entryFee, teamSize, ucExemptCount]
@@ -166,6 +151,36 @@ export function DeclareWinnersModal({
         () => prizePool > 0 ? getPrizeDistribution(prizePool, entryFee, teamSize) : null,
         [prizePool, entryFee, teamSize]
     );
+
+    // Build placements param: "pos:amount:p1|p2,pos:amount:p1|p2"
+    const placementsParam = useMemo(() => {
+        if (!baseDist) return "";
+        return rankings.slice(0, placementCount).map((team, idx) => {
+            const pos = idx + 1;
+            const amount = baseDist.prizes.get(pos)?.amount ?? 0;
+            const pids = (team.players || []).map(p => p.id).join("|");
+            return `${pos}:${amount}:${pids}`;
+        }).join(",");
+    }, [rankings, placementCount, baseDist]);
+
+    // Fetch tax preview (only in detailed tab)
+    const { data: taxPreviewRes, isLoading: taxLoading } = useQuery<{
+        data: TaxPreviewData;
+        taxTotals?: { totalTax: number; orgContribution: number; fundContribution: number };
+        soloTaxTotal?: number;
+    }>({
+        queryKey: ["tax-preview", tournamentId, topTeamPlayerIds.join(","), placementsParam],
+        queryFn: async () => {
+            let url = `/api/tournaments/${tournamentId}/tax-preview?playerIds=${topTeamPlayerIds.join(",")}`;
+            if (placementsParam) url += `&placements=${encodeURIComponent(placementsParam)}`;
+            const res = await fetch(url);
+            if (!res.ok) return { data: {} };
+            return res.json();
+        },
+        enabled: isOpen && activeTab === "detailed" && topTeamPlayerIds.length > 0,
+    });
+
+    const taxPreview = taxPreviewRes?.data || {};
 
     // Helper: per-player base amount
     const getPerPlayerAmount = (position: number, playerCount: number) => {
@@ -207,27 +222,21 @@ export function DeclareWinnersModal({
         return Math.floor(baseAmount * (1 - tax.taxRate));
     };
 
-    // Calculate tax totals (detailed only)
+    // Tax totals from backend (exact same logic as declare-winners)
     const taxTotals = useMemo(() => {
-        if (activeTab !== "detailed") return { total: 0, repeatTax: 0, soloTax: 0, fundContribution: 0, orgContribution: 0, soloToLosers: 0, soloToPool: 0 };
-        let totalRepeatTax = 0, totalSoloTax = 0;
-        rankings.slice(0, placementCount).forEach((team, idx) => {
-            const playerCount = team.players?.length || 0;
-            if (playerCount === 0) return;
-            const perPlayer = getPerPlayerAmount(idx + 1, playerCount);
-            const pa = getParticipationAdjustedAmounts(team.players || [], perPlayer);
-            team.players?.forEach(p => {
-                const tax = taxPreview[p.id];
-                if (!tax) return;
-                const adj = pa.get(p.id)?.adjusted ?? perPlayer;
-                if (tax.repeatWinnerTaxRate > 0) totalRepeatTax += Math.floor(adj * tax.repeatWinnerTaxRate);
-                if (tax.soloTaxRate > 0) totalSoloTax += Math.floor(adj * tax.soloTaxRate);
-            });
-        });
-        const total = totalRepeatTax + totalSoloTax;
-        return { total, repeatTax: totalRepeatTax, soloTax: totalSoloTax, fundContribution: Math.floor(totalRepeatTax * 0.60), orgContribution: Math.ceil(totalRepeatTax * 0.40), soloToLosers: Math.floor(totalSoloTax * 0.60), soloToPool: Math.ceil(totalSoloTax * 0.40) };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [taxPreview, rankings, placementCount, baseDist, activeTab]);
+        const bt = taxPreviewRes?.taxTotals;
+        const soloTotal = taxPreviewRes?.soloTaxTotal ?? 0;
+        if (!bt || activeTab !== "detailed") return { total: 0, repeatTax: 0, soloTax: 0, fundContribution: 0, orgContribution: 0, soloToLosers: 0, soloToPool: 0 };
+        return {
+            total: bt.totalTax + soloTotal,
+            repeatTax: bt.totalTax,
+            soloTax: soloTotal,
+            fundContribution: bt.fundContribution,
+            orgContribution: bt.orgContribution,
+            soloToLosers: Math.floor(soloTotal * 0.60),
+            soloToPool: Math.ceil(soloTotal * 0.40),
+        };
+    }, [taxPreviewRes, activeTab]);
 
     const organizerAmount = distribution?.finalOrgAmount ?? 0;
 
