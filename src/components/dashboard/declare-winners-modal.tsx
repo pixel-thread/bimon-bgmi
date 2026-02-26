@@ -359,9 +359,12 @@ export function DeclareWinnersModal({
         onSuccess: async () => {
             setDeclareStatus({ step: "Done!", done: true });
             toast.success("Winners declared, streaks updated & rewards processed!");
+            queryClient.removeQueries({ queryKey: ["admin-tournaments"] });
+            queryClient.removeQueries({ queryKey: ["tournament-rankings", tournamentId] });
             await queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
             await queryClient.invalidateQueries({ queryKey: ["tournament-rankings"] });
             queryClient.invalidateQueries({ queryKey: ["solo-tax-pool"] });
+            queryClient.invalidateQueries({ queryKey: ["stored-winner-rewards"] });
             setTimeout(() => { setDeclareStatus(null); onClose(); }, 1000);
         },
         onError: (err: Error) => {
@@ -377,9 +380,12 @@ export function DeclareWinnersModal({
         },
         onSuccess: async () => {
             toast.success("Winner declaration undone!");
+            queryClient.removeQueries({ queryKey: ["admin-tournaments"] });
+            queryClient.removeQueries({ queryKey: ["tournament-rankings", tournamentId] });
             await queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
             await queryClient.invalidateQueries({ queryKey: ["tournament-rankings"] });
             queryClient.invalidateQueries({ queryKey: ["solo-tax-pool"] });
+            queryClient.invalidateQueries({ queryKey: ["stored-winner-rewards"] });
             onClose();
         },
         onError: (err: Error) => toast.error(err.message),

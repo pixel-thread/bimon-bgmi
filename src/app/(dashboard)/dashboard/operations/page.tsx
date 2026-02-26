@@ -179,9 +179,10 @@ export default function OperationsPage() {
             });
             if (!res.ok) throw new Error("Failed to update");
         },
-        onSuccess: () => {
+        onSuccess: async () => {
             toast.success("Tournament updated!");
-            queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
+            queryClient.removeQueries({ queryKey: ["admin-tournaments", seasonId] });
+            await queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
             setIsEditing(false);
         },
         onError: () => toast.error("Failed to update"),
@@ -205,9 +206,10 @@ export default function OperationsPage() {
             }
             return res.json();
         },
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
             toast.success("Tournament created!");
-            queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
+            queryClient.removeQueries({ queryKey: ["admin-tournaments", seasonId] });
+            await queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
             createModal.onClose();
             setTName(""); setTDescription(""); setTFee("30");
             if (data?.data?.id) setSelectedId(data.data.id);
@@ -227,9 +229,10 @@ export default function OperationsPage() {
                 throw new Error(d.error || "Failed");
             }
         },
-        onSuccess: () => {
+        onSuccess: async () => {
             toast.success("Season created!");
-            queryClient.invalidateQueries({ queryKey: ["seasons"] });
+            queryClient.removeQueries({ queryKey: ["seasons"] });
+            await queryClient.invalidateQueries({ queryKey: ["seasons"] });
             seasonModal.onClose();
             setSName("");
         },
