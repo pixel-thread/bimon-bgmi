@@ -158,191 +158,186 @@ export function PlayerStatsModal({
                     backdrop: "bg-black/60 backdrop-blur-sm",
                 }}
             >
-                <ModalContent className="!overflow-hidden">
-                    {/* RKO shake wrapper */}
-                    <div
-                        style={isRkoPlayer && !rkoMuted ? {
-                            animation: 'rkoShake 0.15s ease-in-out infinite',
-                        } : undefined}
+                <ModalContent className={`!overflow-hidden transition-shadow duration-300 ${isRkoPlayer && !rkoMuted ? 'ring-2 ring-red-500/60 shadow-[0_0_30px_rgba(220,38,38,0.3)]' : ''}`}>
+                    {/* Custom close button */}
+                    <button
+                        onClick={onClose}
+                        className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
                     >
-                        {/* Custom close button */}
-                        <button
-                            onClick={onClose}
-                            className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
-                        >
-                            <X className="h-4 w-4" />
-                        </button>
+                        <X className="h-4 w-4" />
+                    </button>
 
-                        {/* Hero section */}
-                        <div className="relative h-72 w-full overflow-hidden">
-                            {characterImage?.url ? (
-                                <>
-                                    {!imageLoaded && (
-                                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-default-100">
-                                            <Loader2 className="h-8 w-8 animate-spin text-foreground/30" />
-                                        </div>
-                                    )}
-                                    {characterImage.isVideo ? (
-                                        <video
-                                            src={characterImage.url}
-                                            autoPlay
-                                            muted
-                                            playsInline
-                                            className="h-full w-full object-cover"
-                                            style={{ objectPosition: "50% 25%" }}
-                                            onLoadedData={() => setImageLoaded(true)}
-                                        />
-                                    ) : (
-                                        <img
-                                            src={characterImage.url}
-                                            alt=""
-                                            className="h-full w-full object-cover"
-                                            style={{ objectPosition: "50% 25%" }}
-                                            onLoad={() => setImageLoaded(true)}
-                                        />
-                                    )}
-                                </>
-                            ) : (
-                                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/60 to-primary/30">
-                                    <span className="text-6xl font-bold text-white/20">
-                                        {name.charAt(0).toUpperCase()}
-                                    </span>
-                                </div>
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+                    {/* Hero section */}
+                    <div className="relative h-72 w-full overflow-hidden">
+                        {characterImage?.url ? (
+                            <>
+                                {!imageLoaded && (
+                                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-default-100">
+                                        <Loader2 className="h-8 w-8 animate-spin text-foreground/30" />
+                                    </div>
+                                )}
+                                {characterImage.isVideo ? (
+                                    <video
+                                        src={characterImage.url}
+                                        autoPlay
+                                        muted
+                                        playsInline
+                                        className="h-full w-full object-cover"
+                                        style={{ objectPosition: "50% 25%" }}
+                                        onLoadedData={() => setImageLoaded(true)}
+                                    />
+                                ) : (
+                                    <img
+                                        src={characterImage.url}
+                                        alt=""
+                                        className="h-full w-full object-cover"
+                                        style={{ objectPosition: "50% 25%" }}
+                                        onLoad={() => setImageLoaded(true)}
+                                    />
+                                )}
+                            </>
+                        ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/60 to-primary/30">
+                                <span className="text-6xl font-bold text-white/20">
+                                    {name.charAt(0).toUpperCase()}
+                                </span>
+                            </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
 
-                            {/* Player info overlay */}
-                            <div className="absolute bottom-4 left-4 flex items-end gap-3">
-                                <Avatar
-                                    src={player.imageUrl || undefined}
-                                    name={name}
-                                    className="h-14 w-14 ring-2 ring-background"
-                                />
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h2
-                                            className="text-lg font-bold text-white"
-                                            style={{
-                                                textShadow:
-                                                    "0 1px 8px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.6)",
-                                            }}
+                        {/* Player info overlay */}
+                        <div className="absolute bottom-4 left-4 flex items-end gap-3">
+                            <Avatar
+                                src={player.imageUrl || undefined}
+                                name={name}
+                                className="h-14 w-14 ring-2 ring-background"
+                            />
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h2
+                                        className="text-lg font-bold text-white"
+                                        style={{
+                                            textShadow:
+                                                "0 1px 8px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.6)",
+                                        }}
+                                    >
+                                        {name}
+                                    </h2>
+                                    {player.hasRoyalPass && (
+                                        <Crown className="h-4 w-4 text-yellow-400" />
+                                    )}
+                                    {isRkoPlayer && (
+                                        <button
+                                            onClick={toggleRkoMute}
+                                            className="ml-0.5 p-0.5 rounded-full hover:bg-white/20 transition-colors"
+                                            title={rkoMuted ? "Unmute RKO" : "Mute RKO"}
                                         >
-                                            {name}
-                                        </h2>
-                                        {player.hasRoyalPass && (
-                                            <Crown className="h-4 w-4 text-yellow-400" />
-                                        )}
-                                        {isRkoPlayer && (
-                                            <button
-                                                onClick={toggleRkoMute}
-                                                className="ml-0.5 p-0.5 rounded-full hover:bg-white/20 transition-colors"
-                                                title={rkoMuted ? "Unmute RKO" : "Mute RKO"}
-                                            >
-                                                {rkoMuted ? (
-                                                    <VolumeX className="w-4 h-4 text-white/60" />
-                                                ) : (
-                                                    <Volume2 className="w-4 h-4 text-red-500 animate-pulse" />
-                                                )}
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <CategoryBadge
-                                            category={player.category}
-                                            size="sm"
-                                        />
-                                    </div>
-                                    {player.bio && (
-                                        <p className="mt-0.5 text-[10px] italic text-foreground/60">
-                                            &ldquo;{player.bio}&rdquo;
-                                        </p>
+                                            {rkoMuted ? (
+                                                <VolumeX className="w-4 h-4 text-foreground/50" />
+                                            ) : (
+                                                <Volume2 className="w-4 h-4 text-red-500 animate-pulse" />
+                                            )}
+                                        </button>
                                     )}
                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <CategoryBadge
+                                        category={player.category}
+                                        size="sm"
+                                    />
+                                </div>
+                                {player.bio && (
+                                    <p className="mt-0.5 text-[10px] italic text-foreground/60">
+                                        &ldquo;{player.bio}&rdquo;
+                                    </p>
+                                )}
                             </div>
                         </div>
-
-                        <ModalBody className="space-y-4 px-4 pb-6 pt-0">
-                            {/* Stats grid */}
-                            <div className="grid grid-cols-2 gap-3">
-                                {statCards.map((stat, i) => (
-                                    <motion.div
-                                        key={stat.label}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={isRkoPlayer && !rkoMuted ? {
-                                            opacity: 1, y: 0,
-                                            rotate: [0, -8 + i * 4, 4 - i * 2, 0],
-                                            x: [0, -4 + i * 2, 2 - i, 0],
-                                        } : { opacity: 1, y: 0 }}
-                                        transition={isRkoPlayer && !rkoMuted
-                                            ? { duration: 0.5 + i * 0.1, repeat: Infinity, repeatDelay: 0.2 }
-                                            : { delay: 0.1 }
-                                        }
-                                        className="rounded-xl border border-divider bg-default-100 p-3"
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <stat.icon
-                                                className={`h-4 w-4 ${stat.color}`}
-                                            />
-                                            <span className="text-xs text-foreground/50">
-                                                {stat.label}
-                                            </span>
-                                        </div>
-                                        <p className="mt-1 text-xl font-bold">
-                                            {stat.value}
-                                        </p>
-                                    </motion.div>
-                                ))}
-                            </div>
-
-                            {/* Action button */}
-                            {isOwnProfile ? (
-                                <Button
-                                    color="primary"
-                                    variant="flat"
-                                    fullWidth
-                                    onPress={() => {
-                                        onClose();
-                                        router.push("/profile");
-                                    }}
-                                    className="font-medium"
-                                >
-                                    View Profile
-                                </Button>
-                            ) : (
-                                <Button
-                                    color="primary"
-                                    variant="flat"
-                                    fullWidth
-                                    onPress={() => setShowUCTransfer(true)}
-                                    className="font-medium"
-                                >
-                                    Send / Request UC
-                                </Button>
-                            )}
-                            {/* RKO equalizer footer */}
-                            {isRkoPlayer && !rkoMuted && (
-                                <button
-                                    onClick={toggleRkoMute}
-                                    className="flex items-end justify-evenly w-full h-10 px-2 rounded-lg border cursor-pointer border-red-500/50 bg-red-50 dark:bg-red-950/30 shadow-[0_0_12px_rgba(220,38,38,0.2)]"
-                                    title="Mute"
-                                >
-                                    {Array.from({ length: 24 }, (_, i) => {
-                                        const barVariant = (i % 5) + 1;
-                                        const delayMs = (i * 50) % 300;
-                                        return (
-                                            <div
-                                                key={i}
-                                                className="w-[2px] sm:w-[3px] rounded-full bg-red-500"
-                                                style={{
-                                                    animation: `rkoBar${barVariant} 0.4s ease-in-out ${delayMs}ms infinite alternate`,
-                                                }}
-                                            />
-                                        );
-                                    })}
-                                </button>
-                            )}
-                        </ModalBody>
                     </div>
+
+                    <ModalBody className="space-y-4 px-4 pb-6 pt-0">
+                        {/* Stats grid */}
+                        <div className="grid grid-cols-2 gap-3">
+                            {statCards.map((stat, i) => (
+                                <motion.div
+                                    key={stat.label}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={isRkoPlayer && !rkoMuted ? {
+                                        opacity: 1, y: 0,
+                                        scale: [1, 1.03, 0.97, 1],
+                                    } : { opacity: 1, y: 0, scale: 1 }}
+                                    transition={isRkoPlayer && !rkoMuted
+                                        ? { duration: 0.6, repeat: Infinity, repeatDelay: 0.1 + i * 0.08 }
+                                        : { delay: 0.1 }
+                                    }
+                                    className={`rounded-xl border p-3 ${isRkoPlayer && !rkoMuted
+                                            ? 'border-red-500/30 bg-red-50/50 dark:bg-red-950/20'
+                                            : 'border-divider bg-default-100'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <stat.icon
+                                            className={`h-4 w-4 ${stat.color}`}
+                                        />
+                                        <span className="text-xs text-foreground/50">
+                                            {stat.label}
+                                        </span>
+                                    </div>
+                                    <p className="mt-1 text-xl font-bold">
+                                        {stat.value}
+                                    </p>
+                                </motion.div>
+                            ))}
+                        </div>
+
+                        {/* Action button */}
+                        {isOwnProfile ? (
+                            <Button
+                                color="primary"
+                                variant="flat"
+                                fullWidth
+                                onPress={() => {
+                                    onClose();
+                                    router.push("/profile");
+                                }}
+                                className="font-medium"
+                            >
+                                View Profile
+                            </Button>
+                        ) : (
+                            <Button
+                                color="primary"
+                                variant="flat"
+                                fullWidth
+                                onPress={() => setShowUCTransfer(true)}
+                                className="font-medium"
+                            >
+                                Send / Request UC
+                            </Button>
+                        )}
+                        {/* RKO equalizer footer */}
+                        {isRkoPlayer && !rkoMuted && (
+                            <button
+                                onClick={toggleRkoMute}
+                                className="flex items-end justify-evenly w-full h-10 px-2 rounded-lg border cursor-pointer border-red-500/50 bg-red-50 dark:bg-red-950/30 shadow-[0_0_12px_rgba(220,38,38,0.2)]"
+                                title="Mute"
+                            >
+                                {Array.from({ length: 24 }, (_, i) => {
+                                    const barVariant = (i % 5) + 1;
+                                    const delayMs = (i * 50) % 300;
+                                    return (
+                                        <div
+                                            key={i}
+                                            className="w-[2px] sm:w-[3px] rounded-full bg-red-500"
+                                            style={{
+                                                animation: `rkoBar${barVariant} 0.4s ease-in-out ${delayMs}ms infinite alternate`,
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </button>
+                        )}
+                    </ModalBody>
                 </ModalContent>
             </Modal>
 
