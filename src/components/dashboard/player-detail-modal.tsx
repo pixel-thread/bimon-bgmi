@@ -27,6 +27,7 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     Clock,
+    ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -74,6 +75,8 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
     const [ucDescription, setUcDescription] = useState("UC Top-up");
     const [banReason, setBanReason] = useState("");
     const [activeTab, setActiveTab] = useState<"overview" | "transactions">("overview");
+    const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+    const toggleSection = (key: string) => setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
     // Fetch player details
     const { data: player, isLoading } = useQuery<PlayerDetail>({
@@ -240,28 +243,40 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                         </div>
                     ) : activeTab === "overview" ? (
                         <>
-                            {/* Stats cards */}
-                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                                <div className="rounded-xl bg-default-100 p-3 text-center">
-                                    <p className="text-xs text-foreground/50">Kills</p>
-                                    <p className="mt-1 text-lg font-bold">{player?.stats.kills}</p>
-                                </div>
-                                <div className="rounded-xl bg-default-100 p-3 text-center">
-                                    <p className="text-xs text-foreground/50">K/D</p>
-                                    <p className="mt-1 text-lg font-bold">
-                                        {player?.stats.kd.toFixed(2)}
-                                    </p>
-                                </div>
-                                <div className="rounded-xl bg-default-100 p-3 text-center">
-                                    <p className="text-xs text-foreground/50">Matches</p>
-                                    <p className="mt-1 text-lg font-bold">{player?.stats.matches}</p>
-                                </div>
-                                <div className="rounded-xl bg-default-100 p-3 text-center">
-                                    <p className="text-xs text-foreground/50">Streak</p>
-                                    <p className="mt-1 text-lg font-bold">
-                                        {player?.streak.current}/8
-                                    </p>
-                                </div>
+                            {/* Stats cards — collapsed by default */}
+                            <div className="rounded-xl border border-divider">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSection("stats")}
+                                    className="flex w-full items-center justify-between p-3 text-sm font-semibold cursor-pointer hover:bg-default-50 rounded-xl transition-colors"
+                                >
+                                    Stats
+                                    <ChevronDown className={`h-4 w-4 text-foreground/40 transition-transform ${expandedSections.stats ? "rotate-180" : ""}`} />
+                                </button>
+                                {expandedSections.stats && (
+                                    <div className="grid grid-cols-2 gap-2 px-3 pb-3 sm:grid-cols-4">
+                                        <div className="rounded-xl bg-default-100 p-3 text-center">
+                                            <p className="text-xs text-foreground/50">Kills</p>
+                                            <p className="mt-1 text-lg font-bold">{player?.stats.kills}</p>
+                                        </div>
+                                        <div className="rounded-xl bg-default-100 p-3 text-center">
+                                            <p className="text-xs text-foreground/50">K/D</p>
+                                            <p className="mt-1 text-lg font-bold">
+                                                {player?.stats.kd.toFixed(2)}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-xl bg-default-100 p-3 text-center">
+                                            <p className="text-xs text-foreground/50">Matches</p>
+                                            <p className="mt-1 text-lg font-bold">{player?.stats.matches}</p>
+                                        </div>
+                                        <div className="rounded-xl bg-default-100 p-3 text-center">
+                                            <p className="text-xs text-foreground/50">Streak</p>
+                                            <p className="mt-1 text-lg font-bold">
+                                                {player?.streak.current}/8
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Balance */}
@@ -276,43 +291,52 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                 </span>
                             </div>
 
-                            {/* Player Flags */}
-                            <div className="space-y-3 rounded-xl border border-divider p-4">
-                                <h3 className="text-sm font-semibold">Player Flags</h3>
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <ShieldAlert className="h-4 w-4 text-primary" />
-                                            <div>
-                                                <p className="text-sm font-medium">Trusted Player</p>
-                                                <p className="text-xs text-foreground/50">Bypass verification checks</p>
+                            {/* Player Flags — collapsed by default */}
+                            <div className="rounded-xl border border-divider">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSection("flags")}
+                                    className="flex w-full items-center justify-between p-3 text-sm font-semibold cursor-pointer hover:bg-default-50 rounded-xl transition-colors"
+                                >
+                                    Player Flags
+                                    <ChevronDown className={`h-4 w-4 text-foreground/40 transition-transform ${expandedSections.flags ? "rotate-180" : ""}`} />
+                                </button>
+                                {expandedSections.flags && (
+                                    <div className="space-y-3 px-4 pb-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <ShieldAlert className="h-4 w-4 text-primary" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Trusted Player</p>
+                                                    <p className="text-xs text-foreground/50">Extended credit line (-200 UC)</p>
+                                                </div>
                                             </div>
+                                            <Switch
+                                                size="sm"
+                                                isSelected={player?.isTrusted ?? false}
+                                                isDisabled={toggleMutation.isPending}
+                                                onValueChange={(val) => toggleMutation.mutate({ isTrusted: val })}
+                                                aria-label="Toggle trusted"
+                                            />
                                         </div>
-                                        <Switch
-                                            size="sm"
-                                            isSelected={player?.isTrusted ?? false}
-                                            isDisabled={toggleMutation.isPending}
-                                            onValueChange={(val) => toggleMutation.mutate({ isTrusted: val })}
-                                            aria-label="Toggle trusted"
-                                        />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <BadgeDollarSign className="h-4 w-4 text-warning" />
-                                            <div>
-                                                <p className="text-sm font-medium">UC Exempt</p>
-                                                <p className="text-xs text-foreground/50">Skip UC deductions for entry fees</p>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <BadgeDollarSign className="h-4 w-4 text-warning" />
+                                                <div>
+                                                    <p className="text-sm font-medium">UC Exempt</p>
+                                                    <p className="text-xs text-foreground/50">Skip UC deductions for entry fees</p>
+                                                </div>
                                             </div>
+                                            <Switch
+                                                size="sm"
+                                                isSelected={player?.isUCExempt ?? false}
+                                                isDisabled={toggleMutation.isPending}
+                                                onValueChange={(val) => toggleMutation.mutate({ isUCExempt: val })}
+                                                aria-label="Toggle UC exempt"
+                                            />
                                         </div>
-                                        <Switch
-                                            size="sm"
-                                            isSelected={player?.isUCExempt ?? false}
-                                            isDisabled={toggleMutation.isPending}
-                                            onValueChange={(val) => toggleMutation.mutate({ isUCExempt: val })}
-                                            aria-label="Toggle UC exempt"
-                                        />
                                     </div>
-                                </div>
+                                )}
                             </div>
 
                             {/* UC Credit/Debit form */}
@@ -379,48 +403,57 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                 )}
                             </div>
 
-                            {/* Ban/Unban */}
-                            <div className="space-y-3 rounded-xl border border-divider p-4">
-                                <h3 className="text-sm font-semibold">
-                                    {player?.isBanned ? "Player is Banned" : "Ban Player"}
-                                </h3>
-                                {player?.ban && (
-                                    <p className="text-xs text-foreground/50">
-                                        Reason: {player.ban.reason || "No reason provided"}
-                                        {player.ban.bannedAt && (
-                                            <> · {new Date(player.ban.bannedAt).toLocaleDateString()}</>
-                                        )}
-                                    </p>
-                                )}
-                                {!player?.isBanned && (
-                                    <Input
-                                        size="sm"
-                                        placeholder="Ban reason (optional)"
-                                        value={banReason}
-                                        onValueChange={setBanReason}
-                                    />
-                                )}
-                                <Button
-                                    size="sm"
-                                    color={player?.isBanned ? "success" : "danger"}
-                                    variant="flat"
-                                    onPress={handleBanToggle}
-                                    isLoading={banMutation.isPending}
-                                    startContent={
-                                        player?.isBanned ? (
-                                            <ShieldCheck className="h-4 w-4" />
-                                        ) : (
-                                            <ShieldBan className="h-4 w-4" />
-                                        )
-                                    }
-                                    className="w-full"
+                            {/* Ban/Unban — collapsed by default */}
+                            <div className="rounded-xl border border-divider">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSection("ban")}
+                                    className="flex w-full items-center justify-between p-3 text-sm font-semibold cursor-pointer hover:bg-default-50 rounded-xl transition-colors"
                                 >
-                                    {player?.isBanned ? "Unban Player" : "Ban Player"}
-                                </Button>
-                                {banMutation.isSuccess && (
-                                    <p className="text-center text-xs text-success">
-                                        ✓ Status updated
-                                    </p>
+                                    {player?.isBanned ? "Player is Banned" : "Ban Player"}
+                                    <ChevronDown className={`h-4 w-4 text-foreground/40 transition-transform ${expandedSections.ban ? "rotate-180" : ""}`} />
+                                </button>
+                                {expandedSections.ban && (
+                                    <div className="space-y-3 px-4 pb-4">
+                                        {player?.ban && (
+                                            <p className="text-xs text-foreground/50">
+                                                Reason: {player.ban.reason || "No reason provided"}
+                                                {player.ban.bannedAt && (
+                                                    <> · {new Date(player.ban.bannedAt).toLocaleDateString()}</>
+                                                )}
+                                            </p>
+                                        )}
+                                        {!player?.isBanned && (
+                                            <Input
+                                                size="sm"
+                                                placeholder="Ban reason (optional)"
+                                                value={banReason}
+                                                onValueChange={setBanReason}
+                                            />
+                                        )}
+                                        <Button
+                                            size="sm"
+                                            color={player?.isBanned ? "success" : "danger"}
+                                            variant="flat"
+                                            onPress={handleBanToggle}
+                                            isLoading={banMutation.isPending}
+                                            startContent={
+                                                player?.isBanned ? (
+                                                    <ShieldCheck className="h-4 w-4" />
+                                                ) : (
+                                                    <ShieldBan className="h-4 w-4" />
+                                                )
+                                            }
+                                            className="w-full"
+                                        >
+                                            {player?.isBanned ? "Unban Player" : "Ban Player"}
+                                        </Button>
+                                        {banMutation.isSuccess && (
+                                            <p className="text-center text-xs text-success">
+                                                ✓ Status updated
+                                            </p>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </>
