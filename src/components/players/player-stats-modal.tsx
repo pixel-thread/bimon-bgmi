@@ -158,7 +158,10 @@ export function PlayerStatsModal({
                     backdrop: "bg-black/60 backdrop-blur-sm",
                 }}
             >
-                <ModalContent className={`!overflow-hidden transition-shadow duration-300 ${isRkoPlayer && !rkoMuted ? 'ring-2 ring-red-500/60 shadow-[0_0_30px_rgba(220,38,38,0.3)]' : ''}`}>
+                <ModalContent
+                    className={`!overflow-hidden transition-shadow duration-300 ${isRkoPlayer && !rkoMuted ? 'ring-2 ring-red-500/60 shadow-[0_0_30px_rgba(220,38,38,0.3)]' : ''}`}
+                    style={isRkoPlayer && !rkoMuted ? { animation: 'rkoShake 0.15s ease-in-out infinite' } : undefined}
+                >
                     {/* Custom close button */}
                     <button
                         onClick={onClose}
