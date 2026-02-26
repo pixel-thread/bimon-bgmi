@@ -261,12 +261,19 @@ export function PlayerStatsModal({
                     <ModalBody className="space-y-4 px-4 pb-6 pt-0">
                         {/* Stats grid */}
                         <div className="grid grid-cols-2 gap-3">
-                            {statCards.map((stat) => (
+                            {statCards.map((stat, i) => (
                                 <motion.div
                                     key={stat.label}
                                     initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.1 }}
+                                    animate={isRkoPlayer && !rkoMuted ? {
+                                        opacity: 1, y: [0, (-3 + i * 2), (4 - i), 0],
+                                        x: [0, (2 - i), (-3 + i), 0],
+                                        rotate: [0, (-2 + i), (3 - i * 0.5), 0],
+                                    } : { opacity: 1, y: 0, x: 0, rotate: 0 }}
+                                    transition={isRkoPlayer && !rkoMuted
+                                        ? { duration: 0.3 + i * 0.05, repeat: Infinity, ease: "easeInOut" }
+                                        : { delay: 0.1 }
+                                    }
                                     className="rounded-xl border border-divider bg-default-100 p-3"
                                 >
                                     <div className="flex items-center gap-2">
