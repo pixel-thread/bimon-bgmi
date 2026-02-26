@@ -6,6 +6,15 @@ const isProtectedRoute = createRouteMatcher([
     "/dashboard(.*)",
     "/profile(.*)",
     "/settings(.*)",
+    "/vote(.*)",
+    "/wallet(.*)",
+    "/players(.*)",
+    "/notifications(.*)",
+    "/onboarding(.*)",
+    "/jobs(.*)",
+    "/winners(.*)",
+    "/royal-pass(.*)",
+    "/promoter(.*)",
 ]);
 
 // Routes that are always public
