@@ -26,7 +26,6 @@ import {
     Vote,
     Medal,
     Plus,
-    Flame,
     Calendar,
     Pencil,
     Save,
@@ -235,43 +234,6 @@ export default function OperationsPage() {
         onError: (err: Error) => toast.error(err.message),
     });
 
-
-    const processStreaksAndRewards = useMutation({
-        mutationFn: async () => {
-            // Step 1: Update streaks (+ milestone rewards)
-            const res1 = await fetch(`/api/tournaments/${selectedId}/update-streaks`, {
-                method: "POST",
-            });
-            if (!res1.ok) {
-                const d = await res1.json();
-                throw new Error(d.error || "Failed to update streaks");
-            }
-            const streakData = await res1.json();
-
-            // Step 2: Process rewards (merit + referrals)
-            const res2 = await fetch(`/api/tournaments/${selectedId}/post-declare`, {
-                method: "POST",
-            });
-            if (!res2.ok) {
-                const d = await res2.json();
-                throw new Error(d.error || "Failed to process rewards");
-            }
-            const rewardData = await res2.json();
-
-            return { streakData, rewardData };
-        },
-        onSuccess: ({ streakData, rewardData }) => {
-            const s = streakData?.data;
-            const r = rewardData?.data;
-            const parts: string[] = [];
-            if (s?.updated > 0) parts.push(`🔥 ${s.updated} streaks`);
-            if (s?.rewardsCreated > 0) parts.push(`🎁 ${s.rewardsCreated} streak reward(s)`);
-            if (r?.meritUpdated > 0) parts.push(`✅ ${r.meritUpdated} merit`);
-            if (r?.referralsProcessed > 0) parts.push(`💰 ${r.referralsProcessed} referrals`);
-            toast.success(parts.length > 0 ? parts.join(", ") : "Everything already up to date");
-        },
-        onError: (err: Error) => toast.error(err.message),
-    });
 
     // ─── Global Background ───────────────────────────────────
 
@@ -562,18 +524,6 @@ export default function OperationsPage() {
                                 >
                                     {selected.isWinnerDeclared ? "View Results" : "View Winners"}
                                 </Button>
-                                {selected.isWinnerDeclared && (
-                                    <Button
-                                        size="sm"
-                                        color="success"
-                                        variant="flat"
-                                        isLoading={processStreaksAndRewards.isPending}
-                                        startContent={<Flame className="h-3 w-3" />}
-                                        onPress={() => processStreaksAndRewards.mutate()}
-                                    >
-                                        Streaks & Rewards
-                                    </Button>
-                                )}
                             </div>
                         </CardBody>
                     </Card>
