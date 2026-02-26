@@ -258,22 +258,13 @@ export function PlayerStatsModal({
                     <ModalBody className="space-y-4 px-4 pb-6 pt-0">
                         {/* Stats grid */}
                         <div className="grid grid-cols-2 gap-3">
-                            {statCards.map((stat, i) => (
+                            {statCards.map((stat) => (
                                 <motion.div
                                     key={stat.label}
                                     initial={{ opacity: 0, y: 10 }}
-                                    animate={isRkoPlayer && !rkoMuted ? {
-                                        opacity: 1, y: 0,
-                                        scale: [1, 1.03, 0.97, 1],
-                                    } : { opacity: 1, y: 0, scale: 1 }}
-                                    transition={isRkoPlayer && !rkoMuted
-                                        ? { duration: 0.6, repeat: Infinity, repeatDelay: 0.1 + i * 0.08 }
-                                        : { delay: 0.1 }
-                                    }
-                                    className={`rounded-xl border p-3 ${isRkoPlayer && !rkoMuted
-                                        ? 'border-red-500/30 bg-red-50/50 dark:bg-red-950/20'
-                                        : 'border-divider bg-default-100'
-                                        }`}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.1 }}
+                                    className="rounded-xl border border-divider bg-default-100 p-3"
                                 >
                                     <div className="flex items-center gap-2">
                                         <stat.icon
