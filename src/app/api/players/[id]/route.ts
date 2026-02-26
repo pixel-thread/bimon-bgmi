@@ -131,6 +131,14 @@ export async function PATCH(
             updateData.category = body.category;
         }
 
+        // Boolean toggles
+        if (typeof body.isTrusted === "boolean") {
+            updateData.isTrusted = body.isTrusted;
+        }
+        if (typeof body.isUCExempt === "boolean") {
+            updateData.isUCExempt = body.isUCExempt;
+        }
+
         if (Object.keys(updateData).length === 0) {
             return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
         }
@@ -138,7 +146,7 @@ export async function PATCH(
         const updated = await prisma.player.update({
             where: { id },
             data: updateData,
-            select: { id: true, category: true },
+            select: { id: true, category: true, isTrusted: true, isUCExempt: true },
         });
 
         return NextResponse.json({ data: updated });

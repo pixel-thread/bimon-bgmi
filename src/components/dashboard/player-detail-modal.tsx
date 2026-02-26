@@ -13,11 +13,14 @@ import {
     SelectItem,
     Skeleton,
     Textarea,
+    Switch,
 } from "@heroui/react";
 import {
     Crown,
     ShieldBan,
     ShieldCheck,
+    ShieldAlert,
+    BadgeDollarSign,
     Wallet,
     Plus,
     Minus,
@@ -129,6 +132,23 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
             queryClient.invalidateQueries({ queryKey: ["admin-player", playerId] });
             queryClient.invalidateQueries({ queryKey: ["admin-players"] });
             setBanReason("");
+        },
+    });
+
+    // Toggle mutation (isTrusted / isUCExempt)
+    const toggleMutation = useMutation({
+        mutationFn: async (data: { isTrusted?: boolean; isUCExempt?: boolean }) => {
+            const res = await fetch(`/api/players/${playerId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) throw new Error("Failed to update");
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["admin-player", playerId] });
+            queryClient.invalidateQueries({ queryKey: ["admin-players"] });
         },
     });
 
@@ -254,6 +274,45 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                     }`}>
                                     {player?.balance?.toLocaleString()} UC
                                 </span>
+                            </div>
+
+                            {/* Player Flags */}
+                            <div className="space-y-3 rounded-xl border border-divider p-4">
+                                <h3 className="text-sm font-semibold">Player Flags</h3>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <ShieldAlert className="h-4 w-4 text-primary" />
+                                            <div>
+                                                <p className="text-sm font-medium">Trusted Player</p>
+                                                <p className="text-xs text-foreground/50">Bypass verification checks</p>
+                                            </div>
+                                        </div>
+                                        <Switch
+                                            size="sm"
+                                            isSelected={player?.isTrusted ?? false}
+                                            isDisabled={toggleMutation.isPending}
+                                            onValueChange={(val) => toggleMutation.mutate({ isTrusted: val })}
+                                            aria-label="Toggle trusted"
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <BadgeDollarSign className="h-4 w-4 text-warning" />
+                                            <div>
+                                                <p className="text-sm font-medium">UC Exempt</p>
+                                                <p className="text-xs text-foreground/50">Skip UC deductions for entry fees</p>
+                                            </div>
+                                        </div>
+                                        <Switch
+                                            size="sm"
+                                            isSelected={player?.isUCExempt ?? false}
+                                            isDisabled={toggleMutation.isPending}
+                                            onValueChange={(val) => toggleMutation.mutate({ isUCExempt: val })}
+                                            aria-label="Toggle UC exempt"
+                                        />
+                                    </div>
+                                </div>
                             </div>
 
                             {/* UC Credit/Debit form */}
