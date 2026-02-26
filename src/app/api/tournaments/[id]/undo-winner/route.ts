@@ -102,6 +102,15 @@ export async function POST(
             // 4. Delete Income records (Fund/Org)
             await tx.income.deleteMany({ where: { tournamentId: id } });
 
+            // 4b. Delete winner notifications for this tournament
+            await tx.notification.deleteMany({
+                where: {
+                    type: "tournament",
+                    message: { contains: tournament.name },
+                    playerId: { in: winningPlayerIds },
+                },
+            });
+
             // 5. Undo referral tournament count increments
             for (const ref of referrals) {
                 if (ref.tournamentsCompleted >= 5 && (ref.status === "PAID" || ref.status === "QUALIFIED")) {

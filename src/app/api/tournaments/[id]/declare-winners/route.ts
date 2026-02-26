@@ -68,7 +68,7 @@ export async function POST(
                 team: {
                     include: {
                         players: {
-                            select: { id: true, displayName: true, isUCExempt: true, isSoloRestricted: true, soloMatchesNeeded: true, meritScore: true },
+                            select: { id: true, userId: true, displayName: true, isUCExempt: true, isSoloRestricted: true, soloMatchesNeeded: true, meritScore: true },
                         },
                     },
                 },
@@ -82,7 +82,7 @@ export async function POST(
         type TeamAgg = {
             teamId: string;
             total: number; kills: number; pts: number;
-            players: { playerId: string; name: string; isUCExempt: boolean; isSoloRestricted: boolean; soloMatchesNeeded: number }[];
+            players: { playerId: string; userId: string; name: string; isUCExempt: boolean; isSoloRestricted: boolean; soloMatchesNeeded: number }[];
             chickenDinners: number;
             lastMatchPosition: number;
         };
@@ -102,6 +102,7 @@ export async function POST(
                     teamId: stat.teamId, total: t, kills, pts: p,
                     players: stat.team.players.map((p2) => ({
                         playerId: p2.id,
+                        userId: p2.userId,
                         name: p2.displayName || "Unknown",
                         isUCExempt: p2.isUCExempt,
                         isSoloRestricted: p2.isSoloRestricted,
@@ -199,6 +200,7 @@ export async function POST(
 
         interface PlayerPrize {
             playerId: string;
+            userId: string;
             finalAmount: number;
             message: string;
             details: Prisma.InputJsonValue;
@@ -252,6 +254,7 @@ export async function POST(
 
                     playersData.push({
                         playerId: player.playerId,
+                        userId: player.userId,
                         finalAmount,
                         message: `${getOrdinal(placement.position)} Place - ${tournament.name}`,
                         details: {
@@ -346,7 +349,7 @@ export async function POST(
                     },
                 });
 
-                // Create PendingReward for each player
+                // Create PendingReward + Notification for each player
                 for (const p of teamData.players) {
                     await tx.pendingReward.create({
                         data: {
@@ -356,6 +359,18 @@ export async function POST(
                             position: teamData.position,
                             message: p.message,
                             details: p.details,
+                        },
+                    });
+
+                    // Create notification so the player sees a badge + feed entry
+                    await tx.notification.create({
+                        data: {
+                            userId: p.userId,
+                            playerId: p.playerId,
+                            title: `🏆 You won ${getOrdinal(teamData.position)} place!`,
+                            message: `You earned ${p.finalAmount} UC in ${tournament.name}. Tap to claim your reward!`,
+                            type: "tournament",
+                            link: "/notifications",
                         },
                     });
                 }
