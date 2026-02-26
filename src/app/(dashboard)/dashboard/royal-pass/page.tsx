@@ -57,7 +57,7 @@ interface RoyalPassData {
 
 export default function RoyalPassAdminPage() {
     const [search, setSearch] = useState("");
-    const [sortBy, setSortBy] = useState<"date" | "name" | "streak">("date");
+    const [sortBy, setSortBy] = useState<"date" | "name" | "streak">("streak");
 
     const { data, isLoading, error } = useQuery<RoyalPassData>({
         queryKey: ["admin-royal-pass"],
