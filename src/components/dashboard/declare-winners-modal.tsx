@@ -288,10 +288,10 @@ export function DeclareWinnersModal({
             });
             if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed"); }
         },
-        onSuccess: () => {
+        onSuccess: async () => {
             toast.success("Winners declared & UC distributed!");
-            queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
-            queryClient.invalidateQueries({ queryKey: ["tournament-rankings"] });
+            await queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
+            await queryClient.invalidateQueries({ queryKey: ["tournament-rankings"] });
             queryClient.invalidateQueries({ queryKey: ["solo-tax-pool"] });
             onClose();
         },
@@ -304,10 +304,10 @@ export function DeclareWinnersModal({
             const res = await fetch(`/api/tournaments/${tournamentId}/undo-winner`, { method: "POST" });
             if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed"); }
         },
-        onSuccess: () => {
+        onSuccess: async () => {
             toast.success("Winner declaration undone!");
-            queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
-            queryClient.invalidateQueries({ queryKey: ["tournament-rankings"] });
+            await queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
+            await queryClient.invalidateQueries({ queryKey: ["tournament-rankings"] });
             queryClient.invalidateQueries({ queryKey: ["solo-tax-pool"] });
             onClose();
         },
