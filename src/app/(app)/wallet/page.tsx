@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
     Card,
@@ -8,8 +8,6 @@ import {
     CardHeader,
     Divider,
     Skeleton,
-    Select,
-    SelectItem,
 } from "@heroui/react";
 import {
     Wallet as WalletIcon,
@@ -38,18 +36,11 @@ interface WalletData {
     balance: number;
 }
 
-interface SeasonDTO {
-    id: string;
-    name: string;
-    status: string;
-}
-
 /**
  * /wallet — Full wallet page with balance + transaction history.
- * Supports season filter and infinite scroll (10 at a time).
+ * Supports infinite scroll (10 at a time).
  */
 export default function WalletPage() {
-    const [selectedSeason, setSelectedSeason] = useState<string>("all");
     const loadMoreRef = useRef<HTMLDivElement>(null);
 
     // Balance
@@ -64,17 +55,7 @@ export default function WalletPage() {
         staleTime: 30 * 1000,
     });
 
-    // Seasons
-    const { data: seasons } = useQuery<SeasonDTO[]>({
-        queryKey: ["seasons"],
-        queryFn: async () => {
-            const res = await fetch("/api/seasons");
-            if (!res.ok) throw new Error("Failed");
-            const json = await res.json();
-            return json.data ?? [];
-        },
-        staleTime: 5 * 60 * 1000,
-    });
+
 
     // Transactions with infinite scroll
     const {
@@ -85,14 +66,11 @@ export default function WalletPage() {
         hasNextPage,
         isFetchingNextPage,
     } = useInfiniteQuery<TransactionsResponse>({
-        queryKey: ["transactions", selectedSeason],
+        queryKey: ["transactions"],
         queryFn: async ({ pageParam }) => {
             const params = new URLSearchParams({
                 limit: "10",
                 ...(pageParam ? { cursor: pageParam as string } : {}),
-                ...(selectedSeason !== "all"
-                    ? { seasonId: selectedSeason }
-                    : {}),
             });
             const res = await fetch(`/api/transactions?${params}`);
             if (!res.ok) throw new Error("Failed to fetch");
@@ -157,8 +135,8 @@ export default function WalletPage() {
                                 </span>
                                 <p
                                     className={`text-4xl font-bold ${(wallet?.balance ?? 0) < 0
-                                            ? "text-danger"
-                                            : "text-foreground"
+                                        ? "text-danger"
+                                        : "text-foreground"
                                         }`}
                                 >
                                     {(wallet?.balance ?? 0).toLocaleString()} UC
@@ -174,34 +152,7 @@ export default function WalletPage() {
                         <h3 className="text-sm font-semibold">
                             Transaction History
                         </h3>
-                        {/* Season filter */}
-                        {seasons && seasons.length > 0 && (
-                            <Select
-                                size="sm"
-                                variant="flat"
-                                aria-label="Filter by season"
-                                selectedKeys={[selectedSeason]}
-                                onSelectionChange={(keys) => {
-                                    const val = Array.from(keys)[0] as string;
-                                    if (val) setSelectedSeason(val);
-                                }}
-                                classNames={{
-                                    base: "w-36",
-                                    trigger:
-                                        "h-7 min-h-7 text-[11px] bg-default-100",
-                                    value: "text-[11px]",
-                                }}
-                            >
-                                {[
-                                    { id: "all", name: "All Seasons" },
-                                    ...seasons,
-                                ].map((s) => (
-                                    <SelectItem key={s.id}>
-                                        {s.name}
-                                    </SelectItem>
-                                ))}
-                            </Select>
-                        )}
+
                     </CardHeader>
                     <Divider />
                     <CardBody className="p-0">
@@ -236,9 +187,7 @@ export default function WalletPage() {
                                 <div className="flex flex-col items-center gap-3 py-8 text-center">
                                     <Clock className="h-8 w-8 text-foreground/20" />
                                     <p className="text-sm text-foreground/40">
-                                        {selectedSeason !== "all"
-                                            ? "No transactions this season"
-                                            : "No transactions yet"}
+                                        No transactions yet
                                     </p>
                                 </div>
                             )}
@@ -252,8 +201,8 @@ export default function WalletPage() {
                                     >
                                         <div
                                             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${tx.type === "CREDIT"
-                                                    ? "bg-success/10"
-                                                    : "bg-danger/10"
+                                                ? "bg-success/10"
+                                                : "bg-danger/10"
                                                 }`}
                                         >
                                             {tx.type === "CREDIT" ? (
@@ -274,8 +223,8 @@ export default function WalletPage() {
                                         </div>
                                         <span
                                             className={`shrink-0 text-sm font-semibold ${tx.type === "CREDIT"
-                                                    ? "text-success"
-                                                    : "text-danger"
+                                                ? "text-success"
+                                                : "text-danger"
                                                 }`}
                                         >
                                             {tx.type === "CREDIT" ? "+" : "-"}
