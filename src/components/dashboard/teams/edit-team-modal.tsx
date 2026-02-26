@@ -152,7 +152,7 @@ export function EditTeamModal({
 
     return (
         <>
-            <Modal isOpen={isOpen} onClose={handleClose} size="lg" scrollBehavior="inside">
+            <Modal isOpen={isOpen} onClose={handleClose} size="lg" scrollBehavior="inside" hideCloseButton>
                 <ModalContent>
                     <ModalHeader className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
