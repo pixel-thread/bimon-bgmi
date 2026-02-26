@@ -171,6 +171,7 @@ export function DeclareWinnersModal({
         soloTaxTotal?: number;
         finalOrg?: number;
         finalFund?: number;
+        storedPlayerAmounts?: Record<string, number>;
     }>({
         queryKey: ["tax-preview", tournamentId, topTeamPlayerIds.join(","), placementsParam],
         queryFn: async () => {
@@ -180,7 +181,7 @@ export function DeclareWinnersModal({
             if (!res.ok) return { data: {} };
             return res.json();
         },
-        enabled: isOpen && activeTab === "detailed" && topTeamPlayerIds.length > 0 && !isWinnerDeclared,
+        enabled: isOpen && activeTab === "detailed" && topTeamPlayerIds.length > 0,
     });
 
     // Fetch stored results when already declared (no recalculation)
@@ -238,6 +239,7 @@ export function DeclareWinnersModal({
     });
 
     const taxPreview = taxPreviewRes?.data || {};
+    const storedPlayerAmounts: Record<string, number> = taxPreviewRes?.storedPlayerAmounts || {};
 
     // Helper: per-player base amount
     const getPerPlayerAmount = (position: number, playerCount: number) => {
@@ -272,8 +274,12 @@ export function DeclareWinnersModal({
         return result;
     };
 
-    // Helper: tax-adjusted amount
+    // Helper: tax-adjusted amount (uses stored amount when available)
     const getTaxedAmount = (playerId: string, baseAmount: number) => {
+        // If tournament is declared and we have stored amounts, use those directly
+        if (isWinnerDeclared && storedPlayerAmounts[playerId] !== undefined) {
+            return storedPlayerAmounts[playerId];
+        }
         const tax = taxPreview[playerId];
         if (!tax || tax.taxRate === 0) return baseAmount;
         return Math.floor(baseAmount * (1 - tax.taxRate));
