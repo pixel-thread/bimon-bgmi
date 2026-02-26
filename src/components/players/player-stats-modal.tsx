@@ -49,15 +49,21 @@ export function PlayerStatsModal({
     const [showUCTransfer, setShowUCTransfer] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
 
-    // 🐍 RKO Easter egg
+    // 🐍 Easter egg audio players
+    const EASTER_EGG_AUDIO: Record<string, string> = {
+        badsnipe: "/audio/rko.mp3",
+        ksscarface: "/audio/619.mp3",
+    };
+    const easterEggAudio = player?.username ? EASTER_EGG_AUDIO[player.username.toLowerCase()] : undefined;
+    const isRkoPlayer = !!easterEggAudio;
+
     const rkoAudioRef = useRef<HTMLAudioElement | null>(null);
     const [rkoMuted, setRkoMuted] = useState(true);
-    const isRkoPlayer = player?.username?.toLowerCase() === "badsnipe";
 
     useEffect(() => {
-        if (isOpen && isRkoPlayer) {
-            if (!rkoAudioRef.current) {
-                rkoAudioRef.current = new Audio("/audio/rko.mp3");
+        if (isOpen && isRkoPlayer && easterEggAudio) {
+            if (!rkoAudioRef.current || rkoAudioRef.current.src !== new URL(easterEggAudio, window.location.origin).href) {
+                rkoAudioRef.current = new Audio(easterEggAudio);
                 rkoAudioRef.current.loop = false;
                 rkoAudioRef.current.onended = () => setRkoMuted(true);
             }
@@ -77,7 +83,7 @@ export function PlayerStatsModal({
                 rkoAudioRef.current.currentTime = 0;
             }
         };
-    }, [isOpen, isRkoPlayer]);
+    }, [isOpen, isRkoPlayer, easterEggAudio]);
 
     const toggleRkoMute = useCallback(() => {
         if (!rkoAudioRef.current) return;
