@@ -33,6 +33,21 @@ export async function POST(
         if (!tournament) return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
         if (!tournament.isWinnerDeclared) return NextResponse.json({ error: "Winners not declared yet" }, { status: 400 });
 
+        // Block undo if any rewards were already claimed (processed)
+        const claimedCount = await prisma.pendingReward.count({
+            where: {
+                type: "WINNER",
+                isClaimed: true,
+                message: { contains: tournament.name },
+            },
+        });
+        if (claimedCount > 0) {
+            return NextResponse.json(
+                { error: `Cannot undo: ${claimedCount} reward(s) already claimed by players. Undo is only safe before processing rewards.` },
+                { status: 400 }
+            );
+        }
+
         // Get all winning player IDs
         const winners = await prisma.tournamentWinner.findMany({
             where: { tournamentId: id },
