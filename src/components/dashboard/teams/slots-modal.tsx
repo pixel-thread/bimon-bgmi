@@ -258,7 +258,7 @@ export function SlotsModal({
                                                 className={`border-b border-white/5 ${index % 2 === 0 ? "bg-zinc-900/40" : "bg-zinc-800/30"} hover:bg-zinc-700/40 transition-colors`}
                                             >
                                                 <td className="px-2 py-1.5 text-center text-sm font-medium text-zinc-400">
-                                                    {index + 1}
+                                                    {index + 2}
                                                 </td>
                                                 {paddedPlayers.map((playerName, pi) => (
                                                     <td
