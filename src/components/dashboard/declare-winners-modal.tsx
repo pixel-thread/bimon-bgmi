@@ -164,7 +164,7 @@ export function DeclareWinnersModal({
         }).join(",");
     }, [rankings, placementCount, baseDist]);
 
-    // Fetch tax preview (only in detailed tab)
+    // Fetch tax preview (only in detailed tab, and only if not already declared)
     const { data: taxPreviewRes, isLoading: taxLoading } = useQuery<{
         data: TaxPreviewData;
         taxTotals?: { totalTax: number; orgContribution: number; fundContribution: number };
@@ -180,8 +180,29 @@ export function DeclareWinnersModal({
             if (!res.ok) return { data: {} };
             return res.json();
         },
-        enabled: isOpen && activeTab === "detailed" && topTeamPlayerIds.length > 0,
+        enabled: isOpen && activeTab === "detailed" && topTeamPlayerIds.length > 0 && !isWinnerDeclared,
     });
+
+    // Fetch stored results when already declared (no recalculation)
+    const { data: storedResults } = useQuery<{ playerId: string; amount: number; position: number }[]>({
+        queryKey: ["stored-winner-rewards", tournamentId],
+        queryFn: async () => {
+            const res = await fetch(`/api/tournaments/${tournamentId}/stored-results`);
+            if (!res.ok) return [];
+            const json = await res.json();
+            return json.data ?? [];
+        },
+        enabled: isOpen && isWinnerDeclared,
+    });
+
+    // Map of playerId -> stored amount (for display when already declared)
+    const storedAmounts = useMemo(() => {
+        const map = new Map<string, number>();
+        if (storedResults) {
+            for (const r of storedResults) map.set(r.playerId, r.amount);
+        }
+        return map;
+    }, [storedResults]);
 
     // Dry-run declare-winners to get exact Org/Fund that would be stored
     const { data: dryRunRes } = useQuery<{
@@ -286,9 +307,25 @@ export function DeclareWinnersModal({
         mutationFn: async () => {
             // Step 1: Declare winners
             setDeclareStatus({ step: "Declaring winners..." });
-            const placements = Array.from({ length: placementCount }, (_, i) => ({
-                position: i + 1, amount: baseDist?.prizes.get(i + 1)?.amount ?? 0,
-            }));
+
+            // Build placements with exact per-player amounts from preview
+            const placements = rankings.slice(0, placementCount).map((team, i) => {
+                const pos = i + 1;
+                const teamAmount = baseDist?.prizes.get(pos)?.amount ?? 0;
+                const playerCount = team.players?.length || 0;
+                const perPlayer = getPerPlayerAmount(pos, playerCount);
+
+                // Compute exact per-player amounts using preview helpers
+                const pa = getParticipationAdjustedAmounts(team.players || [], perPlayer);
+                const players = (team.players || []).map(p => {
+                    const adjusted = pa.get(p.id)?.adjusted ?? perPlayer;
+                    const final = getTaxedAmount(p.id, adjusted);
+                    return { playerId: p.id, amount: final };
+                });
+
+                return { position: pos, amount: teamAmount, players };
+            });
+
             const res1 = await fetch(`/api/tournaments/${tournamentId}/declare-winners`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ placements }),
@@ -381,10 +418,29 @@ export function DeclareWinnersModal({
                 {/* Per-player details (detailed tab only) */}
                 {detailed && teamPrize > 0 && playerCount > 0 && (
                     <div className="mt-2 pt-2 border-t border-dashed border-divider space-y-1.5">
-                        {taxLoading ? (
+                        {taxLoading && !isWinnerDeclared ? (
                             <div className="flex justify-center py-1"><Spinner size="sm" /></div>
                         ) : (
                             team.players?.map(p => {
+                                // If already declared, use stored amounts from DB
+                                if (isWinnerDeclared && storedAmounts.size > 0) {
+                                    const stored = storedAmounts.get(p.id);
+                                    if (stored !== undefined) {
+                                        return (
+                                            <div key={p.id} className="text-xs space-y-0.5">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="font-medium">{p.name}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-foreground/50">
+                                                    <span>₹{perPlayer} →</span>
+                                                    <span className="font-semibold text-foreground">₹{stored}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                }
+
+                                // Preview mode: calculate from tax preview
                                 const tax = taxPreview[p.id];
                                 const pa = getParticipationAdjustedAmounts(team.players || [], perPlayer).get(p.id);
                                 const afterParticipation = pa?.adjusted ?? perPlayer;
@@ -641,8 +697,8 @@ export function DeclareWinnersModal({
                 <ModalFooter className="flex-col items-stretch gap-2">
                     {declareStatus && (
                         <div className={`text-xs text-center px-3 py-1.5 rounded-lg ${declareStatus.error ? "bg-danger/10 text-danger" :
-                                declareStatus.done ? "bg-success/10 text-success" :
-                                    "bg-warning/10 text-warning"
+                            declareStatus.done ? "bg-success/10 text-success" :
+                                "bg-warning/10 text-warning"
                             }`}>
                             {declareStatus.done ? "✅ " : declareStatus.error ? "❌ " : "⏳ "}
                             {declareStatus.step}

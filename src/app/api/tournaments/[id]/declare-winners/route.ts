@@ -54,7 +54,7 @@ export async function POST(
         const { id } = await params;
         const body = await req.json();
         const { placements, dryRun } = body as {
-            placements?: { position: number; amount: number }[];
+            placements?: { position: number; amount: number; players?: { playerId: string; amount: number }[] }[];
             dryRun?: boolean;
         };
 
@@ -228,10 +228,18 @@ export async function POST(
 
             const playersData: PlayerPrize[] = [];
 
+            // Build a map of pre-computed per-player amounts (from preview)
+            const precomputedAmounts = new Map<string, number>();
+            if (placement.players && placement.players.length > 0) {
+                for (const pp of placement.players) {
+                    precomputedAmounts.set(pp.playerId, pp.amount);
+                }
+            }
+
             if (placement.amount > 0 && team.players.length > 0) {
                 const basePerPlayer = Math.floor(placement.amount / team.players.length);
 
-                // Participation adjustment
+                // Participation adjustment (only needed when no precomputed amounts)
                 const rates = team.players.map((p) => {
                     const played = matchesPlayedMap.get(p.playerId) || 0;
                     return { playerId: p.playerId, rate: totalMatches > 0 ? played / totalMatches : 1, played };
@@ -247,15 +255,26 @@ export async function POST(
                 for (const player of team.players) {
                     const pa = adjustedAmounts.get(player.playerId) || { adjusted: basePerPlayer, adj: 0, played: 0 };
 
-                    // Repeat winner tax
-                    const previousWins = playerWinCounts.get(player.playerId) || 0;
-                    const taxResult = calculateRepeatWinnerTax(player.playerId, pa.adjusted, previousWins + 1);
+                    let finalAmount: number;
+                    let taxResult: TaxResult;
+                    let soloTaxResult: SoloTaxResult;
 
-                    // Solo tax
-                    const isSolo = playerSoloMap.get(player.playerId) || false;
-                    const soloTaxResult = calculateSoloTax(player.playerId, taxResult.netAmount, isSolo);
-
-                    const finalAmount = soloTaxResult.netAmount;
+                    if (precomputedAmounts.has(player.playerId)) {
+                        // Use exact amount from preview — no recalculation
+                        finalAmount = precomputedAmounts.get(player.playerId)!;
+                        // Still compute tax results for accounting (Fund/Org splits)
+                        const previousWins = playerWinCounts.get(player.playerId) || 0;
+                        taxResult = calculateRepeatWinnerTax(player.playerId, pa.adjusted, previousWins + 1);
+                        const isSolo = playerSoloMap.get(player.playerId) || false;
+                        soloTaxResult = calculateSoloTax(player.playerId, taxResult.netAmount, isSolo);
+                    } else {
+                        // Fallback: server-side calculation (dry run / simple mode)
+                        const previousWins = playerWinCounts.get(player.playerId) || 0;
+                        taxResult = calculateRepeatWinnerTax(player.playerId, pa.adjusted, previousWins + 1);
+                        const isSolo = playerSoloMap.get(player.playerId) || false;
+                        soloTaxResult = calculateSoloTax(player.playerId, taxResult.netAmount, isSolo);
+                        finalAmount = soloTaxResult.netAmount;
+                    }
 
                     playersData.push({
                         playerId: player.playerId,
