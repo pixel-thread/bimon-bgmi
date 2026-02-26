@@ -8,11 +8,12 @@ const REFERRAL_COMMISSION = 5;
  * POST /api/tournaments/[id]/undo-winner
  *
  * Full reversal of declare-winners:
- * 1. Delete TournamentWinner records
- * 2. Delete PendingReward (WINNER + SOLO_SUPPORT + REFERRAL related)
- * 3. Delete Income records (Fund/Org)
- * 4. Undo referral commission increments
- * 5. Reset tournament → ACTIVE, isWinnerDeclared = false
+ * 1. Reverse claimed rewards (deduct wallet + silent debit)
+ * 2. Delete ALL PendingReward (WINNER + SOLO_SUPPORT + REFERRAL)
+ * 3. Delete TournamentWinner records
+ * 4. Delete Income records (Fund/Org)
+ * 5. Undo referral commission increments
+ * 6. Reset tournament → ACTIVE, isWinnerDeclared = false
  */
 export async function POST(
     _req: NextRequest,
@@ -33,28 +34,12 @@ export async function POST(
         if (!tournament) return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
         if (!tournament.isWinnerDeclared) return NextResponse.json({ error: "Winners not declared yet" }, { status: 400 });
 
-        // Block undo if any rewards were already claimed (processed)
-        const claimedCount = await prisma.pendingReward.count({
-            where: {
-                type: "WINNER",
-                isClaimed: true,
-                message: { contains: tournament.name },
-            },
-        });
-        if (claimedCount > 0) {
-            return NextResponse.json(
-                { error: `Cannot undo: ${claimedCount} reward(s) already claimed by players. Undo is only safe before processing rewards.` },
-                { status: 400 }
-            );
-        }
-
         // Get all winning player IDs
         const winners = await prisma.tournamentWinner.findMany({
             where: { tournamentId: id },
             include: { team: { include: { players: { select: { id: true } } } } },
         });
         const winningTeamIds = winners.map(w => w.team.id);
-        // Get players from both _PlayerToTeam AND TeamPlayerStats (migrated data)
         const winningPlayersFromStats = await prisma.teamPlayerStats.findMany({
             where: { teamId: { in: winningTeamIds } },
             select: { playerId: true },
@@ -67,7 +52,7 @@ export async function POST(
             ]),
         ];
 
-        // Get all participants in the tournament
+        // Get all participants
         const allTeams = await prisma.team.findMany({
             where: { tournamentId: id },
             include: { players: { select: { id: true } } },
@@ -80,23 +65,34 @@ export async function POST(
         });
 
         await prisma.$transaction(async (tx) => {
-            // 1. Delete pending winner rewards (unclaimed)
-            if (winningPlayerIds.length > 0) {
-                await tx.pendingReward.deleteMany({
-                    where: {
-                        playerId: { in: winningPlayerIds },
-                        type: "WINNER",
-                        isClaimed: false,
+            // 1. Reverse claimed rewards (deduct from wallet silently)
+            const claimedRewards = await tx.pendingReward.findMany({
+                where: {
+                    message: { contains: tournament.name },
+                    type: { in: ["WINNER", "SOLO_SUPPORT"] },
+                    isClaimed: true,
+                },
+            });
+            for (const reward of claimedRewards) {
+                await tx.wallet.update({
+                    where: { playerId: reward.playerId },
+                    data: { balance: { decrement: reward.amount } },
+                });
+                await tx.transaction.create({
+                    data: {
+                        playerId: reward.playerId,
+                        amount: reward.amount,
+                        type: "DEBIT",
+                        description: `Adjustment - ${tournament.name}`,
                     },
                 });
             }
 
-            // 2. Delete pending solo support rewards for this tournament
+            // 2. Delete ALL rewards for this tournament (claimed + unclaimed)
             await tx.pendingReward.deleteMany({
                 where: {
-                    type: "SOLO_SUPPORT",
-                    isClaimed: false,
                     message: { contains: tournament.name },
+                    type: { in: ["WINNER", "SOLO_SUPPORT"] },
                 },
             });
 
@@ -109,7 +105,6 @@ export async function POST(
             // 5. Undo referral tournament count increments
             for (const ref of referrals) {
                 if (ref.tournamentsCompleted >= 5 && (ref.status === "PAID" || ref.status === "QUALIFIED")) {
-                    // Undo the pay/qualify
                     await tx.referral.update({
                         where: { id: ref.id },
                         data: {
@@ -123,7 +118,6 @@ export async function POST(
                             where: { id: ref.promoterId },
                             data: { promoterEarnings: { decrement: REFERRAL_COMMISSION } },
                         });
-                        // Delete pending referral reward
                         const promoterPlayer = await tx.player.findFirst({
                             where: { userId: ref.promoterId },
                             select: { id: true },
