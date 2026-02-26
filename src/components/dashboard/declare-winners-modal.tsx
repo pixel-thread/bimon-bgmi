@@ -218,6 +218,7 @@ export function DeclareWinnersModal({
                 orgTaxContribution: number;
                 fundTaxContribution: number;
                 totalRepeatTax: number;
+                roundingRemainder: number;
             };
         };
     }>({
@@ -609,6 +610,7 @@ export function DeclareWinnersModal({
                                                             parts.push(<span key="base" className="text-foreground/30">₹{bd.orgBase}</span>);
                                                             if (bd.ucExemptCost > 0) parts.push(<span key="ex" className="text-danger"> -₹{bd.ucExemptCost}</span>);
                                                             if (bd.orgTaxContribution > 0) parts.push(<span key="tax" className="text-success"> +₹{bd.orgTaxContribution}</span>);
+                                                            if (bd.roundingRemainder > 0) parts.push(<span key="round" className="text-foreground/40"> +₹{bd.roundingRemainder}</span>);
                                                             parts.push(<span key="eq" className="mx-0.5">=</span>);
                                                             parts.push(<span key="tot">₹{final.toLocaleString()}</span>);
                                                             return <>{parts}</>;

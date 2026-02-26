@@ -324,6 +324,16 @@ export async function POST(
                 finalOrg = Math.ceil(combined * 0.65);
                 finalFund = combined - finalOrg;
             }
+
+            // Reconcile rounding remainders — any leftover UC goes to Org
+            const totalToPlayers = winnerTeamsData.reduce(
+                (sum, t) => sum + t.players.reduce((s, p) => s + p.finalAmount, 0), 0
+            );
+            const distributed = totalToPlayers + finalOrg + finalFund;
+            const roundingRemainder = prizePool - distributed;
+            if (roundingRemainder > 0) {
+                finalOrg += roundingRemainder;
+            }
         }
 
         // ── DRY RUN: return preview without writing ──────────
@@ -344,6 +354,7 @@ export async function POST(
                         orgTaxContribution: taxTots.orgContribution,
                         fundTaxContribution: taxTots.fundContribution,
                         totalRepeatTax: taxTots.totalTax,
+                        roundingRemainder: finalOrg - ((dist?.finalOrgAmount ?? 0) + taxTots.orgContribution),
                     },
                     soloTaxTotal: allSoloTaxResults.reduce((s, r) => s + r.taxAmount, 0),
                     winners: winnerTeamsData.map(t => ({
