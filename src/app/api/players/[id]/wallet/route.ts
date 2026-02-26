@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
+import { clearTrustedOnBalanceRecovery } from "@/lib/logic/balanceRecovery";
 
 /**
  * POST /api/players/[id]/wallet
@@ -65,6 +66,13 @@ export async function POST(
 
             return { balance: updatedWallet.balance, transaction };
         });
+
+        // Auto-clear trusted if balance recovered (only on credits)
+        if (type === "CREDIT") {
+            await prisma.$transaction(async (tx) => {
+                await clearTrustedOnBalanceRecovery(id, result.balance, tx);
+            });
+        }
 
         return NextResponse.json({
             balance: result.balance,

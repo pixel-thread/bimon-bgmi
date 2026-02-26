@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { auth } from "@clerk/nextjs/server";
+import { clearTrustedOnBalanceRecovery } from "@/lib/logic/balanceRecovery";
 
 /**
  * POST /api/rewards/[id]/claim
@@ -72,6 +73,15 @@ export async function POST(
                     description: `${label}: ${reward.message || "Reward claimed"}`,
                 },
             });
+
+            // Auto-clear trusted if balance recovered above -30
+            const wallet = await tx.wallet.findUnique({
+                where: { playerId: user.player!.id },
+                select: { balance: true },
+            });
+            if (wallet) {
+                await clearTrustedOnBalanceRecovery(user.player!.id, wallet.balance, tx);
+            }
         });
 
         return SuccessResponse({

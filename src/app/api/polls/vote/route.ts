@@ -37,6 +37,8 @@ export async function POST(request: NextRequest) {
                         select: {
                             id: true,
                             isBanned: true,
+                            isTrusted: true,
+                            wallet: { select: { balance: true } },
                         },
                     },
                 },
@@ -71,6 +73,18 @@ export async function POST(request: NextRequest) {
                 message: "Poll not found or no longer active",
                 status: 404,
             });
+        }
+
+        // Balance gate for IN/SOLO votes (trusted players get extended credit)
+        if (vote !== "OUT") {
+            const balance = user.player.wallet?.balance ?? 0;
+            const minBalance = user.player.isTrusted ? -200 : -29;
+            if (balance < minBalance) {
+                return ErrorResponse({
+                    message: `Insufficient balance (${balance} UC)`,
+                    status: 403,
+                });
+            }
         }
 
         const playerId = user.player.id;
