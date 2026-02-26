@@ -2,10 +2,15 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { requireAdmin } from "@/lib/auth";
 
+const STREAK_MILESTONE = 8;
+const STREAK_REWARD_UC = 30;
+
 /**
  * POST /api/tournaments/[id]/update-streaks
  * Increments streak.current for every player who participated in this tournament.
  * Updates streak.longest if current exceeds it.
+ * When a Royal Pass player hits the streak milestone (8), creates a STREAK
+ * PendingReward and resets their streak to 0.
  * Skips players whose streak.lastTournamentId already matches (idempotent).
  */
 export async function POST(
@@ -46,13 +51,21 @@ export async function POST(
             });
         }
 
-        // Get existing streaks for these players
-        const streaks = await prisma.playerStreak.findMany({
-            where: { playerId: { in: playerIds } },
-        });
+        // Get existing streaks and Royal Pass status for these players
+        const [streaks, players] = await Promise.all([
+            prisma.playerStreak.findMany({
+                where: { playerId: { in: playerIds } },
+            }),
+            prisma.player.findMany({
+                where: { id: { in: playerIds } },
+                select: { id: true, hasRoyalPass: true },
+            }),
+        ]);
 
         const streakMap = new Map(streaks.map((s) => [s.playerId, s]));
+        const royalPassSet = new Set(players.filter((p) => p.hasRoyalPass).map((p) => p.id));
         let updated = 0;
+        let rewardsCreated = 0;
 
         // Update streaks in batches
         const BATCH_SIZE = 10;
@@ -67,22 +80,57 @@ export async function POST(
                 const newCurrent = (existing?.current ?? 0) + 1;
                 const newLongest = Math.max(newCurrent, existing?.longest ?? 0);
 
-                await prisma.playerStreak.upsert({
-                    where: { playerId },
-                    create: {
-                        playerId,
-                        current: 1,
-                        longest: 1,
-                        seasonId: tournament.seasonId,
-                        lastTournamentId: tournamentId,
-                    },
-                    update: {
-                        current: newCurrent,
-                        longest: newLongest,
-                        seasonId: tournament.seasonId,
-                        lastTournamentId: tournamentId,
-                    },
-                });
+                // Check if Royal Pass player hits milestone
+                if (newCurrent >= STREAK_MILESTONE && royalPassSet.has(playerId)) {
+                    // Create streak reward + reset streak to 0
+                    await prisma.$transaction([
+                        prisma.pendingReward.create({
+                            data: {
+                                playerId,
+                                type: "STREAK",
+                                amount: STREAK_REWARD_UC,
+                                message: `🔥 ${STREAK_MILESTONE} tournament streak reward!`,
+                            },
+                        }),
+                        prisma.playerStreak.upsert({
+                            where: { playerId },
+                            create: {
+                                playerId,
+                                current: 0,
+                                longest: newLongest,
+                                seasonId: tournament.seasonId,
+                                lastTournamentId: tournamentId,
+                                lastRewardAt: new Date(),
+                            },
+                            update: {
+                                current: 0,
+                                longest: newLongest,
+                                seasonId: tournament.seasonId,
+                                lastTournamentId: tournamentId,
+                                lastRewardAt: new Date(),
+                            },
+                        }),
+                    ]);
+                    rewardsCreated++;
+                } else {
+                    // Normal streak increment
+                    await prisma.playerStreak.upsert({
+                        where: { playerId },
+                        create: {
+                            playerId,
+                            current: 1,
+                            longest: 1,
+                            seasonId: tournament.seasonId,
+                            lastTournamentId: tournamentId,
+                        },
+                        update: {
+                            current: newCurrent,
+                            longest: newLongest,
+                            seasonId: tournament.seasonId,
+                            lastTournamentId: tournamentId,
+                        },
+                    });
+                }
                 updated++;
             });
             await Promise.all(promises);
@@ -114,7 +162,8 @@ export async function POST(
             data: {
                 updated,
                 reset: toReset.length,
-                message: `Updated ${updated} streaks, reset ${toReset.length}`,
+                rewardsCreated,
+                message: `Updated ${updated} streaks, reset ${toReset.length}${rewardsCreated > 0 ? `, ${rewardsCreated} streak reward(s) created` : ""}`,
             },
         });
     } catch (error) {

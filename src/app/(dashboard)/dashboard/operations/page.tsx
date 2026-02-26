@@ -34,7 +34,6 @@ import {
     Trash2,
     ImageIcon,
     Upload,
-    Gift,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion } from "motion/react";
@@ -237,41 +236,39 @@ export default function OperationsPage() {
     });
 
 
-    const updateStreaks = useMutation({
+    const processStreaksAndRewards = useMutation({
         mutationFn: async () => {
-            const res = await fetch(`/api/tournaments/${selectedId}/update-streaks`, {
+            // Step 1: Update streaks (+ milestone rewards)
+            const res1 = await fetch(`/api/tournaments/${selectedId}/update-streaks`, {
                 method: "POST",
             });
-            if (!res.ok) {
-                const d = await res.json();
-                throw new Error(d.error || "Failed");
+            if (!res1.ok) {
+                const d = await res1.json();
+                throw new Error(d.error || "Failed to update streaks");
             }
-            return res.json();
-        },
-        onSuccess: (data) => {
-            if (data?.data?.updated > 0) {
-                toast.success(`🔥 Streaks updated for ${data.data.updated} players`);
-            } else {
-                toast.info("Streaks already up to date");
-            }
-        },
-        onError: (err: Error) => toast.error(err.message),
-    });
+            const streakData = await res1.json();
 
-    const processRewards = useMutation({
-        mutationFn: async () => {
-            const res = await fetch(`/api/tournaments/${selectedId}/post-declare`, {
+            // Step 2: Process rewards (merit + referrals)
+            const res2 = await fetch(`/api/tournaments/${selectedId}/post-declare`, {
                 method: "POST",
             });
-            if (!res.ok) {
-                const d = await res.json();
-                throw new Error(d.error || "Failed");
+            if (!res2.ok) {
+                const d = await res2.json();
+                throw new Error(d.error || "Failed to process rewards");
             }
-            return res.json();
+            const rewardData = await res2.json();
+
+            return { streakData, rewardData };
         },
-        onSuccess: (data) => {
-            const d = data?.data;
-            toast.success(`✅ Merit: ${d?.meritUpdated || 0} updated, Referrals: ${d?.referralsProcessed || 0} paid, ${d?.referralsIncremented || 0} incremented`);
+        onSuccess: ({ streakData, rewardData }) => {
+            const s = streakData?.data;
+            const r = rewardData?.data;
+            const parts: string[] = [];
+            if (s?.updated > 0) parts.push(`🔥 ${s.updated} streaks`);
+            if (s?.rewardsCreated > 0) parts.push(`🎁 ${s.rewardsCreated} streak reward(s)`);
+            if (r?.meritUpdated > 0) parts.push(`✅ ${r.meritUpdated} merit`);
+            if (r?.referralsProcessed > 0) parts.push(`💰 ${r.referralsProcessed} referrals`);
+            toast.success(parts.length > 0 ? parts.join(", ") : "Everything already up to date");
         },
         onError: (err: Error) => toast.error(err.message),
     });
@@ -566,28 +563,16 @@ export default function OperationsPage() {
                                     {selected.isWinnerDeclared ? "View Results" : "View Winners"}
                                 </Button>
                                 {selected.isWinnerDeclared && (
-                                    <>
-                                        <Button
-                                            size="sm"
-                                            color="success"
-                                            variant="flat"
-                                            isLoading={updateStreaks.isPending}
-                                            startContent={<Flame className="h-3 w-3" />}
-                                            onPress={() => updateStreaks.mutate()}
-                                        >
-                                            Update Streaks
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            color="secondary"
-                                            variant="flat"
-                                            isLoading={processRewards.isPending}
-                                            startContent={<Gift className="h-3 w-3" />}
-                                            onPress={() => processRewards.mutate()}
-                                        >
-                                            Process Rewards
-                                        </Button>
-                                    </>
+                                    <Button
+                                        size="sm"
+                                        color="success"
+                                        variant="flat"
+                                        isLoading={processStreaksAndRewards.isPending}
+                                        startContent={<Flame className="h-3 w-3" />}
+                                        onPress={() => processStreaksAndRewards.mutate()}
+                                    >
+                                        Streaks & Rewards
+                                    </Button>
                                 )}
                             </div>
                         </CardBody>
