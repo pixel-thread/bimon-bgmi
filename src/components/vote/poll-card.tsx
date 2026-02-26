@@ -380,20 +380,21 @@ function VotersDialog({
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <div className="flex -space-x-2">
-                                                {voters.slice(0, 4).map((v) => (
-                                                    <Avatar
-                                                        key={v.playerId}
-                                                        src={v.imageUrl}
-                                                        name={v.displayName}
-                                                        size="sm"
-                                                        className="w-6 h-6 border-2 border-background"
-                                                    />
-                                                ))}
-                                                {count > 4 && (
-                                                    <div className="w-6 h-6 rounded-full bg-default-200 flex items-center justify-center text-[10px] font-medium border-2 border-background">
-                                                        +{count - 4}
+                                                {voters.slice(0, 4).map((v, i) => (
+                                                    <div key={v.playerId} className="relative">
+                                                        <Avatar
+                                                            src={v.imageUrl}
+                                                            name={v.displayName}
+                                                            size="sm"
+                                                            className="w-6 h-6 border-2 border-background"
+                                                        />
+                                                        {i === Math.min(3, voters.length - 1) && count > 4 && (
+                                                            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center px-0.5 border border-background">
+                                                                +{count - 4}
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                )}
+                                                ))}
                                             </div>
                                             <button
                                                 type="button"
