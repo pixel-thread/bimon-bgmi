@@ -271,8 +271,8 @@ export function PlayerStatsModal({
                                         : { delay: 0.1 }
                                     }
                                     className={`rounded-xl border p-3 ${isRkoPlayer && !rkoMuted
-                                            ? 'border-red-500/30 bg-red-50/50 dark:bg-red-950/20'
-                                            : 'border-divider bg-default-100'
+                                        ? 'border-red-500/30 bg-red-50/50 dark:bg-red-950/20'
+                                        : 'border-divider bg-default-100'
                                         }`}
                                 >
                                     <div className="flex items-center gap-2">
@@ -290,8 +290,28 @@ export function PlayerStatsModal({
                             ))}
                         </div>
 
-                        {/* Action button */}
-                        {isOwnProfile ? (
+                        {/* Action button — becomes RKO equalizer when music is playing */}
+                        {isRkoPlayer && !rkoMuted ? (
+                            <button
+                                onClick={toggleRkoMute}
+                                className="flex items-end justify-evenly w-full h-10 px-2 rounded-xl border cursor-pointer border-red-500/50 bg-red-50 dark:bg-red-950/30 shadow-[0_0_12px_rgba(220,38,38,0.2)]"
+                                title="Mute"
+                            >
+                                {Array.from({ length: 24 }, (_, i) => {
+                                    const barVariant = (i % 5) + 1;
+                                    const delayMs = (i * 50) % 300;
+                                    return (
+                                        <div
+                                            key={i}
+                                            className="w-[2px] sm:w-[3px] rounded-full bg-red-500"
+                                            style={{
+                                                animation: `rkoBar${barVariant} 0.4s ease-in-out ${delayMs}ms infinite alternate`,
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </button>
+                        ) : isOwnProfile ? (
                             <Button
                                 color="primary"
                                 variant="flat"
@@ -314,28 +334,6 @@ export function PlayerStatsModal({
                             >
                                 Send / Request UC
                             </Button>
-                        )}
-                        {/* RKO equalizer footer */}
-                        {isRkoPlayer && !rkoMuted && (
-                            <button
-                                onClick={toggleRkoMute}
-                                className="flex items-end justify-evenly w-full h-10 px-2 rounded-lg border cursor-pointer border-red-500/50 bg-red-50 dark:bg-red-950/30 shadow-[0_0_12px_rgba(220,38,38,0.2)]"
-                                title="Mute"
-                            >
-                                {Array.from({ length: 24 }, (_, i) => {
-                                    const barVariant = (i % 5) + 1;
-                                    const delayMs = (i * 50) % 300;
-                                    return (
-                                        <div
-                                            key={i}
-                                            className="w-[2px] sm:w-[3px] rounded-full bg-red-500"
-                                            style={{
-                                                animation: `rkoBar${barVariant} 0.4s ease-in-out ${delayMs}ms infinite alternate`,
-                                            }}
-                                        />
-                                    );
-                                })}
-                            </button>
                         )}
                     </ModalBody>
                 </ModalContent>
