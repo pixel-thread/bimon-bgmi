@@ -323,7 +323,7 @@ export function DeclareWinnersModal({
                     return { playerId: p.id, amount: final };
                 });
 
-                return { position: pos, amount: teamAmount, players };
+                return { position: pos, amount: teamAmount, teamId: team.teamId, players };
             });
 
             const res1 = await fetch(`/api/tournaments/${tournamentId}/declare-winners`, {

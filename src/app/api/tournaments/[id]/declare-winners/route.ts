@@ -54,7 +54,7 @@ export async function POST(
         const { id } = await params;
         const body = await req.json();
         const { placements, dryRun } = body as {
-            placements?: { position: number; amount: number; players?: { playerId: string; amount: number }[] }[];
+            placements?: { position: number; amount: number; teamId?: string; players?: { playerId: string; amount: number }[] }[];
             dryRun?: boolean;
         };
 
@@ -223,7 +223,12 @@ export async function POST(
         const winnerTeamsData: WinnerTeamData[] = [];
 
         for (const placement of placementsToUse) {
-            const team = rankings[placement.position - 1];
+            // If teamId is provided (from modal), use that exact team.
+            // Otherwise fall back to position-based lookup (dry run / simple mode).
+            const teamById = placement.teamId
+                ? Array.from(teamMap.values()).find(t => t.teamId === placement.teamId)
+                : null;
+            const team = teamById || rankings[placement.position - 1];
             if (!team) continue;
 
             const playersData: PlayerPrize[] = [];
