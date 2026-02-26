@@ -142,9 +142,10 @@ export function DeclareWinnersModal({
     }, [rankings, placementCount]);
 
     // Prize distribution (must be before placementsParam which uses baseDist)
+    // distribution uses basePrizePool for Org/Fund (matching declare-winners which excludes bonus pool)
     const distribution = useMemo(
-        () => prizePool > 0 ? getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount) : null,
-        [prizePool, entryFee, teamSize, ucExemptCount]
+        () => basePrizePool > 0 ? getFinalDistribution(basePrizePool, entryFee, teamSize, ucExemptCount) : null,
+        [basePrizePool, entryFee, teamSize, ucExemptCount]
     );
 
     const baseDist = useMemo(
@@ -168,6 +169,8 @@ export function DeclareWinnersModal({
         data: TaxPreviewData;
         taxTotals?: { totalTax: number; orgContribution: number; fundContribution: number };
         soloTaxTotal?: number;
+        finalOrg?: number;
+        finalFund?: number;
     }>({
         queryKey: ["tax-preview", tournamentId, topTeamPlayerIds.join(","), placementsParam],
         queryFn: async () => {
@@ -178,6 +181,39 @@ export function DeclareWinnersModal({
             return res.json();
         },
         enabled: isOpen && activeTab === "detailed" && topTeamPlayerIds.length > 0,
+    });
+
+    // Dry-run declare-winners to get exact Org/Fund that would be stored
+    const { data: dryRunRes } = useQuery<{
+        data?: {
+            finalOrg: number;
+            finalFund: number;
+            breakdown?: {
+                orgBase: number;
+                fundBase: number;
+                ucExemptCost: number;
+                orgAfterExempt: number;
+                orgTaxContribution: number;
+                fundTaxContribution: number;
+                totalRepeatTax: number;
+            };
+        };
+    }>({
+        queryKey: ["declare-dryrun", tournamentId, placementsParam],
+        queryFn: async () => {
+            if (!baseDist) return {};
+            const placements = Array.from({ length: placementCount }, (_, i) => ({
+                position: i + 1, amount: baseDist.prizes.get(i + 1)?.amount ?? 0,
+            }));
+            const res = await fetch(`/api/tournaments/${tournamentId}/declare-winners`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ placements, dryRun: true }),
+            });
+            if (!res.ok) return {};
+            return res.json();
+        },
+        enabled: isOpen && activeTab === "detailed" && !!baseDist && placementCount > 0 && !isWinnerDeclared,
     });
 
     const taxPreview = taxPreviewRes?.data || {};
@@ -477,22 +513,16 @@ export function DeclareWinnersModal({
                                                     <span>💼 Org ({baseDist.tier.orgFeePercent}%):</span>
                                                     <span className="font-medium text-foreground">
                                                         {(() => {
+                                                            const bd = dryRunRes?.data?.breakdown;
+                                                            const final = dryRunRes?.data?.finalOrg ?? taxPreviewRes?.finalOrg ?? organizerAmount;
+                                                            if (!bd) return <>₹{final.toLocaleString()}</>;
                                                             const parts: React.ReactNode[] = [];
-                                                            const exemptCost = distribution?.ucExemptCost ?? 0;
-                                                            if (exemptCost > 0) {
-                                                                parts.push(<span key="raw" className="text-foreground/30">₹{baseDist.orgFee.toLocaleString()}</span>);
-                                                                parts.push(<span key="exempt" className="text-danger"> -₹{exemptCost}</span>);
-                                                            }
-                                                            if (taxTotals.orgContribution > 0) {
-                                                                if (exemptCost === 0) parts.push(<span key="base" className="text-foreground/30">₹{organizerAmount.toLocaleString()}</span>);
-                                                                parts.push(<span key="tax" className="text-success"> +₹{taxTotals.orgContribution}</span>);
-                                                            }
-                                                            if (parts.length > 0) {
-                                                                parts.push(<span key="eq" className="mx-0.5">=</span>);
-                                                                parts.push(<span key="total">₹{(organizerAmount + taxTotals.orgContribution).toLocaleString()}</span>);
-                                                                return <>{parts}</>;
-                                                            }
-                                                            return <>₹{organizerAmount.toLocaleString()}</>;
+                                                            parts.push(<span key="base" className="text-foreground/30">₹{bd.orgBase}</span>);
+                                                            if (bd.ucExemptCost > 0) parts.push(<span key="ex" className="text-danger"> -₹{bd.ucExemptCost}</span>);
+                                                            if (bd.orgTaxContribution > 0) parts.push(<span key="tax" className="text-success"> +₹{bd.orgTaxContribution}</span>);
+                                                            parts.push(<span key="eq" className="mx-0.5">=</span>);
+                                                            parts.push(<span key="tot">₹{final.toLocaleString()}</span>);
+                                                            return <>{parts}</>;
                                                         })()}
                                                     </span>
                                                 </div>
@@ -500,14 +530,17 @@ export function DeclareWinnersModal({
                                                 <div className="flex justify-between text-foreground/50">
                                                     <span>🏦 Fund ({baseDist.tier.fundPercent}%):</span>
                                                     <span className="font-medium text-foreground">
-                                                        {taxTotals.fundContribution > 0 ? (
-                                                            <>
-                                                                <span className="text-foreground/30">₹{distribution.finalFundAmount.toLocaleString()}</span>
-                                                                <span className="text-success"> +₹{taxTotals.fundContribution}</span>
-                                                                <span className="mx-0.5">=</span>
-                                                                <span>₹{(distribution.finalFundAmount + taxTotals.fundContribution).toLocaleString()}</span>
-                                                            </>
-                                                        ) : <>₹{distribution.finalFundAmount.toLocaleString()}</>}
+                                                        {(() => {
+                                                            const bd = dryRunRes?.data?.breakdown;
+                                                            const final = dryRunRes?.data?.finalFund ?? taxPreviewRes?.finalFund ?? distribution.finalFundAmount;
+                                                            if (!bd) return <>₹{final.toLocaleString()}</>;
+                                                            const parts: React.ReactNode[] = [];
+                                                            parts.push(<span key="base" className="text-foreground/30">₹{bd.fundBase}</span>);
+                                                            if (bd.fundTaxContribution > 0) parts.push(<span key="tax" className="text-success"> +₹{bd.fundTaxContribution}</span>);
+                                                            parts.push(<span key="eq" className="mx-0.5">=</span>);
+                                                            parts.push(<span key="tot">₹{final.toLocaleString()}</span>);
+                                                            return <>{parts}</>;
+                                                        })()}
                                                     </span>
                                                 </div>
                                             </div>

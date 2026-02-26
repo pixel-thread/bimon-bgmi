@@ -38,9 +38,19 @@ export async function POST(
             where: { tournamentId: id },
             include: { team: { include: { players: { select: { id: true } } } } },
         });
-        const winningPlayerIds = winners.flatMap((w) =>
-            w.team.players.map((p) => p.id)
-        );
+        const winningTeamIds = winners.map(w => w.team.id);
+        // Get players from both _PlayerToTeam AND TeamPlayerStats (migrated data)
+        const winningPlayersFromStats = await prisma.teamPlayerStats.findMany({
+            where: { teamId: { in: winningTeamIds } },
+            select: { playerId: true },
+            distinct: ["playerId"],
+        });
+        const winningPlayerIds = [
+            ...new Set([
+                ...winners.flatMap(w => w.team.players.map(p => p.id)),
+                ...winningPlayersFromStats.map(p => p.playerId),
+            ]),
+        ];
 
         // Get all participants in the tournament
         const allTeams = await prisma.team.findMany({

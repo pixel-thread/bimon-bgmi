@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
-import { getTaxRate, calculateRepeatWinnerTax, aggregateTaxTotals } from "@/lib/logic/repeatWinnerTax";
-import { getSoloTaxRate, calculateSoloTax } from "@/lib/logic/soloTax";
-import { getFinalDistribution, getTeamSize } from "@/lib/logic/prizeDistribution";
+import { getTaxRate } from "@/lib/logic/repeatWinnerTax";
+import { getSoloTaxRate } from "@/lib/logic/soloTax";
 
 /**
  * GET /api/tournaments/[id]/tax-preview?playerIds=id1,id2,...&placements=pos:amount:p1|p2,pos:amount:p1|p2
@@ -40,7 +39,7 @@ export async function GET(
 
         const tournament = await prisma.tournament.findUnique({
             where: { id },
-            select: { id: true, seasonId: true, fee: true },
+            select: { id: true, seasonId: true, fee: true, isWinnerDeclared: true, name: true },
         });
         if (!tournament) {
             return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -134,63 +133,38 @@ export async function GET(
             };
         }
 
-        // Calculate exact tax totals using same logic as declare-winners
-        let calculatedTaxTotals: { totalTax: number; orgContribution: number; fundContribution: number } | null = null;
-        let calculatedSoloTax = 0;
+        // If declared, return stored values (no recalculation)
+        let finalOrg: number | undefined;
+        let finalFund: number | undefined;
+        let storedPlayerAmounts: Record<string, number> | null = null;
 
-        if (placementsParam) {
-            const SOFTENING_FACTOR = 0.5;
-            const allTaxResults: { playerId: string; originalAmount: number; taxAmount: number; netAmount: number; taxRate: number; winCount: number }[] = [];
-            let totalSoloTaxAmount = 0;
-
-            // Parse "pos:amount:p1|p2,pos:amount:p1|p2"
-            const placements = placementsParam.split(",").map(s => {
-                const [pos, amt, pids] = s.split(":");
-                return { position: parseInt(pos), amount: parseInt(amt), playerIds: pids?.split("|") || [] };
+        if (tournament.isWinnerDeclared) {
+            const storedIncome = await prisma.income.findMany({
+                where: { tournamentId: id },
+                select: { amount: true, description: true },
             });
-
-            for (const placement of placements) {
-                const teamPlayers = placement.playerIds;
-                if (placement.amount <= 0 || teamPlayers.length === 0) continue;
-
-                const basePerPlayer = Math.floor(placement.amount / teamPlayers.length);
-
-                // Participation adjustment (same as declare-winners)
-                const rates = teamPlayers.map(pid => {
-                    const played = matchesPlayedMap.get(pid) || 0;
-                    return { playerId: pid, rate: totalMatches > 0 ? played / totalMatches : 1 };
-                });
-                const avgRate = rates.reduce((s, r) => s + r.rate, 0) / teamPlayers.length;
-
-                const adjustedAmounts = new Map<string, number>();
-                for (const r of rates) {
-                    const adj = Math.floor((r.rate - avgRate) * basePerPlayer * SOFTENING_FACTOR);
-                    adjustedAmounts.set(r.playerId, basePerPlayer + adj);
-                }
-
-                for (const pid of teamPlayers) {
-                    const adjustedAmount = adjustedAmounts.get(pid) || basePerPlayer;
-                    const previousWins = recentWins.get(pid) || 0;
-                    const taxResult = calculateRepeatWinnerTax(pid, adjustedAmount, previousWins + 1);
-                    allTaxResults.push(taxResult);
-
-                    // Solo tax
-                    const isSolo = playerSoloMap.get(pid) || false;
-                    const soloResult = calculateSoloTax(pid, taxResult.netAmount, isSolo);
-                    if (soloResult.isSolo) totalSoloTaxAmount += soloResult.taxAmount;
-                }
+            for (const inc of storedIncome) {
+                if (inc.description.startsWith("Org")) finalOrg = inc.amount;
+                if (inc.description.startsWith("Fund")) finalFund = inc.amount;
             }
 
-            calculatedTaxTotals = aggregateTaxTotals(allTaxResults);
-            calculatedSoloTax = totalSoloTaxAmount;
+            const storedRewards = await prisma.pendingReward.findMany({
+                where: {
+                    playerId: { in: playerIds },
+                    type: "WINNER",
+                    message: { contains: tournament.name },
+                },
+                select: { playerId: true, amount: true },
+            });
+            storedPlayerAmounts = Object.fromEntries(
+                storedRewards.map(r => [r.playerId, r.amount])
+            );
         }
 
         return NextResponse.json({
             data: result,
-            ...(calculatedTaxTotals ? {
-                taxTotals: calculatedTaxTotals,
-                soloTaxTotal: calculatedSoloTax,
-            } : {}),
+            ...(finalOrg !== undefined ? { finalOrg, finalFund } : {}),
+            ...(storedPlayerAmounts ? { storedPlayerAmounts } : {}),
         });
     } catch (error) {
         console.error("Error fetching tax preview:", error);

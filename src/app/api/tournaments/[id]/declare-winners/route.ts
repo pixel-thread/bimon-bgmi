@@ -48,8 +48,9 @@ export async function POST(
 
         const { id } = await params;
         const body = await req.json();
-        const { placements } = body as {
+        const { placements, dryRun } = body as {
             placements?: { position: number; amount: number }[];
+            dryRun?: boolean;
         };
 
         // ── 1. Fetch tournament ──────────────────────────────
@@ -58,7 +59,7 @@ export async function POST(
             select: { id: true, name: true, fee: true, seasonId: true, isWinnerDeclared: true },
         });
         if (!tournament) return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
-        if (tournament.isWinnerDeclared) return NextResponse.json({ error: "Winners already declared" }, { status: 400 });
+        if (!dryRun && tournament.isWinnerDeclared) return NextResponse.json({ error: "Winners already declared" }, { status: 400 });
 
         // ── 2. Aggregate team rankings ───────────────────────
         const teamStats = await prisma.teamStats.findMany({
@@ -279,10 +280,57 @@ export async function POST(
             winnerTeamsData.push({ teamId: team.teamId, amount: placement.amount, position: placement.position, players: playersData });
         }
 
-        // ── 5. Atomic transaction ────────────────────────────
+        // ── 5. Calculate final amounts ────────────────────────
+        let finalOrg = 0, finalFund = 0;
+        if (prizePool > 0) {
+            const distribution = getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount);
+            const taxTotals = aggregateTaxTotals(allTaxResults);
+            finalFund = distribution.finalFundAmount + taxTotals.fundContribution;
+            finalOrg = distribution.finalOrgAmount + taxTotals.orgContribution;
+            if (finalFund >= finalOrg && finalOrg > 0) {
+                const combined = finalFund + finalOrg;
+                finalOrg = Math.ceil(combined * 0.65);
+                finalFund = combined - finalOrg;
+            }
+        }
+
+        // ── DRY RUN: return preview without writing ──────────
+        if (dryRun) {
+            const dist = prizePool > 0 ? getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount) : null;
+            const taxTots = aggregateTaxTotals(allTaxResults);
+            return NextResponse.json({
+                success: true,
+                dryRun: true,
+                data: {
+                    finalOrg,
+                    finalFund,
+                    breakdown: {
+                        orgBase: dist?.orgFee ?? 0,
+                        fundBase: dist?.fundAmount ?? 0,
+                        ucExemptCost: dist?.ucExemptCost ?? 0,
+                        orgAfterExempt: dist?.finalOrgAmount ?? 0,
+                        orgTaxContribution: taxTots.orgContribution,
+                        fundTaxContribution: taxTots.fundContribution,
+                        totalRepeatTax: taxTots.totalTax,
+                    },
+                    soloTaxTotal: allSoloTaxResults.reduce((s, r) => s + r.taxAmount, 0),
+                    winners: winnerTeamsData.map(t => ({
+                        position: t.position,
+                        teamAmount: t.amount,
+                        players: t.players.map(p => ({
+                            playerId: p.playerId,
+                            finalAmount: p.finalAmount,
+                            repeatTax: p.taxResult.taxAmount,
+                            soloTax: p.soloTaxResult.taxAmount,
+                        })),
+                    })),
+                },
+            });
+        }
+
+        // ── 6. Atomic transaction ────────────────────────────
         // Winners, PendingRewards, Income, and tournament status are ALL inside
-        // the transaction so they can't get out of sync (previously income was
-        // outside and got lost on timeouts).
+        // the transaction so they can't get out of sync.
         const createdWinners = await prisma.$transaction(async (tx) => {
             const winners = [];
 
@@ -317,23 +365,11 @@ export async function POST(
 
             // Income records with tax contributions (INSIDE transaction)
             if (prizePool > 0) {
-                const distribution = getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount);
-                const taxTotals = aggregateTaxTotals(allTaxResults);
-
-                let fundWithTax = distribution.finalFundAmount + taxTotals.fundContribution;
-                let orgWithTax = distribution.finalOrgAmount + taxTotals.orgContribution;
-
-                // Enforce: Org must always be >= Fund (tax split can flip them)
-                if (fundWithTax > orgWithTax && orgWithTax > 0) {
-                    const combined = fundWithTax + orgWithTax;
-                    orgWithTax = Math.ceil(combined / 2);
-                    fundWithTax = combined - orgWithTax;
-                }
-
-                if (fundWithTax > 0) {
+                if (finalFund > 0) {
+                    const taxTotals = aggregateTaxTotals(allTaxResults);
                     await tx.income.create({
                         data: {
-                            amount: fundWithTax,
+                            amount: finalFund,
                             description: taxTotals.fundContribution > 0
                                 ? `Fund - ${tournament.name} (incl. ₹${taxTotals.fundContribution} repeat winner tax)`
                                 : `Fund - ${tournament.name}`,
@@ -341,10 +377,11 @@ export async function POST(
                         },
                     });
                 }
-                if (orgWithTax > 0) {
+                if (finalOrg > 0) {
+                    const taxTotals = aggregateTaxTotals(allTaxResults);
                     await tx.income.create({
                         data: {
-                            amount: orgWithTax,
+                            amount: finalOrg,
                             description: taxTotals.orgContribution > 0
                                 ? `Org - ${tournament.name} (incl. ₹${taxTotals.orgContribution} repeat winner tax)`
                                 : `Org - ${tournament.name}`,
