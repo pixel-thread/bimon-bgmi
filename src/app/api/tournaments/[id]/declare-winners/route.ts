@@ -19,6 +19,11 @@ import {
     type SoloTaxResult,
 } from "@/lib/logic/soloTax";
 
+// BGMI placement points — must match rankings API
+const PLACEMENT_PTS: Record<number, number> = {
+    1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1,
+};
+
 
 
 /**
@@ -90,7 +95,7 @@ export async function POST(
         const teamMap = new Map<string, TeamAgg>();
         for (const stat of teamStats) {
             const kills = stat.teamPlayerStats.reduce((sum, ps) => sum + (ps.kills ?? 0), 0);
-            const p = stat.position ?? 0;
+            const p = PLACEMENT_PTS[stat.position] ?? 0;
             const t = kills + p;
             const existing = teamMap.get(stat.teamId);
             if (existing) {
