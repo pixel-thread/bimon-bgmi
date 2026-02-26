@@ -73,32 +73,32 @@ export function getPollTheme(participantCount: number): PollTheme | null {
     } else if (participantCount >= 30) {
         // Rare — Green/Emerald
         return {
-            card: "bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-950/30 dark:to-gray-800 border-2 border-emerald-400 dark:border-emerald-500 shadow-lg shadow-emerald-300/50 dark:shadow-emerald-900/30",
+            card: "bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-950/60 dark:to-gray-900 border-2 border-emerald-400 dark:border-emerald-400 shadow-lg shadow-emerald-300/50 dark:shadow-emerald-500/20",
             header: "from-emerald-500 via-green-400 to-emerald-600",
             wave1: "rgba(16,185,129,0.3)",
             wave2: "rgba(255,255,255,0.15)",
             sparkle: "bg-green-200",
             badge: "bg-white/20 text-white backdrop-blur-sm",
-            options: "bg-gradient-to-b from-emerald-100/50 to-emerald-50/30 dark:from-emerald-900/20 dark:to-emerald-950/10",
-            footer: "bg-gradient-to-b from-emerald-50/30 to-emerald-100/50 dark:from-emerald-950/10 dark:to-emerald-900/20",
+            options: "bg-gradient-to-b from-emerald-100/50 to-emerald-50/30 dark:from-emerald-900/40 dark:to-emerald-950/20",
+            footer: "bg-gradient-to-b from-emerald-50/30 to-emerald-100/50 dark:from-emerald-950/20 dark:to-emerald-900/40",
             button: "text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-emerald-200 hover:bg-emerald-100 dark:hover:bg-emerald-900/30",
-            optionSelected: { border: "border-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20", text: "text-emerald-700 dark:text-emerald-300", radio: "border-emerald-500 bg-emerald-500" },
-            optionUnselected: { border: "border-emerald-200 dark:border-emerald-700 hover:border-emerald-400", radio: "border-emerald-300 dark:border-emerald-600" },
+            optionSelected: { border: "border-emerald-500 dark:border-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/40", text: "text-emerald-700 dark:text-emerald-300", radio: "border-emerald-500 bg-emerald-500" },
+            optionUnselected: { border: "border-emerald-200 dark:border-emerald-600 hover:border-emerald-400", radio: "border-emerald-300 dark:border-emerald-500" },
         };
     } else if (participantCount >= 20) {
         // Common — Gold/Amber
         return {
-            card: "bg-gradient-to-b from-amber-50 to-white dark:from-amber-950/30 dark:to-gray-800 border-2 border-amber-300 dark:border-amber-600 shadow-lg shadow-amber-200/50 dark:shadow-amber-900/30",
+            card: "bg-gradient-to-b from-amber-50 to-white dark:from-amber-950/60 dark:to-gray-900 border-2 border-amber-300 dark:border-amber-500 shadow-lg shadow-amber-200/50 dark:shadow-amber-500/20",
             header: "from-amber-500 via-yellow-400 to-orange-400",
             wave1: "rgba(251,191,36,0.3)",
             wave2: "rgba(255,255,255,0.15)",
             sparkle: "bg-yellow-200",
             badge: "bg-white/20 text-white backdrop-blur-sm",
-            options: "bg-gradient-to-b from-amber-100/50 to-amber-50/30 dark:from-amber-900/20 dark:to-amber-950/10",
-            footer: "bg-gradient-to-b from-amber-50/30 to-amber-100/50 dark:from-amber-950/10 dark:to-amber-900/20",
-            button: "text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/30",
-            optionSelected: { border: "border-amber-500", bg: "bg-amber-50 dark:bg-amber-900/20", text: "text-amber-700 dark:text-amber-300", radio: "border-amber-500 bg-amber-500" },
-            optionUnselected: { border: "border-amber-200 dark:border-amber-700 hover:border-amber-400", radio: "border-amber-300 dark:border-amber-600" },
+            options: "bg-gradient-to-b from-amber-100/50 to-amber-50/30 dark:from-amber-900/40 dark:to-amber-950/20",
+            footer: "bg-gradient-to-b from-amber-50/30 to-amber-100/50 dark:from-amber-950/20 dark:to-amber-900/40",
+            button: "text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40",
+            optionSelected: { border: "border-amber-500 dark:border-amber-400", bg: "bg-amber-50 dark:bg-amber-900/40", text: "text-amber-700 dark:text-amber-300", radio: "border-amber-500 bg-amber-500" },
+            optionUnselected: { border: "border-amber-200 dark:border-amber-600 hover:border-amber-400", radio: "border-amber-300 dark:border-amber-500" },
         };
     } else if (participantCount >= 1) {
         // Starter — Slate
