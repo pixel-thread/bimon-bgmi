@@ -10,6 +10,7 @@ import {
     Input,
     Avatar,
     Chip,
+    Checkbox,
     Spinner,
 } from "@heroui/react";
 import { Search, Plus, X, Users } from "lucide-react";
@@ -47,7 +48,7 @@ export function CreateTeamModal({
 }: Props) {
     const [search, setSearch] = useState("");
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
+    const [deductUC, setDeductUC] = useState(false);
     const queryClient = useQueryClient();
 
     // Search players
@@ -96,7 +97,7 @@ export function CreateTeamModal({
             const res = await fetch("/api/teams/create", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tournamentId, matchId, playerIds: selectedIds }),
+                body: JSON.stringify({ tournamentId, matchId, playerIds: selectedIds, deductUC }),
             });
             const json = await res.json();
             if (!res.ok) throw new Error(json.message || "Failed to create team");
@@ -115,7 +116,7 @@ export function CreateTeamModal({
         setSearch("");
         setSelectedIds([]);
         setSelectedPlayers([]);
-
+        setDeductUC(false);
         onClose();
     }
 
@@ -209,6 +210,17 @@ export function CreateTeamModal({
                             No available players found
                         </p>
                     )}
+
+                    {/* UC deduction toggle */}
+                    <div className="pt-2">
+                        <Checkbox
+                            isSelected={deductUC}
+                            onValueChange={setDeductUC}
+                            size="sm"
+                        >
+                            <span className="text-sm">Deduct UC entry fee from players</span>
+                        </Checkbox>
+                    </div>
                 </ModalBody>
                 <ModalFooter>
                     <Button variant="flat" onPress={handleClose} size="sm">

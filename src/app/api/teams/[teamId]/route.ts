@@ -20,51 +20,96 @@ export async function PATCH(
 
         const { teamId } = await params;
         const body = await req.json();
-        const { addPlayerIds = [], removePlayerIds = [] } = body as {
+        const {
+            addPlayerIds = [],
+            removePlayerIds = [],
+            deductUC = false,
+            refund = false,
+        } = body as {
             addPlayerIds?: string[];
             removePlayerIds?: string[];
+            deductUC?: boolean;
+            refund?: boolean;
         };
 
         const team = await prisma.team.findUnique({
             where: { id: teamId },
-            include: { players: { select: { id: true } } },
+            include: {
+                players: { select: { id: true } },
+                tournament: { select: { fee: true, name: true } },
+            },
         });
 
         if (!team) {
             return NextResponse.json({ error: "Team not found" }, { status: 404 });
         }
 
-        const ops: Promise<unknown>[] = [];
+        const entryFee = team.tournament?.fee ?? 0;
+        const tournamentName = team.tournament?.name ?? "tournament";
 
-        // Add players
-        if (addPlayerIds.length > 0) {
-            ops.push(
-                prisma.team.update({
+        await prisma.$transaction(async (tx) => {
+            // Add players
+            if (addPlayerIds.length > 0) {
+                await tx.team.update({
                     where: { id: teamId },
                     data: {
                         players: {
                             connect: addPlayerIds.map(id => ({ id })),
                         },
                     },
-                })
-            );
-        }
+                });
 
-        // Remove players
-        if (removePlayerIds.length > 0) {
-            ops.push(
-                prisma.team.update({
+                // Deduct UC from added players
+                if (deductUC && entryFee > 0) {
+                    for (const playerId of addPlayerIds) {
+                        await tx.wallet.upsert({
+                            where: { playerId },
+                            create: { playerId, balance: -entryFee },
+                            update: { balance: { decrement: entryFee } },
+                        });
+                        await tx.transaction.create({
+                            data: {
+                                amount: entryFee,
+                                type: "DEBIT",
+                                description: `Entry fee: Added to team in ${tournamentName}`,
+                                playerId,
+                            },
+                        });
+                    }
+                }
+            }
+
+            // Remove players
+            if (removePlayerIds.length > 0) {
+                await tx.team.update({
                     where: { id: teamId },
                     data: {
                         players: {
                             disconnect: removePlayerIds.map(id => ({ id })),
                         },
                     },
-                })
-            );
-        }
+                });
 
-        await Promise.all(ops);
+                // Refund UC to removed players
+                if (refund && entryFee > 0) {
+                    for (const playerId of removePlayerIds) {
+                        await tx.wallet.upsert({
+                            where: { playerId },
+                            create: { playerId, balance: entryFee },
+                            update: { balance: { increment: entryFee } },
+                        });
+                        await tx.transaction.create({
+                            data: {
+                                amount: entryFee,
+                                type: "CREDIT",
+                                description: `Refund: Removed from team in ${tournamentName}`,
+                                playerId,
+                            },
+                        });
+                    }
+                }
+            }
+        });
 
         // Fetch updated team
         const updated = await prisma.team.findUnique({
@@ -80,9 +125,13 @@ export async function PATCH(
             },
         });
 
+        const parts: string[] = [];
+        if (addPlayerIds.length > 0) parts.push(`+${addPlayerIds.length} added${deductUC && entryFee > 0 ? ` (${entryFee} UC deducted each)` : ""}`);
+        if (removePlayerIds.length > 0) parts.push(`-${removePlayerIds.length} removed${refund && entryFee > 0 ? ` (${entryFee} UC refunded each)` : ""}`);
+
         return NextResponse.json({
             success: true,
-            message: `Team updated: +${addPlayerIds.length} added, -${removePlayerIds.length} removed`,
+            message: `Team updated: ${parts.join(", ")}`,
             data: {
                 id: updated?.id,
                 playerCount: updated?.players.length ?? 0,

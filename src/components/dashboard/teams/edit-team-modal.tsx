@@ -10,6 +10,7 @@ import {
     Input,
     Avatar,
     Chip,
+    Checkbox,
     Spinner,
     Switch,
 } from "@heroui/react";
@@ -47,6 +48,8 @@ export function EditTeamModal({
     const [currentPlayers, setCurrentPlayers] = useState<Player[]>([]);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [refundOnDelete, setRefundOnDelete] = useState(false);
+    const [deductUC, setDeductUC] = useState(false);
+    const [refundRemoved, setRefundRemoved] = useState(false);
     const queryClient = useQueryClient();
 
     // Initialize on open
@@ -108,7 +111,12 @@ export function EditTeamModal({
             const res = await fetch(`/api/teams/${teamId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ addPlayerIds: addedIds, removePlayerIds: removedIds }),
+                body: JSON.stringify({
+                    addPlayerIds: addedIds,
+                    removePlayerIds: removedIds,
+                    deductUC: addedIds.length > 0 ? deductUC : undefined,
+                    refund: removedIds.length > 0 ? refundRemoved : undefined,
+                }),
             });
             const json = await res.json();
             if (!res.ok) throw new Error(json.error || "Failed to update team");
@@ -147,6 +155,8 @@ export function EditTeamModal({
         setCurrentPlayers([]);
         setShowDeleteConfirm(false);
         setRefundOnDelete(false);
+        setDeductUC(false);
+        setRefundRemoved(false);
         onClose();
     }
 
@@ -299,6 +309,30 @@ export function EditTeamModal({
                             <p className="py-2 text-center text-sm text-foreground/40">
                                 No available players found
                             </p>
+                        )}
+
+                        {/* UC toggles for add/remove */}
+                        {(addedIds.length > 0 || removedIds.length > 0) && (
+                            <div className="space-y-2 pt-2">
+                                {addedIds.length > 0 && (
+                                    <Checkbox
+                                        isSelected={deductUC}
+                                        onValueChange={setDeductUC}
+                                        size="sm"
+                                    >
+                                        <span className="text-sm">Deduct UC entry fee from added players</span>
+                                    </Checkbox>
+                                )}
+                                {removedIds.length > 0 && (
+                                    <Checkbox
+                                        isSelected={refundRemoved}
+                                        onValueChange={setRefundRemoved}
+                                        size="sm"
+                                    >
+                                        <span className="text-sm">Refund UC entry fee to removed players</span>
+                                    </Checkbox>
+                                )}
+                            </div>
                         )}
                     </ModalBody>
                     <ModalFooter>
