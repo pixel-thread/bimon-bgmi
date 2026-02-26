@@ -28,7 +28,7 @@ type Phase =
 const TIMINGS = {
     PUBGMI: 2400,
     GLITCH_OUT: 500,
-    PUBG: 600,
+    PUBG: 1500,
     ROLL_IN: 1000,
     GLITCH_TO_BGMI: 500,
     BGMI: 2400,
@@ -96,7 +96,7 @@ export function PubgmiLogo({ variant = "header", className }: PubgmiLogoProps) {
                             <span
                                 key={`roll-${i}`}
                                 className="pubgmi-letter pubgmi-roll-in"
-                                style={{ animationDelay: `${i * 400}ms` }}
+                                style={{ "--roll-delay": `${i * 500}ms` } as React.CSSProperties}
                             >
                                 {letter}
                             </span>
