@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Modal,
@@ -131,6 +131,8 @@ export function MeritRatingSection() {
 
     // Ratings state: { playerId: rating }
     const [ratings, setRatings] = useState<Record<string, number>>({});
+    // Hide modal immediately after successful submission
+    const [submitted, setSubmitted] = useState(false);
 
     const { data } = useQuery<PendingMeritData>({
         queryKey: ["pending-merit"],
@@ -173,6 +175,7 @@ export function MeritRatingSection() {
             await Promise.all(promises);
         },
         onSuccess: () => {
+            setSubmitted(true);
             setRatings({});
             queryClient.invalidateQueries({ queryKey: ["pending-merit"] });
         },
@@ -185,8 +188,16 @@ export function MeritRatingSection() {
         []
     );
 
-    // Nothing to show
-    const isOpen = allPending.length > 0 && !!tournamentId;
+    // Reset submitted flag once the API confirms no pending ratings remain
+    // so future tournaments can trigger the modal again
+    useEffect(() => {
+        if (submitted && allPending.length === 0) {
+            setSubmitted(false);
+        }
+    }, [submitted, allPending.length]);
+
+    // Hide immediately after submit; only re-show if API returns new pending players
+    const isOpen = !submitted && allPending.length > 0 && !!tournamentId;
 
     return (
         <Modal
