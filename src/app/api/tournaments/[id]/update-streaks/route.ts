@@ -157,6 +157,37 @@ export async function POST(
             });
         }
 
+        // Catch-up: find any Royal Pass players with streak >= milestone
+        // who were missed (e.g. before reward logic existed)
+        const missedMilestones = await prisma.playerStreak.findMany({
+            where: {
+                current: { gte: STREAK_MILESTONE },
+                player: { hasRoyalPass: true },
+            },
+            select: { playerId: true, current: true, longest: true },
+        });
+
+        for (const ms of missedMilestones) {
+            await prisma.$transaction([
+                prisma.pendingReward.create({
+                    data: {
+                        playerId: ms.playerId,
+                        type: "STREAK",
+                        amount: STREAK_REWARD_UC,
+                        message: `🔥 ${STREAK_MILESTONE} tournament streak reward!`,
+                    },
+                }),
+                prisma.playerStreak.update({
+                    where: { playerId: ms.playerId },
+                    data: {
+                        current: 0,
+                        lastRewardAt: new Date(),
+                    },
+                }),
+            ]);
+            rewardsCreated++;
+        }
+
         return NextResponse.json({
             success: true,
             data: {
