@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { useState, useEffect, useCallback } from "react";
+import { PubgmiLogo } from "@/components/common/pubgmi-logo";
 
 interface SidebarItem {
     label: string;
@@ -131,7 +132,7 @@ export function AdminSidebar() {
                 {/* Logo */}
                 <div className="flex h-14 items-center gap-2 border-b border-divider px-4">
                     <Swords className="h-6 w-6 text-primary" />
-                    <span className="text-lg font-bold tracking-tight">PUBGMI</span>
+                    <PubgmiLogo variant="header" className="text-lg" />
                     <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
                         Admin
                     </span>

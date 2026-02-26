@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { ChevronRight, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { PubgmiLogo } from "@/components/common/pubgmi-logo";
 
 import { useQuery } from "@tanstack/react-query";
 
@@ -31,9 +32,7 @@ export function HeroHeading() {
         return (
             <h1 className="mt-8 text-5xl font-extrabold tracking-tight text-center sm:text-6xl">
                 Welcome to{" "}
-                <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-                    PUBGMI
-                </span>
+                <PubgmiLogo variant="hero" />
             </h1>
         );
     }
@@ -50,9 +49,7 @@ export function HeroHeading() {
             ) : (
                 <>
                     Welcome to{" "}
-                    <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-                        PUBGMI
-                    </span>
+                    <PubgmiLogo variant="hero" />
                 </>
             )}
         </h1>

@@ -36,6 +36,7 @@ import {
 import { useState, useEffect, useCallback } from "react";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { sidebarItems } from "./admin-sidebar";
+import { PubgmiLogo } from "@/components/common/pubgmi-logo";
 
 const navItems = [
     { label: "Players", href: "/players", icon: Users },
@@ -158,7 +159,7 @@ export function Header() {
                         )}
                     </div>
                     <NavbarBrand>
-                        <span className="text-lg font-bold tracking-tight">PUBGMI</span>
+                        <PubgmiLogo variant="header" className="text-lg" />
                     </NavbarBrand>
                 </NavbarContent>
 
