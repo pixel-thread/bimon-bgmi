@@ -254,10 +254,12 @@ export default function TeamsPage() {
             if (!res.ok) throw new Error(json.message || "Failed");
             return json;
         },
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
             toast.success(data.message || "Match created");
-            queryClient.invalidateQueries({ queryKey: ["matches-brief"] });
-            queryClient.invalidateQueries({ queryKey: ["teams"] });
+            // Remove stale cache first, then refetch
+            queryClient.removeQueries({ queryKey: ["matches-brief", tournamentId] });
+            await queryClient.invalidateQueries({ queryKey: ["matches-brief"] });
+            await queryClient.invalidateQueries({ queryKey: ["teams"] });
             // Auto-select the newly created match
             if (data.data?.id) {
                 setMatchId(data.data.id);
@@ -275,11 +277,12 @@ export default function TeamsPage() {
             if (!res.ok) throw new Error(json.message || "Failed");
             return json;
         },
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
             toast.success(data.message || "Match deleted");
             setMatchId("all");
-            queryClient.invalidateQueries({ queryKey: ["teams"] });
-            queryClient.invalidateQueries({ queryKey: ["matches-brief"] });
+            queryClient.removeQueries({ queryKey: ["matches-brief", tournamentId] });
+            await queryClient.invalidateQueries({ queryKey: ["teams"] });
+            await queryClient.invalidateQueries({ queryKey: ["matches-brief"] });
             setShowDeleteConfirm(false);
         },
         onError: (err: Error) => toast.error(err.message),

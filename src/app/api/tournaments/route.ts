@@ -122,7 +122,6 @@ export async function GET(request: NextRequest) {
         return SuccessResponse({
             data,
             meta: { hasMore, nextCursor, count: results.length },
-            cache: CACHE.SHORT,
         });
     } catch (error) {
         return ErrorResponse({

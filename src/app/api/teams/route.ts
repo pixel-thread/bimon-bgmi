@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
             };
         });
 
-        return SuccessResponse({ data, cache: CACHE.SHORT });
+        return SuccessResponse({ data });
     } catch (error) {
         return ErrorResponse({ message: "Failed to fetch teams", error });
     }
