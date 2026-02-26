@@ -3,13 +3,11 @@
 import { useEffect, useState, useRef } from "react";
 
 /**
- * Animated PUBGMI logo that cycles through phases:
+ * Animated PUBGMI logo — slot-machine style:
  *
- * 1. "PUBGMI" — stable hold
- * 2. Glitch → "PUBG" — MI disappears
- * 3. "MI" rolls in from the top → "PUBGMI"
- * 4. Glitch → "BGMI" — stable hold
- * 5. Glitch → back to "PUBGMI" → repeat
+ * PUBGMI → PU falls → BGMI
+ * → BGMI falls while PUBGMI rolls in simultaneously
+ * → PUBGMI → MI falls → PUBG → MI rolls in → PUBGMI → repeat
  */
 interface PubgmiLogoProps {
     variant?: "hero" | "header";
@@ -17,22 +15,25 @@ interface PubgmiLogoProps {
 }
 
 type Phase =
-    | "PUBGMI"       // stable full text
-    | "GLITCH_OUT"   // glitching before removing MI
-    | "PUBG"         // only PUBG shown, MI gone
-    | "ROLL_IN"      // MI rolling in from top
-    | "GLITCH_TO_BGMI" // glitch transition to BGMI
-    | "BGMI"         // stable BGMI
-    | "GLITCH_TO_PUBGMI"; // glitch transition back to PUBGMI
+    | "PUBGMI"
+    | "DROP_PU"          // P then U fall
+    | "BGMI"
+    | "SWAP"             // BGMI falls + PUBGMI rolls in simultaneously
+    | "PUBGMI_MID"
+    | "DROP_MI"          // M then I fall
+    | "PUBG"
+    | "ROLL_MI"          // M then I roll in
+    ;
 
 const TIMINGS = {
     PUBGMI: 2400,
-    GLITCH_OUT: 500,
-    PUBG: 1500,
-    ROLL_IN: 1000,
-    GLITCH_TO_BGMI: 500,
-    BGMI: 2400,
-    GLITCH_TO_PUBGMI: 500,
+    DROP_PU: 900,
+    BGMI: 1500,
+    SWAP: 2000,
+    PUBGMI_MID: 2000,
+    DROP_MI: 900,
+    PUBG: 1200,
+    ROLL_MI: 1400,
 };
 
 export function PubgmiLogo({ variant = "header", className }: PubgmiLogoProps) {
@@ -46,25 +47,28 @@ export function PubgmiLogo({ variant = "header", className }: PubgmiLogoProps) {
 
         switch (phase) {
             case "PUBGMI":
-                advance("GLITCH_OUT", TIMINGS.PUBGMI);
+                advance("DROP_PU", TIMINGS.PUBGMI);
                 break;
-            case "GLITCH_OUT":
-                advance("PUBG", TIMINGS.GLITCH_OUT);
-                break;
-            case "PUBG":
-                advance("ROLL_IN", TIMINGS.PUBG);
-                break;
-            case "ROLL_IN":
-                advance("GLITCH_TO_BGMI", TIMINGS.ROLL_IN + 800); // hold after roll-in
-                break;
-            case "GLITCH_TO_BGMI":
-                advance("BGMI", TIMINGS.GLITCH_TO_BGMI);
+            case "DROP_PU":
+                advance("BGMI", TIMINGS.DROP_PU);
                 break;
             case "BGMI":
-                advance("GLITCH_TO_PUBGMI", TIMINGS.BGMI);
+                advance("SWAP", TIMINGS.BGMI);
                 break;
-            case "GLITCH_TO_PUBGMI":
-                advance("PUBGMI", TIMINGS.GLITCH_TO_PUBGMI);
+            case "SWAP":
+                advance("PUBGMI_MID", TIMINGS.SWAP);
+                break;
+            case "PUBGMI_MID":
+                advance("DROP_MI", TIMINGS.PUBGMI_MID);
+                break;
+            case "DROP_MI":
+                advance("PUBG", TIMINGS.DROP_MI);
+                break;
+            case "PUBG":
+                advance("ROLL_MI", TIMINGS.PUBG);
+                break;
+            case "ROLL_MI":
+                advance("PUBGMI", TIMINGS.ROLL_MI + 600);
                 break;
         }
 
@@ -73,65 +77,115 @@ export function PubgmiLogo({ variant = "header", className }: PubgmiLogoProps) {
         };
     }, [phase]);
 
-    const isGlitching =
-        phase === "GLITCH_OUT" ||
-        phase === "GLITCH_TO_BGMI" ||
-        phase === "GLITCH_TO_PUBGMI";
+    const s = (letter: string, pos: number) => (
+        <span key={`s-${pos}`} className="pubgmi-letter">{letter}</span>
+    );
 
-    // Determine which letters to show and how
+    const fall = (letter: string, i: number, prefix: string) => (
+        <span
+            key={`fall-${prefix}-${i}`}
+            className="pubgmi-letter pubgmi-fall-down"
+            style={{ "--fall-delay": `${i * 150}ms` } as React.CSSProperties}
+        >
+            {letter}
+        </span>
+    );
+
+    const roll = (letter: string, i: number, prefix: string) => (
+        <span
+            key={`roll-${prefix}-${i}`}
+            className="pubgmi-letter pubgmi-roll-in"
+            style={{ "--roll-delay": `${i * 150}ms` } as React.CSSProperties}
+        >
+            {letter}
+        </span>
+    );
+
     const renderLetters = () => {
         switch (phase) {
             case "PUBGMI":
-            case "GLITCH_OUT":
-                return renderText("PUBGMI", isGlitching);
-
-            case "PUBG":
-                return renderText("PUBG", false);
-
-            case "ROLL_IN":
+            case "PUBGMI_MID":
                 return (
                     <>
-                        {renderText("PUBG", false)}
-                        {"MI".split("").map((letter, i) => (
+                        {s("P", 0)}{s("U", 1)}{s("B", 2)}{s("G", 3)}{s("M", 4)}{s("I", 5)}
+                    </>
+                );
+
+            case "DROP_PU":
+                return (
+                    <>
+                        {fall("P", 0, "pu")}{fall("U", 1, "pu")}
+                        {s("B", 2)}{s("G", 3)}{s("M", 4)}{s("I", 5)}
+                    </>
+                );
+
+            case "BGMI":
+                return (
+                    <>
+                        {s("B", 2)}{s("G", 3)}{s("M", 4)}{s("I", 5)}
+                    </>
+                );
+
+            // BGMI falls out while PUBGMI rolls in — layered
+            case "SWAP":
+                return (
+                    <span className="pubgmi-swap-container">
+                        {/* Falling BGMI — absolute so it doesn't affect layout */}
+                        <span className="pubgmi-swap-out">
+                            {"BGMI".split("").map((letter, i) => (
+                                <span
+                                    key={`swap-out-${i}`}
+                                    className="pubgmi-letter pubgmi-fall-down"
+                                    style={{ "--fall-delay": `${i * 100}ms` } as React.CSSProperties}
+                                >
+                                    {letter}
+                                </span>
+                            ))}
+                        </span>
+                        {/* Rolling in PUBGMI — starts slightly after */}
+                        {"PUBGMI".split("").map((letter, i) => (
                             <span
-                                key={`roll-${i}`}
+                                key={`swap-in-${i}`}
                                 className="pubgmi-letter pubgmi-roll-in"
-                                style={{ "--roll-delay": `${i * 500}ms` } as React.CSSProperties}
+                                style={{ "--roll-delay": `${300 + i * 120}ms` } as React.CSSProperties}
                             >
                                 {letter}
                             </span>
                         ))}
+                    </span>
+                );
+
+            case "DROP_MI":
+                return (
+                    <>
+                        {s("P", 0)}{s("U", 1)}{s("B", 2)}{s("G", 3)}
+                        {fall("M", 0, "mi")}{fall("I", 1, "mi")}
                     </>
                 );
 
-            case "GLITCH_TO_BGMI":
-                return renderText("PUBGMI", true);
+            case "PUBG":
+                return (
+                    <>
+                        {s("P", 0)}{s("U", 1)}{s("B", 2)}{s("G", 3)}
+                    </>
+                );
 
-            case "BGMI":
-                return renderText("BGMI", false);
-
-            case "GLITCH_TO_PUBGMI":
-                return renderText("BGMI", true);
+            case "ROLL_MI":
+                return (
+                    <>
+                        {s("P", 0)}{s("U", 1)}{s("B", 2)}{s("G", 3)}
+                        {roll("M", 0, "mi")}{roll("I", 1, "mi")}
+                    </>
+                );
 
             default:
-                return renderText("PUBGMI", false);
+                return null;
         }
     };
 
-    const renderText = (text: string, glitching: boolean) =>
-        text.split("").map((letter, i) => (
-            <span
-                key={`${text}-${phase}-${i}`}
-                className={`pubgmi-letter ${glitching ? "pubgmi-glitch-letter" : ""}`}
-                style={{ animationDelay: `${i * (glitching ? 40 : 50)}ms` }}
-            >
-                {letter}
-            </span>
-        ));
-
     return (
         <span
-            className={`pubgmi-logo inline-flex items-baseline select-none overflow-hidden ${className || ""}`}
+            className={`pubgmi-logo inline-flex items-baseline select-none ${className || ""}`}
             aria-label="PUBGMI"
         >
             {renderLetters()}
