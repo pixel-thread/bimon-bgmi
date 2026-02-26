@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Avatar, Chip } from "@heroui/react";
 import { useUser } from "@clerk/nextjs";
 import { Gamepad2, Loader2, CheckCircle } from "lucide-react";
+import { PubgmiLogo } from "@/components/common/pubgmi-logo";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import {
@@ -138,7 +139,7 @@ export default function OnboardingPage() {
     if (!isLoaded) {
         return (
             <div className="flex min-h-dvh items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <PubgmiLogo variant="hero" className="text-3xl" />
             </div>
         );
     }

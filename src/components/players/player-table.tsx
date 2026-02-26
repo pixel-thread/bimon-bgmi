@@ -2,7 +2,8 @@
 
 import { Avatar } from "@heroui/react";
 import { CategoryBadge } from "@/components/ui/category-badge";
-import { Loader2, Crown } from "lucide-react";
+import { Crown } from "lucide-react";
+import { PubgmiLogo } from "@/components/common/pubgmi-logo";
 import type { PlayerDTO, PlayersMeta } from "@/hooks/use-players";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { useRef, useEffect } from "react";
@@ -171,7 +172,7 @@ export function PlayerTable({
             {/* Infinite scroll sentinel */}
             <div ref={sentinelRef} className="flex justify-center py-4">
                 {isFetchingNextPage && (
-                    <Loader2 className="h-5 w-5 animate-spin text-foreground/30" />
+                    <PubgmiLogo variant="header" className="text-base text-foreground/30" />
                 )}
             </div>
         </div>
