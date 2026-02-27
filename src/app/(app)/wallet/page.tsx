@@ -297,6 +297,11 @@ export default function WalletPage() {
         return () => observer.disconnect();
     }, [handleIntersection]);
 
+    // Check if player has topped up via Razorpay
+    const hasRazorpayTopUp = transactions.some((t) =>
+        t.description.toLowerCase().includes("razorpay")
+    );
+
 
     return (
         <div className="mx-auto max-w-lg px-4 py-6 sm:px-6">
@@ -361,9 +366,11 @@ export default function WalletPage() {
 
                                 {/* Lucky voter promo */}
                                 <div className="flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2">
-                                    <span className="text-xs">🎯</span>
+                                    <span className="text-xs">{hasRazorpayTopUp ? "🎉" : "🎯"}</span>
                                     <p className="text-[11px] font-medium text-success">
-                                        Add UC = 7x lucky voter chance this season
+                                        {hasRazorpayTopUp
+                                            ? "You have 7x lucky voter chance for free entry this season!"
+                                            : "Add UC = 7x lucky voter chance this season"}
                                     </p>
                                 </div>
                             </CardBody>
