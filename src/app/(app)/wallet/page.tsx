@@ -32,9 +32,6 @@ import {
     CreditCard,
     IndianRupee,
     Sparkles,
-    TrendingUp,
-    TrendingDown,
-    ArrowRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -260,7 +257,7 @@ export default function WalletPage() {
         },
         onSuccess: (data) => {
             const ucAdded = data?.data?.ucAdded ?? 0;
-            toast.success(`🎉 Added ${ucAdded} UC to your balance!`);
+            toast.success(`🎉 Added ${ucAdded} UC! 7x lucky voter boost active 🎯`);
             queryClient.invalidateQueries({ queryKey: ["wallet"] });
             queryClient.invalidateQueries({ queryKey: ["profile"] });
             queryClient.invalidateQueries({ queryKey: ["transactions"] });
@@ -300,13 +297,6 @@ export default function WalletPage() {
         return () => observer.disconnect();
     }, [handleIntersection]);
 
-    // ── Quick stats for summary ─────────────────────────────
-    const totalCredits = transactions
-        .filter((t) => t.type === "CREDIT")
-        .reduce((sum, t) => sum + t.amount, 0);
-    const totalDebits = transactions
-        .filter((t) => t.type === "DEBIT")
-        .reduce((sum, t) => sum + t.amount, 0);
 
     return (
         <div className="mx-auto max-w-lg px-4 py-6 sm:px-6">
@@ -369,33 +359,11 @@ export default function WalletPage() {
                                     </Button>
                                 </div>
 
-                                {/* Quick stats */}
-                                {transactions.length > 0 && (
-                                    <div className="flex gap-3">
-                                        <div className="flex items-center gap-1.5 rounded-lg bg-success/10 px-2.5 py-1.5">
-                                            <TrendingUp className="h-3 w-3 text-success" />
-                                            <span className="text-[11px] font-semibold text-success">
-                                                +
-                                                {totalCredits.toLocaleString()}{" "}
-                                                UC
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 rounded-lg bg-danger/10 px-2.5 py-1.5">
-                                            <TrendingDown className="h-3 w-3 text-danger" />
-                                            <span className="text-[11px] font-semibold text-danger">
-                                                -
-                                                {totalDebits.toLocaleString()}{" "}
-                                                UC
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-
                                 {/* Lucky voter promo */}
-                                <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
+                                <div className="flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2">
                                     <span className="text-xs">🎯</span>
-                                    <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                                        Top up = 7x lucky voter chance this season
+                                    <p className="text-[11px] font-medium text-success">
+                                        Add UC = 7x lucky voter chance this season
                                     </p>
                                 </div>
                             </CardBody>
@@ -488,7 +456,7 @@ export default function WalletPage() {
                                                 )}
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-sm">
+                                                <p className="text-xs">
                                                     {tx.description}
                                                 </p>
                                                 <div className="flex items-center gap-1.5 text-[10px] text-foreground/40">
@@ -618,14 +586,6 @@ export default function WalletPage() {
                             </div>
                             <p className="text-[10px] text-foreground/30">
                                 Min: 10 UC · Max: 9,756 UC (₹10,000)
-                            </p>
-                        </div>
-
-                        {/* Lucky voter promo */}
-                        <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
-                            <span className="text-xs">🎯</span>
-                            <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                                Top up = 7x lucky voter chance this season
                             </p>
                         </div>
 
