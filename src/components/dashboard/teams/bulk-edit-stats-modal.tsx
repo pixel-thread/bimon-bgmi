@@ -99,7 +99,7 @@ export function BulkEditStatsModal({
     const [hasInitialized, setHasInitialized] = useState(false);
     const [unknownPlayers, setUnknownPlayers] = useState<Array<{ name: string; kills: number; matchIdx: number }>>([]);
     const [changeNotes, setChangeNotes] = useState<string[]>([]);
-    const [isFirstPaste, setIsFirstPaste] = useState(true);
+
 
     // ── Fetch match data ──
     const { data: allMatches, isLoading } = useQuery<MatchData[]>({
@@ -111,6 +111,7 @@ export function BulkEditStatsModal({
             return json.data ?? [];
         },
         enabled: isOpen && !!tournamentId,
+        staleTime: 0,
         refetchOnWindowFocus: false,
     });
 
@@ -124,7 +125,7 @@ export function BulkEditStatsModal({
             setShowMatchSelector(false);
             setUnknownPlayers([]);
             setChangeNotes([]);
-            setIsFirstPaste(true);
+
             return;
         }
         if (isAllMode) {
@@ -558,26 +559,22 @@ Match B: #1 team, #2 team | Found: X, Absent: Y, Unknown: Z`;
                 const playerMap = matchPlayerMaps[matchIdx];
                 const teamPositions = new Map<string, number>();
 
-                // Keep original player state, only update from AI data
+                // Reset all players to absent first, then mark present ones from AI
                 const newTeams = matchData.teams.map((team) => ({
                     ...team,
                     position: "" as string,
-                    players: team.players.map((p) => ({ ...p })),
+                    players: team.players.map((p) => ({
+                        ...p,
+                        kills: "" as string,
+                        isAbsent: true,
+                    })),
                 }));
 
-                // Track which players the AI explicitly marked as absent (kills: null)
-                const absentPlayerIds = new Set<string>();
-
                 aiGroup.players.forEach((aiPlayer) => {
-                    if (aiPlayer.isUnknown) {
-                        if (aiPlayer.kills !== null) {
+                    if (aiPlayer.isUnknown || aiPlayer.kills === null) {
+                        if (aiPlayer.isUnknown && aiPlayer.kills !== null) {
                             newUnknownPlayers.push({ name: aiPlayer.name, kills: aiPlayer.kills, matchIdx });
                         }
-                        return;
-                    }
-
-                    // kills: null means AI didn't find this player — keep original state
-                    if (aiPlayer.kills === null) {
                         return;
                     }
 
@@ -604,22 +601,15 @@ Match B: #1 team, #2 team | Found: X, Absent: Y, Unknown: Z`;
                 };
             });
 
-            // On first paste, don't flood with change notes — only show unknown players
-            if (isFirstPaste) {
-                setChangeNotes([]);
-                setIsFirstPaste(false);
-                // Update initialMatchDataList so subsequent edits show real diffs
-                setInitialMatchDataList(JSON.parse(JSON.stringify(newMatchDataList)));
-            } else {
-                setChangeNotes(computeChangeNotes(newMatchDataList));
-            }
+            // Always show change notes comparing against saved data
+            setChangeNotes(computeChangeNotes(newMatchDataList));
             setMatchDataList(newMatchDataList);
             setUnknownPlayers(newUnknownPlayers);
             toast.success(`Applied data for ${Math.min(matchGroups.length, matchDataList.length)} match(es)!`);
         } catch (err: unknown) {
             toast.error((err as Error).message || "Invalid JSON");
         }
-    }, [matchDataList, computeChangeNotes, isFirstPaste]);
+    }, [matchDataList, computeChangeNotes]);
 
     // Handle paste
     const handlePaste = useCallback((e: React.ClipboardEvent) => {
