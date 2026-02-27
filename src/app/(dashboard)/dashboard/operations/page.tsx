@@ -404,7 +404,7 @@ export default function OperationsPage() {
             )}
 
             {/* Selected Tournament Details — super admin only */}
-            {selected && isSuperAdmin && (
+            {selected && (
                 <motion.div
                     key={selected.id}
                     initial={{ opacity: 0, y: 8 }}
@@ -520,15 +520,17 @@ export default function OperationsPage() {
                                 >
                                     Edit
                                 </Button>
-                                <Button
-                                    size="sm"
-                                    color="warning"
-                                    variant="flat"
-                                    startContent={<Trophy className="h-3 w-3" />}
-                                    onPress={winnersModal.onOpen}
-                                >
-                                    {selected.isWinnerDeclared ? "View Results" : "View Winners"}
-                                </Button>
+                                {isSuperAdmin && (
+                                    <Button
+                                        size="sm"
+                                        color="warning"
+                                        variant="flat"
+                                        startContent={<Trophy className="h-3 w-3" />}
+                                        onPress={winnersModal.onOpen}
+                                    >
+                                        {selected.isWinnerDeclared ? "View Results" : "View Winners"}
+                                    </Button>
+                                )}
                             </div>
                         </CardBody>
                     </Card>
