@@ -20,7 +20,7 @@ import {
     Volume2,
     VolumeX,
 } from "lucide-react";
-import { PubgmiLogo } from "@/components/common/pubgmi-logo";
+import { Spinner } from "@heroui/react";
 import type { PlayerDTO } from "@/hooks/use-players";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { useRouter } from "next/navigation";
@@ -183,7 +183,7 @@ export function PlayerStatsModal({
                             <>
                                 {!imageLoaded && (
                                     <div className="absolute inset-0 z-10 flex items-center justify-center bg-default-100">
-                                        <PubgmiLogo variant="header" className="text-xl text-foreground/30" />
+                                        <Spinner size="sm" />
                                     </div>
                                 )}
                                 {characterImage.isVideo ? (

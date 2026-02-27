@@ -3,7 +3,7 @@
 import { Avatar } from "@heroui/react";
 import { CategoryBadge } from "@/components/ui/category-badge";
 import { Crown } from "lucide-react";
-import { PubgmiLogo } from "@/components/common/pubgmi-logo";
+import Script from "next/script";
 import type { PlayerDTO, PlayersMeta } from "@/hooks/use-players";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { useRef, useEffect } from "react";
@@ -172,7 +172,20 @@ export function PlayerTable({
             {/* Infinite scroll sentinel */}
             <div ref={sentinelRef} className="flex justify-center py-4">
                 {isFetchingNextPage && (
-                    <PubgmiLogo variant="header" className="text-base text-foreground/30" />
+                    <>
+                        <Script
+                            src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.3/dist/dotlottie-wc.js"
+                            type="module"
+                            strategy="lazyOnload"
+                        />
+                        {/* @ts-expect-error – dotlottie-wc is a web component */}
+                        <dotlottie-wc
+                            src="https://lottie.host/1e87a411-568e-4c3c-9636-d83afd6d26f4/WELgDwxSwC.lottie"
+                            style={{ width: "150px", height: "150px" }}
+                            autoplay
+                            loop
+                        />
+                    </>
                 )}
             </div>
         </div>
