@@ -257,7 +257,7 @@ export default function WalletPage() {
         },
         onSuccess: (data) => {
             const ucAdded = data?.data?.ucAdded ?? 0;
-            toast.success(`🎉 Added ${ucAdded} UC! 7x lucky voter boost active 🎯`);
+            toast.success(`🎉 Added ${ucAdded} UC! 7x chance for free tournament entry 🎯`);
             queryClient.invalidateQueries({ queryKey: ["wallet"] });
             queryClient.invalidateQueries({ queryKey: ["profile"] });
             queryClient.invalidateQueries({ queryKey: ["transactions"] });
@@ -369,8 +369,8 @@ export default function WalletPage() {
                                     <span className="text-xs">{hasRazorpayTopUp ? "🎉" : "🎯"}</span>
                                     <p className="text-[11px] font-medium text-success">
                                         {hasRazorpayTopUp
-                                            ? "You have 7x lucky voter chance for free entry this season!"
-                                            : "Add UC = 7x lucky voter chance this season"}
+                                            ? "You have 7x chance for free tournament entry this season!"
+                                            : "Add UC = 7x chance for free tournament entry"}
                                     </p>
                                 </div>
                             </CardBody>
