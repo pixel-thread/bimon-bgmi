@@ -1,6 +1,6 @@
 "use client";
 
-import { FunLoader } from "@/components/common/fun-loader";
+import { Spinner } from "@heroui/react";
 
 /**
  * Loading state for the dashboard route group.
@@ -8,7 +8,7 @@ import { FunLoader } from "@/components/common/fun-loader";
 export default function DashboardLoading() {
     return (
         <div className="flex min-h-[60vh] items-center justify-center">
-            <FunLoader />
+            <Spinner size="lg" />
         </div>
     );
 }
