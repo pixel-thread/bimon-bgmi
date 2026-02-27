@@ -59,15 +59,37 @@ export async function POST(req: Request) {
         const dataUri = `data:${mimeType};base64,${base64}`;
         const isVideo = file.type.startsWith("video/");
 
-        // Upload to Cloudinary (auto-detect image vs video)
+        // 50MB limit
+        if (bytes.byteLength > 50 * 1024 * 1024) {
+            return NextResponse.json({ error: "File too large (max 50MB)" }, { status: 400 });
+        }
+
+        // Upload to Cloudinary with incoming transformations
+        // For videos: trim to 8s, compress to 720p, auto quality + codec → only stores compressed version
+        // For images: limit to 800x1200, auto quality → only stores compressed version
         const uploadResult = await cloudinary.uploader.upload(dataUri, {
             folder: "character_images",
             public_id: `player_${user.player.id}_${Date.now()}`,
             overwrite: true,
-            resource_type: "auto",
+            resource_type: isVideo ? "video" : "image",
             ...(isVideo
-                ? { eager: [{ width: 800, crop: "limit", quality: "auto", format: "mp4" }] }
-                : { transformation: [{ width: 800, height: 1200, crop: "limit", quality: "auto" }] }
+                ? {
+                    transformation: [
+                        {
+                            width: 720,
+                            crop: "limit",
+                            quality: "auto",
+                            duration: "8",
+                            video_codec: "auto",
+                        },
+                    ],
+                    format: "mp4",
+                }
+                : {
+                    transformation: [
+                        { width: 800, height: 1200, crop: "limit", quality: "auto" },
+                    ],
+                }
             ),
         });
 
