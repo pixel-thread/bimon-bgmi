@@ -102,7 +102,7 @@ interface WalletData {
 const PLATFORM_FEE_PERCENT = 2.4;
 const QUICK_UC_AMOUNTS = [10, 50, 100, 200];
 
-/** Calculate rupee amount to charge for desired UC */
+/** Calculate rupee amount to charge for desired UC (includes 2.4% Razorpay fee) */
 const calculateRupees = (uc: number) => {
     const exactAmount = uc / (1 - PLATFORM_FEE_PERCENT / 100);
     return Math.round(exactAmount * 100) / 100;
@@ -395,6 +395,14 @@ export default function WalletPage() {
                     </motion.div>
                 )}
 
+                {/* Lucky voter promo */}
+                <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 px-4 py-2.5">
+                    <span className="text-sm">🎯</span>
+                    <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                        Top up = 7x lucky voter chance this season
+                    </p>
+                </div>
+
                 {/* ── Transaction History ─────────────────────── */}
                 <Card className="border border-divider">
                     <CardHeader className="flex items-center justify-between pb-2">
@@ -529,7 +537,7 @@ export default function WalletPage() {
                             Add UC Balance
                         </span>
                         <span className="text-[11px] text-foreground/40">
-                            {PLATFORM_FEE_PERCENT}% fee by Razorpay
+                            {PLATFORM_FEE_PERCENT}% Razorpay fee included
                         </span>
                     </ModalHeader>
 
@@ -591,6 +599,14 @@ export default function WalletPage() {
                             </div>
                             <p className="text-[10px] text-foreground/30">
                                 Min: 10 UC · Max: 9,756 UC (₹10,000)
+                            </p>
+                        </div>
+
+                        {/* Lucky voter promo */}
+                        <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
+                            <span className="text-xs">🎯</span>
+                            <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                                Top up = 7x lucky voter chance this season
                             </p>
                         </div>
 

@@ -169,6 +169,29 @@ export async function POST(request: NextRequest) {
                 if (netLoss > 0) {
                     lossChance = Math.min(40, 5 + Math.floor(netLoss / 30) * 5);
                 }
+
+                // Razorpay top-up boost: players who topped up this season
+                // get 35% minimum chance (close to 40% biggest loser cap)
+                const season = await prisma.season.findUnique({
+                    where: { id: seasonId },
+                    select: { startDate: true, endDate: true },
+                });
+                if (season) {
+                    const hasRazorpayTopUp = await prisma.payment.findFirst({
+                        where: {
+                            playerId,
+                            status: "paid",
+                            createdAt: {
+                                gte: season.startDate,
+                                lte: season.endDate ?? new Date(),
+                            },
+                        },
+                        select: { id: true },
+                    });
+                    if (hasRazorpayTopUp) {
+                        lossChance = Math.max(lossChance, 35);
+                    }
+                }
             }
 
             const roll = Math.floor(Math.random() * 100);

@@ -5,7 +5,7 @@ import { type NextRequest } from "next/server";
 import { z } from "zod";
 import crypto from "crypto";
 
-// Platform fee percentage (2.4%)
+// Razorpay platform fee (2.4%)
 const PLATFORM_FEE_PERCENT = 2.4;
 
 const verifyPaymentSchema = z.object({
@@ -17,6 +17,7 @@ const verifyPaymentSchema = z.object({
 /**
  * POST /api/payments/verify
  * Verifies Razorpay payment signature and credits UC to player wallet.
+ * UC = rupees paid minus 2.4% Razorpay fee.
  */
 export async function POST(req: NextRequest) {
     try {
@@ -36,7 +37,6 @@ export async function POST(req: NextRequest) {
             .digest("hex");
 
         if (generatedSignature !== razorpay_signature) {
-            // Mark payment as failed
             await prisma.payment.update({
                 where: { razorpayOrderId: razorpay_order_id },
                 data: { status: "failed" },
@@ -47,7 +47,6 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        // Find the payment record
         const payment = await prisma.payment.findUnique({
             where: { razorpayOrderId: razorpay_order_id },
         });
@@ -63,9 +62,8 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        // Convert paisa back to rupees (₹1 = 100 paisa)
+        // Convert paisa → rupees, apply 2.4% fee
         const amountInRupees = payment.amount / 100;
-        // Apply platform fee (2.4%) and calculate UC (floor to round down)
         const ucAmount = Math.floor(
             amountInRupees * (1 - PLATFORM_FEE_PERCENT / 100)
         );
