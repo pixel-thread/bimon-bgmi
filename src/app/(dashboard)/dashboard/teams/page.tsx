@@ -196,7 +196,7 @@ export default function TeamsPage() {
             }));
         },
         enabled: !!tournamentId,
-        staleTime: 30_000,
+        staleTime: 0,
     });
 
     const { data: teams, isLoading, error } = useQuery<TeamDTO[]>({

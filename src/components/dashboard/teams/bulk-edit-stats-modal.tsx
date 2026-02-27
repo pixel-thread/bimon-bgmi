@@ -619,7 +619,7 @@ Match B: #1 team, #2 team | Found: X, Absent: Y, Unknown: Z`;
         } catch (err: unknown) {
             toast.error((err as Error).message || "Invalid JSON");
         }
-    }, [matchDataList, computeChangeNotes]);
+    }, [matchDataList, computeChangeNotes, isFirstPaste]);
 
     // Handle paste
     const handlePaste = useCallback((e: React.ClipboardEvent) => {

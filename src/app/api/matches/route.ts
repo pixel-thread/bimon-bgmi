@@ -85,9 +85,10 @@ export async function GET(request: NextRequest) {
                 }));
                 const presentIds = new Set(tpsPlayers.map(p => p.id));
 
-                // Add absent players from team roster
+                // Add players from roster who don't have TPS records yet
+                // These players haven't had stats entered — default to present
                 const roster = teamRosterMap.get(ts.team.id) || [];
-                const absentPlayers = roster
+                const rosterOnlyPlayers = roster
                     .filter(p => !presentIds.has(p.id))
                     .map(p => ({
                         id: p.id,
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
                         username: p.user.username,
                         imageUrl: p.customProfileImageUrl || p.user.imageUrl,
                         kills: 0,
-                        present: false,
+                        present: true,
                     }));
 
                 return {
@@ -103,7 +104,7 @@ export async function GET(request: NextRequest) {
                     teamName: ts.team.name,
                     teamNumber: ts.team.teamNumber,
                     position: ts.position,
-                    players: [...tpsPlayers, ...absentPlayers],
+                    players: [...tpsPlayers, ...rosterOnlyPlayers],
                 };
             }),
         }));
