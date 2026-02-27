@@ -18,7 +18,20 @@ export function LastRouteRedirector() {
         try {
             const lastRoute = localStorage.getItem(STORAGE_KEY);
             if (lastRoute && lastRoute !== "/") {
-                router.replace(lastRoute);
+                // Validate the route still exists before redirecting
+                fetch(lastRoute, { method: "HEAD" })
+                    .then((res) => {
+                        if (res.ok) {
+                            router.replace(lastRoute);
+                        } else {
+                            // Route no longer exists — clear stale entry
+                            localStorage.removeItem(STORAGE_KEY);
+                        }
+                    })
+                    .catch(() => {
+                        // Network error — just redirect anyway (offline PWA)
+                        router.replace(lastRoute);
+                    });
             }
         } catch {
             // localStorage unavailable — do nothing
