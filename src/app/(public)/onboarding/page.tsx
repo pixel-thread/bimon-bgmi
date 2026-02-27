@@ -113,11 +113,20 @@ export default function OnboardingPage() {
 
         setIsSubmitting(true);
         try {
+            // Grab referral code saved during sign-up redirect
+            const referralCode = localStorage.getItem("referral-code") || undefined;
+
             const res = await fetch("/api/onboarding", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ displayName: displayName.trim() }),
+                body: JSON.stringify({
+                    displayName: displayName.trim(),
+                    referralCode,
+                }),
             });
+
+            // Clear referral code regardless of outcome
+            localStorage.removeItem("referral-code");
 
             if (!res.ok) {
                 const json = await res.json();

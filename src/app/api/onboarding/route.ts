@@ -15,7 +15,10 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { displayName } = body as { displayName: string };
+        const { displayName, referralCode } = body as {
+            displayName: string;
+            referralCode?: string;
+        };
 
         if (!displayName?.trim() || displayName.trim().length < 3) {
             return ErrorResponse({
@@ -67,6 +70,22 @@ export async function POST(request: NextRequest) {
                         playerId: player.id,
                     },
                 });
+
+                // Create referral record if a valid referral code was provided
+                if (referralCode) {
+                    const promoter = await tx.user.findFirst({
+                        where: { username: referralCode },
+                    });
+                    // Only create if promoter exists and isn't self-referring
+                    if (promoter && promoter.id !== user.id) {
+                        await tx.referral.create({
+                            data: {
+                                promoterId: promoter.id,
+                                referredPlayerId: player.id,
+                            },
+                        });
+                    }
+                }
             } else {
                 // Update display name
                 player = await tx.player.update({

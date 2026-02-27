@@ -1,9 +1,23 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 /**
  * /sign-up redirects to /sign-in
- * There is no separate sign-up page — Google OAuth handles both.
+ * Captures ?ref= param into localStorage so onboarding can create the referral.
  */
 export default function SignUpPage() {
-    redirect("/sign-in");
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        const ref = searchParams.get("ref");
+        if (ref) {
+            localStorage.setItem("referral-code", ref);
+        }
+        router.replace("/sign-in");
+    }, [router, searchParams]);
+
+    return null;
 }
