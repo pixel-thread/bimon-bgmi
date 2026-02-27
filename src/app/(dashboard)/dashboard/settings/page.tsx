@@ -120,7 +120,7 @@ export default function SettingsPage() {
                         <CardBody className="space-y-2 pt-3">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-foreground/60">Version</span>
-                                <span className="font-mono text-xs">2.0.0</span>
+                                <span className="font-mono text-xs">v2 · {process.env.NEXT_PUBLIC_BUILD_DATE}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-foreground/60">Framework</span>

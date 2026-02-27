@@ -204,7 +204,7 @@ export default function SettingsPage() {
                             <Divider />
                             <div className="flex justify-between">
                                 <span>Version</span>
-                                <span className="font-medium text-foreground/70">2.0.0</span>
+                                <span className="font-medium text-foreground/70">v2 · {process.env.NEXT_PUBLIC_BUILD_DATE}</span>
                             </div>
                             <Divider />
                             <div className="flex justify-between">
