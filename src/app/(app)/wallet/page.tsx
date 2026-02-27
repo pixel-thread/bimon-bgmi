@@ -343,7 +343,7 @@ export default function WalletPage() {
                                             Available Balance
                                         </span>
                                         <p
-                                            className={`text-4xl font-bold tracking-tight ${(wallet?.balance ?? 0) < 0
+                                            className={`whitespace-nowrap text-4xl font-bold tracking-tight ${(wallet?.balance ?? 0) < 0
                                                 ? "text-danger"
                                                 : "text-foreground"
                                                 }`}
@@ -390,18 +390,18 @@ export default function WalletPage() {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Lucky voter promo */}
+                                <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
+                                    <span className="text-xs">🎯</span>
+                                    <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                                        Top up = 7x lucky voter chance this season
+                                    </p>
+                                </div>
                             </CardBody>
                         </Card>
                     </motion.div>
                 )}
-
-                {/* Lucky voter promo */}
-                <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 px-4 py-2.5">
-                    <span className="text-sm">🎯</span>
-                    <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                        Top up = 7x lucky voter chance this season
-                    </p>
-                </div>
 
                 {/* ── Transaction History ─────────────────────── */}
                 <Card className="border border-divider">
@@ -455,50 +455,69 @@ export default function WalletPage() {
 
                         {transactions.length > 0 && (
                             <div className="divide-y divide-divider">
-                                {transactions.map((tx, i) => (
-                                    <motion.div
-                                        key={tx.id}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        transition={{ delay: i * 0.02 }}
-                                        className="flex items-center gap-3 px-4 py-3"
-                                    >
-                                        <div
-                                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tx.type === "CREDIT"
-                                                ? "bg-success/10"
-                                                : "bg-danger/10"
-                                                }`}
+                                {transactions.map((tx, i) => {
+                                    // Compute balance after this tx by working backwards
+                                    // from current balance through all prior transactions
+                                    const laterTxs = transactions.slice(0, i);
+                                    let balAfter = wallet?.balance ?? 0;
+                                    for (const lt of laterTxs) {
+                                        balAfter -= lt.type === "CREDIT" ? lt.amount : -lt.amount;
+                                    }
+                                    const balBefore = tx.type === "CREDIT"
+                                        ? balAfter - tx.amount
+                                        : balAfter + tx.amount;
+
+                                    return (
+                                        <motion.div
+                                            key={tx.id}
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            transition={{ delay: i * 0.02 }}
+                                            className="flex items-center gap-3 px-4 py-3"
                                         >
-                                            {tx.type === "CREDIT" ? (
-                                                <ArrowDownLeft className="h-4 w-4 text-success" />
-                                            ) : (
-                                                <ArrowUpRight className="h-4 w-4 text-danger" />
-                                            )}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm">
-                                                {tx.description}
-                                            </p>
-                                            <p className="text-xs text-foreground/40">
-                                                {new Date(
-                                                    tx.createdAt
-                                                ).toLocaleDateString("en-IN", {
-                                                    day: "numeric",
-                                                    month: "short",
-                                                })}
-                                            </p>
-                                        </div>
-                                        <span
-                                            className={`shrink-0 text-sm font-semibold ${tx.type === "CREDIT"
-                                                ? "text-success"
-                                                : "text-danger"
-                                                }`}
-                                        >
-                                            {tx.type === "CREDIT" ? "+" : "-"}
-                                            {tx.amount.toLocaleString()} UC
-                                        </span>
-                                    </motion.div>
-                                ))}
+                                            <div
+                                                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tx.type === "CREDIT"
+                                                    ? "bg-success/10"
+                                                    : "bg-danger/10"
+                                                    }`}
+                                            >
+                                                {tx.type === "CREDIT" ? (
+                                                    <ArrowDownLeft className="h-4 w-4 text-success" />
+                                                ) : (
+                                                    <ArrowUpRight className="h-4 w-4 text-danger" />
+                                                )}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm">
+                                                    {tx.description}
+                                                </p>
+                                                <div className="flex items-center gap-1.5 text-[10px] text-foreground/40">
+                                                    <span>
+                                                        {new Date(
+                                                            tx.createdAt
+                                                        ).toLocaleDateString("en-IN", {
+                                                            day: "numeric",
+                                                            month: "short",
+                                                        })}
+                                                    </span>
+                                                    <span>·</span>
+                                                    <span>
+                                                        {balBefore.toLocaleString()} → {balAfter.toLocaleString()} UC
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <span
+                                                className={`shrink-0 text-sm font-semibold ${tx.type === "CREDIT"
+                                                    ? "text-success"
+                                                    : "text-danger"
+                                                    }`}
+                                            >
+                                                {tx.type === "CREDIT" ? "+" : "-"}
+                                                {tx.amount.toLocaleString()} UC
+                                            </span>
+                                        </motion.div>
+                                    );
+                                })}
 
                                 {/* Infinite scroll trigger */}
                                 <div
