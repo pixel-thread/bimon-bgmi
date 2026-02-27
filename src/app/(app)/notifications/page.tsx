@@ -442,8 +442,23 @@ export default function NotificationsPage() {
                             transition={{ delay: (hasActionItems ? 0.1 : 0) + i * 0.03 }}
                         >
                             <Card
-                                isPressable={!!notification.link || !!pendingRequest}
+                                isPressable={!!notification.link || !!pendingRequest || !notification.isRead}
                                 onPress={() => {
+                                    // Mark as read immediately (optimistic)
+                                    if (!notification.isRead) {
+                                        fetch(`/api/notifications/${notification.id}/read`, { method: "POST" });
+                                        queryClient.setQueryData<NotificationsData>(["notifications"], (old) => {
+                                            if (!old) return old;
+                                            return {
+                                                ...old,
+                                                unreadCount: Math.max(0, old.unreadCount - 1),
+                                                notifications: old.notifications.map((n) =>
+                                                    n.id === notification.id ? { ...n, isRead: true } : n
+                                                ),
+                                            };
+                                        });
+                                        queryClient.invalidateQueries({ queryKey: ["notification-count"] });
+                                    }
                                     if (pendingRequest) {
                                         openRequestModal(pendingRequest);
                                     } else if (notification.link) {
