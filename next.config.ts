@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
       { source: "/admin/teams", destination: "/dashboard/teams", permanent: false },
       { source: "/admin/income", destination: "/dashboard/income", permanent: false },
       { source: "/admin/rules", destination: "/dashboard/rules", permanent: false },
-      { source: "/admin/settings", destination: "/dashboard/settings", permanent: false },
+      { source: "/admin/settings", destination: "/settings", permanent: false },
       { source: "/admin/royal-pass", destination: "/dashboard/royal-pass", permanent: false },
       { source: "/admin/lucky-voters", destination: "/dashboard/lucky-voters", permanent: false },
       { source: "/admin/insights", destination: "/dashboard/player-insights", permanent: false },
