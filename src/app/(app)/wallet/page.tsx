@@ -29,7 +29,6 @@ import {
     AlertCircle,
     Loader2,
     Plus,
-    CreditCard,
     IndianRupee,
     Sparkles,
 } from "lucide-react";
@@ -92,6 +91,39 @@ interface TransactionsResponse {
 
 interface WalletData {
     balance: number;
+}
+
+// ─── Payment Methods Badge ──────────────────────────────────
+
+const PAYMENT_METHODS = ["GPay", "Paytm", "PhonePe", "BHIM", "Cards"];
+
+function PaymentMethodsBadge() {
+    const [idx, setIdx] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setIdx((prev) => (prev + 1) % PAYMENT_METHODS.length);
+        }, 1500);
+        return () => clearInterval(timer);
+    }, []);
+
+    return (
+        <div className="flex items-center justify-center gap-1.5 pb-1 text-[10px] text-foreground/40">
+            <span>Pay via</span>
+            <AnimatePresence mode="wait">
+                <motion.span
+                    key={PAYMENT_METHODS[idx]}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.2 }}
+                    className="inline-block font-semibold text-foreground/60"
+                >
+                    {PAYMENT_METHODS[idx]}
+                </motion.span>
+            </AnimatePresence>
+        </div>
+    );
 }
 
 // ─── Constants ──────────────────────────────────────────────
@@ -627,29 +659,27 @@ export default function WalletPage() {
                         </div>
                     </ModalBody>
 
-                    <ModalFooter className="gap-2">
-                        <Button
-                            variant="flat"
-                            onPress={onClose}
-                            isDisabled={isPaymentLoading}
-                            className="flex-1"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            color="success"
-                            className="flex-1 font-semibold text-white"
-                            isLoading={isPaymentLoading}
-                            isDisabled={!isValidAmount}
-                            startContent={
-                                !isPaymentLoading && (
-                                    <CreditCard className="h-4 w-4" />
-                                )
-                            }
-                            onPress={() => createOrder.mutate()}
-                        >
-                            Pay ₹{formatRupees(rupeeAmount)}
-                        </Button>
+                    <ModalFooter className="flex-col gap-2">
+                        <div className="flex w-full gap-2">
+                            <Button
+                                variant="flat"
+                                onPress={onClose}
+                                isDisabled={isPaymentLoading}
+                                className="flex-1"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                color="success"
+                                className="flex-1 font-semibold text-white"
+                                isLoading={isPaymentLoading}
+                                isDisabled={!isValidAmount}
+                                onPress={() => createOrder.mutate()}
+                            >
+                                Pay ₹{formatRupees(rupeeAmount)}
+                            </Button>
+                        </div>
+                        <PaymentMethodsBadge />
                     </ModalFooter>
                 </ModalContent>
             </Modal>
