@@ -38,7 +38,7 @@ interface RoyalPassInfo {
     }[];
 }
 
-const RP_PRICE_DISCOUNTED = 10; // 50% off from 20 UC
+const RP_PRICE_DISCOUNTED = 5; // 75% off from 20 UC
 const RP_PRICE_FULL = 20; // Full price
 
 /**
@@ -90,7 +90,7 @@ export default function RoyalPassPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="rounded-lg bg-gradient-to-r from-red-500 to-orange-500 py-2 px-4 text-center text-sm font-medium text-white"
                 >
-                    🎉 <span className="line-through opacity-75">20 UC</span> → 10 UC only! Limited time offer
+                    🎉 <span className="line-through opacity-75">20 UC</span> → 5 UC only! ⏳ Limited time — don't miss out!
                 </motion.div>
             )}
 
@@ -153,8 +153,8 @@ export default function RoyalPassPage() {
                                             <div
                                                 key={i}
                                                 className={`h-3 flex-1 rounded-full transition-all ${i < data.currentStreak
-                                                        ? "bg-gradient-to-r from-orange-400 to-red-500"
-                                                        : "bg-default-200 dark:bg-default-100"
+                                                    ? "bg-gradient-to-r from-orange-400 to-red-500"
+                                                    : "bg-default-200 dark:bg-default-100"
                                                     }`}
                                             />
                                         ))}
@@ -199,8 +199,8 @@ export default function RoyalPassPage() {
                                 fullWidth
                                 size="lg"
                                 className={`h-14 text-lg font-bold text-white shadow-lg ${lostDiscount
-                                        ? "bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500"
-                                        : "bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500"
+                                    ? "bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500"
+                                    : "bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500"
                                     }`}
                                 onPress={handleBuyRP}
                                 isDisabled={isPurchasing}
@@ -220,9 +220,12 @@ export default function RoyalPassPage() {
                                 </span>
                             </Button>
                             {!lostDiscount && (
-                                <div className="text-center">
+                                <div className="flex items-center justify-center gap-2">
                                     <Chip size="sm" color="danger" variant="flat" className="text-[10px]">
-                                        50% OFF
+                                        75% OFF
+                                    </Chip>
+                                    <Chip size="sm" color="warning" variant="flat" className="text-[10px] animate-pulse">
+                                        ⏳ Limited Time
                                     </Chip>
                                 </div>
                             )}

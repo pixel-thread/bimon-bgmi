@@ -625,9 +625,12 @@ export default function ProfilePage() {
                             >
                                 <div className="text-center space-y-4">
                                     {/* Badge */}
-                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-500 text-white text-xs font-bold animate-pulse shadow-lg shadow-red-500/30">
-                                            🔥 50% OFF
+                                            🔥 75% OFF
+                                        </span>
+                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500 text-white text-[10px] font-bold animate-pulse shadow-lg shadow-amber-500/30">
+                                            ⏳ Limited
                                         </span>
                                     </div>
 
@@ -638,7 +641,7 @@ export default function ProfilePage() {
                                         <h3 className="text-xl font-bold text-yellow-400">Royal Pass</h3>
                                         <div className="flex items-center justify-center gap-2 mt-2">
                                             <span className="text-foreground/40 line-through text-lg">20 UC</span>
-                                            <span className="text-2xl font-black text-yellow-400">10 UC</span>
+                                            <span className="text-2xl font-black text-yellow-400">5 UC</span>
                                         </div>
                                     </div>
                                     <div className="space-y-2 text-left text-sm">
@@ -655,9 +658,9 @@ export default function ProfilePage() {
                                             <span className="text-foreground/80">Crown badge on profile</span>
                                         </div>
                                     </div>
-                                    {player?.wallet && player.wallet.balance < 10 && (
+                                    {player?.wallet && player.wallet.balance < 5 && (
                                         <p className="text-xs text-red-400">
-                                            You need {10 - player.wallet.balance} more UC (Balance: {player.wallet.balance} UC)
+                                            You need {5 - player.wallet.balance} more UC (Balance: {player.wallet.balance} UC)
                                         </p>
                                     )}
                                     <div className="flex gap-2 pt-2">
@@ -670,7 +673,7 @@ export default function ProfilePage() {
                                         </Button>
                                         <Button
                                             className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-bold"
-                                            isDisabled={!player?.wallet || player.wallet.balance < 10}
+                                            isDisabled={!player?.wallet || player.wallet.balance < 5}
                                             onPress={async () => {
                                                 try {
                                                     const res = await fetch("/api/royal-pass/buy", { method: "POST" });
@@ -689,7 +692,7 @@ export default function ProfilePage() {
                                                 }
                                             }}
                                         >
-                                            👑 Buy for 10 UC
+                                            👑 Buy for 5 UC
                                         </Button>
                                     </div>
                                 </div>

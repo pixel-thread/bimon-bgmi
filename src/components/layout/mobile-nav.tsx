@@ -6,6 +6,7 @@ import {
     Users,
     Vote,
     Wallet,
+    Gift,
     LayoutDashboard,
     Loader2,
 } from "lucide-react";
@@ -25,6 +26,7 @@ type Tab = {
 const tabs: Tab[] = [
     { label: "Players", href: "/players", icon: Users },
     { label: "Vote", href: "/vote", icon: Vote },
+    { label: "Refer", href: "/refer", icon: Gift },
     { label: "__wallet__", href: "/wallet", icon: Wallet },
     { label: "Profile", href: "/profile" },
 ];

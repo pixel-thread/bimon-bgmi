@@ -4,17 +4,12 @@ import { useState, useEffect } from "react";
 import { Card, CardBody, Switch, Divider, Chip } from "@heroui/react";
 import {
     Settings,
-    Users,
     Globe,
     Bell,
     Palette,
     Info,
     LogOut,
-    Copy,
-    Check,
     ChevronRight,
-    Shield,
-    BarChart3,
 } from "lucide-react";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
@@ -29,21 +24,9 @@ export default function SettingsPage() {
     const { signOut } = useClerk();
     const { user } = useUser();
     const { theme, setTheme } = useTheme();
-    const [copied, setCopied] = useState(false);
     const [mounted, setMounted] = useState(false);
-
     useEffect(() => setMounted(true), []);
     const [notifications, setNotifications] = useState(true);
-
-    // Generate referral link from username
-    const referralCode = user?.username || "...";
-    const siteUrl = typeof window !== "undefined" ? window.location.origin : "bimon-bgmi.vercel.app";
-
-    const copyReferralLink = () => {
-        navigator.clipboard.writeText(`${siteUrl} — Referral: ${referralCode}`);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
 
     return (
         <div className="mx-auto w-full max-w-2xl space-y-4 px-4 py-6 pb-24 sm:pb-6">
@@ -53,58 +36,11 @@ export default function SettingsPage() {
                 <h1 className="text-xl font-bold">Settings</h1>
             </div>
 
-            {/* Promoter / Referral */}
-            <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-            >
-                <Card className="border border-divider">
-                    <CardBody className="gap-3 p-4">
-                        <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-primary" />
-                            <h2 className="text-sm font-semibold">Invite Friends</h2>
-                        </div>
-                        <p className="text-xs text-foreground/50">
-                            Share the link below and tell them your referral code.
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <div className="flex-1 truncate rounded-lg bg-default-100 px-3 py-2 text-xs text-foreground/70">
-                                {siteUrl}
-                            </div>
-                            <button
-                                onClick={copyReferralLink}
-                                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/20"
-                            >
-                                {copied ? (
-                                    <Check className="h-4 w-4" />
-                                ) : (
-                                    <Copy className="h-4 w-4" />
-                                )}
-                            </button>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-xs text-foreground/40">
-                                <Shield className="h-3 w-3" />
-                                Your code: <span className="font-medium text-foreground/60">{referralCode}</span>
-                            </div>
-                            <Link
-                                href="/promoter"
-                                className="flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary transition-colors hover:bg-primary/20"
-                            >
-                                <BarChart3 className="h-3 w-3" />
-                                Track
-                            </Link>
-                        </div>
-                    </CardBody>
-                </Card>
-            </motion.div>
-
             {/* Language */}
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
+                transition={{ delay: 0.05 }}
             >
                 <Card className="border border-divider">
                     <CardBody className="p-4">

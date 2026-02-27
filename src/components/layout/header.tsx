@@ -22,6 +22,7 @@ import {
     Vote,
     Crown,
     Wallet,
+    Gift,
     BarChart3,
     LogOut,
     User,
@@ -41,6 +42,7 @@ import { PubgmiLogo } from "@/components/common/pubgmi-logo";
 const navItems = [
     { label: "Players", href: "/players", icon: Users },
     { label: "Vote", href: "/vote", icon: Vote },
+    { label: "Refer", href: "/refer", icon: Gift },
     { label: "Wallet", href: "/wallet", icon: Wallet },
 ];
 

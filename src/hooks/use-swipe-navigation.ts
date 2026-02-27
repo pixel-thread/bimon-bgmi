@@ -7,7 +7,7 @@ import { useEffect, useRef, useCallback, useMemo } from "react";
  * Ordered list of swipeable tab routes for regular users.
  * Matches the mobile nav tab order exactly.
  */
-const USER_ROUTES = ["/players", "/vote", "/wallet", "/profile"];
+const USER_ROUTES = ["/players", "/vote", "/refer", "/wallet", "/profile"];
 
 /**
  * Admin route prefix — when the user is an admin, dashboard is prepended

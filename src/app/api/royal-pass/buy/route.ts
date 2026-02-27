@@ -2,14 +2,14 @@ import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { auth } from "@clerk/nextjs/server";
 
-const RP_PRICE_DISCOUNTED = 10; // 50% off from 20 UC
+const RP_PRICE_DISCOUNTED = 5; // 75% off from 20 UC
 const RP_PRICE_FULL = 20; // Full price when discount lost
 const STREAK_THRESHOLD = 8; // Streak milestone for RP reward
 
 /**
  * POST /api/royal-pass/buy
  * Self-purchase Royal Pass for the current season.
- * Price: 5 UC (50% off) if streak < 8, or 10 UC (full) if streak >= 8.
+ * Price: 5 UC (75% off) if streak < 8, or 20 UC (full) if streak >= 8.
  */
 export async function POST() {
     try {
@@ -69,7 +69,7 @@ export async function POST() {
                     playerId: user.player!.id,
                     amount: rpPrice,
                     type: "DEBIT",
-                    description: lostDiscount ? "Royal Pass Purchase (full price)" : "Royal Pass Purchase (50% off)",
+                    description: lostDiscount ? "Royal Pass Purchase (full price)" : "Royal Pass Purchase (75% off)",
                 },
             });
 

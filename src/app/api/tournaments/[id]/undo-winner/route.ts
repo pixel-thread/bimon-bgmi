@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 
-const REFERRAL_COMMISSION = 5;
+const REFERRAL_COMMISSION = 20;
 
 /**
  * POST /api/tournaments/[id]/undo-winner

@@ -15,6 +15,7 @@ const isProtectedRoute = createRouteMatcher([
     "/winners(.*)",
     "/royal-pass(.*)",
     "/promoter(.*)",
+    "/refer(.*)",
 ]);
 
 // Routes that are always public
