@@ -42,13 +42,13 @@ import { PubgmiLogo } from "@/components/common/pubgmi-logo";
 const navItems = [
     { label: "Players", href: "/players", icon: Users },
     { label: "Vote", href: "/vote", icon: Vote },
-    { label: "Refer", href: "/refer", icon: Gift },
     { label: "Wallet", href: "/wallet", icon: Wallet },
 ];
 
 const moreItems = [
     { label: "Winners", href: "/winners", icon: Trophy },
     { label: "Jobs", href: "/jobs", icon: Briefcase },
+    { label: "Refer", href: "/refer", icon: Gift },
     { label: "Notifications", href: "/notifications", icon: Bell },
     { label: "Rules", href: "/rules", icon: BookOpen },
 ];

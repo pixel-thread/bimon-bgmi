@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Users, Gift, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@heroui/react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const PROMO_KEY = "referral-promo-v2-seen";
 
@@ -20,6 +20,7 @@ export function ReferralPromoModal() {
     const [countdown, setCountdown] = useState(SKIP_DELAY);
     const [navigating, setNavigating] = useState(false);
     const canSkip = countdown <= 0;
+    const router = useRouter();
 
     useEffect(() => {
         // Small delay so it doesn't flash on initial render
@@ -202,16 +203,19 @@ export function ReferralPromoModal() {
                                 transition={{ delay: 0.6 }}
                                 className="space-y-2 pt-1"
                             >
-                                <Link href="/refer" onClick={() => { setNavigating(true); dismiss(); }}>
-                                    <Button
-                                        fullWidth
-                                        size="lg"
-                                        isLoading={navigating}
-                                        className="h-14 text-lg font-bold text-white bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 shadow-lg shadow-green-500/30 hover:shadow-green-500/50 transition-shadow"
-                                    >
-                                        🚀 Start Referring
-                                    </Button>
-                                </Link>
+                                <Button
+                                    fullWidth
+                                    size="lg"
+                                    isLoading={navigating}
+                                    className="h-14 text-lg font-bold text-white bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 shadow-lg shadow-green-500/30 hover:shadow-green-500/50 transition-shadow"
+                                    onPress={() => {
+                                        setNavigating(true);
+                                        dismiss();
+                                        router.push("/refer");
+                                    }}
+                                >
+                                    🚀 Start Referring
+                                </Button>
                                 <button
                                     onClick={canSkip ? dismiss : undefined}
                                     className={`text-xs transition-colors ${canSkip
