@@ -95,7 +95,34 @@ interface WalletData {
 
 // ─── Payment Methods Badge ──────────────────────────────────
 
-const PAYMENT_METHODS = ["GPay", "Paytm", "PhonePe", "BHIM", "Cards"];
+const PAYMENT_METHODS = [
+    // Google Pay - multicolor G
+    <svg key="gpay" width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <rect width="18" height="18" rx="4" fill="#fff" fillOpacity="0.2" />
+        <text x="5" y="13.5" fontSize="11" fontWeight="800" fill="#4285F4">G</text>
+    </svg>,
+    // Paytm - blue
+    <svg key="paytm" width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <rect width="18" height="18" rx="4" fill="#00BAF2" fillOpacity="0.3" />
+        <text x="4" y="13.5" fontSize="10" fontWeight="800" fill="#fff">₹</text>
+    </svg>,
+    // PhonePe - purple
+    <svg key="phonepe" width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <rect width="18" height="18" rx="4" fill="#5F259F" fillOpacity="0.4" />
+        <text x="2.5" y="13" fontSize="9" fontWeight="800" fill="#fff">Pe</text>
+    </svg>,
+    // BHIM - orange
+    <svg key="bhim" width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <rect width="18" height="18" rx="4" fill="#F47920" fillOpacity="0.3" />
+        <text x="4.5" y="13.5" fontSize="11" fontWeight="800" fill="#fff">B</text>
+    </svg>,
+    // Cards
+    <svg key="cards" width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <rect width="18" height="18" rx="4" fill="#fff" fillOpacity="0.2" />
+        <rect x="3" y="5" width="12" height="8" rx="1.5" stroke="#fff" strokeWidth="1.2" fill="none" />
+        <line x1="3" y1="8" x2="15" y2="8" stroke="#fff" strokeWidth="1.2" />
+    </svg>,
+];
 
 function PaymentMethodsBadge() {
     const [idx, setIdx] = useState(0);
@@ -108,21 +135,18 @@ function PaymentMethodsBadge() {
     }, []);
 
     return (
-        <div className="flex items-center justify-center gap-1.5 pb-1 text-[10px] text-foreground/40">
-            <span>Pay via</span>
-            <AnimatePresence mode="wait">
-                <motion.span
-                    key={PAYMENT_METHODS[idx]}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.2 }}
-                    className="inline-block font-semibold text-foreground/60"
-                >
-                    {PAYMENT_METHODS[idx]}
-                </motion.span>
-            </AnimatePresence>
-        </div>
+        <AnimatePresence mode="wait">
+            <motion.span
+                key={idx}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.15 }}
+                className="flex items-center"
+            >
+                {PAYMENT_METHODS[idx]}
+            </motion.span>
+        </AnimatePresence>
     );
 }
 
@@ -659,27 +683,27 @@ export default function WalletPage() {
                         </div>
                     </ModalBody>
 
-                    <ModalFooter className="flex-col gap-2">
-                        <div className="flex w-full gap-2">
-                            <Button
-                                variant="flat"
-                                onPress={onClose}
-                                isDisabled={isPaymentLoading}
-                                className="flex-1"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                color="success"
-                                className="flex-1 font-semibold text-white"
-                                isLoading={isPaymentLoading}
-                                isDisabled={!isValidAmount}
-                                onPress={() => createOrder.mutate()}
-                            >
-                                Pay ₹{formatRupees(rupeeAmount)}
-                            </Button>
-                        </div>
-                        <PaymentMethodsBadge />
+                    <ModalFooter className="gap-2">
+                        <Button
+                            variant="flat"
+                            onPress={onClose}
+                            isDisabled={isPaymentLoading}
+                            className="flex-1"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            color="success"
+                            className="flex-1 font-semibold text-white"
+                            isLoading={isPaymentLoading}
+                            isDisabled={!isValidAmount}
+                            startContent={
+                                !isPaymentLoading && <PaymentMethodsBadge />
+                            }
+                            onPress={() => createOrder.mutate()}
+                        >
+                            Pay ₹{formatRupees(rupeeAmount)}
+                        </Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
