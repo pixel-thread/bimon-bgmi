@@ -20,7 +20,6 @@ import {
     ModalBody,
     ModalFooter,
     useDisclosure,
-    Input,
 } from "@heroui/react";
 import {
     Wallet as WalletIcon,
@@ -345,8 +344,8 @@ export default function WalletPage() {
                                         </span>
                                         <p
                                             className={`text-4xl font-bold tracking-tight ${(wallet?.balance ?? 0) < 0
-                                                    ? "text-danger"
-                                                    : "text-foreground"
+                                                ? "text-danger"
+                                                : "text-foreground"
                                                 }`}
                                         >
                                             {(
@@ -458,8 +457,8 @@ export default function WalletPage() {
                                     >
                                         <div
                                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tx.type === "CREDIT"
-                                                    ? "bg-success/10"
-                                                    : "bg-danger/10"
+                                                ? "bg-success/10"
+                                                : "bg-danger/10"
                                                 }`}
                                         >
                                             {tx.type === "CREDIT" ? (
@@ -483,8 +482,8 @@ export default function WalletPage() {
                                         </div>
                                         <span
                                             className={`shrink-0 text-sm font-semibold ${tx.type === "CREDIT"
-                                                    ? "text-success"
-                                                    : "text-danger"
+                                                ? "text-success"
+                                                : "text-danger"
                                                 }`}
                                         >
                                             {tx.type === "CREDIT" ? "+" : "-"}
@@ -530,7 +529,7 @@ export default function WalletPage() {
                             Add UC Balance
                         </span>
                         <span className="text-[11px] text-foreground/40">
-                            {PLATFORM_FEE_PERCENT}% platform fee applies
+                            {PLATFORM_FEE_PERCENT}% fee by Razorpay
                         </span>
                     </ModalHeader>
 
@@ -566,22 +565,34 @@ export default function WalletPage() {
                         </div>
 
                         {/* Custom amount */}
-                        <Input
-                            type="number"
-                            label="Custom UC Amount"
-                            placeholder="Enter UC amount"
-                            min={10}
-                            max={9756}
-                            value={desiredUC?.toString() || ""}
-                            onValueChange={(v) => {
-                                const n = parseInt(v, 10);
-                                if (!isNaN(n) && n >= 0) setDesiredUC(n);
-                                else if (v === "") setDesiredUC(0);
-                            }}
-                            size="sm"
-                            description="Min: 10 UC · Max: 9,756 UC (₹10,000)"
-                            isDisabled={isPaymentLoading}
-                        />
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-medium uppercase tracking-wider text-foreground/40">
+                                Custom UC Amount
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    min={10}
+                                    max={9756}
+                                    value={desiredUC || ""}
+                                    onChange={(e) => {
+                                        const n = parseInt(e.target.value, 10);
+                                        if (!isNaN(n) && n >= 0) setDesiredUC(n);
+                                        else if (e.target.value === "") setDesiredUC(0);
+                                    }}
+                                    placeholder="Enter UC amount"
+                                    disabled={isPaymentLoading}
+                                    className="w-full rounded-xl border border-divider bg-default-100 px-4 py-3 text-sm font-medium text-foreground outline-none transition-colors placeholder:text-foreground/30 focus:border-primary focus:ring-1 focus:ring-primary/30 disabled:opacity-50"
+                                />
+                                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-foreground/30">
+                                    UC
+                                </span>
+                            </div>
+                            <p className="text-[10px] text-foreground/30">
+                                Min: 10 UC · Max: 9,756 UC (₹10,000)
+                            </p>
+                        </div>
 
                         {/* Payment preview */}
                         <div className="space-y-2 rounded-xl bg-gradient-to-br from-success/10 to-success/5 p-4">
@@ -593,7 +604,7 @@ export default function WalletPage() {
                             </div>
                             <div className="flex items-center justify-between text-xs text-foreground/60">
                                 <span>
-                                    Platform Fee ({PLATFORM_FEE_PERCENT}%)
+                                    Razorpay Fee ({PLATFORM_FEE_PERCENT}%)
                                 </span>
                                 <span className="text-foreground/40">
                                     included
