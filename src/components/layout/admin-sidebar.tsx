@@ -127,7 +127,7 @@ export function AdminSidebar() {
     };
 
     return (
-        <aside className="hidden w-64 shrink-0 border-r border-divider bg-background/50 lg:block">
+        <aside className="hidden w-64 shrink-0 border-r border-divider bg-background/50 lg:block sticky top-0 h-dvh">
             <div className="flex h-full flex-col">
                 {/* Logo */}
                 <div className="flex h-14 items-center gap-2 border-b border-divider px-4">
