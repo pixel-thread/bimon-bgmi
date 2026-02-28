@@ -428,8 +428,8 @@ export function DeclareWinnersModal({
                     )}
                 </div>
 
-                {/* Per-player details (detailed tab only) */}
-                {detailed && teamPrize > 0 && playerCount > 0 && (
+                {/* Per-player details: always show stored amounts after declaration, detailed preview only before */}
+                {((isWinnerDeclared && storedAmounts.size > 0) || (detailed && !isWinnerDeclared)) && teamPrize > 0 && playerCount > 0 && (
                     <div className="mt-2 pt-2 border-t border-dashed border-divider space-y-1.5">
                         {taxLoading && !isWinnerDeclared ? (
                             <div className="flex justify-center py-1"><Spinner size="sm" /></div>
