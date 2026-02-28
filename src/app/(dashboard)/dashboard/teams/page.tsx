@@ -472,17 +472,13 @@ export default function TeamsPage() {
                             >
                                 <Card className="border border-divider" style={{ overflow: 'hidden', maxWidth: '100%' }}>
                                     <CardHeader className="justify-between pb-1 gap-2" style={{ overflow: 'hidden' }}>
-                                        <div className="flex items-center gap-2 min-w-0" style={{ overflow: 'hidden', flex: 1 }}>
+                                        <div className="flex items-center gap-2 min-w-0">
                                             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                                                 {team.teamNumber}
                                             </span>
-                                            <div className="min-w-0 flex-1 overflow-hidden" style={{ maxWidth: '120px' }}>
-                                                <h3 className="text-sm font-semibold truncate">
-                                                    {team.players?.length > 0
-                                                        ? team.players.map(p => p.displayName || p.username).join(", ")
-                                                        : team.name}
-                                                </h3>
-                                            </div>
+                                            <span className="text-sm font-semibold text-foreground/50">
+                                                Team {team.teamNumber}
+                                            </span>
                                         </div>
                                         {team.winner && (
                                             <div className="flex items-center gap-1 shrink-0">
