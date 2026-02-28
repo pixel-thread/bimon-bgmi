@@ -115,22 +115,23 @@ export const PodiumCard = memo(function PodiumCard({
                 {charImg?.url ? (
                     isVideo && mediaUrl ? (
                         <>
-                            {thumbnailUrl && (
-                                <img
-                                    src={thumbnailUrl}
-                                    alt=""
-                                    className="absolute inset-0 h-full w-full object-cover opacity-90"
-                                />
+                            {/* Initials placeholder while video loads */}
+                            {!mediaLoaded && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="text-3xl font-bold text-white/20">
+                                        {getDisplayName(player.displayName, player.username)
+                                            .charAt(0)
+                                            .toUpperCase()}
+                                    </span>
+                                </div>
                             )}
                             <video
                                 ref={videoRef}
                                 src={mediaUrl}
                                 autoPlay
-                                loop
                                 muted
                                 playsInline
                                 preload="auto"
-                                poster={thumbnailUrl || undefined}
                                 className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mediaLoaded ? "opacity-90" : "opacity-0"
                                     }`}
                                 onCanPlay={() => setMediaLoaded(true)}
