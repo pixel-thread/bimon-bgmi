@@ -125,9 +125,11 @@ export const PodiumCard = memo(function PodiumCard({
                             <video
                                 ref={videoRef}
                                 src={mediaUrl}
+                                autoPlay
+                                loop
                                 muted
                                 playsInline
-                                preload="none"
+                                preload="auto"
                                 poster={thumbnailUrl || undefined}
                                 className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mediaLoaded ? "opacity-90" : "opacity-0"
                                     }`}

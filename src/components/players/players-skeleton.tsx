@@ -12,9 +12,27 @@ export function PlayersSkeleton({ showPodium = true }: { showPodium?: boolean })
             {/* Podium skeleton */}
             {showPodium && (
                 <div className="flex items-end justify-center gap-3 py-4 sm:gap-6 sm:py-6">
-                    <Skeleton className="h-36 w-20 rounded-2xl sm:h-44 sm:w-28" />
-                    <Skeleton className="h-44 w-24 rounded-2xl sm:h-52 sm:w-32" />
-                    <Skeleton className="h-36 w-20 rounded-2xl sm:h-44 sm:w-28" />
+                    {/* 2nd place */}
+                    <div className="flex flex-col items-center gap-2 mt-6 sm:mt-8">
+                        <Skeleton className="w-20 sm:w-28 aspect-[9/16] rounded-2xl" />
+                        <Skeleton className="h-8 w-8 rounded-full" />
+                        <Skeleton className="h-3 w-16 rounded" />
+                        <Skeleton className="h-2.5 w-12 rounded" />
+                    </div>
+                    {/* 1st place */}
+                    <div className="flex flex-col items-center gap-2">
+                        <Skeleton className="w-24 sm:w-32 aspect-[9/16] rounded-2xl" />
+                        <Skeleton className="h-8 w-8 rounded-full" />
+                        <Skeleton className="h-3 w-16 rounded" />
+                        <Skeleton className="h-2.5 w-12 rounded" />
+                    </div>
+                    {/* 3rd place */}
+                    <div className="flex flex-col items-center gap-2 mt-6 sm:mt-8">
+                        <Skeleton className="w-20 sm:w-28 aspect-[9/16] rounded-2xl" />
+                        <Skeleton className="h-8 w-8 rounded-full" />
+                        <Skeleton className="h-3 w-16 rounded" />
+                        <Skeleton className="h-2.5 w-12 rounded" />
+                    </div>
                 </div>
             )}
 
@@ -31,6 +49,9 @@ export function PlayersSkeleton({ showPodium = true }: { showPodium?: boolean })
                             <Skeleton className="h-3.5 w-28 rounded" />
                             <Skeleton className="h-2.5 w-20 rounded sm:hidden" />
                         </div>
+                        {/* Mobile stat */}
+                        <Skeleton className="h-4 w-10 rounded sm:hidden" />
+                        {/* Desktop stats */}
                         <Skeleton className="hidden h-5 w-10 rounded-full sm:block" />
                         <Skeleton className="hidden h-3.5 w-12 rounded sm:block" />
                         <Skeleton className="hidden h-3.5 w-12 rounded sm:block" />
