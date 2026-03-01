@@ -62,6 +62,7 @@ const sidebarItems: SidebarSection[] = [
         items: [
             { label: "Player Insights", href: "/dashboard/player-insights", icon: Eye },
             { label: "Royal Pass", href: "/dashboard/royal-pass", icon: Crown },
+            { label: "Referrals", href: "/dashboard/refer", icon: Users, superAdminOnly: true },
             { label: "Lucky Voters", href: "/dashboard/lucky-voters", icon: Clover },
             { label: "Income", href: "/dashboard/income", icon: DollarSign },
         ],
