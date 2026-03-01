@@ -5,11 +5,13 @@ import { auth } from "@clerk/nextjs/server";
 const RP_PRICE_DISCOUNTED = 5; // 75% off from 20 UC
 const RP_PRICE_FULL = 20; // Full price when discount lost
 const STREAK_THRESHOLD = 8; // Streak milestone for RP reward
+const STREAK_REWARD_UC = 30; // UC reward for hitting streak milestone
 
 /**
  * POST /api/royal-pass/buy
  * Self-purchase Royal Pass for the current season.
  * Price: 5 UC (75% off) if streak < 8, or 20 UC (full) if streak >= 8.
+ * If paying full price (streak >= 8), also grants 30 UC streak reward and resets streak to 0.
  */
 export async function POST() {
     try {
@@ -26,7 +28,7 @@ export async function POST() {
                         id: true,
                         hasRoyalPass: true,
                         wallet: { select: { id: true, balance: true } },
-                        streak: { select: { current: true } },
+                        streak: { select: { current: true, longest: true } },
                     },
                 },
             },
@@ -41,7 +43,8 @@ export async function POST() {
         }
 
         // Lost discount if streak already reached threshold
-        const lostDiscount = (user.player.streak?.current ?? 0) >= STREAK_THRESHOLD;
+        const currentStreak = user.player.streak?.current ?? 0;
+        const lostDiscount = currentStreak >= STREAK_THRESHOLD;
         const rpPrice = lostDiscount ? RP_PRICE_FULL : RP_PRICE_DISCOUNTED;
 
         if (!user.player.wallet || user.player.wallet.balance < rpPrice) {
@@ -89,10 +92,36 @@ export async function POST() {
                 where: { id: user.player!.id },
                 data: { hasRoyalPass: true },
             });
+
+            // If paying full price (streak >= 8), grant streak reward + reset streak
+            if (lostDiscount) {
+                // Create streak reward
+                await tx.pendingReward.create({
+                    data: {
+                        playerId: user.player!.id,
+                        type: "STREAK",
+                        amount: STREAK_REWARD_UC,
+                        message: `🔥 ${STREAK_THRESHOLD} tournament streak reward!`,
+                    },
+                });
+
+                // Reset streak to 0, preserve longest
+                const newLongest = Math.max(currentStreak, user.player!.streak?.longest ?? 0);
+                await tx.playerStreak.update({
+                    where: { playerId: user.player!.id },
+                    data: {
+                        current: 0,
+                        longest: newLongest,
+                        lastRewardAt: new Date(),
+                    },
+                });
+            }
         });
 
         return SuccessResponse({
-            message: "Royal Pass activated! 👑",
+            message: lostDiscount
+                ? "Royal Pass activated! 👑 + 🔥 30 UC streak reward created!"
+                : "Royal Pass activated! 👑",
         });
     } catch (error) {
         return ErrorResponse({ message: "Failed to purchase Royal Pass", error });
