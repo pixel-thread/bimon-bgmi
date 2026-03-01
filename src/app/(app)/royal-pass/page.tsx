@@ -147,20 +147,61 @@ export default function RoyalPassPage() {
                                 </div>
 
                                 {/* Segmented progress bar with 30 UC goal */}
-                                <div className="flex items-center gap-2">
-                                    <div className="flex flex-1 gap-1">
-                                        {Array.from({ length: data.nextRewardAt }).map((_, i) => (
-                                            <div
-                                                key={i}
-                                                className={`h-3 flex-1 rounded-full transition-all ${i < data.currentStreak
-                                                    ? "bg-gradient-to-r from-orange-400 to-red-500"
-                                                    : "bg-default-200 dark:bg-default-100"
-                                                    }`}
-                                            />
-                                        ))}
-                                    </div>
-                                    <span className="text-sm font-bold text-amber-500">30 UC</span>
-                                </div>
+                                {(() => {
+                                    const streakComplete = data.currentStreak >= data.nextRewardAt;
+                                    const wasting = streakComplete && !data.hasRoyalPass;
+                                    return (
+                                        <>
+                                            {wasting && (
+                                                <style>{`
+                                                    @keyframes pillGrow {
+                                                        0%, 100% { flex-grow: 1; }
+                                                        30% { flex-grow: 2.5; }
+                                                        50% { flex-grow: 1; }
+                                                    }
+                                                    @keyframes textPop {
+                                                        0%, 30% { transform: scale(1); }
+                                                        38% { transform: scale(1.2); }
+                                                        46% { transform: scale(1); }
+                                                        100% { transform: scale(1); }
+                                                    }
+                                                `}</style>
+                                            )}
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex flex-1 gap-1">
+                                                    {Array.from({ length: data.nextRewardAt }).map((_, i) => {
+                                                        const isFilled = i < data.currentStreak;
+                                                        const isLastPill = i === data.nextRewardAt - 1;
+                                                        return (
+                                                            <div
+                                                                key={i}
+                                                                className={`h-3 rounded-full ${isFilled
+                                                                    ? "bg-gradient-to-r from-orange-400 to-red-500"
+                                                                    : "bg-default-200 dark:bg-default-100"
+                                                                    }`}
+                                                                style={isLastPill && wasting
+                                                                    ? { flex: "1", animation: "pillGrow 3.5s ease-in-out infinite" }
+                                                                    : { flex: "1" }
+                                                                }
+                                                            />
+                                                        );
+                                                    })}
+                                                </div>
+                                                <span
+                                                    className={`font-bold shrink-0 ${wasting
+                                                        ? "text-base text-amber-400"
+                                                        : "text-sm text-amber-500"
+                                                        }`}
+                                                    style={wasting ? {
+                                                        animation: "textPop 3.5s ease-in-out infinite",
+                                                    } : undefined}
+                                                >
+                                                    {wasting ? "Free 30 UC" : "30 UC"}
+                                                </span>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
 
                                 <p className="text-center text-xs text-foreground/50">
                                     {data.hasRoyalPass
@@ -205,19 +246,7 @@ export default function RoyalPassPage() {
                                 onPress={handleBuyRP}
                                 isDisabled={isPurchasing}
                             >
-                                <span className="flex items-center gap-2">
-                                    {isPurchasing ? (
-                                        <Loader2 className="h-5 w-5 animate-spin" />
-                                    ) : (
-                                        <Crown className="h-5 w-5" />
-                                    )}
-                                    {isPurchasing
-                                        ? "Claiming..."
-                                        : lostDiscount
-                                            ? "Buy RP - Get 🔥 30 UC Instant!"
-                                            : `Buy RP - ${rpPrice} UC`
-                                    }
-                                </span>
+                                {isPurchasing ? "Claiming..." : `Buy ${rpPrice} UC`}
                             </Button>
                             {!lostDiscount && (
                                 <div className="flex items-center justify-center gap-2">
