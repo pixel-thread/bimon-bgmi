@@ -5,13 +5,14 @@ import { prisma } from "@/lib/database";
 
 /**
  * Get the current authenticated user from the database.
+ * Auto-creates a DB user record for new Clerk users.
  * Cached per request — safe to call multiple times.
  */
 export const getCurrentUser = cache(async () => {
     const { userId: clerkId } = await auth();
     if (!clerkId) return null;
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
         where: { clerkId },
         include: {
             player: {
@@ -22,7 +23,35 @@ export const getCurrentUser = cache(async () => {
         },
     });
 
-    if (!user) return null;
+    if (!user) {
+        // New Clerk user — auto-create DB record
+        const clerkUser = await currentUser();
+        if (!clerkUser) return null;
+
+        const email = clerkUser.emailAddresses?.[0]?.emailAddress || null;
+        const username =
+            clerkUser.username ||
+            (clerkUser.firstName || "user")
+                .toLowerCase()
+                .replace(/[^a-z0-9_]/g, "") +
+            Math.floor(Math.random() * 9000 + 1000);
+
+        user = await prisma.user.create({
+            data: {
+                clerkId,
+                username,
+                email,
+                imageUrl: clerkUser.imageUrl || null,
+            },
+            include: {
+                player: {
+                    include: {
+                        wallet: true,
+                    },
+                },
+            },
+        });
+    }
 
     return {
         id: user.id,

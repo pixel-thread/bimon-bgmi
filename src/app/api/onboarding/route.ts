@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { type NextRequest } from "next/server";
 
 /**
  * POST /api/onboarding
  * Creates or updates the user's player profile during onboarding.
+ * Auto-creates the DB User record for new Clerk users.
  */
 export async function POST(request: NextRequest) {
     try {
@@ -27,14 +28,36 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Find the user
-        const user = await prisma.user.findUnique({
+        // Find or create the user
+        let user = await prisma.user.findUnique({
             where: { clerkId: userId },
             include: { player: true },
         });
 
         if (!user) {
-            return ErrorResponse({ message: "User not found", status: 404 });
+            // New user from Clerk — create DB record
+            const clerkUser = await currentUser();
+            if (!clerkUser) {
+                return ErrorResponse({ message: "Could not fetch user profile", status: 500 });
+            }
+
+            const email = clerkUser.emailAddresses?.[0]?.emailAddress || null;
+            const username =
+                clerkUser.username ||
+                (clerkUser.firstName || "user")
+                    .toLowerCase()
+                    .replace(/[^a-z0-9_]/g, "") +
+                Math.floor(Math.random() * 9000 + 1000);
+
+            user = await prisma.user.create({
+                data: {
+                    clerkId: userId,
+                    username,
+                    email,
+                    imageUrl: clerkUser.imageUrl || null,
+                },
+                include: { player: true },
+            });
         }
 
         if (user.isOnboarded && user.player) {
