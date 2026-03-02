@@ -4,8 +4,31 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useCallback, useMemo } from "react";
 
 /**
- * Ordered list of swipeable tab routes for regular users.
- * Matches the mobile nav tab order exactly.
+ * SVG icon paths matching lucide-react icons used in the mobile nav.
+ * Each is a 24x24 viewBox path with stroke styling.
+ */
+const ICONS: Record<string, string> = {
+    // Users icon
+    "/players": `<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>`,
+    // Vote icon
+    "/vote": `<path d="m9 12 2 2 4-4"/><path d="M5 7c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v12H5V7Z"/><path d="M22 19H2"/>`,
+    // Wallet icon
+    "/wallet": `<path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>`,
+    // User/Profile icon
+    "/profile": `<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>`,
+    // LayoutDashboard icon
+    "/dashboard": `<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/>`,
+};
+
+function getIconSvg(path: string): string {
+    // Match dashboard routes
+    const key = path.startsWith("/dashboard") ? "/dashboard" : path;
+    const iconPath = ICONS[key] || ICONS["/players"];
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>`;
+}
+
+/**
+ * Ordered list of swipeable tab routes.
  */
 const USER_ROUTES = [
     { path: "/players", label: "Players" },
@@ -15,17 +38,9 @@ const USER_ROUTES = [
 ];
 
 const DASHBOARD_PREFIX = "/dashboard";
-
-/** Minimum horizontal distance (px) to trigger navigation */
 const MIN_SWIPE_DISTANCE = 60;
-
-/** Maximum ratio of vertical/horizontal movement */
 const MAX_VERTICAL_RATIO = 0.75;
 
-/**
- * Hook that enables Instagram-like swipe navigation between main tab pages.
- * Shows the current page sliding away and a peek of the next page sliding in.
- */
 export function useSwipeNavigation(
     isAdmin = false,
     lastDashboardHref = "/dashboard"
@@ -45,6 +60,25 @@ export function useSwipeNavigation(
     const directionLocked = useRef<"horizontal" | "vertical" | null>(null);
     const mainEl = useRef<HTMLElement | null>(null);
     const peekEl = useRef<HTMLDivElement | null>(null);
+    const navigating = useRef(false);
+
+    // Reset main when pathname changes (new page rendered)
+    useEffect(() => {
+        if (navigating.current) {
+            navigating.current = false;
+            const main = document.querySelector("main") as HTMLElement;
+            if (main) {
+                main.style.transition = "none";
+                main.style.transform = "";
+                main.style.opacity = "1";
+                main.style.willChange = "";
+                // Remove transition:none after a frame
+                requestAnimationFrame(() => {
+                    main.style.transition = "";
+                });
+            }
+        }
+    }, [pathname]);
 
     const getCurrentIndex = useCallback(() => {
         return routes.findIndex((route) => {
@@ -76,7 +110,6 @@ export function useSwipeNavigation(
         [getCurrentIndex, routes]
     );
 
-    /** Create or update the peek panel */
     const showPeek = useCallback(
         (direction: "left" | "right", progress: number) => {
             const target = getTargetRoute(direction);
@@ -94,30 +127,20 @@ export function useSwipeNavigation(
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    background: var(--background, #000);
+                    background: var(--background, #0a0a0a);
                     pointer-events: none;
                     will-change: transform;
                 `;
-                // Inner content
                 el.innerHTML = `
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:12px;opacity:0.5;">
-                        <div style="width:24px;height:24px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></div>
-                        <span style="font-size:14px;font-weight:600;color:currentColor;">${target.label}</span>
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;opacity:0.35;">
+                        ${getIconSvg(target.path)}
+                        <span style="font-size:13px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">${target.label}</span>
                     </div>
                 `;
                 document.body.appendChild(el);
                 peekEl.current = el;
-
-                // Add spinner keyframe if not exists
-                if (!document.getElementById("swipe-spinner-style")) {
-                    const style = document.createElement("style");
-                    style.id = "swipe-spinner-style";
-                    style.textContent = `@keyframes spin{to{transform:rotate(360deg)}}`;
-                    document.head.appendChild(style);
-                }
             }
 
-            // Position: off-screen on the incoming side, sliding in based on progress
             const offset = (1 - progress) * 100;
             if (direction === "left") {
                 peekEl.current.style.right = "0";
@@ -169,7 +192,6 @@ export function useSwipeNavigation(
             const dy = Math.abs(touch.clientY - touchStart.current.y);
             const absDx = Math.abs(dx);
 
-            // Lock direction
             if (!directionLocked.current && (absDx > 10 || dy > 10)) {
                 if (dy > absDx * MAX_VERTICAL_RATIO) {
                     directionLocked.current = "vertical";
@@ -184,7 +206,6 @@ export function useSwipeNavigation(
             const direction = dx < 0 ? "left" : "right";
 
             if (!canSwipe(direction)) {
-                // Rubber-band at edges
                 const rubber = Math.sign(dx) * Math.pow(absDx, 0.5) * 2;
                 mainEl.current.style.transform = `translateX(${rubber}px)`;
                 hidePeek();
@@ -197,13 +218,9 @@ export function useSwipeNavigation(
             const screenWidth = window.innerWidth;
             const progress = Math.min(absDx / screenWidth, 1);
 
-            // Move current page
             mainEl.current.style.transform = `translateX(${dx}px)`;
-
-            // Show peek of next page
             showPeek(direction, progress);
 
-            // Prefetch the target
             const target = getTargetRoute(direction);
             if (target) router.prefetch(target.path);
         };
@@ -243,11 +260,9 @@ export function useSwipeNavigation(
 
                 const screenW = window.innerWidth;
 
-                // Animate current page off-screen
                 mainEl.current.style.transition = "transform 200ms ease-out";
                 mainEl.current.style.transform = `translateX(${direction === "left" ? -screenW : screenW}px)`;
 
-                // Animate peek to full position
                 if (peekEl.current) {
                     peekEl.current.style.transition = "transform 200ms ease-out";
                     peekEl.current.style.transform = "translateX(0)";
@@ -255,19 +270,14 @@ export function useSwipeNavigation(
 
                 setTimeout(() => {
                     hidePeek();
+                    // Keep main hidden until new page renders
+                    if (mainEl.current) {
+                        mainEl.current.style.opacity = "0";
+                    }
+                    navigating.current = true;
                     router.push(target.path);
-
-                    // Reset after navigation
-                    requestAnimationFrame(() => {
-                        if (mainEl.current) {
-                            mainEl.current.style.transition = "";
-                            mainEl.current.style.transform = "";
-                            mainEl.current.style.willChange = "";
-                        }
-                    });
                 }, 200);
             } else {
-                // Snap back
                 mainEl.current.style.transition = "transform 200ms ease-out";
                 mainEl.current.style.transform = "translateX(0)";
 
