@@ -1,7 +1,7 @@
 import { Header } from "@/components/layout/header";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { OnboardingGuard } from "@/components/common/OnboardingGuard";
-import { SwipeNavigator } from "@/components/common/swipe-navigator";
+
 import { ReferralPromoModal } from "@/components/common/referral-promo-modal";
 
 /**
@@ -22,7 +22,7 @@ export default function AppLayout({
                 <Header />
                 <main className="flex-1 pt-16 pb-16 lg:pb-0">{children}</main>
                 <MobileNav />
-                <SwipeNavigator />
+
                 <ReferralPromoModal />
             </div>
         </OnboardingGuard>

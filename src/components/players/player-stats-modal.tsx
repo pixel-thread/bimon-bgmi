@@ -194,7 +194,11 @@ export function PlayerStatsModal({
                                         playsInline
                                         loop
                                         preload="auto"
-                                        className="h-full w-full object-cover"
+                                        controls={false}
+                                        controlsList="nodownload nofullscreen noremoteplayback"
+                                        disableRemotePlayback
+                                        disablePictureInPicture
+                                        className="h-full w-full object-cover [&::-webkit-media-controls]:!hidden [&::-webkit-media-controls-enclosure]:!hidden"
                                         onLoadedData={() => setImageLoaded(true)}
                                         onCanPlay={() => setImageLoaded(true)}
                                     />

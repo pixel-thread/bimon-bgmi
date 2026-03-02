@@ -2,7 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { Header } from "@/components/layout/header";
 import { MobileNav } from "@/components/layout/mobile-nav";
-import { SwipeNavigator } from "@/components/common/swipe-navigator";
+
 import { redirect } from "next/navigation";
 
 /**
@@ -59,7 +59,7 @@ export default async function DashboardLayout({
                 </div>
             </div>
             <MobileNav />
-            <SwipeNavigator />
+
         </div>
     );
 }

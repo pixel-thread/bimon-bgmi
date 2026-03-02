@@ -371,7 +371,11 @@ export function CharacterPreviewModal({
                                 <video
                                     src={previewUrl}
                                     autoPlay muted playsInline loop
-                                    className="pointer-events-none"
+                                    controls={false}
+                                    controlsList="nodownload nofullscreen noremoteplayback"
+                                    disableRemotePlayback
+                                    disablePictureInPicture
+                                    className="pointer-events-none [&::-webkit-media-controls]:!hidden [&::-webkit-media-controls-enclosure]:!hidden"
                                     style={getImgStyle()}
                                     onLoadedMetadata={(e) => {
                                         const v = e.currentTarget;

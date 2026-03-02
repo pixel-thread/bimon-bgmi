@@ -132,7 +132,11 @@ export const PodiumCard = memo(function PodiumCard({
                                 muted
                                 playsInline
                                 preload="auto"
-                                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${mediaLoaded ? "opacity-90" : "opacity-0"
+                                controls={false}
+                                controlsList="nodownload nofullscreen noremoteplayback"
+                                disableRemotePlayback
+                                disablePictureInPicture
+                                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 [&::-webkit-media-controls]:!hidden [&::-webkit-media-controls-enclosure]:!hidden ${mediaLoaded ? "opacity-90" : "opacity-0"
                                     }`}
                                 onCanPlay={() => setMediaLoaded(true)}
                             />
