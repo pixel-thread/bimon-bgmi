@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
         // Block bio editing for specific users (admin-locked bios)
         const BIO_LOCKED_USERS = ["kohduhhh", "gonison"];
         if (bio !== undefined && BIO_LOCKED_USERS.includes(user.username)) {
-            return ErrorResponse({ message: "tad b dei rei ki Ge lah bin edit", status: 403 });
+            return ErrorResponse({ message: "Ki Ge lah edit rei", status: 403 });
         }
 
         if (bio !== undefined) updateData.bio = bio;
