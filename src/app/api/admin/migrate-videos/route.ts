@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthEmail } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 import { v2 as cloudinary } from "cloudinary";
 
@@ -15,14 +15,14 @@ cloudinary.config({
  * Deletes the old bloated originals. Super admin only.
  */
 export async function POST() {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) {
+    const email = await getAuthEmail();
+    if (!email) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check super admin
     const user = await prisma.user.findUnique({
-        where: { clerkId },
+        where: { email },
         select: { role: true },
     });
     if (user?.role !== "SUPER_ADMIN") {

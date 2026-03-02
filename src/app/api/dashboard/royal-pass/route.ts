@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthEmail } from "@/lib/auth";
 
 async function checkAdmin() {
-    const { userId } = await auth();
+    const userId = await getAuthEmail();
     if (!userId) return null;
     const user = await prisma.user.findUnique({
-        where: { clerkId: userId },
+        where: { email: userId },
         select: { role: true },
     });
     if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) return null;

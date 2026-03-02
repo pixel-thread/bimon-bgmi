@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 
 /**

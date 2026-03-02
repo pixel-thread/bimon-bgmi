@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthEmail } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 
 /**
@@ -8,7 +8,7 @@ import { prisma } from "@/lib/database";
  * Body: multipart/form-data with "image" field.
  */
 export async function POST(req: Request) {
-    const { userId } = await auth();
+    const userId = await getAuthEmail();
     if (!userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 import Razorpay from "razorpay";
 import { z } from "zod";
@@ -32,14 +32,14 @@ const razorpay = new Razorpay({
  */
 export async function POST(req: NextRequest) {
     try {
-        const { userId } = await auth();
+        const userId = await getAuthEmail();
         if (!userId) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
 
         // Find the player
         const user = await prisma.user.findUnique({
-            where: { clerkId: userId },
+            where: { email: userId },
             select: { id: true, player: { select: { id: true } } },
         });
 

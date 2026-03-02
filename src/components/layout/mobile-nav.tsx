@@ -9,7 +9,7 @@ import {
     LayoutDashboard,
     Loader2,
 } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { type LucideIcon } from "lucide-react";
 import { sidebarItems } from "./admin-sidebar";
@@ -37,7 +37,8 @@ const tabs: Tab[] = [
 export function MobileNav() {
     const pathname = usePathname();
     const { isAdmin, balance } = useAuthUser();
-    const { user } = useUser();
+    const { data: session } = useSession();
+    const user = session?.user;
     const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
 
     const { data: profile } = useQuery<{ imageUrl?: string; displayName?: string }>({
@@ -122,7 +123,7 @@ export function MobileNav() {
         ? [{ label: lastDashboard.label, href: lastDashboard.href, icon: lastDashboard.icon }, ...tabs]
         : tabs;
 
-    const initials = user?.firstName?.[0] || user?.username?.[0]?.toUpperCase() || "?";
+    const initials = user?.name?.[0]?.toUpperCase() || "?";
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-divider bg-background/80 backdrop-blur-xl lg:hidden">
@@ -130,7 +131,7 @@ export function MobileNav() {
                 {allTabs.map((tab) => {
                     const isActive = pathname.startsWith(tab.href);
                     const isProfile = tab.label === "Profile";
-                    const profileLabel = profile?.displayName?.split(" ")[0] || user?.firstName || "Profile";
+                    const profileLabel = profile?.displayName?.split(" ")[0] || user?.name?.split(" ")[0] || "Profile";
                     const isLoading = navigatingTo === tab.href && !isActive;
 
                     return (
@@ -148,10 +149,10 @@ export function MobileNav() {
                             {isLoading ? (
                                 <Loader2 className="h-5 w-5 animate-spin" />
                             ) : isProfile ? (
-                                (profile?.imageUrl || user?.imageUrl) ? (
+                                (profile?.imageUrl || user?.image) ? (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img
-                                        src={profile?.imageUrl || user?.imageUrl}
+                                        src={profile?.imageUrl || user?.image || ""}
                                         alt="Profile"
                                         className={`h-5 w-5 rounded-full object-cover transition-transform ${isActive ? "scale-110 ring-1.5 ring-primary" : ""
                                             }`}

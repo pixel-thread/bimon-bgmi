@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthEmail } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 
 /**
@@ -25,7 +25,7 @@ export async function GET() {
  * Body: { galleryId: string }
  */
 export async function POST(req: Request) {
-    const { userId } = await auth();
+    const userId = await getAuthEmail();
     if (!userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
  * Clears the global background.
  */
 export async function DELETE() {
-    const { userId } = await auth();
+    const userId = await getAuthEmail();
     if (!userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

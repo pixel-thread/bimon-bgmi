@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { getAuthEmail, getAuthName, getAuthImage } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 
 /**
@@ -10,7 +10,7 @@ import { type NextRequest } from "next/server";
  */
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const userId = await getAuthEmail();
         if (!userId) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
@@ -30,31 +30,27 @@ export async function POST(request: NextRequest) {
 
         // Find or create the user
         let user = await prisma.user.findUnique({
-            where: { clerkId: userId },
+            where: { email: userId },
             include: { player: true },
         });
 
         if (!user) {
-            // New user from Clerk — create DB record
-            const clerkUser = await currentUser();
-            if (!clerkUser) {
-                return ErrorResponse({ message: "Could not fetch user profile", status: 500 });
-            }
+            // New user — create DB record using NextAuth session data
+            const name = await getAuthName();
+            const image = await getAuthImage();
 
-            const email = clerkUser.emailAddresses?.[0]?.emailAddress || null;
             const username =
-                clerkUser.username ||
-                (clerkUser.firstName || "user")
+                (name || "user")
                     .toLowerCase()
                     .replace(/[^a-z0-9_]/g, "") +
                 Math.floor(Math.random() * 9000 + 1000);
 
             user = await prisma.user.create({
                 data: {
-                    clerkId: userId,
+                    clerkId: `google_${Date.now()}`, // placeholder for backward compat
                     username,
-                    email,
-                    imageUrl: clerkUser.imageUrl || null,
+                    email: userId!,
+                    imageUrl: image || null,
                 },
                 include: { player: true },
             });

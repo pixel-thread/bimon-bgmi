@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthEmail } from "@/lib/auth";
 
 const RP_PRICE_DISCOUNTED = 5; // 75% off from 20 UC
 const RP_PRICE_FULL = 20; // Full price when discount lost
@@ -15,13 +15,13 @@ const STREAK_REWARD_UC = 30; // UC reward for hitting streak milestone
  */
 export async function POST() {
     try {
-        const { userId: clerkId } = await auth();
-        if (!clerkId) {
+        const email = await getAuthEmail();
+        if (!email) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
 
         const user = await prisma.user.findUnique({
-            where: { clerkId },
+            where: { email },
             select: {
                 player: {
                     select: {

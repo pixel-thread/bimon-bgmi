@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 
 /**
@@ -10,7 +10,7 @@ import { type NextRequest } from "next/server";
  */
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const userId = await getAuthEmail();
         if (!userId) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         // Run player + poll lookups in parallel (saves ~100ms)
         const [user, poll] = await Promise.all([
             prisma.user.findUnique({
-                where: { clerkId: userId },
+                where: { email: userId },
                 select: {
                     player: {
                         select: {

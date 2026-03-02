@@ -12,7 +12,7 @@ import {
     PopoverTrigger,
     PopoverContent,
 } from "@heroui/react";
-import { useClerk, useUser } from "@clerk/nextjs";
+import { signOut, useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -64,8 +64,8 @@ export function Header() {
     const isDashboard = pathname.startsWith("/dashboard");
     const router = useRouter();
     const { isAdmin, isSuperAdmin, isSignedIn, balance } = useAuthUser();
-    const { user } = useUser();
-    const { signOut } = useClerk();
+    const { data: session } = useSession();
+    const user = session?.user;
 
     // Check if a section contains the active page
     const sectionHasActive = useCallback((section: typeof sidebarItems[0]) => {
@@ -125,10 +125,10 @@ export function Header() {
 
 
     const handleSignOut = async () => {
-        await signOut({ redirectUrl: "/" });
+        await signOut({ callbackUrl: "/" });
     };
 
-    const initials = user?.firstName?.[0] || user?.username?.[0]?.toUpperCase() || "?";
+    const initials = user?.name?.[0]?.toUpperCase() || "?";
 
     return (
         <>
@@ -298,11 +298,11 @@ export function Header() {
                             </NavbarItem>
                             <NavbarItem className="hidden lg:flex">
                                 <Link href="/profile" className="block">
-                                    {user?.imageUrl ? (
+                                    {user?.image ? (
                                         // eslint-disable-next-line @next/next/no-img-element
                                         <img
-                                            src={user.imageUrl}
-                                            alt={user.username || "avatar"}
+                                            src={user.image}
+                                            alt={user.name || "avatar"}
                                             className="h-8 w-8 rounded-full object-cover ring-2 ring-primary/20 transition-all hover:ring-primary/40"
                                         />
                                     ) : (

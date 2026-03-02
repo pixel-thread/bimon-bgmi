@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 
 export interface PollDTO {
@@ -62,7 +62,7 @@ export function usePolls() {
  */
 export function useVote() {
     const queryClient = useQueryClient();
-    const { user: clerkUser } = useUser();
+    const { data: session } = useSession();
 
     return useMutation({
         mutationFn: async ({
@@ -122,10 +122,9 @@ export function useVote() {
                                 vote,
                                 createdAt: new Date().toISOString(),
                                 displayName:
-                                    clerkUser?.fullName ||
-                                    clerkUser?.username ||
+                                    session?.user?.name ||
                                     "You",
-                                imageUrl: clerkUser?.imageUrl || "",
+                                imageUrl: session?.user?.image || "",
                             });
                         }
 

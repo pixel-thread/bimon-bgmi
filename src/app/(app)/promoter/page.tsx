@@ -4,15 +4,15 @@ import { Card, CardBody } from "@heroui/react";
 import { BarChart3, Users, Trophy, ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 
 /**
  * /promoter — Promoter tracker page.
  * Shows referral stats (coming soon — no tracking yet).
  */
 export default function PromoterPage() {
-    const { user } = useUser();
-    const referralCode = user?.username || "...";
+    const { data: session } = useSession();
+    const referralCode = session?.user?.name?.toLowerCase().replace(/[^a-z0-9_]/g, "") || "...";
 
     return (
         <div className="mx-auto max-w-lg px-4 py-6 sm:px-6">

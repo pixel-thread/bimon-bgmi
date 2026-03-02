@@ -1,46 +1,58 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth-config";
 import { NextResponse } from "next/server";
 
 // Routes that require authentication
-const isProtectedRoute = createRouteMatcher([
-    "/dashboard(.*)",
-    "/profile(.*)",
-    "/settings(.*)",
-    "/vote(.*)",
-    "/wallet(.*)",
-    "/players(.*)",
-    "/notifications(.*)",
-    "/onboarding(.*)",
-    "/jobs(.*)",
-    "/winners(.*)",
-    "/royal-pass(.*)",
-    "/promoter(.*)",
-    "/refer(.*)",
-]);
+const protectedRoutes = [
+    "/dashboard",
+    "/profile",
+    "/settings",
+    "/vote",
+    "/wallet",
+    "/players",
+    "/notifications",
+    "/onboarding",
+    "/jobs",
+    "/winners",
+    "/royal-pass",
+    "/promoter",
+    "/refer",
+];
 
-// Routes that are always public
-const isPublicRoute = createRouteMatcher([
+// Routes that are always public (bypass auth check)
+const publicRoutes = [
     "/",
-    "/sign-in(.*)",
-    "/sign-up(.*)",
-    "/sso-callback(.*)",
+    "/sign-in",
+    "/sign-up",
     "/about",
     "/faq",
     "/rules",
-    "/recent-matches(.*)",
-    "/api/cron(.*)",
+    "/recent-matches",
+    "/api/auth", // NextAuth handler
+    "/api/cron",
     "/api/payments/webhook",
-]);
+];
 
-export default clerkMiddleware(async (auth, request) => {
-    if (isProtectedRoute(request)) {
-        const { userId } = await auth();
-        if (!userId) {
-            const signInUrl = new URL("/sign-in", request.url);
-            signInUrl.searchParams.set("redirect_url", request.url);
-            return NextResponse.redirect(signInUrl);
-        }
+export default auth((req) => {
+    const { pathname } = req.nextUrl;
+
+    // Check if it's a public route
+    const isPublic = publicRoutes.some(
+        (route) => pathname === route || pathname.startsWith(route + "/")
+    );
+    if (isPublic) return NextResponse.next();
+
+    // Check if it's a protected route
+    const isProtected = protectedRoutes.some(
+        (route) => pathname === route || pathname.startsWith(route + "/")
+    );
+
+    if (isProtected && !req.auth) {
+        const signInUrl = new URL("/sign-in", req.url);
+        signInUrl.searchParams.set("callbackUrl", req.url);
+        return NextResponse.redirect(signInUrl);
     }
+
+    return NextResponse.next();
 });
 
 export const config = {

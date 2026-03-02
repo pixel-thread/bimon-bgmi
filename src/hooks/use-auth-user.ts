@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useAuth as useClerkAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 
 interface AuthUser {
     id: string;
@@ -28,7 +28,9 @@ interface AuthUser {
  * Fetches user data from API, caches it, and provides auth helpers.
  */
 export function useAuthUser() {
-    const { isSignedIn, isLoaded } = useClerkAuth();
+    const { data: session, status } = useSession();
+    const isLoaded = status !== "loading";
+    const isSignedIn = status === "authenticated";
 
     const {
         data: user,
@@ -55,8 +57,9 @@ export function useAuthUser() {
 
     return {
         user,
+        session,
         isLoading: !isLoaded || isLoading,
-        isSignedIn: isSignedIn ?? false,
+        isSignedIn: isSignedIn,
         isAdmin,
         isSuperAdmin,
         isPlayer,

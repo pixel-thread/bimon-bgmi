@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { CategoryBadge } from "@/components/ui/category-badge";
-import { useClerk } from "@clerk/nextjs";
+import { signOut } from "next-auth/react";
 import { GameNameInput, validateDisplayName } from "@/components/common/GameNameInput";
 import { useIGNTutorial } from "@/components/common/IGNTutorialModal";
 import { toast } from "sonner";
@@ -93,7 +93,7 @@ interface ProfileData {
  */
 export default function ProfilePage() {
     const queryClient = useQueryClient();
-    const clerk = useClerk();
+    const handleSignOut = () => signOut({ callbackUrl: "/" });
     const profileInputRef = useRef<HTMLInputElement>(null);
     const characterInputRef = useRef<HTMLInputElement>(null);
     const [uploadingProfile, setUploadingProfile] = useState(false);
@@ -766,7 +766,7 @@ export default function ProfilePage() {
                     <Button
                         color="danger" variant="flat" fullWidth
                         startContent={<LogOut className="h-4 w-4" />}
-                        onPress={() => clerk.signOut({ redirectUrl: "/" })}
+                        onPress={() => handleSignOut()}
                     >
                         Sign Out
                     </Button>

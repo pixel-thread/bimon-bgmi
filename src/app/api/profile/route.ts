@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthEmail } from "@/lib/auth";
 
 /**
  * GET /api/profile
@@ -9,13 +9,13 @@ import { auth } from "@clerk/nextjs/server";
  */
 export async function GET() {
     try {
-        const { userId } = await auth();
+        const userId = await getAuthEmail();
         if (!userId) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
 
         const user = await prisma.user.findUnique({
-            where: { clerkId: userId },
+            where: { email: userId },
             include: {
                 player: {
                     include: {

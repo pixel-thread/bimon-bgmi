@@ -14,7 +14,7 @@ import {
     CheckCircle2,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -47,8 +47,8 @@ interface ReferralData {
  * Shows referral code, real tracking data, and how the program works.
  */
 export default function ReferPage() {
-    const { user } = useUser();
-    const referralCode = user?.username || "...";
+    const { data: session } = useSession();
+    const referralCode = session?.user?.name?.toLowerCase().replace(/[^a-z0-9_]/g, "") || "...";
     const siteUrl = typeof window !== "undefined" ? window.location.origin : "";
     const referralLink = `${siteUrl}/sign-up?ref=${referralCode}`;
     const [copied, setCopied] = useState(false);

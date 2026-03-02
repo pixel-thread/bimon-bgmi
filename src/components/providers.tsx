@@ -1,7 +1,7 @@
 "use client";
 
 import { HeroUIProvider } from "@heroui/react";
-import { ClerkProvider } from "@clerk/nextjs";
+import { SessionProvider } from "next-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
@@ -32,7 +32,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     );
 
     return (
-        <ClerkProvider>
+        <SessionProvider>
             <QueryClientProvider client={queryClient}>
                 <ThemeProvider
                     attribute="class"
@@ -55,6 +55,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
                     </HeroUIProvider>
                 </ThemeProvider>
             </QueryClientProvider>
-        </ClerkProvider>
+        </SessionProvider>
     );
 }

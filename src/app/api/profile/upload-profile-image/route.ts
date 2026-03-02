@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthEmail } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 
 /**
@@ -7,8 +7,8 @@ import { prisma } from "@/lib/database";
  * Uploads a profile image to ImgBB and saves the URL in Player.customProfileImageUrl.
  */
 export async function POST(req: Request) {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) {
+    const email = await getAuthEmail();
+    if (!email) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         const imgbbForm = new FormData();
         imgbbForm.append("key", process.env.IMGBB_API_KEY!);
         imgbbForm.append("image", base64);
-        imgbbForm.append("name", `profile_${clerkId}_${Date.now()}`);
+        imgbbForm.append("name", `profile_${Date.now()}`);
 
         const imgbbRes = await fetch("https://api.imgbb.com/1/upload", {
             method: "POST",
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
 
         // Update player's customProfileImageUrl
         const user = await prisma.user.findUnique({
-            where: { clerkId },
+            where: { email },
             select: { player: { select: { id: true } } },
         });
 

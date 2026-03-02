@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthEmail } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 import { v2 as cloudinary } from "cloudinary";
 
@@ -14,8 +14,8 @@ cloudinary.config({
  * Uploads a character image to Cloudinary and creates/updates a Gallery record linked to the Player.
  */
 export async function POST(req: Request) {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) {
+    const email = await getAuthEmail();
+    if (!email) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
 
         // Get player
         const user = await prisma.user.findUnique({
-            where: { clerkId },
+            where: { email },
             select: {
                 player: {
                     select: {

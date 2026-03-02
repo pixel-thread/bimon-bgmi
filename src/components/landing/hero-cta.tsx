@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { ChevronRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { PubgmiLogo } from "@/components/common/pubgmi-logo";
@@ -12,7 +12,9 @@ import { useQuery } from "@tanstack/react-query";
  * Auth-aware heading for the landing page hero.
  */
 export function HeroHeading() {
-    const { isSignedIn, isLoaded, user } = useUser();
+    const { data: session, status } = useSession();
+    const isSignedIn = status === "authenticated";
+    const isLoaded = status !== "loading";
 
     const { data: profile } = useQuery<{ displayName?: string }>({
         queryKey: ["profile"],
@@ -26,7 +28,7 @@ export function HeroHeading() {
         staleTime: 5 * 60 * 1000,
     });
 
-    const displayName = profile?.displayName || user?.firstName || user?.username || "";
+    const displayName = profile?.displayName || session?.user?.name || "";
 
     if (!isLoaded) {
         return (
@@ -62,7 +64,9 @@ export function HeroHeading() {
  * Not signed in → "Sign In" → /sign-in
  */
 export function HeroCTA() {
-    const { isSignedIn, isLoaded } = useUser();
+    const { status } = useSession();
+    const isSignedIn = status === "authenticated";
+    const isLoaded = status !== "loading";
     const [loading, setLoading] = useState(false);
 
     if (!isLoaded) {

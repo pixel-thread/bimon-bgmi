@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 import crypto from "crypto";
@@ -21,7 +21,7 @@ const verifyPaymentSchema = z.object({
  */
 export async function POST(req: NextRequest) {
     try {
-        const { userId } = await auth();
+        const userId = await getAuthEmail();
         if (!userId) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Avatar, Chip } from "@heroui/react";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { Gamepad2, Loader2, CheckCircle } from "lucide-react";
 import { PubgmiLogo } from "@/components/common/pubgmi-logo";
 import { motion } from "motion/react";
@@ -22,7 +22,8 @@ import { WhatsAppJoinModal } from "@/components/common/WhatsAppJoinModal";
  * Already-onboarded users are redirected to /vote.
  */
 export default function OnboardingPage() {
-    const { user: clerkUser, isLoaded } = useUser();
+    const { data: session, status } = useSession();
+    const isLoaded = status !== "loading";
     const router = useRouter();
     const { user: authUser } = useAuthUser();
 
@@ -44,10 +45,11 @@ export default function OnboardingPage() {
         }
     }, [authUser?.isOnboarded, justCompleted, router]);
 
-    // Auto-fill username from Clerk/Google name
+    // Auto-fill username from Google name
     useEffect(() => {
-        if (clerkUser?.firstName && !userName) {
-            let sanitized = clerkUser.firstName
+        const firstName = session?.user?.name?.split(" ")[0];
+        if (firstName && !userName) {
+            let sanitized = firstName
                 .toLowerCase()
                 .replace(/[^a-z0-9_]/g, "");
 
@@ -61,7 +63,7 @@ export default function OnboardingPage() {
                 setIsUserNameAutoFilled(true);
             }
         }
-    }, [clerkUser?.firstName, userName]);
+    }, [session?.user?.name, userName]);
 
     // Debounced duplicate IGN check
     const checkDuplicateIGN = useCallback((name: string) => {
@@ -198,14 +200,13 @@ export default function OnboardingPage() {
 
                     {/* Body */}
                     <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-5">
-                        {/* Clerk user info */}
-                        {clerkUser && (
+                        {/* User info from Google */}
+                        {session?.user && (
                             <div className="flex items-center gap-3 rounded-xl bg-default-100 p-3 -mt-1">
                                 <Avatar
-                                    src={clerkUser.imageUrl}
+                                    src={session.user.image || undefined}
                                     name={
-                                        clerkUser.username ||
-                                        clerkUser.firstName ||
+                                        session.user.name ||
                                         "User"
                                     }
                                     size="sm"
@@ -213,7 +214,7 @@ export default function OnboardingPage() {
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2">
                                         <p className="text-sm font-medium truncate">
-                                            {clerkUser.firstName || clerkUser.username}
+                                            {session.user.name}
                                         </p>
                                         {isUserNameAutoFilled && (
                                             <Chip
@@ -229,7 +230,7 @@ export default function OnboardingPage() {
                                         )}
                                     </div>
                                     <p className="text-xs text-foreground/40">
-                                        {clerkUser.primaryEmailAddress?.emailAddress}
+                                        {session.user.email}
                                     </p>
                                 </div>
                             </div>

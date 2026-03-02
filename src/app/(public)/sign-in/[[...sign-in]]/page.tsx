@@ -1,13 +1,14 @@
 "use client";
 
-import { useSignIn, useAuth } from "@clerk/nextjs";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Swords, Loader2 } from "lucide-react";
 
 export default function SignInPage() {
-    const { signIn, isLoaded } = useSignIn();
-    const { isSignedIn } = useAuth();
+    const { status } = useSession();
+    const isSignedIn = status === "authenticated";
+    const isLoaded = status !== "loading";
     const router = useRouter();
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -23,11 +24,7 @@ export default function SignInPage() {
         if (!isLoaded) return;
         setLoading(true);
         try {
-            await signIn.authenticateWithRedirect({
-                strategy: "oauth_google",
-                redirectUrl: "/sso-callback",
-                redirectUrlComplete: "/",
-            });
+            await signIn("google", { callbackUrl: "/" });
         } catch {
             setError("Failed to start Google sign in. Please try again.");
             setLoading(false);

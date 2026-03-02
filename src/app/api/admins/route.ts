@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthEmail } from "@/lib/auth";
 import { NextRequest } from "next/server";
 
 /**
@@ -9,13 +9,13 @@ import { NextRequest } from "next/server";
  */
 export async function GET(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const userId = await getAuthEmail();
         if (!userId) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
 
         const currentUser = await prisma.user.findUnique({
-            where: { clerkId: userId },
+            where: { email: userId },
             select: { role: true },
         });
 
@@ -84,13 +84,13 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const userId = await getAuthEmail();
         if (!userId) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
 
         const currentUser = await prisma.user.findUnique({
-            where: { clerkId: userId },
+            where: { email: userId },
             select: { id: true, role: true },
         });
 
@@ -130,13 +130,13 @@ export async function PATCH(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const userId = await getAuthEmail();
         if (!userId) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
 
         const currentUser = await prisma.user.findUnique({
-            where: { clerkId: userId },
+            where: { email: userId },
             select: { id: true, role: true },
         });
 
