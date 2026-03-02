@@ -158,7 +158,7 @@ export function BulkEditStatsModal({
                         name: p.displayName || p.username,
                         displayName: p.displayName,
                         username: p.username,
-                        kills: p.kills != null && p.kills !== undefined ? String(p.kills) : "",
+                        kills: !p.present ? "" : (p.kills != null && p.kills !== undefined ? String(p.kills) : ""),
                         isAbsent: !p.present,
                     })),
                 })),
