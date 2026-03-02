@@ -56,21 +56,21 @@ export async function POST(request: NextRequest) {
 
         if (!user?.player) {
             return ErrorResponse({
-                message: "Player profile not found",
+                message: "⚠️ Complete your profile setup first before voting",
                 status: 404,
             });
         }
 
         if (user.player.isBanned) {
             return ErrorResponse({
-                message: "Banned players cannot vote",
+                message: "🚫 You are currently banned and cannot vote. Contact admin for help.",
                 status: 403,
             });
         }
 
         if (!poll || !poll.isActive) {
             return ErrorResponse({
-                message: "Poll not found or no longer active",
+                message: "⏰ This poll has been closed and is no longer accepting votes",
                 status: 404,
             });
         }
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
             const minBalance = user.player.isTrusted ? -200 : -29;
             if (balance < minBalance) {
                 return ErrorResponse({
-                    message: `Insufficient balance (${balance} UC)`,
+                    message: `💰 Not enough UC to vote IN — your balance is ${balance} UC. Top up your wallet to continue.`,
                     status: 403,
                 });
             }

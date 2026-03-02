@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 export interface PollDTO {
     id: string;
@@ -76,7 +77,10 @@ export function useVote() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ pollId, vote }),
             });
-            if (!res.ok) throw new Error("Failed to cast vote");
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error(json.message || "Failed to cast vote");
+            }
             return res.json();
         },
         onMutate: async ({ pollId, vote }) => {
@@ -145,10 +149,13 @@ export function useVote() {
 
             return { previous };
         },
-        onError: (_err, _vars, context) => {
+        onError: (err, _vars, context) => {
             if (context?.previous) {
                 queryClient.setQueryData(["polls"], context.previous);
             }
+            toast.error(err instanceof Error ? err.message : "Failed to cast vote", {
+                duration: 5000,
+            });
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ["polls"] });
