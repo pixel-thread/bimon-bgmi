@@ -47,6 +47,8 @@ let globalDeferredPrompt: BeforeInstallPromptEvent | null = null;
 if (typeof window !== "undefined") {
     window.addEventListener("beforeinstallprompt", (e: Event) => {
         e.preventDefault();
+        // Only capture on Android mobile — skip desktop
+        if (!isAndroidMobile()) return;
         globalDeferredPrompt = e as BeforeInstallPromptEvent;
     });
 }

@@ -167,7 +167,7 @@ export default function RoyalPassAdminPage() {
                             onPress={() => setSortBy(sortBy === "date" ? "name" : sortBy === "name" ? "streak" : "date")}
                             startContent={<ArrowUpDown className="h-3.5 w-3.5" />}
                         >
-                            <span className="hidden sm:inline text-xs">{cycleSortLabel}</span>
+                            <span className="text-xs">{cycleSortLabel}</span>
                         </Button>
                     </div>
 
