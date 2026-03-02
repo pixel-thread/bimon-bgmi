@@ -1,5 +1,4 @@
 import { Swords } from "lucide-react";
-import Link from "next/link";
 import { HeroCTA, HeroHeading } from "@/components/landing/hero-cta";
 import { LastRouteRedirector } from "@/components/common/last-route-redirector";
 
@@ -32,12 +31,6 @@ export default function HomePage() {
 
                     <div className="mt-10 flex items-center justify-center gap-4">
                         <HeroCTA />
-                        <Link
-                            href="/rules"
-                            className="inline-flex items-center rounded-xl border border-foreground/10 bg-foreground/5 px-7 py-3 text-sm font-medium text-foreground/70 backdrop-blur-sm transition-all hover:border-foreground/20 hover:bg-foreground/10 hover:text-foreground"
-                        >
-                            View Rules
-                        </Link>
                     </div>
                 </div>
             </section>
