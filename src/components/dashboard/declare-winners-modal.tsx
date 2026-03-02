@@ -55,6 +55,17 @@ type TaxPreviewData = Record<string, {
     participationRate: number;
 }>;
 
+type DeclaredWinner = {
+    id: string;
+    position: number;
+    amount: number;
+    isDistributed: boolean;
+    teamId: string;
+    teamName: string;
+    teamNumber: number;
+    players: { id: string; displayName: string; username: string }[];
+};
+
 type Props = {
     isOpen: boolean;
     onClose: () => void;
@@ -189,6 +200,18 @@ export function DeclareWinnersModal({
         queryKey: ["stored-winner-rewards", tournamentId],
         queryFn: async () => {
             const res = await fetch(`/api/tournaments/${tournamentId}/stored-results`);
+            if (!res.ok) return [];
+            const json = await res.json();
+            return json.data ?? [];
+        },
+        enabled: isOpen && isWinnerDeclared,
+    });
+
+    // Fetch declared winners (same source as /winners page)
+    const { data: declaredWinners } = useQuery<DeclaredWinner[]>({
+        queryKey: ["declared-winners-detail", tournamentId],
+        queryFn: async () => {
+            const res = await fetch(`/api/winners?tournamentId=${tournamentId}`);
             if (!res.ok) return [];
             const json = await res.json();
             return json.data ?? [];
@@ -675,14 +698,62 @@ export function DeclareWinnersModal({
                                 </div>
                             )}
 
-                            {/* ─ Team Rankings ─ */}
+                            {/* ─ Team Rankings / Declared Winners ─ */}
                             <div>
                                 <p className="text-xs font-semibold text-foreground/40 uppercase tracking-wider mb-2">
-                                    Rankings (Top {placementCount})
+                                    {isWinnerDeclared ? "Declared Winners" : `Rankings (Top ${placementCount})`}
                                 </p>
                                 <div className="space-y-2">
-                                    {rankings.slice(0, placementCount).map((team, idx) =>
-                                        renderTeamCard(team, idx, activeTab === "detailed")
+                                    {isWinnerDeclared && declaredWinners && declaredWinners.length > 0 ? (
+                                        declaredWinners.map((winner, idx) => {
+                                            const borderClass = idx === 0 ? "border-warning/40 bg-warning/[0.04]" :
+                                                idx === 1 ? "border-foreground/15 bg-foreground/[0.02]" :
+                                                    idx === 2 ? "border-orange-500/30 bg-orange-500/[0.03]" :
+                                                        "border-divider";
+                                            return (
+                                                <div key={winner.teamId} className={`rounded-lg border p-3 ${borderClass}`}>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-xl shrink-0">{getMedal(idx)}</span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-medium truncate">
+                                                                {winner.players.map(p => p.displayName || p.username).join(", ")}
+                                                            </p>
+                                                            <p className="text-xs text-foreground/40">{winner.teamName}</p>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <Chip size="sm" color="success" variant="flat" className="font-semibold">
+                                                                ₹{winner.amount.toLocaleString()}
+                                                            </Chip>
+                                                            {winner.players.length > 1 && (
+                                                                <p className="text-[10px] text-foreground/30 mt-0.5">
+                                                                    ₹{Math.floor(winner.amount / winner.players.length)}/player
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    {/* Per-player stored amounts */}
+                                                    {storedAmounts.size > 0 && (
+                                                        <div className="mt-2 pt-2 border-t border-dashed border-divider space-y-1.5">
+                                                            {winner.players.map(p => {
+                                                                const stored = storedAmounts.get(p.id);
+                                                                return (
+                                                                    <div key={p.id} className="text-xs flex items-center justify-between">
+                                                                        <span className="font-medium">{p.displayName || p.username}</span>
+                                                                        {stored !== undefined && (
+                                                                            <span className="font-semibold">₹{stored}</span>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        rankings.slice(0, placementCount).map((team, idx) =>
+                                            renderTeamCard(team, idx, activeTab === "detailed")
+                                        )
                                     )}
                                 </div>
                             </div>

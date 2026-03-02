@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
             position: w.position,
             amount: w.amount,
             isDistributed: w.isDistributed,
+            teamId: w.team.id,
             teamName: w.team.name,
             teamNumber: w.team.teamNumber,
             players: w.team.players.map((p) => ({
