@@ -611,12 +611,28 @@ export default function TeamsPage() {
             {/* Delete Match Confirmation */}
             <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} size="sm">
                 <ModalContent>
-                    <ModalHeader>Delete Match?</ModalHeader>
+                    <ModalHeader>
+                        {selectedMatch?.matchNumber === 1 ? "Reset Tournament?" : "Delete Match?"}
+                    </ModalHeader>
                     <ModalBody>
-                        <p className="text-sm text-foreground/60">
-                            This will permanently delete Match #{selectedMatch?.matchNumber} and all
-                            associated team stats, player stats, and records. This cannot be undone.
-                        </p>
+                        {selectedMatch?.matchNumber === 1 ? (
+                            <div className="space-y-2">
+                                <p className="text-sm text-danger font-medium">
+                                    ⚠️ This will fully reset the tournament!
+                                </p>
+                                <ul className="text-sm text-foreground/60 list-disc pl-4 space-y-1">
+                                    <li>Delete ALL matches, teams & stats</li>
+                                    <li>Refund entry fees to player wallets</li>
+                                    <li>Reactivate the poll for voting</li>
+                                    <li>Set tournament back to ACTIVE</li>
+                                </ul>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-foreground/60">
+                                This will permanently delete Match #{selectedMatch?.matchNumber} and all
+                                associated team stats, player stats, and records. This cannot be undone.
+                            </p>
+                        )}
                     </ModalBody>
                     <ModalFooter>
                         <Button
@@ -632,7 +648,7 @@ export default function TeamsPage() {
                             isLoading={isDeleting}
                             size="sm"
                         >
-                            Delete
+                            {selectedMatch?.matchNumber === 1 ? "Reset Tournament" : "Delete"}
                         </Button>
                     </ModalFooter>
                 </ModalContent>
