@@ -76,7 +76,7 @@ const roleLabels: Record<string, string> = {
 export default function AdminsPage() {
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
-    const [roleFilter, setRoleFilter] = useState("ALL");
+    const [roleFilter, setRoleFilter] = useState("USER");
 
     // Role change state
     const [roleTarget, setRoleTarget] = useState<UserData | null>(null);
