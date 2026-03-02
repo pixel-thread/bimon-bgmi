@@ -126,7 +126,7 @@ export default function WinnersPage() {
                                         <h2 className="text-sm font-bold">Leaderboard</h2>
                                     </div>
                                     <p className="mb-3 text-xs text-foreground/40">
-                                        Top performers in last 6 tournaments
+                                        Top performers this season
                                     </p>
                                     <div className="max-h-[400px] divide-y divide-divider/50 overflow-y-auto">
                                         {data.playerPlacements.map((player, i) => (
@@ -193,7 +193,7 @@ export default function WinnersPage() {
                                     <h2 className="text-sm font-bold">Recent Winners</h2>
                                 </div>
                                 <p className="mb-3 text-xs text-foreground/40">
-                                    Last 6 tournaments results
+                                    Recent tournament results this season
                                 </p>
 
                                 {(data.tournaments?.length ?? 0) === 0 ? (

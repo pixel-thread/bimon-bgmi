@@ -8,10 +8,17 @@ import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
  */
 export async function GET() {
     try {
-        // 1. Fetch last 6 tournaments that have declared winners
+        // Find the current active season
+        const activeSeason = await prisma.season.findFirst({
+            where: { status: "ACTIVE" },
+            select: { id: true },
+        });
+
+        // 1. Fetch last 6 tournaments that have declared winners (active season only)
         const tournaments = await prisma.tournament.findMany({
             where: {
                 isWinnerDeclared: true,
+                ...(activeSeason ? { seasonId: activeSeason.id } : {}),
             },
             orderBy: { startDate: "desc" },
             take: 6,
