@@ -627,13 +627,11 @@ Match B: #1 team, #2 team | Found: X, Absent: Y, Unknown: Z`;
                 const stats = matchData.teams.map((t) => ({
                     teamId: t.teamId,
                     position: parseInt(t.position) || 0,
-                    players: t.players
-                        .filter((p) => !p.isAbsent)
-                        .map((p) => ({
-                            playerId: p.playerId,
-                            kills: parseInt(p.kills) || 0,
-                            present: true,
-                        })),
+                    players: t.players.map((p) => ({
+                        playerId: p.playerId,
+                        kills: p.isAbsent ? 0 : (parseInt(p.kills) || 0),
+                        present: !p.isAbsent,
+                    })),
                 }));
                 const res = await fetch("/api/teams/bulk-stats", {
                     method: "PUT",
@@ -759,7 +757,7 @@ Match B: #1 team, #2 team | Found: X, Absent: Y, Unknown: Z`;
 
                                             <div className={`space-y-2 overflow-y-auto ${changeNotes.length > 0 ? "max-h-[40vh] lg:max-h-[50vh]" : "max-h-[55vh] lg:max-h-[65vh]"}`}>
                                                 {matchData.teams.map((team, teamIdx) => {
-                                                    const hasData = team.position !== "" || team.players.some((p) => p.kills !== "");
+                                                    const hasData = team.position !== "" || team.players.some((p) => p.kills !== "" || p.isAbsent);
                                                     return (
                                                         <div
                                                             key={team.teamId}

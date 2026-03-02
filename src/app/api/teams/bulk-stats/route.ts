@@ -90,8 +90,6 @@ export async function PUT(request: NextRequest) {
         // Update PlayerStats season aggregates
         for (const teamStat of stats) {
             for (const p of teamStat.players) {
-                if (!p.present) continue;
-
                 // Re-aggregate from all TeamPlayerStats for this player in the season
                 const agg = await prisma.teamPlayerStats.aggregate({
                     where: {
