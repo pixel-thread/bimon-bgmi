@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
             select: {
+                username: true,
                 player: {
                     select: {
                         id: true,
@@ -102,6 +103,12 @@ export async function POST(req: NextRequest) {
             updateData.displayName = displayName;
             updateData.displayNameLastChangeAt = new Date();
         }
+        // Block bio editing for specific users (admin-locked bios)
+        const BIO_LOCKED_USERS = ["kohduhhh", "gonison"];
+        if (bio !== undefined && BIO_LOCKED_USERS.includes(user.username)) {
+            return ErrorResponse({ message: "Your bio is locked by admin 😘", status: 403 });
+        }
+
         if (bio !== undefined) updateData.bio = bio;
 
         if (Object.keys(updateData).length === 0) {
