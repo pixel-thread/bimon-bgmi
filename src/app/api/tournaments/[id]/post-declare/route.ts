@@ -97,7 +97,7 @@ export async function POST(
                 // Qualify and pay
                 referralOps.push(prisma.referral.update({
                     where: { id: ref.id },
-                    data: { tournamentsCompleted: newCount, status: "PAID", qualifiedAt: new Date(), paidAt: new Date() },
+                    data: { tournamentsCompleted: newCount, status: "PAID", amountPaid: REFERRAL_COMMISSION, qualifiedAt: new Date(), paidAt: new Date() },
                 }));
                 referralOps.push(prisma.user.update({
                     where: { id: ref.promoterId },

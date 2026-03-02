@@ -56,7 +56,7 @@ export async function GET() {
             tournamentsRequired: REFERRAL_TOURNAMENTS_REQUIRED,
             progress: Math.min(Math.round((ref.tournamentsCompleted / REFERRAL_TOURNAMENTS_REQUIRED) * 100), 100),
             status: ref.status,
-            reward: REFERRAL_COMMISSION,
+            reward: ref.status === "PAID" ? ref.amountPaid : REFERRAL_COMMISSION,
             qualifiedAt: ref.qualifiedAt,
             paidAt: ref.paidAt,
             createdAt: ref.createdAt,
@@ -67,7 +67,7 @@ export async function GET() {
         const pendingReferrals = referrals.filter((r) => r.status === "PENDING").length;
         const qualifiedReferrals = referrals.filter((r) => r.status === "QUALIFIED").length;
         const paidReferrals = referrals.filter((r) => r.status === "PAID").length;
-        const totalUCPaid = paidReferrals * REFERRAL_COMMISSION;
+        const totalUCPaid = referrals.filter((r) => r.status === "PAID").reduce((sum, r) => sum + r.amountPaid, 0);
 
         // Top promoters
         const promoterMap = new Map<string, { username: string; imageUrl: string | null; count: number; paid: number; earnings: number }>();

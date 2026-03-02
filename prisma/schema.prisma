@@ -750,6 +750,7 @@ model Referral {
   referredPlayer       Player         @relation(fields: [referredPlayerId], references: [id], onDelete: Cascade)
   status               ReferralStatus @default(PENDING)
   tournamentsCompleted Int            @default(0)
+  amountPaid           Int            @default(0)
   qualifiedAt          DateTime?
   paidAt               DateTime?
 

@@ -39,7 +39,7 @@ export async function GET() {
             tournamentsRequired: REFERRAL_TOURNAMENTS_REQUIRED,
             progress: Math.min(Math.round((ref.tournamentsCompleted / REFERRAL_TOURNAMENTS_REQUIRED) * 100), 100),
             status: ref.status,
-            reward: REFERRAL_COMMISSION,
+            reward: ref.status === "PAID" ? ref.amountPaid : REFERRAL_COMMISSION,
             isPaid: ref.status === "PAID",
             paidAt: ref.paidAt,
             createdAt: ref.createdAt,
@@ -48,7 +48,7 @@ export async function GET() {
         const totalReferrals = referrals.length;
         const activeReferrals = referrals.filter((r) => r.status === "PENDING").length;
         const paidReferrals = referrals.filter((r) => r.status === "PAID").length;
-        const totalEarned = paidReferrals * REFERRAL_COMMISSION;
+        const totalEarned = referrals.filter((r) => r.status === "PAID").reduce((sum, r) => sum + r.amountPaid, 0);
 
         return SuccessResponse({
             data: {
