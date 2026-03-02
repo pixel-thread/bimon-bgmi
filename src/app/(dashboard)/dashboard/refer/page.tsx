@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
     Card,
     CardBody,
-    CardHeader,
     Chip,
     Skeleton,
     Avatar,
@@ -17,8 +16,8 @@ import {
     Banknote,
     Clock,
     CheckCircle,
-    Trophy,
     TrendingUp,
+    ChevronDown,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState, useMemo } from "react";
@@ -61,19 +60,17 @@ interface ReferralStats {
     tournamentsRequired: number;
 }
 
-interface TopPromoter {
-    id: string;
-    username: string;
-    imageUrl: string | null;
-    count: number;
-    paid: number;
-    earnings: number;
-}
-
 interface ReferralData {
     referrals: ReferralItem[];
     stats: ReferralStats;
-    topPromoters: TopPromoter[];
+    topPromoters: unknown[];
+}
+
+interface PromoterGroup {
+    promoter: Promoter;
+    referrals: ReferralItem[];
+    paidCount: number;
+    totalEarned: number;
 }
 
 const statusConfig = {
@@ -85,6 +82,7 @@ const statusConfig = {
 export default function ReferralAdminPage() {
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "QUALIFIED" | "PAID">("ALL");
+    const [expandedPromoters, setExpandedPromoters] = useState<Set<string>>(new Set());
 
     const { data, isLoading, error } = useQuery<ReferralData>({
         queryKey: ["admin-referrals"],
@@ -97,9 +95,10 @@ export default function ReferralAdminPage() {
         staleTime: 30 * 1000,
     });
 
-    const filtered = useMemo(() => {
+    const groups = useMemo((): PromoterGroup[] => {
         if (!data) return [];
         let list = data.referrals;
+
         if (statusFilter !== "ALL") {
             list = list.filter((r) => r.status === statusFilter);
         }
@@ -112,8 +111,39 @@ export default function ReferralAdminPage() {
                     r.referred.username.toLowerCase().includes(q)
             );
         }
-        return list;
+
+        // Group by promoter
+        const map = new Map<string, PromoterGroup>();
+        for (const ref of list) {
+            const existing = map.get(ref.promoter.id);
+            if (existing) {
+                existing.referrals.push(ref);
+                if (ref.status === "PAID") {
+                    existing.paidCount++;
+                    existing.totalEarned += ref.reward;
+                }
+            } else {
+                map.set(ref.promoter.id, {
+                    promoter: ref.promoter,
+                    referrals: [ref],
+                    paidCount: ref.status === "PAID" ? 1 : 0,
+                    totalEarned: ref.status === "PAID" ? ref.reward : 0,
+                });
+            }
+        }
+
+        // Sort by most referrals first
+        return Array.from(map.values()).sort((a, b) => b.referrals.length - a.referrals.length);
     }, [data, search, statusFilter]);
+
+    const togglePromoter = (id: string) => {
+        setExpandedPromoters((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
 
     if (error) {
         return (
@@ -203,40 +233,6 @@ export default function ReferralAdminPage() {
                 ) : null}
             </div>
 
-            {/* Top Promoters */}
-            {data && data.topPromoters.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                    <Card>
-                        <CardHeader className="px-4 pt-4 pb-2">
-                            <div className="flex items-center gap-2">
-                                <Trophy className="h-4 w-4 text-amber-500" />
-                                <h3 className="text-sm font-semibold">Top Promoters</h3>
-                            </div>
-                        </CardHeader>
-                        <CardBody className="px-4 pb-4 pt-0">
-                            <div className="flex gap-3 overflow-x-auto pb-1">
-                                {data.topPromoters.map((p, i) => (
-                                    <div key={p.id} className="flex shrink-0 items-center gap-2 rounded-xl border border-divider p-3 min-w-[160px]">
-                                        <div className="relative">
-                                            <Avatar src={p.imageUrl || undefined} name={p.username} size="sm" />
-                                            {i < 3 && (
-                                                <div className={`absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-white ${i === 0 ? "bg-amber-500" : i === 1 ? "bg-gray-400" : "bg-amber-700"}`}>
-                                                    {i + 1}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-medium truncate">{p.username}</p>
-                                            <p className="text-xs text-foreground/50">{p.count} referred · {p.paid} paid</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardBody>
-                    </Card>
-                </motion.div>
-            )}
-
             {/* Filters */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Input
@@ -267,13 +263,13 @@ export default function ReferralAdminPage() {
                 </div>
             </div>
 
-            {/* Referral List */}
+            {/* Grouped Referral List */}
             <div className="space-y-2">
                 {isLoading ? (
-                    Array.from({ length: 5 }).map((_, i) => (
+                    Array.from({ length: 3 }).map((_, i) => (
                         <Card key={i}><CardBody className="p-4"><Skeleton className="h-16 rounded-lg" /></CardBody></Card>
                     ))
-                ) : filtered.length === 0 ? (
+                ) : groups.length === 0 ? (
                     <Card>
                         <CardBody className="py-12 text-center">
                             <Users className="mx-auto mb-2 h-8 w-8 text-foreground/20" />
@@ -281,60 +277,91 @@ export default function ReferralAdminPage() {
                         </CardBody>
                     </Card>
                 ) : (
-                    filtered.map((ref, i) => {
-                        const config = statusConfig[ref.status];
-                        const StatusIcon = config.icon;
+                    groups.map((group, gi) => {
+                        const isExpanded = expandedPromoters.has(group.promoter.id);
                         return (
                             <motion.div
-                                key={ref.id}
+                                key={group.promoter.id}
                                 initial={{ opacity: 0, y: 6 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.02 }}
+                                transition={{ delay: gi * 0.03 }}
                             >
                                 <Card>
-                                    <CardBody className="p-4">
-                                        <div className="flex items-center gap-3">
-                                            {/* Promoter → Referred */}
-                                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                <Avatar
-                                                    src={ref.promoter.imageUrl || undefined}
-                                                    name={ref.promoter.username}
-                                                    size="sm"
-                                                    className="shrink-0"
-                                                />
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <p className="text-sm font-medium truncate">{ref.promoter.username}</p>
-                                                        <TrendingUp className="h-3 w-3 text-foreground/30 shrink-0" />
-                                                        <p className="text-sm truncate text-foreground/70">{ref.referred.name}</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <Progress
-                                                            value={ref.progress}
-                                                            size="sm"
-                                                            color={ref.status === "PAID" ? "success" : ref.status === "QUALIFIED" ? "primary" : "warning"}
-                                                            className="max-w-[100px]"
-                                                        />
-                                                        <span className="text-[10px] text-foreground/40 shrink-0">
-                                                            {ref.tournamentsCompleted}/{ref.tournamentsRequired}
-                                                        </span>
-                                                    </div>
+                                    {/* Promoter Header — clickable to expand */}
+                                    <CardBody className="p-0">
+                                        <button
+                                            onClick={() => togglePromoter(group.promoter.id)}
+                                            className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-default-100/50"
+                                        >
+                                            <Avatar
+                                                src={group.promoter.imageUrl || undefined}
+                                                name={group.promoter.username}
+                                                size="sm"
+                                                className="shrink-0"
+                                            />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-semibold truncate">{group.promoter.username}</p>
+                                                <div className="flex items-center gap-2 text-[11px] text-foreground/50">
+                                                    <span>{group.referrals.length} referred</span>
+                                                    <span>·</span>
+                                                    <span>{group.paidCount} paid</span>
+                                                    {group.totalEarned > 0 && (
+                                                        <>
+                                                            <span>·</span>
+                                                            <span className="text-green-500 font-medium">{group.totalEarned} UC</span>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
+                                            <ChevronDown
+                                                className={`h-4 w-4 text-foreground/30 shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                                            />
+                                        </button>
 
-                                            {/* Status + Reward */}
-                                            <div className="flex items-center gap-2 shrink-0">
-                                                <Chip
-                                                    size="sm"
-                                                    variant="flat"
-                                                    color={config.color}
-                                                    startContent={<StatusIcon className="h-3 w-3" />}
-                                                >
-                                                    {config.label}
-                                                </Chip>
-                                                {ref.status === "PAID" && (
-                                                    <span className="text-xs font-semibold text-green-500">{ref.reward} UC</span>
-                                                )}
+                                        {/* Expanded referral list */}
+                                        <div
+                                            className={`overflow-hidden transition-all duration-200 ${isExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}
+                                        >
+                                            <div className="border-t border-divider divide-y divide-divider">
+                                                {group.referrals.map((ref) => {
+                                                    const config = statusConfig[ref.status];
+                                                    const StatusIcon = config.icon;
+                                                    return (
+                                                        <div key={ref.id} className="flex items-center gap-3 px-4 py-3 pl-14">
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <TrendingUp className="h-3 w-3 text-foreground/30 shrink-0" />
+                                                                    <p className="text-sm truncate">{ref.referred.name}</p>
+                                                                    <span className="text-[11px] text-foreground/40 shrink-0">@{ref.referred.username}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    <Progress
+                                                                        value={ref.progress}
+                                                                        size="sm"
+                                                                        color={ref.status === "PAID" ? "success" : ref.status === "QUALIFIED" ? "primary" : "warning"}
+                                                                        className="max-w-[80px]"
+                                                                    />
+                                                                    <span className="text-[10px] text-foreground/40 shrink-0">
+                                                                        {ref.tournamentsCompleted}/{ref.tournamentsRequired}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <Chip
+                                                                    size="sm"
+                                                                    variant="flat"
+                                                                    color={config.color}
+                                                                    startContent={<StatusIcon className="h-3 w-3" />}
+                                                                >
+                                                                    {config.label}
+                                                                </Chip>
+                                                                {ref.status === "PAID" && (
+                                                                    <span className="text-xs font-semibold text-green-500">{ref.reward} UC</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     </CardBody>
