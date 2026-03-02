@@ -40,7 +40,7 @@ export function MobileNav() {
     const { user } = useUser();
     const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
 
-    const { data: profile } = useQuery<{ imageUrl?: string }>({
+    const { data: profile } = useQuery<{ imageUrl?: string; displayName?: string }>({
         queryKey: ["profile"],
         queryFn: async () => {
             const res = await fetch("/api/profile");
@@ -126,6 +126,7 @@ export function MobileNav() {
                 {allTabs.map((tab) => {
                     const isActive = pathname.startsWith(tab.href);
                     const isProfile = tab.label === "Profile";
+                    const profileLabel = profile?.displayName?.split(" ")[0] || user?.firstName || "Profile";
                     const isLoading = navigatingTo === tab.href && !isActive;
 
                     return (
@@ -169,7 +170,7 @@ export function MobileNav() {
                                 ? (balance ?? 0) > 0 ? "text-success" : (balance ?? 0) < 0 ? "text-danger" : ""
                                 : ""
                                 }`}>
-                                {tab.label === "__wallet__" ? `${(balance ?? 0).toLocaleString()} UC` : tab.label}
+                                {tab.label === "__wallet__" ? `${(balance ?? 0).toLocaleString()} UC` : isProfile ? profileLabel : tab.label}
                             </span>
                             {isActive && (
                                 <div className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" />
