@@ -26,12 +26,9 @@ const MAX_VERTICAL_RATIO = 0.75;
  * - Swipe left  → next tab (right in the list)
  * - Swipe right → previous tab (left in the list)
  *
+ * Uses View Transitions API for smooth slide animations where supported.
  * Only active on mobile (< lg breakpoint via matchMedia).
  * Does nothing if the current page isn't one of the swipeable routes.
- *
- * @param isAdmin — if true, includes "/dashboard" as the first swipeable tab.
- * @param lastDashboardHref — the specific dashboard sub-route to navigate to
- *   (e.g. "/dashboard/tournaments") so admins return to their last dashboard page.
  */
 export function useSwipeNavigation(
     isAdmin = false,
@@ -53,7 +50,6 @@ export function useSwipeNavigation(
 
     /** Find the index of the current route in the swipe list */
     const getCurrentIndex = useCallback(() => {
-        // For dashboard routes, match if the pathname starts with /dashboard
         return routes.findIndex((route) => {
             if (route.startsWith(DASHBOARD_PREFIX)) {
                 return pathname.startsWith(DASHBOARD_PREFIX);
@@ -61,6 +57,31 @@ export function useSwipeNavigation(
             return pathname.startsWith(route);
         });
     }, [pathname, routes]);
+
+    /** Navigate with View Transitions API for smooth slide */
+    const navigateWithTransition = useCallback(
+        (targetRoute: string, direction: "left" | "right") => {
+            const navigate = () => router.push(targetRoute);
+
+            // Use View Transitions API if available (Chrome 111+, Android Chrome)
+            if (
+                typeof document !== "undefined" &&
+                "startViewTransition" in document
+            ) {
+                document.documentElement.dataset.swipeDirection = direction;
+                (
+                    document as unknown as {
+                        startViewTransition: (cb: () => void) => void;
+                    }
+                ).startViewTransition(() => {
+                    navigate();
+                });
+            } else {
+                navigate();
+            }
+        },
+        [router]
+    );
 
     useEffect(() => {
         // Only enable on mobile
@@ -80,13 +101,11 @@ export function useSwipeNavigation(
             const dx = touch.clientX - touchStart.current.x;
             const dy = Math.abs(touch.clientY - touchStart.current.y);
 
-            // If vertical movement dominates, cancel the swipe
             if (dy > Math.abs(dx) * MAX_VERTICAL_RATIO) {
                 touchStart.current = null;
                 return;
             }
 
-            // Mark that we've started a horizontal swipe
             if (Math.abs(dx) > 30) {
                 isSwiping.current = true;
             }
@@ -105,36 +124,41 @@ export function useSwipeNavigation(
             touchStart.current = null;
             isSwiping.current = false;
 
-            // Validate the swipe
             if (Math.abs(dx) < MIN_SWIPE_DISTANCE) return;
             if (dy > Math.abs(dx) * MAX_VERTICAL_RATIO) return;
 
             const currentIndex = getCurrentIndex();
-            if (currentIndex === -1) return; // Not on a swipeable page
+            if (currentIndex === -1) return;
 
             let targetIndex: number;
+            let direction: "left" | "right";
             if (dx < 0) {
-                // Swipe left → go to next tab
                 targetIndex = currentIndex + 1;
+                direction = "left";
             } else {
-                // Swipe right → go to previous tab
                 targetIndex = currentIndex - 1;
+                direction = "right";
             }
 
-            // Bounds check
             if (targetIndex < 0 || targetIndex >= routes.length) return;
 
-            router.push(routes[targetIndex]);
+            navigateWithTransition(routes[targetIndex], direction);
         };
 
-        document.addEventListener("touchstart", handleTouchStart, { passive: true });
-        document.addEventListener("touchmove", handleTouchMove, { passive: true });
-        document.addEventListener("touchend", handleTouchEnd, { passive: true });
+        document.addEventListener("touchstart", handleTouchStart, {
+            passive: true,
+        });
+        document.addEventListener("touchmove", handleTouchMove, {
+            passive: true,
+        });
+        document.addEventListener("touchend", handleTouchEnd, {
+            passive: true,
+        });
 
         return () => {
             document.removeEventListener("touchstart", handleTouchStart);
             document.removeEventListener("touchmove", handleTouchMove);
             document.removeEventListener("touchend", handleTouchEnd);
         };
-    }, [getCurrentIndex, router, routes]);
+    }, [getCurrentIndex, navigateWithTransition, routes]);
 }

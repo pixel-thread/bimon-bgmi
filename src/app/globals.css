@@ -327,3 +327,80 @@ body {
     animation: none !important;
   }
 }
+
+/* ─── Swipe Navigation View Transitions ─── */
+@media (prefers-reduced-motion: no-preference) {
+
+  /* Default view transition (crossfade only) */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 200ms;
+    animation-timing-function: ease-out;
+  }
+
+  /* Swipe left → content slides in from the right */
+  html[data-swipe-direction="left"]::view-transition-old(root) {
+    animation: swipe-out-left 200ms ease-out both;
+  }
+
+  html[data-swipe-direction="left"]::view-transition-new(root) {
+    animation: swipe-in-from-right 200ms ease-out both;
+  }
+
+  /* Swipe right → content slides in from the left */
+  html[data-swipe-direction="right"]::view-transition-old(root) {
+    animation: swipe-out-right 200ms ease-out both;
+  }
+
+  html[data-swipe-direction="right"]::view-transition-new(root) {
+    animation: swipe-in-from-left 200ms ease-out both;
+  }
+}
+
+@keyframes swipe-out-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(-25%);
+  }
+}
+
+@keyframes swipe-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(25%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes swipe-out-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(25%);
+  }
+}
+
+@keyframes swipe-in-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-25%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
