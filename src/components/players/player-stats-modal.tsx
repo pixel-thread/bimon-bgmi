@@ -178,7 +178,7 @@ export function PlayerStatsModal({
                     </button>
 
                     {/* Hero section */}
-                    <div className="relative h-72 w-full overflow-hidden">
+                    <div className="relative aspect-[3/4] w-full overflow-hidden">
                         {characterImage?.url ? (
                             <>
                                 {!imageLoaded && (
@@ -192,16 +192,17 @@ export function PlayerStatsModal({
                                         autoPlay
                                         muted
                                         playsInline
+                                        loop
+                                        preload="auto"
                                         className="h-full w-full object-cover"
-                                        style={{ objectPosition: "50% 25%" }}
                                         onLoadedData={() => setImageLoaded(true)}
+                                        onCanPlay={() => setImageLoaded(true)}
                                     />
                                 ) : (
                                     <img
                                         src={characterImage.url}
                                         alt=""
                                         className="h-full w-full object-cover"
-                                        style={{ objectPosition: "50% 25%" }}
                                         onLoad={() => setImageLoaded(true)}
                                     />
                                 )}

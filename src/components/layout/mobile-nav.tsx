@@ -46,7 +46,11 @@ export function MobileNav() {
             const res = await fetch("/api/profile");
             if (!res.ok) return {};
             const json = await res.json();
-            return json.data || {};
+            const d = json.data || {};
+            return {
+                imageUrl: d.imageUrl,
+                displayName: d.player?.displayName || d.username,
+            };
         },
         enabled: !!user,
         staleTime: 5 * 60 * 1000,

@@ -59,14 +59,38 @@ export async function POST(req: Request) {
         const dataUri = `data:${mimeType};base64,${base64}`;
         const isVideo = file.type.startsWith("video/");
 
+        // Parse optional crop params (for video crop)
+        const cropParamsStr = formData.get("cropParams") as string | null;
+        const cropParams = cropParamsStr ? JSON.parse(cropParamsStr) as { x: number; y: number; w: number; h: number } : null;
+
         // 50MB limit
         if (bytes.byteLength > 50 * 1024 * 1024) {
             return NextResponse.json({ error: "File too large (max 50MB)" }, { status: 400 });
         }
 
         // Upload to Cloudinary with incoming transformations
-        // For videos: trim to 8s, compress to 720p, auto quality + codec → only stores compressed version
-        // For images: limit to 800x1200, auto quality → only stores compressed version
+        // For videos: crop to selected region, then compress to 720p, auto quality
+        // For images: already cropped client-side, just limit size
+        const videoTransformations = [];
+        if (cropParams) {
+            // First crop to the user-selected region
+            videoTransformations.push({
+                crop: "crop",
+                x: cropParams.x,
+                y: cropParams.y,
+                width: cropParams.w,
+                height: cropParams.h,
+            });
+        }
+        // Then compress
+        videoTransformations.push({
+            width: 720,
+            crop: "limit",
+            quality: "auto",
+            duration: "8",
+            video_codec: "auto",
+        });
+
         const uploadResult = await cloudinary.uploader.upload(dataUri, {
             folder: "character_images",
             public_id: `player_${user.player.id}_${Date.now()}`,
@@ -74,15 +98,7 @@ export async function POST(req: Request) {
             resource_type: isVideo ? "video" : "image",
             ...(isVideo
                 ? {
-                    transformation: [
-                        {
-                            width: 720,
-                            crop: "limit",
-                            quality: "auto",
-                            duration: "8",
-                            video_codec: "auto",
-                        },
-                    ],
+                    transformation: videoTransformations,
                     format: "mp4",
                 }
                 : {

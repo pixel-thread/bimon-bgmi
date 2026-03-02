@@ -37,6 +37,7 @@ import { useClerk } from "@clerk/nextjs";
 import { GameNameInput, validateDisplayName } from "@/components/common/GameNameInput";
 import { useIGNTutorial } from "@/components/common/IGNTutorialModal";
 import { toast } from "sonner";
+import { CharacterPreviewModal } from "@/components/profile/character-preview-modal";
 
 interface ProfileData {
     id: string;
@@ -99,6 +100,8 @@ export default function ProfilePage() {
     const [uploadingCharacter, setUploadingCharacter] = useState(false);
     const [previewProfileUrl, setPreviewProfileUrl] = useState<string | null>(null);
     const [previewCharacter, setPreviewCharacter] = useState<{ url: string; isVideo: boolean } | null>(null);
+    const [pendingCharacterFile, setPendingCharacterFile] = useState<File | null>(null);
+    const [showCharacterPreview, setShowCharacterPreview] = useState(false);
     const [showUCBreakdown, setShowUCBreakdown] = useState(false);
 
     // Profile edit state
@@ -121,7 +124,9 @@ export default function ProfilePage() {
         staleTime: 60 * 1000,
     });
 
-    const handleSaveProfile = async () => {
+    const [onCooldown, setOnCooldown] = useState(false);
+
+    const handleSaveProfile = async (forceChange = false) => {
         if (newIGN.trim()) {
             const err = validateDisplayName(newIGN);
             if (err) { setIgnError(err); return; }
@@ -134,13 +139,21 @@ export default function ProfilePage() {
                 body: JSON.stringify({
                     ...(newIGN.trim() ? { displayName: newIGN.trim() } : {}),
                     ...(newBio !== undefined ? { bio: newBio.trim() } : {}),
+                    ...(forceChange ? { forceChange: true } : {}),
                 }),
             });
             if (res.ok) {
-                toast.success("Profile updated!");
+                toast.success(forceChange ? "Name updated (1 UC charged)" : "Profile updated!");
                 setEditing(false);
+                setOnCooldown(false);
                 queryClient.invalidateQueries({ queryKey: ["profile"] });
                 queryClient.invalidateQueries({ queryKey: ["auth-user"] });
+                queryClient.invalidateQueries({ queryKey: ["wallet"] });
+            } else if (res.status === 429) {
+                // Cooldown — show "Pay 1 UC & Save" button
+                setOnCooldown(true);
+                const json = await res.json();
+                setIgnError(json.message || "Name on cooldown");
             } else {
                 const json = await res.json();
                 setIgnError(json.message || "Failed to update");
@@ -188,21 +201,19 @@ export default function ProfilePage() {
             <div className="space-y-4">
                 {/* Hero card */}
                 <Card className="overflow-hidden border border-divider">
-                    <div className="relative h-80 w-full group">
+                    <div className="relative aspect-[3/4] w-full group">
                         {(previewCharacter?.url || player?.characterImage?.url) ? (
                             (previewCharacter?.isVideo || (!previewCharacter && player?.characterImage?.isVideo)) ? (
                                 <video
                                     src={previewCharacter?.url || player?.characterImage?.url}
                                     autoPlay muted playsInline
                                     className="h-full w-full object-cover"
-                                    style={{ objectPosition: "50% 25%" }}
                                 />
                             ) : (
                                 <img
                                     src={previewCharacter?.url || player?.characterImage?.url}
                                     alt=""
                                     className="h-full w-full object-cover"
-                                    style={{ objectPosition: "50% 25%" }}
                                 />
                             )
                         ) : (
@@ -216,19 +227,14 @@ export default function ProfilePage() {
                         <input
                             ref={characterInputRef}
                             type="file" accept="image/*,video/*" className="hidden"
-                            onChange={async (e) => {
+                            onChange={(e) => {
                                 const file = e.target.files?.[0]; if (!file) return;
-                                setUploadingCharacter(true);
-                                try {
-                                    const fd = new FormData(); fd.append("image", file);
-                                    const res = await fetch("/api/profile/upload-character-image", { method: "POST", body: fd });
-                                    if (res.ok) {
-                                        setPreviewCharacter({ url: URL.createObjectURL(file), isVideo: file.type.startsWith("video/") });
-                                        queryClient.invalidateQueries({ queryKey: ["profile"] });
-                                    } else if (res.status === 403) {
-                                        toast.error("Royal Pass required to upload a character image");
-                                    }
-                                } finally { setUploadingCharacter(false); e.target.value = ""; }
+                                const url = URL.createObjectURL(file);
+                                const isVid = file.type.startsWith("video/");
+                                setPreviewCharacter({ url, isVideo: isVid });
+                                setPendingCharacterFile(file);
+                                setShowCharacterPreview(true);
+                                e.target.value = "";
                             }}
                         />
                         <button
@@ -573,12 +579,12 @@ export default function ProfilePage() {
                                             Cancel
                                         </Button>
                                         <Button
-                                            size="sm" color="primary"
-                                            onPress={handleSaveProfile}
+                                            size="sm" color={onCooldown ? "warning" : "primary"}
+                                            onPress={() => handleSaveProfile(onCooldown)}
                                             isLoading={saving}
-                                            isDisabled={!!ignError || !newIGN.trim() || (newIGN === (player.displayName || profile.username) && newBio === (player.bio || ""))}
+                                            isDisabled={!onCooldown && (!!ignError || !newIGN.trim() || (newIGN === (player.displayName || profile.username) && newBio === (player.bio || "")))}
                                         >
-                                            Save
+                                            {onCooldown ? "Pay 1 UC & Save" : "Save"}
                                         </Button>
                                     </div>
                                 </div>
@@ -700,6 +706,60 @@ export default function ProfilePage() {
                         </div>
                     )}
                 </AnimatePresence>
+
+                {/* Character Image Preview Modal */}
+                {previewCharacter && player && stats && (
+                    <CharacterPreviewModal
+                        isOpen={showCharacterPreview}
+                        onClose={() => {
+                            setShowCharacterPreview(false);
+                            setPendingCharacterFile(null);
+                            setPreviewCharacter(null);
+                        }}
+                        onConfirm={async (file: File, cropParams?: { x: number; y: number; w: number; h: number }) => {
+                            setUploadingCharacter(true);
+                            try {
+                                const fd = new FormData();
+                                fd.append("image", file);
+                                if (cropParams) {
+                                    fd.append("cropParams", JSON.stringify(cropParams));
+                                }
+                                const res = await fetch("/api/profile/upload-character-image", { method: "POST", body: fd });
+                                if (res.ok) {
+                                    toast.success("Character image updated!");
+                                    queryClient.invalidateQueries({ queryKey: ["profile"] });
+                                    queryClient.invalidateQueries({ queryKey: ["players"] });
+                                } else if (res.status === 403) {
+                                    toast.error("Royal Pass required");
+                                } else {
+                                    toast.error("Upload failed");
+                                }
+                            } catch {
+                                toast.error("Network error");
+                            } finally {
+                                setUploadingCharacter(false);
+                                setShowCharacterPreview(false);
+                                setPendingCharacterFile(null);
+                                setPreviewCharacter(null);
+                            }
+                        }}
+                        uploading={uploadingCharacter}
+                        previewUrl={previewCharacter.url}
+                        isVideo={previewCharacter.isVideo}
+                        playerName={name}
+                        username={profile.username}
+                        imageUrl={profile.imageUrl}
+                        category={player.category}
+                        hasRoyalPass={player.hasRoyalPass}
+                        bio={player.bio}
+                        stats={{
+                            kd: stats.kd,
+                            kills: stats.kills,
+                            matches: stats.matches,
+                            balance: player.wallet.balance,
+                        }}
+                    />
+                )}
 
                 {/* Sign Out */}
                 <div className="mt-6 pb-20 lg:pb-4">

@@ -76,10 +76,7 @@ export async function POST(req: NextRequest) {
                         });
                     }
 
-                    // Player chose to pay — check wallet
-                    if (!user.player.wallet || user.player.wallet.balance < NAME_CHANGE_FEE) {
-                        return ErrorResponse({ message: "Not enough UC to break cooldown", status: 400 });
-                    }
+                    // Player chose to pay — allow going into debt
                     nameChangeFee = NAME_CHANGE_FEE;
                 }
             }
@@ -123,10 +120,11 @@ export async function POST(req: NextRequest) {
                 data: updateData,
             });
 
-            if (nameChangeFee > 0 && player.wallet) {
-                await tx.wallet.update({
-                    where: { id: player.wallet.id },
-                    data: { balance: { decrement: nameChangeFee } },
+            if (nameChangeFee > 0) {
+                await tx.wallet.upsert({
+                    where: { playerId: player.id },
+                    create: { playerId: player.id, balance: -nameChangeFee },
+                    update: { balance: { decrement: nameChangeFee } },
                 });
                 await tx.transaction.create({
                     data: {

@@ -7,7 +7,7 @@ import type { PlayerDTO } from "@/hooks/use-players";
 
 const positionConfig = {
     1: {
-        size: "w-24 sm:w-32 aspect-[9/16]",
+        size: "w-24 sm:w-32 aspect-[3/4]",
         border: "border-2 border-yellow-400",
         glow: "shadow-[0_0_25px_rgba(250,204,21,0.4)]",
         bg: "from-yellow-900/60 to-yellow-950/80",
@@ -17,7 +17,7 @@ const positionConfig = {
         mt: "mt-0",
     },
     2: {
-        size: "w-20 sm:w-28 aspect-[9/16]",
+        size: "w-20 sm:w-28 aspect-[3/4]",
         border: "border-2 border-slate-300",
         glow: "shadow-[0_0_20px_rgba(148,163,184,0.3)]",
         bg: "from-slate-700/60 to-slate-800/80",
@@ -27,7 +27,7 @@ const positionConfig = {
         mt: "mt-6 sm:mt-8",
     },
     3: {
-        size: "w-20 sm:w-28 aspect-[9/16]",
+        size: "w-20 sm:w-28 aspect-[3/4]",
         border: "border-2 border-amber-600",
         glow: "shadow-[0_0_20px_rgba(217,119,6,0.3)]",
         bg: "from-amber-800/60 to-amber-900/80",
