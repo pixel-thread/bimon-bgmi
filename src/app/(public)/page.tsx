@@ -1,6 +1,7 @@
 import { Swords } from "lucide-react";
 import { HeroCTA, HeroHeading } from "@/components/landing/hero-cta";
 import { LastRouteRedirector } from "@/components/common/last-route-redirector";
+import { PwaInstallPrompt } from "@/components/common/pwa-install-prompt";
 
 /**
  * Public landing page — / route.
@@ -9,6 +10,7 @@ export default function HomePage() {
     return (
         <div className="min-h-dvh bg-background text-foreground">
             <LastRouteRedirector />
+            <PwaInstallPrompt />
             {/* Hero */}
             <section className="relative overflow-hidden px-4 pb-20 pt-20 sm:px-6 sm:pt-28">
                 {/* Animated background blobs */}
