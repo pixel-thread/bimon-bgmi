@@ -90,7 +90,7 @@ export default function OperationsPage() {
     // Create tournament form
     const [tName, setTName] = useState("");
     const [tDescription, setTDescription] = useState("");
-    const [tFee, setTFee] = useState("30");
+    const [tFee, setTFee] = useState("");
     const [tSeasonId, setTSeasonId] = useState("");
     const [showDesc, setShowDesc] = useState(false);
 
@@ -104,7 +104,7 @@ export default function OperationsPage() {
             if (m) maxNum = Math.max(maxNum, parseInt(m[1]));
         }
         setTName(`Lehkai sngewtynnad ${maxNum + 1}`);
-        setTFee("30");
+        setTFee(String(settings?.defaultEntryFee ?? 30));
         // Auto-select current season
         const current = seasons.find((s) => s.isCurrent);
         setTSeasonId(current?.id ?? seasons[0]?.id ?? "");
@@ -115,6 +115,17 @@ export default function OperationsPage() {
 
     // Create season form
     const [sName, setSName] = useState("");
+
+    // Fetch settings for defaults
+    const { data: settings } = useQuery<{ defaultEntryFee: number }>({
+        queryKey: ["app-settings"],
+        queryFn: async () => {
+            const res = await fetch("/api/settings");
+            if (!res.ok) return { defaultEntryFee: 30 };
+            const json = await res.json();
+            return json.data ?? { defaultEntryFee: 30 };
+        },
+    });
 
     const { data: seasons = [] } = useQuery<SeasonDTO[]>({
         queryKey: ["seasons"],
@@ -215,7 +226,7 @@ export default function OperationsPage() {
             queryClient.removeQueries({ queryKey: ["admin-tournaments", seasonId] });
             await queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
             createModal.onClose();
-            setTName(""); setTDescription(""); setTFee("30");
+            setTName(""); setTDescription(""); setTFee(String(settings?.defaultEntryFee ?? 30));
             if (data?.data?.id) setSelectedId(data.data.id);
         },
         onError: (err: Error) => toast.error(err.message),
