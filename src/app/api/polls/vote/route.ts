@@ -134,7 +134,20 @@ export async function POST(request: NextRequest) {
             const seasonId = poll.tournament?.seasonId;
             let lossChance = 5; // base 5% for everyone
 
+            // Skip if player already won lucky voter in this season
+            let alreadyWonThisSeason = false;
             if (seasonId) {
+                const existingWin = await prisma.poll.findFirst({
+                    where: {
+                        luckyVoterId: playerId,
+                        tournament: { seasonId },
+                    },
+                    select: { id: true },
+                });
+                alreadyWonThisSeason = !!existingWin;
+            }
+
+            if (!alreadyWonThisSeason && seasonId) {
                 // Get total fees paid in this season (team count × fee per tournament)
                 const seasonTeams = await prisma.team.findMany({
                     where: {
@@ -198,13 +211,15 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            const roll = Math.floor(Math.random() * 100);
-            if (roll < lossChance) {
-                await prisma.poll.update({
-                    where: { id: pollId },
-                    data: { luckyVoterId: playerId },
-                });
-                isLuckyVoter = true;
+            if (!alreadyWonThisSeason) {
+                const roll = Math.floor(Math.random() * 100);
+                if (roll < lossChance) {
+                    await prisma.poll.update({
+                        where: { id: pollId },
+                        data: { luckyVoterId: playerId },
+                    });
+                    isLuckyVoter = true;
+                }
             }
         }
 
