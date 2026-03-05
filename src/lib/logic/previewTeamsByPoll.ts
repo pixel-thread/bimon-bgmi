@@ -194,18 +194,23 @@ export async function previewTeamsByPoll({
 
     if (groupSize > 1 && playersForTeams.length % groupSize !== 0) {
         let needed = playersForTeams.length % groupSize;
-        // If remainder is too small, steal full teams to make it divisible by minTeamSize
         while (needed > 0 && needed % minTeamSize !== 0) {
             needed += groupSize;
         }
         needed = Math.min(needed, playersForTeams.length);
 
-        // Prefer legends/top players — they can handle smaller teams
+        // Pick evenly across skill tiers (like the main balancer: strongest + weakest paired)
         const sorted = [...playersForTeams].sort((a, b) => b.weightedScore - a.weightedScore);
+        const step = sorted.length / needed;
         const pickedIds = new Set<string>();
-        for (let i = 0; i < needed && i < sorted.length; i++) {
-            pickedIds.add(sorted[i].id);
-            leftoverPlayers.push(sorted[i]);
+        for (let i = 0; i < needed; i++) {
+            const idx = Math.min(Math.floor(i * step), sorted.length - 1);
+            let pickIdx = idx;
+            while (pickedIds.has(sorted[pickIdx].id) && pickIdx < sorted.length - 1) pickIdx++;
+            if (!pickedIds.has(sorted[pickIdx].id)) {
+                pickedIds.add(sorted[pickIdx].id);
+                leftoverPlayers.push(sorted[pickIdx]);
+            }
         }
         playersForTeams = playersForTeams.filter((p) => !pickedIds.has(p.id));
     }

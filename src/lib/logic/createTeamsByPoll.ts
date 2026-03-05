@@ -214,12 +214,20 @@ export async function createTeamsByPoll({
             // Cap: don't take more than available
             needed = Math.min(needed, playersForTeams.length);
 
-            // Prefer legends/top players — they can handle smaller teams
+            // Pick evenly across skill tiers (like the main balancer: strongest + weakest paired)
+            // This keeps legends in both leftover AND full-size teams for proper balancing
             const sorted = [...playersForTeams].sort((a, b) => b.weightedScore - a.weightedScore);
+            const step = sorted.length / needed;
             const pickedIds = new Set<string>();
-            for (let i = 0; i < needed && i < sorted.length; i++) {
-                pickedIds.add(sorted[i].id);
-                leftoverPlayers.push(sorted[i]);
+            for (let i = 0; i < needed; i++) {
+                const idx = Math.min(Math.floor(i * step), sorted.length - 1);
+                // Find nearest unpicked player
+                let pickIdx = idx;
+                while (pickedIds.has(sorted[pickIdx].id) && pickIdx < sorted.length - 1) pickIdx++;
+                if (!pickedIds.has(sorted[pickIdx].id)) {
+                    pickedIds.add(sorted[pickIdx].id);
+                    leftoverPlayers.push(sorted[pickIdx]);
+                }
             }
             playersForTeams = playersForTeams.filter((p) => !pickedIds.has(p.id));
         }
