@@ -9,6 +9,7 @@ import {
     Chip,
     Skeleton,
     Button,
+    Input,
 } from "@heroui/react";
 import {
     Target,
@@ -49,6 +50,7 @@ interface ProfileData {
     player: {
         id: string;
         displayName: string | null;
+        uid: string | null;
         bio: string | null;
         category: string;
         hasRoyalPass: boolean;
@@ -108,6 +110,7 @@ export default function ProfilePage() {
     // Profile edit state
     const [editing, setEditing] = useState(false);
     const [newIGN, setNewIGN] = useState("");
+    const [newUID, setNewUID] = useState("");
     const [newBio, setNewBio] = useState("");
     const [ignError, setIgnError] = useState("");
     const [saving, setSaving] = useState(false);
@@ -139,6 +142,7 @@ export default function ProfilePage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     ...(newIGN.trim() ? { displayName: newIGN.trim() } : {}),
+                    ...(newUID.trim() ? { uid: newUID.trim() } : {}),
                     ...(newBio !== undefined ? { bio: newBio.trim() } : {}),
                     ...(forceChange ? { forceChange: true } : {}),
                 }),
@@ -503,6 +507,7 @@ export default function ProfilePage() {
                                         onPress={() => {
                                             setEditing(true);
                                             setNewIGN(player.displayName || profile.username);
+                                            setNewUID(player.uid || "");
                                             setNewBio(player.bio || "");
                                             setIgnError("");
                                         }}
@@ -527,33 +532,86 @@ export default function ProfilePage() {
                                     <div>
                                         <div className="flex items-center gap-2 mb-2">
                                             <label className="text-sm font-medium text-foreground/70">Game Name</label>
-                                            {ignTutorial.HelpButton}
+                                            {!GAME.hasUID && ignTutorial.HelpButton}
                                         </div>
-                                        <GameNameInput
-                                            value={newIGN}
-                                            onChange={setNewIGN}
-                                            error={ignError}
-                                            onErrorChange={setIgnError}
-                                            disabled={saving}
-                                        />
-                                        <p className="mt-2 text-xs text-foreground/40">
-                                            <button
-                                                type="button"
-                                                onClick={ignTutorial.openModal}
-                                                className="text-primary hover:underline font-medium"
-                                            >
-                                                Kumno ban copy?
-                                            </button>
-                                            {" / "}
-                                            <button
-                                                type="button"
-                                                onClick={ignTutorial.openModal}
-                                                className="text-primary hover:underline font-medium"
-                                            >
-                                                Need help?
-                                            </button>
-                                        </p>
+                                        {GAME.hasUID ? (
+                                            <Input
+                                                value={newIGN}
+                                                onChange={(e) => {
+                                                    setNewIGN(e.target.value);
+                                                    setIgnError("");
+                                                }}
+                                                placeholder="Enter your in-game name"
+                                                size="lg"
+                                                variant="bordered"
+                                                maxLength={20}
+                                                isDisabled={saving}
+                                                isInvalid={!!ignError}
+                                                errorMessage={ignError}
+                                                startContent={
+                                                    <span className="text-foreground/30 text-sm">🎮</span>
+                                                }
+                                            />
+                                        ) : (
+                                            <>
+                                                <GameNameInput
+                                                    value={newIGN}
+                                                    onChange={setNewIGN}
+                                                    error={ignError}
+                                                    onErrorChange={setIgnError}
+                                                    disabled={saving}
+                                                />
+                                                <p className="mt-2 text-xs text-foreground/40">
+                                                    <button
+                                                        type="button"
+                                                        onClick={ignTutorial.openModal}
+                                                        className="text-primary hover:underline font-medium"
+                                                    >
+                                                        Kumno ban copy?
+                                                    </button>
+                                                    {" / "}
+                                                    <button
+                                                        type="button"
+                                                        onClick={ignTutorial.openModal}
+                                                        className="text-primary hover:underline font-medium"
+                                                    >
+                                                        Need help?
+                                                    </button>
+                                                </p>
+                                            </>
+                                        )}
                                     </div>
+
+                                    {/* UID — paste only (Free Fire only) */}
+                                    {GAME.hasUID && (
+                                        <div>
+                                            <label className="text-sm font-medium text-foreground/70 mb-2 block">
+                                                {GAME.idLabel}
+                                            </label>
+                                            <Input
+                                                value={newUID}
+                                                placeholder={GAME.idPlaceholder}
+                                                size="lg"
+                                                variant="bordered"
+                                                onKeyDown={(e) => {
+                                                    const allowedKeys = ["Tab", "ArrowLeft", "ArrowRight", "Backspace", "Delete"];
+                                                    if (!allowedKeys.includes(e.key) && !(e.metaKey || e.ctrlKey)) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
+                                                onPaste={(e) => {
+                                                    e.preventDefault();
+                                                    const pasted = e.clipboardData.getData("text").trim();
+                                                    if (pasted) setNewUID(pasted);
+                                                }}
+                                                description={`Copy from ${GAME.gameName} profile → paste here`}
+                                                isDisabled={saving}
+                                                startContent={
+                                                    <span className="text-foreground/30 text-sm">🆔</span>
+                                                }
+                                            />
+                                        </div>
+                                    )}
 
                                     {/* Bio */}
                                     <div>
@@ -599,6 +657,12 @@ export default function ProfilePage() {
                                         <span className="text-xs text-foreground/40">Game Name:</span>
                                         <span className="text-sm font-bold">{player.displayName || profile.username}</span>
                                     </div>
+                                    {GAME.hasUID && player.uid && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-foreground/40">{GAME.idLabel}:</span>
+                                            <span className="text-sm font-mono">{player.uid}</span>
+                                        </div>
+                                    )}
                                     {player.bio && (
                                         <div className="flex items-start gap-2">
                                             <span className="text-xs text-foreground/40">Bio:</span>

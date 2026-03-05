@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
 
         const body = await req.json();
         const displayName = body.displayName?.trim();
+        const uid = typeof body.uid === "string" ? body.uid.trim() : undefined;
         const bio = typeof body.bio === "string" ? body.bio.trim() : undefined;
         const forceChange = body.forceChange === true; // client confirms paying 1 UC
 
@@ -110,6 +111,7 @@ export async function POST(req: NextRequest) {
         }
 
         if (bio !== undefined) updateData.bio = bio;
+        if (uid !== undefined) updateData.uid = uid;
 
         if (Object.keys(updateData).length === 0) {
             return SuccessResponse({ message: "Nothing to update" });
