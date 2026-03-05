@@ -195,7 +195,7 @@ function BgmiLogo({ className }: PubgmiLogoProps) {
 // ─── Free Fire Logo — BOO-YAH ↔ Boss-rangbah alternating cascade ───
 const FF_WORDS = [
     ["B", "O", "O", "-", "Y", "A", "H"],
-    ["B", "o", "s", "s", "-", "r", "a", "n", "g", "b", "a", "h"],
+    ["B", "O", "S", "S", "-", "R", "A", "N", "G", "B", "A", "H"],
 ];
 
 function FreeFireLogo({ className }: PubgmiLogoProps) {
