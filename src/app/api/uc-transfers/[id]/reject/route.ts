@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
+import { GAME } from "@/lib/game-config";
 
 /**
  * PATCH /api/uc-transfers/[id]/reject
@@ -79,8 +80,8 @@ export async function PATCH(
             // Notify the requester
             const rejecterName = transfer.toPlayer.displayName || transfer.toPlayer.user.username;
             const rejectMsg = responseMessage
-                ? `${rejecterName} rejected your request for ${transfer.amount} UC: "${responseMessage}"`
-                : `${rejecterName} rejected your request for ${transfer.amount} UC`;
+                ? `${rejecterName} rejected your request for ${transfer.amount} ${GAME.currency}: "${responseMessage}"`
+                : `${rejecterName} rejected your request for ${transfer.amount} ${GAME.currency}`;
 
             await tx.notification.create({
                 data: {

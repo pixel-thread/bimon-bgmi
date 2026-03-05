@@ -2,6 +2,7 @@ import { Swords } from "lucide-react";
 import { HeroCTA, HeroHeading } from "@/components/landing/hero-cta";
 import { LastRouteRedirector } from "@/components/common/last-route-redirector";
 import { PwaInstallPrompt } from "@/components/common/pwa-install-prompt";
+import { GAME } from "@/lib/game-config";
 
 /**
  * Public landing page — / route.
@@ -21,14 +22,14 @@ export default function HomePage() {
                 <div className="mx-auto max-w-2xl text-center">
                     <div className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/5 px-4 py-1.5 text-xs font-medium text-foreground/60 backdrop-blur-sm">
                         <Swords className="h-3.5 w-3.5 text-blue-400" />
-                        BGMI Community Platform
+                        {GAME.gameName} Community Platform
                     </div>
 
                     <HeroHeading />
 
                     <p className="mx-auto mt-5 max-w-lg text-lg leading-relaxed text-foreground/50">
-                        Join organized BGMI tournaments with skill-balanced teams,
-                        UC prize pools, and real-time stat tracking.
+                        Join organized {GAME.gameName} tournaments with skill-balanced teams,
+                        {GAME.currency} prize pools, and real-time stat tracking.
                     </p>
 
                     <div className="mt-10 flex items-center justify-center gap-4">

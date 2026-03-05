@@ -2,6 +2,7 @@ import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { type NextRequest } from "next/server";
+import { GAME } from "@/lib/game-config";
 
 /**
  * DELETE /api/matches/[id]
@@ -122,7 +123,7 @@ export async function DELETE(
 
             const refundTotal = entryFeeTransactions.reduce((s, t) => s + t.amount, 0);
             return SuccessResponse({
-                message: `Tournament fully reset! Deleted ${tournament.matches.length} match(es), all teams & stats.${refundTotal > 0 ? ` Refunded ${refundTotal} UC.` : ""} Poll reactivated.`,
+                message: `Tournament fully reset! Deleted ${tournament.matches.length} match(es), all teams & stats.${refundTotal > 0 ? ` Refunded ${refundTotal} ${GAME.currency}.` : ""} Poll reactivated.`,
             });
         }
 

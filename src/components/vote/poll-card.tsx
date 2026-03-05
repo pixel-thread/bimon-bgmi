@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "motion/react";
 import type { PollDTO } from "@/hooks/use-polls";
 import { getPollTheme, getLuckyWinnerTheme, type PollTheme } from "./pollTheme";
 import { getPrizeDistribution, getTeamSize } from "@/utils/prizeDistribution";
+import { GAME } from "@/lib/game-config";
 
 /* ─── Types ─────────────────────────────────────────────────── */
 
@@ -97,7 +98,7 @@ function PrizeBreakdownTooltip({
                                                     {medal} {position}{ordinal}
                                                 </span>
                                                 <span className="font-semibold">
-                                                    {prize.amount.toLocaleString()} UC
+                                                    {prize.amount.toLocaleString()} {GAME.currency}
                                                 </span>
                                             </div>
                                         );
@@ -621,7 +622,7 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                         </p>
                                         <p className="text-2xl font-black text-white drop-shadow-lg inline-flex items-center">
                                             <AnimatedCounter value={prizePool} />
-                                            <span className="ml-1">UC</span>
+                                            <span className="ml-1">{GAME.currency}</span>
                                         </p>
                                     </div>
                                 </div>
@@ -689,10 +690,10 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                     <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
                                         🎉 FREE ENTRY:{" "}
                                         <span className="line-through opacity-60">{entryFee}</span> 0
-                                        UC
+                                        {GAME.currency}
                                     </span>
                                 ) : entryFee > 0 ? (
-                                    `Entry: ${entryFee} UC`
+                                    `Entry: ${entryFee} ${GAME.currency}`
                                 ) : (
                                     "Free Entry"
                                 )}

@@ -3,6 +3,7 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { getSettings } from "@/lib/settings";
+import { GAME } from "@/lib/game-config";
 
 const NAME_CHANGE_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
 
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
                     if (!forceChange) {
                         // Tell client about cooldown — they can choose to pay
                         return ErrorResponse({
-                            message: `Name change on cooldown (${remainingDays}d left). Pay ${NAME_CHANGE_FEE} UC to change now.`,
+                            message: `Name change on cooldown (${remainingDays}d left). Pay ${NAME_CHANGE_FEE} ${GAME.currency} to change now.`,
                             status: 429,
                         });
                     }
@@ -144,7 +145,7 @@ export async function POST(req: NextRequest) {
 
         return SuccessResponse({
             message: nameChangeFee > 0
-                ? `Game Name updated (${nameChangeFee} UC charged)`
+                ? `Game Name updated (${nameChangeFee} ${GAME.currency} charged)`
                 : "Profile updated",
         });
     } catch (error) {

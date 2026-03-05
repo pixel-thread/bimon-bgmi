@@ -38,6 +38,7 @@ import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { GAME } from "@/lib/game-config";
 
 interface Notification {
     id: string;
@@ -233,7 +234,7 @@ export default function NotificationsPage() {
         },
         onSuccess: (data) => {
             const amount = data?.data?.amount ?? 0;
-            toast.success(`🎉 Claimed ${amount} UC!`);
+            toast.success(`🎉 Claimed ${amount} ${GAME.currency}!`);
             queryClient.invalidateQueries({ queryKey: ["notifications"] });
             queryClient.invalidateQueries({ queryKey: ["notification-count"] });
             queryClient.invalidateQueries({ queryKey: ["wallet"] });
@@ -526,7 +527,7 @@ export default function NotificationsPage() {
                                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500">
                                     <Wallet className="h-5 w-5 text-white" />
                                 </div>
-                                <span className="text-base font-semibold">UC Request</span>
+                                <span className="text-base font-semibold">{GAME.currency} Request</span>
                             </ModalHeader>
                             <ModalBody className="gap-3 text-center">
                                 <p className="text-sm text-foreground/70">
@@ -536,7 +537,7 @@ export default function NotificationsPage() {
                                     </span>{" "}
                                     requested{" "}
                                     <span className="font-semibold text-foreground">
-                                        {selectedRequest.amount.toLocaleString()} UC
+                                        {selectedRequest.amount.toLocaleString()} {GAME.currency}
                                     </span>
                                 </p>
                                 <p className="text-xs text-foreground/50">
@@ -547,7 +548,7 @@ export default function NotificationsPage() {
                                             : "text-danger"
                                             }`}
                                     >
-                                        {(selectedRequest.fromPlayer.wallet?.balance ?? 0).toLocaleString()} UC
+                                        {(selectedRequest.fromPlayer.wallet?.balance ?? 0).toLocaleString()} {GAME.currency}
                                     </span>
                                 </p>
                                 {selectedRequest.message && (
@@ -628,7 +629,7 @@ export default function NotificationsPage() {
                                     {/* Amount */}
                                     <div className="rounded-xl bg-success/10 py-3">
                                         <p className="text-2xl font-bold text-success">
-                                            +{selectedReward.amount} UC
+                                            +{selectedReward.amount} {GAME.currency}
                                         </p>
                                     </div>
 
@@ -651,27 +652,27 @@ export default function NotificationsPage() {
                                             {details.baseShare != null && (
                                                 <div className="flex items-center justify-between text-xs">
                                                     <span className="text-foreground/50">Base Share</span>
-                                                    <span className="font-medium">{Number(details.baseShare)} UC</span>
+                                                    <span className="font-medium">{Number(details.baseShare)} {GAME.currency}</span>
                                                 </div>
                                             )}
                                             {Number(details.participationAdj) !== 0 && details.participationAdj != null && (
                                                 <div className="flex items-center justify-between text-xs">
                                                     <span className="text-foreground/50">Participation Adjustment</span>
                                                     <span className={`font-medium ${Number(details.participationAdj) > 0 ? "text-success" : "text-danger"}`}>
-                                                        {Number(details.participationAdj) > 0 ? "+" : ""}{Number(details.participationAdj)} UC
+                                                        {Number(details.participationAdj) > 0 ? "+" : ""}{Number(details.participationAdj)} {GAME.currency}
                                                     </span>
                                                 </div>
                                             )}
                                             {Number(details.repeatTax) > 0 && (
                                                 <div className="flex items-center justify-between text-xs">
                                                     <span className="text-foreground/50">Repeat Winner Tax</span>
-                                                    <span className="font-medium text-danger">-{Number(details.repeatTax)} UC</span>
+                                                    <span className="font-medium text-danger">-{Number(details.repeatTax)} {GAME.currency}</span>
                                                 </div>
                                             )}
                                             {Number(details.soloTax) > 0 && (
                                                 <div className="flex items-center justify-between text-xs">
                                                     <span className="text-foreground/50">Solo Tax</span>
-                                                    <span className="font-medium text-danger">-{Number(details.soloTax)} UC</span>
+                                                    <span className="font-medium text-danger">-{Number(details.soloTax)} {GAME.currency}</span>
                                                 </div>
                                             )}
                                             {details.matchesPlayed != null && (
@@ -701,7 +702,7 @@ export default function NotificationsPage() {
                                         }
                                         onPress={() => claimReward.mutate(selectedReward.id)}
                                     >
-                                        Claim {selectedReward.amount} UC
+                                        Claim {selectedReward.amount} {GAME.currency}
                                     </Button>
                                 </ModalFooter>
                             </>

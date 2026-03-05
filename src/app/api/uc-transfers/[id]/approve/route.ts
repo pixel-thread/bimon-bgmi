@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
+import { GAME } from "@/lib/game-config";
 
 /**
  * PATCH /api/uc-transfers/[id]/approve
@@ -61,7 +62,7 @@ export async function PATCH(
         const approverBalance = transfer.toPlayer.wallet?.balance ?? 0;
         if (approverBalance < transfer.amount) {
             return NextResponse.json(
-                { error: `Insufficient balance. You have ${approverBalance} UC.` },
+                { error: `Insufficient balance. You have ${approverBalance} ${GAME.currency}.` },
                 { status: 400 }
             );
         }
@@ -103,8 +104,8 @@ export async function PATCH(
             // Notify the requester
             const approverName = transfer.toPlayer.displayName || transfer.toPlayer.user.username;
             const approveMsg = responseMessage
-                ? `${approverName} approved your request for ${transfer.amount} UC: "${responseMessage}"`
-                : `${approverName} approved your request for ${transfer.amount} UC`;
+                ? `${approverName} approved your request for ${transfer.amount} ${GAME.currency}: "${responseMessage}"`
+                : `${approverName} approved your request for ${transfer.amount} ${GAME.currency}`;
 
             await tx.notification.create({
                 data: {

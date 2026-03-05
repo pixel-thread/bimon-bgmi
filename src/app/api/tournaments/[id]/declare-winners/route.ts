@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
+import { GAME } from "@/lib/game-config";
 import {
     getFinalDistribution,
     getTeamSize,
@@ -406,7 +407,7 @@ export async function POST(
                             userId: p.userId,
                             playerId: p.playerId,
                             title: `🏆 You won ${getOrdinal(teamData.position)} place!`,
-                            message: `You earned ${p.finalAmount} UC in ${tournament.name}. Tap to claim your reward!`,
+                            message: `You earned ${p.finalAmount} ${GAME.currency} in ${tournament.name}. Tap to claim your reward!`,
                             type: "tournament",
                             link: "/notifications",
                         },

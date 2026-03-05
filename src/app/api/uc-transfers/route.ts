@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
+import { GAME } from "@/lib/game-config";
 
 /**
  * POST /api/uc-transfers
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
             const balance = fromPlayer.wallet?.balance ?? 0;
             if (balance < amount) {
                 return NextResponse.json(
-                    { error: `Insufficient balance. You have ${balance} UC.` },
+                    { error: `Insufficient balance. You have ${balance} ${GAME.currency}.` },
                     { status: 400 }
                 );
             }
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
                 await tx.notification.create({
                     data: {
                         title: "UC Received",
-                        message: `${senderName} sent you ${amount} UC`,
+                        message: `${senderName} sent you ${amount} ${GAME.currency}`,
                         type: "uc_received",
                         userId: toPlayer.user.id,
                         playerId: toPlayerId,
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({
                 success: true,
                 data: transfer,
-                message: `Sent ${amount} UC to ${toName}`,
+                message: `Sent ${amount} ${GAME.currency} to ${toName}`,
             });
         }
 
@@ -121,7 +122,7 @@ export async function POST(req: NextRequest) {
                 await tx.notification.create({
                     data: {
                         title: "UC Request",
-                        message: `${senderName} requested ${amount} UC from you`,
+                        message: `${senderName} requested ${amount} ${GAME.currency} from you`,
                         type: "uc_request",
                         userId: toPlayer.user.id,
                         playerId: toPlayerId,
@@ -136,7 +137,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({
                 success: true,
                 data: transfer,
-                message: `Requested ${amount} UC from ${toName}`,
+                message: `Requested ${amount} ${GAME.currency} from ${toName}`,
             });
         }
 

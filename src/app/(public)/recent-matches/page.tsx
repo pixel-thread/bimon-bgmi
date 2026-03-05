@@ -18,6 +18,7 @@ import {
     AlertCircle,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { GAME } from "@/lib/game-config";
 
 interface MatchImage {
     id: string;
@@ -141,7 +142,7 @@ export default function RecentMatchesPage() {
                                                 color="warning"
                                                 startContent={<Coins className="h-3 w-3" />}
                                             >
-                                                {group.tournament.fee} UC
+                                                {group.tournament.fee} {GAME.currency}
                                             </Chip>
                                         </div>
                                     </CardHeader>

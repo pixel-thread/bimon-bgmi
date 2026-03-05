@@ -2,6 +2,7 @@ import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { type NextRequest } from "next/server";
+import { GAME } from "@/lib/game-config";
 
 /**
  * POST /api/teams/create
@@ -203,7 +204,7 @@ export async function POST(request: NextRequest) {
         }
 
         const baseMsg = deductUC && entryFee > 0
-            ? `Team created. ${entryFee} UC debited from each player.`
+            ? `Team created. ${entryFee} ${GAME.currency} debited from each player.`
             : "Team created successfully";
         const propagateMsg = propagatedCount > 0
             ? ` Also added to ${propagatedCount} more match${propagatedCount > 1 ? "es" : ""}.`

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { NextRequest, NextResponse } from "next/server";
+import { GAME } from "@/lib/game-config";
 
 /**
  * PATCH /api/teams/[teamId]
@@ -126,8 +127,8 @@ export async function PATCH(
         });
 
         const parts: string[] = [];
-        if (addPlayerIds.length > 0) parts.push(`+${addPlayerIds.length} added${deductUC && entryFee > 0 ? ` (${entryFee} UC deducted each)` : ""}`);
-        if (removePlayerIds.length > 0) parts.push(`-${removePlayerIds.length} removed${refund && entryFee > 0 ? ` (${entryFee} UC refunded each)` : ""}`);
+        if (addPlayerIds.length > 0) parts.push(`+${addPlayerIds.length} added${deductUC && entryFee > 0 ? ` (${entryFee} ${GAME.currency} deducted each)` : ""}`);
+        if (removePlayerIds.length > 0) parts.push(`-${removePlayerIds.length} removed${refund && entryFee > 0 ? ` (${entryFee} ${GAME.currency} refunded each)` : ""}`);
 
         return NextResponse.json({
             success: true,
@@ -240,7 +241,7 @@ export async function DELETE(
 
         const refundMsg =
             refund && entryFee > 0 && refundedPlayers.length > 0
-                ? ` ${entryFee} UC refunded to ${refundedPlayers.length} player(s).`
+                ? ` ${entryFee} ${GAME.currency} refunded to ${refundedPlayers.length} player(s).`
                 : "";
 
         return SuccessResponse({
