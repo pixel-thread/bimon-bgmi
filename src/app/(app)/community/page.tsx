@@ -1,10 +1,13 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardBody, Button, Textarea, Chip, Switch, Avatar } from "@heroui/react";
+import {
+    Card, CardBody, Button, Textarea, Chip, Switch, Avatar,
+    Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
+} from "@heroui/react";
 import {
     MessageCircle, Send, Heart, Lightbulb, Bug, Star, HelpCircle,
-    ThumbsUp, ThumbsDown, EyeOff, User,
+    ThumbsUp, ThumbsDown, EyeOff, User, Plus,
 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -30,12 +33,13 @@ interface MessageDTO {
     downvotes: number;
     createdAt: string;
     isOwn: boolean;
-    myVote: number | null; // 1, -1, or null
+    myVote: number | null;
     player: { displayName: string; imageUrl: string } | null;
 }
 
 export default function CommunityPage() {
     const queryClient = useQueryClient();
+    const composeModal = useDisclosure();
     const [message, setMessage] = useState("");
     const [category, setCategory] = useState("feedback");
     const [isAnonymous, setIsAnonymous] = useState(false);
@@ -66,6 +70,9 @@ export default function CommunityPage() {
         onSuccess: (data) => {
             toast.success(data.message);
             setMessage("");
+            setCategory("feedback");
+            setIsAnonymous(false);
+            composeModal.onClose();
             queryClient.invalidateQueries({ queryKey: ["community-messages"] });
         },
         onError: (err: Error) => toast.error(err.message),
@@ -90,7 +97,7 @@ export default function CommunityPage() {
     });
 
     return (
-        <div className="space-y-6 max-w-2xl mx-auto">
+        <div className="space-y-4 max-w-2xl mx-auto pb-20">
             {/* Header */}
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
                 <h1 className="text-xl font-bold flex items-center gap-2">
@@ -98,74 +105,8 @@ export default function CommunityPage() {
                     Community
                 </h1>
                 <p className="text-sm text-foreground/50 mt-1">
-                    Share your thoughts, suggestions, or report issues. We read every message!
+                    Share your thoughts — we read every message!
                 </p>
-            </motion.div>
-
-            {/* Send message */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-                <Card className="border border-divider">
-                    <CardBody className="p-4 space-y-3">
-                        {/* Category pills */}
-                        <div className="flex flex-wrap gap-1.5">
-                            {CATEGORIES.map((cat) => {
-                                const CatIcon = cat.icon;
-                                return (
-                                    <Button
-                                        key={cat.value}
-                                        size="sm"
-                                        variant={category === cat.value ? "solid" : "flat"}
-                                        color={category === cat.value ? cat.color : "default"}
-                                        className="text-xs"
-                                        startContent={<CatIcon className="h-3 w-3" />}
-                                        onPress={() => setCategory(cat.value)}
-                                    >
-                                        {cat.label}
-                                    </Button>
-                                );
-                            })}
-                        </div>
-
-                        {/* Message input */}
-                        <Textarea
-                            placeholder={`What's on your mind about ${GAME.name}?`}
-                            value={message}
-                            onValueChange={setMessage}
-                            maxLength={500}
-                            minRows={3}
-                            maxRows={6}
-                            description={`${message.length}/500`}
-                        />
-
-                        {/* Anonymous toggle + Send */}
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                                <Switch
-                                    size="sm"
-                                    isSelected={isAnonymous}
-                                    onValueChange={setIsAnonymous}
-                                    thumbIcon={isAnonymous
-                                        ? <EyeOff className="h-3 w-3" />
-                                        : <User className="h-3 w-3" />
-                                    }
-                                />
-                                <span className="text-xs text-foreground/60">
-                                    {isAnonymous ? "Anonymous" : "With your name"}
-                                </span>
-                            </div>
-                            <Button
-                                color="primary"
-                                size="sm"
-                                isDisabled={!message.trim()}
-                                isLoading={submit.isPending}
-                                startContent={<Send className="h-3.5 w-3.5" />}
-                                onPress={() => submit.mutate()}
-                            >
-                                Send
-                            </Button>
-                        </div>
-                    </CardBody>
-                </Card>
             </motion.div>
 
             {/* Community feed */}
@@ -173,12 +114,9 @@ export default function CommunityPage() {
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className="space-y-3"
+                    transition={{ delay: 0.05 }}
+                    className="space-y-2.5"
                 >
-                    <h2 className="text-sm font-semibold text-foreground/60">
-                        Community Feed ({data.messages.length})
-                    </h2>
                     <AnimatePresence>
                         {data.messages.map((msg) => {
                             const cat = CATEGORIES.find(c => c.value === msg.category);
@@ -194,7 +132,7 @@ export default function CommunityPage() {
                                 >
                                     <Card className={`border ${msg.isOwn ? "border-primary/30" : "border-divider"}`}>
                                         <CardBody className="p-3 space-y-2">
-                                            {/* Top row: avatar + name + category + time */}
+                                            {/* Top row */}
                                             <div className="flex items-center gap-2">
                                                 {msg.isAnonymous || !msg.player ? (
                                                     <div className="w-6 h-6 rounded-full bg-default-200 flex items-center justify-center shrink-0">
@@ -230,7 +168,7 @@ export default function CommunityPage() {
                                                 </div>
                                             )}
 
-                                            {/* Bottom row: time + votes */}
+                                            {/* Bottom row */}
                                             <div className="flex items-center justify-between pl-8">
                                                 <div className="flex items-center gap-1">
                                                     <p className="text-[10px] text-foreground/30">
@@ -284,13 +222,103 @@ export default function CommunityPage() {
 
             {/* Empty state */}
             {data?.messages && data.messages.length === 0 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-8">
-                    <Star className="h-8 w-8 text-foreground/20 mx-auto mb-2" />
-                    <p className="text-sm text-foreground/40">
-                        No messages yet. Be the first to share your thoughts!
-                    </p>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
+                    <Star className="h-10 w-10 text-foreground/15 mx-auto mb-3" />
+                    <p className="text-sm text-foreground/40 mb-1">No messages yet</p>
+                    <p className="text-xs text-foreground/30">Be the first to share your thoughts!</p>
                 </motion.div>
             )}
+
+            {/* FAB */}
+            <motion.div
+                className="fixed bottom-20 right-4 z-50"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.2 }}
+            >
+                <Button
+                    isIconOnly
+                    color="primary"
+                    size="lg"
+                    className="rounded-full shadow-lg shadow-primary/30 h-14 w-14"
+                    onPress={composeModal.onOpen}
+                >
+                    <Plus className="h-6 w-6" />
+                </Button>
+            </motion.div>
+
+            {/* Compose Modal */}
+            <Modal isOpen={composeModal.isOpen} onClose={composeModal.onClose} placement="bottom" size="full">
+                <ModalContent>
+                    <ModalHeader className="flex items-center gap-2 pb-2">
+                        <Send className="h-4 w-4 text-primary" />
+                        New Message
+                    </ModalHeader>
+                    <ModalBody className="space-y-3">
+                        {/* Category pills */}
+                        <div className="flex flex-wrap gap-1.5">
+                            {CATEGORIES.map((cat) => {
+                                const CatIcon = cat.icon;
+                                return (
+                                    <Button
+                                        key={cat.value}
+                                        size="sm"
+                                        variant={category === cat.value ? "solid" : "flat"}
+                                        color={category === cat.value ? cat.color : "default"}
+                                        className="text-xs"
+                                        startContent={<CatIcon className="h-3 w-3" />}
+                                        onPress={() => setCategory(cat.value)}
+                                    >
+                                        {cat.label}
+                                    </Button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Message input */}
+                        <Textarea
+                            placeholder={`What's on your mind about ${GAME.name}?`}
+                            value={message}
+                            onValueChange={setMessage}
+                            maxLength={500}
+                            minRows={4}
+                            maxRows={8}
+                            description={`${message.length}/500`}
+                            autoFocus
+                        />
+
+                        {/* Anonymous toggle */}
+                        <div className="flex items-center gap-2">
+                            <Switch
+                                size="sm"
+                                isSelected={isAnonymous}
+                                onValueChange={setIsAnonymous}
+                                thumbIcon={isAnonymous
+                                    ? <EyeOff className="h-3 w-3" />
+                                    : <User className="h-3 w-3" />
+                                }
+                            />
+                            <span className="text-xs text-foreground/60">
+                                {isAnonymous ? "Posting as Anonymous" : "Posting with your name"}
+                            </span>
+                        </div>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button variant="flat" onPress={composeModal.onClose}>
+                            Cancel
+                        </Button>
+                        <Button
+                            color="primary"
+                            isDisabled={!message.trim()}
+                            isLoading={submit.isPending}
+                            startContent={<Send className="h-4 w-4" />}
+                            onPress={() => submit.mutate()}
+                        >
+                            Send
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </div>
     );
 }
