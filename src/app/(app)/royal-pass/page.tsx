@@ -235,35 +235,36 @@ export default function RoyalPassPage() {
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.05 }}
+                            className="flex justify-center"
                         >
                             <button
                                 onClick={handleBuyRP}
                                 disabled={isPurchasing}
-                                className={`w-fit mx-auto rounded-2xl overflow-hidden shadow-lg transition-transform active:scale-[0.98] disabled:opacity-60 ${lostDiscount
+                                className={`rounded-full overflow-hidden shadow-lg transition-transform active:scale-[0.98] disabled:opacity-60 ${lostDiscount
                                     ? "shadow-pink-500/20"
                                     : "shadow-amber-500/20"
                                     }`}
                             >
                                 {/* Top — price */}
                                 {!lostDiscount ? (
-                                    <div className="bg-zinc-900 dark:bg-zinc-800 px-4 py-2 flex items-center justify-center gap-2">
-                                        <span className="text-sm font-bold text-white/40 line-through decoration-red-500 decoration-2">
+                                    <div className="bg-zinc-900 dark:bg-zinc-800 px-5 py-1 flex items-center justify-center gap-1.5">
+                                        <span className="text-[10px] font-bold text-white/40 line-through decoration-red-500 decoration-1">
                                             {RP_PRICE_FULL} {GAME.currencyLabel}
                                         </span>
-                                        <span className="text-xl font-black text-white">
+                                        <span className="text-sm font-black text-white">
                                             {RP_PRICE_DISCOUNTED} {GAME.currencyLabel}
                                         </span>
                                     </div>
                                 ) : (
-                                    <div className="bg-zinc-900 dark:bg-zinc-800 px-4 py-2 text-center">
-                                        <span className="text-xl font-black text-white">
+                                    <div className="bg-zinc-900 dark:bg-zinc-800 px-5 py-1 text-center">
+                                        <span className="text-sm font-black text-white">
                                             {RP_PRICE_FULL} {GAME.currencyLabel}
                                         </span>
                                     </div>
                                 )}
 
                                 {/* Middle — CTA */}
-                                <div className={`px-4 py-3 text-center text-base font-bold text-white ${lostDiscount
+                                <div className={`px-6 py-2.5 text-center text-sm font-bold text-white ${lostDiscount
                                     ? "bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500"
                                     : "bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500"
                                     }`}>
@@ -272,8 +273,8 @@ export default function RoyalPassPage() {
 
                                 {/* Bottom — special offer */}
                                 {!lostDiscount && (
-                                    <div className="bg-zinc-900 dark:bg-zinc-800 px-4 py-1.5 text-center">
-                                        <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">
+                                    <div className="bg-zinc-900 dark:bg-zinc-800 px-5 py-1 text-center">
+                                        <span className="text-[9px] font-bold text-amber-400 uppercase tracking-widest">
                                             ⚡ Special Offer
                                         </span>
                                     </div>
