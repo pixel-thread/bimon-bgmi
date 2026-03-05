@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Avatar, Chip } from "@heroui/react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { Gamepad2, Loader2, CheckCircle } from "lucide-react";
 import { PubgmiLogo } from "@/components/common/pubgmi-logo";
 import { motion } from "motion/react";
@@ -202,37 +202,49 @@ export default function OnboardingPage() {
                     <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-5">
                         {/* User info from Google */}
                         {session?.user && (
-                            <div className="flex items-center gap-3 rounded-xl bg-default-100 p-3 -mt-1">
-                                <Avatar
-                                    src={session.user.image || undefined}
-                                    name={
-                                        session.user.name ||
-                                        "User"
-                                    }
-                                    size="sm"
-                                />
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-sm font-medium truncate">
-                                            {session.user.name}
+                            <div>
+                                <div className="flex items-center gap-3 rounded-xl bg-default-100 p-3 -mt-1">
+                                    <Avatar
+                                        src={session.user.image || undefined}
+                                        name={
+                                            session.user.name ||
+                                            "User"
+                                        }
+                                        size="sm"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-sm font-medium truncate">
+                                                {session.user.name}
+                                            </p>
+                                            {isUserNameAutoFilled && (
+                                                <Chip
+                                                    size="sm"
+                                                    variant="flat"
+                                                    color="success"
+                                                    startContent={
+                                                        <CheckCircle className="h-3 w-3" />
+                                                    }
+                                                >
+                                                    {userName}
+                                                </Chip>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-foreground/40">
+                                            {session.user.email}
                                         </p>
-                                        {isUserNameAutoFilled && (
-                                            <Chip
-                                                size="sm"
-                                                variant="flat"
-                                                color="success"
-                                                startContent={
-                                                    <CheckCircle className="h-3 w-3" />
-                                                }
-                                            >
-                                                {userName}
-                                            </Chip>
-                                        )}
                                     </div>
-                                    <p className="text-xs text-foreground/40">
-                                        {session.user.email}
-                                    </p>
                                 </div>
+                                <p className="text-xs text-foreground/40 mt-1.5 text-right">
+                                    Wrong account?{" "}
+                                    <button
+                                        type="button"
+                                        onClick={() => signOut({ callbackUrl: "/sign-in" })}
+                                        className="text-primary hover:underline font-medium"
+                                    >
+                                        Switch
+                                    </button>
+                                </p>
                             </div>
                         )}
 
