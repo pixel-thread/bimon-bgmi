@@ -247,7 +247,11 @@ export default function RoyalPassPage() {
                                 onPress={handleBuyRP}
                                 isDisabled={isPurchasing}
                             >
-                                {isPurchasing ? "Claiming..." : `Buy ${rpPrice} ${GAME.currencyLabel}`}
+                                {isPurchasing ? "Claiming..." : lostDiscount ? (
+                                    `Buy ${RP_PRICE_FULL} ${GAME.currencyLabel}`
+                                ) : (
+                                    <>Buy <span className="line-through opacity-60 mx-0.5">{RP_PRICE_FULL}</span> {RP_PRICE_DISCOUNTED} {GAME.currencyLabel}</>
+                                )}
                             </Button>
                             {!lostDiscount && (
                                 <div className="flex items-center justify-center gap-2">
