@@ -552,9 +552,44 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="max-w-2xl mx-auto"
         >
-            {/* Donation Tag - Outside but attached to poll (v1 style) */}
+            {/* Donation Tag with confetti burst */}
             {donationTotal > 0 && theme && (
                 <div className="flex justify-center mb-[-8px] relative z-10">
+                    {/* Confetti particles */}
+                    <div className="absolute inset-0 pointer-events-none overflow-visible">
+                        {Array.from({ length: 20 }).map((_, i) => {
+                            const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6bd6', '#ffa94d'];
+                            const color = colors[i % colors.length];
+                            const angle = (i / 20) * 360;
+                            const distance = 40 + Math.random() * 60;
+                            const x = Math.cos(angle * Math.PI / 180) * distance;
+                            const y = Math.sin(angle * Math.PI / 180) * distance;
+                            const size = 4 + Math.random() * 4;
+                            const delay = Math.random() * 0.3;
+                            return (
+                                <span
+                                    key={i}
+                                    className="absolute left-1/2 top-1/2 rounded-full opacity-0"
+                                    style={{
+                                        width: size,
+                                        height: size,
+                                        backgroundColor: color,
+                                        animation: `confetti-burst 1s ${delay}s ease-out forwards`,
+                                        // @ts-expect-error css vars
+                                        '--cx': `${x}px`,
+                                        '--cy': `${y}px`,
+                                    }}
+                                />
+                            );
+                        })}
+                    </div>
+                    <style jsx>{`
+                        @keyframes confetti-burst {
+                            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+                            60% { opacity: 1; }
+                            100% { transform: translate(calc(-50% + var(--cx)), calc(-50% + var(--cy))) scale(1); opacity: 0; }
+                        }
+                    `}</style>
                     {poll.donations.donations.map((d, i) => (
                         <div key={i} className={`inline-flex items-center px-4 py-1.5 rounded-lg bg-gradient-to-r ${theme.header} text-white text-sm font-semibold shadow-lg`}>
                             <span>{d.isAnonymous ? "Anonymous" : (d.playerName || "Community")} donated&nbsp;</span>
