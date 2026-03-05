@@ -116,6 +116,7 @@ export function Header() {
             return {
                 unreadCount: json.data?.unreadCount ?? 0,
                 unclaimedRewardCount: json.data?.unclaimedRewards?.length ?? 0,
+                hasUnclaimedStreak: (json.data?.unclaimedRewards ?? []).some((r: any) => r.type === "STREAK"),
             };
         },
         enabled: isSignedIn,
@@ -123,6 +124,7 @@ export function Header() {
     });
     const unreadCount = notifData?.unreadCount ?? 0;
     const unclaimedRewardCount = notifData?.unclaimedRewardCount ?? 0;
+    const hasUnclaimedStreak = notifData?.hasUnclaimedStreak ?? false;
     const totalActionCount = unreadCount + unclaimedRewardCount;
 
 
@@ -290,12 +292,15 @@ export function Header() {
                                     onClick={() => {
                                         if (!pathname.startsWith("/royal-pass")) setNavigatingTo("/royal-pass");
                                     }}
-                                    className="flex items-center justify-center rounded-full p-1.5 text-yellow-500 transition-opacity hover:opacity-80"
+                                    className="relative flex items-center justify-center rounded-full p-1.5 text-yellow-500 transition-opacity hover:opacity-80"
                                 >
                                     {navigatingTo === "/royal-pass" && !pathname.startsWith("/royal-pass") ? (
                                         <Loader2 className="h-5 w-5 animate-spin" />
                                     ) : (
                                         <Crown className="h-5 w-5" />
+                                    )}
+                                    {hasUnclaimedStreak && (
+                                        <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-background animate-pulse" />
                                     )}
                                 </Link>
                             </NavbarItem>
