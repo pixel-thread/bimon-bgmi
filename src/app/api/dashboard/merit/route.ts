@@ -66,7 +66,6 @@ export async function GET(request: NextRequest) {
                     isSoloRestricted: true,
                     soloMatchesNeeded: true,
                     isBanned: true,
-                    banReason: true,
                     user: { select: { username: true } },
                     _count: {
                         select: {

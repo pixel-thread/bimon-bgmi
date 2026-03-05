@@ -136,7 +136,6 @@ export async function POST(request: NextRequest) {
                     data: {
                         meritScore,
                         isBanned: true,
-                        banReason: `Auto-banned: merit score dropped to ${meritScore}% (threshold: ${banThreshold}%)`,
                     },
                 });
                 autoAction = "banned";

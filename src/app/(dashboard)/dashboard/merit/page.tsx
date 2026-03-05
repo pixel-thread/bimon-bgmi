@@ -38,7 +38,6 @@ interface MeritPlayer {
     isSoloRestricted: boolean;
     soloMatchesNeeded: number;
     isBanned: boolean;
-    banReason: string | null;
     user: { username: string };
     _count: { meritRatingsReceived: number };
 }
@@ -461,10 +460,10 @@ export default function MeritPage() {
                                         <div
                                             key={player.id}
                                             className={`flex items-center gap-3 px-4 py-2.5 ${player.meritScore <= thresholds.banThreshold
-                                                    ? "bg-danger/5"
-                                                    : player.meritScore <= thresholds.restrictThreshold
-                                                        ? "bg-warning/5"
-                                                        : ""
+                                                ? "bg-danger/5"
+                                                : player.meritScore <= thresholds.restrictThreshold
+                                                    ? "bg-warning/5"
+                                                    : ""
                                                 }`}
                                         >
                                             <span className="text-[11px] text-foreground/25 w-5 text-right tabular-nums">
@@ -499,9 +498,7 @@ export default function MeritPage() {
                                                             {player.soloMatchesNeeded} matches left
                                                         </span>
                                                     )}
-                                                    {player.banReason?.startsWith("Auto-") && (
-                                                        <span className="text-danger">auto-banned</span>
-                                                    )}
+
                                                 </div>
                                             </div>
                                             <Chip
