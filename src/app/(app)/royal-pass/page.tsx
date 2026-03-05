@@ -239,7 +239,7 @@ export default function RoyalPassPage() {
                             <button
                                 onClick={handleBuyRP}
                                 disabled={isPurchasing}
-                                className={`w-full rounded-2xl overflow-hidden shadow-lg transition-transform active:scale-[0.98] disabled:opacity-60 ${lostDiscount
+                                className={`w-fit mx-auto rounded-2xl overflow-hidden shadow-lg transition-transform active:scale-[0.98] disabled:opacity-60 ${lostDiscount
                                     ? "shadow-pink-500/20"
                                     : "shadow-amber-500/20"
                                     }`}
