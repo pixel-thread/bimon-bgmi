@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -152,7 +153,7 @@ export async function POST(
             // 6. Reset tournament
             await tx.tournament.update({
                 where: { id },
-                data: { isWinnerDeclared: false, status: "ACTIVE", taxPreviewCache: null },
+                data: { isWinnerDeclared: false, status: "ACTIVE", taxPreviewCache: Prisma.DbNull },
             });
         }, { timeout: 60000, maxWait: 65000 });
 
