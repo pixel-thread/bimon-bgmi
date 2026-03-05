@@ -38,6 +38,7 @@ import { GameNameInput, validateDisplayName } from "@/components/common/GameName
 import { useIGNTutorial } from "@/components/common/IGNTutorialModal";
 import { toast } from "sonner";
 import { CharacterPreviewModal } from "@/components/profile/character-preview-modal";
+import { GAME } from "@/lib/game-config";
 
 interface ProfileData {
     id: string;
@@ -143,7 +144,7 @@ export default function ProfilePage() {
                 }),
             });
             if (res.ok) {
-                toast.success(forceChange ? "Name updated (1 UC charged)" : "Profile updated!");
+                toast.success(forceChange ? `Name updated (1 ${GAME.currency} charged)` : "Profile updated!");
                 setEditing(false);
                 setOnCooldown(false);
                 queryClient.invalidateQueries({ queryKey: ["profile"] });
@@ -383,7 +384,7 @@ export default function ProfilePage() {
                                         >
                                             <div className="mt-3 pt-3 border-t border-divider">
                                                 {(stats.ucPlacements.first + stats.ucPlacements.second + stats.ucPlacements.third + stats.ucPlacements.fourth + stats.ucPlacements.fifth) === 0 ? (
-                                                    <p className="text-center text-sm text-foreground/40 py-2">No UC wins yet</p>
+                                                    <p className="text-center text-sm text-foreground/40 py-2">No {GAME.currency} wins yet</p>
                                                 ) : (
                                                     <div className="flex gap-4 justify-center flex-wrap">
                                                         {stats.ucPlacements.first > 0 && (
@@ -584,7 +585,7 @@ export default function ProfilePage() {
                                             isLoading={saving}
                                             isDisabled={!onCooldown && (!!ignError || !newIGN.trim() || (newIGN === (player.displayName || profile.username) && newBio === (player.bio || "")))}
                                         >
-                                            {onCooldown ? "Pay 1 UC & Save" : "Save"}
+                                            {onCooldown ? `Pay 1 ${GAME.currency} & Save` : "Save"}
                                         </Button>
                                     </div>
                                 </div>
@@ -644,10 +645,10 @@ export default function ProfilePage() {
                                         <Crown className="h-8 w-8 text-black" />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-bold text-yellow-400">Royal Pass</h3>
+                                        <h3 className="text-xl font-bold text-yellow-400">{GAME.passName}</h3>
                                         <div className="flex items-center justify-center gap-2 mt-2">
-                                            <span className="text-foreground/40 line-through text-lg">20 UC</span>
-                                            <span className="text-2xl font-black text-yellow-400">5 UC</span>
+                                            <span className="text-foreground/40 line-through text-lg">20 {GAME.currency}</span>
+                                            <span className="text-2xl font-black text-yellow-400">5 {GAME.currency}</span>
                                         </div>
                                     </div>
                                     <div className="space-y-2 text-left text-sm">
@@ -657,7 +658,7 @@ export default function ProfilePage() {
                                         </div>
                                         <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 px-3 py-2">
                                             <Flame className="h-4 w-4 text-yellow-400 shrink-0" />
-                                            <span className="text-foreground/80">Streak bonus rewards (₹30 UC)</span>
+                                            <span className="text-foreground/80">Streak bonus rewards (₹30 {GAME.currency})</span>
                                         </div>
                                         <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 px-3 py-2">
                                             <Crown className="h-4 w-4 text-yellow-400 shrink-0" />
@@ -666,7 +667,7 @@ export default function ProfilePage() {
                                     </div>
                                     {player?.wallet && player.wallet.balance < 5 && (
                                         <p className="text-xs text-red-400">
-                                            You need {5 - player.wallet.balance} more UC (Balance: {player.wallet.balance} UC)
+                                            You need {5 - player.wallet.balance} more {GAME.currency} (Balance: {player.wallet.balance} {GAME.currency})
                                         </p>
                                     )}
                                     <div className="flex gap-2 pt-2">
@@ -685,7 +686,7 @@ export default function ProfilePage() {
                                                     const res = await fetch("/api/royal-pass/buy", { method: "POST" });
                                                     const json = await res.json();
                                                     if (res.ok) {
-                                                        toast.success("Royal Pass activated! 👑");
+                                                        toast.success(`${GAME.passName} activated! ${GAME.passEmoji}`);
                                                         setShowRPModal(false);
                                                         await queryClient.invalidateQueries({ queryKey: ["profile"] });
                                                         // Auto-open gallery picker after RP purchase
@@ -698,7 +699,7 @@ export default function ProfilePage() {
                                                 }
                                             }}
                                         >
-                                            👑 Buy for 5 UC
+                                            {GAME.passEmoji} Buy for 5 {GAME.currency}
                                         </Button>
                                     </div>
                                 </div>
@@ -730,7 +731,7 @@ export default function ProfilePage() {
                                     queryClient.invalidateQueries({ queryKey: ["profile"] });
                                     queryClient.invalidateQueries({ queryKey: ["players"] });
                                 } else if (res.status === 403) {
-                                    toast.error("Royal Pass required");
+                                    toast.error(`${GAME.passName} required`);
                                 } else {
                                     toast.error("Upload failed");
                                 }

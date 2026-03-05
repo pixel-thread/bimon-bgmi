@@ -24,6 +24,7 @@ import {
     Shield,
 } from "lucide-react";
 import { toast } from "sonner";
+import { GAME } from "@/lib/game-config";
 
 /** Real WhatsApp SVG icon */
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -185,8 +186,8 @@ export default function SettingsPage() {
                             size="sm"
                             value={String(settings.defaultEntryFee)}
                             onValueChange={(v) => update("defaultEntryFee", Number(v))}
-                            description="Default tournament entry fee (UC)"
-                            endContent={<span className="text-foreground/40">UC</span>}
+                            description={`Default tournament entry fee (${GAME.currency})`}
+                            endContent={<span className="text-foreground/40">{GAME.currency}</span>}
                         />
                         <Input
                             label="Name Change Fee"
@@ -194,8 +195,8 @@ export default function SettingsPage() {
                             size="sm"
                             value={String(settings.nameChangeFee)}
                             onValueChange={(v) => update("nameChangeFee", Number(v))}
-                            description="Cost to change IGN (UC)"
-                            endContent={<span className="text-foreground/40">UC</span>}
+                            description={`Cost to change IGN (${GAME.currency})`}
+                            endContent={<span className="text-foreground/40">{GAME.currency}</span>}
                         />
                     </div>
                     <Divider />
@@ -204,7 +205,7 @@ export default function SettingsPage() {
                         onValueChange={(v) => update("enableTopUps", v)}
                         size="sm"
                     >
-                        Enable Top-Ups (UC purchases)
+                        Enable Top-Ups ({GAME.currency} purchases)
                     </Switch>
                 </CardBody>
             </Card>
@@ -214,7 +215,7 @@ export default function SettingsPage() {
                 <CardHeader className="flex gap-2 items-center pb-0">
                     <Crown className="h-5 w-5 text-warning" />
                     <div>
-                        <h2 className="text-lg font-semibold">Royal Pass</h2>
+                        <h2 className="text-lg font-semibold">{GAME.passName}</h2>
                         <p className="text-xs text-foreground/50">Premium pass pricing and streak rewards</p>
                     </div>
                 </CardHeader>
@@ -224,17 +225,17 @@ export default function SettingsPage() {
                         onValueChange={(v) => update("enableElitePass", v)}
                         size="sm"
                     >
-                        Enable Royal Pass
+                        Enable {GAME.passName}
                     </Switch>
                     {settings.enableElitePass && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Input
-                                label="Royal Pass Price"
+                                label={`${GAME.passName} Price`}
                                 type="number"
                                 size="sm"
                                 value={String(settings.elitePassPrice)}
                                 onValueChange={(v) => update("elitePassPrice", Number(v))}
-                                endContent={<span className="text-foreground/40">UC</span>}
+                                endContent={<span className="text-foreground/40">{GAME.currency}</span>}
                             />
                             <Input
                                 label="Original Price (strikethrough)"
@@ -242,7 +243,7 @@ export default function SettingsPage() {
                                 size="sm"
                                 value={String(settings.elitePassOrigPrice)}
                                 onValueChange={(v) => update("elitePassOrigPrice", Number(v))}
-                                endContent={<span className="text-foreground/40">UC</span>}
+                                endContent={<span className="text-foreground/40">{GAME.currency}</span>}
                             />
                             <Input
                                 label="Streak Milestone"
@@ -258,7 +259,7 @@ export default function SettingsPage() {
                                 size="sm"
                                 value={String(settings.streakRewardAmount)}
                                 onValueChange={(v) => update("streakRewardAmount", Number(v))}
-                                endContent={<span className="text-foreground/40">UC</span>}
+                                endContent={<span className="text-foreground/40">{GAME.currency}</span>}
                             />
                         </div>
                     )}
@@ -290,8 +291,8 @@ export default function SettingsPage() {
                                 size="sm"
                                 value={String(settings.referralReward)}
                                 onValueChange={(v) => update("referralReward", Number(v))}
-                                description="UC earned per referral"
-                                endContent={<span className="text-foreground/40">UC</span>}
+                                description={`${GAME.currency} earned per referral`}
+                                endContent={<span className="text-foreground/40">{GAME.currency}</span>}
                             />
                             <Input
                                 label="Tournaments Required"
@@ -469,7 +470,7 @@ export default function SettingsPage() {
                         size="sm"
                         value={settings.welcomeMessage}
                         onValueChange={(v) => update("welcomeMessage", v)}
-                        placeholder="Welcome to BIMON!"
+                        placeholder={`Welcome to ${GAME.name}!`}
                         minRows={2}
                     />
                 </CardBody>

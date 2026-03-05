@@ -23,6 +23,7 @@ import {
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { GAME } from "@/lib/game-config";
 
 interface RoyalPassInfo {
     hasRoyalPass: boolean;
@@ -68,7 +69,7 @@ export default function RoyalPassPage() {
             const res = await fetch("/api/royal-pass/buy", { method: "POST" });
             const json = await res.json();
             if (res.ok) {
-                toast.success("🎉 Royal Pass purchased!");
+                toast.success(`🎉 ${GAME.passName} purchased!`);
                 queryClient.invalidateQueries({ queryKey: ["royal-pass"] });
                 queryClient.invalidateQueries({ queryKey: ["profile"] });
             } else {
@@ -90,7 +91,7 @@ export default function RoyalPassPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="rounded-lg bg-gradient-to-r from-red-500 to-orange-500 py-2 px-4 text-center text-sm font-medium text-white"
                 >
-                    🎉 <span className="line-through opacity-75">20 UC</span> → 5 UC only! ⏳ Limited time — don't miss out!
+                    🎉 <span className="line-through opacity-75">20 {GAME.currency}</span> → 5 {GAME.currency} only! ⏳ Limited time — don't miss out!
                 </motion.div>
             )}
 
@@ -100,15 +101,15 @@ export default function RoyalPassPage() {
                     <Crown className="h-8 w-8 text-white" />
                 </div>
                 <h1 className="bg-gradient-to-r from-yellow-500 to-amber-500 bg-clip-text text-2xl font-bold text-transparent">
-                    Royal Pass
+                    {GAME.passName}
                 </h1>
-                <p className="text-sm text-foreground/50">Play tournaments, earn UC!</p>
+                <p className="text-sm text-foreground/50">Play tournaments, earn {GAME.currency}!</p>
             </div>
 
             {error && (
                 <div className="flex items-center gap-2 rounded-lg bg-danger-50 p-4 text-sm text-danger dark:bg-danger-50/10">
                     <AlertCircle className="h-4 w-4" />
-                    Failed to load Royal Pass data.
+                    Failed to load {GAME.passName} data.
                 </div>
             )}
 
@@ -196,7 +197,7 @@ export default function RoyalPassPage() {
                                                         animation: "textPop 3.5s ease-in-out infinite",
                                                     } : undefined}
                                                 >
-                                                    {wasting ? "Free 30 UC" : "30 UC"}
+                                                    {wasting ? `Free ${data.nextRewardAt} ${GAME.currency}` : `${data.nextRewardAt} ${GAME.currency}`}
                                                 </span>
                                             </div>
                                         </>
@@ -205,8 +206,8 @@ export default function RoyalPassPage() {
 
                                 <p className="text-center text-xs text-foreground/50">
                                     {data.hasRoyalPass
-                                        ? "Leh kai ban ban 8 tournament ioh ei 30 UC instant!"
-                                        : "Get Royal Pass to earn 30 UC when you hit 8 streak!"}
+                                        ? `Leh kai ban ban ${data.nextRewardAt} tournament ioh ei ${data.nextRewardAt * 3 + 6} ${GAME.currency} instant!`
+                                        : `Get ${GAME.passName} to earn ${data.nextRewardAt * 3 + 6} ${GAME.currency} when you hit ${data.nextRewardAt} streak!`}
                                 </p>
                             </CardBody>
                         </Card>
@@ -223,7 +224,7 @@ export default function RoyalPassPage() {
                                 <CardBody className="p-4 text-center">
                                     <Crown className="mx-auto mb-2 h-8 w-8 text-amber-500" />
                                     <p className="font-semibold text-green-600 dark:text-green-400">
-                                        You have Royal Pass! 👑
+                                        You have {GAME.passName}! {GAME.passEmoji}
                                     </p>
                                 </CardBody>
                             </Card>
@@ -246,7 +247,7 @@ export default function RoyalPassPage() {
                                 onPress={handleBuyRP}
                                 isDisabled={isPurchasing}
                             >
-                                {isPurchasing ? "Claiming..." : `Buy ${rpPrice} UC`}
+                                {isPurchasing ? "Claiming..." : `Buy ${rpPrice} ${GAME.currency}`}
                             </Button>
                             {!lostDiscount && (
                                 <div className="flex items-center justify-center gap-2">
@@ -294,7 +295,7 @@ export default function RoyalPassPage() {
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm font-bold text-warning">
-                                                    {reward.amount} UC
+                                                    {reward.amount} {GAME.currency}
                                                 </span>
                                                 <Chip
                                                     size="sm"
@@ -323,7 +324,7 @@ export default function RoyalPassPage() {
                             <li>Rung ha ka tournament</li>
                             <li>Your streak increases by 1</li>
                             <li>Pep shi tournament? Ka streak la resets sha 0</li>
-                            <li>Khlem pep 8 tournament → Ioh 30 UC bonus!</li>
+                            <li>Khlem pep {data?.nextRewardAt ?? 8} tournament → Ioh {(data?.nextRewardAt ?? 8) * 3 + 6} {GAME.currency} bonus!</li>
                             <li className="text-amber-600 dark:text-amber-400">
                                 🎨 Upload custom character image/video for your podium card!
                             </li>

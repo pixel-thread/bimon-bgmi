@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState, useMemo } from "react";
+import { GAME } from "@/lib/game-config";
 
 interface RoyalPassHolder {
     id: string;
@@ -101,17 +102,17 @@ export default function RoyalPassAdminPage() {
             <div>
                 <div className="flex items-center gap-2">
                     <Crown className="h-5 w-5 text-yellow-500" />
-                    <h1 className="text-xl font-bold">Royal Pass</h1>
+                    <h1 className="text-xl font-bold">{GAME.passName}</h1>
                 </div>
                 <p className="text-sm text-foreground/50">
-                    Manage Royal Pass holders and track revenue
+                    Manage {GAME.passName} holders and track revenue
                 </p>
             </div>
 
             {error && (
                 <div className="flex items-center gap-2 rounded-lg bg-danger-50 p-4 text-sm text-danger dark:bg-danger-50/10">
                     <AlertCircle className="h-4 w-4" />
-                    Failed to load Royal Pass data.
+                    Failed to load {GAME.passName} data.
                 </div>
             )}
 
@@ -132,8 +133,8 @@ export default function RoyalPassAdminPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {[
                             { icon: <Crown className="h-5 w-5 text-yellow-500" />, value: data.stats.totalPasses, label: "Total Purchases" },
-                            { icon: <Banknote className="h-5 w-5 text-success" />, value: `${data.stats.ucCollected} UC`, label: "UC Collected" },
-                            { icon: <Zap className="h-5 w-5 text-warning" />, value: `${data.stats.ucRewarded} UC`, label: "UC Rewarded" },
+                            { icon: <Banknote className="h-5 w-5 text-success" />, value: `${data.stats.ucCollected} ${GAME.currency}`, label: `${GAME.currency} Collected` },
+                            { icon: <Zap className="h-5 w-5 text-warning" />, value: `${data.stats.ucRewarded} ${GAME.currency}`, label: `${GAME.currency} Rewarded` },
                             { icon: <Users className="h-5 w-5 text-primary" />, value: data.stats.paidPurchases, label: "Paid Purchases" },
                         ].map((stat, i) => (
                             <motion.div key={stat.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}>
@@ -186,7 +187,7 @@ export default function RoyalPassAdminPage() {
                                 <div className="flex flex-col items-center gap-3 py-12 text-center">
                                     <InboxIcon className="h-10 w-10 text-foreground/20" />
                                     <p className="text-sm text-foreground/50">
-                                        {search ? "No matching holders" : "No Royal Pass holders yet"}
+                                        {search ? "No matching holders" : `No ${GAME.passName} holders yet`}
                                     </p>
                                 </div>
                             </CardBody>
@@ -197,9 +198,9 @@ export default function RoyalPassAdminPage() {
                                     <span>Player</span>
                                     <span>Purchased</span>
                                     <span className="text-center">Streak</span>
-                                    <span className="text-center">UC Earned</span>
+                                    <span className="text-center">{GAME.currency} Earned</span>
                                     <span className="text-center">Type</span>
-                                    <span className="text-right">UC Paid</span>
+                                    <span className="text-right">{GAME.currency} Paid</span>
                                 </div>
 
                                 <CardBody className="p-0">
@@ -228,7 +229,7 @@ export default function RoyalPassAdminPage() {
                                                         <span className="text-sm font-medium">{h.streak}</span>
                                                     </div>
                                                     <p className="text-sm text-center font-medium text-success">
-                                                        {h.ucEarned > 0 ? `${h.ucEarned} UC` : "0 UC"}
+                                                        {h.ucEarned > 0 ? `${h.ucEarned} ${GAME.currency}` : `0 ${GAME.currency}`}
                                                     </p>
                                                     <div className="flex justify-center">
                                                         <Chip size="sm" variant="flat" color={h.pricePaid > 0 ? "warning" : "success"}>
@@ -236,7 +237,7 @@ export default function RoyalPassAdminPage() {
                                                         </Chip>
                                                     </div>
                                                     <p className="text-sm text-right font-semibold text-warning">
-                                                        {h.amount > 0 ? `${h.amount} UC` : "0 UC"}
+                                                        {h.amount > 0 ? `${h.amount} ${GAME.currency}` : `0 ${GAME.currency}`}
                                                     </p>
                                                 </div>
 
@@ -248,7 +249,7 @@ export default function RoyalPassAdminPage() {
                                                             <div className="flex items-center justify-between gap-2">
                                                                 <p className="text-sm font-medium truncate">{h.displayName}</p>
                                                                 <Chip size="sm" variant="flat" color={h.pricePaid > 0 ? "warning" : "success"} className="shrink-0">
-                                                                    {h.pricePaid > 0 ? `${h.amount} UC` : "Free"}
+                                                                    {h.pricePaid > 0 ? `${h.amount} ${GAME.currency}` : "Free"}
                                                                 </Chip>
                                                             </div>
                                                             <div className="flex items-center gap-2 mt-0.5 text-[11px] text-foreground/40">
@@ -257,7 +258,7 @@ export default function RoyalPassAdminPage() {
                                                                     <Flame className="h-2.5 w-2.5 text-orange-500" />{h.streak}
                                                                 </span>
                                                                 {h.ucEarned > 0 && (
-                                                                    <span className="text-success font-medium">{h.ucEarned} UC earned</span>
+                                                                    <span className="text-success font-medium">{h.ucEarned} {GAME.currency} earned</span>
                                                                 )}
                                                             </div>
                                                         </div>

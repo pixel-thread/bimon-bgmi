@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
+import { GAME } from "@/lib/game-config";
 
 // ─── Razorpay Types ─────────────────────────────────────────
 
@@ -277,8 +278,8 @@ export default function WalletPage() {
                 key: keyId,
                 amount: orderAmount,
                 currency,
-                name: "PUBGMI",
-                description: `Add ${desiredUC} UC to your balance`,
+                name: GAME.name,
+                description: `Add ${desiredUC} ${GAME.currency} to your balance`,
                 order_id: orderId,
                 handler: (response: RazorpayResponse) => {
                     verifyPayment.mutate(response);
@@ -315,7 +316,7 @@ export default function WalletPage() {
         },
         onSuccess: (data) => {
             const ucAdded = data?.data?.ucAdded ?? 0;
-            toast.success(`🎉 Added ${ucAdded} UC! 7x chance for free tournament entry 🎯`);
+            toast.success(`🎉 Added ${ucAdded} ${GAME.currency}! 7x chance for free tournament entry 🎯`);
             queryClient.invalidateQueries({ queryKey: ["wallet"] });
             queryClient.invalidateQueries({ queryKey: ["profile"] });
             queryClient.invalidateQueries({ queryKey: ["transactions"] });
@@ -370,7 +371,7 @@ export default function WalletPage() {
                     <h1 className="text-lg font-bold">Wallet</h1>
                 </div>
                 <p className="text-sm text-foreground/50">
-                    Your UC balance and transactions
+                    Your {GAME.currency} balance and transactions
                 </p>
             </div>
 
@@ -405,7 +406,7 @@ export default function WalletPage() {
                                                 wallet?.balance ?? 0
                                             ).toLocaleString()}{" "}
                                             <span className="text-lg font-semibold text-foreground/40">
-                                                UC
+                                                {GAME.currency}
                                             </span>
                                         </p>
                                     </div>
@@ -418,7 +419,7 @@ export default function WalletPage() {
                                         }
                                         onPress={onOpen}
                                     >
-                                        Add UC
+                                        Add {GAME.currency}
                                     </Button>
                                 </div>
 
@@ -428,7 +429,7 @@ export default function WalletPage() {
                                     <p className="text-[11px] font-medium text-success">
                                         {hasRazorpayTopUp
                                             ? "You have 7x chance for free tournament entry this season!"
-                                            : "Add UC = 7x chance for free tournament entry"}
+                                            : `Add ${GAME.currency} = 7x chance for free tournament entry`}
                                     </p>
                                 </div>
                             </CardBody>
@@ -535,7 +536,7 @@ export default function WalletPage() {
                                                     </span>
                                                     <span>·</span>
                                                     <span>
-                                                        {balBefore.toLocaleString()} → {balAfter.toLocaleString()} UC
+                                                        {balBefore.toLocaleString()} → {balAfter.toLocaleString()} {GAME.currency}
                                                     </span>
                                                 </div>
                                             </div>
@@ -546,7 +547,7 @@ export default function WalletPage() {
                                                     }`}
                                             >
                                                 {tx.type === "CREDIT" ? "+" : "-"}
-                                                {tx.amount.toLocaleString()} UC
+                                                {tx.amount.toLocaleString()} {GAME.currency}
                                             </span>
                                         </motion.div>
                                     );
@@ -586,7 +587,7 @@ export default function WalletPage() {
                             <WalletIcon className="h-5 w-5 text-white" />
                         </div>
                         <span className="text-base font-semibold">
-                            Add UC Balance
+                            Add {GAME.currency} Balance
                         </span>
                         <span className="text-[11px] text-foreground/40">
                             {PLATFORM_FEE_PERCENT}% Razorpay fee included
@@ -618,7 +619,7 @@ export default function WalletPage() {
                                         onPress={() => setDesiredUC(uc)}
                                         isDisabled={isPaymentLoading}
                                     >
-                                        {uc} UC
+                                        {uc} {GAME.currency}
                                     </Button>
                                 ))}
                             </div>
@@ -627,7 +628,7 @@ export default function WalletPage() {
                         {/* Custom amount */}
                         <div className="space-y-1.5">
                             <label className="text-[11px] font-medium uppercase tracking-wider text-foreground/40">
-                                Custom UC Amount
+                                Custom {GAME.currency} Amount
                             </label>
                             <div className="relative">
                                 <input
@@ -641,25 +642,25 @@ export default function WalletPage() {
                                         if (!isNaN(n) && n >= 0) setDesiredUC(n);
                                         else if (e.target.value === "") setDesiredUC(0);
                                     }}
-                                    placeholder="Enter UC amount"
+                                    placeholder={`Enter ${GAME.currency} amount`}
                                     disabled={isPaymentLoading}
                                     className="w-full rounded-xl border border-divider bg-default-100 px-4 py-3 text-sm font-medium text-foreground outline-none transition-colors placeholder:text-foreground/30 focus:border-primary focus:ring-1 focus:ring-primary/30 disabled:opacity-50"
                                 />
                                 <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-foreground/30">
-                                    UC
+                                    {GAME.currency}
                                 </span>
                             </div>
                             <p className="text-[10px] text-foreground/30">
-                                Min: 10 UC · Max: 9,756 UC (₹10,000)
+                                Min: 10 {GAME.currency} · Max: 9,756 {GAME.currency} (₹10,000)
                             </p>
                         </div>
 
                         {/* Payment preview */}
                         <div className="space-y-2 rounded-xl bg-gradient-to-br from-success/10 to-success/5 p-4">
                             <div className="flex items-center justify-between text-xs text-foreground/60">
-                                <span>UC to receive</span>
+                                <span>{GAME.currency} to receive</span>
                                 <span className="font-semibold text-success">
-                                    {desiredUC.toLocaleString()} UC
+                                    {desiredUC.toLocaleString()} {GAME.currency}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between text-xs text-foreground/60">

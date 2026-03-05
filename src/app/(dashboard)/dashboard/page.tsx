@@ -20,6 +20,7 @@ import {
     UsersRound,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { GAME } from "@/lib/game-config";
 
 interface DashboardStats {
     players: { total: number; banned: number };
@@ -80,7 +81,7 @@ export default function DashboardPage() {
                 <div>
                     <h1 className="text-lg font-bold">Dashboard</h1>
                     <p className="text-xs text-foreground/40">
-                        Overview of your PUBGMI community
+                        Overview of your {GAME.name} community
                     </p>
                 </div>
                 {seasons && seasons.length > 0 && (

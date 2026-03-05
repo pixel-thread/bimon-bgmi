@@ -17,6 +17,7 @@ import { motion } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { toast } from "sonner";
+import { GAME } from "@/lib/game-config";
 
 interface ReferralData {
     referrals: {
@@ -87,10 +88,10 @@ export default function ReferPage() {
                         <Gift className="h-8 w-8 text-white" />
                     </div>
                     <h1 className="text-2xl font-bold">
-                        Earn <span className="bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">FREE 20 UC</span>
+                        Earn <span className="bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">FREE {stats?.rewardPerReferral ?? 20} {GAME.currency}</span>
                     </h1>
                     <p className="text-sm text-foreground/50">
-                        Invite friends and earn UC when they play!
+                        Invite friends and earn {GAME.currency} when they play!
                     </p>
                     <Chip size="sm" color="warning" variant="flat" className="text-[10px] animate-pulse">
                         ⏳ Limited time only!
@@ -175,7 +176,7 @@ export default function ReferPage() {
                                 <CardBody className="items-center gap-1 p-3">
                                     <Sparkles className="h-4 w-4 text-success" />
                                     <p className="text-xl font-bold text-success">{stats?.totalEarned ?? 0}</p>
-                                    <p className="text-[10px] text-foreground/40">UC Earned</p>
+                                    <p className="text-[10px] text-foreground/40">{GAME.currency} Earned</p>
                                 </CardBody>
                             </Card>
                         </div>
@@ -243,7 +244,7 @@ export default function ReferPage() {
                                                     color="success"
                                                     startContent={<CheckCircle2 className="h-3 w-3" />}
                                                 >
-                                                    +{ref.reward} UC
+                                                    +{ref.reward} {GAME.currency}
                                                 </Chip>
                                             ) : (
                                                 <Chip
@@ -298,9 +299,9 @@ export default function ReferPage() {
                                     },
                                     {
                                         step: 4,
-                                        title: "You get 20 UC!",
+                                        title: `You get ${stats?.rewardPerReferral ?? 20} ${GAME.currency}!`,
                                         desc: "Automatically added to your pending rewards",
-                                        emoji: "💰",
+                                        emoji: GAME.currencyEmoji,
                                     },
                                 ].map((item, i) => (
                                     <div key={item.step} className="flex items-start gap-3">
@@ -331,7 +332,7 @@ export default function ReferPage() {
                         <CardBody className="p-0">
                             <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-4 text-center text-white">
                                 <p className="text-xs font-medium uppercase tracking-wider opacity-80">Per referral you earn</p>
-                                <p className="text-4xl font-black mt-1">20 UC</p>
+                                <p className="text-4xl font-black mt-1">{stats?.rewardPerReferral ?? 20} {GAME.currency}</p>
                                 <p className="text-xs mt-1 opacity-70">⏳ Limited time — refer now & earn big!</p>
                             </div>
                         </CardBody>

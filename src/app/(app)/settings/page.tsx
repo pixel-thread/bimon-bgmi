@@ -15,6 +15,7 @@ import { signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { motion } from "motion/react";
 import Link from "next/link";
+import { GAME } from "@/lib/game-config";
 
 /**
  * /settings — App settings page.
@@ -134,7 +135,7 @@ export default function SettingsPage() {
                         <div className="space-y-1.5 text-xs text-foreground/50">
                             <div className="flex justify-between">
                                 <span>App</span>
-                                <span className="font-medium text-foreground/70">PUBGMI</span>
+                                <span className="font-medium text-foreground/70">{GAME.name}</span>
                             </div>
                             <Divider />
                             <div className="flex justify-between">

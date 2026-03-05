@@ -3,6 +3,7 @@
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { GAME } from "@/lib/game-config";
 import { Swords, Loader2 } from "lucide-react";
 
 export default function SignInPage() {
@@ -39,7 +40,7 @@ export default function SignInPage() {
                     <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
                         <Swords className="h-6 w-6 text-primary" />
                     </div>
-                    <h1 className="text-2xl font-bold tracking-tight">Welcome to PUBGMI</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">Welcome to {GAME.name}</h1>
                     <p className="mt-1 text-sm text-foreground/60">
                         Sign in with your Google account to continue
                     </p>

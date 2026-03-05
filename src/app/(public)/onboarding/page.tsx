@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Avatar, Chip } from "@heroui/react";
+import { GAME } from "@/lib/game-config";
 import { useSession, signOut } from "next-auth/react";
 import { Gamepad2, Loader2, CheckCircle } from "lucide-react";
 import { PubgmiLogo } from "@/components/common/pubgmi-logo";
@@ -137,7 +138,7 @@ export default function OnboardingPage() {
             }
 
             setJustCompleted(true);
-            toast.success("Welcome to PUBGMI! 🎮");
+            toast.success(`Welcome to ${GAME.name}! 🎮`);
             // Show WhatsApp groups before redirecting
             setShowWhatsApp(true);
         } catch {
@@ -189,7 +190,7 @@ export default function OnboardingPage() {
                                 <Gamepad2 className="h-8 w-8 text-primary" />
                             </div>
                         </div>
-                        <h1 className="text-xl font-bold">Welcome to PUBGMI</h1>
+                        <h1 className="text-xl font-bold">Welcome to {GAME.name}</h1>
                         <p className="text-sm text-foreground/50 mt-1">
                             Copy bad paste ia{" "}
                             <span className="font-semibold text-primary">

@@ -4,6 +4,8 @@ import { Providers } from "@/components/providers";
 import { RouteTracker } from "@/components/common/route-tracker";
 import { AutoUpdater } from "@/components/common/auto-updater";
 
+import { GAME } from "@/lib/game-config";
+
 import "./globals.css";
 
 const rajdhani = Rajdhani({
@@ -14,18 +16,18 @@ const rajdhani = Rajdhani({
 });
 
 export const metadata: Metadata = {
-  applicationName: "PUBGMI",
+  applicationName: GAME.name,
   title: {
-    default: "PUBGMI — Tournament Manager",
-    template: "%s | PUBGMI",
+    default: `${GAME.name} — Tournament Manager`,
+    template: `%s | ${GAME.name}`,
   },
   description:
-    "Manage BGMI tournaments, teams, UC economy, and player stats — all in one place.",
+    `Manage ${GAME.gameName} tournaments, teams, ${GAME.currency} economy, and player stats — all in one place.`,
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "PUBGMI",
+    title: GAME.name,
   },
   formatDetection: {
     telephone: false,
@@ -40,30 +42,30 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "PUBGMI",
+    siteName: GAME.name,
     title: {
-      default: "PUBGMI — Tournament Manager",
-      template: "%s | PUBGMI",
+      default: `${GAME.name} — Tournament Manager`,
+      template: `%s | ${GAME.name}`,
     },
     description:
-      "Manage BGMI tournaments, teams, UC economy, and player stats.",
+      `Manage ${GAME.gameName} tournaments, teams, ${GAME.currency} economy, and player stats.`,
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "PUBGMI — Tournament Manager",
+        alt: `${GAME.name} — Tournament Manager`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: {
-      default: "PUBGMI — Tournament Manager",
-      template: "%s | PUBGMI",
+      default: `${GAME.name} — Tournament Manager`,
+      template: `%s | ${GAME.name}`,
     },
     description:
-      "Manage BGMI tournaments, teams, UC economy, and player stats.",
+      `Manage ${GAME.gameName} tournaments, teams, ${GAME.currency} economy, and player stats.`,
     images: ["/og-image.png"],
   },
 };
