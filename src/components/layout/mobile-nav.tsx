@@ -176,7 +176,7 @@ export function MobileNav() {
                                 ? (balance ?? 0) > 0 ? "text-success" : (balance ?? 0) < 0 ? "text-danger" : ""
                                 : ""
                                 }`}>
-                                {tab.label === "__wallet__" ? `${(balance ?? 0).toLocaleString()} ${GAME.currency}` : isProfile ? profileLabel : tab.label}
+                                {tab.label === "__wallet__" ? `${(balance ?? 0).toLocaleString()} ${GAME.currencyLabel}` : isProfile ? profileLabel : tab.label}
                             </span>
                             {isActive && (
                                 <div className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" />

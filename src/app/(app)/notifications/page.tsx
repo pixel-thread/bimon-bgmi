@@ -234,7 +234,7 @@ export default function NotificationsPage() {
         },
         onSuccess: (data) => {
             const amount = data?.data?.amount ?? 0;
-            toast.success(`🎉 Claimed ${amount} ${GAME.currency}!`);
+            toast.success(`🎉 Claimed ${amount} ${GAME.currencyLabel}!`);
             queryClient.invalidateQueries({ queryKey: ["notifications"] });
             queryClient.invalidateQueries({ queryKey: ["notification-count"] });
             queryClient.invalidateQueries({ queryKey: ["wallet"] });
@@ -537,7 +537,7 @@ export default function NotificationsPage() {
                                     </span>{" "}
                                     requested{" "}
                                     <span className="font-semibold text-foreground">
-                                        {selectedRequest.amount.toLocaleString()} {GAME.currency}
+                                        {selectedRequest.amount.toLocaleString()} {GAME.currencyLabel}
                                     </span>
                                 </p>
                                 <p className="text-xs text-foreground/50">
@@ -548,7 +548,7 @@ export default function NotificationsPage() {
                                             : "text-danger"
                                             }`}
                                     >
-                                        {(selectedRequest.fromPlayer.wallet?.balance ?? 0).toLocaleString()} {GAME.currency}
+                                        {(selectedRequest.fromPlayer.wallet?.balance ?? 0).toLocaleString()} {GAME.currencyLabel}
                                     </span>
                                 </p>
                                 {selectedRequest.message && (
@@ -629,7 +629,7 @@ export default function NotificationsPage() {
                                     {/* Amount */}
                                     <div className="rounded-xl bg-success/10 py-3">
                                         <p className="text-2xl font-bold text-success">
-                                            +{selectedReward.amount} {GAME.currency}
+                                            +{selectedReward.amount} {GAME.currencyLabel}
                                         </p>
                                     </div>
 
@@ -652,27 +652,27 @@ export default function NotificationsPage() {
                                             {details.baseShare != null && (
                                                 <div className="flex items-center justify-between text-xs">
                                                     <span className="text-foreground/50">Base Share</span>
-                                                    <span className="font-medium">{Number(details.baseShare)} {GAME.currency}</span>
+                                                    <span className="font-medium">{Number(details.baseShare)} {GAME.currencyLabel}</span>
                                                 </div>
                                             )}
                                             {Number(details.participationAdj) !== 0 && details.participationAdj != null && (
                                                 <div className="flex items-center justify-between text-xs">
                                                     <span className="text-foreground/50">Participation Adjustment</span>
                                                     <span className={`font-medium ${Number(details.participationAdj) > 0 ? "text-success" : "text-danger"}`}>
-                                                        {Number(details.participationAdj) > 0 ? "+" : ""}{Number(details.participationAdj)} {GAME.currency}
+                                                        {Number(details.participationAdj) > 0 ? "+" : ""}{Number(details.participationAdj)} {GAME.currencyLabel}
                                                     </span>
                                                 </div>
                                             )}
                                             {Number(details.repeatTax) > 0 && (
                                                 <div className="flex items-center justify-between text-xs">
                                                     <span className="text-foreground/50">Repeat Winner Tax</span>
-                                                    <span className="font-medium text-danger">-{Number(details.repeatTax)} {GAME.currency}</span>
+                                                    <span className="font-medium text-danger">-{Number(details.repeatTax)} {GAME.currencyLabel}</span>
                                                 </div>
                                             )}
                                             {Number(details.soloTax) > 0 && (
                                                 <div className="flex items-center justify-between text-xs">
                                                     <span className="text-foreground/50">Solo Tax</span>
-                                                    <span className="font-medium text-danger">-{Number(details.soloTax)} {GAME.currency}</span>
+                                                    <span className="font-medium text-danger">-{Number(details.soloTax)} {GAME.currencyLabel}</span>
                                                 </div>
                                             )}
                                             {details.matchesPlayed != null && (
@@ -702,7 +702,7 @@ export default function NotificationsPage() {
                                         }
                                         onPress={() => claimReward.mutate(selectedReward.id)}
                                     >
-                                        Claim {selectedReward.amount} {GAME.currency}
+                                        Claim {selectedReward.amount} {GAME.currencyLabel}
                                     </Button>
                                 </ModalFooter>
                             </>

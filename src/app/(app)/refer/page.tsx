@@ -88,7 +88,7 @@ export default function ReferPage() {
                         <Gift className="h-8 w-8 text-white" />
                     </div>
                     <h1 className="text-2xl font-bold">
-                        Earn <span className="bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">FREE {stats?.rewardPerReferral ?? 20} {GAME.currency}</span>
+                        Earn <span className="bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">FREE {stats?.rewardPerReferral ?? 20} {GAME.currencyLabel}</span>
                     </h1>
                     <p className="text-sm text-foreground/50">
                         Invite friends and earn {GAME.currency} when they play!
@@ -244,7 +244,7 @@ export default function ReferPage() {
                                                     color="success"
                                                     startContent={<CheckCircle2 className="h-3 w-3" />}
                                                 >
-                                                    +{ref.reward} {GAME.currency}
+                                                    +{ref.reward} {GAME.currencyLabel}
                                                 </Chip>
                                             ) : (
                                                 <Chip
@@ -299,7 +299,7 @@ export default function ReferPage() {
                                     },
                                     {
                                         step: 4,
-                                        title: `You get ${stats?.rewardPerReferral ?? 20} ${GAME.currency}!`,
+                                        title: `You get ${stats?.rewardPerReferral ?? 20} ${GAME.currencyLabel}!`,
                                         desc: "Automatically added to your pending rewards",
                                         emoji: GAME.currencyEmoji,
                                     },
@@ -332,7 +332,7 @@ export default function ReferPage() {
                         <CardBody className="p-0">
                             <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-4 text-center text-white">
                                 <p className="text-xs font-medium uppercase tracking-wider opacity-80">Per referral you earn</p>
-                                <p className="text-4xl font-black mt-1">{stats?.rewardPerReferral ?? 20} {GAME.currency}</p>
+                                <p className="text-4xl font-black mt-1">{stats?.rewardPerReferral ?? 20} {GAME.currencyLabel}</p>
                                 <p className="text-xs mt-1 opacity-70">⏳ Limited time — refer now & earn big!</p>
                             </div>
                         </CardBody>

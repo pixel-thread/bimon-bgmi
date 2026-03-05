@@ -711,8 +711,8 @@ export default function ProfilePage() {
                                     <div>
                                         <h3 className="text-xl font-bold text-yellow-400">{GAME.passName}</h3>
                                         <div className="flex items-center justify-center gap-2 mt-2">
-                                            <span className="text-foreground/40 line-through text-lg">20 {GAME.currency}</span>
-                                            <span className="text-2xl font-black text-yellow-400">5 {GAME.currency}</span>
+                                            <span className="text-foreground/40 line-through text-lg">20 {GAME.currencyLabel}</span>
+                                            <span className="text-2xl font-black text-yellow-400">5 {GAME.currencyLabel}</span>
                                         </div>
                                     </div>
                                     <div className="space-y-2 text-left text-sm">
@@ -722,7 +722,7 @@ export default function ProfilePage() {
                                         </div>
                                         <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 px-3 py-2">
                                             <Flame className="h-4 w-4 text-yellow-400 shrink-0" />
-                                            <span className="text-foreground/80">Streak bonus rewards (₹30 {GAME.currency})</span>
+                                            <span className="text-foreground/80">Streak bonus rewards (₹30 {GAME.currencyLabel})</span>
                                         </div>
                                         <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 px-3 py-2">
                                             <Crown className="h-4 w-4 text-yellow-400 shrink-0" />
@@ -731,7 +731,7 @@ export default function ProfilePage() {
                                     </div>
                                     {player?.wallet && player.wallet.balance < 5 && (
                                         <p className="text-xs text-red-400">
-                                            You need {5 - player.wallet.balance} more {GAME.currency} (Balance: {player.wallet.balance} {GAME.currency})
+                                            You need {5 - player.wallet.balance} more {GAME.currencyLabel} (Balance: {player.wallet.balance} {GAME.currencyLabel})
                                         </p>
                                     )}
                                     <div className="flex gap-2 pt-2">
@@ -763,7 +763,7 @@ export default function ProfilePage() {
                                                 }
                                             }}
                                         >
-                                            {GAME.passEmoji} Buy for 5 {GAME.currency}
+                                            {GAME.passEmoji} Buy for 5 {GAME.currencyLabel}
                                         </Button>
                                     </div>
                                 </div>

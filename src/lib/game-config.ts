@@ -13,6 +13,7 @@ interface GameConfig {
     fullName: string;            // Full display name
     gameName: string;            // Actual game name
     currency: string;            // "UC" or "Diamonds"
+    currencyLabel: string;       // Compact inline label: "UC" or "💎"
     currencyEmoji: string;       // "💰" or "💎"
     currencyPlural: string;      // "UC" or "Diamonds"
     passName: string;            // "Royal Pass" or "Elite Pass"
@@ -32,6 +33,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         fullName: "PUBG Mobile India Tournament Platform",
         gameName: "BGMI",
         currency: "UC",
+        currencyLabel: "UC",
         currencyEmoji: "💰",
         currencyPlural: "UC",
         passName: "Royal Pass",
@@ -48,6 +50,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         fullName: "Free Fire Tournament Platform",
         gameName: "Free Fire",
         currency: "Diamonds",
+        currencyLabel: "💎",
         currencyEmoji: "💎",
         currencyPlural: "Diamonds",
         passName: "Elite Pass",

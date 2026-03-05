@@ -406,7 +406,7 @@ export default function WalletPage() {
                                                 wallet?.balance ?? 0
                                             ).toLocaleString()}{" "}
                                             <span className="text-lg font-semibold text-foreground/40">
-                                                {GAME.currency}
+                                                {GAME.currencyLabel}
                                             </span>
                                         </p>
                                     </div>
@@ -536,7 +536,7 @@ export default function WalletPage() {
                                                     </span>
                                                     <span>·</span>
                                                     <span>
-                                                        {balBefore.toLocaleString()} → {balAfter.toLocaleString()} {GAME.currency}
+                                                        {balBefore.toLocaleString()} → {balAfter.toLocaleString()} {GAME.currencyLabel}
                                                     </span>
                                                 </div>
                                             </div>
@@ -547,7 +547,7 @@ export default function WalletPage() {
                                                     }`}
                                             >
                                                 {tx.type === "CREDIT" ? "+" : "-"}
-                                                {tx.amount.toLocaleString()} {GAME.currency}
+                                                {tx.amount.toLocaleString()} {GAME.currencyLabel}
                                             </span>
                                         </motion.div>
                                     );
@@ -619,7 +619,7 @@ export default function WalletPage() {
                                         onPress={() => setDesiredUC(uc)}
                                         isDisabled={isPaymentLoading}
                                     >
-                                        {uc} {GAME.currency}
+                                        {uc} {GAME.currencyLabel}
                                     </Button>
                                 ))}
                             </div>
@@ -647,11 +647,11 @@ export default function WalletPage() {
                                     className="w-full rounded-xl border border-divider bg-default-100 px-4 py-3 text-sm font-medium text-foreground outline-none transition-colors placeholder:text-foreground/30 focus:border-primary focus:ring-1 focus:ring-primary/30 disabled:opacity-50"
                                 />
                                 <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-foreground/30">
-                                    {GAME.currency}
+                                    {GAME.currencyLabel}
                                 </span>
                             </div>
                             <p className="text-[10px] text-foreground/30">
-                                Min: 10 {GAME.currency} · Max: 9,756 {GAME.currency} (₹10,000)
+                                Min: 10 {GAME.currencyLabel} · Max: 9,756 {GAME.currencyLabel} (₹10,000)
                             </p>
                         </div>
 
@@ -660,7 +660,7 @@ export default function WalletPage() {
                             <div className="flex items-center justify-between text-xs text-foreground/60">
                                 <span>{GAME.currency} to receive</span>
                                 <span className="font-semibold text-success">
-                                    {desiredUC.toLocaleString()} {GAME.currency}
+                                    {desiredUC.toLocaleString()} {GAME.currencyLabel}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between text-xs text-foreground/60">

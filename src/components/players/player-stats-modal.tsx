@@ -131,7 +131,7 @@ export function PlayerStatsModal({
         },
         {
             label: "Balance",
-            value: `${player.balance.toLocaleString()} ${GAME.currency}`,
+            value: `${player.balance.toLocaleString()} ${GAME.currencyLabel}`,
             icon: Wallet,
             color: "text-warning",
         },

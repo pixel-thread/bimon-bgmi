@@ -123,7 +123,7 @@ export function UCTransferDialog({
                                 className={`font-bold ${balance > 0 ? "text-success" : "text-danger"
                                     }`}
                             >
-                                {balance} {GAME.currency}
+                                {balance} {GAME.currencyLabel}
                             </span>
                         </p>
                     )}

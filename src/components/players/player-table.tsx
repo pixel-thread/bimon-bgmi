@@ -155,7 +155,7 @@ export function PlayerTable({
                             <span className="text-sm font-semibold text-foreground/70 sm:hidden">
                                 {sortBy === "balance" ? (
                                     <span className={player.balance < 0 ? "text-danger" : player.balance > 0 ? "text-success" : ""}>
-                                        {player.balance.toLocaleString()} {GAME.currency}
+                                        {player.balance.toLocaleString()} {GAME.currencyLabel}
                                     </span>
                                 ) : sortBy === "kills" ? (
                                     `${player.stats.kills} K`

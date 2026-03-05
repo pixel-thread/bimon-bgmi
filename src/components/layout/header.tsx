@@ -191,7 +191,7 @@ export function Header() {
                                     {item.label === "Wallet" ? (
                                         <span className={
                                             (balance ?? 0) > 0 ? "text-success" : (balance ?? 0) < 0 ? "text-danger" : ""
-                                        }>{(balance ?? 0).toLocaleString()} {GAME.currency}</span>
+                                        }>{(balance ?? 0).toLocaleString()} {GAME.currencyLabel}</span>
                                     ) : item.label}
                                 </Link>
                             </NavbarItem>
