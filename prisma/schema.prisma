@@ -189,6 +189,7 @@ model Player {
   gameScores        GameScore[]
   jobReactions      JobListingReaction[]
   donations         PrizePoolDonation[]
+  communityMessages CommunityMessage[]
 
   @@index([userId])
   @@index([category])
@@ -293,6 +294,46 @@ model PrizePoolDonation {
   player     Player?    @relation(fields: [playerId], references: [id], onDelete: SetNull)
 
   @@index([tournamentId])
+}
+
+// ─── Community ───────────────────────────────────────────────
+
+/// Player feedback/suggestions to the org.
+model CommunityMessage {
+  id          String  @id @default(uuid())
+  message     String  @db.VarChar(500)
+  category    String  @default("feedback") // feedback, suggestion, bug, appreciation, other
+  playerId    String
+  isAnonymous Boolean @default(false)
+  isRead      Boolean @default(false)
+  adminReply  String?
+  upvotes     Int     @default(0)
+  downvotes   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  player Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  votes  CommunityVote[]
+
+  @@index([playerId])
+  @@index([isRead])
+  @@index([createdAt(sort: Desc)])
+}
+
+/// Tracks who voted on which community message (one vote per player per message).
+model CommunityVote {
+  id        String @id @default(uuid())
+  messageId String
+  playerId  String
+  vote      Int    // 1 = upvote, -1 = downvote
+
+  createdAt DateTime @default(now())
+
+  message CommunityMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, playerId])
+  @@index([messageId])
 }
 
 // ─── Player Tracking ─────────────────────────────────────────

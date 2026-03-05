@@ -33,6 +33,7 @@ import {
     Bell,
     Briefcase,
     Loader2,
+    MessageCircle,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useAuthUser } from "@/hooks/use-auth-user";
@@ -50,6 +51,7 @@ const moreItems = [
     { label: "Winners", href: "/winners", icon: Trophy },
     { label: "Jobs", href: "/jobs", icon: Briefcase },
     { label: "Refer", href: "/refer", icon: Gift },
+    { label: "Community", href: "/community", icon: MessageCircle },
     { label: "Notifications", href: "/notifications", icon: Bell },
     { label: "Rules", href: "/rules", icon: BookOpen },
 ];
