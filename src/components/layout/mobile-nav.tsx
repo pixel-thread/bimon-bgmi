@@ -8,6 +8,7 @@ import {
     Wallet,
     LayoutDashboard,
     Loader2,
+    MessageCircle,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useAuthUser } from "@/hooks/use-auth-user";
@@ -26,7 +27,7 @@ type Tab = {
 const tabs: Tab[] = [
     { label: "Players", href: "/players", icon: Users },
     { label: "Vote", href: "/vote", icon: Vote },
-    { label: "__wallet__", href: "/wallet", icon: Wallet },
+    { label: "Community", href: "/community", icon: MessageCircle },
     { label: "Profile", href: "/profile" },
 ];
 

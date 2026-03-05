@@ -97,7 +97,7 @@ export default function CommunityPage() {
     });
 
     return (
-        <div className="space-y-4 max-w-2xl mx-auto pb-20">
+        <div className="space-y-5 max-w-2xl mx-auto px-1 pb-24">
             {/* Header */}
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
                 <h1 className="text-xl font-bold flex items-center gap-2">
@@ -248,7 +248,16 @@ export default function CommunityPage() {
             </motion.div>
 
             {/* Compose Modal */}
-            <Modal isOpen={composeModal.isOpen} onClose={composeModal.onClose} placement="bottom" size="full">
+            <Modal
+                isOpen={composeModal.isOpen}
+                onClose={composeModal.onClose}
+                placement="center"
+                scrollBehavior="inside"
+                classNames={{
+                    base: "max-h-[85dvh]",
+                    body: "pb-6",
+                }}
+            >
                 <ModalContent>
                     <ModalHeader className="flex items-center gap-2 pb-2">
                         <Send className="h-4 w-4 text-primary" />
@@ -284,7 +293,6 @@ export default function CommunityPage() {
                             minRows={4}
                             maxRows={8}
                             description={`${message.length}/500`}
-                            autoFocus
                         />
 
                         {/* Anonymous toggle */}
