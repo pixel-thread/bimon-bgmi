@@ -8,12 +8,13 @@ import {
 import {
     MessageCircle, Send, Heart, Lightbulb, Bug, Star, HelpCircle,
     ThumbsUp, ThumbsDown, EyeOff, User, Plus, BarChart3,
-    Check, X, PlusCircle,
+    Check, X, PlusCircle, Pin, Pencil, Trash2, MoreVertical,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { GAME } from "@/lib/game-config";
+import { useAuthUser } from "@/hooks/use-auth-user";
 
 const CATEGORIES = [
     { value: "feedback", label: "Feedback", icon: MessageCircle, color: "primary" as const },
@@ -34,6 +35,7 @@ interface MessageDTO {
     downvotes: number;
     createdAt: string;
     isOwn: boolean;
+    isPinned: boolean;
     myVote: number | null;
     player: { displayName: string; imageUrl: string } | null;
 }
@@ -53,6 +55,7 @@ interface PollDTO {
     totalVotes: number;
     myVoteOptionId: string | null;
     createdAt: string;
+    isPinned: boolean;
     options: PollOptionDTO[];
     pendingSuggestions: { id: string; text: string; suggestedBy: string }[];
 }
@@ -89,34 +92,69 @@ function RotatingSubtitle() {
 }
 
 // ─── Poll Card ────────────────────────────────────────────────
-function PollCard({ poll, onVote, onSuggest, onApprove, onReject }: {
+function PollCard({ poll, isSuperAdmin, onVote, onSuggest, onApprove, onReject, onEdit, onDelete, onPin }: {
     poll: PollDTO;
+    isSuperAdmin: boolean;
     onVote: (pollId: string, optionId: string) => void;
     onSuggest: (pollId: string, text: string) => void;
     onApprove: (optionId: string) => void;
     onReject: (optionId: string) => void;
+    onEdit: (pollId: string, question: string) => void;
+    onDelete: (pollId: string) => void;
+    onPin: (pollId: string) => void;
 }) {
     const [suggestText, setSuggestText] = useState("");
     const [showSuggest, setShowSuggest] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editQuestion, setEditQuestion] = useState(poll.question);
     const maxVotes = Math.max(...poll.options.map(o => o.votes), 1);
 
     return (
-        <Card className={`border ${poll.isOwn ? "border-primary/30" : "border-divider"}`}>
+        <Card className={`border ${poll.isPinned ? "border-warning/40" : poll.isOwn ? "border-primary/30" : "border-divider"}`}>
             <CardBody className="p-3 space-y-2.5">
                 {/* Header */}
                 <div className="flex items-start gap-2">
                     <div className="w-6 h-6 rounded-full bg-secondary/20 flex items-center justify-center shrink-0 mt-0.5">
-                        <BarChart3 className="h-3 w-3 text-secondary" />
+                        {poll.isPinned ? <Pin className="h-3 w-3 text-warning" /> : <BarChart3 className="h-3 w-3 text-secondary" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold">{poll.question}</p>
+                        {isEditing ? (
+                            <div className="flex gap-1.5">
+                                <Input size="sm" value={editQuestion} onValueChange={setEditQuestion} maxLength={200} />
+                                <Button isIconOnly size="sm" color="primary" variant="flat" onPress={() => { onEdit(poll.id, editQuestion); setIsEditing(false); }}>
+                                    <Check className="h-3 w-3" />
+                                </Button>
+                                <Button isIconOnly size="sm" variant="light" onPress={() => setIsEditing(false)}>
+                                    <X className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        ) : (
+                            <p className="text-sm font-semibold">{poll.question}</p>
+                        )}
                         <p className="text-[10px] text-foreground/40">
                             by {poll.creatorName} · {poll.totalVotes} vote{poll.totalVotes !== 1 ? "s" : ""}
                         </p>
                     </div>
-                    {poll.isOwn && (
-                        <Chip size="sm" variant="flat" className="text-[8px] h-4 shrink-0">You</Chip>
-                    )}
+                    <div className="flex gap-0.5 shrink-0">
+                        {poll.isOwn && (
+                            <Chip size="sm" variant="flat" className="text-[8px] h-4">You</Chip>
+                        )}
+                        {poll.isOwn && !isEditing && (
+                            <Button isIconOnly size="sm" variant="light" className="h-6 w-6 min-w-6" onPress={() => setIsEditing(true)}>
+                                <Pencil className="h-2.5 w-2.5" />
+                            </Button>
+                        )}
+                        {(poll.isOwn || isSuperAdmin) && (
+                            <Button isIconOnly size="sm" variant="light" color="danger" className="h-6 w-6 min-w-6" onPress={() => onDelete(poll.id)}>
+                                <Trash2 className="h-2.5 w-2.5" />
+                            </Button>
+                        )}
+                        {isSuperAdmin && (
+                            <Button isIconOnly size="sm" variant="light" color={poll.isPinned ? "warning" : "default"} className="h-6 w-6 min-w-6" onPress={() => onPin(poll.id)}>
+                                <Pin className="h-2.5 w-2.5" />
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Options with vote bars */}
@@ -236,10 +274,13 @@ function PollCard({ poll, onVote, onSuggest, onApprove, onReject }: {
 // ─── Main Page ────────────────────────────────────────────────
 export default function CommunityPage() {
     const queryClient = useQueryClient();
+    const { isSuperAdmin } = useAuthUser();
     const composeModal = useDisclosure();
     const pollModal = useDisclosure();
     const [fabOpen, setFabOpen] = useState(false);
     const [message, setMessage] = useState("");
+    const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+    const [editingMsgText, setEditingMsgText] = useState("");
     const [category, setCategory] = useState("feedback");
     const [isAnonymous, setIsAnonymous] = useState(false);
 
@@ -420,6 +461,45 @@ export default function CommunityPage() {
         onError: (err: Error) => toast.error(err.message),
     });
 
+    // Generic action for messages (edit, delete, pin)
+    const msgActionMutation = useMutation({
+        mutationFn: async (body: Record<string, unknown>) => {
+            const res = await fetch("/api/community", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || json.message || "Failed");
+            return json;
+        },
+        onSuccess: (data) => {
+            if (data.message) toast.success(data.message);
+            setEditingMsgId(null);
+            queryClient.invalidateQueries({ queryKey: ["community-messages"] });
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+
+    // Generic action for polls (edit, delete, pin)
+    const pollActionMutation = useMutation({
+        mutationFn: async (body: Record<string, unknown>) => {
+            const res = await fetch("/api/community/polls", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || json.message || "Failed");
+            return json;
+        },
+        onSuccess: (data) => {
+            if (data.message) toast.success(data.message);
+            queryClient.invalidateQueries({ queryKey: ["community-polls"] });
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+
     const addPollOption = () => {
         if (pollOptions.length < 10) setPollOptions([...pollOptions, ""]);
     };
@@ -457,10 +537,14 @@ export default function CommunityPage() {
                         <PollCard
                             key={poll.id}
                             poll={poll}
+                            isSuperAdmin={isSuperAdmin}
                             onVote={(pId, oId) => voteMutation.mutate({ pollId: pId, optionId: oId })}
                             onSuggest={(pId, text) => suggestMutation.mutate({ pollId: pId, text })}
                             onApprove={(oId) => moderateMutation.mutate({ action: "approve", optionId: oId })}
                             onReject={(oId) => moderateMutation.mutate({ action: "reject", optionId: oId })}
+                            onEdit={(pId, q) => pollActionMutation.mutate({ action: "edit", pollId: pId, question: q })}
+                            onDelete={(pId) => pollActionMutation.mutate({ action: "delete", pollId: pId })}
+                            onPin={(pId) => pollActionMutation.mutate({ action: "pin", pollId: pId })}
                         />
                     ))}
                 </motion.div>
@@ -487,10 +571,13 @@ export default function CommunityPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -8 }}
                                 >
-                                    <Card className={`border ${msg.isOwn ? "border-primary/30" : "border-divider"}`}>
+                                    <Card className={`border ${msg.isPinned ? "border-warning/40" : msg.isOwn ? "border-primary/30" : "border-divider"}`}>
                                         <CardBody className="p-3 space-y-2">
                                             {/* Top row */}
                                             <div className="flex items-center gap-2">
+                                                {msg.isPinned && (
+                                                    <Pin className="h-3 w-3 text-warning shrink-0" />
+                                                )}
                                                 {msg.isAnonymous || !msg.player ? (
                                                     <div className="w-6 h-6 rounded-full bg-default-200 flex items-center justify-center shrink-0">
                                                         <EyeOff className="h-3 w-3 text-foreground/40" />
@@ -510,10 +597,39 @@ export default function CommunityPage() {
                                                     <CatIcon className="h-2.5 w-2.5 inline mr-0.5" />
                                                     {cat?.label || msg.category}
                                                 </Chip>
+
+                                                {/* Action buttons */}
+                                                {msg.isOwn && editingMsgId !== msg.id && (
+                                                    <Button isIconOnly size="sm" variant="light" className="h-6 w-6 min-w-6" onPress={() => { setEditingMsgId(msg.id); setEditingMsgText(msg.message); }}>
+                                                        <Pencil className="h-2.5 w-2.5" />
+                                                    </Button>
+                                                )}
+                                                {(msg.isOwn || isSuperAdmin) && (
+                                                    <Button isIconOnly size="sm" variant="light" color="danger" className="h-6 w-6 min-w-6" onPress={() => msgActionMutation.mutate({ action: "delete", messageId: msg.id })}>
+                                                        <Trash2 className="h-2.5 w-2.5" />
+                                                    </Button>
+                                                )}
+                                                {isSuperAdmin && (
+                                                    <Button isIconOnly size="sm" variant="light" color={msg.isPinned ? "warning" : "default"} className="h-6 w-6 min-w-6" onPress={() => msgActionMutation.mutate({ action: "pin", messageId: msg.id })}>
+                                                        <Pin className="h-2.5 w-2.5" />
+                                                    </Button>
+                                                )}
                                             </div>
 
-                                            {/* Message */}
-                                            <p className="text-sm pl-8">{msg.message}</p>
+                                            {/* Message (editable) */}
+                                            {editingMsgId === msg.id ? (
+                                                <div className="flex gap-1.5 pl-8">
+                                                    <Input size="sm" value={editingMsgText} onValueChange={setEditingMsgText} maxLength={500} />
+                                                    <Button isIconOnly size="sm" color="primary" variant="flat" onPress={() => msgActionMutation.mutate({ action: "edit", messageId: msg.id, message: editingMsgText })}>
+                                                        <Check className="h-3 w-3" />
+                                                    </Button>
+                                                    <Button isIconOnly size="sm" variant="light" onPress={() => setEditingMsgId(null)}>
+                                                        <X className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm pl-8">{msg.message}</p>
+                                            )}
 
                                             {/* Admin reply */}
                                             {msg.adminReply && (

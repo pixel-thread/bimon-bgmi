@@ -312,6 +312,7 @@ model CommunityMessage {
   adminReply  String?
   upvotes     Int     @default(0)
   downvotes   Int     @default(0)
+  isPinned    Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -345,6 +346,7 @@ model CommunityPoll {
   question  String  @db.VarChar(200)
   playerId  String
   isActive  Boolean @default(true)
+  isPinned  Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

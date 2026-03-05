@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
                     select: { vote: true },
                 } : false,
             },
-            orderBy: { createdAt: "desc" },
+            orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
             take: 100,
         });
 
@@ -58,6 +58,7 @@ export async function GET(req: NextRequest) {
             downvotes: m.downvotes,
             createdAt: m.createdAt,
             isOwn: playerId === m.playerId,
+            isPinned: m.isPinned,
             myVote: Array.isArray(m.votes) && m.votes.length > 0 ? m.votes[0].vote : null,
             player: m.isAnonymous && !isAdmin
                 ? null
@@ -187,6 +188,53 @@ export async function PATCH(req: NextRequest) {
                 ]);
                 return NextResponse.json({ success: true, action: "voted" });
             }
+        }
+
+        // Edit own message
+        if (body.action === "edit") {
+            if (!user.player?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            const { messageId, message: newMessage } = body;
+            if (!messageId || !newMessage?.trim()) {
+                return NextResponse.json({ error: "Message required" }, { status: 400 });
+            }
+            const msg = await prisma.communityMessage.findUnique({ where: { id: messageId } });
+            if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 });
+            if (msg.playerId !== user.player.id) {
+                return NextResponse.json({ error: "Not your message" }, { status: 403 });
+            }
+            await prisma.communityMessage.update({
+                where: { id: messageId },
+                data: { message: newMessage.trim().slice(0, 500) },
+            });
+            return NextResponse.json({ success: true, message: "Message updated!" });
+        }
+
+        // Delete own message
+        if (body.action === "delete") {
+            if (!user.player?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            const { messageId } = body;
+            const msg = await prisma.communityMessage.findUnique({ where: { id: messageId } });
+            if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 });
+            if (msg.playerId !== user.player.id && !isAdmin) {
+                return NextResponse.json({ error: "Not your message" }, { status: 403 });
+            }
+            await prisma.communityMessage.delete({ where: { id: messageId } });
+            return NextResponse.json({ success: true, message: "Message deleted" });
+        }
+
+        // Pin/unpin message (super admin only)
+        if (body.action === "pin") {
+            if (user.role !== "SUPER_ADMIN") {
+                return NextResponse.json({ error: "Only super admin can pin" }, { status: 403 });
+            }
+            const { messageId } = body;
+            const msg = await prisma.communityMessage.findUnique({ where: { id: messageId } });
+            if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 });
+            await prisma.communityMessage.update({
+                where: { id: messageId },
+                data: { isPinned: !msg.isPinned },
+            });
+            return NextResponse.json({ success: true, message: msg.isPinned ? "Unpinned" : "Pinned!" });
         }
 
         // Admin actions

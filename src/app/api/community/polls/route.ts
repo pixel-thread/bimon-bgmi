@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, getCurrentUser } from "@/lib/auth";
 
 /**
  * GET /api/community/polls — List active community polls with vote counts.
@@ -25,7 +25,7 @@ export async function GET() {
 
         const polls = await prisma.communityPoll.findMany({
             where: { isActive: true },
-            orderBy: { createdAt: "desc" },
+            orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
             take: 20,
             include: {
                 player: { select: { id: true, displayName: true } },
@@ -64,6 +64,7 @@ export async function GET() {
             creatorName: p.player.displayName,
             totalVotes: p._count.votes,
             myVoteOptionId: myVoteMap.get(p.id) ?? null,
+            isPinned: p.isPinned,
             createdAt: p.createdAt.toISOString(),
             options: p.options.map(o => ({
                 id: o.id,
@@ -252,6 +253,63 @@ export async function PATCH(req: Request) {
                 data: { isActive: false },
             });
             return SuccessResponse({ message: "Poll closed!" });
+        }
+
+        // ── Edit poll question ──
+        if (action === "edit") {
+            const { pollId, question } = body;
+            if (!question?.trim()) {
+                return ErrorResponse({ message: "Question required", status: 400 });
+            }
+            const poll = await prisma.communityPoll.findUnique({
+                where: { id: pollId },
+                select: { playerId: true },
+            });
+            if (!poll) return ErrorResponse({ message: "Poll not found", status: 404 });
+            if (poll.playerId !== player.id) {
+                return ErrorResponse({ message: "Only the creator can edit", status: 403 });
+            }
+            await prisma.communityPoll.update({
+                where: { id: pollId },
+                data: { question: question.trim().slice(0, 200) },
+            });
+            return SuccessResponse({ message: "Poll updated!" });
+        }
+
+        // ── Delete poll ──
+        if (action === "delete") {
+            const { pollId } = body;
+            const poll = await prisma.communityPoll.findUnique({
+                where: { id: pollId },
+                select: { playerId: true },
+            });
+            if (!poll) return ErrorResponse({ message: "Poll not found", status: 404 });
+            // Creator or super admin can delete
+            const user = await getCurrentUser();
+            if (poll.playerId !== player.id && user?.role !== "SUPER_ADMIN") {
+                return ErrorResponse({ message: "Not authorized", status: 403 });
+            }
+            await prisma.communityPoll.delete({ where: { id: pollId } });
+            return SuccessResponse({ message: "Poll deleted" });
+        }
+
+        // ── Pin/unpin poll (super admin only) ──
+        if (action === "pin") {
+            const user = await getCurrentUser();
+            if (user?.role !== "SUPER_ADMIN") {
+                return ErrorResponse({ message: "Only super admin can pin", status: 403 });
+            }
+            const { pollId } = body;
+            const poll = await prisma.communityPoll.findUnique({
+                where: { id: pollId },
+                select: { isPinned: true },
+            });
+            if (!poll) return ErrorResponse({ message: "Poll not found", status: 404 });
+            await prisma.communityPoll.update({
+                where: { id: pollId },
+                data: { isPinned: !poll.isPinned },
+            });
+            return SuccessResponse({ message: poll.isPinned ? "Unpinned" : "Pinned!" });
         }
 
         return ErrorResponse({ message: "Unknown action", status: 400 });
