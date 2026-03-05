@@ -19,6 +19,7 @@ import { motion } from "motion/react";
 import { PlayerDetailModal } from "@/components/dashboard/player-detail-modal";
 import { usePlayerFilters } from "@/hooks/use-player-filters";
 import { PlayerFiltersBar } from "@/components/players/player-filters-bar";
+import { GAME } from "@/lib/game-config";
 
 interface PlayerDTO {
     id: string;
@@ -105,14 +106,14 @@ export default function AdminPlayersPage() {
                                 : "text-danger"
                                 }`}
                         >
-                            {(meta.totalBalance ?? 0).toLocaleString()} UC
+                            {(meta.totalBalance ?? 0).toLocaleString()} {GAME.currency}
                         </span>
                     </div>
                     {(meta.negativeBalance ?? 0) < 0 && (
                         <div className="flex items-center gap-1.5 rounded-lg bg-danger-50 px-3 py-1.5 dark:bg-danger-50/10">
                             <span className="text-foreground/50">Negative:</span>
                             <span className="font-semibold text-danger">
-                                {(meta.negativeBalance ?? 0).toLocaleString()} UC
+                                {(meta.negativeBalance ?? 0).toLocaleString()} {GAME.currency}
                             </span>
                         </div>
                     )}
@@ -182,7 +183,7 @@ export default function AdminPlayersPage() {
                                             {p.displayName || p.username}
                                         </p>
                                         <p className="truncate text-xs text-foreground/40 sm:hidden">
-                                            {p.category} · {p.balance} UC
+                                            {p.category} · {p.balance} {GAME.currency}
                                         </p>
                                     </div>
 
@@ -213,7 +214,7 @@ export default function AdminPlayersPage() {
                                                 : "text-foreground/40"
                                             }`}
                                     >
-                                        {p.balance} UC
+                                        {p.balance} {GAME.currency}
                                     </span>
 
                                     {/* Status */}

@@ -20,6 +20,7 @@ import {
     Zap,
 } from "lucide-react";
 import type { PreviewTeamsByPollsResult, TeamPreview } from "@/lib/logic/previewTeamsByPoll";
+import { GAME } from "@/lib/game-config";
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -159,7 +160,7 @@ export function PollTeamsPreviewModal({
                     <Users className="h-4 w-4" />
                     Preview Teams
                     <span className="text-xs font-normal text-foreground/50">
-                        Review teams. UC debited on confirm.
+                        Review teams. {GAME.currency} debited on confirm.
                     </span>
                 </ModalHeader>
 
@@ -189,7 +190,7 @@ export function PollTeamsPreviewModal({
                                 </Chip>
                                 {previewData.entryFee > 0 && (
                                     <Chip size="sm" variant="flat" color="warning" className="text-xs">
-                                        {previewData.entryFee} UC
+                                        {previewData.entryFee} {GAME.currency}
                                     </Chip>
                                 )}
                             </div>

@@ -11,6 +11,7 @@ import {
 } from "@heroui/react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { type PlayerFilters } from "@/hooks/use-player-filters";
+import { GAME } from "@/lib/game-config";
 
 const TIERS = [
     { key: "All", label: "All Tiers" },
@@ -153,7 +154,7 @@ export function PlayerFiltersBar({
                                 aria-label="Sort by"
                             >
                                 <SelectItem key="kd">K/D Ratio</SelectItem>
-                                <SelectItem key="balance">Balance (UC)</SelectItem>
+                                <SelectItem key="balance">Balance ({GAME.currency})</SelectItem>
                                 <SelectItem key="matches">Matches Played</SelectItem>
                                 <SelectItem key="kills">Total Kills</SelectItem>
                             </Select>

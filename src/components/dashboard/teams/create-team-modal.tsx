@@ -17,6 +17,7 @@ import { Search, Plus, X, Users } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { GAME } from "@/lib/game-config";
 
 interface Player {
     id: string;
@@ -218,7 +219,7 @@ export function CreateTeamModal({
                             onValueChange={setDeductUC}
                             size="sm"
                         >
-                            <span className="text-sm">Deduct UC entry fee from players</span>
+                            <span className="text-sm">Deduct {GAME.currency} entry fee from players</span>
                         </Checkbox>
                     </div>
                 </ModalBody>

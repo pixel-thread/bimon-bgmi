@@ -31,6 +31,7 @@ import { PollFormModal } from "@/components/dashboard/polls/PollFormModal";
 import { useQueryClient } from "@tanstack/react-query";
 import type { PreviewTeamsByPollsResult } from "@/lib/logic/previewTeamsByPoll";
 import { toast } from "sonner";
+import { GAME } from "@/lib/game-config";
 
 interface PollDTO {
     id: string;
@@ -310,7 +311,7 @@ export default function PollsAdminPage() {
                                                         </h3>
                                                     </div>
                                                     <span className="ml-6 text-[11px] text-foreground/40">
-                                                        {poll.tournament && poll.tournament.fee > 0 ? `${poll.tournament.fee} UC · ` : ""}{poll.days}
+                                                        {poll.tournament && poll.tournament.fee > 0 ? `${poll.tournament.fee} ${GAME.currency} · ` : ""}{poll.days}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5">

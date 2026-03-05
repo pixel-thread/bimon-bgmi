@@ -32,6 +32,7 @@ import {
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CategoryBadge } from "@/components/ui/category-badge";
+import { GAME } from "@/lib/game-config";
 
 interface PlayerDetailModalProps {
     playerId: string | null;
@@ -287,7 +288,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                 </div>
                                 <span className={`text-xl font-bold ${(player?.balance ?? 0) < 0 ? "text-danger" : "text-primary"
                                     }`}>
-                                    {player?.balance?.toLocaleString()} UC
+                                    {player?.balance?.toLocaleString()} {GAME.currency}
                                 </span>
                             </div>
 
@@ -308,7 +309,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                                 <ShieldAlert className="h-4 w-4 text-primary" />
                                                 <div>
                                                     <p className="text-sm font-medium">Trusted Player</p>
-                                                    <p className="text-xs text-foreground/50">Extended credit line (-200 UC)</p>
+                                                    <p className="text-xs text-foreground/50">Extended credit line (-200 {GAME.currency})</p>
                                                 </div>
                                             </div>
                                             <Switch
@@ -324,7 +325,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                                 <BadgeDollarSign className="h-4 w-4 text-warning" />
                                                 <div>
                                                     <p className="text-sm font-medium">UC Exempt</p>
-                                                    <p className="text-xs text-foreground/50">Skip UC deductions for entry fees</p>
+                                                    <p className="text-xs text-foreground/50">Skip {GAME.currency} deductions for entry fees</p>
                                                 </div>
                                             </div>
                                             <Switch
@@ -332,7 +333,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                                 isSelected={player?.isUCExempt ?? false}
                                                 isDisabled={toggleMutation.isPending}
                                                 onValueChange={(val) => toggleMutation.mutate({ isUCExempt: val })}
-                                                aria-label="Toggle UC exempt"
+                                                aria-label={`Toggle ${GAME.currency} exempt`}
                                             />
                                         </div>
                                     </div>
@@ -341,7 +342,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
 
                             {/* UC Credit/Debit form */}
                             <div className="space-y-3 rounded-xl border border-divider p-4">
-                                <h3 className="text-sm font-semibold">Add / Remove UC</h3>
+                                <h3 className="text-sm font-semibold">Add / Remove {GAME.currency}</h3>
                                 <div className="flex gap-2">
                                     <Select
                                         size="sm"
@@ -389,7 +390,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                     isDisabled={!ucAmount || !ucDescription.trim()}
                                     className="w-full"
                                 >
-                                    {ucType === "CREDIT" ? "Credit" : "Debit"} {ucAmount || "0"} UC
+                                    {ucType === "CREDIT" ? "Credit" : "Debit"} {ucAmount || "0"} {GAME.currency}
                                 </Button>
                                 {walletMutation.isSuccess && (
                                     <p className="text-center text-xs text-success">
@@ -499,7 +500,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                         </div>
                                         <span className={`text-sm font-semibold ${tx.type === "CREDIT" ? "text-success" : "text-danger"
                                             }`}>
-                                            {tx.type === "CREDIT" ? "+" : "-"}{tx.amount} UC
+                                            {tx.type === "CREDIT" ? "+" : "-"}{tx.amount} {GAME.currency}
                                         </span>
                                     </div>
                                 ))

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { X, Users, Gift, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@heroui/react";
 import { useRouter } from "next/navigation";
+import { GAME } from "@/lib/game-config";
 
 const PROMO_KEY = "referral-promo-v2-seen";
 
@@ -157,7 +158,7 @@ export function ReferralPromoModal() {
                                     FREE
                                 </div>
                                 <div className="text-4xl font-black text-white">
-                                    20 UC
+                                    20 {GAME.currency}
                                 </div>
                             </motion.div>
 
@@ -190,7 +191,7 @@ export function ReferralPromoModal() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-white">They play 5 tournaments</p>
-                                            <p className="text-xs text-white/50">You get <span className="font-bold text-green-400">20 UC</span> automatically!</p>
+                                            <p className="text-xs text-white/50">You get <span className="font-bold text-green-400">20 {GAME.currency}</span> automatically!</p>
                                         </div>
                                     </div>
                                 </div>

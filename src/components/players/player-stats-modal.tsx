@@ -26,6 +26,7 @@ import { useAuthUser } from "@/hooks/use-auth-user";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { UCTransferDialog } from "./uc-transfer-dialog";
+import { GAME } from "@/lib/game-config";
 
 function getDisplayName(
     displayName: string | null,
@@ -130,7 +131,7 @@ export function PlayerStatsModal({
         },
         {
             label: "Balance",
-            value: `${player.balance.toLocaleString()} UC`,
+            value: `${player.balance.toLocaleString()} ${GAME.currency}`,
             icon: Wallet,
             color: "text-warning",
         },
@@ -345,7 +346,7 @@ export function PlayerStatsModal({
                                 onPress={() => setShowUCTransfer(true)}
                                 className="font-medium"
                             >
-                                Send / Request UC
+                                Send / Request {GAME.currency}
                             </Button>
                         )}
                     </ModalBody>

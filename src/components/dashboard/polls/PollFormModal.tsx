@@ -16,6 +16,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Vote, Loader2 } from "lucide-react";
+import { GAME } from "@/lib/game-config";
 
 interface PollOptionDTO {
     id: string;
@@ -169,8 +170,8 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
                             items={tournaments ?? []}
                         >
                             {(t) => (
-                                <SelectItem key={t.id} textValue={`${t.name}${t.fee > 0 ? ` (${t.fee} UC)` : ""}`}>
-                                    {t.name}{t.fee > 0 ? ` (${t.fee} UC)` : ""}
+                                <SelectItem key={t.id} textValue={`${t.name}${t.fee > 0 ? ` (${t.fee} ${GAME.currency})` : ""}`}>
+                                    {t.name}{t.fee > 0 ? ` (${t.fee} ${GAME.currency})` : ""}
                                 </SelectItem>
                             )}
                         </Select>

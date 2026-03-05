@@ -18,6 +18,7 @@ import {
     AlertCircle,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { GAME } from "@/lib/game-config";
 
 interface LuckyWinner {
     pollId: string;
@@ -158,9 +159,9 @@ export default function LuckyVoterPage() {
                                 <Coins className="h-5 w-5 text-warning" />
                             </div>
                             <div>
-                                <p className="text-[10px] text-foreground/40 sm:text-xs">UC Given</p>
+                                <p className="text-[10px] text-foreground/40 sm:text-xs">{GAME.currency} Given</p>
                                 <p className="text-lg font-bold text-success sm:text-xl">
-                                    {filteredStats.totalUCGiven} UC
+                                    {filteredStats.totalUCGiven} {GAME.currency}
                                 </p>
                             </div>
                         </CardBody>
@@ -220,7 +221,7 @@ export default function LuckyVoterPage() {
                                     <tr className="border-b border-divider text-foreground/40">
                                         <th className="px-1.5 py-2 text-left font-medium sm:px-4">Player</th>
                                         <th className="hidden px-4 py-2 text-left font-medium sm:table-cell">Tournament</th>
-                                        <th className="px-1.5 py-2 text-center font-medium sm:px-4">UC Saved</th>
+                                        <th className="px-1.5 py-2 text-center font-medium sm:px-4">{GAME.currency} Saved</th>
                                         <th className="px-1.5 py-2 text-right font-medium sm:px-4">Date</th>
                                     </tr>
                                 </thead>
@@ -239,7 +240,7 @@ export default function LuckyVoterPage() {
                                             </td>
                                             <td className="px-1.5 py-2.5 text-center sm:px-4 sm:py-3">
                                                 <span className="inline-flex items-center gap-1 rounded-md bg-success/10 px-1.5 py-0.5 text-[10px] font-bold text-success sm:px-2 sm:text-xs">
-                                                    🎁 {winner.ucSaved} UC
+                                                    🎁 {winner.ucSaved} {GAME.currency}
                                                 </span>
                                             </td>
                                             <td className="px-1.5 py-2.5 text-right text-foreground/40 sm:px-4 sm:py-3">

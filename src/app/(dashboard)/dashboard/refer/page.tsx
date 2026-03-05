@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState, useMemo } from "react";
+import { GAME } from "@/lib/game-config";
 
 interface Promoter {
     id: string;
@@ -222,7 +223,7 @@ export default function ReferralAdminPage() {
                                             <Banknote className="h-5 w-5 text-purple-500" />
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold">{data.stats.totalUCPaid} UC</p>
+                                            <p className="text-2xl font-bold">{data.stats.totalUCPaid} {GAME.currency}</p>
                                             <p className="text-xs text-foreground/50">Total Paid</p>
                                         </div>
                                     </div>
@@ -308,7 +309,7 @@ export default function ReferralAdminPage() {
                                                     {group.totalEarned > 0 && (
                                                         <>
                                                             <span>·</span>
-                                                            <span className="text-green-500 font-medium">{group.totalEarned} UC</span>
+                                                            <span className="text-green-500 font-medium">{group.totalEarned} {GAME.currency}</span>
                                                         </>
                                                     )}
                                                 </div>
@@ -356,7 +357,7 @@ export default function ReferralAdminPage() {
                                                                     {config.label}
                                                                 </Chip>
                                                                 {ref.status === "PAID" && (
-                                                                    <span className="text-xs font-semibold text-green-500">{ref.reward} UC</span>
+                                                                    <span className="text-xs font-semibold text-green-500">{ref.reward} {GAME.currency}</span>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -375,7 +376,7 @@ export default function ReferralAdminPage() {
             {/* Info */}
             {data && (
                 <p className="text-center text-xs text-foreground/30">
-                    {data.stats.rewardPerReferral} UC per referral · {data.stats.tournamentsRequired} tournaments required
+                    {data.stats.rewardPerReferral} {GAME.currency} per referral · {data.stats.tournamentsRequired} tournaments required
                 </p>
             )}
         </div>

@@ -197,7 +197,7 @@ export default function RoyalPassPage() {
                                                         animation: "textPop 3.5s ease-in-out infinite",
                                                     } : undefined}
                                                 >
-                                                    {wasting ? `Free ${data.nextRewardAt} ${GAME.currency}` : `${data.nextRewardAt} ${GAME.currency}`}
+                                                    {wasting ? `Free ${data.nextRewardAt * 3 + 6} ${GAME.currency}` : `${data.nextRewardAt * 3 + 6} ${GAME.currency}`}
                                                 </span>
                                             </div>
                                         </>

@@ -4,6 +4,7 @@ import { memo, useCallback, useRef, useState } from "react";
 import { Crown, Medal, Award } from "lucide-react";
 import { Avatar } from "@heroui/react";
 import type { PlayerDTO } from "@/hooks/use-players";
+import { GAME } from "@/lib/game-config";
 
 const positionConfig = {
     1: {
@@ -48,7 +49,7 @@ function getDisplayName(
 function getSortMetric(player: PlayerDTO, sortBy: string): { label: string; value: string } {
     switch (sortBy) {
         case "balance":
-            return { label: "UC", value: player.balance.toLocaleString() };
+            return { label: GAME.currency, value: player.balance.toLocaleString() };
         case "kills":
             return { label: "Kills", value: player.stats.kills.toLocaleString() };
         case "matches":

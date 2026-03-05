@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import { DeclareWinnersModal } from "@/components/dashboard/declare-winners-modal";
 import Image from "next/image";
 import { useAuthUser } from "@/hooks/use-auth-user";
+import { GAME } from "@/lib/game-config";
 
 // ─── Types ───────────────────────────────────────────────────
 interface TournamentDTO {
@@ -447,7 +448,7 @@ export default function OperationsPage() {
                                         minRows={2}
                                     />
                                     <Input
-                                        label="Entry Fee (UC)"
+                                        label={`Entry Fee (${GAME.currency})`}
                                         value={editFee}
                                         onValueChange={setEditFee}
                                         type="number"
@@ -479,7 +480,7 @@ export default function OperationsPage() {
                                         <div>
                                             <p className="text-xs text-foreground/40">Entry Fee</p>
                                             <p className="text-sm font-semibold">
-                                                {selected.fee ?? 0} UC
+                                                {selected.fee ?? 0} {GAME.currency}
                                             </p>
                                         </div>
                                         <div className="text-right">
@@ -645,7 +646,7 @@ export default function OperationsPage() {
                             isRequired
                         />
                         <Input
-                            label="Entry Fee (UC)"
+                            label={`Entry Fee (${GAME.currency})`}
                             placeholder="0"
                             value={tFee}
                             onValueChange={setTFee}

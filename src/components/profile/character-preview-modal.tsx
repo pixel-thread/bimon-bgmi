@@ -11,6 +11,7 @@ import {
 } from "@heroui/react";
 import { Crown, X, Target, Swords, Gamepad2, Wallet } from "lucide-react";
 import { CategoryBadge } from "@/components/ui/category-badge";
+import { GAME } from "@/lib/game-config";
 
 interface CharacterPreviewModalProps {
     isOpen: boolean;
@@ -437,7 +438,7 @@ export function CharacterPreviewModal({
                                 { label: "K/D Ratio", value: kd, icon: Target, color: "text-primary" },
                                 { label: "Total Kills", value: stats.kills.toLocaleString(), icon: Swords, color: "text-danger" },
                                 { label: "Matches", value: stats.matches.toLocaleString(), icon: Gamepad2, color: "text-success" },
-                                { label: "Balance", value: `${stats.balance.toLocaleString()} UC`, icon: Wallet, color: "text-warning" },
+                                { label: "Balance", value: `${stats.balance.toLocaleString()} ${GAME.currency}`, icon: Wallet, color: "text-warning" },
                             ].map((stat) => (
                                 <div key={stat.label} className="rounded-xl border border-divider bg-default-100 p-3">
                                     <div className="flex items-center gap-2">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { GAME } from "@/lib/game-config";
 import {
     Modal,
     ModalContent,
@@ -531,7 +532,7 @@ export function DeclareWinnersModal({
                 <ModalHeader className="flex items-center gap-2">
                     <Trophy className="h-5 w-5 text-warning" />
                     <div>
-                        <p>{isWinnerDeclared ? "Tournament Results" : "Declare Winners & Distribute UC"}</p>
+                        <p>{isWinnerDeclared ? "Tournament Results" : `Declare Winners & Distribute ${GAME.currency}`}</p>
                         <p className="text-xs font-normal text-foreground/50">{tournamentName}</p>
                     </div>
                 </ModalHeader>
@@ -771,7 +772,7 @@ export function DeclareWinnersModal({
                         {isWinnerDeclared ? (
                             <Button color="danger" variant="flat" isLoading={undo.isPending}
                                 startContent={<Undo2 className="h-4 w-4" />}
-                                onPress={() => { if (confirm("Undo winner declaration? This will reverse UC transactions.")) undo.mutate(); }}>
+                                onPress={() => { if (confirm(`Undo winner declaration? This will reverse ${GAME.currency} transactions.`)) undo.mutate(); }}>
                                 Undo Declaration
                             </Button>
                         ) : (

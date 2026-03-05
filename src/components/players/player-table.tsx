@@ -6,6 +6,7 @@ import { Crown } from "lucide-react";
 import Script from "next/script";
 import type { PlayerDTO, PlayersMeta } from "@/hooks/use-players";
 import { useAuthUser } from "@/hooks/use-auth-user";
+import { GAME } from "@/lib/game-config";
 import { useRef, useEffect } from "react";
 
 function getDisplayName(
@@ -154,7 +155,7 @@ export function PlayerTable({
                             <span className="text-sm font-semibold text-foreground/70 sm:hidden">
                                 {sortBy === "balance" ? (
                                     <span className={player.balance < 0 ? "text-danger" : player.balance > 0 ? "text-success" : ""}>
-                                        {player.balance.toLocaleString()} UC
+                                        {player.balance.toLocaleString()} {GAME.currency}
                                     </span>
                                 ) : sortBy === "kills" ? (
                                     `${player.stats.kills} K`

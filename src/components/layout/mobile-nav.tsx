@@ -15,6 +15,7 @@ import { type LucideIcon } from "lucide-react";
 import { sidebarItems } from "./admin-sidebar";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { GAME } from "@/lib/game-config";
 
 type Tab = {
     label: string;
@@ -175,7 +176,7 @@ export function MobileNav() {
                                 ? (balance ?? 0) > 0 ? "text-success" : (balance ?? 0) < 0 ? "text-danger" : ""
                                 : ""
                                 }`}>
-                                {tab.label === "__wallet__" ? `${(balance ?? 0).toLocaleString()} UC` : isProfile ? profileLabel : tab.label}
+                                {tab.label === "__wallet__" ? `${(balance ?? 0).toLocaleString()} ${GAME.currency}` : isProfile ? profileLabel : tab.label}
                             </span>
                             {isActive && (
                                 <div className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" />

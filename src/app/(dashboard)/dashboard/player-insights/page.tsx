@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
+import { GAME } from "@/lib/game-config";
 
 interface LoserEntry {
     rank: number;
@@ -139,7 +140,7 @@ export default function PlayerInsightsPage() {
                 <div>
                     <h1 className="text-xl font-bold">Player Insights</h1>
                     <p className="text-sm text-foreground/50">
-                        Who Lost the Most UC
+                        Who Lost the Most {GAME.currency}
                         {data?.summary
                             ? ` (${data.summary.totalTournaments} Tournaments)`
                             : " (Season Analysis)"}

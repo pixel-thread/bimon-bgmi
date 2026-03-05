@@ -18,6 +18,7 @@ import { Search, Plus, X, Pencil, Trash2 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { GAME } from "@/lib/game-config";
 
 interface Player {
     id: string;
@@ -320,7 +321,7 @@ export function EditTeamModal({
                                         onValueChange={setDeductUC}
                                         size="sm"
                                     >
-                                        <span className="text-sm">Deduct UC entry fee from added players</span>
+                                        <span className="text-sm">Deduct {GAME.currency} entry fee from added players</span>
                                     </Checkbox>
                                 )}
                                 {removedIds.length > 0 && (
@@ -329,7 +330,7 @@ export function EditTeamModal({
                                         onValueChange={setRefundRemoved}
                                         size="sm"
                                     >
-                                        <span className="text-sm">Refund UC entry fee to removed players</span>
+                                        <span className="text-sm">Refund {GAME.currency} entry fee to removed players</span>
                                     </Checkbox>
                                 )}
                             </div>
@@ -367,7 +368,7 @@ export function EditTeamModal({
                         </p>
                         <div className="flex items-center justify-between rounded-lg bg-default-100 p-3">
                             <div>
-                                <p className="text-sm font-medium">Refund UC</p>
+                                <p className="text-sm font-medium">Refund {GAME.currency}</p>
                                 <p className="text-xs text-foreground/50">
                                     Credit entry fee back to each player
                                 </p>

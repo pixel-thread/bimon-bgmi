@@ -16,6 +16,7 @@ import {
 import { ArrowUpRight, ArrowDownLeft, Loader2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthUser } from "@/hooks/use-auth-user";
+import { GAME } from "@/lib/game-config";
 
 interface UCTransferDialogProps {
     isOpen: boolean;
@@ -100,7 +101,7 @@ export function UCTransferDialog({
                             title={
                                 <div className="flex items-center gap-1.5">
                                     <ArrowDownLeft className="h-3.5 w-3.5" />
-                                    <span>Request UC</span>
+                                    <span>Request {GAME.currency}</span>
                                 </div>
                             }
                         />
@@ -109,7 +110,7 @@ export function UCTransferDialog({
                             title={
                                 <div className="flex items-center gap-1.5">
                                     <ArrowUpRight className="h-3.5 w-3.5" />
-                                    <span>Send UC</span>
+                                    <span>Send {GAME.currency}</span>
                                 </div>
                             }
                         />
@@ -122,7 +123,7 @@ export function UCTransferDialog({
                                 className={`font-bold ${balance > 0 ? "text-success" : "text-danger"
                                     }`}
                             >
-                                {balance} UC
+                                {balance} {GAME.currency}
                             </span>
                         </p>
                     )}
@@ -140,7 +141,7 @@ export function UCTransferDialog({
                         placeholder="Enter amount"
                         value={amount}
                         onValueChange={(v) => setAmount(v.replace(/\D/g, ""))}
-                        endContent={<span className="text-foreground/40 text-xs font-medium">UC</span>}
+                        endContent={<span className="text-foreground/40 text-xs font-medium">{GAME.currency}</span>}
                         size="sm"
                         isInvalid={
                             activeTab === "send" &&
@@ -164,12 +165,12 @@ export function UCTransferDialog({
                                     onClick={() => !disabled && setAmount(String(v))}
                                     disabled={disabled}
                                     className={`flex-1 py-1 rounded-lg text-xs font-medium transition-colors ${amount === String(v)
-                                            ? activeTab === "send"
-                                                ? "bg-success/15 text-success"
-                                                : "bg-primary/15 text-primary"
-                                            : disabled
-                                                ? "text-foreground/15 cursor-not-allowed"
-                                                : "text-foreground/40 hover:bg-default-100 hover:text-foreground/60"
+                                        ? activeTab === "send"
+                                            ? "bg-success/15 text-success"
+                                            : "bg-primary/15 text-primary"
+                                        : disabled
+                                            ? "text-foreground/15 cursor-not-allowed"
+                                            : "text-foreground/40 hover:bg-default-100 hover:text-foreground/60"
                                         }`}
                                 >
                                     {v}
@@ -207,7 +208,7 @@ export function UCTransferDialog({
                             ))
                         }
                     >
-                        {activeTab === "send" ? "Send UC" : "Request UC"}
+                        {activeTab === "send" ? `Send ${GAME.currency}` : `Request ${GAME.currency}`}
                     </Button>
                 </ModalFooter>
             </ModalContent>

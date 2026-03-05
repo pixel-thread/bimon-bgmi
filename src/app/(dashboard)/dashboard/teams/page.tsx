@@ -43,6 +43,7 @@ import { BulkEditStatsModal } from "@/components/dashboard/teams/bulk-edit-stats
 import { StandingsModal } from "@/components/dashboard/teams/standings-modal";
 import { SlotsModal } from "@/components/dashboard/teams/slots-modal";
 import { EditTeamModal } from "@/components/dashboard/teams/edit-team-modal";
+import { GAME } from "@/lib/game-config";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -496,7 +497,7 @@ export default function TeamsPage() {
                                                         color="warning"
                                                         className="ml-1"
                                                     >
-                                                        {team.winner.amount} UC
+                                                        {team.winner.amount} {GAME.currency}
                                                     </Chip>
                                                 )}
                                             </div>
