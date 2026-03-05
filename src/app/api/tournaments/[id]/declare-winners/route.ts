@@ -312,18 +312,16 @@ export async function POST(
             winnerTeamsData.push({ teamId: team.teamId, amount: placement.amount, position: placement.position, players: playersData });
         }
 
-        // ── 5. Calculate final amounts ────────────────────────
+        // ── 5. Calculate final amounts (simplified 70/30 split) ──
         let finalOrg = 0, finalFund = 0;
         if (prizePool > 0) {
             const distribution = getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount);
             const taxTotals = aggregateTaxTotals(allTaxResults);
-            finalFund = distribution.finalFundAmount + taxTotals.fundContribution;
-            finalOrg = distribution.finalOrgAmount + taxTotals.orgContribution;
-            if (finalFund >= finalOrg && finalOrg > 0) {
-                const combined = finalFund + finalOrg;
-                finalOrg = Math.ceil(combined * 0.65);
-                finalFund = combined - finalOrg;
-            }
+
+            // Combined = base org/fund (already 70/30 split) + all repeat winner taxes
+            const combined = distribution.finalOrgAmount + distribution.finalFundAmount + taxTotals.totalTax;
+            finalOrg = Math.floor(combined * 0.70);
+            finalFund = combined - finalOrg;
 
             // Reconcile rounding remainders — any leftover UC goes to Org
             const totalToPlayers = winnerTeamsData.reduce(
@@ -347,14 +345,14 @@ export async function POST(
                     finalOrg,
                     finalFund,
                     breakdown: {
-                        orgBase: dist?.orgFee ?? 0,
-                        fundBase: dist?.fundAmount ?? 0,
+                        baseOrgFund: (dist?.orgFee ?? 0) + (dist?.fundAmount ?? 0),
                         ucExemptCost: dist?.ucExemptCost ?? 0,
-                        orgAfterExempt: dist?.finalOrgAmount ?? 0,
-                        orgTaxContribution: taxTots.orgContribution,
-                        fundTaxContribution: taxTots.fundContribution,
                         totalRepeatTax: taxTots.totalTax,
-                        roundingRemainder: finalOrg - ((dist?.finalOrgAmount ?? 0) + taxTots.orgContribution),
+                        combined: (dist?.finalOrgAmount ?? 0) + (dist?.finalFundAmount ?? 0) + taxTots.totalTax,
+                        splitRatio: "70/30",
+                        roundingRemainder: prizePool - winnerTeamsData.reduce(
+                            (sum, t) => sum + t.players.reduce((s, p) => s + p.finalAmount, 0), 0
+                        ) - finalOrg - finalFund,
                     },
                     soloTaxTotal: allSoloTaxResults.reduce((s, r) => s + r.taxAmount, 0),
                     winners: winnerTeamsData.map(t => ({
