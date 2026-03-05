@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/database";
+import { Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { type NextRequest } from "next/server";
@@ -44,6 +45,12 @@ export async function PUT(request: NextRequest) {
             where: { id: tournamentId },
             select: { seasonId: true },
         });
+
+        // Clear tax preview cache so declare-winner preview recalculates with fresh data
+        await prisma.tournament.update({
+            where: { id: tournamentId },
+            data: { taxPreviewCache: Prisma.DbNull },
+        }).catch(() => { }); // non-critical
 
         // Process each team's stats
         for (const teamStat of stats) {
