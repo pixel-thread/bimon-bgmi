@@ -192,82 +192,84 @@ function BgmiLogo({ className }: PubgmiLogoProps) {
     );
 }
 
-// ─── Free Fire Logo — simple: show → fall all → roll back in ───
-type FFPhase = "SHOW" | "FALL" | "EMPTY" | "ROLL";
+// ─── Free Fire Logo — BOO-YAH ↔ Boss-rangbah alternating cascade ───
+const FF_WORDS = [
+    ["B", "O", "O", "-", "Y", "A", "H"],
+    ["B", "o", "s", "s", "-", "r", "a", "n", "g", "b", "a", "h"],
+];
 
 function FreeFireLogo({ className }: PubgmiLogoProps) {
-    const [phase, setPhase] = useState<FFPhase>("SHOW");
+    const [wordIndex, setWordIndex] = useState(0);
+    const [phase, setPhase] = useState<"SHOW" | "SWAP">("SHOW");
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const letters = ["B", "O", "O", "-", "Y", "A", "H"];
+
+    const currentLetters = FF_WORDS[wordIndex];
+    const nextLetters = FF_WORDS[(wordIndex + 1) % FF_WORDS.length];
 
     useEffect(() => {
-        const advance = (next: FFPhase, delay: number) => {
-            timeoutRef.current = setTimeout(() => setPhase(next), delay);
+        const advance = (nextPhase: "SHOW" | "SWAP", delay: number) => {
+            timeoutRef.current = setTimeout(() => setPhase(nextPhase), delay);
         };
 
         switch (phase) {
             case "SHOW":
-                advance("FALL", 3000);       // show for 3 sec
+                advance("SWAP", 2500);
                 break;
-            case "FALL":
-                advance("EMPTY", 900);       // letters fall (takes ~900ms)
-                break;
-            case "EMPTY":
-                advance("ROLL", 500);        // brief pause while empty
-                break;
-            case "ROLL":
-                advance("SHOW", 1200);       // letters roll back in
+            case "SWAP":
+                // After swap animation completes, move to next word
+                const swapDuration = Math.max(
+                    currentLetters.length * 100 + 500,  // fall time
+                    nextLetters.length * 80 + 500,       // roll time (starts 300ms after fall begins)
+                ) + 300;
+                timeoutRef.current = setTimeout(() => {
+                    setWordIndex((i) => (i + 1) % FF_WORDS.length);
+                    setPhase("SHOW");
+                }, swapDuration);
                 break;
         }
 
         return () => {
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
         };
-    }, [phase]);
-
-    const renderLetters = () => {
-        switch (phase) {
-            case "SHOW":
-                return letters.map((l, i) => (
-                    <span key={`s-${i}`} className="pubgmi-letter">{l}</span>
-                ));
-
-            case "FALL":
-                return letters.map((l, i) => (
-                    <span
-                        key={`fall-${i}`}
-                        className="pubgmi-letter pubgmi-fall-down"
-                        style={{ "--fall-delay": `${i * 80}ms` } as React.CSSProperties}
-                    >
-                        {l}
-                    </span>
-                ));
-
-            case "EMPTY":
-                return null;
-
-            case "ROLL":
-                return letters.map((l, i) => (
-                    <span
-                        key={`roll-${i}`}
-                        className="pubgmi-letter pubgmi-roll-in"
-                        style={{ "--roll-delay": `${i * 100}ms` } as React.CSSProperties}
-                    >
-                        {l}
-                    </span>
-                ));
-
-            default:
-                return null;
-        }
-    };
+    }, [phase, wordIndex, currentLetters.length, nextLetters.length]);
 
     return (
         <span
             className={`pubgmi-logo inline-flex items-baseline select-none ${className || ""}`}
-            aria-label="BOO-YAH"
+            aria-label={currentLetters.join("")}
         >
-            {renderLetters()}
+            {phase === "SHOW" && (
+                currentLetters.map((l, i) => (
+                    <span key={`show-${wordIndex}-${i}`} className="pubgmi-letter">{l}</span>
+                ))
+            )}
+
+            {phase === "SWAP" && (
+                <span className="pubgmi-swap-container">
+                    {/* Current word: cascade fall */}
+                    <span className="pubgmi-swap-out">
+                        {currentLetters.map((l, i) => (
+                            <span
+                                key={`fall-${wordIndex}-${i}`}
+                                className="pubgmi-letter pubgmi-fall-down"
+                                style={{ "--fall-delay": `${i * 100}ms` } as React.CSSProperties}
+                            >
+                                {l}
+                            </span>
+                        ))}
+                    </span>
+                    {/* Next word: cascade roll in (starts while fall is still happening) */}
+                    {nextLetters.map((l, i) => (
+                        <span
+                            key={`roll-${wordIndex}-${i}`}
+                            className="pubgmi-letter pubgmi-roll-in"
+                            style={{ "--roll-delay": `${300 + i * 80}ms` } as React.CSSProperties}
+                        >
+                            {l}
+                        </span>
+                    ))}
+                </span>
+            )}
         </span>
     );
 }

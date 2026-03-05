@@ -4,7 +4,7 @@ import { Providers } from "@/components/providers";
 import { RouteTracker } from "@/components/common/route-tracker";
 import { AutoUpdater } from "@/components/common/auto-updater";
 
-import { GAME } from "@/lib/game-config";
+import { GAME, GAME_MODE } from "@/lib/game-config";
 
 import "./globals.css";
 
@@ -15,6 +15,8 @@ const rajdhani = Rajdhani({
   variable: "--font-rajdhani",
 });
 
+const ICON_DIR = `/icons/${GAME_MODE === "freefire" ? "freefire" : "bgmi"}`;
+
 export const metadata: Metadata = {
   applicationName: GAME.name,
   title: {
@@ -23,7 +25,6 @@ export const metadata: Metadata = {
   },
   description:
     `Manage ${GAME.gameName} tournaments, teams, ${GAME.currency} economy, and player stats — all in one place.`,
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -34,11 +35,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: `${ICON_DIR}/favicon-32x32.png`, sizes: "32x32", type: "image/png" },
+      { url: `${ICON_DIR}/favicon-16x16.png`, sizes: "16x16", type: "image/png" },
     ],
     shortcut: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    apple: `${ICON_DIR}/apple-touch-icon.png`,
   },
   openGraph: {
     type: "website",
