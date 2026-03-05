@@ -9,7 +9,7 @@ import {
     MessageCircle, Send, Heart, Lightbulb, Bug, Star, HelpCircle,
     ThumbsUp, ThumbsDown, EyeOff, User, Plus,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { GAME } from "@/lib/game-config";
@@ -35,6 +35,40 @@ interface MessageDTO {
     isOwn: boolean;
     myVote: number | null;
     player: { displayName: string; imageUrl: string } | null;
+}
+
+const EMPTY_MESSAGES = [
+    "Send message kumno bin pynbha ia kanoi ka tournament",
+    "Pynbeit da n ong bakla lane ai ongmut ia u seng",
+];
+
+function EmptyState() {
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setIndex((i) => (i + 1) % EMPTY_MESSAGES.length);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
+            <Star className="h-10 w-10 text-foreground/15 mx-auto mb-3" />
+            <AnimatePresence mode="wait">
+                <motion.p
+                    key={index}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-sm text-foreground/40 px-4"
+                >
+                    {EMPTY_MESSAGES[index]}
+                </motion.p>
+            </AnimatePresence>
+        </motion.div>
+    );
 }
 
 export default function CommunityPage() {
@@ -222,11 +256,7 @@ export default function CommunityPage() {
 
             {/* Empty state */}
             {data?.messages && data.messages.length === 0 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
-                    <Star className="h-10 w-10 text-foreground/15 mx-auto mb-3" />
-                    <p className="text-sm text-foreground/40 mb-1">No messages yet</p>
-                    <p className="text-xs text-foreground/30">Be the first to share your thoughts!</p>
-                </motion.div>
+                <EmptyState />
             )}
 
             {/* FAB */}
