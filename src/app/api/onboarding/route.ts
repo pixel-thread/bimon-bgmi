@@ -17,8 +17,9 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { displayName, referralCode } = body as {
+        const { displayName, uid, referralCode } = body as {
             displayName: string;
+            uid?: string;
             referralCode?: string;
         };
 
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
                     data: {
                         userId: user.id,
                         displayName: displayName.trim(),
+                        ...(uid?.trim() && { uid: uid.trim() }),
                     },
                 });
 

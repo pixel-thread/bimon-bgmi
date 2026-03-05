@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Avatar, Chip } from "@heroui/react";
+import { Button, Avatar, Chip, Input } from "@heroui/react";
 import { GAME } from "@/lib/game-config";
 import { useSession, signOut } from "next-auth/react";
 import { Gamepad2, Loader2, CheckCircle } from "lucide-react";
@@ -35,6 +35,7 @@ export default function OnboardingPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showWhatsApp, setShowWhatsApp] = useState(false);
     const [justCompleted, setJustCompleted] = useState(false);
+    const [uid, setUid] = useState("");
     const [isCheckingIGN, setIsCheckingIGN] = useState(false);
     const ignCheckTimer = useRef<NodeJS.Timeout | null>(null);
     const ignTutorial = useIGNTutorial({ autoOpen: true });
@@ -124,6 +125,7 @@ export default function OnboardingPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     displayName: displayName.trim(),
+                    uid: uid.trim() || undefined,
                     referralCode,
                 }),
             });
@@ -194,7 +196,7 @@ export default function OnboardingPage() {
                         <p className="text-sm text-foreground/50 mt-1">
                             Copy bad paste ia{" "}
                             <span className="font-semibold text-primary">
-                                ka kyrteng ba na BGMI
+                                ka kyrteng ba na {GAME.gameName}
                             </span>
                         </p>
                     </div>
@@ -287,6 +289,37 @@ export default function OnboardingPage() {
                                 </button>
                             </p>
                         </div>
+
+                        {/* Free Fire UID — paste only (only shown when GAME.hasUID) */}
+                        {GAME.hasUID && (
+                            <div>
+                                <label className="text-sm font-medium text-foreground/70 mb-2 block">
+                                    {GAME.idLabel}
+                                </label>
+                                <Input
+                                    value={uid}
+                                    placeholder={GAME.idPlaceholder}
+                                    size="lg"
+                                    variant="bordered"
+                                    onKeyDown={(e) => {
+                                        const allowedKeys = ["Tab", "ArrowLeft", "ArrowRight", "Backspace", "Delete"];
+                                        if (!allowedKeys.includes(e.key) && !(e.metaKey || e.ctrlKey)) {
+                                            e.preventDefault();
+                                        }
+                                    }}
+                                    onPaste={(e) => {
+                                        e.preventDefault();
+                                        const pasted = e.clipboardData.getData("text").trim();
+                                        if (pasted) setUid(pasted);
+                                    }}
+                                    description={`Copy from ${GAME.gameName} profile → paste here (typing disabled)`}
+                                    isDisabled={isSubmitting}
+                                    startContent={
+                                        <span className="text-foreground/30 text-sm">🆔</span>
+                                    }
+                                />
+                            </div>
+                        )}
 
                         {/* Submit */}
                         <Button

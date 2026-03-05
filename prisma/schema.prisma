@@ -140,9 +140,10 @@ model Player {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // BGMI identity
+  // Game identity
   displayName             String?
   displayNameLastChangeAt DateTime?
+  uid                     String?
   bio                     String?  @db.VarChar(100)
   characterImageId        String?  @unique
   customProfileImageUrl   String?
