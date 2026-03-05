@@ -37,37 +37,34 @@ interface MessageDTO {
     player: { displayName: string; imageUrl: string } | null;
 }
 
-const EMPTY_MESSAGES = [
+const SUBTITLE_MESSAGES = [
     "Send message kumno bin pynbha ia kanoi ka tournament",
     "Pynbeit da n ong bakla lane ai ongmut ia u seng",
 ];
 
-function EmptyState() {
+function RotatingSubtitle() {
     const [index, setIndex] = useState(0);
 
     useEffect(() => {
         const interval = setInterval(() => {
-            setIndex((i) => (i + 1) % EMPTY_MESSAGES.length);
+            setIndex((i) => (i + 1) % SUBTITLE_MESSAGES.length);
         }, 5000);
         return () => clearInterval(interval);
     }, []);
 
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
-            <Star className="h-10 w-10 text-foreground/15 mx-auto mb-3" />
-            <AnimatePresence mode="wait">
-                <motion.p
-                    key={index}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.3 }}
-                    className="text-sm text-foreground/40 px-4"
-                >
-                    {EMPTY_MESSAGES[index]}
-                </motion.p>
-            </AnimatePresence>
-        </motion.div>
+        <AnimatePresence mode="wait">
+            <motion.p
+                key={index}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.3 }}
+                className="text-sm text-foreground/50"
+            >
+                {SUBTITLE_MESSAGES[index]}
+            </motion.p>
+        </AnimatePresence>
     );
 }
 
@@ -138,9 +135,9 @@ export default function CommunityPage() {
                     <MessageCircle className="h-5 w-5 text-primary" />
                     Community
                 </h1>
-                <p className="text-sm text-foreground/50 mt-1">
-                    Share your thoughts — we read every message!
-                </p>
+                <div className="h-5 mt-1">
+                    <RotatingSubtitle />
+                </div>
             </motion.div>
 
             {/* Community feed */}
@@ -256,7 +253,10 @@ export default function CommunityPage() {
 
             {/* Empty state */}
             {data?.messages && data.messages.length === 0 && (
-                <EmptyState />
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
+                    <Star className="h-10 w-10 text-foreground/15 mx-auto mb-3" />
+                    <p className="text-sm text-foreground/40">Be the first to share your thoughts!</p>
+                </motion.div>
             )}
 
             {/* FAB */}
