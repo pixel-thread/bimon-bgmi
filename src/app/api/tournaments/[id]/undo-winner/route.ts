@@ -152,7 +152,7 @@ export async function POST(
             // 6. Reset tournament
             await tx.tournament.update({
                 where: { id },
-                data: { isWinnerDeclared: false, status: "ACTIVE" },
+                data: { isWinnerDeclared: false, status: "ACTIVE", taxPreviewCache: null },
             });
         }, { timeout: 60000, maxWait: 65000 });
 

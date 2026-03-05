@@ -39,10 +39,16 @@ export async function GET(
 
         const tournament = await prisma.tournament.findUnique({
             where: { id },
-            select: { id: true, seasonId: true, fee: true, isWinnerDeclared: true, name: true },
+            select: { id: true, seasonId: true, fee: true, isWinnerDeclared: true, name: true, taxPreviewCache: true },
         });
         if (!tournament) {
             return NextResponse.json({ error: "Not found" }, { status: 404 });
+        }
+
+        // Return cached preview if available (and not forcing refresh)
+        const refresh = req.nextUrl.searchParams.get("refresh") === "true";
+        if (tournament.taxPreviewCache && !refresh) {
+            return NextResponse.json(tournament.taxPreviewCache as Record<string, unknown>);
         }
 
         // Step 1: Get match IDs for this tournament
@@ -162,11 +168,21 @@ export async function GET(
             );
         }
 
-        return NextResponse.json({
+        const responseData = {
             data: result,
             ...(finalOrg !== undefined ? { finalOrg, finalFund } : {}),
             ...(storedPlayerAmounts ? { storedPlayerAmounts } : {}),
-        });
+        };
+
+        // Cache the preview so reopening shows exact same numbers
+        if (!tournament.taxPreviewCache) {
+            await prisma.tournament.update({
+                where: { id },
+                data: { taxPreviewCache: responseData },
+            }).catch(() => { }); // Non-critical, don't fail the request
+        }
+
+        return NextResponse.json(responseData);
     } catch (error) {
         console.error("Error fetching tax preview:", error);
         return NextResponse.json({ error: "Failed" }, { status: 500 });
