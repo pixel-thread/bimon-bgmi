@@ -37,6 +37,10 @@ export interface PollDTO {
         name: string;
         vote: string;
     }[];
+    donations: {
+        total: number;
+        donations: { amount: number; playerName: string | null; isAnonymous: boolean }[];
+    };
 }
 
 /**

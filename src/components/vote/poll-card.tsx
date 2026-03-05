@@ -500,7 +500,8 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
     // Participants = IN + SOLO
     const participantCount = poll.inVotes + poll.soloVotes;
     const entryFee = tournament?.fee ?? 0;
-    const prizePool = entryFee * participantCount;
+    const donationTotal = poll.donations?.total ?? 0;
+    const prizePool = (entryFee * participantCount) + donationTotal;
     const hasPrizePool = prizePool > 0;
 
     // Dynamic team type — based on IN votes only (SOLO players play alone)
@@ -626,6 +627,12 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                         </p>
                                     </div>
                                 </div>
+                                {/* Donations */}
+                                {donationTotal > 0 && poll.donations.donations.map((d, i) => (
+                                    <p key={i} className="text-[10px] text-white/70 text-center">
+                                        ❤️ {d.isAnonymous ? "Anonymous" : d.playerName} donated: {d.amount} {GAME.currencyLabel}
+                                    </p>
+                                ))}
                                 {/* Prize breakdown ? button */}
                                 <PrizeBreakdownTooltip
                                     prizePool={prizePool}

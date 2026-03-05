@@ -138,7 +138,14 @@ export async function POST(
 
         const entryFee = tournament.fee ?? 0;
         const totalPlayers = allPlayerIds.size;
-        const prizePool = entryFee * totalPlayers;
+
+        // Include voluntary donations in the prize pool
+        const donations = await prisma.prizePoolDonation.findMany({
+            where: { tournamentId: id },
+            select: { amount: true },
+        });
+        const totalDonations = donations.reduce((sum, d) => sum + d.amount, 0);
+        const prizePool = (entryFee * totalPlayers) + totalDonations;
         const teamCount = teamMap.size;
         const teamSize = teamCount > 0 ? Math.round(totalPlayers / teamCount) : 2;
 

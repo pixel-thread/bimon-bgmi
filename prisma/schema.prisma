@@ -188,6 +188,7 @@ model Player {
   notifications     Notification[]
   gameScores        GameScore[]
   jobReactions      JobListingReaction[]
+  donations         PrizePoolDonation[]
 
   @@index([userId])
   @@index([category])
@@ -275,6 +276,23 @@ model SoloTaxPool {
   updatedAt DateTime @updatedAt
 
   @@index([seasonId])
+}
+
+/// Voluntary prize pool donations — can be from a player or anonymous.
+model PrizePoolDonation {
+  id           String  @id @default(uuid())
+  amount       Int
+  tournamentId String
+  playerId     String?
+  playerName   String?
+  isAnonymous  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     Player?    @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@index([tournamentId])
 }
 
 // ─── Player Tracking ─────────────────────────────────────────
@@ -384,6 +402,7 @@ model Tournament {
   matchPlayerPlayed MatchPlayerPlayed[]
   income            Income[]
   sequence          TournamentSequence?
+  donations         PrizePoolDonation[]
 
   @@index([seasonId])
   @@index([status])

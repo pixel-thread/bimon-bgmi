@@ -151,13 +151,21 @@ export async function GET(
         const teamCount = teamMap.size;
         const avgTeamSize = teamCount > 0 ? Math.round(allPlayerIds.size / teamCount) : 2;
 
+        // Include donations in prize pool
+        const donations = await prisma.prizePoolDonation.findMany({
+            where: { tournamentId: id },
+            select: { amount: true },
+        });
+        const totalDonations = donations.reduce((sum: number, d: { amount: number }) => sum + d.amount, 0);
+
         return NextResponse.json({
             success: true,
             data: rankings,
             meta: {
                 entryFee: tournament.fee ?? 0,
                 totalPlayers: allPlayerIds.size,
-                prizePool: (tournament.fee ?? 0) * allPlayerIds.size,
+                prizePool: ((tournament.fee ?? 0) * allPlayerIds.size) + totalDonations,
+                donations: totalDonations,
                 teamType: avgTeamSize === 1 ? "SOLO" : avgTeamSize === 2 ? "DUO" : avgTeamSize === 3 ? "TRIO" : "SQUAD",
                 isWinnerDeclared: tournament.isWinnerDeclared,
                 ucExemptCount: ucExemptPlayerIds.size,

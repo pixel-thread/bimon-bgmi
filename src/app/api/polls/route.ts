@@ -62,6 +62,22 @@ export async function GET(request: Request) {
             orderBy: { createdAt: "desc" },
         });
 
+        // Fetch donation totals for each tournament
+        const tournamentIds = [...new Set(polls.map(p => p.tournament?.id).filter(Boolean))] as string[];
+        const donationTotals = new Map<string, { total: number; donations: { amount: number; playerName: string | null; isAnonymous: boolean }[] }>();
+        if (tournamentIds.length > 0) {
+            const allDonations = await prisma.prizePoolDonation.findMany({
+                where: { tournamentId: { in: tournamentIds } },
+                select: { tournamentId: true, amount: true, playerName: true, isAnonymous: true },
+            });
+            for (const d of allDonations) {
+                const existing = donationTotals.get(d.tournamentId) ?? { total: 0, donations: [] };
+                existing.total += d.amount;
+                existing.donations.push({ amount: d.amount, playerName: d.playerName, isAnonymous: d.isAnonymous });
+                donationTotals.set(d.tournamentId, existing);
+            }
+        }
+
         const data = polls.map((poll) => {
             const totalVotes = poll.votes.length;
             const inVotes = poll.votes.filter((v) => v.vote === "IN").length;
@@ -70,6 +86,8 @@ export async function GET(request: Request) {
             const userVote = playerId
                 ? poll.votes.find((v) => v.playerId === playerId)?.vote ?? null
                 : null;
+
+            const tDonations = poll.tournament?.id ? donationTotals.get(poll.tournament.id) : null;
 
             return {
                 id: poll.id,
@@ -89,6 +107,7 @@ export async function GET(request: Request) {
                     totalVotes > 0 ? Math.round((inVotes / totalVotes) * 100) : 0,
                 userVote,
                 hasVoted: !!userVote,
+                donations: tDonations ?? { total: 0, donations: [] },
                 playersVotes: poll.votes.map((v) => ({
                     playerId: v.playerId,
                     vote: v.vote,
