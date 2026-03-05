@@ -13,7 +13,7 @@ async function getPlayer() {
     if (!email) return null;
     const user = await prisma.user.findUnique({
         where: { email },
-        select: { player: { select: { id: true, orgId: true } } },
+        select: { player: { select: { id: true } } },
     });
     return user?.player ?? null;
 }
@@ -24,7 +24,7 @@ export async function GET() {
         if (!player) return ErrorResponse({ message: "Unauthorized", status: 401 });
 
         const polls = await prisma.communityPoll.findMany({
-            where: { isActive: true, orgId: player.orgId },
+            where: { isActive: true },
             orderBy: { createdAt: "desc" },
             take: 20,
             include: {
@@ -109,7 +109,6 @@ export async function POST(req: Request) {
             data: {
                 question: question.trim().slice(0, 200),
                 playerId: player.id,
-                orgId: player.orgId,
                 options: {
                     create: options
                         .filter((o: string) => o.trim())
