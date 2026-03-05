@@ -189,7 +189,10 @@ model Player {
   gameScores        GameScore[]
   jobReactions      JobListingReaction[]
   donations         PrizePoolDonation[]
-  communityMessages CommunityMessage[]
+  communityMessages     CommunityMessage[]
+  communityPolls        CommunityPoll[]
+  communityPollOptions  CommunityPollOption[]
+  communityPollVotes    CommunityPollVote[]
 
   @@index([userId])
   @@index([category])
@@ -334,6 +337,60 @@ model CommunityVote {
 
   @@unique([messageId, playerId])
   @@index([messageId])
+}
+
+/// Community poll — players can create polls and vote on options.
+model CommunityPoll {
+  id        String  @id @default(uuid())
+  question  String  @db.VarChar(200)
+  playerId  String
+  isActive  Boolean @default(true)
+  orgId     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  player  Player               @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  options CommunityPollOption[]
+  votes   CommunityPollVote[]
+
+  @@index([playerId])
+  @@index([isActive])
+  @@index([createdAt(sort: Desc)])
+}
+
+/// An option in a community poll. Can be added by creator or suggested by others (needs approval).
+model CommunityPollOption {
+  id         String  @id @default(uuid())
+  pollId     String
+  text       String  @db.VarChar(100)
+  addedById  String
+  isApproved Boolean @default(true) // false = pending suggestion
+
+  createdAt DateTime @default(now())
+
+  poll    CommunityPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  addedBy Player              @relation(fields: [addedById], references: [id], onDelete: Cascade)
+  votes   CommunityPollVote[]
+
+  @@index([pollId])
+}
+
+/// A player's vote on a community poll (one vote per player per poll).
+model CommunityPollVote {
+  id       String @id @default(uuid())
+  pollId   String
+  optionId String
+  playerId String
+
+  createdAt DateTime @default(now())
+
+  poll   CommunityPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  option CommunityPollOption  @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  player Player               @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, playerId])
+  @@index([optionId])
 }
 
 // ─── Player Tracking ─────────────────────────────────────────
