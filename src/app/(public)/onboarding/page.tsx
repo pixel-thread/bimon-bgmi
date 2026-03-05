@@ -251,43 +251,74 @@ export default function OnboardingPage() {
                             </div>
                         )}
 
-                        {/* Game Name paste input */}
+                        {/* Game Name input */}
                         <div>
                             <div className="flex items-center gap-2 mb-2">
                                 <label className="text-sm font-medium text-foreground/70">
                                     Game Name
                                 </label>
-                                {ignTutorial.HelpButton}
+                                {!GAME.hasUID && ignTutorial.HelpButton}
                             </div>
-                            <GameNameInput
-                                value={displayName}
-                                onChange={(val) => {
-                                    setDisplayName(val);
-                                    if (val.length >= 2) {
-                                        checkDuplicateIGN(val);
-                                    }
-                                }}
-                                error={displayNameError}
-                                onErrorChange={setDisplayNameError}
-                                disabled={isSubmitting}
-                            />
-                            <p className="mt-2 text-xs text-foreground/40">
-                                <button
-                                    type="button"
-                                    onClick={ignTutorial.openModal}
-                                    className="text-primary hover:underline font-medium"
-                                >
-                                    Kumno ban copy?
-                                </button>
-                                {" / "}
-                                <button
-                                    type="button"
-                                    onClick={ignTutorial.openModal}
-                                    className="text-primary hover:underline font-medium"
-                                >
-                                    Need help?
-                                </button>
-                            </p>
+
+                            {GAME.hasUID ? (
+                                /* Free Fire: regular text input — users can type their IGN */
+                                <>
+                                    <Input
+                                        value={displayName}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setDisplayName(val);
+                                            setDisplayNameError("");
+                                            if (val.length >= 2) {
+                                                checkDuplicateIGN(val);
+                                            }
+                                        }}
+                                        placeholder="Enter your in-game name"
+                                        size="lg"
+                                        variant="bordered"
+                                        maxLength={20}
+                                        isDisabled={isSubmitting}
+                                        isInvalid={!!displayNameError}
+                                        errorMessage={displayNameError}
+                                        startContent={
+                                            <span className="text-foreground/30 text-sm">🎮</span>
+                                        }
+                                    />
+                                </>
+                            ) : (
+                                /* BGMI: paste-only input */
+                                <>
+                                    <GameNameInput
+                                        value={displayName}
+                                        onChange={(val) => {
+                                            setDisplayName(val);
+                                            if (val.length >= 2) {
+                                                checkDuplicateIGN(val);
+                                            }
+                                        }}
+                                        error={displayNameError}
+                                        onErrorChange={setDisplayNameError}
+                                        disabled={isSubmitting}
+                                    />
+                                    <p className="mt-2 text-xs text-foreground/40">
+                                        <button
+                                            type="button"
+                                            onClick={ignTutorial.openModal}
+                                            className="text-primary hover:underline font-medium"
+                                        >
+                                            Kumno ban copy?
+                                        </button>
+                                        {" / "}
+                                        <button
+                                            type="button"
+                                            onClick={ignTutorial.openModal}
+                                            className="text-primary hover:underline font-medium"
+                                        >
+                                            Need help?
+                                        </button>
+                                    </p>
+                                </>
+                            )}
                         </div>
 
                         {/* Free Fire UID — paste only (only shown when GAME.hasUID) */}
