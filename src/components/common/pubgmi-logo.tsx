@@ -1,31 +1,32 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { GAME, GAME_MODE } from "@/lib/game-config";
 
 /**
- * Animated PUBGMI logo — slot-machine style:
+ * Animated game logo — adapts to GAME_MODE:
  *
- * PUBGMI → PU falls → BGMI
- * → BGMI falls while PUBGMI rolls in simultaneously
- * → PUBGMI → MI falls → PUBG → MI rolls in → PUBGMI → repeat
+ * BGMI mode: PUBGMI ↔ BGMI slot-machine animation
+ * Free Fire mode: BOO-YAH bounce animation
  */
 interface PubgmiLogoProps {
     variant?: "hero" | "header";
     className?: string;
 }
 
-type Phase =
+// ─── BGMI Phases ───
+type BgmiPhase =
     | "PUBGMI"
-    | "DROP_PU"          // P then U fall
+    | "DROP_PU"
     | "BGMI"
-    | "SWAP"             // BGMI falls + PUBGMI rolls in simultaneously
+    | "SWAP"
     | "PUBGMI_MID"
-    | "DROP_MI"          // M then I fall
+    | "DROP_MI"
     | "PUBG"
-    | "ROLL_MI"          // M then I roll in
+    | "ROLL_MI"
     ;
 
-const TIMINGS = {
+const BGMI_TIMINGS = {
     PUBGMI: 2400,
     DROP_PU: 900,
     BGMI: 1500,
@@ -36,39 +37,40 @@ const TIMINGS = {
     ROLL_MI: 1400,
 };
 
-export function PubgmiLogo({ variant = "header", className }: PubgmiLogoProps) {
-    const [phase, setPhase] = useState<Phase>("PUBGMI");
+// ─── BGMI Logo ───
+function BgmiLogo({ className }: PubgmiLogoProps) {
+    const [phase, setPhase] = useState<BgmiPhase>("PUBGMI");
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        const advance = (nextPhase: Phase, delay: number) => {
+        const advance = (nextPhase: BgmiPhase, delay: number) => {
             timeoutRef.current = setTimeout(() => setPhase(nextPhase), delay);
         };
 
         switch (phase) {
             case "PUBGMI":
-                advance("DROP_PU", TIMINGS.PUBGMI);
+                advance("DROP_PU", BGMI_TIMINGS.PUBGMI);
                 break;
             case "DROP_PU":
-                advance("BGMI", TIMINGS.DROP_PU);
+                advance("BGMI", BGMI_TIMINGS.DROP_PU);
                 break;
             case "BGMI":
-                advance("SWAP", TIMINGS.BGMI);
+                advance("SWAP", BGMI_TIMINGS.BGMI);
                 break;
             case "SWAP":
-                advance("PUBGMI_MID", TIMINGS.SWAP);
+                advance("PUBGMI_MID", BGMI_TIMINGS.SWAP);
                 break;
             case "PUBGMI_MID":
-                advance("DROP_MI", TIMINGS.PUBGMI_MID);
+                advance("DROP_MI", BGMI_TIMINGS.PUBGMI_MID);
                 break;
             case "DROP_MI":
-                advance("PUBG", TIMINGS.DROP_MI);
+                advance("PUBG", BGMI_TIMINGS.DROP_MI);
                 break;
             case "PUBG":
-                advance("ROLL_MI", TIMINGS.PUBG);
+                advance("ROLL_MI", BGMI_TIMINGS.PUBG);
                 break;
             case "ROLL_MI":
-                advance("PUBGMI", TIMINGS.ROLL_MI + 600);
+                advance("PUBGMI", BGMI_TIMINGS.ROLL_MI + 600);
                 break;
         }
 
@@ -126,11 +128,9 @@ export function PubgmiLogo({ variant = "header", className }: PubgmiLogoProps) {
                     </>
                 );
 
-            // BGMI falls out while PUBGMI rolls in — layered
             case "SWAP":
                 return (
                     <span className="pubgmi-swap-container">
-                        {/* Falling BGMI — absolute so it doesn't affect layout */}
                         <span className="pubgmi-swap-out">
                             {"BGMI".split("").map((letter, i) => (
                                 <span
@@ -142,7 +142,6 @@ export function PubgmiLogo({ variant = "header", className }: PubgmiLogoProps) {
                                 </span>
                             ))}
                         </span>
-                        {/* Rolling in PUBGMI — starts slightly after */}
                         {"PUBGMI".split("").map((letter, i) => (
                             <span
                                 key={`swap-in-${i}`}
@@ -191,4 +190,92 @@ export function PubgmiLogo({ variant = "header", className }: PubgmiLogoProps) {
             {renderLetters()}
         </span>
     );
+}
+
+// ─── Free Fire Logo — simple: show → fall all → roll back in ───
+type FFPhase = "SHOW" | "FALL" | "EMPTY" | "ROLL";
+
+function FreeFireLogo({ className }: PubgmiLogoProps) {
+    const [phase, setPhase] = useState<FFPhase>("SHOW");
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const letters = ["B", "O", "O", "-", "Y", "A", "H"];
+
+    useEffect(() => {
+        const advance = (next: FFPhase, delay: number) => {
+            timeoutRef.current = setTimeout(() => setPhase(next), delay);
+        };
+
+        switch (phase) {
+            case "SHOW":
+                advance("FALL", 3000);       // show for 3 sec
+                break;
+            case "FALL":
+                advance("EMPTY", 900);       // letters fall (takes ~900ms)
+                break;
+            case "EMPTY":
+                advance("ROLL", 500);        // brief pause while empty
+                break;
+            case "ROLL":
+                advance("SHOW", 1200);       // letters roll back in
+                break;
+        }
+
+        return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, [phase]);
+
+    const renderLetters = () => {
+        switch (phase) {
+            case "SHOW":
+                return letters.map((l, i) => (
+                    <span key={`s-${i}`} className="pubgmi-letter">{l}</span>
+                ));
+
+            case "FALL":
+                return letters.map((l, i) => (
+                    <span
+                        key={`fall-${i}`}
+                        className="pubgmi-letter pubgmi-fall-down"
+                        style={{ "--fall-delay": `${i * 80}ms` } as React.CSSProperties}
+                    >
+                        {l}
+                    </span>
+                ));
+
+            case "EMPTY":
+                return null;
+
+            case "ROLL":
+                return letters.map((l, i) => (
+                    <span
+                        key={`roll-${i}`}
+                        className="pubgmi-letter pubgmi-roll-in"
+                        style={{ "--roll-delay": `${i * 100}ms` } as React.CSSProperties}
+                    >
+                        {l}
+                    </span>
+                ));
+
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <span
+            className={`pubgmi-logo inline-flex items-baseline select-none ${className || ""}`}
+            aria-label="BOO-YAH"
+        >
+            {renderLetters()}
+        </span>
+    );
+}
+
+// ─── Exported Component — picks based on GAME_MODE ───
+export function PubgmiLogo(props: PubgmiLogoProps) {
+    if (GAME_MODE === "freefire") {
+        return <FreeFireLogo {...props} />;
+    }
+    return <BgmiLogo {...props} />;
 }
