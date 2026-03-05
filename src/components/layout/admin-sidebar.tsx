@@ -23,6 +23,7 @@ import {
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { useState, useEffect, useCallback } from "react";
 import { PubgmiLogo } from "@/components/common/pubgmi-logo";
+import { GAME } from "@/lib/game-config";
 
 interface SidebarItem {
     label: string;
@@ -61,7 +62,7 @@ const sidebarItems: SidebarSection[] = [
         superAdminOnly: true,
         items: [
             { label: "Player Insights", href: "/dashboard/player-insights", icon: Eye },
-            { label: "Royal Pass", href: "/dashboard/royal-pass", icon: Crown },
+            { label: GAME.passName, href: "/dashboard/royal-pass", icon: Crown },
             { label: "Referrals", href: "/dashboard/refer", icon: Users, superAdminOnly: true },
             { label: "Lucky Voters", href: "/dashboard/lucky-voters", icon: Clover },
             { label: "Income", href: "/dashboard/income", icon: DollarSign },
