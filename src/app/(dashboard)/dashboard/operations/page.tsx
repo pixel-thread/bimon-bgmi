@@ -75,6 +75,7 @@ export default function OperationsPage() {
     const createModal = useDisclosure();
     const seasonModal = useDisclosure();
     const winnersModal = useDisclosure();
+    const donationModal = useDisclosure();
     const { isSuperAdmin } = useAuthUser();
 
     const [selectedId, setSelectedId] = useState("");
@@ -148,6 +149,18 @@ export default function OperationsPage() {
     });
 
     const selected = tournaments.find((t) => t.id === selectedId);
+
+    // Fetch donation total for button badge
+    const { data: donationTotal = 0 } = useQuery<number>({
+        queryKey: ["donation-total", selectedId],
+        queryFn: async () => {
+            const res = await fetch(`/api/tournaments/${selectedId}/donations`);
+            if (!res.ok) return 0;
+            const json = await res.json();
+            return json.data?.total ?? 0;
+        },
+        enabled: !!selectedId,
+    });
 
     // Auto-select first active tournament
     useEffect(() => {
@@ -523,6 +536,20 @@ export default function OperationsPage() {
                                 >
                                     Edit
                                 </Button>
+                                <Button
+                                    size="sm"
+                                    color="secondary"
+                                    variant="flat"
+                                    startContent={<Heart className="h-3 w-3" />}
+                                    onPress={donationModal.onOpen}
+                                >
+                                    Donations
+                                    {selected && donationTotal > 0 && (
+                                        <Chip size="sm" color="success" variant="flat" className="text-[10px] ml-1 h-4">
+                                            +{donationTotal}
+                                        </Chip>
+                                    )}
+                                </Button>
                                 {isSuperAdmin && (
                                     <Button
                                         size="sm"
@@ -535,14 +562,18 @@ export default function OperationsPage() {
                                     </Button>
                                 )}
                             </div>
-
-                            <Divider />
-
-                            {/* Prize Pool Donations */}
-                            <DonationSection tournamentId={selected.id} />
                         </CardBody>
                     </Card>
                 </motion.div>
+            )}
+
+            {/* Donation Modal */}
+            {selected && (
+                <DonationModal
+                    tournamentId={selected.id}
+                    isOpen={donationModal.isOpen}
+                    onClose={donationModal.onClose}
+                />
             )}
             {/* Standings Background */}
             <motion.div
@@ -739,7 +770,7 @@ export default function OperationsPage() {
     );
 }
 
-// ─── Prize Pool Donation Section ──────────────────────────────
+// ─── Prize Pool Donation Modal ──────────────────────────────
 
 interface DonationDTO {
     id: string;
@@ -749,14 +780,13 @@ interface DonationDTO {
     createdAt: string;
 }
 
-function DonationSection({ tournamentId }: { tournamentId: string }) {
+function DonationModal({ tournamentId, isOpen, onClose }: { tournamentId: string; isOpen: boolean; onClose: () => void }) {
     const queryClient = useQueryClient();
     const [amount, setAmount] = useState("");
     const [isAnonymous, setIsAnonymous] = useState(true);
     const [playerSearch, setPlayerSearch] = useState("");
     const [selectedPlayer, setSelectedPlayer] = useState<{ id: string; name: string } | null>(null);
 
-    // Fetch existing donations
     const { data: donationData } = useQuery<{ donations: DonationDTO[]; total: number }>({
         queryKey: ["donations", tournamentId],
         queryFn: async () => {
@@ -765,9 +795,9 @@ function DonationSection({ tournamentId }: { tournamentId: string }) {
             const json = await res.json();
             return json.data;
         },
+        enabled: isOpen,
     });
 
-    // Search players
     const { data: players } = useQuery<{ id: string; displayName: string; user: { username: string } }[]>({
         queryKey: ["player-search", playerSearch],
         queryFn: async () => {
@@ -776,10 +806,9 @@ function DonationSection({ tournamentId }: { tournamentId: string }) {
             const json = await res.json();
             return json.data ?? [];
         },
-        enabled: playerSearch.length >= 2 && !isAnonymous,
+        enabled: playerSearch.length >= 2 && !isAnonymous && isOpen,
     });
 
-    // Add donation
     const addDonation = useMutation({
         mutationFn: async () => {
             const res = await fetch(`/api/tournaments/${tournamentId}/donations`, {
@@ -805,7 +834,6 @@ function DonationSection({ tournamentId }: { tournamentId: string }) {
         onError: (err: Error) => toast.error(err.message),
     });
 
-    // Delete donation
     const deleteDonation = useMutation({
         mutationFn: async (donationId: string) => {
             const res = await fetch(`/api/tournaments/${tournamentId}/donations`, {
@@ -827,142 +855,141 @@ function DonationSection({ tournamentId }: { tournamentId: string }) {
     const canAdd = Number(amount) > 0 && (isAnonymous || selectedPlayer);
 
     return (
-        <div className="space-y-3">
-            <div className="flex items-center gap-2">
-                <Heart className="h-4 w-4 text-pink-500" />
-                <p className="text-sm font-semibold">Prize Pool Donations</p>
-                {(donationData?.total ?? 0) > 0 && (
-                    <Chip size="sm" color="success" variant="flat" className="text-[10px]">
-                        +{donationData?.total} {GAME.currency}
-                    </Chip>
-                )}
-            </div>
-
-            {/* Add donation form */}
-            <div className="space-y-2">
-                <Input
-                    size="sm"
-                    type="number"
-                    label={`Amount (${GAME.currency})`}
-                    placeholder="e.g. 10"
-                    value={amount}
-                    onValueChange={setAmount}
-                    endContent={<span className="text-foreground/40 text-xs">{GAME.currency}</span>}
-                />
-
-                {/* Toggle: Anonymous / Player */}
-                <div className="flex gap-2">
-                    <Button
+        <Modal isOpen={isOpen} onClose={onClose} placement="center" scrollBehavior="inside">
+            <ModalContent>
+                <ModalHeader className="flex items-center gap-2 pb-2">
+                    <Heart className="h-4 w-4 text-pink-500" />
+                    Prize Pool Donations
+                    {(donationData?.total ?? 0) > 0 && (
+                        <Chip size="sm" color="success" variant="flat" className="text-[10px]">
+                            +{donationData?.total} {GAME.currency}
+                        </Chip>
+                    )}
+                </ModalHeader>
+                <ModalBody className="space-y-3 pb-4">
+                    {/* Add donation form */}
+                    <Input
                         size="sm"
-                        variant={isAnonymous ? "solid" : "flat"}
-                        color={isAnonymous ? "secondary" : "default"}
-                        className="flex-1 text-xs"
-                        onPress={() => { setIsAnonymous(true); setSelectedPlayer(null); setPlayerSearch(""); }}
-                        startContent={<UserCircle className="h-3 w-3" />}
-                    >
-                        Anonymous
-                    </Button>
-                    <Button
-                        size="sm"
-                        variant={!isAnonymous ? "solid" : "flat"}
-                        color={!isAnonymous ? "primary" : "default"}
-                        className="flex-1 text-xs"
-                        onPress={() => setIsAnonymous(false)}
-                        startContent={<Users className="h-3 w-3" />}
-                    >
-                        From Player
-                    </Button>
-                </div>
+                        type="number"
+                        label={`Amount (${GAME.currency})`}
+                        placeholder="e.g. 10"
+                        value={amount}
+                        onValueChange={setAmount}
+                        endContent={<span className="text-foreground/40 text-xs">{GAME.currency}</span>}
+                    />
 
-                {/* Player search — only when not anonymous */}
-                {!isAnonymous && (
-                    <div className="space-y-1">
-                        {selectedPlayer ? (
-                            <div className="flex items-center justify-between rounded-lg bg-primary/10 px-3 py-2">
-                                <span className="text-xs font-medium">{selectedPlayer.name}</span>
-                                <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="light"
-                                    onPress={() => { setSelectedPlayer(null); setPlayerSearch(""); }}
-                                >
-                                    <X className="h-3 w-3" />
-                                </Button>
-                            </div>
-                        ) : (
-                            <>
-                                <Input
-                                    size="sm"
-                                    placeholder="Search player..."
-                                    value={playerSearch}
-                                    onValueChange={setPlayerSearch}
-                                />
-                                {players && players.length > 0 && (
-                                    <div className="rounded-lg border border-divider bg-content1 max-h-32 overflow-y-auto">
-                                        {players.map((p) => (
-                                            <button
-                                                key={p.id}
-                                                className="w-full text-left px-3 py-1.5 text-xs hover:bg-default-100 transition-colors"
-                                                onClick={() => {
-                                                    setSelectedPlayer({
-                                                        id: p.id,
-                                                        name: p.displayName || p.user.username,
-                                                    });
-                                                    setPlayerSearch("");
-                                                }}
-                                            >
-                                                {p.displayName || p.user.username}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </>
-                        )}
+                    <div className="flex gap-2">
+                        <Button
+                            size="sm"
+                            variant={isAnonymous ? "solid" : "flat"}
+                            color={isAnonymous ? "secondary" : "default"}
+                            className="flex-1 text-xs"
+                            onPress={() => { setIsAnonymous(true); setSelectedPlayer(null); setPlayerSearch(""); }}
+                            startContent={<UserCircle className="h-3 w-3" />}
+                        >
+                            Anonymous
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant={!isAnonymous ? "solid" : "flat"}
+                            color={!isAnonymous ? "primary" : "default"}
+                            className="flex-1 text-xs"
+                            onPress={() => setIsAnonymous(false)}
+                            startContent={<Users className="h-3 w-3" />}
+                        >
+                            From Player
+                        </Button>
                     </div>
-                )}
 
-                <Button
-                    size="sm"
-                    color="success"
-                    variant="flat"
-                    fullWidth
-                    isDisabled={!canAdd}
-                    isLoading={addDonation.isPending}
-                    startContent={<Plus className="h-3 w-3" />}
-                    onPress={() => addDonation.mutate()}
-                >
-                    Add Donation
-                </Button>
-            </div>
-
-            {/* Existing donations list */}
-            {donationData?.donations && donationData.donations.length > 0 && (
-                <div className="space-y-1">
-                    <p className="text-[10px] text-foreground/40 uppercase tracking-wider">
-                        Donations ({donationData.donations.length})
-                    </p>
-                    {donationData.donations.map((d) => (
-                        <div key={d.id} className="flex items-center justify-between rounded-lg bg-default-50 px-3 py-1.5">
-                            <div>
-                                <span className="text-xs font-semibold text-success">+{d.amount} {GAME.currency}</span>
-                                <span className="text-[10px] text-foreground/40 ml-1.5">
-                                    {d.isAnonymous ? "Anonymous" : d.playerName}
-                                </span>
-                            </div>
-                            <Button
-                                isIconOnly
-                                size="sm"
-                                variant="light"
-                                color="danger"
-                                isLoading={deleteDonation.isPending}
-                                onPress={() => deleteDonation.mutate(d.id)}
-                            >
-                                <Trash2 className="h-3 w-3" />
-                            </Button>
+                    {!isAnonymous && (
+                        <div className="space-y-1">
+                            {selectedPlayer ? (
+                                <div className="flex items-center justify-between rounded-lg bg-primary/10 px-3 py-2">
+                                    <span className="text-xs font-medium">{selectedPlayer.name}</span>
+                                    <Button
+                                        isIconOnly
+                                        size="sm"
+                                        variant="light"
+                                        onPress={() => { setSelectedPlayer(null); setPlayerSearch(""); }}
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <>
+                                    <Input
+                                        size="sm"
+                                        placeholder="Search player..."
+                                        value={playerSearch}
+                                        onValueChange={setPlayerSearch}
+                                    />
+                                    {players && players.length > 0 && (
+                                        <div className="rounded-lg border border-divider bg-content1 max-h-32 overflow-y-auto">
+                                            {players.map((p) => (
+                                                <button
+                                                    key={p.id}
+                                                    className="w-full text-left px-3 py-1.5 text-xs hover:bg-default-100 transition-colors"
+                                                    onClick={() => {
+                                                        setSelectedPlayer({
+                                                            id: p.id,
+                                                            name: p.displayName || p.user.username,
+                                                        });
+                                                        setPlayerSearch("");
+                                                    }}
+                                                >
+                                                    {p.displayName || p.user.username}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
                         </div>
-                    ))}
-                </div>
-            )}
-        </div>
+                    )}
+
+                    <Button
+                        size="sm"
+                        color="success"
+                        variant="flat"
+                        fullWidth
+                        isDisabled={!canAdd}
+                        isLoading={addDonation.isPending}
+                        startContent={<Plus className="h-3 w-3" />}
+                        onPress={() => addDonation.mutate()}
+                    >
+                        Add Donation
+                    </Button>
+
+                    {/* Existing donations list */}
+                    {donationData?.donations && donationData.donations.length > 0 && (
+                        <div className="space-y-1 pt-2 border-t border-divider">
+                            <p className="text-[10px] text-foreground/40 uppercase tracking-wider">
+                                Donations ({donationData.donations.length})
+                            </p>
+                            {donationData.donations.map((d) => (
+                                <div key={d.id} className="flex items-center justify-between rounded-lg bg-default-50 px-3 py-1.5">
+                                    <div>
+                                        <span className="text-xs font-semibold text-success">+{d.amount} {GAME.currency}</span>
+                                        <span className="text-[10px] text-foreground/40 ml-1.5">
+                                            {d.isAnonymous ? "Anonymous" : d.playerName}
+                                        </span>
+                                    </div>
+                                    <Button
+                                        isIconOnly
+                                        size="sm"
+                                        variant="light"
+                                        color="danger"
+                                        isLoading={deleteDonation.isPending}
+                                        onPress={() => deleteDonation.mutate(d.id)}
+                                    >
+                                        <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </ModalBody>
+            </ModalContent>
+        </Modal>
     );
 }
