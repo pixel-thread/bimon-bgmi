@@ -6,10 +6,25 @@ import { type NextRequest } from "next/server";
 const MERIT_ENABLED_KEY = "merit_rating_enabled";
 const PAGE_SIZE = 20;
 
+// Threshold config keys (shared with rate-merit route)
+const THRESHOLD_KEYS = {
+    banThreshold: "merit_auto_ban_threshold",
+    restrictThreshold: "merit_auto_restrict_threshold",
+    restrictMatches: "merit_auto_restrict_matches",
+    minRatings: "merit_min_ratings",
+};
+
+const THRESHOLD_DEFAULTS = {
+    banThreshold: 30,
+    restrictThreshold: 50,
+    restrictMatches: 3,
+    minRatings: 3,
+};
+
 /**
  * GET /api/dashboard/merit
  * Returns merit system status, stats, paginated player list (sorted by lowest merit),
- * and recent ratings.
+ * recent ratings, and auto-action thresholds.
  *
  * Query params:
  *  - page: page number (default 1)
@@ -22,11 +37,21 @@ export async function GET(request: NextRequest) {
         const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
         const skip = (page - 1) * PAGE_SIZE;
 
-        // Get config
-        const config = await prisma.appConfig.findUnique({
-            where: { key: MERIT_ENABLED_KEY },
+        // Get all config in one query
+        const allConfigs = await prisma.appConfig.findMany({
+            where: {
+                key: { in: [MERIT_ENABLED_KEY, ...Object.values(THRESHOLD_KEYS)] },
+            },
         });
-        const isEnabled = config?.value === "true";
+        const configMap = new Map(allConfigs.map((c) => [c.key, c.value]));
+
+        const isEnabled = configMap.get(MERIT_ENABLED_KEY) === "true";
+        const thresholds = {
+            banThreshold: parseInt(configMap.get(THRESHOLD_KEYS.banThreshold) ?? "") || THRESHOLD_DEFAULTS.banThreshold,
+            restrictThreshold: parseInt(configMap.get(THRESHOLD_KEYS.restrictThreshold) ?? "") || THRESHOLD_DEFAULTS.restrictThreshold,
+            restrictMatches: parseInt(configMap.get(THRESHOLD_KEYS.restrictMatches) ?? "") || THRESHOLD_DEFAULTS.restrictMatches,
+            minRatings: parseInt(configMap.get(THRESHOLD_KEYS.minRatings) ?? "") || THRESHOLD_DEFAULTS.minRatings,
+        };
 
         // Get all players sorted by lowest merit first (paginated)
         const [allPlayers, totalPlayers] = await Promise.all([
@@ -41,6 +66,7 @@ export async function GET(request: NextRequest) {
                     isSoloRestricted: true,
                     soloMatchesNeeded: true,
                     isBanned: true,
+                    banReason: true,
                     user: { select: { username: true } },
                     _count: {
                         select: {
@@ -98,6 +124,7 @@ export async function GET(request: NextRequest) {
         return SuccessResponse({
             data: {
                 isEnabled,
+                thresholds,
                 players: allPlayers,
                 totalPlayers,
                 page,
@@ -113,24 +140,62 @@ export async function GET(request: NextRequest) {
 
 /**
  * PATCH /api/dashboard/merit
- * Toggle merit system on/off. Super admin only.
+ * Toggle merit system on/off, or update auto-action thresholds. Super admin only.
+ *
+ * Body: { enabled?: boolean, thresholds?: { banThreshold, restrictThreshold, restrictMatches, minRatings } }
  */
 export async function PATCH(request: NextRequest) {
     try {
         await requireAdmin();
 
         const body = await request.json();
-        const { enabled } = body as { enabled: boolean };
+        const { enabled, thresholds } = body as {
+            enabled?: boolean;
+            thresholds?: {
+                banThreshold?: number;
+                restrictThreshold?: number;
+                restrictMatches?: number;
+                minRatings?: number;
+            };
+        };
 
-        await prisma.appConfig.upsert({
-            where: { key: MERIT_ENABLED_KEY },
-            create: { key: MERIT_ENABLED_KEY, value: String(enabled) },
-            update: { value: String(enabled) },
-        });
+        const ops: Promise<unknown>[] = [];
+
+        // Toggle merit system
+        if (typeof enabled === "boolean") {
+            ops.push(
+                prisma.appConfig.upsert({
+                    where: { key: MERIT_ENABLED_KEY },
+                    create: { key: MERIT_ENABLED_KEY, value: String(enabled) },
+                    update: { value: String(enabled) },
+                })
+            );
+        }
+
+        // Update thresholds
+        if (thresholds) {
+            const updates: [string, number][] = [];
+            if (thresholds.banThreshold !== undefined) updates.push([THRESHOLD_KEYS.banThreshold, thresholds.banThreshold]);
+            if (thresholds.restrictThreshold !== undefined) updates.push([THRESHOLD_KEYS.restrictThreshold, thresholds.restrictThreshold]);
+            if (thresholds.restrictMatches !== undefined) updates.push([THRESHOLD_KEYS.restrictMatches, thresholds.restrictMatches]);
+            if (thresholds.minRatings !== undefined) updates.push([THRESHOLD_KEYS.minRatings, thresholds.minRatings]);
+
+            for (const [key, value] of updates) {
+                ops.push(
+                    prisma.appConfig.upsert({
+                        where: { key },
+                        create: { key, value: String(value) },
+                        update: { value: String(value) },
+                    })
+                );
+            }
+        }
+
+        await Promise.all(ops);
 
         return SuccessResponse({
-            data: { isEnabled: enabled },
-            message: `Merit system ${enabled ? "enabled" : "disabled"}`,
+            data: { updated: true },
+            message: "Merit settings updated",
         });
     } catch (error) {
         return ErrorResponse({ message: "Failed to update merit setting", error });

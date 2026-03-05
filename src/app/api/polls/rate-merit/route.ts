@@ -3,11 +3,31 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 
+// Config keys for auto-action thresholds
+const CONFIG_KEYS = {
+    banThreshold: "merit_auto_ban_threshold",         // default 30
+    restrictThreshold: "merit_auto_restrict_threshold", // default 50
+    restrictMatches: "merit_auto_restrict_matches",     // default 3
+    minRatings: "merit_min_ratings",                    // default 3
+};
+
+const DEFAULTS = {
+    banThreshold: 30,
+    restrictThreshold: 50,
+    restrictMatches: 3,
+    minRatings: 3,
+};
+
 /**
  * POST /api/polls/rate-merit
  * Submit a merit rating for a teammate from a specific tournament.
  *
  * Body: { toPlayerId: string, tournamentId: string, rating: number (1-5) }
+ *
+ * After recalculating the target player's merit score, auto-actions are checked:
+ * - If score <= banThreshold and ratings >= minRatings → auto-ban
+ * - If score <= restrictThreshold and ratings >= minRatings → auto-solo-restrict
+ * - If score recovers above thresholds → lift restrictions
  */
 export async function POST(request: NextRequest) {
     try {
@@ -86,22 +106,65 @@ export async function POST(request: NextRequest) {
             select: { rating: true },
         });
 
+        let meritScore = 100; // default
+        let autoAction: string | null = null;
+
         if (allRatingsReceived.length > 0) {
             const avg =
                 allRatingsReceived.reduce((sum, r) => sum + r.rating, 0) /
                 allRatingsReceived.length;
-            // Convert 1-5 scale to 0-100 merit score
-            const meritScore = Math.round((avg / 5) * 100);
+            meritScore = Math.round((avg / 5) * 100);
 
-            await prisma.player.update({
-                where: { id: toPlayerId },
-                data: { meritScore },
+            // Fetch thresholds + enabled flag from AppConfig
+            const configs = await prisma.appConfig.findMany({
+                where: { key: { in: ["merit_rating_enabled", ...Object.values(CONFIG_KEYS)] } },
             });
+            const configMap = new Map(configs.map((c) => [c.key, c.value]));
+            const isEnabled = configMap.get("merit_rating_enabled") === "true";
+
+            const banThreshold = parseInt(configMap.get(CONFIG_KEYS.banThreshold) ?? "") || DEFAULTS.banThreshold;
+            const restrictThreshold = parseInt(configMap.get(CONFIG_KEYS.restrictThreshold) ?? "") || DEFAULTS.restrictThreshold;
+            const restrictMatches = parseInt(configMap.get(CONFIG_KEYS.restrictMatches) ?? "") || DEFAULTS.restrictMatches;
+            const minRatings = parseInt(configMap.get(CONFIG_KEYS.minRatings) ?? "") || DEFAULTS.minRatings;
+
+            const hasEnoughRatings = allRatingsReceived.length >= minRatings;
+
+            if (isEnabled && hasEnoughRatings && meritScore <= banThreshold) {
+                // Auto-ban
+                await prisma.player.update({
+                    where: { id: toPlayerId },
+                    data: {
+                        meritScore,
+                        isBanned: true,
+                        banReason: `Auto-banned: merit score dropped to ${meritScore}% (threshold: ${banThreshold}%)`,
+                    },
+                });
+                autoAction = "banned";
+            } else if (isEnabled && hasEnoughRatings && meritScore <= restrictThreshold) {
+                // Auto-solo-restrict (only if not already banned)
+                await prisma.player.update({
+                    where: { id: toPlayerId },
+                    data: {
+                        meritScore,
+                        isSoloRestricted: true,
+                        soloMatchesNeeded: restrictMatches,
+                    },
+                });
+                autoAction = "restricted";
+            } else {
+                // Score is healthy — just update score
+                await prisma.player.update({
+                    where: { id: toPlayerId },
+                    data: { meritScore },
+                });
+            }
         }
 
         return SuccessResponse({
-            data: { success: true },
-            message: "Merit rating submitted",
+            data: { success: true, meritScore, autoAction },
+            message: autoAction
+                ? `Merit rating submitted — player auto-${autoAction}`
+                : "Merit rating submitted",
         });
     } catch (error) {
         return ErrorResponse({ message: "Failed to submit merit rating", error });
