@@ -2,6 +2,7 @@ import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
+import { GAME } from "@/lib/game-config";
 
 /**
  * POST /api/royal-pass/buy
@@ -18,7 +19,7 @@ export async function POST() {
 
         const settings = await getSettings();
         if (!settings.enableElitePass) {
-            return ErrorResponse({ message: "Royal Pass is currently disabled", status: 403 });
+            return ErrorResponse({ message: `${GAME.passName} is currently disabled`, status: 403 });
         }
         const RP_PRICE_DISCOUNTED = settings.elitePassPrice;
         const RP_PRICE_FULL = settings.elitePassOrigPrice;
@@ -44,7 +45,7 @@ export async function POST() {
         }
 
         if (user.player.hasRoyalPass) {
-            return ErrorResponse({ message: "You already have Royal Pass!", status: 400 });
+            return ErrorResponse({ message: `You already have ${GAME.passName}!`, status: 400 });
         }
 
         // Lost discount if streak already reached threshold
@@ -54,7 +55,7 @@ export async function POST() {
 
         if (!user.player.wallet || user.player.wallet.balance < rpPrice) {
             return ErrorResponse({
-                message: `Not enough UC. You need ${rpPrice} UC.`,
+                message: `Not enough ${GAME.currency}. You need ${rpPrice} ${GAME.currency}.`,
                 status: 400,
             });
         }
@@ -77,7 +78,7 @@ export async function POST() {
                     playerId: user.player!.id,
                     amount: rpPrice,
                     type: "DEBIT",
-                    description: lostDiscount ? "Royal Pass Purchase (full price)" : "Royal Pass Purchase (75% off)",
+                    description: lostDiscount ? `${GAME.passName} Purchase (full price)` : `${GAME.passName} Purchase (75% off)`,
                 },
             });
 
@@ -125,10 +126,10 @@ export async function POST() {
 
         return SuccessResponse({
             message: lostDiscount
-                ? "Royal Pass activated! 👑 + 🔥 30 UC streak reward created!"
-                : "Royal Pass activated! 👑",
+                ? `${GAME.passName} activated! ${GAME.passEmoji} + 🔥 ${STREAK_REWARD_UC} ${GAME.currency} streak reward created!`
+                : `${GAME.passName} activated! ${GAME.passEmoji}`,
         });
     } catch (error) {
-        return ErrorResponse({ message: "Failed to purchase Royal Pass", error });
+        return ErrorResponse({ message: `Failed to purchase ${GAME.passName}`, error });
     }
 }

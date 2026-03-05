@@ -2,6 +2,7 @@ import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
+import { GAME } from "@/lib/game-config";
 
 /**
  * GET /api/royal-pass
@@ -51,7 +52,7 @@ export async function GET() {
         return SuccessResponse({ data, cache: CACHE.MEDIUM });
     } catch (error) {
         return ErrorResponse({
-            message: "Failed to fetch Royal Pass",
+            message: `Failed to fetch ${GAME.passName}`,
             error,
         });
     }

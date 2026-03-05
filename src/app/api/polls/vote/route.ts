@@ -3,6 +3,7 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 import { getSettings } from "@/lib/settings";
+import { GAME } from "@/lib/game-config";
 
 /**
  * POST /api/polls/vote
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
             const minBalance = user.player.isTrusted ? -200 : -29;
             if (balance < minBalance) {
                 return ErrorResponse({
-                    message: `💰 Not enough UC to vote IN — your balance is ${balance} UC. Top up your wallet to continue.`,
+                    message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — your balance is ${balance} ${GAME.currency}. Top up your wallet to continue.`,
                     status: 403,
                 });
             }

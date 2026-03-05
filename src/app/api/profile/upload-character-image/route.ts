@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { GAME } from "@/lib/game-config";
 import { getAuthEmail } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 import { v2 as cloudinary } from "cloudinary";
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
 
         if (!user.player.hasRoyalPass) {
             return NextResponse.json(
-                { error: "Royal Pass required to upload a character image" },
+                { error: `${GAME.passName} required to upload a character image` },
                 { status: 403 }
             );
         }

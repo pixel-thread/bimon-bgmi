@@ -1,5 +1,6 @@
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
 import { getSettings } from "@/lib/settings";
+import { GAME, GAME_MODE } from "@/lib/game-config";
 
 /**
  * GET /api/settings/public
@@ -12,6 +13,14 @@ export async function GET() {
 
         return SuccessResponse({
             data: {
+                // Game identity
+                gameMode: GAME_MODE,
+                gameName: GAME.gameName,
+                appName: GAME.name,
+                currency: GAME.currency,
+                currencyEmoji: GAME.currencyEmoji,
+                passName: GAME.passName,
+                // Feature flags & values
                 enableTopUps: settings.enableTopUps,
                 enableElitePass: settings.enableElitePass,
                 elitePassPrice: settings.elitePassPrice,
