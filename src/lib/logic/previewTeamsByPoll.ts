@@ -200,24 +200,12 @@ export async function previewTeamsByPoll({
         }
         needed = Math.min(needed, playersForTeams.length);
 
+        // Prefer legends/top players — they can handle smaller teams
         const sorted = [...playersForTeams].sort((a, b) => b.weightedScore - a.weightedScore);
-        const step = sorted.length / needed;
         const pickedIds = new Set<string>();
-        for (let i = 0; i < needed; i++) {
-            const idx = Math.min(Math.floor(i * step + step / 2), sorted.length - 1);
-            if (!pickedIds.has(sorted[idx].id)) {
-                pickedIds.add(sorted[idx].id);
-                leftoverPlayers.push(sorted[idx]);
-            }
-        }
-        if (leftoverPlayers.length < needed) {
-            for (const p of sorted) {
-                if (leftoverPlayers.length >= needed) break;
-                if (!pickedIds.has(p.id)) {
-                    pickedIds.add(p.id);
-                    leftoverPlayers.push(p);
-                }
-            }
+        for (let i = 0; i < needed && i < sorted.length; i++) {
+            pickedIds.add(sorted[i].id);
+            leftoverPlayers.push(sorted[i]);
         }
         playersForTeams = playersForTeams.filter((p) => !pickedIds.has(p.id));
     }
