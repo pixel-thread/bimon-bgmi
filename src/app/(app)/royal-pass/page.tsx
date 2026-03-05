@@ -230,70 +230,59 @@ export default function RoyalPassPage() {
                             </Card>
                         </motion.div>
                     ) : (
-                        /* Buy RP Card */
+                        /* Buy RP — Price Tag */
                         <motion.div
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.05 }}
+                            className="space-y-3"
                         >
-                            <Card className={`relative overflow-hidden border ${lostDiscount
-                                ? "border-pink-500/30"
-                                : "border-yellow-500/30"
-                                }`}>
-                                {/* Glow bg */}
-                                <div className={`absolute inset-0 ${lostDiscount
-                                    ? "bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent"
-                                    : "bg-gradient-to-br from-yellow-500/10 via-amber-500/5 to-transparent"
-                                    }`} />
-
-                                <CardBody className="relative p-5 space-y-4">
-                                    {/* Price display */}
-                                    <div className="text-center">
-                                        {!lostDiscount && (
-                                            <motion.div
-                                                initial={{ scale: 0.8, opacity: 0 }}
-                                                animate={{ scale: 1, opacity: 1 }}
-                                                className="inline-flex items-center gap-1.5 rounded-full bg-red-500/15 px-3 py-1 mb-2"
-                                            >
-                                                <span className="text-[10px] font-black text-red-500 uppercase tracking-wider">75% OFF</span>
-                                                <span className="text-[10px] text-red-400 animate-pulse">⏳ Limited</span>
-                                            </motion.div>
-                                        )}
-                                        <div className="flex items-baseline justify-center gap-2">
-                                            {!lostDiscount && (
-                                                <span className="text-2xl font-bold text-foreground/25 line-through decoration-red-500/60 decoration-2">
-                                                    {RP_PRICE_FULL} {GAME.currencyLabel}
-                                                </span>
-                                            )}
-                                            <span className={`text-4xl font-black ${lostDiscount
-                                                ? "bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent"
-                                                : "bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent"
-                                                }`}>
-                                                {rpPrice} {GAME.currencyLabel}
+                            {/* Price tag */}
+                            <div className="mx-auto w-fit">
+                                <div className="relative rounded-2xl bg-zinc-900 dark:bg-zinc-800 overflow-hidden shadow-xl">
+                                    {/* Old price strip */}
+                                    {!lostDiscount && (
+                                        <div className="bg-amber-500 px-6 py-1.5 text-center">
+                                            <span className="text-sm font-bold text-zinc-900 line-through decoration-red-600 decoration-2">
+                                                {RP_PRICE_FULL} {GAME.currencyLabel}
                                             </span>
                                         </div>
-                                        {!lostDiscount && (
-                                            <p className="text-[11px] text-foreground/40 mt-1">
-                                                You save {RP_PRICE_FULL - RP_PRICE_DISCOUNTED} {GAME.currencyLabel}!
-                                            </p>
-                                        )}
+                                    )}
+                                    {/* New price */}
+                                    <div className="px-8 py-4 text-center">
+                                        <div className="flex items-baseline justify-center gap-1">
+                                            <span className="text-5xl font-black text-white tracking-tight">
+                                                {rpPrice}
+                                            </span>
+                                            <span className="text-lg font-bold text-white/70">
+                                                {GAME.currencyLabel}
+                                            </span>
+                                        </div>
                                     </div>
+                                    {/* Special offer strip */}
+                                    {!lostDiscount && (
+                                        <div className="bg-amber-500 px-6 py-1 text-center">
+                                            <span className="text-[11px] font-black text-zinc-900 uppercase tracking-widest">
+                                                ⚡ Special Offer!
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
 
-                                    {/* Buy button */}
-                                    <Button
-                                        fullWidth
-                                        size="lg"
-                                        className={`h-12 text-base font-bold text-white shadow-lg ${lostDiscount
-                                            ? "bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 shadow-pink-500/20"
-                                            : "bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 shadow-amber-500/20"
-                                            }`}
-                                        onPress={handleBuyRP}
-                                        isDisabled={isPurchasing}
-                                    >
-                                        {isPurchasing ? "Claiming..." : `${GAME.passEmoji} Get ${GAME.passName}`}
-                                    </Button>
-                                </CardBody>
-                            </Card>
+                            {/* Buy button */}
+                            <Button
+                                fullWidth
+                                size="lg"
+                                className={`h-12 text-base font-bold text-white shadow-lg ${lostDiscount
+                                    ? "bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 shadow-pink-500/20"
+                                    : "bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 shadow-amber-500/20"
+                                    }`}
+                                onPress={handleBuyRP}
+                                isDisabled={isPurchasing}
+                            >
+                                {isPurchasing ? "Claiming..." : `${GAME.passEmoji} Get ${GAME.passName}`}
+                            </Button>
                         </motion.div>
                     )}
 
