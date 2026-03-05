@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
                 // Notify recipient
                 await tx.notification.create({
                     data: {
-                        title: "UC Received",
+                        title: `${GAME.currency} Received`,
                         message: `${senderName} sent you ${amount} ${GAME.currency}`,
                         type: "uc_received",
                         userId: toPlayer.user.id,
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
                 // Notify recipient (person being asked)
                 await tx.notification.create({
                     data: {
-                        title: "UC Request",
+                        title: `${GAME.currency} Request`,
                         message: `${senderName} requested ${amount} ${GAME.currency} from you`,
                         type: "uc_request",
                         userId: toPlayer.user.id,
@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ error: "Invalid transfer type" }, { status: 400 });
     } catch (error) {
-        console.error("UC transfer error:", error);
+        console.error(`${GAME.currency} transfer error:`, error);
         return NextResponse.json({ error: "Transfer failed" }, { status: 500 });
     }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import crypto from "crypto";
+import { GAME } from "@/lib/game-config";
 
 // Razorpay platform fee (2.4%)
 const PLATFORM_FEE_PERCENT = 2.4;
@@ -108,14 +109,14 @@ export async function POST(req: Request) {
                 data: {
                     amount: ucAmount,
                     type: "CREDIT",
-                    description: `Added ${ucAmount} UC via Razorpay`,
+                    description: `Added ${ucAmount} ${GAME.currency} via Razorpay`,
                     playerId: payment.playerId,
                 },
             });
         });
 
         console.log(
-            `Webhook: Credited ${ucAmount} UC to player ${payment.playerId} (order: ${razorpayOrderId})`
+            `Webhook: Credited ${ucAmount} ${GAME.currency} to player ${payment.playerId} (order: ${razorpayOrderId})`
         );
 
         return NextResponse.json({ status: "ok", ucAdded: ucAmount });

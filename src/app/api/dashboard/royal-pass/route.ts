@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
+import { GAME } from "@/lib/game-config";
 
 async function checkAdmin() {
     const userId = await getAuthEmail();
@@ -15,7 +16,7 @@ async function checkAdmin() {
 
 /**
  * GET /api/dashboard/royal-pass
- * Admin: Fetch all Royal Pass holders with player details.
+ * Admin: Fetch all ${GAME.passName} holders with player details.
  */
 export async function GET(request: Request) {
     try {
@@ -128,14 +129,14 @@ export async function GET(request: Request) {
 
         return SuccessResponse({ data });
     } catch (error) {
-        console.error("[Royal Pass API Error]", error);
-        return ErrorResponse({ message: "Failed to fetch Royal Pass data", error });
+        console.error(`[${GAME.passName} API Error]`, error);
+        return ErrorResponse({ message: `Failed to fetch ${GAME.passName} data`, error });
     }
 }
 
 /**
  * POST /api/dashboard/royal-pass
- * Admin: Grant Royal Pass to a player.
+ * Admin: Grant ${GAME.passName} to a player.
  */
 export async function POST(request: Request) {
     try {
@@ -175,13 +176,13 @@ export async function POST(request: Request) {
 
         return SuccessResponse({ data: royalPass });
     } catch (error) {
-        return ErrorResponse({ message: "Failed to grant Royal Pass", error });
+        return ErrorResponse({ message: `Failed to grant ${GAME.passName}`, error });
     }
 }
 
 /**
  * PATCH /api/dashboard/royal-pass
- * Admin: Toggle Royal Pass status for a player.
+ * Admin: Toggle ${GAME.passName} status for a player.
  */
 export async function PATCH(request: Request) {
     try {
@@ -205,6 +206,6 @@ export async function PATCH(request: Request) {
 
         return SuccessResponse({ data: updated });
     } catch (error) {
-        return ErrorResponse({ message: "Failed to update Royal Pass status", error });
+        return ErrorResponse({ message: `Failed to update ${GAME.passName} status`, error });
     }
 }

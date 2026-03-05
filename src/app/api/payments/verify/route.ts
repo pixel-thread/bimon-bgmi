@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
+import { GAME } from "@/lib/game-config";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 import crypto from "crypto";
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
                 data: {
                     amount: ucAmount,
                     type: "CREDIT",
-                    description: `Added ${ucAmount} UC via Razorpay`,
+                    description: `Added ${ucAmount} ${GAME.currency} via Razorpay`,
                     playerId: payment.playerId,
                 },
             });
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
 
         return SuccessResponse({
             data: { ucAdded: ucAmount },
-            message: `Successfully added ${ucAmount} UC to your balance`,
+            message: `Successfully added ${ucAmount} ${GAME.currency} to your balance`,
             cache: CACHE.NONE,
         });
     } catch (error) {

@@ -92,11 +92,11 @@ export async function PATCH(
                 where: {
                     type: "uc_request",
                     userId: transfer.toPlayer.user.id,
-                    message: { contains: `${transfer.amount} UC` },
+                    message: { contains: `${transfer.amount} ${GAME.currency}` },
                 },
                 data: {
                     type: "uc_request_approved",
-                    title: "UC Request Approved",
+                    title: `${GAME.currency} Request Approved`,
                     isRead: true,
                 },
             });
@@ -109,7 +109,7 @@ export async function PATCH(
 
             await tx.notification.create({
                 data: {
-                    title: "UC Request Approved",
+                    title: `${GAME.currency} Request Approved`,
                     message: approveMsg,
                     type: "uc_approved",
                     userId: transfer.fromPlayer.user.id,
