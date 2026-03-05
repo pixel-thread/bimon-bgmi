@@ -1,9 +1,7 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth";
-
-const REFERRAL_COMMISSION = 20;
-const REFERRAL_TOURNAMENTS_REQUIRED = 5;
+import { getSettings } from "@/lib/settings";
 
 /**
  * GET /api/dashboard/referrals
@@ -16,6 +14,10 @@ export async function GET() {
         if (!user || user.role !== "SUPER_ADMIN") {
             return ErrorResponse({ message: "Unauthorized", status: 403 });
         }
+
+        const settings = await getSettings();
+        const REFERRAL_COMMISSION = settings.referralReward;
+        const REFERRAL_TOURNAMENTS_REQUIRED = settings.referralTournamentsReq;
 
         const referrals = await prisma.referral.findMany({
             include: {

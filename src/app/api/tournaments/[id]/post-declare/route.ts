@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
-
-const REFERRAL_COMMISSION = 20;
-const REFERRAL_TOURNAMENTS_REQUIRED = 5;
+import { getSettings } from "@/lib/settings";
 
 /**
  * POST /api/tournaments/[id]/post-declare
@@ -39,6 +37,11 @@ export async function POST(
         if (!tournament.isWinnerDeclared) {
             return NextResponse.json({ error: "Winners not declared yet" }, { status: 400 });
         }
+
+        // Load dynamic settings
+        const settings = await getSettings();
+        const REFERRAL_COMMISSION = settings.referralReward;
+        const REFERRAL_TOURNAMENTS_REQUIRED = settings.referralTournamentsReq;
 
         // Get all participant player IDs via TeamPlayerStats (works for migrated data)
         const matchIds = (await prisma.match.findMany({

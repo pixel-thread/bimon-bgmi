@@ -2,9 +2,9 @@ import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
 import { NextRequest } from "next/server";
+import { getSettings } from "@/lib/settings";
 
 const NAME_CHANGE_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
-const NAME_CHANGE_FEE = 1; // UC
 
 /**
  * POST /api/profile/update-ign
@@ -59,6 +59,8 @@ export async function POST(req: NextRequest) {
         }
 
         // Check cooldown if display name is being changed
+        const settings = await getSettings();
+        const NAME_CHANGE_FEE = settings.nameChangeFee;
         let nameChangeFee = 0;
         if (displayName && displayName !== user.player.displayName) {
             const lastChange = user.player.displayNameLastChangeAt;

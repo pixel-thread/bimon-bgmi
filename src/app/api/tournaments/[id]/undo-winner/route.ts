@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
-
-const REFERRAL_COMMISSION = 20;
+import { getSettings } from "@/lib/settings";
 
 /**
  * POST /api/tournaments/[id]/undo-winner
@@ -34,6 +33,9 @@ export async function POST(
         });
         if (!tournament) return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
         if (!tournament.isWinnerDeclared) return NextResponse.json({ error: "Winners not declared yet" }, { status: 400 });
+
+        const settings = await getSettings();
+        const REFERRAL_COMMISSION = settings.referralReward;
 
         // Get all winning player IDs
         const winners = await prisma.tournamentWinner.findMany({

@@ -1,9 +1,7 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth";
-
-const REFERRAL_COMMISSION = 20;
-const REFERRAL_TOURNAMENTS_REQUIRED = 5;
+import { getSettings } from "@/lib/settings";
 
 /**
  * GET /api/referrals
@@ -15,6 +13,10 @@ export async function GET() {
         if (!user) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
+
+        const settings = await getSettings();
+        const REFERRAL_COMMISSION = settings.referralReward;
+        const REFERRAL_TOURNAMENTS_REQUIRED = settings.referralTournamentsReq;
 
         // Get all referrals where current user is the promoter
         const referrals = await prisma.referral.findMany({

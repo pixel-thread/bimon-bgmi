@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { requireAdmin } from "@/lib/auth";
-
-const STREAK_MILESTONE = 8;
-const STREAK_REWARD_UC = 30;
+import { getSettings } from "@/lib/settings";
 
 /**
  * POST /api/tournaments/[id]/update-streaks
@@ -34,6 +32,10 @@ export async function POST(
         if (!tournament.isWinnerDeclared) {
             return NextResponse.json({ error: "Winners must be declared first" }, { status: 400 });
         }
+
+        const settings = await getSettings();
+        const STREAK_MILESTONE = settings.streakMilestone;
+        const STREAK_REWARD_UC = settings.streakRewardAmount;
 
         // Find all players who played in this tournament
         const matchPlayed = await prisma.matchPlayerPlayed.findMany({
