@@ -24,14 +24,18 @@ export function LastRouteRedirector() {
                         if (res.ok) {
                             router.replace(lastRoute);
                         } else {
-                            // Route no longer exists — clear stale entry
+                            // Route no longer exists — go to community
                             localStorage.removeItem(STORAGE_KEY);
+                            router.replace("/community");
                         }
                     })
                     .catch(() => {
                         // Network error — just redirect anyway (offline PWA)
                         router.replace(lastRoute);
                     });
+            } else {
+                // No saved route — default to community
+                router.replace("/community");
             }
         } catch {
             // localStorage unavailable — do nothing

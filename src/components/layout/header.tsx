@@ -44,14 +44,14 @@ import { GAME } from "@/lib/game-config";
 const navItems = [
     { label: "Players", href: "/players", icon: Users },
     { label: "Vote", href: "/vote", icon: Vote },
-    { label: "Wallet", href: "/wallet", icon: Wallet },
+    { label: "Community", href: "/community", icon: MessageCircle },
 ];
 
 const moreItems = [
     { label: "Winners", href: "/winners", icon: Trophy },
     { label: "Jobs", href: "/jobs", icon: Briefcase },
     { label: "Refer", href: "/refer", icon: Gift },
-    { label: "Community", href: "/community", icon: MessageCircle },
+    { label: "Wallet", href: "/wallet", icon: Wallet },
     { label: "Notifications", href: "/notifications", icon: Bell },
     { label: "Rules", href: "/rules", icon: BookOpen },
 ];
