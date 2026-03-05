@@ -2,6 +2,7 @@ import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
+import { getSettings } from "@/lib/settings";
 
 /**
  * POST /api/polls/vote
@@ -118,8 +119,10 @@ export async function POST(request: NextRequest) {
         // Lucky voter lottery — weighted by losses: biggest losers get highest chance
         let isLuckyVoter = poll.luckyVoterId === playerId;
         const entryFee = poll.tournament?.fee ?? 0;
+        const settings = await getSettings();
 
         if (
+            settings.enableLuckyVoters &&
             isFirstVote &&
             !isLuckyVoter &&
             !poll.luckyVoterId &&

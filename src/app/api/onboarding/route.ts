@@ -2,6 +2,7 @@ import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail, getAuthName, getAuthImage } from "@/lib/auth";
 import { type NextRequest } from "next/server";
+import { getSettings } from "@/lib/settings";
 
 /**
  * POST /api/onboarding
@@ -90,8 +91,9 @@ export async function POST(request: NextRequest) {
                     },
                 });
 
-                // Create referral record if a valid referral code was provided
-                if (referralCode) {
+                // Create referral record if referrals enabled and valid code provided
+                const settings = await getSettings();
+                if (settings.enableReferrals && referralCode) {
                     const promoter = await tx.user.findFirst({
                         where: { username: referralCode },
                     });

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth";
+import { getSettings } from "@/lib/settings";
 
 /**
  * GET /api/royal-pass
@@ -28,9 +29,10 @@ export async function GET() {
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
 
+        const settings = await getSettings();
         const hasRoyalPass = player.hasRoyalPass ?? false;
         const currentStreak = player.streak?.current ?? 0;
-        const nextRewardAt = 8; // Streak milestone for RP reward
+        const nextRewardAt = settings.streakMilestone;
 
         const data = {
             hasRoyalPass,

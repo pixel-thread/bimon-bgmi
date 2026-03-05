@@ -1,11 +1,7 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
-
-const RP_PRICE_DISCOUNTED = 5; // 75% off from 20 UC
-const RP_PRICE_FULL = 20; // Full price when discount lost
-const STREAK_THRESHOLD = 8; // Streak milestone for RP reward
-const STREAK_REWARD_UC = 30; // UC reward for hitting streak milestone
+import { getSettings } from "@/lib/settings";
 
 /**
  * POST /api/royal-pass/buy
@@ -19,6 +15,15 @@ export async function POST() {
         if (!email) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
+
+        const settings = await getSettings();
+        if (!settings.enableElitePass) {
+            return ErrorResponse({ message: "Royal Pass is currently disabled", status: 403 });
+        }
+        const RP_PRICE_DISCOUNTED = settings.elitePassPrice;
+        const RP_PRICE_FULL = settings.elitePassOrigPrice;
+        const STREAK_THRESHOLD = settings.streakMilestone;
+        const STREAK_REWARD_UC = settings.streakRewardAmount;
 
         const user = await prisma.user.findUnique({
             where: { email },

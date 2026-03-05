@@ -26,11 +26,12 @@ export async function POST(req: NextRequest) {
 
         // Validate displayName if provided
         if (displayName) {
+            const settings = await getSettings();
             if (displayName.length < 2) {
                 return ErrorResponse({ message: "Game Name must be at least 2 characters", status: 400 });
             }
-            if (displayName.length > 14) {
-                return ErrorResponse({ message: "Game Name must be 14 characters or less", status: 400 });
+            if (displayName.length > settings.maxIGNLength) {
+                return ErrorResponse({ message: `Game Name must be ${settings.maxIGNLength} characters or less`, status: 400 });
             }
         }
 
