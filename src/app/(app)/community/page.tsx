@@ -317,7 +317,7 @@ export default function CommunityPage() {
         onError: (err: Error) => toast.error(err.message),
     });
 
-    // Vote on poll
+    // Vote on poll (optimistic)
     const voteMutation = useMutation({
         mutationFn: async ({ pollId, optionId }: { pollId: string; optionId: string }) => {
             const res = await fetch("/api/community/polls", {
@@ -329,8 +329,39 @@ export default function CommunityPage() {
             if (!res.ok) throw new Error(json.error || "Failed");
             return json;
         },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["community-polls"] }),
-        onError: (err: Error) => toast.error(err.message),
+        onMutate: async ({ pollId, optionId }) => {
+            await queryClient.cancelQueries({ queryKey: ["community-polls"] });
+            const previous = queryClient.getQueryData<PollDTO[]>(["community-polls"]);
+
+            queryClient.setQueryData<PollDTO[]>(["community-polls"], (old) =>
+                (old ?? []).map((poll) => {
+                    if (poll.id !== pollId) return poll;
+                    const prevOptionId = poll.myVoteOptionId;
+                    const isChangingVote = prevOptionId !== null;
+                    return {
+                        ...poll,
+                        myVoteOptionId: optionId,
+                        totalVotes: isChangingVote ? poll.totalVotes : poll.totalVotes + 1,
+                        options: poll.options.map((o) => ({
+                            ...o,
+                            votes: o.id === optionId
+                                ? o.votes + 1
+                                : o.id === prevOptionId
+                                    ? o.votes - 1
+                                    : o.votes,
+                        })),
+                    };
+                })
+            );
+            return { previous };
+        },
+        onError: (err: Error, _vars, context) => {
+            if (context?.previous) {
+                queryClient.setQueryData(["community-polls"], context.previous);
+            }
+            toast.error(err.message);
+        },
+        onSettled: () => queryClient.invalidateQueries({ queryKey: ["community-polls"] }),
     });
 
     // Suggest option
