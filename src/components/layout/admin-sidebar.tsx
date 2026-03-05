@@ -71,6 +71,7 @@ const sidebarItems: SidebarSection[] = [
         section: "Admin",
         items: [
             { label: "Admins", href: "/dashboard/admins", icon: Shield, superAdminOnly: true },
+            { label: "Settings", href: "/dashboard/settings", icon: Settings, superAdminOnly: true },
         ],
     },
 ];

@@ -1,0 +1,505 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import {
+    Card,
+    CardBody,
+    CardHeader,
+    Input,
+    Switch,
+    Button,
+    Divider,
+    Chip,
+    Textarea,
+    Spinner,
+} from "@heroui/react";
+import {
+    DollarSign,
+    Crown,
+    Users,
+    Clover,
+    Gamepad2,
+    Save,
+    RotateCcw,
+    Shield,
+} from "lucide-react";
+import { toast } from "sonner";
+
+/** Real WhatsApp SVG icon */
+function WhatsAppIcon({ className }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+        </svg>
+    );
+}
+
+interface Settings {
+    orgCutPercent: number;
+    defaultEntryFee: number;
+    enableTopUps: boolean;
+    nameChangeFee: number;
+    enableElitePass: boolean;
+    elitePassPrice: number;
+    elitePassOrigPrice: number;
+    streakMilestone: number;
+    streakRewardAmount: number;
+    enableReferrals: boolean;
+    referralReward: number;
+    referralTournamentsReq: number;
+    enableLuckyVoters: boolean;
+    allowedTeamSizes: string;
+    maxIGNLength: number;
+    defaultPollDays: number;
+    whatsAppGroups: string[];
+    welcomeMessage: string;
+    customRules: string;
+    meritBanThreshold: number;
+    meritSoloRestrictThreshold: number;
+}
+
+export default function SettingsPage() {
+    const [settings, setSettings] = useState<Settings | null>(null);
+    const [original, setOriginal] = useState<Settings | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        fetch("/api/settings")
+            .then((r) => r.json())
+            .then((res) => {
+                if (res.success) {
+                    setSettings(res.data);
+                    setOriginal(res.data);
+                }
+            })
+            .finally(() => setLoading(false));
+    }, []);
+
+    const hasChanges = JSON.stringify(settings) !== JSON.stringify(original);
+
+    const handleSave = async () => {
+        if (!settings) return;
+        setSaving(true);
+        try {
+            const res = await fetch("/api/settings", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(settings),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setOriginal(data.data);
+                setSettings(data.data);
+                toast.success("Settings saved!");
+            } else {
+                toast.error(data.message || "Failed to save");
+            }
+        } catch {
+            toast.error("Failed to save settings");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleReset = () => {
+        if (original) setSettings({ ...original });
+    };
+
+    const update = (key: keyof Settings, value: any) => {
+        setSettings((prev) => prev ? { ...prev, [key]: value } : prev);
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Spinner size="lg" />
+            </div>
+        );
+    }
+
+    if (!settings) {
+        return (
+            <div className="text-center text-foreground/50 py-20">
+                Failed to load settings.
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6 max-w-4xl">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold">Settings</h1>
+                    <p className="text-sm text-foreground/50">
+                        Configure platform-wide settings
+                    </p>
+                </div>
+                <div className="flex gap-2">
+                    <Button
+                        variant="flat"
+                        size="sm"
+                        startContent={<RotateCcw className="h-4 w-4" />}
+                        isDisabled={!hasChanges}
+                        onPress={handleReset}
+                    >
+                        Reset
+                    </Button>
+                    <Button
+                        color="primary"
+                        size="sm"
+                        startContent={<Save className="h-4 w-4" />}
+                        isDisabled={!hasChanges}
+                        isLoading={saving}
+                        onPress={handleSave}
+                    >
+                        Save Changes
+                    </Button>
+                </div>
+            </div>
+
+            {/* Financial */}
+            <Card>
+                <CardHeader className="flex gap-2 items-center pb-0">
+                    <DollarSign className="h-5 w-5 text-warning" />
+                    <div>
+                        <h2 className="text-lg font-semibold">Financial</h2>
+                        <p className="text-xs text-foreground/50">Prize pool cuts, fees, and top-ups</p>
+                    </div>
+                </CardHeader>
+                <CardBody className="gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                            label="Platform Cut %"
+                            type="number"
+                            size="sm"
+                            value={String(settings.orgCutPercent)}
+                            onValueChange={(v) => update("orgCutPercent", Number(v))}
+                            description="% taken from prize pool"
+                            endContent={<span className="text-foreground/40">%</span>}
+                        />
+                        <Input
+                            label="Default Entry Fee"
+                            type="number"
+                            size="sm"
+                            value={String(settings.defaultEntryFee)}
+                            onValueChange={(v) => update("defaultEntryFee", Number(v))}
+                            description="Default tournament entry fee (UC)"
+                            endContent={<span className="text-foreground/40">UC</span>}
+                        />
+                        <Input
+                            label="Name Change Fee"
+                            type="number"
+                            size="sm"
+                            value={String(settings.nameChangeFee)}
+                            onValueChange={(v) => update("nameChangeFee", Number(v))}
+                            description="Cost to change IGN (UC)"
+                            endContent={<span className="text-foreground/40">UC</span>}
+                        />
+                    </div>
+                    <Divider />
+                    <Switch
+                        isSelected={settings.enableTopUps}
+                        onValueChange={(v) => update("enableTopUps", v)}
+                        size="sm"
+                    >
+                        Enable Top-Ups (UC purchases)
+                    </Switch>
+                </CardBody>
+            </Card>
+
+            {/* Royal Pass */}
+            <Card>
+                <CardHeader className="flex gap-2 items-center pb-0">
+                    <Crown className="h-5 w-5 text-warning" />
+                    <div>
+                        <h2 className="text-lg font-semibold">Royal Pass</h2>
+                        <p className="text-xs text-foreground/50">Premium pass pricing and streak rewards</p>
+                    </div>
+                </CardHeader>
+                <CardBody className="gap-4">
+                    <Switch
+                        isSelected={settings.enableElitePass}
+                        onValueChange={(v) => update("enableElitePass", v)}
+                        size="sm"
+                    >
+                        Enable Royal Pass
+                    </Switch>
+                    {settings.enableElitePass && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input
+                                label="Royal Pass Price"
+                                type="number"
+                                size="sm"
+                                value={String(settings.elitePassPrice)}
+                                onValueChange={(v) => update("elitePassPrice", Number(v))}
+                                endContent={<span className="text-foreground/40">UC</span>}
+                            />
+                            <Input
+                                label="Original Price (strikethrough)"
+                                type="number"
+                                size="sm"
+                                value={String(settings.elitePassOrigPrice)}
+                                onValueChange={(v) => update("elitePassOrigPrice", Number(v))}
+                                endContent={<span className="text-foreground/40">UC</span>}
+                            />
+                            <Input
+                                label="Streak Milestone"
+                                type="number"
+                                size="sm"
+                                value={String(settings.streakMilestone)}
+                                onValueChange={(v) => update("streakMilestone", Number(v))}
+                                description="Tournaments needed for streak reward"
+                            />
+                            <Input
+                                label="Streak Reward"
+                                type="number"
+                                size="sm"
+                                value={String(settings.streakRewardAmount)}
+                                onValueChange={(v) => update("streakRewardAmount", Number(v))}
+                                endContent={<span className="text-foreground/40">UC</span>}
+                            />
+                        </div>
+                    )}
+                </CardBody>
+            </Card>
+
+            {/* Referrals */}
+            <Card>
+                <CardHeader className="flex gap-2 items-center pb-0">
+                    <Users className="h-5 w-5 text-primary" />
+                    <div>
+                        <h2 className="text-lg font-semibold">Referrals</h2>
+                        <p className="text-xs text-foreground/50">Referral rewards and requirements</p>
+                    </div>
+                </CardHeader>
+                <CardBody className="gap-4">
+                    <Switch
+                        isSelected={settings.enableReferrals}
+                        onValueChange={(v) => update("enableReferrals", v)}
+                        size="sm"
+                    >
+                        Enable Referrals
+                    </Switch>
+                    {settings.enableReferrals && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input
+                                label="Referral Reward"
+                                type="number"
+                                size="sm"
+                                value={String(settings.referralReward)}
+                                onValueChange={(v) => update("referralReward", Number(v))}
+                                description="UC earned per referral"
+                                endContent={<span className="text-foreground/40">UC</span>}
+                            />
+                            <Input
+                                label="Tournaments Required"
+                                type="number"
+                                size="sm"
+                                value={String(settings.referralTournamentsReq)}
+                                onValueChange={(v) => update("referralTournamentsReq", Number(v))}
+                                description="Referee must play this many before reward"
+                            />
+                        </div>
+                    )}
+                </CardBody>
+            </Card>
+
+            {/* Lucky Voters */}
+            <Card>
+                <CardHeader className="flex gap-2 items-center pb-0">
+                    <Clover className="h-5 w-5 text-success" />
+                    <div>
+                        <h2 className="text-lg font-semibold">Lucky Voters</h2>
+                        <p className="text-xs text-foreground/50">Random voter rewards</p>
+                    </div>
+                </CardHeader>
+                <CardBody>
+                    <Switch
+                        isSelected={settings.enableLuckyVoters}
+                        onValueChange={(v) => update("enableLuckyVoters", v)}
+                        size="sm"
+                    >
+                        Enable Lucky Voters
+                    </Switch>
+                </CardBody>
+            </Card>
+
+            {/* Gameplay */}
+            <Card>
+                <CardHeader className="flex gap-2 items-center pb-0">
+                    <Gamepad2 className="h-5 w-5 text-secondary" />
+                    <div>
+                        <h2 className="text-lg font-semibold">Gameplay</h2>
+                        <p className="text-xs text-foreground/50">Team sizes, IGN limits, poll duration</p>
+                    </div>
+                </CardHeader>
+                <CardBody className="gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                            label="Max IGN Length"
+                            type="number"
+                            size="sm"
+                            value={String(settings.maxIGNLength)}
+                            onValueChange={(v) => update("maxIGNLength", Number(v))}
+                        />
+                        <Input
+                            label="Default Poll Days"
+                            type="number"
+                            size="sm"
+                            value={String(settings.defaultPollDays)}
+                            onValueChange={(v) => update("defaultPollDays", Number(v))}
+                            description="Default poll duration text"
+                        />
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium mb-2">Allowed Team Sizes</p>
+                        <div className="flex flex-wrap gap-2">
+                            {["SOLO", "DUO", "TRIO", "SQUAD"].map((size) => {
+                                const active = settings.allowedTeamSizes.includes(size);
+                                return (
+                                    <Chip
+                                        key={size}
+                                        variant={active ? "solid" : "bordered"}
+                                        color={active ? "primary" : "default"}
+                                        className="cursor-pointer"
+                                        onClick={() => {
+                                            const sizes = settings.allowedTeamSizes
+                                                .split(",")
+                                                .filter(Boolean);
+                                            if (active) {
+                                                update(
+                                                    "allowedTeamSizes",
+                                                    sizes.filter((s) => s !== size).join(",")
+                                                );
+                                            } else {
+                                                update(
+                                                    "allowedTeamSizes",
+                                                    [...sizes, size].join(",")
+                                                );
+                                            }
+                                        }}
+                                    >
+                                        {size}
+                                    </Chip>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </CardBody>
+            </Card>
+
+            {/* Merit System */}
+            <Card>
+                <CardHeader className="flex gap-2 items-center pb-0">
+                    <Shield className="h-5 w-5 text-danger" />
+                    <div>
+                        <h2 className="text-lg font-semibold">Merit System</h2>
+                        <p className="text-xs text-foreground/50">Auto-actions based on merit score thresholds</p>
+                    </div>
+                </CardHeader>
+                <CardBody className="gap-4">
+                    <p className="text-xs text-foreground/40">
+                        When a player&apos;s merit score drops to or below these thresholds, the action is applied automatically. Set to 0 to disable.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                            label="🚫 Auto-Ban Threshold"
+                            type="number"
+                            size="sm"
+                            value={String(settings.meritBanThreshold ?? 0)}
+                            onValueChange={(v) => update("meritBanThreshold", Number(v))}
+                            description="Full ban at this merit %"
+                            endContent={<span className="text-foreground/40">%</span>}
+                        />
+                        <Input
+                            label="⚠️ Solo-Restrict Threshold"
+                            type="number"
+                            size="sm"
+                            value={String(settings.meritSoloRestrictThreshold ?? 0)}
+                            onValueChange={(v) => update("meritSoloRestrictThreshold", Number(v))}
+                            description="Warning zone at this merit %"
+                            endContent={<span className="text-foreground/40">%</span>}
+                        />
+                    </div>
+                </CardBody>
+            </Card>
+
+            {/* Community */}
+            <Card>
+                <CardHeader className="flex gap-2 items-center pb-0">
+                    <div className="w-5 h-5 text-[#25D366]">
+                        <WhatsAppIcon className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-semibold">Community</h2>
+                        <p className="text-xs text-foreground/50">WhatsApp groups and welcome message</p>
+                    </div>
+                </CardHeader>
+                <CardBody className="gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                            label="WhatsApp Group 1"
+                            size="sm"
+                            value={(settings.whatsAppGroups || [])[0] || ""}
+                            onValueChange={(v) => {
+                                const groups = [...(settings.whatsAppGroups || ["", ""])];
+                                groups[0] = v;
+                                update("whatsAppGroups", groups.filter((_, i) => i < 2));
+                            }}
+                            placeholder="https://chat.whatsapp.com/..."
+                            startContent={<WhatsAppIcon className="w-4 h-4 text-[#25D366]" />}
+                        />
+                        <Input
+                            label="WhatsApp Group 2"
+                            size="sm"
+                            value={(settings.whatsAppGroups || [])[1] || ""}
+                            onValueChange={(v) => {
+                                const groups = [...(settings.whatsAppGroups || ["", ""])];
+                                groups[1] = v;
+                                update("whatsAppGroups", groups.filter((_, i) => i < 2));
+                            }}
+                            placeholder="https://chat.whatsapp.com/..."
+                            startContent={<WhatsAppIcon className="w-4 h-4 text-[#25D366]" />}
+                        />
+                    </div>
+                    <Textarea
+                        label="Welcome Message"
+                        size="sm"
+                        value={settings.welcomeMessage}
+                        onValueChange={(v) => update("welcomeMessage", v)}
+                        placeholder="Welcome to BIMON!"
+                        minRows={2}
+                    />
+                </CardBody>
+            </Card>
+
+            {/* Sticky save bar */}
+            {hasChanges && (
+                <div className="sticky bottom-4 flex justify-end">
+                    <Card className="shadow-lg border border-primary/20">
+                        <CardBody className="flex-row items-center gap-3 py-2 px-4">
+                            <span className="text-sm text-foreground/60">Unsaved changes</span>
+                            <Button
+                                variant="flat"
+                                size="sm"
+                                onPress={handleReset}
+                            >
+                                Discard
+                            </Button>
+                            <Button
+                                color="primary"
+                                size="sm"
+                                isLoading={saving}
+                                onPress={handleSave}
+                            >
+                                Save
+                            </Button>
+                        </CardBody>
+                    </Card>
+                </div>
+            )}
+        </div>
+    );
+}
