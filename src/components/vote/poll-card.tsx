@@ -552,6 +552,17 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="max-w-2xl mx-auto"
         >
+            {/* Donation Tag - Outside but attached to poll (v1 style) */}
+            {donationTotal > 0 && theme && (
+                <div className="flex justify-center mb-[-8px] relative z-10">
+                    {poll.donations.donations.map((d, i) => (
+                        <div key={i} className={`inline-flex items-center px-4 py-1.5 rounded-lg bg-gradient-to-r ${theme.header} text-white text-sm font-semibold shadow-lg`}>
+                            <span>{d.isAnonymous ? "Anonymous" : (d.playerName || "Community")} donated&nbsp;</span>
+                            <span>{d.amount} {GAME.currencyLabel}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
             <div
                 className={`relative rounded-xl overflow-hidden transition-all duration-700 ease-in-out ${theme
                     ? theme.card
@@ -627,12 +638,6 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                         </p>
                                     </div>
                                 </div>
-                                {/* Donations */}
-                                {donationTotal > 0 && poll.donations.donations.map((d, i) => (
-                                    <p key={i} className="text-[10px] text-white/70 text-center">
-                                        ❤️ {d.isAnonymous ? "Anonymous" : d.playerName} donated: {d.amount} {GAME.currencyLabel}
-                                    </p>
-                                ))}
                                 {/* Prize breakdown ? button */}
                                 <PrizeBreakdownTooltip
                                     prizePool={prizePool}
