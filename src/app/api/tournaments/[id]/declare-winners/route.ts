@@ -169,7 +169,7 @@ export async function POST(
             getPlayerRecentWins(allWinningPlayerIds, tournament.seasonId || "", 6),
             prisma.teamPlayerStats.groupBy({
                 by: ["playerId"],
-                where: { playerId: { in: allWinningPlayerIds }, matchId: { in: matchIds } },
+                where: { playerId: { in: allWinningPlayerIds }, matchId: { in: matchIds }, present: true },
                 _count: { matchId: true },
             }),
             // Detect solo via teamPlayerStats

@@ -62,6 +62,7 @@ export async function GET(
                 where: {
                     playerId: { in: playerIds },
                     matchId: { in: matchIds },
+                    present: true,
                 },
                 _count: { matchId: true },
             }),
