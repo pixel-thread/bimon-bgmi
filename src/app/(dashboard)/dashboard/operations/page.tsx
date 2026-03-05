@@ -150,18 +150,6 @@ export default function OperationsPage() {
 
     const selected = tournaments.find((t) => t.id === selectedId);
 
-    // Fetch donation total for button badge
-    const { data: donationTotal = 0 } = useQuery<number>({
-        queryKey: ["donation-total", selectedId],
-        queryFn: async () => {
-            const res = await fetch(`/api/tournaments/${selectedId}/donations`);
-            if (!res.ok) return 0;
-            const json = await res.json();
-            return json.data?.total ?? 0;
-        },
-        enabled: !!selectedId,
-    });
-
     // Auto-select first active tournament
     useEffect(() => {
         if (tournaments.length > 0) {
@@ -537,18 +525,13 @@ export default function OperationsPage() {
                                     Edit
                                 </Button>
                                 <Button
+                                    isIconOnly
                                     size="sm"
                                     color="secondary"
                                     variant="flat"
-                                    startContent={<Heart className="h-3 w-3" />}
                                     onPress={donationModal.onOpen}
                                 >
-                                    Donations
-                                    {selected && donationTotal > 0 && (
-                                        <Chip size="sm" color="success" variant="flat" className="text-[10px] ml-1 h-4">
-                                            +{donationTotal}
-                                        </Chip>
-                                    )}
+                                    <Heart className="h-3.5 w-3.5" />
                                 </Button>
                                 {isSuperAdmin && (
                                     <Button
