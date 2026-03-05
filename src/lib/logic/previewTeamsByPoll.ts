@@ -187,26 +187,46 @@ export async function previewTeamsByPoll({
             voteTimestampMap.set(p.id, vote.createdAt);
         }
     }
+    // Handle leftovers: form smaller balanced teams so everyone plays
+    // Min team size = groupSize-1 (squads→trio, trios→duo)
+    let leftoverPlayers: typeof playersForTeams = [];
+    const minTeamSize = Math.max(groupSize - 1, 1);
 
-    // Handle leftovers (when player count isn't divisible by group size)
-    // Latest voters are excluded (FIFO)
     if (groupSize > 1 && playersForTeams.length % groupSize !== 0) {
-        const leftoverCount = playersForTeams.length % groupSize;
-        playersForTeams.sort((a, b) => {
-            const timeA = voteTimestampMap.get(a.id)?.getTime() ?? 0;
-            const timeB = voteTimestampMap.get(b.id)?.getTime() ?? 0;
-            return timeB - timeA; // Latest first
-        });
-        for (let i = 0; i < leftoverCount; i++) {
-            playersForTeams.shift();
+        let needed = playersForTeams.length % groupSize;
+        // If remainder is too small, steal full teams to make it divisible by minTeamSize
+        while (needed > 0 && needed % minTeamSize !== 0) {
+            needed += groupSize;
         }
+        needed = Math.min(needed, playersForTeams.length);
+
+        const sorted = [...playersForTeams].sort((a, b) => b.weightedScore - a.weightedScore);
+        const step = sorted.length / needed;
+        const pickedIds = new Set<string>();
+        for (let i = 0; i < needed; i++) {
+            const idx = Math.min(Math.floor(i * step + step / 2), sorted.length - 1);
+            if (!pickedIds.has(sorted[idx].id)) {
+                pickedIds.add(sorted[idx].id);
+                leftoverPlayers.push(sorted[idx]);
+            }
+        }
+        if (leftoverPlayers.length < needed) {
+            for (const p of sorted) {
+                if (leftoverPlayers.length >= needed) break;
+                if (!pickedIds.has(p.id)) {
+                    pickedIds.add(p.id);
+                    leftoverPlayers.push(p);
+                }
+            }
+        }
+        playersForTeams = playersForTeams.filter((p) => !pickedIds.has(p.id));
     }
 
     // Shuffle for variety
     playersForTeams = shuffle(playersForTeams);
 
     const teamCount = Math.floor(playersForTeams.length / groupSize);
-    if (teamCount === 0 && soloPlayers.length === 0) {
+    if (teamCount === 0 && soloPlayers.length === 0 && leftoverPlayers.length === 0) {
         throw new Error("Not enough players to form teams.");
     }
 
@@ -228,6 +248,33 @@ export async function previewTeamsByPoll({
             teams = createBalancedTrios(asWeighted, seasonId, previousTeammates);
         } else if (groupSize === 4) {
             teams = createBalancedQuads(asWeighted, seasonId, previousTeammates);
+        }
+    }
+
+    // Split leftover players into balanced teams of minTeamSize
+    if (leftoverPlayers.length > 0) {
+        leftoverPlayers.sort((a, b) => b.weightedScore - a.weightedScore);
+        const leftoverTeamCount = Math.ceil(leftoverPlayers.length / minTeamSize);
+
+        for (let t = 0; t < leftoverTeamCount; t++) {
+            const teamMembers: typeof playersForTeams = [];
+            for (let i = 0; i < leftoverPlayers.length; i++) {
+                if (i % leftoverTeamCount === t) teamMembers.push(leftoverPlayers[i]);
+            }
+            if (teamMembers.length > 0) {
+                const totalKills = teamMembers.reduce((sum, p) => {
+                    const stats = p.stats?.find((s: any) => s.seasonId === seasonId);
+                    return sum + (stats?.kills ?? 0);
+                }, 0);
+                const weightedScore = teamMembers.reduce((sum: number, p: any) => sum + (p.weightedScore ?? 0), 0);
+                teams.push({
+                    players: teamMembers as unknown as PlayerWithWeightT[],
+                    totalKills,
+                    totalDeaths: 0,
+                    totalWins: 0,
+                    weightedScore,
+                });
+            }
         }
     }
 

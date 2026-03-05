@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { Chip, Avatar, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
-import { Users, ChevronRight, ArrowLeft, Clock } from "lucide-react";
+import { Users, ChevronRight, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import type { PollDTO } from "@/hooks/use-polls";
 import { getPollTheme, getLuckyWinnerTheme, type PollTheme } from "./pollTheme";
@@ -325,22 +325,6 @@ function VotersDialog({
     });
     const maxCount = Math.max(...groups.map((g) => g.count), 1);
 
-    // Waiting player logic — most recent IN voters who are leftovers
-    const waitingPlayerIds = useMemo(() => {
-        const teamSizeMap: Record<string, number> = { SOLO: 1, DUO: 2, TRIO: 3, SQUAD: 4 };
-        const size = teamSizeMap[teamType] ?? 2;
-        if (size <= 1) return new Set<string>();
-        const inVoters = [...(votersByVote["IN"] ?? [])]
-            .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        const leftover = inVoters.length % size;
-        if (leftover === 0) return new Set<string>();
-        const ids = new Set<string>();
-        // Last N voters (most recent) are the ones waiting
-        for (let i = inVoters.length - leftover; i < inVoters.length; i++) {
-            ids.add(inVoters[i].playerId);
-        }
-        return ids;
-    }, [votersByVote, teamType]);
 
     const selectedVoters = selectedGroup ? (votersByVote[selectedGroup] ?? []) : [];
     const getLabel = (v: string) => v === "IN" ? "Nga Leh 😎" : v === "OUT" ? "Leh rei, I'm ge 🏳️‍🌈" : "Nga Leh solo 🫩";
@@ -434,11 +418,6 @@ function VotersDialog({
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium truncate flex items-center gap-1.5">
                                                 {v.displayName}
-                                                {selectedGroup === "IN" && waitingPlayerIds.has(v.playerId) && (
-                                                    <span title="Waiting for more players">
-                                                        <Clock className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
-                                                    </span>
-                                                )}
                                             </p>
                                             {v.createdAt && (
                                                 <p className="text-[11px] text-foreground/40">
