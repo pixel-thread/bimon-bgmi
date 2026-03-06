@@ -354,17 +354,22 @@ export default function BracketDemoPage() {
                                                     <span className={`text-sm font-medium flex-1 ${m.away === "NeymarSkillz" ? "text-primary" : ""}`}>
                                                         {m.away}
                                                     </span>
-                                                    {/* Action */}
+                                                    {/* Action icon */}
                                                     <div className="ml-2 shrink-0">
                                                         {m.done ? (
-                                                            <button className="p-1.5 rounded-lg hover:bg-foreground/10 transition-colors">
+                                                            <button
+                                                                className="p-1.5 rounded-lg hover:bg-foreground/10 transition-colors"
+                                                                onClick={() => alert(`${m.home} ${m.score} ${m.away}\n\n📸 Screenshot would show here in production`)}
+                                                            >
                                                                 <Eye className="h-4 w-4 text-foreground/40" />
                                                             </button>
                                                         ) : isYou ? (
                                                             <button className="p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors">
                                                                 <Upload className="h-4 w-4 text-primary" />
                                                             </button>
-                                                        ) : null}
+                                                        ) : (
+                                                            <div className="w-7 h-7" />
+                                                        )}
                                                     </div>
                                                 </div>
                                             );
