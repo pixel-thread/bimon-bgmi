@@ -104,24 +104,29 @@ export default function PollsAdminPage() {
     const { data: activePolls, isLoading: activeLoading, error: activeError } = useQuery<PollDTO[]>({
         queryKey: ["admin-polls", "active", currentSeasonId],
         queryFn: async () => {
-            const res = await fetch(`/api/polls?seasonId=${currentSeasonId}&_t=${Date.now()}`);
+            const url = currentSeasonId
+                ? `/api/polls?seasonId=${currentSeasonId}&_t=${Date.now()}`
+                : `/api/polls?_t=${Date.now()}`;
+            const res = await fetch(url);
             if (!res.ok) throw new Error("Failed");
             return (await res.json()).data.polls;
         },
         staleTime: 30 * 1000,
-        enabled: !!currentSeasonId,
     });
 
     // All polls — only fetched when "all" or "closed" tab is selected
     const { data: allPolls, isLoading: allLoading, error: allError } = useQuery<PollDTO[]>({
         queryKey: ["admin-polls", "all", currentSeasonId],
         queryFn: async () => {
-            const res = await fetch(`/api/polls?all=true&seasonId=${currentSeasonId}&_t=${Date.now()}`);
+            const url = currentSeasonId
+                ? `/api/polls?all=true&seasonId=${currentSeasonId}&_t=${Date.now()}`
+                : `/api/polls?all=true&_t=${Date.now()}`;
+            const res = await fetch(url);
             if (!res.ok) throw new Error("Failed");
             return (await res.json()).data.polls;
         },
         staleTime: 30 * 1000,
-        enabled: !!currentSeasonId && (filter === "all" || filter === "closed"),
+        enabled: filter === "all" || filter === "closed",
     });
 
     // Derive data based on active tab

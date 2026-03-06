@@ -164,7 +164,6 @@ export default function OperationsPage() {
             const json = await res.json();
             return json.data;
         },
-        enabled: !!seasonId,
     });
 
     const selected = tournaments.find((t) => t.id === selectedId);
