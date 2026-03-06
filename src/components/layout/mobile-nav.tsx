@@ -9,6 +9,7 @@ import {
     LayoutDashboard,
     Loader2,
     MessageCircle,
+    Swords,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useAuthUser } from "@/hooks/use-auth-user";
@@ -24,10 +25,13 @@ type Tab = {
     icon?: LucideIcon;
 };
 
+// Build tabs based on game features
 const tabs: Tab[] = [
     { label: "Players", href: "/players", icon: Users },
     { label: "Vote", href: "/vote", icon: Vote },
-    { label: "Community", href: "/community", icon: MessageCircle },
+    ...(GAME.features.hasBracket
+        ? [{ label: "Bracket", href: "/bracket", icon: Swords }]
+        : [{ label: "Community", href: "/community", icon: MessageCircle }]),
     { label: "Profile", href: "/profile" },
 ];
 
