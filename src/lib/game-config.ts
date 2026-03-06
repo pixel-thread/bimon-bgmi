@@ -1,29 +1,33 @@
 /**
  * Game Configuration — single source of truth for game-specific strings.
- * Everything that differs between BGMI and Free Fire lives here.
+ * Everything that differs between BGMI, Free Fire, and PES lives here.
  * Usage: import { GAME } from "@/lib/game-config";
  *        then use GAME.currency, GAME.passName, etc.
  */
 
-export type GameMode = "bgmi" | "freefire";
+export type GameMode = "bgmi" | "freefire" | "pes";
 
 interface GameConfig {
     mode: GameMode;
     name: string;                // App/brand name
     fullName: string;            // Full display name
     gameName: string;            // Actual game name
-    currency: string;            // "UC" or "Diamonds"
-    currencyLabel: string;       // Compact inline label: "UC" or "💎"
-    currencyEmoji: string;       // "💰" or "💎"
-    currencyPlural: string;      // "UC" or "Diamonds"
+    currency: string;            // "UC" or "Diamonds" or "Coins"
+    currencyLabel: string;       // Compact inline label
+    currencyEmoji: string;       // Emoji for currency
+    currencyPlural: string;      // Plural form
     passName: string;            // "Royal Pass" or "Elite Pass"
     passEmoji: string;           // "👑"
-    idLabel: string;             // "BGMI ID" or "Free Fire UID"
+    idLabel: string;             // "BGMI ID" or "PES ID"
     idPlaceholder: string;       // placeholder text for ID input
     hasUID: boolean;             // whether the game uses a separate UID field
     // Scoring
-    scoringSystem: "bgmi" | "ffws";
+    scoringSystem: "bgmi" | "ffws" | "bracket";
     booyahBonus: boolean;        // Free Fire has Booyah (1st place bonus)
+    // Tournament type
+    defaultTournamentType: "BR" | "BRACKET_1V1";
+    hasBracket: boolean;         // whether this game supports bracket tournaments
+    hasBR: boolean;              // whether this game supports BR tournaments
 }
 
 const GAME_CONFIGS: Record<GameMode, GameConfig> = {
@@ -43,6 +47,9 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         hasUID: false,
         scoringSystem: "bgmi",
         booyahBonus: false,
+        defaultTournamentType: "BR",
+        hasBracket: false,
+        hasBR: true,
     },
     freefire: {
         mode: "freefire",
@@ -60,6 +67,29 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         hasUID: true,
         scoringSystem: "ffws",
         booyahBonus: true,
+        defaultTournamentType: "BR",
+        hasBracket: false,
+        hasBR: true,
+    },
+    pes: {
+        mode: "pes",
+        name: "KICKOFF",
+        fullName: "eFootball Tournament Platform",
+        gameName: "eFootball (PES)",
+        currency: "Coins",
+        currencyLabel: "🪙",
+        currencyEmoji: "🪙",
+        currencyPlural: "Coins",
+        passName: "Season Pass",
+        passEmoji: "⚽",
+        idLabel: "eFootball ID",
+        idPlaceholder: "Your eFootball / Konami ID",
+        hasUID: false,
+        scoringSystem: "bracket",
+        booyahBonus: false,
+        defaultTournamentType: "BRACKET_1V1",
+        hasBracket: true,
+        hasBR: false,
     },
 };
 
