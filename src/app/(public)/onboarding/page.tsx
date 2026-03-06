@@ -194,10 +194,21 @@ export default function OnboardingPage() {
                         </div>
                         <h1 className="text-xl font-bold">Welcome to {GAME.name}</h1>
                         <p className="text-sm text-foreground/50 mt-1">
-                            Copy bad paste ia{" "}
-                            <span className="font-semibold text-primary">
-                                ka kyrteng ba na {GAME.gameName}
-                            </span>
+                            {GAME.pasteOnlyIGN ? (
+                                <>
+                                    Copy bad paste ia{" "}
+                                    <span className="font-semibold text-primary">
+                                        ka kyrteng ba na {GAME.gameName}
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    Enter ia{" "}
+                                    <span className="font-semibold text-primary">
+                                        ka kyrteng ba na {GAME.gameName}
+                                    </span>
+                                </>
+                            )}
                         </p>
                     </div>
 
@@ -257,35 +268,10 @@ export default function OnboardingPage() {
                                 <label className="text-sm font-medium text-foreground/70">
                                     Game Name
                                 </label>
-                                {!GAME.hasUID && ignTutorial.HelpButton}
+                                {GAME.pasteOnlyIGN && ignTutorial.HelpButton}
                             </div>
 
-                            {GAME.hasUID ? (
-                                /* Free Fire: regular text input — users can type their IGN */
-                                <>
-                                    <Input
-                                        value={displayName}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setDisplayName(val);
-                                            setDisplayNameError("");
-                                            if (val.length >= 2) {
-                                                checkDuplicateIGN(val);
-                                            }
-                                        }}
-                                        placeholder="Enter your in-game name"
-                                        size="lg"
-                                        variant="bordered"
-                                        maxLength={20}
-                                        isDisabled={isSubmitting}
-                                        isInvalid={!!displayNameError}
-                                        errorMessage={displayNameError}
-                                        startContent={
-                                            <span className="text-foreground/30 text-sm">🎮</span>
-                                        }
-                                    />
-                                </>
-                            ) : (
+                            {GAME.pasteOnlyIGN ? (
                                 /* BGMI: paste-only input */
                                 <>
                                     <GameNameInput
@@ -317,6 +303,31 @@ export default function OnboardingPage() {
                                             Need help?
                                         </button>
                                     </p>
+                                </>
+                            ) : (
+                                /* PES / Free Fire: free-text input */
+                                <>
+                                    <Input
+                                        value={displayName}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setDisplayName(val);
+                                            setDisplayNameError("");
+                                            if (val.length >= 2) {
+                                                checkDuplicateIGN(val);
+                                            }
+                                        }}
+                                        placeholder="Enter your game name"
+                                        size="lg"
+                                        variant="bordered"
+                                        maxLength={20}
+                                        isDisabled={isSubmitting}
+                                        isInvalid={!!displayNameError}
+                                        errorMessage={displayNameError}
+                                        startContent={
+                                            <span className="text-foreground/30 text-sm">🎮</span>
+                                        }
+                                    />
                                 </>
                             )}
                         </div>
