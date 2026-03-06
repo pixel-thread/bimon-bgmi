@@ -3,20 +3,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@heroui/react";
 import { motion, AnimatePresence } from "motion/react";
-import { MessageCircle, ChevronRight, Check, X } from "lucide-react";
+import { MessageCircle, ChevronRight, Check, X, Loader2 } from "lucide-react";
 
-const WHATSAPP_GROUPS = [
-    {
-        id: "group1",
-        name: "Group 1",
-        link: "https://chat.whatsapp.com/DV9xBTjp7Q30VU1ITzFpMM",
-    },
-    {
-        id: "group2",
-        name: "Group 2",
-        link: "https://chat.whatsapp.com/CNuujmMWQNpCdKGze69k0j",
-    },
-] as const;
+interface WhatsAppGroup {
+    id: string;
+    name: string;
+    link: string;
+}
 
 interface WhatsAppJoinModalProps {
     /** Whether the modal is open */
@@ -25,6 +18,8 @@ interface WhatsAppJoinModalProps {
     onClose: () => void;
     /** Whether this is mandatory (hides close until all joined) */
     mandatory?: boolean;
+    /** Optional pre-loaded groups (skip API fetch) */
+    groups?: WhatsAppGroup[];
 }
 
 /**
@@ -36,11 +31,42 @@ export function WhatsAppJoinModal({
     isOpen,
     onClose,
     mandatory = true,
+    groups: propGroups,
 }: WhatsAppJoinModalProps) {
     const [joinedGroups, setJoinedGroups] = useState<Set<string>>(new Set());
     const [isHydrated, setIsHydrated] = useState(false);
+    const [loadedGroups, setLoadedGroups] = useState<WhatsAppGroup[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
 
-    // Load from localStorage
+    // Fetch groups from settings API if not provided via props
+    useEffect(() => {
+        if (propGroups) {
+            setLoadedGroups(propGroups);
+            return;
+        }
+        if (!isOpen) return;
+
+        setIsLoading(true);
+        fetch("/api/settings/public")
+            .then((res) => res.json())
+            .then((json) => {
+                const links: string[] = json.data?.whatsAppGroups || [];
+                const groups = links
+                    .filter((link) => link && link.trim())
+                    .map((link, i) => ({
+                        id: `group${i + 1}`,
+                        name: `Group ${i + 1}`,
+                        link: link.trim(),
+                    }));
+                setLoadedGroups(groups);
+                // If no groups configured, skip modal
+                if (groups.length === 0) onClose();
+            })
+            .catch(() => onClose()) // skip if fetch fails
+            .finally(() => setIsLoading(false));
+    }, [isOpen, propGroups, onClose]);
+
+    // Load joined state from localStorage
     useEffect(() => {
         const stored = localStorage.getItem("whatsapp_joined_groups");
         if (stored) {
@@ -61,9 +87,9 @@ export function WhatsAppJoinModal({
         localStorage.setItem("whatsapp_joined_groups", JSON.stringify([...updated]));
     };
 
-    if (!isHydrated) return null;
+    if (!isHydrated || isLoading) return null;
 
-    const allJoined = WHATSAPP_GROUPS.every((g) => joinedGroups.has(g.id));
+    const allJoined = loadedGroups.every((g) => joinedGroups.has(g.id));
     const canClose = !mandatory || allJoined;
 
     return (
@@ -118,7 +144,7 @@ export function WhatsAppJoinModal({
 
                         {/* Groups */}
                         <div className="px-6 py-4 space-y-3">
-                            {WHATSAPP_GROUPS.map((group) => {
+                            {loadedGroups.map((group) => {
                                 const isJoined = joinedGroups.has(group.id);
                                 return (
                                     <button
@@ -129,14 +155,14 @@ export function WhatsAppJoinModal({
                                         }
                                         disabled={isJoined}
                                         className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${isJoined
-                                                ? "bg-success/10 border border-success/30"
-                                                : "bg-default-100 hover:bg-success/10 active:scale-[0.98]"
+                                            ? "bg-success/10 border border-success/30"
+                                            : "bg-default-100 hover:bg-success/10 active:scale-[0.98]"
                                             }`}
                                     >
                                         <div
                                             className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isJoined
-                                                    ? "bg-success"
-                                                    : "bg-success/80"
+                                                ? "bg-success"
+                                                : "bg-success/80"
                                                 }`}
                                         >
                                             {isJoined ? (
@@ -175,7 +201,7 @@ export function WhatsAppJoinModal({
                                 </Button>
                             ) : (
                                 <p className="text-xs text-center text-foreground/30">
-                                    Join both groups to continue
+                                    Join {loadedGroups.length === 1 ? "the group" : "all groups"} to continue
                                 </p>
                             )}
                         </div>
