@@ -20,12 +20,23 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Name is required" }, { status: 400 });
         }
 
+        // Auto-link to current active season if none provided
+        let resolvedSeasonId = seasonId || null;
+        if (!resolvedSeasonId) {
+            const activeSeason = await prisma.season.findFirst({
+                where: { status: "ACTIVE" },
+                select: { id: true },
+                orderBy: { createdAt: "desc" },
+            });
+            resolvedSeasonId = activeSeason?.id ?? null;
+        }
+
         const tournament = await prisma.tournament.create({
             data: {
                 name: name.trim(),
                 description: description || null,
                 fee: fee ? Number(fee) : null,
-                seasonId: seasonId || null,
+                seasonId: resolvedSeasonId,
                 createdBy: user.id,
                 startDate: new Date(),
                 type: ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT", "BR"].includes(type) ? type : "BR",

@@ -344,7 +344,9 @@ export default function PollsAdminPage() {
                                                 <div className="space-y-2">
                                                     <div className="flex items-center justify-between text-xs">
                                                         <span className="text-success">IN {poll.inVotes}</span>
-                                                        <span className="text-warning">SOLO {poll.soloVotes}</span>
+                                                        {GAME.features.hasTeamSizes && (
+                                                            <span className="text-warning">SOLO {poll.soloVotes}</span>
+                                                        )}
                                                         <span className="text-danger">OUT {poll.outVotes}</span>
                                                     </div>
                                                     <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-full">
@@ -352,10 +354,12 @@ export default function PollsAdminPage() {
                                                             className="bg-success transition-all"
                                                             style={{ width: `${inPct}%` }}
                                                         />
-                                                        <div
-                                                            className="bg-warning transition-all"
-                                                            style={{ width: `${soloPct}%` }}
-                                                        />
+                                                        {GAME.features.hasTeamSizes && (
+                                                            <div
+                                                                className="bg-warning transition-all"
+                                                                style={{ width: `${soloPct}%` }}
+                                                            />
+                                                        )}
                                                         <div
                                                             className="bg-danger transition-all"
                                                             style={{ width: `${outPct}%` }}
