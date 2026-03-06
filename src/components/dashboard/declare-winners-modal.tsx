@@ -98,7 +98,7 @@ export function DeclareWinnersModal({
     const [poolOpen, setPoolOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<string>("simple");
 
-    // Fetch org/fund percentages from settings
+    // Fetch org/fund percentages from settings (always fresh when modal opens)
     const { data: publicSettings } = useQuery({
         queryKey: ["public-settings"],
         queryFn: async () => {
@@ -107,7 +107,7 @@ export function DeclareWinnersModal({
             const json = await res.json();
             return json.data ?? { orgCutPercent: 10, fundPercent: 4 };
         },
-        staleTime: 5 * 60 * 1000,
+        staleTime: 0, // Always fetch fresh — admin may have just changed settings
     });
     const orgPercent = publicSettings?.orgCutPercent ?? 10;
     const fundPercent = publicSettings?.fundPercent ?? 4;
