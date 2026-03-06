@@ -37,6 +37,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 interface Settings {
     orgCutPercent: number;
+    fundPercent: number;
     defaultEntryFee: number;
     enableTopUps: boolean;
     nameChangeFee: number;
@@ -177,7 +178,16 @@ export default function SettingsPage() {
                             size="sm"
                             value={String(settings.orgCutPercent)}
                             onValueChange={(v) => update("orgCutPercent", Number(v))}
-                            description="% taken from prize pool"
+                            description="Org share of prize pool"
+                            endContent={<span className="text-foreground/40">%</span>}
+                        />
+                        <Input
+                            label="Fund %"
+                            type="number"
+                            size="sm"
+                            value={String(settings.fundPercent ?? 4)}
+                            onValueChange={(v) => update("fundPercent", Number(v))}
+                            description="Community fund share (0 = off, org takes all)"
                             endContent={<span className="text-foreground/40">%</span>}
                         />
                         <Input

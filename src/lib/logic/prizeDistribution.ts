@@ -5,10 +5,11 @@
  * Tier thresholds determine the number of winners and distribution percentages.
  * 
  * Rules:
- * 1. Combined = 14% of pool (10% org + 4% fund) + all repeat winner taxes - UC-exempt cost
- * 2. Split: 70% Org, 30% Fund
+ * 1. Combined = orgPercent + fundPercent of pool + all repeat winner taxes - UC-exempt cost
+ * 2. Split: Org takes (orgPercent / combined%), Fund takes (fundPercent / combined%)
  * 3. UC-exempt cost subtracted from combined before split
  * 4. Odd prize amounts cascade up (lower positions → higher, finally 1st → Fund)
+ * 5. orgPercent and fundPercent come from dashboard settings (defaults: 10% org, 4% fund)
  */
 
 // ============================================================================
@@ -72,7 +73,7 @@ const TIER_CONFIGS: PrizeTierConfig[] = [
         orgFeePercent: 10,
         fundPercent: 4,
         winnerCount: 2,
-        percentages: [57, 29], // ~86% to winners (remaining after 10% org + 4% fund)
+        percentages: [57, 29], // ~86% to winners (remaining after org + fund)
         description: "Top 2 paid",
     },
     {
@@ -110,6 +111,10 @@ const TIER_CONFIGS: PrizeTierConfig[] = [
     },
 ];
 
+// Default percentages (backward compatible)
+const DEFAULT_ORG_PERCENT = 10;
+const DEFAULT_FUND_PERCENT = 4;
+
 
 /**
  * Convert TeamType to team size number.
@@ -146,20 +151,25 @@ function makeEven(amount: number): { evenAmount: number; remainder: number } {
  * @param totalPool - Total prize pool amount
  * @param entryFee - Entry fee per player
  * @param teamSize - Number of players per team (1=solo, 2=duo, 3=trio, 4=squad)
+ * @param orgPercent - Org cut percentage (from settings, default 10%)
+ * @param fundPercent - Fund cut percentage (from settings, default 4%)
  * @returns Complete prize distribution breakdown
  */
 export function getPrizeDistribution(
     totalPool: number,
     entryFee: number = 50,
-    teamSize: number = 2
+    teamSize: number = 2,
+    orgPercent: number = DEFAULT_ORG_PERCENT,
+    fundPercent: number = DEFAULT_FUND_PERCENT,
 ): PrizeDistributionResult {
     // Find the applicable tier
     const tier = TIER_CONFIGS.find(
         (t) => totalPool >= t.minPool && (t.maxPool === null || totalPool <= t.maxPool)
     ) || TIER_CONFIGS[0]; // Fallback to tier 1
 
-    const orgFee = Math.floor(totalPool * (tier.orgFeePercent / 100));
-    let fundAmount = Math.floor(totalPool * (tier.fundPercent / 100));
+    // Use settings-driven percentages instead of hardcoded tier values
+    const orgFee = Math.floor(totalPool * (orgPercent / 100));
+    let fundAmount = Math.floor(totalPool * (fundPercent / 100));
     const prizes = new Map<number, PositionPrize>();
 
     if (tier.level >= 2) {
@@ -255,30 +265,32 @@ export function getPrizeDistribution(
     };
 }
 
-// Org/Fund split ratio
-const ORG_SPLIT = 0.70;
-const FUND_SPLIT_RATIO = 0.30;
-
 /**
- * Calculate final distribution with simplified Org/Fund split.
+ * Calculate final distribution with proportional Org/Fund split.
  * 
  * Rules:
- * 1. Combined = base org (10%) + base fund (4%) - UC-exempt cost
- * 2. Split: 70% Org, 30% Fund
+ * 1. Combined = base org + base fund - UC-exempt cost
+ * 2. Split proportionally based on orgPercent vs fundPercent
+ *    - e.g., org=10%, fund=4% → org gets 10/14 (~71%), fund gets 4/14 (~29%)
+ *    - If fund=0%, org takes 100%
  * 
  * @param totalPool - Total prize pool amount (includes UC-exempt as if they paid)
  * @param entryFee - Entry fee per player
  * @param teamSize - Number of players per team
  * @param ucExemptCount - Number of UC-exempt players
+ * @param orgPercent - Org cut percentage (from settings)
+ * @param fundPercent - Fund cut percentage (from settings, 0 = fund off)
  * @returns Final distribution with adjusted org and fund amounts
  */
 export function getFinalDistribution(
     totalPool: number,
     entryFee: number,
     teamSize: number,
-    ucExemptCount: number
+    ucExemptCount: number,
+    orgPercent: number = DEFAULT_ORG_PERCENT,
+    fundPercent: number = DEFAULT_FUND_PERCENT,
 ): FinalDistributionResult {
-    const base = getPrizeDistribution(totalPool, entryFee, teamSize);
+    const base = getPrizeDistribution(totalPool, entryFee, teamSize, orgPercent, fundPercent);
 
     // Calculate UC-exempt cost (entry fee for each exempt player)
     const ucExemptCost = ucExemptCount * entryFee;
@@ -286,9 +298,21 @@ export function getFinalDistribution(
     // Combined = base org + base fund - UC-exempt cost
     const combined = Math.max(0, base.orgFee + base.fundAmount - ucExemptCost);
 
-    // Simple 70/30 split
-    const finalOrgAmount = Math.floor(combined * ORG_SPLIT);
-    const finalFundAmount = combined - finalOrgAmount; // Fund gets the rest (avoids rounding loss)
+    // Split proportionally based on actual percentages
+    const totalCutPercent = orgPercent + fundPercent;
+    let finalOrgAmount: number;
+    let finalFundAmount: number;
+
+    if (totalCutPercent <= 0 || fundPercent <= 0) {
+        // Fund is off — org takes everything
+        finalOrgAmount = combined;
+        finalFundAmount = 0;
+    } else {
+        // Proportional split: org takes orgPercent/(orgPercent+fundPercent)
+        const orgRatio = orgPercent / totalCutPercent;
+        finalOrgAmount = Math.floor(combined * orgRatio);
+        finalFundAmount = combined - finalOrgAmount; // Fund gets the rest (avoids rounding loss)
+    }
 
     return {
         ...base,

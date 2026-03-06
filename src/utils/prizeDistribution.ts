@@ -5,11 +5,11 @@
  * Tier thresholds determine the number of winners and distribution percentages.
  * 
  * Rules:
- * 1. Org = 10%, Fund = 4% (fixed across all tiers)
- * 2. UC-exempt players count in prize pool, but their entry fee is subtracted from Org
- * 3. Org minimum = ₹20
- * 4. Org should always be > Fund (take from Fund if needed)
- * 5. Odd prize amounts cascade up (lower positions → higher, finally 1st → Fund)
+ * 1. Combined = orgPercent + fundPercent of pool + all repeat winner taxes - UC-exempt cost
+ * 2. Split: Org takes (orgPercent / combined%), Fund takes (fundPercent / combined%)
+ * 3. UC-exempt cost subtracted from combined before split
+ * 4. Odd prize amounts cascade up (lower positions → higher, finally 1st → Fund)
+ * 5. orgPercent and fundPercent come from dashboard settings (defaults: 10% org, 4% fund)
  */
 
 // ============================================================================
@@ -73,7 +73,7 @@ const TIER_CONFIGS: PrizeTierConfig[] = [
         orgFeePercent: 10,
         fundPercent: 4,
         winnerCount: 2,
-        percentages: [57, 29], // ~86% to winners (remaining after 10% org + 4% fund)
+        percentages: [57, 29], // ~86% to winners (remaining after org + fund)
         description: "Top 2 paid",
     },
     {
@@ -111,8 +111,10 @@ const TIER_CONFIGS: PrizeTierConfig[] = [
     },
 ];
 
-// Constants
-const ORG_MINIMUM = 20;
+// Default percentages (backward compatible)
+const DEFAULT_ORG_PERCENT = 10;
+const DEFAULT_FUND_PERCENT = 4;
+
 
 /**
  * Convert TeamType to team size number.
@@ -149,20 +151,25 @@ function makeEven(amount: number): { evenAmount: number; remainder: number } {
  * @param totalPool - Total prize pool amount
  * @param entryFee - Entry fee per player
  * @param teamSize - Number of players per team (1=solo, 2=duo, 3=trio, 4=squad)
+ * @param orgPercent - Org cut percentage (from settings, default 10%)
+ * @param fundPercent - Fund cut percentage (from settings, default 4%)
  * @returns Complete prize distribution breakdown
  */
 export function getPrizeDistribution(
     totalPool: number,
     entryFee: number = 50,
-    teamSize: number = 2
+    teamSize: number = 2,
+    orgPercent: number = DEFAULT_ORG_PERCENT,
+    fundPercent: number = DEFAULT_FUND_PERCENT,
 ): PrizeDistributionResult {
     // Find the applicable tier
     const tier = TIER_CONFIGS.find(
         (t) => totalPool >= t.minPool && (t.maxPool === null || totalPool <= t.maxPool)
     ) || TIER_CONFIGS[0]; // Fallback to tier 1
 
-    const orgFee = Math.floor(totalPool * (tier.orgFeePercent / 100));
-    let fundAmount = Math.floor(totalPool * (tier.fundPercent / 100));
+    // Use settings-driven percentages instead of hardcoded tier values
+    const orgFee = Math.floor(totalPool * (orgPercent / 100));
+    let fundAmount = Math.floor(totalPool * (fundPercent / 100));
     const prizes = new Map<number, PositionPrize>();
 
     if (tier.level >= 2) {
@@ -259,71 +266,53 @@ export function getPrizeDistribution(
 }
 
 /**
- * Calculate final distribution with UC-exempt adjustments.
+ * Calculate final distribution with proportional Org/Fund split.
  * 
  * Rules:
- * 1. UC-exempt players count in prize pool but their entry fee is subtracted from Org
- * 2. Org minimum = ₹20
- * 3. Org should always be > Fund (take from Fund if needed)
+ * 1. Combined = base org + base fund - UC-exempt cost
+ * 2. Split proportionally based on orgPercent vs fundPercent
+ *    - e.g., org=10%, fund=4% → org gets 10/14 (~71%), fund gets 4/14 (~29%)
+ *    - If fund=0%, org takes 100%
  * 
  * @param totalPool - Total prize pool amount (includes UC-exempt as if they paid)
  * @param entryFee - Entry fee per player
  * @param teamSize - Number of players per team
  * @param ucExemptCount - Number of UC-exempt players
+ * @param orgPercent - Org cut percentage (from settings)
+ * @param fundPercent - Fund cut percentage (from settings, 0 = fund off)
  * @returns Final distribution with adjusted org and fund amounts
  */
 export function getFinalDistribution(
     totalPool: number,
     entryFee: number,
     teamSize: number,
-    ucExemptCount: number
+    ucExemptCount: number,
+    orgPercent: number = DEFAULT_ORG_PERCENT,
+    fundPercent: number = DEFAULT_FUND_PERCENT,
 ): FinalDistributionResult {
-    const base = getPrizeDistribution(totalPool, entryFee, teamSize);
+    const base = getPrizeDistribution(totalPool, entryFee, teamSize, orgPercent, fundPercent);
 
     // Calculate UC-exempt cost (entry fee for each exempt player)
     const ucExemptCost = ucExemptCount * entryFee;
 
-    // Calculate raw org amount after UC-exempt cost
-    let rawOrgAmount = base.orgFee - ucExemptCost;
-    let adjustedFund = base.fundAmount;
+    // Combined = base org + base fund - UC-exempt cost
+    const combined = Math.max(0, base.orgFee + base.fundAmount - ucExemptCost);
 
-    // Rule 1: Org minimum = ₹20
-    if (rawOrgAmount < ORG_MINIMUM) {
-        const neededFromFund = ORG_MINIMUM - rawOrgAmount;
-        const takeFromFund = Math.min(neededFromFund, adjustedFund);
-        adjustedFund -= takeFromFund;
-        rawOrgAmount += takeFromFund;
+    // Split proportionally based on actual percentages
+    const totalCutPercent = orgPercent + fundPercent;
+    let finalOrgAmount: number;
+    let finalFundAmount: number;
+
+    if (totalCutPercent <= 0 || fundPercent <= 0) {
+        // Fund is off — org takes everything
+        finalOrgAmount = combined;
+        finalFundAmount = 0;
+    } else {
+        // Proportional split: org takes orgPercent/(orgPercent+fundPercent)
+        const orgRatio = orgPercent / totalCutPercent;
+        finalOrgAmount = Math.floor(combined * orgRatio);
+        finalFundAmount = combined - finalOrgAmount; // Fund gets the rest (avoids rounding loss)
     }
-
-    // Rule 2: Org should always be > Fund
-    if (rawOrgAmount <= adjustedFund && adjustedFund > 0) {
-        // We need org > fund, so we need to take from fund
-        // Target: org = fund + 1 (minimum to be greater)
-        // But we also need to respect org minimum
-
-        // Calculate how much we have total
-        const combined = rawOrgAmount + adjustedFund;
-
-        // Split so that org > fund
-        // If combined is X, we want org = ceil(X/2) + 1 and fund = floor(X/2) - 1 (roughly)
-        // Actually simpler: take from fund until org > fund, but ensure org >= ORG_MINIMUM
-
-        const targetOrg = Math.max(ORG_MINIMUM, Math.floor(combined / 2) + 1);
-        const targetFund = combined - targetOrg;
-
-        if (targetFund >= 0) {
-            rawOrgAmount = targetOrg;
-            adjustedFund = targetFund;
-        } else {
-            // Not enough combined, give all to org
-            rawOrgAmount = combined;
-            adjustedFund = 0;
-        }
-    }
-
-    // Ensure org is at least ORG_MINIMUM (final check)
-    const finalOrgAmount = Math.max(rawOrgAmount, Math.min(ORG_MINIMUM, base.orgFee + base.fundAmount));
-    const finalFundAmount = Math.max(0, adjustedFund);
 
     return {
         ...base,
