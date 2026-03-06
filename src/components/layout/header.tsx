@@ -130,6 +130,18 @@ export function Header() {
     const hasUnclaimedStreak = notifData?.hasUnclaimedStreak ?? false;
     const totalActionCount = unreadCount + unclaimedRewardCount;
 
+    // Fetch runtime settings (enableElitePass toggle from dashboard)
+    const { data: publicSettings } = useQuery({
+        queryKey: ["public-settings"],
+        queryFn: async () => {
+            const res = await fetch("/api/settings/public");
+            if (!res.ok) return { enableElitePass: true };
+            const json = await res.json();
+            return json.data ?? { enableElitePass: true };
+        },
+        staleTime: 5 * 60 * 1000, // 5 min cache
+    });
+    const showRoyalPass = GAME.features.hasRoyalPass && (publicSettings?.enableElitePass !== false);
 
 
     const handleSignOut = async () => {
@@ -289,7 +301,7 @@ export function Header() {
                 <NavbarContent justify="end">
                     {isSignedIn && (
                         <>
-                            {GAME.features.hasRoyalPass && (
+                            {showRoyalPass && (
                                 <NavbarItem>
                                     <Link
                                         href="/royal-pass"
