@@ -62,11 +62,23 @@ export async function PUT(
             },
         });
 
-        // Advance the winner
-        await advanceWinners(match.tournamentId, match.round);
+        // Advance only for knockout-style matches
+        const tournament = await prisma.tournament.findUnique({
+            where: { id: match.tournamentId },
+            select: { type: true },
+        });
+        const isKnockoutMatch =
+            tournament?.type === "BRACKET_1V1" ||
+            (tournament?.type === "GROUP_KNOCKOUT" && match.round > 0);
+
+        if (isKnockoutMatch) {
+            await advanceWinners(match.tournamentId, match.round);
+        }
 
         return SuccessResponse({
-            message: "Match resolved. Winner advances to next round.",
+            message: isKnockoutMatch
+                ? "Match resolved. Winner advances to next round."
+                : "Match resolved.",
         });
     } catch (error) {
         return ErrorResponse({ message: "Failed to resolve match", error });

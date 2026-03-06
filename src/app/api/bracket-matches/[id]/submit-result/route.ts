@@ -75,15 +75,29 @@ export async function POST(
                 status: 403,
             });
         }
+        // Check tournament type to determine if draws are allowed
+        const tournament = await prisma.tournament.findUnique({
+            where: { id: match.tournamentId },
+            select: { type: true },
+        });
+        const isLeague = tournament?.type === "LEAGUE";
+        const isGroupStage = tournament?.type === "GROUP_KNOCKOUT" && match.round < 0;
+        const drawsAllowed = isLeague || isGroupStage;
 
         // Determine winner from scores
+        let claimedWinnerId: string | null = null;
         if (score1 === score2) {
-            return ErrorResponse({
-                message: "Draws are not allowed — there must be a winner",
-                status: 400,
-            });
+            if (!drawsAllowed) {
+                return ErrorResponse({
+                    message: "Draws are not allowed — there must be a winner",
+                    status: 400,
+                });
+            }
+            // Draw — no winner
+            claimedWinnerId = null;
+        } else {
+            claimedWinnerId = score1 > score2 ? match.player1Id : match.player2Id;
         }
-        const claimedWinnerId = score1 > score2 ? match.player1Id : match.player2Id;
 
         const disputeDeadline = new Date(Date.now() + DISPUTE_WINDOW_MS);
 
@@ -198,12 +212,25 @@ export async function PUT(
             data: { status: "CONFIRMED" },
         });
 
-        // Advance the winner to the next round
-        await advanceWinners(match.tournamentId, match.round);
-
-        return SuccessResponse({
-            message: "Result confirmed! Winner advances to next round.",
+        // Only advance winners for knockout-style matches
+        // Skip for: League (all matches), Group+KO group stage (negative rounds)
+        const tournament = await prisma.tournament.findUnique({
+            where: { id: match.tournamentId },
+            select: { type: true },
         });
+        const isKnockoutMatch =
+            tournament?.type === "BRACKET_1V1" ||
+            (tournament?.type === "GROUP_KNOCKOUT" && match.round > 0);
+
+        if (isKnockoutMatch) {
+            await advanceWinners(match.tournamentId, match.round);
+        }
+
+        const msg = isKnockoutMatch
+            ? "Result confirmed! Winner advances to next round."
+            : "Result confirmed!";
+
+        return SuccessResponse({ message: msg });
     } catch (error) {
         return ErrorResponse({ message: "Failed to confirm result", error });
     }

@@ -61,11 +61,23 @@ export async function POST(
             },
         });
 
-        // Advance the winner to the next round
-        await advanceWinners(match.tournamentId, match.round);
+        // Advance only for knockout-style matches
+        const tournament = await prisma.tournament.findUnique({
+            where: { id: match.tournamentId },
+            select: { type: true },
+        });
+        const isKnockoutMatch =
+            tournament?.type === "BRACKET_1V1" ||
+            (tournament?.type === "GROUP_KNOCKOUT" && match.round > 0);
+
+        if (isKnockoutMatch) {
+            await advanceWinners(match.tournamentId, match.round);
+        }
 
         return SuccessResponse({
-            message: "Winner randomly selected and advanced to next round.",
+            message: isKnockoutMatch
+                ? "Winner randomly selected and advanced."
+                : "Winner randomly selected.",
             data: { winnerId },
         });
     } catch (error) {
