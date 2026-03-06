@@ -532,27 +532,9 @@ export default function ProfilePage() {
                                     <div>
                                         <div className="flex items-center gap-2 mb-2">
                                             <label className="text-sm font-medium text-foreground/70">Game Name</label>
-                                            {!GAME.hasUID && ignTutorial.HelpButton}
+                                            {GAME.pasteOnlyIGN && ignTutorial.HelpButton}
                                         </div>
-                                        {GAME.hasUID ? (
-                                            <Input
-                                                value={newIGN}
-                                                onChange={(e) => {
-                                                    setNewIGN(e.target.value);
-                                                    setIgnError("");
-                                                }}
-                                                placeholder="Enter your in-game name"
-                                                size="lg"
-                                                variant="bordered"
-                                                maxLength={20}
-                                                isDisabled={saving}
-                                                isInvalid={!!ignError}
-                                                errorMessage={ignError}
-                                                startContent={
-                                                    <span className="text-foreground/30 text-sm">🎮</span>
-                                                }
-                                            />
-                                        ) : (
+                                        {GAME.pasteOnlyIGN ? (
                                             <>
                                                 <GameNameInput
                                                     value={newIGN}
@@ -579,6 +561,24 @@ export default function ProfilePage() {
                                                     </button>
                                                 </p>
                                             </>
+                                        ) : (
+                                            <Input
+                                                value={newIGN}
+                                                onChange={(e) => {
+                                                    setNewIGN(e.target.value);
+                                                    setIgnError("");
+                                                }}
+                                                placeholder="Enter your game name"
+                                                size="lg"
+                                                variant="bordered"
+                                                maxLength={20}
+                                                isDisabled={saving}
+                                                isInvalid={!!ignError}
+                                                errorMessage={ignError}
+                                                startContent={
+                                                    <span className="text-foreground/30 text-sm">🎮</span>
+                                                }
+                                            />
                                         )}
                                     </div>
 
@@ -675,7 +675,7 @@ export default function ProfilePage() {
                     </Card>
                 )}
 
-                {ignTutorial.Modal}
+                {GAME.pasteOnlyIGN && ignTutorial.Modal}
 
                 {/* Royal Pass Purchase Modal */}
                 <AnimatePresence>

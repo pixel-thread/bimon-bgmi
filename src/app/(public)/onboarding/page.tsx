@@ -38,7 +38,7 @@ export default function OnboardingPage() {
     const [uid, setUid] = useState("");
     const [isCheckingIGN, setIsCheckingIGN] = useState(false);
     const ignCheckTimer = useRef<NodeJS.Timeout | null>(null);
-    const ignTutorial = useIGNTutorial({ autoOpen: true });
+    const ignTutorial = useIGNTutorial({ autoOpen: GAME.pasteOnlyIGN });
 
     // Redirect already-onboarded users to home
     useEffect(() => {
@@ -176,8 +176,8 @@ export default function OnboardingPage() {
 
     return (
         <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-primary/5 via-background to-background px-4">
-            {/* IGN Tutorial Modal */}
-            {ignTutorial.Modal}
+            {/* IGN Tutorial Modal (paste-only games) */}
+            {GAME.pasteOnlyIGN && ignTutorial.Modal}
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -196,16 +196,16 @@ export default function OnboardingPage() {
                         <p className="text-sm text-foreground/50 mt-1">
                             {GAME.pasteOnlyIGN ? (
                                 <>
-                                    Copy bad paste ia{" "}
+                                    {GAME.locale === "kha" ? "Copy bad paste ia" : "Copy and paste"}{" "}
                                     <span className="font-semibold text-primary">
-                                        ka kyrteng ba na {GAME.gameName}
+                                        {GAME.locale === "kha" ? `ka kyrteng ba na ${GAME.gameName}` : `your ${GAME.gameName} name`}
                                     </span>
                                 </>
                             ) : (
                                 <>
-                                    Enter ia{" "}
+                                    {GAME.locale === "kha" ? "Enter ia" : "Enter"}{" "}
                                     <span className="font-semibold text-primary">
-                                        ka kyrteng ba na {GAME.gameName}
+                                        {GAME.locale === "kha" ? `ka kyrteng ba na ${GAME.gameName}` : `your ${GAME.gameName} name`}
                                     </span>
                                 </>
                             )}
@@ -383,7 +383,7 @@ export default function OnboardingPage() {
 
                     {/* Footer */}
                     <p className="text-center text-xs text-foreground/30 px-6 pb-4">
-                        Phi lah ban change biang na profile page
+                        {GAME.locale === "kha" ? "Phi lah ban change biang na profile page" : "You can change this later from your profile page"}
                     </p>
                 </div>
             </motion.div>

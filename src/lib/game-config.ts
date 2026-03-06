@@ -46,6 +46,7 @@ interface GameConfig {
     idPlaceholder: string;       // e.g. "Your BGMI ID (numeric)"
     hasUID: boolean;             // Whether to show UID field in onboarding
     pasteOnlyIGN: boolean;       // Whether game name must be pasted (BGMI) or can be typed (PES/FF)
+    locale: "kha" | "en";        // UI language: "kha" = Khasi, "en" = English
     scoringSystem: string;       // "bgmi" | "ffws" | "bracket"
     booyahBonus: boolean;        // FFWS/Booyah bonus points
     defaultTournamentType: string; // "BR" | "BRACKET_1V1" | "LEAGUE" | "GROUP_KNOCKOUT"
@@ -72,6 +73,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         idPlaceholder: "Your BGMI character ID",
         hasUID: false,
         pasteOnlyIGN: true,          // BGMI requires paste to prevent fake names
+        locale: "kha",
         scoringSystem: "bgmi",
         booyahBonus: false,
         defaultTournamentType: "BR",
@@ -106,6 +108,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         idPlaceholder: "Your Free Fire UID (numeric)",
         hasUID: true,
         pasteOnlyIGN: false,         // FF allows typed input
+        locale: "kha",
         scoringSystem: "ffws",
         booyahBonus: true,
         defaultTournamentType: "BR",
@@ -140,6 +143,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         idPlaceholder: "Your eFootball / Konami ID",
         hasUID: false,
         pasteOnlyIGN: false,         // PES players can type any name
+        locale: "en",
         scoringSystem: "bracket",
         booyahBonus: false,
         defaultTournamentType: "BRACKET_1V1",
