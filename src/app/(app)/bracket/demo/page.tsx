@@ -47,7 +47,7 @@ const KNOCKOUT_ROUNDS = [
         name: "Quarter-Finals",
         matches: [
             mkMatch({ id: "k1", round: 1, position: 0, player1Id: "p1", player2Id: "p2", winnerId: "p1", score1: 3, score2: 1, status: "CONFIRMED", player1: P.p1, player2: P.p2, winner: P.p1 }),
-            mkMatch({ id: "k2", round: 1, position: 1, player1Id: "p3", player2Id: "p4", winnerId: null, status: "PENDING", player1: P.p3, player2: P.p4 }),
+            mkMatch({ id: "k2", round: 1, position: 1, player1Id: "p3", player2Id: "p4", winnerId: "p3", score1: 2, score2: 1, status: "CONFIRMED", player1: P.p3, player2: P.p4, winner: P.p3, results: [{ id: "r0", submittedById: "p3", claimedScore1: 2, claimedScore2: 1, screenshotUrl: null, isDispute: false, createdAt: new Date().toISOString() }] }),
             mkMatch({ id: "k3", round: 1, position: 2, player1Id: "p5", player2Id: "p6", winnerId: "p5", score1: 2, score2: 0, status: "CONFIRMED", player1: P.p5, player2: P.p6, winner: P.p5 }),
             mkMatch({ id: "k4", round: 1, position: 3, player1Id: "p7", player2Id: "p8", winnerId: "p7", score1: 1, score2: 0, status: "CONFIRMED", player1: P.p7, player2: P.p8, winner: P.p7 }),
         ],
@@ -56,8 +56,8 @@ const KNOCKOUT_ROUNDS = [
         round: 2,
         name: "Semi-Finals",
         matches: [
-            mkMatch({ id: "k5", round: 2, position: 0, player1Id: "p1", player2Id: null, status: "PENDING", player1: P.p1, player2: null }),
-            mkMatch({ id: "k6", round: 2, position: 1, player1Id: "p5", player2Id: "p7", winnerId: "p5", score1: 4, score2: 2, status: "SUBMITTED", disputeDeadline: new Date(Date.now() + 30 * 60 * 1000).toISOString(), player1: P.p5, player2: P.p7, results: [{ id: "r1", submittedById: "p5", claimedScore1: 4, claimedScore2: 2, screenshotUrl: null, isDispute: false, createdAt: new Date().toISOString() }] }),
+            mkMatch({ id: "k5", round: 2, position: 0, player1Id: "p1", player2Id: "p3", winnerId: "p3", score1: 1, score2: 3, status: "SUBMITTED", disputeDeadline: new Date(Date.now() + 25 * 60 * 1000).toISOString(), player1: P.p1, player2: P.p3, results: [{ id: "r2", submittedById: "p3", claimedScore1: 1, claimedScore2: 3, screenshotUrl: null, isDispute: false, createdAt: new Date().toISOString() }] }),
+            mkMatch({ id: "k6", round: 2, position: 1, player1Id: "p5", player2Id: "p7", winnerId: "p5", score1: 4, score2: 2, status: "CONFIRMED", player1: P.p5, player2: P.p7, winner: P.p5, results: [{ id: "r1", submittedById: "p5", claimedScore1: 4, claimedScore2: 2, screenshotUrl: null, isDispute: false, createdAt: new Date().toISOString() }] }),
         ],
     },
     {
