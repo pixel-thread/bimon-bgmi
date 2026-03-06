@@ -45,7 +45,7 @@ const navItems = [
     { label: "Players", href: "/players", icon: Users },
     { label: "Vote", href: "/vote", icon: Vote },
     ...(GAME.features.hasBracket
-        ? [{ label: "Bracket", href: "/bracket", icon: Swords }]
+        ? [{ label: "Matches", href: "/bracket", icon: Swords }]
         : []),
 ];
 

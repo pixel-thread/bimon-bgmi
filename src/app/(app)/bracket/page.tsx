@@ -78,7 +78,7 @@ export default function BracketPage() {
         return (
             <div className="flex flex-col items-center justify-center gap-3 py-24">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-foreground/50">Loading bracket...</p>
+                <p className="text-sm text-foreground/50">Loading matches...</p>
             </div>
         );
     }
