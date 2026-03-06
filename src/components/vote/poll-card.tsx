@@ -319,7 +319,10 @@ function VotersDialog({
     onSelectGroup: (g: "IN" | "OUT" | "SOLO" | null) => void;
     teamType: string;
 }) {
-    const groups = (["IN", "OUT", "SOLO"] as const).map((voteType) => {
+    const allVoteTypes = GAME.features.hasTeamSizes
+        ? (["IN", "OUT", "SOLO"] as const)
+        : (["IN", "OUT"] as const);
+    const groups = allVoteTypes.map((voteType) => {
         const voters = votersByVote[voteType] ?? [];
         return { voteType, voters, count: voters.length };
     });
@@ -511,7 +514,10 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
     const options: { label: string; vote: "IN" | "OUT" | "SOLO"; count: number }[] = [
         { label: getOptionName("IN"), vote: "IN", count: poll.inVotes },
         { label: getOptionName("OUT"), vote: "OUT", count: poll.outVotes },
-        { label: getOptionName("SOLO"), vote: "SOLO", count: poll.soloVotes },
+        // SOLO only exists for BR games with team sizes — hide for PES/1v1
+        ...(GAME.features.hasTeamSizes
+            ? [{ label: getOptionName("SOLO"), vote: "SOLO" as const, count: poll.soloVotes }]
+            : []),
     ];
     const maxCount = Math.max(...options.map((o) => o.count), 1);
 
@@ -660,8 +666,8 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                     theme={theme}
                                     onDoubleTap={onRefetch}
                                 />
-                                {/* Team type badge */}
-                                {effectiveTeamType && (
+                                {/* Team type badge — only for BR games with team sizes */}
+                                {GAME.features.hasTeamSizes && effectiveTeamType && (
                                     <div className="absolute bottom-2 left-3">
                                         <Chip
                                             size="sm"
