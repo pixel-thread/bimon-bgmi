@@ -244,7 +244,34 @@ function MatchCard({
     );
 }
 
-/* ─── Bracket View (Horizontal Scrollable) ──────────────────── */
+/* ─── Bracket Connector Lines ───────────────────────────────── */
+
+function BracketConnector({ matchCount }: { matchCount: number }) {
+    // SVG connectors: pairs of matches connect to one next-round match
+    const pairs = Math.floor(matchCount / 2);
+    if (pairs === 0) return null;
+
+    return (
+        <div className="flex flex-col justify-around flex-1 min-w-[32px]">
+            {Array.from({ length: pairs }).map((_, i) => (
+                <div key={i} className="flex items-center h-full">
+                    <svg width="32" height="100%" viewBox="0 0 32 100" preserveAspectRatio="none" className="h-full">
+                        {/* Top line going right */}
+                        <line x1="0" y1="25" x2="16" y2="25" stroke="currentColor" strokeWidth="1" className="text-foreground/15" />
+                        {/* Bottom line going right */}
+                        <line x1="0" y1="75" x2="16" y2="75" stroke="currentColor" strokeWidth="1" className="text-foreground/15" />
+                        {/* Vertical connector */}
+                        <line x1="16" y1="25" x2="16" y2="75" stroke="currentColor" strokeWidth="1" className="text-foreground/15" />
+                        {/* Middle line going right to next match */}
+                        <line x1="16" y1="50" x2="32" y2="50" stroke="currentColor" strokeWidth="1" className="text-foreground/15" />
+                    </svg>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+/* ─── Bracket View (Horizontal Scrollable with connectors) ─── */
 
 export function BracketView({
     rounds,
@@ -266,41 +293,52 @@ export function BracketView({
 
     return (
         <div className="overflow-x-auto pb-4">
-            <div className="flex gap-4 min-w-max">
-                {rounds.map((round, idx) => (
-                    <motion.div
-                        key={round.round}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.1 }}
-                        className="flex flex-col gap-3 min-w-[200px]"
-                    >
-                        {/* Round header */}
-                        <div className="text-center">
-                            <h3 className="text-xs font-bold text-foreground/70 uppercase tracking-wider">
-                                {round.name}
-                            </h3>
-                            <p className="text-[10px] text-foreground/40">
-                                {round.matches.length} match{round.matches.length !== 1 ? "es" : ""}
-                            </p>
-                        </div>
+            <div className="flex items-stretch min-w-max">
+                {rounds.map((round, idx) => {
+                    // Increasing spacing between matches for each round
+                    const gapClass = idx === 0 ? "gap-3" : idx === 1 ? "gap-8" : idx === 2 ? "gap-16" : "gap-24";
 
-                        {/* Matches in this round */}
-                        <div className="flex flex-col gap-3 justify-around flex-1">
-                            {round.matches.map((match) => (
-                                <MatchCard
-                                    key={match.id}
-                                    match={match}
-                                    currentPlayerId={currentPlayerId}
-                                    onSubmitResult={onSubmitResult}
-                                    onConfirmResult={onConfirmResult}
-                                    onDispute={onDispute}
-                                    onViewResult={onViewResult}
-                                />
-                            ))}
+                    return (
+                        <div key={round.round} className="flex items-stretch">
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: idx * 0.1 }}
+                                className="flex flex-col min-w-[210px]"
+                            >
+                                {/* Round header */}
+                                <div className="text-center mb-3">
+                                    <h3 className="text-xs font-bold text-foreground/70 uppercase tracking-wider">
+                                        {round.name}
+                                    </h3>
+                                    <p className="text-[10px] text-foreground/40">
+                                        {round.matches.length} match{round.matches.length !== 1 ? "es" : ""}
+                                    </p>
+                                </div>
+
+                                {/* Matches in this round */}
+                                <div className={`flex flex-col ${gapClass} justify-around flex-1`}>
+                                    {round.matches.map((match) => (
+                                        <MatchCard
+                                            key={match.id}
+                                            match={match}
+                                            currentPlayerId={currentPlayerId}
+                                            onSubmitResult={onSubmitResult}
+                                            onConfirmResult={onConfirmResult}
+                                            onDispute={onDispute}
+                                            onViewResult={onViewResult}
+                                        />
+                                    ))}
+                                </div>
+                            </motion.div>
+
+                            {/* Connector lines between this round and next */}
+                            {idx < rounds.length - 1 && (
+                                <BracketConnector matchCount={round.matches.length} />
+                            )}
                         </div>
-                    </motion.div>
-                ))}
+                    );
+                })}
 
                 {/* Winner column */}
                 {rounds.length > 0 && (() => {
