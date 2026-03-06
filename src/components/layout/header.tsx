@@ -289,24 +289,26 @@ export function Header() {
                 <NavbarContent justify="end">
                     {isSignedIn && (
                         <>
-                            <NavbarItem>
-                                <Link
-                                    href="/royal-pass"
-                                    onClick={() => {
-                                        if (!pathname.startsWith("/royal-pass")) setNavigatingTo("/royal-pass");
-                                    }}
-                                    className="relative flex items-center justify-center rounded-full p-1.5 text-yellow-500 transition-opacity hover:opacity-80"
-                                >
-                                    {navigatingTo === "/royal-pass" && !pathname.startsWith("/royal-pass") ? (
-                                        <Loader2 className="h-5 w-5 animate-spin" />
-                                    ) : (
-                                        <Crown className="h-5 w-5" />
-                                    )}
-                                    {hasUnclaimedStreak && (
-                                        <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-background animate-pulse" />
-                                    )}
-                                </Link>
-                            </NavbarItem>
+                            {GAME.features.hasRoyalPass && (
+                                <NavbarItem>
+                                    <Link
+                                        href="/royal-pass"
+                                        onClick={() => {
+                                            if (!pathname.startsWith("/royal-pass")) setNavigatingTo("/royal-pass");
+                                        }}
+                                        className="relative flex items-center justify-center rounded-full p-1.5 text-yellow-500 transition-opacity hover:opacity-80"
+                                    >
+                                        {navigatingTo === "/royal-pass" && !pathname.startsWith("/royal-pass") ? (
+                                            <Loader2 className="h-5 w-5 animate-spin" />
+                                        ) : (
+                                            <Crown className="h-5 w-5" />
+                                        )}
+                                        {hasUnclaimedStreak && (
+                                            <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-background animate-pulse" />
+                                        )}
+                                    </Link>
+                                </NavbarItem>
+                            )}
                             <NavbarItem className="hidden lg:flex">
                                 <Link href="/profile" className="block">
                                     {user?.image ? (
