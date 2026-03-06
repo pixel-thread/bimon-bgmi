@@ -334,20 +334,39 @@ export default function BracketDemoPage() {
                                 <Card key={day.round} className="border border-divider">
                                     <CardBody className="p-3 space-y-2">
                                         <p className="text-xs font-bold text-foreground/50 uppercase">{day.label}</p>
-                                        {day.matches.map((m, i) => (
-                                            <div
-                                                key={i}
-                                                className={`flex items-center justify-between p-2.5 rounded-xl ${m.done ? "bg-success/5" : "bg-foreground/5"
-                                                    }`}
-                                            >
-                                                <span className="text-sm font-medium flex-1 text-right">{m.home}</span>
-                                                <span className={`mx-4 px-3 py-0.5 rounded-lg text-sm font-bold ${m.done ? "bg-success/10 text-success" : "bg-foreground/10 text-foreground/40"
-                                                    }`}>
-                                                    {m.score}
-                                                </span>
-                                                <span className="text-sm font-medium flex-1">{m.away}</span>
-                                            </div>
-                                        ))}
+                                        {day.matches.map((m, i) => {
+                                            const isYou = m.home === "NeymarSkillz" || m.away === "NeymarSkillz";
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className={`flex items-center p-2.5 rounded-xl transition-colors ${m.done ? "bg-success/5 cursor-pointer hover:bg-success/10" :
+                                                            isYou ? "bg-primary/5 border border-primary/20" :
+                                                                "bg-foreground/5"
+                                                        }`}
+                                                >
+                                                    <span className={`text-sm font-medium flex-1 text-right ${m.home === "NeymarSkillz" ? "text-primary" : ""}`}>
+                                                        {m.home}
+                                                    </span>
+                                                    <span className={`mx-3 px-3 py-0.5 rounded-lg text-sm font-bold ${m.done ? "bg-success/10 text-success" : "bg-foreground/10 text-foreground/40"
+                                                        }`}>
+                                                        {m.score}
+                                                    </span>
+                                                    <span className={`text-sm font-medium flex-1 ${m.away === "NeymarSkillz" ? "text-primary" : ""}`}>
+                                                        {m.away}
+                                                    </span>
+                                                    {/* Action */}
+                                                    <div className="ml-2 min-w-[90px] text-right">
+                                                        {m.done ? (
+                                                            <span className="text-[11px] text-foreground/40 font-medium">View Result →</span>
+                                                        ) : isYou ? (
+                                                            <span className="text-[11px] text-primary font-semibold">Submit Result →</span>
+                                                        ) : (
+                                                            <span className="text-[11px] text-foreground/20">Pending</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </CardBody>
                                 </Card>
                             ))}
