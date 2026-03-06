@@ -362,14 +362,14 @@ export default function BracketDemoPage() {
                                                             "bg-foreground/5"
                                                         }`}
                                                 >
-                                                    <span className={`text-sm font-medium flex-1 text-right ${m.home === "NeymarSkillz" ? "text-primary" : ""}`}>
+                                                    <span className={`text-sm font-medium flex-1 text-center ${m.home === "NeymarSkillz" ? "text-primary" : ""}`}>
                                                         {m.home}
                                                     </span>
                                                     <span className={`mx-3 px-3 py-0.5 rounded-lg text-sm font-bold ${m.done ? "bg-success/10 text-success" : "bg-foreground/10 text-foreground/40"
                                                         }`}>
                                                         {m.score}
                                                     </span>
-                                                    <span className={`text-sm font-medium flex-1 ${m.away === "NeymarSkillz" ? "text-primary" : ""}`}>
+                                                    <span className={`text-sm font-medium flex-1 text-center ${m.away === "NeymarSkillz" ? "text-primary" : ""}`}>
                                                         {m.away}
                                                     </span>
                                                     {/* Action icon */}
@@ -491,18 +491,18 @@ export default function BracketDemoPage() {
                                                 <div
                                                     key={i}
                                                     className={`flex items-center p-2.5 rounded-xl transition-colors ${m.done ? "bg-success/5" :
-                                                            isYou ? "bg-primary/5 border border-primary/20" :
-                                                                "bg-foreground/5"
+                                                        isYou ? "bg-primary/5 border border-primary/20" :
+                                                            "bg-foreground/5"
                                                         }`}
                                                 >
-                                                    <span className={`text-sm font-medium flex-1 text-right ${m.home === "NeymarSkillz" ? "text-primary" : ""}`}>
+                                                    <span className={`text-sm font-medium flex-1 text-center ${m.home === "NeymarSkillz" ? "text-primary" : ""}`}>
                                                         {m.home}
                                                     </span>
                                                     <span className={`mx-3 px-3 py-0.5 rounded-lg text-sm font-bold ${m.done ? "bg-success/10 text-success" : "bg-foreground/10 text-foreground/40"
                                                         }`}>
                                                         {m.score}
                                                     </span>
-                                                    <span className={`text-sm font-medium flex-1 ${m.away === "NeymarSkillz" ? "text-primary" : ""}`}>
+                                                    <span className={`text-sm font-medium flex-1 text-center ${m.away === "NeymarSkillz" ? "text-primary" : ""}`}>
                                                         {m.away}
                                                     </span>
                                                     <div className="ml-2 shrink-0">
