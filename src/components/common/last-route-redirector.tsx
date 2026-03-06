@@ -24,9 +24,9 @@ export function LastRouteRedirector() {
                         if (res.ok) {
                             router.replace(lastRoute);
                         } else {
-                            // Route no longer exists — go to community
+                            // Route no longer exists — go to vote
                             localStorage.removeItem(STORAGE_KEY);
-                            router.replace("/community");
+                            router.replace("/vote");
                         }
                     })
                     .catch(() => {
@@ -34,8 +34,8 @@ export function LastRouteRedirector() {
                         router.replace(lastRoute);
                     });
             } else {
-                // No saved route — default to community
-                router.replace("/community");
+                // No saved route — default to vote
+                router.replace("/vote");
             }
         } catch {
             // localStorage unavailable — do nothing
