@@ -20,11 +20,11 @@ export default function BracketPage() {
     const [viewingMatch, setViewingMatch] = useState<string | null>(null);
     const playerId = user?.player?.id;
 
-    // Fetch active bracket tournament
+    // Fetch active bracket tournament (any PES bracket type)
     const { data, isLoading, error } = useQuery({
         queryKey: ["active-bracket"],
         queryFn: async () => {
-            const res = await fetch("/api/tournaments?type=BRACKET_1V1&status=ACTIVE,IN_PROGRESS");
+            const res = await fetch("/api/tournaments?type=BRACKET_1V1,LEAGUE,GROUP_KNOCKOUT&status=ACTIVE,IN_PROGRESS");
             if (!res.ok) return null;
             const json = await res.json();
             return json.data?.[0] ?? null; // Latest active bracket tournament
@@ -32,6 +32,7 @@ export default function BracketPage() {
     });
 
     const tournamentId = data?.id;
+    const tournamentType = data?.type ?? "BRACKET_1V1";
 
     // Fetch bracket data for the tournament
     const { data: bracketData, isLoading: bracketLoading } = useQuery({
@@ -65,6 +66,12 @@ export default function BracketPage() {
         status: viewMatch.status,
         screenshotUrl: viewMatch.results?.[0]?.screenshotUrl ?? null,
     } : null;
+
+    // Format label
+    const formatLabel =
+        tournamentType === "LEAGUE" ? "League" :
+            tournamentType === "GROUP_KNOCKOUT" ? "Group + Knockout" :
+                "Knockout";
 
     // Loading state
     if (isLoading || bracketLoading) {
@@ -101,7 +108,7 @@ export default function BracketPage() {
                     <Swords className="h-5 w-5 text-primary" />
                     <div className="flex-1">
                         <p className="text-sm font-semibold">{data.name}</p>
-                        <p className="text-xs text-foreground/50">Bracket not generated yet</p>
+                        <p className="text-xs text-foreground/50">Matches not generated yet</p>
                     </div>
                     <Chip size="sm" color="warning" variant="dot">Waiting</Chip>
                 </div>
@@ -117,7 +124,7 @@ export default function BracketPage() {
                 <div className="flex-1">
                     <p className="text-sm font-semibold">{data.name}</p>
                     <p className="text-xs text-foreground/50">
-                        {bracketData.totalPlayers} Players • {bracketData.totalRounds} Rounds
+                        {bracketData.totalPlayers} Players • {formatLabel}
                     </p>
                 </div>
                 <Chip size="sm" color="success" variant="dot">In Progress</Chip>
@@ -134,9 +141,13 @@ export default function BracketPage() {
                 />
             )}
 
-            {/* Full Bracket */}
+            {/* Matches — bracket view works for all formats since they all use BracketMatch */}
             <div>
-                <h2 className="text-lg font-bold mb-4">Tournament Bracket</h2>
+                <h2 className="text-lg font-bold mb-4">
+                    {tournamentType === "LEAGUE" ? "All Matches" :
+                        tournamentType === "GROUP_KNOCKOUT" ? "Tournament Matches" :
+                            "Tournament Bracket"}
+                </h2>
                 <BracketView
                     rounds={bracketData.rounds}
                     totalRounds={bracketData.totalRounds}

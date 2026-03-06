@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
                 seasonId: seasonId || null,
                 createdBy: user.id,
                 startDate: new Date(),
-                type: type === "BRACKET_1V1" ? "BRACKET_1V1" : "BR",
+                type: ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT", "BR"].includes(type) ? type : "BR",
             },
         });
 
@@ -54,8 +54,17 @@ export async function GET(request: NextRequest) {
 
         const where: Record<string, unknown> = {};
 
+        // Support comma-separated status values (e.g. "ACTIVE,IN_PROGRESS")
         if (status !== "ALL") {
-            where.status = status;
+            const statuses = status.split(",").map(s => s.trim()).filter(Boolean);
+            where.status = statuses.length > 1 ? { in: statuses } : statuses[0];
+        }
+
+        // Support comma-separated type filter (e.g. "BRACKET_1V1,LEAGUE,GROUP_KNOCKOUT")
+        const typeFilter = searchParams.get("type");
+        if (typeFilter) {
+            const types = typeFilter.split(",").map(t => t.trim()).filter(Boolean);
+            where.type = types.length > 1 ? { in: types } : types[0];
         }
 
         if (search) {
