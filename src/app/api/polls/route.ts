@@ -138,11 +138,36 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { question, days, teamType, tournamentId } = body;
+        const { question, days, teamType, tournamentId, tournamentType, options: customOptions } = body;
 
         if (!question || !tournamentId) {
             return ErrorResponse({ message: "question and tournamentId are required", status: 400 });
         }
+
+        // If tournamentType is provided (PES flow), update the linked tournament's type
+        if (tournamentType && ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT", "BR"].includes(tournamentType)) {
+            await prisma.tournament.update({
+                where: { id: tournamentId },
+                data: { type: tournamentType },
+            });
+        }
+
+        // Use custom option names if provided, otherwise use defaults
+        const { GAME } = await import("@/lib/game-config");
+        const defaultOptions = GAME.features.hasTeamSizes
+            ? [
+                { name: "Nga Leh 😎", vote: "IN" },
+                { name: "Leh rei", vote: "OUT" },
+                { name: "Nga Leh solo 🫩", vote: "SOLO" },
+            ]
+            : [
+                { name: "Nga Leh 😎", vote: "IN" },
+                { name: "Leh rei", vote: "OUT" },
+            ];
+
+        const pollOptions = Array.isArray(customOptions) && customOptions.length > 0
+            ? customOptions.map((o: { name: string; vote: string }) => ({ name: o.name, vote: o.vote }))
+            : defaultOptions;
 
         const poll = await prisma.poll.create({
             data: {
@@ -151,11 +176,7 @@ export async function POST(request: Request) {
                 teamType: teamType || "DUO",
                 tournamentId,
                 options: {
-                    create: [
-                        { name: "Nga Leh 😎", vote: "IN" },
-                        { name: "Leh rei", vote: "OUT" },
-                        { name: "Nga Leh solo 🫩", vote: "SOLO" },
-                    ],
+                    create: pollOptions,
                 },
             },
             include: {

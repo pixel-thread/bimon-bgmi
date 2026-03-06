@@ -95,7 +95,18 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
             setTournamentFormat(GAME.defaultTournamentType ?? "BRACKET_1V1");
             setTournamentId("");
             setIsActive(true);
-            setOptions([]);
+            // Pre-populate default options for create
+            const defaultOpts: PollOptionDTO[] = GAME.features.hasTeamSizes
+                ? [
+                    { id: "new-in", name: "Nga Leh 😎", vote: "IN" },
+                    { id: "new-out", name: "Leh rei", vote: "OUT" },
+                    { id: "new-solo", name: "Nga Leh solo 🫩", vote: "SOLO" },
+                ]
+                : [
+                    { id: "new-in", name: "Nga Leh 😎", vote: "IN" },
+                    { id: "new-out", name: "Leh rei", vote: "OUT" },
+                ];
+            setOptions(defaultOpts);
         }
     }, [poll, isOpen]);
 
@@ -122,7 +133,13 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
         try {
             const body = isEdit
                 ? { id: poll!.id, question, days, teamType, isActive, options: options.map(o => ({ id: o.id, name: o.name })) }
-                : { question, days, teamType, tournamentId };
+                : {
+                    question, days, teamType, tournamentId,
+                    // For PES: send format so poll creation can update tournament type
+                    ...(!GAME.features.hasTeamSizes && { tournamentType: tournamentFormat }),
+                    // Send custom option names
+                    options: options.map(o => ({ name: o.name, vote: o.vote })),
+                };
 
             const res = await fetch("/api/polls", {
                 method: isEdit ? "PATCH" : "POST",
@@ -258,8 +275,8 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
                         </div>
                     )}
 
-                    {/* Editable poll options (edit mode only) */}
-                    {isEdit && options.length > 0 && (
+                    {/* Editable poll options */}
+                    {options.length > 0 && (
                         <div className="space-y-2">
                             <p className="text-xs font-medium text-foreground/50">Answer Options</p>
                             {options.map((opt) => (
