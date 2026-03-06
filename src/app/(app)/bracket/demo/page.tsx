@@ -135,6 +135,24 @@ const GROUP_B: GroupEntry[] = [
     { name: "CR7_Legend", w: 0, d: 0, l: 3, gf: 1, ga: 7, gd: -6, pts: 0 },
 ];
 
+const GROUP_MATCHES_A = [
+    { home: "KingMessi10", away: "MbappeSpeed", score: "2-1", done: true },
+    { home: "SalahKing", away: "BellinghamX", score: "1-0", done: true },
+    { home: "KingMessi10", away: "SalahKing", score: "3-0", done: true },
+    { home: "MbappeSpeed", away: "BellinghamX", score: "1-0", done: true },
+    { home: "KingMessi10", away: "BellinghamX", score: "1-1", done: true },
+    { home: "MbappeSpeed", away: "SalahKing", score: "1-1", done: true },
+];
+
+const GROUP_MATCHES_B = [
+    { home: "HaalandBeast", away: "NeymarSkillz", score: "3-1", done: true },
+    { home: "ViníciusJR", away: "CR7_Legend", score: "2-0", done: true },
+    { home: "HaalandBeast", away: "ViníciusJR", score: "2-1", done: true },
+    { home: "NeymarSkillz", away: "CR7_Legend", score: "3-0", done: true },
+    { home: "HaalandBeast", away: "CR7_Legend", score: "3-1", done: true },
+    { home: "NeymarSkillz", away: "ViníciusJR", score: "1-2", done: false },
+];
+
 const GK_KNOCKOUT_ROUNDS = [
     {
         round: 1,
@@ -452,6 +470,60 @@ export default function BracketDemoPage() {
                                             </table>
                                         </div>
                                         <p className="text-[10px] text-success/60">✅ Top 2 advance to knockout</p>
+                                    </CardBody>
+                                </Card>
+                            ))}
+                        </div>
+
+                        {/* Group Match Fixtures */}
+                        <div className="space-y-4">
+                            <h2 className="text-lg font-bold">Group Matches</h2>
+                            {[
+                                { name: "Group A", matches: GROUP_MATCHES_A },
+                                { name: "Group B", matches: GROUP_MATCHES_B },
+                            ].map((group) => (
+                                <Card key={group.name} className="border border-divider">
+                                    <CardBody className="p-3 space-y-2">
+                                        <p className="text-xs font-bold text-foreground/50 uppercase">{group.name} Fixtures</p>
+                                        {group.matches.map((m, i) => {
+                                            const isYou = m.home === "NeymarSkillz" || m.away === "NeymarSkillz";
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className={`flex items-center p-2.5 rounded-xl transition-colors ${m.done ? "bg-success/5" :
+                                                            isYou ? "bg-primary/5 border border-primary/20" :
+                                                                "bg-foreground/5"
+                                                        }`}
+                                                >
+                                                    <span className={`text-sm font-medium flex-1 text-right ${m.home === "NeymarSkillz" ? "text-primary" : ""}`}>
+                                                        {m.home}
+                                                    </span>
+                                                    <span className={`mx-3 px-3 py-0.5 rounded-lg text-sm font-bold ${m.done ? "bg-success/10 text-success" : "bg-foreground/10 text-foreground/40"
+                                                        }`}>
+                                                        {m.score}
+                                                    </span>
+                                                    <span className={`text-sm font-medium flex-1 ${m.away === "NeymarSkillz" ? "text-primary" : ""}`}>
+                                                        {m.away}
+                                                    </span>
+                                                    <div className="ml-2 shrink-0">
+                                                        {m.done ? (
+                                                            <button
+                                                                className="p-1.5 rounded-lg hover:bg-foreground/10 transition-colors"
+                                                                onClick={() => alert(`${m.home} ${m.score} ${m.away}\n\n📸 Screenshot would show here in production`)}
+                                                            >
+                                                                <Eye className="h-4 w-4 text-foreground/40" />
+                                                            </button>
+                                                        ) : isYou ? (
+                                                            <button className="p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors">
+                                                                <Upload className="h-4 w-4 text-primary" />
+                                                            </button>
+                                                        ) : (
+                                                            <div className="w-7 h-7" />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </CardBody>
                                 </Card>
                             ))}
