@@ -26,11 +26,11 @@ export async function getPreviousTournamentTeammates(
     }
 
     // Get the most recent N tournaments in this season (excluding the current one)
+    // Note: Don't filter by status — previous tournaments may be COMPLETED, IN_PROGRESS, etc.
     const recentTournaments = await prisma.tournament.findMany({
         where: {
             seasonId,
             id: { not: currentTournamentId },
-            status: "ACTIVE",
         },
         orderBy: { createdAt: "desc" },
         take: lookbackCount,
