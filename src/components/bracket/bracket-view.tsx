@@ -244,7 +244,68 @@ function MatchCard({
     );
 }
 
-/* ─── Bracket View (Horizontal Scrollable with CSS connectors) ─── */
+/* ─── Compact Match Slot (used inside the bracket tree) ──────── */
+
+function CompactMatch({
+    match,
+    currentPlayerId,
+    onViewResult,
+}: {
+    match: BracketMatchData;
+    currentPlayerId?: string;
+    onViewResult?: (matchId: string) => void;
+}) {
+    const isParticipant = currentPlayerId === match.player1Id || currentPlayerId === match.player2Id;
+    const hasResult = match.status === "CONFIRMED" || match.status === "SUBMITTED";
+    const statusColor =
+        match.status === "CONFIRMED" ? "bg-success" :
+            match.status === "SUBMITTED" ? "bg-warning" :
+                match.status === "DISPUTED" ? "bg-danger" :
+                    match.status === "BYE" ? "bg-secondary" :
+                        "bg-foreground/20";
+
+    const borderClass = isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
+        ? "border-primary/60"
+        : "border-divider";
+
+    const renderRow = (
+        player: BracketPlayer | null,
+        score: number | null,
+        isWinner: boolean,
+        isCurrent: boolean,
+        isTop: boolean,
+    ) => (
+        <div className={`flex items-center gap-1.5 px-2 py-1 ${isTop ? "rounded-t-lg" : "rounded-b-lg"} ${isWinner ? "bg-success/10" : ""
+            }`}>
+            <span className={`text-[11px] truncate flex-1 ${isCurrent ? "text-primary font-semibold" :
+                isWinner ? "text-success font-medium" :
+                    player ? "text-foreground/80" : "text-foreground/25 italic"
+                }`}>
+                {player?.displayName ?? "TBD"}
+            </span>
+            {score !== null && (
+                <span className={`text-[11px] font-bold tabular-nums min-w-[14px] text-right ${isWinner ? "text-success" : "text-foreground/40"
+                    }`}>{score}</span>
+            )}
+            {isWinner && <Trophy className="h-2.5 w-2.5 text-success shrink-0" />}
+        </div>
+    );
+
+    return (
+        <div
+            className={`border rounded-lg w-[170px] transition-all relative ${borderClass} ${hasResult ? "cursor-pointer hover:border-foreground/30" : ""
+                }`}
+            onClick={() => hasResult && onViewResult?.(match.id)}
+        >
+            <div className={`absolute -right-1 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${statusColor}`} />
+            {renderRow(match.player1, match.score1, match.winnerId === match.player1Id && match.winnerId !== null, currentPlayerId === match.player1Id, true)}
+            <div className="h-px bg-divider" />
+            {renderRow(match.player2, match.score2, match.winnerId === match.player2Id && match.winnerId !== null, currentPlayerId === match.player2Id, false)}
+        </div>
+    );
+}
+
+/* ─── Bracket View (proper bracket tree) ─────────────────────── */
 
 export function BracketView({
     rounds,
@@ -264,136 +325,83 @@ export function BracketView({
         );
     }
 
+    const MATCH_H = 48;
+    const GAP = 8;
+
     return (
         <div className="overflow-x-auto pb-4">
-            <div className="flex items-stretch min-w-max">
-                {rounds.map((round, idx) => {
+            <div className="flex items-start min-w-max">
+                {rounds.map((round, ri) => {
+                    const mult = Math.pow(2, ri);
+                    const gap = ri === 0 ? GAP : (MATCH_H + GAP) * mult - MATCH_H;
+                    const padTop = ri === 0 ? 0 : ((MATCH_H + GAP) * mult - MATCH_H - GAP) / 2;
+
                     return (
-                        <div key={round.round} className="flex items-stretch">
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.1 }}
-                                className="flex flex-col min-w-[210px]"
-                            >
-                                {/* Round header */}
-                                <div className="text-center mb-3">
-                                    <h3 className="text-xs font-bold text-foreground/70 uppercase tracking-wider">
-                                        {round.name}
-                                    </h3>
-                                    <p className="text-[10px] text-foreground/40">
-                                        {round.matches.length} match{round.matches.length !== 1 ? "es" : ""}
-                                    </p>
+                        <div key={round.round} className="flex items-start">
+                            <div style={{ paddingTop: padTop }}>
+                                <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider text-center mb-2">
+                                    {round.name}
+                                </p>
+                                <div className="flex flex-col" style={{ gap }}>
+                                    {round.matches.map((m) => (
+                                        <CompactMatch key={m.id} match={m} currentPlayerId={currentPlayerId} onViewResult={onViewResult} />
+                                    ))}
                                 </div>
+                            </div>
 
-                                {/* Matches in this round with connectors */}
-                                <div className="flex flex-col justify-around flex-1">
-                                    {round.matches.map((match) => {
-                                        // Color based on match status
-                                        const lineColor =
-                                            match.status === "CONFIRMED" ? "border-success/40" :
-                                                match.status === "SUBMITTED" ? "border-warning/40" :
-                                                    match.status === "DISPUTED" ? "border-danger/40" :
-                                                        match.status === "BYE" ? "border-secondary/30" :
-                                                            "border-foreground/10";
-                                        const bgColor =
-                                            match.status === "CONFIRMED" ? "bg-success/40" :
-                                                match.status === "SUBMITTED" ? "bg-warning/40" :
-                                                    match.status === "DISPUTED" ? "bg-danger/40" :
-                                                        match.status === "BYE" ? "bg-secondary/30" :
-                                                            "bg-foreground/10";
+                            {ri < rounds.length - 1 && (
+                                <div style={{ paddingTop: padTop }}>
+                                    <p className="text-[10px] opacity-0 mb-2">.</p>
+                                    <div className="flex flex-col" style={{ gap }}>
+                                        {Array.from({ length: Math.ceil(round.matches.length / 2) }).map((_, pi) => {
+                                            const pair = round.matches.slice(pi * 2, pi * 2 + 2);
+                                            const done = pair.every(m => m.status === "CONFIRMED" || m.status === "BYE");
+                                            const lc = done ? "border-success/30" : "border-foreground/10";
+                                            const h = pair.length === 2 ? MATCH_H * 2 + gap : MATCH_H;
 
-                                        return (
-                                            <div key={match.id} className="flex items-center">
-                                                {/* Left connector (from previous round) */}
-                                                {idx > 0 && (
-                                                    <div className={`w-4 border-t ${lineColor}`} />
-                                                )}
-                                                {/* Match card */}
-                                                <div className="flex-1">
-                                                    <MatchCard
-                                                        match={match}
-                                                        currentPlayerId={currentPlayerId}
-                                                        onSubmitResult={onSubmitResult}
-                                                        onConfirmResult={onConfirmResult}
-                                                        onDispute={onDispute}
-                                                        onViewResult={onViewResult}
-                                                    />
+                                            return (
+                                                <div key={pi} className="relative" style={{ height: h, width: 24 }}>
+                                                    {pair.length === 2 ? (
+                                                        <>
+                                                            <div className={`absolute left-0 top-[${MATCH_H / 2}px] border-t ${lc}`} style={{ width: 8, top: MATCH_H / 2 }} />
+                                                            <div className={`absolute left-0 border-t ${lc}`} style={{ width: 8, top: MATCH_H + gap + MATCH_H / 2 }} />
+                                                            <div className={`absolute left-[8px] border-r ${lc}`} style={{ top: MATCH_H / 2, bottom: h - MATCH_H - gap - MATCH_H / 2 }} />
+                                                            <div className={`absolute left-[8px] right-0 border-t ${lc}`} style={{ top: h / 2 }} />
+                                                        </>
+                                                    ) : (
+                                                        <div className={`absolute left-0 right-0 border-t ${lc}`} style={{ top: MATCH_H / 2 }} />
+                                                    )}
                                                 </div>
-                                                {/* Right connector (to next round) */}
-                                                {idx < rounds.length - 1 && (
-                                                    <div className={`w-4 border-t ${lineColor}`} />
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </motion.div>
-
-                            {/* Vertical merge connectors between rounds */}
-                            {idx < rounds.length - 1 && round.matches.length > 1 && (
-                                <div className="flex flex-col justify-around flex-shrink-0 w-5">
-                                    {Array.from({ length: Math.floor(round.matches.length / 2) }).map((_, pairIdx) => {
-                                        // Color vertical connector based on whether both matches in the pair are done
-                                        const pair = round.matches.slice(pairIdx * 2, pairIdx * 2 + 2);
-                                        const bothDone = pair.every(m => m.status === "CONFIRMED" || m.status === "BYE");
-                                        const vColor = bothDone ? "bg-success/40" : "bg-foreground/10";
-                                        const hColor = bothDone ? "border-success/40" : "border-foreground/10";
-
-                                        return (
-                                            <div key={pairIdx} className="flex-1 flex flex-col justify-center relative">
-                                                {/* Vertical line connecting pairs */}
-                                                <div
-                                                    className={`absolute left-0 w-px ${vColor}`}
-                                                    style={{
-                                                        top: "25%",
-                                                        bottom: "25%",
-                                                    }}
-                                                />
-                                                {/* Horizontal line to next round */}
-                                                <div className={`absolute left-0 right-0 top-1/2 border-t ${hColor}`} />
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
                         </div>
                     );
                 })}
 
-                {/* Winner column */}
                 {rounds.length > 0 && (() => {
-                    const final = rounds[rounds.length - 1]?.matches[0];
-                    const winner = final?.winner;
-                    const finalColor = winner ? "border-warning/60" : "border-foreground/10";
+                    const winner = rounds[rounds.length - 1]?.matches[0]?.winner;
                     return (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: rounds.length * 0.1 }}
-                            className="flex flex-col items-center justify-center min-w-[100px] gap-2 ml-2"
-                        >
-                            <div className={`w-4 border-t ${finalColor} self-start`} />
-                            <Trophy className={`h-8 w-8 ${winner ? "text-warning-500" : "text-foreground/20"}`} />
+                        <div className="flex flex-col items-center justify-center min-w-[80px] gap-1 self-center ml-2">
+                            <Trophy className={`h-7 w-7 ${winner ? "text-warning-500" : "text-foreground/15"}`} />
                             {winner ? (
                                 <>
-                                    <p className="text-sm font-bold text-warning-600 dark:text-warning-400">
-                                        🏆 Champion
-                                    </p>
-                                    <p className="text-xs font-medium">
-                                        {winner.displayName}
-                                    </p>
+                                    <p className="text-xs font-bold text-warning-500">🏆</p>
+                                    <p className="text-[11px] font-semibold text-center">{winner.displayName}</p>
                                 </>
                             ) : (
-                                <p className="text-xs text-foreground/30">TBD</p>
+                                <p className="text-[10px] text-foreground/25">TBD</p>
                             )}
-                        </motion.div>
+                        </div>
                     );
                 })()}
             </div>
         </div>
     );
 }
+
 
 /* ─── My Match Highlight ────────────────────────────────────── */
 
