@@ -327,7 +327,7 @@ function VotersDialog({
 
 
     const selectedVoters = selectedGroup ? (votersByVote[selectedGroup] ?? []) : [];
-    const getLabel = (v: string) => v === "IN" ? "Nga Leh 😎" : v === "OUT" ? "Leh rei, I'm ge 🏳️‍🌈" : "Nga Leh solo 🫩";
+    const getLabel = (v: string) => v === "IN" ? "Nga Leh 😎" : v === "OUT" ? "Leh rei 🏳️‍🌈" : "Nga Leh solo 🫩";
     const getColor = (v: string) => v === "IN" ? "bg-emerald-500" : v === "OUT" ? "bg-red-500" : "bg-amber-500";
 
     return (
@@ -504,7 +504,7 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
     // Get option names from DB, fall back to defaults
     const getOptionName = (vote: string) => {
         const opt = poll.options?.find((o: { vote: string; name: string }) => o.vote === vote);
-        return opt?.name || (vote === "IN" ? "Nga Leh 😎" : vote === "OUT" ? "Leh rei, I'm ge 🏳️‍🌈" : "Nga Leh solo 🫩");
+        return opt?.name || (vote === "IN" ? "Nga Leh 😎" : vote === "OUT" ? "Leh rei 🏳️‍🌈" : "Nga Leh solo 🫩");
     };
 
     // Vote breakdown for each option (percentage relative to max)
