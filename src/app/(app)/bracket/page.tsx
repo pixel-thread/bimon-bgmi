@@ -15,7 +15,7 @@ import { Chip, Tabs, Tab } from "@heroui/react";
  * Shows all active tournaments with tabs to switch between them.
  */
 export default function MatchesPage() {
-    const { user } = useAuthUser();
+    const { user, isAdmin } = useAuthUser();
     const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
     const [viewingMatch, setViewingMatch] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<string>("");
@@ -106,6 +106,7 @@ export default function MatchesPage() {
                 <TournamentContent
                     tournament={currentTournament}
                     playerId={playerId}
+                    isAdmin={isAdmin}
                     selectedMatch={selectedMatch}
                     viewingMatch={viewingMatch}
                     onSelectMatch={setSelectedMatch}
@@ -121,6 +122,7 @@ export default function MatchesPage() {
 function TournamentContent({
     tournament,
     playerId,
+    isAdmin,
     selectedMatch,
     viewingMatch,
     onSelectMatch,
@@ -128,6 +130,7 @@ function TournamentContent({
 }: {
     tournament: any;
     playerId?: string;
+    isAdmin?: boolean;
     selectedMatch: string | null;
     viewingMatch: string | null;
     onSelectMatch: (id: string | null) => void;
@@ -267,6 +270,8 @@ function TournamentContent({
                 isOpen={!!viewingMatch}
                 onClose={() => onViewMatch(null)}
                 match={viewMatchData}
+                isAdmin={isAdmin}
+                tournamentId={tournamentId}
             />
         </>
     );

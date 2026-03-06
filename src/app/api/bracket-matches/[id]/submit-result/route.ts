@@ -21,25 +21,35 @@ export async function POST(
 
         const { id: matchId } = await params;
         const body = await req.json();
-        const { score1, score2, screenshotUrl } = body as {
+        const { score1, score2, screenshotUrl, adminOverride } = body as {
             score1: number;
             score2: number;
             screenshotUrl?: string;
+            adminOverride?: boolean;
         };
 
         if (score1 === undefined || score2 === undefined) {
             return ErrorResponse({ message: "score1 and score2 required", status: 400 });
         }
 
-        // Get the player
+        // Get the user + role
         const user = await prisma.user.findUnique({
             where: { email: userId },
-            select: { player: { select: { id: true } } },
+            select: {
+                player: { select: { id: true } },
+                role: true,
+            },
         });
         if (!user?.player) {
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
         const playerId = user.player.id;
+        const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+
+        // Admin override check
+        if (adminOverride && !isAdmin) {
+            return ErrorResponse({ message: "Admin access required", status: 403 });
+        }
 
         // Get the bracket match
         const match = await prisma.bracketMatch.findUnique({
@@ -59,22 +69,26 @@ export async function POST(
             return ErrorResponse({ message: "Match not found", status: 404 });
         }
 
-        if (match.status !== "PENDING") {
+        // Admin can override any status; players can only submit PENDING matches
+        if (!adminOverride && match.status !== "PENDING") {
             return ErrorResponse({
                 message: `Match is already ${match.status.toLowerCase()}`,
                 status: 400,
             });
         }
 
-        // Verify this player is in this match
-        const isPlayer1 = match.player1Id === playerId;
-        const isPlayer2 = match.player2Id === playerId;
-        if (!isPlayer1 && !isPlayer2) {
-            return ErrorResponse({
-                message: "You are not a participant in this match",
-                status: 403,
-            });
+        // Verify participant (skip for admin override)
+        if (!adminOverride) {
+            const isPlayer1 = match.player1Id === playerId;
+            const isPlayer2 = match.player2Id === playerId;
+            if (!isPlayer1 && !isPlayer2) {
+                return ErrorResponse({
+                    message: "You are not a participant in this match",
+                    status: 403,
+                });
+            }
         }
+
         // Check tournament type to determine if draws are allowed
         const tournament = await prisma.tournament.findUnique({
             where: { id: match.tournamentId },
@@ -93,13 +107,10 @@ export async function POST(
                     status: 400,
                 });
             }
-            // Draw — no winner
             claimedWinnerId = null;
         } else {
             claimedWinnerId = score1 > score2 ? match.player1Id : match.player2Id;
         }
-
-        const disputeDeadline = new Date(Date.now() + DISPUTE_WINDOW_MS);
 
         // Save the result submission
         await prisma.bracketResult.create({
@@ -113,7 +124,38 @@ export async function POST(
             },
         });
 
-        // Update the match
+        // Admin override: auto-confirm immediately (no dispute window)
+        if (adminOverride) {
+            await prisma.bracketMatch.update({
+                where: { id: matchId },
+                data: {
+                    score1,
+                    score2,
+                    winnerId: claimedWinnerId,
+                    status: "CONFIRMED",
+                },
+            });
+
+            // Advance winners for knockout matches
+            const isKnockoutMatch =
+                tournament?.type === "BRACKET_1V1" ||
+                (tournament?.type === "GROUP_KNOCKOUT" && match.round > 0);
+
+            if (isKnockoutMatch) {
+                await advanceWinners(match.tournamentId, match.round);
+            }
+
+            return SuccessResponse({
+                data: { matchId, score1, score2, winnerId: claimedWinnerId },
+                message: isKnockoutMatch
+                    ? "Result confirmed by admin! Winner advances."
+                    : "Result confirmed by admin!",
+            });
+        }
+
+        // Normal player flow: SUBMITTED status with dispute window
+        const disputeDeadline = new Date(Date.now() + DISPUTE_WINDOW_MS);
+
         await prisma.bracketMatch.update({
             where: { id: matchId },
             data: {
