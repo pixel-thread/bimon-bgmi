@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { name, description, fee, seasonId } = body;
+        const { name, description, fee, seasonId, type } = body;
 
         if (!name?.trim()) {
             return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
                 seasonId: seasonId || null,
                 createdBy: user.id,
                 startDate: new Date(),
+                type: type === "BRACKET_1V1" ? "BRACKET_1V1" : "BR",
             },
         });
 
@@ -101,6 +102,7 @@ export async function GET(request: NextRequest) {
                 description: t.description,
                 fee: t.fee,
                 status: t.status,
+                type: t.type,
                 isWinnerDeclared: t.isWinnerDeclared,
                 season: t.season,
                 startDate: t.startDate,

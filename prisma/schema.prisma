@@ -40,6 +40,11 @@ enum TournamentStatus {
   DELETED
 }
 
+enum TournamentType {
+  BR           // Battle Royale (BGMI, Free Fire)
+  BRACKET_1V1  // 1v1 Bracket (PES, etc.)
+}
+
 enum TeamType {
   SOLO
   DUO
@@ -52,6 +57,14 @@ enum Vote {
   IN
   OUT
   SOLO
+}
+
+enum BracketMatchStatus {
+  PENDING
+  SUBMITTED
+  DISPUTED
+  CONFIRMED
+  BYE
 }
 
 enum TransactionType {
@@ -193,6 +206,10 @@ model Player {
   communityPolls        CommunityPoll[]
   communityPollOptions  CommunityPollOption[]
   communityPollVotes    CommunityPollVote[]
+  bracketMatchesAsP1    BracketMatch[]     @relation("BracketPlayer1")
+  bracketMatchesAsP2    BracketMatch[]     @relation("BracketPlayer2")
+  bracketMatchWins      BracketMatch[]     @relation("BracketWinner")
+  bracketResults        BracketResult[]
 
   @@index([userId])
   @@index([category])
@@ -483,6 +500,7 @@ model Tournament {
   createdBy        String?
   isWinnerDeclared Boolean          @default(false)
   status           TournamentStatus @default(ACTIVE)
+  type             TournamentType   @default(BR)
   galleryId        String?
   taxPreviewCache  Json?
 
@@ -502,6 +520,7 @@ model Tournament {
   income            Income[]
   sequence          TournamentSequence?
   donations         PrizePoolDonation[]
+  bracketMatches    BracketMatch[]
 
   @@index([seasonId])
   @@index([status])
@@ -1062,4 +1081,51 @@ model AppConfig {
   key       String   @id
   value     String
   updatedAt DateTime @updatedAt
+}
+
+// ─── 1v1 Bracket Tournament ─────────────────────────────────
+
+model BracketMatch {
+  id              String              @id @default(uuid())
+  tournamentId    String
+  round           Int                 // 1 = first round, 2 = quarters, etc.
+  position        Int                 // position within the round (0-indexed)
+  player1Id       String?
+  player2Id       String?
+  winnerId        String?
+  score1          Int?
+  score2          Int?
+  status          BracketMatchStatus  @default(PENDING)
+  disputeDeadline DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tournament Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player1    Player?       @relation("BracketPlayer1", fields: [player1Id], references: [id])
+  player2    Player?       @relation("BracketPlayer2", fields: [player2Id], references: [id])
+  winner     Player?       @relation("BracketWinner", fields: [winnerId], references: [id])
+  results    BracketResult[]
+
+  @@index([tournamentId])
+  @@index([tournamentId, round])
+  @@index([player1Id])
+  @@index([player2Id])
+}
+
+model BracketResult {
+  id              String  @id @default(uuid())
+  bracketMatchId  String
+  submittedById   String
+  claimedScore1   Int
+  claimedScore2   Int
+  screenshotUrl   String?
+  isDispute       Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  bracketMatch BracketMatch @relation(fields: [bracketMatchId], references: [id], onDelete: Cascade)
+  submittedBy  Player       @relation(fields: [submittedById], references: [id])
+
+  @@index([bracketMatchId])
 }

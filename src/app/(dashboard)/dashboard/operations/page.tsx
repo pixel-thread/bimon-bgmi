@@ -91,6 +91,7 @@ export default function OperationsPage() {
     const [tName, setTName] = useState("");
     const [tDescription, setTDescription] = useState("");
     const [tFee, setTFee] = useState("");
+    const [tType, setTType] = useState<"BR" | "BRACKET_1V1">("BR");
     const [tSeasonId, setTSeasonId] = useState("");
     const [showDesc, setShowDesc] = useState(false);
 
@@ -213,6 +214,7 @@ export default function OperationsPage() {
                     description: tDescription.trim() || null,
                     fee: tFee ? Number(tFee) : 0,
                     seasonId: tSeasonId || undefined,
+                    type: tType,
                 }),
             });
             if (!res.ok) {
@@ -684,6 +686,26 @@ export default function OperationsPage() {
                             onValueChange={setTFee}
                             type="number"
                         />
+                        <div className="flex gap-2">
+                            <Button
+                                size="sm"
+                                variant={tType === "BR" ? "solid" : "flat"}
+                                color={tType === "BR" ? "primary" : "default"}
+                                onPress={() => setTType("BR")}
+                                className="flex-1"
+                            >
+                                🎯 Battle Royale
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant={tType === "BRACKET_1V1" ? "solid" : "flat"}
+                                color={tType === "BRACKET_1V1" ? "secondary" : "default"}
+                                onPress={() => setTType("BRACKET_1V1")}
+                                className="flex-1"
+                            >
+                                ⚔️ 1v1 Bracket
+                            </Button>
+                        </div>
                         {showDesc ? (
                             <Textarea
                                 label="Description"
