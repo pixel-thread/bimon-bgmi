@@ -1,11 +1,31 @@
 /**
  * Game Configuration — single source of truth for game-specific strings.
  * Everything that differs between BGMI, Free Fire, and PES lives here.
+ *
+ * To add a new game:
+ *   1. Add entry to GameMode union type
+ *   2. Add config object to GAME_CONFIGS
+ *   3. Create new Vercel project with NEXT_PUBLIC_GAME_MODE=<mode>
+ *   4. Create new Supabase DB & push schema
+ *   That's it — all UI adapts automatically via feature flags.
+ *
  * Usage: import { GAME } from "@/lib/game-config";
- *        then use GAME.currency, GAME.passName, etc.
+ *        then use GAME.currency, GAME.passName, GAME.features.hasTeamSizes, etc.
  */
 
 export type GameMode = "bgmi" | "freefire" | "pes";
+
+/** Feature flags — control which UI sections & features are enabled per game */
+interface GameFeatures {
+    hasTeamSizes: boolean;       // BR team composition (SOLO/DUO/TRIO/SQUAD)
+    hasLuckyVoters: boolean;     // Random voter reward system
+    hasRoyalPass: boolean;       // Premium pass + streak rewards
+    hasMerit: boolean;           // Merit rating system
+    hasReferrals: boolean;       // Referral reward program
+    hasTopUps: boolean;          // In-app currency purchases
+    hasBracket: boolean;         // 1v1 bracket tournaments
+    hasBR: boolean;              // Battle Royale tournaments
+}
 
 interface GameConfig {
     mode: GameMode;
@@ -26,8 +46,12 @@ interface GameConfig {
     booyahBonus: boolean;        // Free Fire has Booyah (1st place bonus)
     // Tournament type
     defaultTournamentType: "BR" | "BRACKET_1V1";
-    hasBracket: boolean;         // whether this game supports bracket tournaments
-    hasBR: boolean;              // whether this game supports BR tournaments
+    /** @deprecated Use features.hasBracket instead */
+    hasBracket: boolean;
+    /** @deprecated Use features.hasBR instead */
+    hasBR: boolean;
+    // Feature flags
+    features: GameFeatures;
 }
 
 const GAME_CONFIGS: Record<GameMode, GameConfig> = {
@@ -50,6 +74,16 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         defaultTournamentType: "BR",
         hasBracket: false,
         hasBR: true,
+        features: {
+            hasTeamSizes: true,
+            hasLuckyVoters: true,
+            hasRoyalPass: true,
+            hasMerit: true,
+            hasReferrals: true,
+            hasTopUps: true,
+            hasBracket: false,
+            hasBR: true,
+        },
     },
     freefire: {
         mode: "freefire",
@@ -70,6 +104,16 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         defaultTournamentType: "BR",
         hasBracket: false,
         hasBR: true,
+        features: {
+            hasTeamSizes: true,
+            hasLuckyVoters: true,
+            hasRoyalPass: true,
+            hasMerit: true,
+            hasReferrals: true,
+            hasTopUps: true,
+            hasBracket: false,
+            hasBR: true,
+        },
     },
     pes: {
         mode: "pes",
@@ -90,6 +134,16 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         defaultTournamentType: "BRACKET_1V1",
         hasBracket: true,
         hasBR: false,
+        features: {
+            hasTeamSizes: false,       // PES is 1v1 only
+            hasLuckyVoters: false,      // Not applicable for 1v1
+            hasRoyalPass: false,        // No pass system for PES
+            hasMerit: false,            // No merit rating for 1v1
+            hasReferrals: true,         // Referrals still make sense
+            hasTopUps: true,            // Currency purchases still apply
+            hasBracket: true,
+            hasBR: false,
+        },
     },
 };
 

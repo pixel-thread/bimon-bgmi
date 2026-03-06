@@ -199,133 +199,143 @@ export default function SettingsPage() {
                             endContent={<span className="text-foreground/40">{GAME.currency}</span>}
                         />
                     </div>
-                    <Divider />
-                    <Switch
-                        isSelected={settings.enableTopUps}
-                        onValueChange={(v) => update("enableTopUps", v)}
-                        size="sm"
-                    >
-                        Enable Top-Ups ({GAME.currency} purchases)
-                    </Switch>
-                </CardBody>
-            </Card>
-
-            {/* Royal Pass */}
-            <Card>
-                <CardHeader className="flex gap-2 items-center pb-0">
-                    <Crown className="h-5 w-5 text-warning" />
-                    <div>
-                        <h2 className="text-lg font-semibold">{GAME.passName}</h2>
-                        <p className="text-xs text-foreground/50">Premium pass pricing and streak rewards</p>
-                    </div>
-                </CardHeader>
-                <CardBody className="gap-4">
-                    <Switch
-                        isSelected={settings.enableElitePass}
-                        onValueChange={(v) => update("enableElitePass", v)}
-                        size="sm"
-                    >
-                        Enable {GAME.passName}
-                    </Switch>
-                    {settings.enableElitePass && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Input
-                                label={`${GAME.passName} Price`}
-                                type="number"
+                    {GAME.features.hasTopUps && (
+                        <>
+                            <Divider />
+                            <Switch
+                                isSelected={settings.enableTopUps}
+                                onValueChange={(v) => update("enableTopUps", v)}
                                 size="sm"
-                                value={String(settings.elitePassPrice)}
-                                onValueChange={(v) => update("elitePassPrice", Number(v))}
-                                endContent={<span className="text-foreground/40">{GAME.currency}</span>}
-                            />
-                            <Input
-                                label="Original Price (strikethrough)"
-                                type="number"
-                                size="sm"
-                                value={String(settings.elitePassOrigPrice)}
-                                onValueChange={(v) => update("elitePassOrigPrice", Number(v))}
-                                endContent={<span className="text-foreground/40">{GAME.currency}</span>}
-                            />
-                            <Input
-                                label="Streak Milestone"
-                                type="number"
-                                size="sm"
-                                value={String(settings.streakMilestone)}
-                                onValueChange={(v) => update("streakMilestone", Number(v))}
-                                description="Tournaments needed for streak reward"
-                            />
-                            <Input
-                                label="Streak Reward"
-                                type="number"
-                                size="sm"
-                                value={String(settings.streakRewardAmount)}
-                                onValueChange={(v) => update("streakRewardAmount", Number(v))}
-                                endContent={<span className="text-foreground/40">{GAME.currency}</span>}
-                            />
-                        </div>
+                            >
+                                Enable Top-Ups ({GAME.currency} purchases)
+                            </Switch>
+                        </>
                     )}
                 </CardBody>
             </Card>
+
+            {/* Royal Pass — BR games only */}
+            {GAME.features.hasRoyalPass && (
+                <Card>
+                    <CardHeader className="flex gap-2 items-center pb-0">
+                        <Crown className="h-5 w-5 text-warning" />
+                        <div>
+                            <h2 className="text-lg font-semibold">{GAME.passName}</h2>
+                            <p className="text-xs text-foreground/50">Premium pass pricing and streak rewards</p>
+                        </div>
+                    </CardHeader>
+                    <CardBody className="gap-4">
+                        <Switch
+                            isSelected={settings.enableElitePass}
+                            onValueChange={(v) => update("enableElitePass", v)}
+                            size="sm"
+                        >
+                            Enable {GAME.passName}
+                        </Switch>
+                        {settings.enableElitePass && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Input
+                                    label={`${GAME.passName} Price`}
+                                    type="number"
+                                    size="sm"
+                                    value={String(settings.elitePassPrice)}
+                                    onValueChange={(v) => update("elitePassPrice", Number(v))}
+                                    endContent={<span className="text-foreground/40">{GAME.currency}</span>}
+                                />
+                                <Input
+                                    label="Original Price (strikethrough)"
+                                    type="number"
+                                    size="sm"
+                                    value={String(settings.elitePassOrigPrice)}
+                                    onValueChange={(v) => update("elitePassOrigPrice", Number(v))}
+                                    endContent={<span className="text-foreground/40">{GAME.currency}</span>}
+                                />
+                                <Input
+                                    label="Streak Milestone"
+                                    type="number"
+                                    size="sm"
+                                    value={String(settings.streakMilestone)}
+                                    onValueChange={(v) => update("streakMilestone", Number(v))}
+                                    description="Tournaments needed for streak reward"
+                                />
+                                <Input
+                                    label="Streak Reward"
+                                    type="number"
+                                    size="sm"
+                                    value={String(settings.streakRewardAmount)}
+                                    onValueChange={(v) => update("streakRewardAmount", Number(v))}
+                                    endContent={<span className="text-foreground/40">{GAME.currency}</span>}
+                                />
+                            </div>
+                        )}
+                    </CardBody>
+                </Card>
+            )}
 
             {/* Referrals */}
-            <Card>
-                <CardHeader className="flex gap-2 items-center pb-0">
-                    <Users className="h-5 w-5 text-primary" />
-                    <div>
-                        <h2 className="text-lg font-semibold">Referrals</h2>
-                        <p className="text-xs text-foreground/50">Referral rewards and requirements</p>
-                    </div>
-                </CardHeader>
-                <CardBody className="gap-4">
-                    <Switch
-                        isSelected={settings.enableReferrals}
-                        onValueChange={(v) => update("enableReferrals", v)}
-                        size="sm"
-                    >
-                        Enable Referrals
-                    </Switch>
-                    {settings.enableReferrals && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Input
-                                label="Referral Reward"
-                                type="number"
-                                size="sm"
-                                value={String(settings.referralReward)}
-                                onValueChange={(v) => update("referralReward", Number(v))}
-                                description={`${GAME.currency} earned per referral`}
-                                endContent={<span className="text-foreground/40">{GAME.currency}</span>}
-                            />
-                            <Input
-                                label="Tournaments Required"
-                                type="number"
-                                size="sm"
-                                value={String(settings.referralTournamentsReq)}
-                                onValueChange={(v) => update("referralTournamentsReq", Number(v))}
-                                description="Referee must play this many before reward"
-                            />
+            {GAME.features.hasReferrals && (
+                <Card>
+                    <CardHeader className="flex gap-2 items-center pb-0">
+                        <Users className="h-5 w-5 text-primary" />
+                        <div>
+                            <h2 className="text-lg font-semibold">Referrals</h2>
+                            <p className="text-xs text-foreground/50">Referral rewards and requirements</p>
                         </div>
-                    )}
-                </CardBody>
-            </Card>
+                    </CardHeader>
+                    <CardBody className="gap-4">
+                        <Switch
+                            isSelected={settings.enableReferrals}
+                            onValueChange={(v) => update("enableReferrals", v)}
+                            size="sm"
+                        >
+                            Enable Referrals
+                        </Switch>
+                        {settings.enableReferrals && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Input
+                                    label="Referral Reward"
+                                    type="number"
+                                    size="sm"
+                                    value={String(settings.referralReward)}
+                                    onValueChange={(v) => update("referralReward", Number(v))}
+                                    description={`${GAME.currency} earned per referral`}
+                                    endContent={<span className="text-foreground/40">{GAME.currency}</span>}
+                                />
+                                <Input
+                                    label="Tournaments Required"
+                                    type="number"
+                                    size="sm"
+                                    value={String(settings.referralTournamentsReq)}
+                                    onValueChange={(v) => update("referralTournamentsReq", Number(v))}
+                                    description="Referee must play this many before reward"
+                                />
+                            </div>
+                        )}
+                    </CardBody>
+                </Card>
+            )}
 
-            {/* Lucky Voters */}
-            <Card>
-                <CardHeader className="flex gap-2 items-center pb-0">
-                    <Clover className="h-5 w-5 text-success" />
-                    <div>
-                        <h2 className="text-lg font-semibold">Lucky Voters</h2>
-                        <p className="text-xs text-foreground/50">Random voter rewards</p>
-                    </div>
-                </CardHeader>
-                <CardBody>
-                    <Switch
-                        isSelected={settings.enableLuckyVoters}
-                        onValueChange={(v) => update("enableLuckyVoters", v)}
-                        size="sm"
-                    >
-                        Enable Lucky Voters
-                    </Switch>
-                </CardBody>
-            </Card>
+            {/* Lucky Voters — BR games only */}
+            {GAME.features.hasLuckyVoters && (
+                <Card>
+                    <CardHeader className="flex gap-2 items-center pb-0">
+                        <Clover className="h-5 w-5 text-success" />
+                        <div>
+                            <h2 className="text-lg font-semibold">Lucky Voters</h2>
+                            <p className="text-xs text-foreground/50">Random voter rewards</p>
+                        </div>
+                    </CardHeader>
+                    <CardBody>
+                        <Switch
+                            isSelected={settings.enableLuckyVoters}
+                            onValueChange={(v) => update("enableLuckyVoters", v)}
+                            size="sm"
+                        >
+                            Enable Lucky Voters
+                        </Switch>
+                    </CardBody>
+                </Card>
+            )}
 
             {/* Gameplay */}
             <Card>
@@ -354,78 +364,82 @@ export default function SettingsPage() {
                             description="Default poll duration text"
                         />
                     </div>
-                    <div>
-                        <p className="text-sm font-medium mb-2">Allowed Team Sizes</p>
-                        <div className="flex flex-wrap gap-2">
-                            {["SOLO", "DUO", "TRIO", "SQUAD"].map((size) => {
-                                const active = settings.allowedTeamSizes.includes(size);
-                                return (
-                                    <Chip
-                                        key={size}
-                                        variant={active ? "solid" : "bordered"}
-                                        color={active ? "primary" : "default"}
-                                        className="cursor-pointer"
-                                        onClick={() => {
-                                            const sizes = settings.allowedTeamSizes
-                                                .split(",")
-                                                .filter(Boolean);
-                                            if (active) {
-                                                update(
-                                                    "allowedTeamSizes",
-                                                    sizes.filter((s) => s !== size).join(",")
-                                                );
-                                            } else {
-                                                update(
-                                                    "allowedTeamSizes",
-                                                    [...sizes, size].join(",")
-                                                );
-                                            }
-                                        }}
-                                    >
-                                        {size}
-                                    </Chip>
-                                );
-                            })}
+                    {GAME.features.hasTeamSizes && (
+                        <div>
+                            <p className="text-sm font-medium mb-2">Allowed Team Sizes</p>
+                            <div className="flex flex-wrap gap-2">
+                                {["SOLO", "DUO", "TRIO", "SQUAD"].map((size) => {
+                                    const active = settings.allowedTeamSizes.includes(size);
+                                    return (
+                                        <Chip
+                                            key={size}
+                                            variant={active ? "solid" : "bordered"}
+                                            color={active ? "primary" : "default"}
+                                            className="cursor-pointer"
+                                            onClick={() => {
+                                                const sizes = settings.allowedTeamSizes
+                                                    .split(",")
+                                                    .filter(Boolean);
+                                                if (active) {
+                                                    update(
+                                                        "allowedTeamSizes",
+                                                        sizes.filter((s) => s !== size).join(",")
+                                                    );
+                                                } else {
+                                                    update(
+                                                        "allowedTeamSizes",
+                                                        [...sizes, size].join(",")
+                                                    );
+                                                }
+                                            }}
+                                        >
+                                            {size}
+                                        </Chip>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </CardBody>
             </Card>
 
-            {/* Merit System */}
-            <Card>
-                <CardHeader className="flex gap-2 items-center pb-0">
-                    <Shield className="h-5 w-5 text-danger" />
-                    <div>
-                        <h2 className="text-lg font-semibold">Merit System</h2>
-                        <p className="text-xs text-foreground/50">Auto-actions based on merit score thresholds</p>
-                    </div>
-                </CardHeader>
-                <CardBody className="gap-4">
-                    <p className="text-xs text-foreground/40">
-                        When a player&apos;s merit score drops to or below these thresholds, the action is applied automatically. Set to 0 to disable.
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                            label="🚫 Auto-Ban Threshold"
-                            type="number"
-                            size="sm"
-                            value={String(settings.meritBanThreshold ?? 0)}
-                            onValueChange={(v) => update("meritBanThreshold", Number(v))}
-                            description="Full ban at this merit %"
-                            endContent={<span className="text-foreground/40">%</span>}
-                        />
-                        <Input
-                            label="⚠️ Solo-Restrict Threshold"
-                            type="number"
-                            size="sm"
-                            value={String(settings.meritSoloRestrictThreshold ?? 0)}
-                            onValueChange={(v) => update("meritSoloRestrictThreshold", Number(v))}
-                            description="Warning zone at this merit %"
-                            endContent={<span className="text-foreground/40">%</span>}
-                        />
-                    </div>
-                </CardBody>
-            </Card>
+            {/* Merit System — BR games only */}
+            {GAME.features.hasMerit && (
+                <Card>
+                    <CardHeader className="flex gap-2 items-center pb-0">
+                        <Shield className="h-5 w-5 text-danger" />
+                        <div>
+                            <h2 className="text-lg font-semibold">Merit System</h2>
+                            <p className="text-xs text-foreground/50">Auto-actions based on merit score thresholds</p>
+                        </div>
+                    </CardHeader>
+                    <CardBody className="gap-4">
+                        <p className="text-xs text-foreground/40">
+                            When a player&apos;s merit score drops to or below these thresholds, the action is applied automatically. Set to 0 to disable.
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input
+                                label="🚫 Auto-Ban Threshold"
+                                type="number"
+                                size="sm"
+                                value={String(settings.meritBanThreshold ?? 0)}
+                                onValueChange={(v) => update("meritBanThreshold", Number(v))}
+                                description="Full ban at this merit %"
+                                endContent={<span className="text-foreground/40">%</span>}
+                            />
+                            <Input
+                                label="⚠️ Solo-Restrict Threshold"
+                                type="number"
+                                size="sm"
+                                value={String(settings.meritSoloRestrictThreshold ?? 0)}
+                                onValueChange={(v) => update("meritSoloRestrictThreshold", Number(v))}
+                                description="Warning zone at this merit %"
+                                endContent={<span className="text-foreground/40">%</span>}
+                            />
+                        </div>
+                    </CardBody>
+                </Card>
+            )}
 
             {/* Community */}
             <Card>

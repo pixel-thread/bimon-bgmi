@@ -30,6 +30,8 @@ interface SidebarItem {
     href: string;
     icon: typeof BarChart3;
     superAdminOnly?: boolean;
+    /** If set, only show when this feature is enabled in GAME.features */
+    feature?: keyof typeof GAME.features;
 }
 
 interface SidebarSection {
@@ -43,7 +45,7 @@ const sidebarItems: SidebarSection[] = [
         section: "Tournament",
         items: [
             { label: "Dashboard", href: "/dashboard", icon: BarChart3 },
-            { label: "Teams", href: "/dashboard/teams", icon: Swords },
+            { label: "Teams", href: "/dashboard/teams", icon: Swords, feature: "hasTeamSizes" },
             { label: "Players", href: "/dashboard/players", icon: Users, superAdminOnly: true },
             { label: "Polls", href: "/dashboard/polls", icon: Vote },
             { label: "Operations", href: "/dashboard/operations", icon: Settings },
@@ -53,7 +55,7 @@ const sidebarItems: SidebarSection[] = [
         section: "Platform",
         items: [
             { label: "Job Listings", href: "/dashboard/job-listings", icon: Briefcase },
-            { label: "Merit", href: "/dashboard/merit", icon: Star, superAdminOnly: true },
+            { label: "Merit", href: "/dashboard/merit", icon: Star, superAdminOnly: true, feature: "hasMerit" },
             { label: "Rules", href: "/dashboard/rules", icon: BookOpen },
         ],
     },
@@ -62,9 +64,9 @@ const sidebarItems: SidebarSection[] = [
         superAdminOnly: true,
         items: [
             { label: "Player Insights", href: "/dashboard/player-insights", icon: Eye },
-            { label: GAME.passName, href: "/dashboard/royal-pass", icon: Crown },
-            { label: "Referrals", href: "/dashboard/refer", icon: Users, superAdminOnly: true },
-            { label: "Lucky Voters", href: "/dashboard/lucky-voters", icon: Clover },
+            { label: GAME.passName, href: "/dashboard/royal-pass", icon: Crown, feature: "hasRoyalPass" },
+            { label: "Referrals", href: "/dashboard/refer", icon: Users, superAdminOnly: true, feature: "hasReferrals" },
+            { label: "Lucky Voters", href: "/dashboard/lucky-voters", icon: Clover, feature: "hasLuckyVoters" },
             { label: "Income", href: "/dashboard/income", icon: DollarSign },
         ],
     },
@@ -84,12 +86,16 @@ export function AdminSidebar() {
     const { isSuperAdmin } = useAuthUser();
     const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
 
-    // Filter sections and items by permission
+    // Filter sections and items by permission + feature flags
     const filteredSections = sidebarItems
         .filter((section) => !section.superAdminOnly || isSuperAdmin)
         .map((section) => ({
             ...section,
-            items: section.items.filter((item) => !item.superAdminOnly || isSuperAdmin),
+            items: section.items.filter((item) => {
+                if (item.superAdminOnly && !isSuperAdmin) return false;
+                if (item.feature && !GAME.features[item.feature]) return false;
+                return true;
+            }),
         }))
         .filter((section) => section.items.length > 0);
 
