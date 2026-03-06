@@ -110,6 +110,7 @@ export function DeclareWinnersModal({
             return res.json();
         },
         enabled: isOpen && !!tournamentId,
+        staleTime: 0, // Always fetch fresh data when modal opens
     });
 
     const rankings = rankingsData?.data ?? [];
