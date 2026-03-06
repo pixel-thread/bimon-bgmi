@@ -8,34 +8,136 @@ import { ViewResultModal } from "@/components/bracket/view-result-modal";
 import { useConfirmResult, useDisputeResult } from "@/components/bracket/submit-result-modal";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { Trophy, Swords, Loader2 } from "lucide-react";
-import { Chip } from "@heroui/react";
+import { Chip, Tabs, Tab } from "@heroui/react";
 
 /**
- * /bracket — Live bracket page.
- * Shows the active tournament's bracket with real data.
+ * /bracket — Matches page.
+ * Shows all active tournaments with tabs to switch between them.
  */
-export default function BracketPage() {
+export default function MatchesPage() {
     const { user } = useAuthUser();
     const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
     const [viewingMatch, setViewingMatch] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<string>("");
     const playerId = user?.player?.id;
 
-    // Fetch active bracket tournament (any PES bracket type)
-    const { data, isLoading, error } = useQuery({
-        queryKey: ["active-bracket"],
+    // Fetch ALL active tournaments (any PES type)
+    const { data: tournaments, isLoading } = useQuery({
+        queryKey: ["active-tournaments"],
         queryFn: async () => {
             const res = await fetch("/api/tournaments?type=BRACKET_1V1,LEAGUE,GROUP_KNOCKOUT&status=ACTIVE,IN_PROGRESS");
-            if (!res.ok) return null;
+            if (!res.ok) return [];
             const json = await res.json();
-            return json.data?.[0] ?? null; // Latest active bracket tournament
+            return json.data ?? [];
         },
     });
 
-    const tournamentId = data?.id;
-    const tournamentType = data?.type ?? "BRACKET_1V1";
+    // Auto-select first tab
+    const activeTournaments = tournaments ?? [];
+    const currentId = activeTab || activeTournaments[0]?.id || "";
+    const currentTournament = activeTournaments.find((t: any) => t.id === currentId);
 
-    // Fetch bracket data for the tournament
-    const { data: bracketData, isLoading: bracketLoading } = useQuery({
+    // Loading
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center gap-3 py-24">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-foreground/50">Loading matches...</p>
+            </div>
+        );
+    }
+
+    // No active tournaments
+    if (activeTournaments.length === 0) {
+        return (
+            <div className="flex flex-col items-center gap-4 py-24 text-center">
+                <div className="p-4 rounded-2xl bg-foreground/5">
+                    <Swords className="h-12 w-12 text-foreground/20" />
+                </div>
+                <div>
+                    <h2 className="text-lg font-bold">No Active Matches</h2>
+                    <p className="text-sm text-foreground/50 mt-1">
+                        Check the Vote page for upcoming tournaments
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    const formatIcon = (type: string) =>
+        type === "LEAGUE" ? "🏟️" :
+            type === "GROUP_KNOCKOUT" ? "🌍" : "⚔️";
+
+    return (
+        <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+            {/* Tournament tabs (only show if multiple) */}
+            {activeTournaments.length > 1 && (
+                <Tabs
+                    selectedKey={currentId}
+                    onSelectionChange={(key) => {
+                        setActiveTab(key as string);
+                        setSelectedMatch(null);
+                        setViewingMatch(null);
+                    }}
+                    color="primary"
+                    variant="solid"
+                    classNames={{
+                        tabList: "bg-foreground/5 w-full",
+                        tab: "font-semibold",
+                    }}
+                    fullWidth
+                >
+                    {activeTournaments.map((t: any) => (
+                        <Tab
+                            key={t.id}
+                            title={
+                                <span className="flex items-center gap-1.5">
+                                    <span>{formatIcon(t.type)}</span>
+                                    <span className="truncate max-w-[120px]">{t.name}</span>
+                                </span>
+                            }
+                        />
+                    ))}
+                </Tabs>
+            )}
+
+            {/* Selected tournament content */}
+            {currentTournament && (
+                <TournamentContent
+                    tournament={currentTournament}
+                    playerId={playerId}
+                    selectedMatch={selectedMatch}
+                    viewingMatch={viewingMatch}
+                    onSelectMatch={setSelectedMatch}
+                    onViewMatch={setViewingMatch}
+                />
+            )}
+        </div>
+    );
+}
+
+/* ─── Single Tournament Content ─────────────────────────────── */
+
+function TournamentContent({
+    tournament,
+    playerId,
+    selectedMatch,
+    viewingMatch,
+    onSelectMatch,
+    onViewMatch,
+}: {
+    tournament: any;
+    playerId?: string;
+    selectedMatch: string | null;
+    viewingMatch: string | null;
+    onSelectMatch: (id: string | null) => void;
+    onViewMatch: (id: string | null) => void;
+}) {
+    const tournamentId = tournament.id;
+    const tournamentType = tournament.type ?? "BRACKET_1V1";
+
+    // Fetch bracket/match data
+    const { data: bracketData, isLoading } = useQuery({
         queryKey: ["bracket", tournamentId],
         queryFn: async () => {
             const res = await fetch(`/api/tournaments/${tournamentId}/bracket`);
@@ -46,10 +148,10 @@ export default function BracketPage() {
         enabled: !!tournamentId,
     });
 
-    const confirmResult = useConfirmResult(tournamentId ?? "");
-    const disputeResult = useDisputeResult(tournamentId ?? "");
+    const confirmResult = useConfirmResult(tournamentId);
+    const disputeResult = useDisputeResult(tournamentId);
 
-    // Find match data for view result modal
+    // View result modal data
     const allMatches = bracketData?.rounds?.flatMap((r: any) => r.matches) ?? [];
     const viewMatch = viewingMatch ? allMatches.find((m: any) => m.id === viewingMatch) : null;
     const viewMatchData = viewMatch ? {
@@ -67,62 +169,41 @@ export default function BracketPage() {
         screenshotUrl: viewMatch.results?.[0]?.screenshotUrl ?? null,
     } : null;
 
-    // Format label
     const formatLabel =
         tournamentType === "LEAGUE" ? "League" :
             tournamentType === "GROUP_KNOCKOUT" ? "Group + Knockout" :
                 "Knockout";
 
-    // Loading state
-    if (isLoading || bracketLoading) {
+    if (isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center gap-3 py-24">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-foreground/50">Loading matches...</p>
+            <div className="flex flex-col items-center justify-center gap-3 py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <p className="text-sm text-foreground/50">Loading...</p>
             </div>
         );
     }
 
-    // No active tournament
-    if (!data || !tournamentId) {
-        return (
-            <div className="flex flex-col items-center gap-4 py-24 text-center">
-                <div className="p-4 rounded-2xl bg-foreground/5">
-                    <Swords className="h-12 w-12 text-foreground/20" />
-                </div>
-                <div>
-                    <h2 className="text-lg font-bold">No Tournament Active</h2>
-                    <p className="text-sm text-foreground/50 mt-1">
-                        Check the Vote page for upcoming tournaments
-                    </p>
-                </div>
-            </div>
-        );
-    }
-
-    // Tournament exists but no bracket yet
+    // No matches generated yet
     if (!bracketData?.rounds || bracketData.rounds.length === 0) {
         return (
-            <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-                <div className="flex items-center gap-4 p-4 rounded-2xl bg-foreground/5 border border-divider">
-                    <Swords className="h-5 w-5 text-primary" />
-                    <div className="flex-1">
-                        <p className="text-sm font-semibold">{data.name}</p>
-                        <p className="text-xs text-foreground/50">Matches not generated yet</p>
-                    </div>
-                    <Chip size="sm" color="warning" variant="dot">Waiting</Chip>
+            <div className="flex items-center gap-4 p-4 rounded-2xl bg-foreground/5 border border-divider">
+                <Swords className="h-5 w-5 text-primary" />
+                <div className="flex-1">
+                    <p className="text-sm font-semibold">{tournament.name}</p>
+                    <p className="text-xs text-foreground/50">Matches not generated yet</p>
                 </div>
+                <Chip size="sm" color="warning" variant="dot">Waiting</Chip>
             </div>
         );
     }
 
     return (
-        <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+        <>
             {/* Tournament Info */}
             <div className="flex items-center gap-4 p-4 rounded-2xl bg-foreground/5 border border-divider">
                 <Swords className="h-5 w-5 text-primary" />
                 <div className="flex-1">
-                    <p className="text-sm font-semibold">{data.name}</p>
+                    <p className="text-sm font-semibold">{tournament.name}</p>
                     <p className="text-xs text-foreground/50">
                         {bracketData.totalPlayers} Players • {formatLabel}
                     </p>
@@ -135,13 +216,13 @@ export default function BracketPage() {
                 <MyBracketMatch
                     rounds={bracketData.rounds}
                     currentPlayerId={playerId}
-                    onSubmitResult={(id) => setSelectedMatch(id)}
+                    onSubmitResult={(id) => onSelectMatch(id)}
                     onConfirmResult={(id) => confirmResult.mutate(id)}
                     onDispute={(id) => disputeResult.mutate(id)}
                 />
             )}
 
-            {/* Matches — bracket view works for all formats since they all use BracketMatch */}
+            {/* Matches */}
             <div>
                 <h2 className="text-lg font-bold mb-4">
                     {tournamentType === "LEAGUE" ? "All Matches" :
@@ -152,10 +233,10 @@ export default function BracketPage() {
                     rounds={bracketData.rounds}
                     totalRounds={bracketData.totalRounds}
                     currentPlayerId={playerId}
-                    onSubmitResult={(id) => setSelectedMatch(id)}
+                    onSubmitResult={(id) => onSelectMatch(id)}
                     onConfirmResult={(id) => confirmResult.mutate(id)}
                     onDispute={(id) => disputeResult.mutate(id)}
-                    onViewResult={(id) => setViewingMatch(id)}
+                    onViewResult={(id) => onViewMatch(id)}
                 />
             </div>
 
@@ -177,16 +258,16 @@ export default function BracketPage() {
                     matchId={selectedMatch}
                     tournamentId={tournamentId}
                     isOpen={!!selectedMatch}
-                    onClose={() => setSelectedMatch(null)}
+                    onClose={() => onSelectMatch(null)}
                 />
             )}
 
             {/* View Result Modal */}
             <ViewResultModal
                 isOpen={!!viewingMatch}
-                onClose={() => setViewingMatch(null)}
+                onClose={() => onViewMatch(null)}
                 match={viewMatchData}
             />
-        </div>
+        </>
     );
 }
