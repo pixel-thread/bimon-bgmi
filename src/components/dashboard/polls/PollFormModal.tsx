@@ -41,6 +41,11 @@ interface TournamentOption {
 }
 
 const TEAM_TYPES = ["DYNAMIC", "SOLO", "DUO", "TRIO", "SQUAD"];
+const TOURNAMENT_FORMAT_LABELS: Record<string, string> = {
+    BRACKET_1V1: "⚔️ Knockout",
+    LEAGUE: "🏟️ League",
+    GROUP_KNOCKOUT: "🌍 Group + Knockout",
+};
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 interface PollFormModalProps {
@@ -55,7 +60,8 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
 
     const [question, setQuestion] = useState("");
     const [days, setDays] = useState("Monday");
-    const [teamType, setTeamType] = useState("DYNAMIC");
+    const [teamType, setTeamType] = useState(GAME.features.hasTeamSizes ? "DYNAMIC" : "SOLO");
+    const [tournamentFormat, setTournamentFormat] = useState(GAME.defaultTournamentType ?? "BRACKET_1V1");
     const [tournamentId, setTournamentId] = useState("");
     const [isActive, setIsActive] = useState(true);
     const [options, setOptions] = useState<PollOptionDTO[]>([]);
@@ -85,7 +91,8 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
         } else {
             setQuestion("");
             setDays("Monday");
-            setTeamType("DYNAMIC");
+            setTeamType(GAME.features.hasTeamSizes ? "DYNAMIC" : "SOLO");
+            setTournamentFormat(GAME.defaultTournamentType ?? "BRACKET_1V1");
             setTournamentId("");
             setIsActive(true);
             setOptions([]);
@@ -193,19 +200,37 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
                     />
 
                     <div className="grid grid-cols-2 gap-3">
-                        <Select
-                            label="Team Type"
-                            selectedKeys={[teamType]}
-                            onSelectionChange={(keys) => {
-                                const key = Array.from(keys)[0] as string;
-                                if (key) setTeamType(key);
-                            }}
-                            size="sm"
-                        >
-                            {TEAM_TYPES.map((t) => (
-                                <SelectItem key={t} textValue={t}>{t}</SelectItem>
-                            ))}
-                        </Select>
+                        {GAME.features.hasTeamSizes ? (
+                            <Select
+                                label="Team Type"
+                                selectedKeys={[teamType]}
+                                onSelectionChange={(keys) => {
+                                    const key = Array.from(keys)[0] as string;
+                                    if (key) setTeamType(key);
+                                }}
+                                size="sm"
+                            >
+                                {TEAM_TYPES.map((t) => (
+                                    <SelectItem key={t} textValue={t}>{t}</SelectItem>
+                                ))}
+                            </Select>
+                        ) : (
+                            <Select
+                                label="Format"
+                                selectedKeys={[tournamentFormat]}
+                                onSelectionChange={(keys) => {
+                                    const key = Array.from(keys)[0] as string;
+                                    if (key) setTournamentFormat(key);
+                                }}
+                                size="sm"
+                            >
+                                {(GAME.tournamentTypes ?? ["BRACKET_1V1"]).map((t: string) => (
+                                    <SelectItem key={t} textValue={TOURNAMENT_FORMAT_LABELS[t] ?? t}>
+                                        {TOURNAMENT_FORMAT_LABELS[t] ?? t}
+                                    </SelectItem>
+                                ))}
+                            </Select>
+                        )}
 
                         <Select
                             label="Day"

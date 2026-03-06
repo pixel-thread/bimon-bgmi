@@ -336,76 +336,110 @@ export function BracketView({
     const MATCH_H = 48;
     const GAP = 8;
 
+    // Separate 3rd place match from the final round (position 1 = 3rd place)
+    const thirdPlaceMatch = rounds.length > 0
+        ? rounds[rounds.length - 1]?.matches.find(m => m.position === 1)
+        : null;
+
+    // Filter 3rd place match out of the main bracket rounds
+    const bracketRounds = rounds.map((round, ri) => {
+        if (ri === rounds.length - 1 && thirdPlaceMatch) {
+            return {
+                ...round,
+                name: "Final",
+                matches: round.matches.filter(m => m.position !== 1),
+            };
+        }
+        return round;
+    });
+
     return (
-        <div className="overflow-x-auto pb-4">
-            <div className="flex items-start min-w-max">
-                {rounds.map((round, ri) => {
-                    const mult = Math.pow(2, ri);
-                    const gap = ri === 0 ? GAP : (MATCH_H + GAP) * mult - MATCH_H;
-                    const padTop = ri === 0 ? 0 : ((MATCH_H + GAP) * mult - MATCH_H - GAP) / 2;
+        <div className="space-y-6">
+            {/* Main bracket tree */}
+            <div className="overflow-x-auto pb-4">
+                <div className="flex items-start min-w-max">
+                    {bracketRounds.map((round, ri) => {
+                        const mult = Math.pow(2, ri);
+                        const gap = ri === 0 ? GAP : (MATCH_H + GAP) * mult - MATCH_H;
+                        const padTop = ri === 0 ? 0 : ((MATCH_H + GAP) * mult - MATCH_H - GAP) / 2;
 
-                    return (
-                        <div key={round.round} className="flex items-start">
-                            <div style={{ paddingTop: padTop }}>
-                                <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider text-center mb-2">
-                                    {round.name}
-                                </p>
-                                <div className="flex flex-col" style={{ gap }}>
-                                    {round.matches.map((m) => (
-                                        <CompactMatch key={m.id} match={m} currentPlayerId={currentPlayerId} onViewResult={onViewResult} />
-                                    ))}
-                                </div>
-                            </div>
-
-                            {ri < rounds.length - 1 && (
+                        return (
+                            <div key={round.round} className="flex items-start">
                                 <div style={{ paddingTop: padTop }}>
-                                    <p className="text-[10px] opacity-0 mb-2">.</p>
+                                    <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider text-center mb-2">
+                                        {round.name}
+                                    </p>
                                     <div className="flex flex-col" style={{ gap }}>
-                                        {Array.from({ length: Math.ceil(round.matches.length / 2) }).map((_, pi) => {
-                                            const pair = round.matches.slice(pi * 2, pi * 2 + 2);
-                                            const done = pair.every(m => m.status === "CONFIRMED" || m.status === "BYE");
-                                            const lc = done ? "border-success/30" : "border-foreground/10";
-                                            const h = pair.length === 2 ? MATCH_H * 2 + gap : MATCH_H;
-
-                                            return (
-                                                <div key={pi} className="relative" style={{ height: h, width: 24 }}>
-                                                    {pair.length === 2 ? (
-                                                        <>
-                                                            <div className={`absolute left-0 top-[${MATCH_H / 2}px] border-t ${lc}`} style={{ width: 8, top: MATCH_H / 2 }} />
-                                                            <div className={`absolute left-0 border-t ${lc}`} style={{ width: 8, top: MATCH_H + gap + MATCH_H / 2 }} />
-                                                            <div className={`absolute left-[8px] border-r ${lc}`} style={{ top: MATCH_H / 2, bottom: h - MATCH_H - gap - MATCH_H / 2 }} />
-                                                            <div className={`absolute left-[8px] right-0 border-t ${lc}`} style={{ top: h / 2 }} />
-                                                        </>
-                                                    ) : (
-                                                        <div className={`absolute left-0 right-0 border-t ${lc}`} style={{ top: MATCH_H / 2 }} />
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
+                                        {round.matches.map((m) => (
+                                            <CompactMatch key={m.id} match={m} currentPlayerId={currentPlayerId} onViewResult={onViewResult} />
+                                        ))}
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                    );
-                })}
 
-                {rounds.length > 0 && (() => {
-                    const winner = rounds[rounds.length - 1]?.matches[0]?.winner;
-                    return (
-                        <div className="flex flex-col items-center justify-center min-w-[80px] gap-1 self-center ml-2">
-                            <Trophy className={`h-7 w-7 ${winner ? "text-warning-500" : "text-foreground/15"}`} />
-                            {winner ? (
-                                <>
-                                    <p className="text-xs font-bold text-warning-500">🏆</p>
-                                    <p className="text-[11px] font-semibold text-center">{winner.displayName}</p>
-                                </>
-                            ) : (
-                                <p className="text-[10px] text-foreground/25">TBD</p>
-                            )}
-                        </div>
-                    );
-                })()}
+                                {ri < bracketRounds.length - 1 && (
+                                    <div style={{ paddingTop: padTop }}>
+                                        <p className="text-[10px] opacity-0 mb-2">.</p>
+                                        <div className="flex flex-col" style={{ gap }}>
+                                            {Array.from({ length: Math.ceil(round.matches.length / 2) }).map((_, pi) => {
+                                                const pair = round.matches.slice(pi * 2, pi * 2 + 2);
+                                                const done = pair.every(m => m.status === "CONFIRMED" || m.status === "BYE");
+                                                const lc = done ? "border-success/30" : "border-foreground/10";
+                                                const h = pair.length === 2 ? MATCH_H * 2 + gap : MATCH_H;
+
+                                                return (
+                                                    <div key={pi} className="relative" style={{ height: h, width: 24 }}>
+                                                        {pair.length === 2 ? (
+                                                            <>
+                                                                <div className={`absolute left-0 top-[${MATCH_H / 2}px] border-t ${lc}`} style={{ width: 8, top: MATCH_H / 2 }} />
+                                                                <div className={`absolute left-0 border-t ${lc}`} style={{ width: 8, top: MATCH_H + gap + MATCH_H / 2 }} />
+                                                                <div className={`absolute left-[8px] border-r ${lc}`} style={{ top: MATCH_H / 2, bottom: h - MATCH_H - gap - MATCH_H / 2 }} />
+                                                                <div className={`absolute left-[8px] right-0 border-t ${lc}`} style={{ top: h / 2 }} />
+                                                            </>
+                                                        ) : (
+                                                            <div className={`absolute left-0 right-0 border-t ${lc}`} style={{ top: MATCH_H / 2 }} />
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+
+                    {bracketRounds.length > 0 && (() => {
+                        const winner = bracketRounds[bracketRounds.length - 1]?.matches[0]?.winner;
+                        return (
+                            <div className="flex flex-col items-center justify-center min-w-[80px] gap-1 self-center ml-2">
+                                <Trophy className={`h-7 w-7 ${winner ? "text-warning-500" : "text-foreground/15"}`} />
+                                {winner ? (
+                                    <>
+                                        <p className="text-xs font-bold text-warning-500">🏆</p>
+                                        <p className="text-[11px] font-semibold text-center">{winner.displayName}</p>
+                                    </>
+                                ) : (
+                                    <p className="text-[10px] text-foreground/25">TBD</p>
+                                )}
+                            </div>
+                        );
+                    })()}
+                </div>
             </div>
+
+            {/* 3rd Place Match — separate card below */}
+            {thirdPlaceMatch && (
+                <div className="max-w-xs">
+                    <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-2">
+                        🥉 3rd Place Match
+                    </p>
+                    <CompactMatch
+                        match={thirdPlaceMatch}
+                        currentPlayerId={currentPlayerId}
+                        onViewResult={onViewResult}
+                    />
+                </div>
+            )}
         </div>
     );
 }

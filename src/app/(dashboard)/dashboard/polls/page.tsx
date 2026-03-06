@@ -329,13 +329,15 @@ export default function PollsAdminPage() {
                                                     >
                                                         {poll.isActive ? "Active" : "Closed"}
                                                     </Chip>
-                                                    <Chip
-                                                        size="sm"
-                                                        variant="flat"
-                                                        className="text-[10px]"
-                                                    >
-                                                        {poll.teamType}
-                                                    </Chip>
+                                                    {GAME.features.hasTeamSizes && (
+                                                        <Chip
+                                                            size="sm"
+                                                            variant="flat"
+                                                            className="text-[10px]"
+                                                        >
+                                                            {poll.teamType}
+                                                        </Chip>
+                                                    )}
                                                 </div>
                                             </CardHeader>
                                             <Divider />
