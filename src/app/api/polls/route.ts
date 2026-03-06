@@ -154,7 +154,8 @@ export async function POST(request: Request) {
 
         // Use custom option names if provided, otherwise use defaults
         const { GAME } = await import("@/lib/game-config");
-        const defaultOptions = GAME.features.hasTeamSizes
+        type VoteType = "IN" | "OUT" | "SOLO";
+        const defaultOptions: { name: string; vote: VoteType }[] = GAME.features.hasTeamSizes
             ? [
                 { name: "Nga Leh 😎", vote: "IN" },
                 { name: "Leh rei", vote: "OUT" },
@@ -165,8 +166,8 @@ export async function POST(request: Request) {
                 { name: "Leh rei", vote: "OUT" },
             ];
 
-        const pollOptions = Array.isArray(customOptions) && customOptions.length > 0
-            ? customOptions.map((o: { name: string; vote: string }) => ({ name: o.name, vote: o.vote as "IN" | "OUT" | "SOLO" }))
+        const pollOptions: { name: string; vote: VoteType }[] = Array.isArray(customOptions) && customOptions.length > 0
+            ? customOptions.map((o: { name: string; vote: string }) => ({ name: o.name, vote: o.vote as VoteType }))
             : defaultOptions;
 
         const poll = await prisma.poll.create({
