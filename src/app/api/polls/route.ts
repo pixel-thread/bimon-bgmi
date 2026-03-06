@@ -153,7 +153,7 @@ export async function POST(request: Request) {
                 options: {
                     create: [
                         { name: "Nga Leh 😎", vote: "IN" },
-                        { name: "Leh rei 🏳️‍🌈", vote: "OUT" },
+                        { name: "Leh rei", vote: "OUT" },
                         { name: "Nga Leh solo 🫩", vote: "SOLO" },
                     ],
                 },
