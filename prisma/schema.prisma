@@ -41,8 +41,10 @@ enum TournamentStatus {
 }
 
 enum TournamentType {
-  BR           // Battle Royale (BGMI, Free Fire)
-  BRACKET_1V1  // 1v1 Bracket (PES, etc.)
+  BR              // Battle Royale (BGMI, Free Fire)
+  BRACKET_1V1     // Single Elimination 1v1 Knockout
+  LEAGUE          // Round-robin League (everyone plays everyone)
+  GROUP_KNOCKOUT  // Group stage → Knockout (FIFA World Cup style)
 }
 
 enum TeamType {

@@ -23,8 +23,10 @@ interface GameFeatures {
     hasMerit: boolean;           // Merit rating system
     hasReferrals: boolean;       // Referral reward program
     hasTopUps: boolean;          // In-app currency purchases
-    hasBracket: boolean;         // 1v1 bracket tournaments
+    hasBracket: boolean;         // 1v1 bracket tournaments (knockout)
     hasBR: boolean;              // Battle Royale tournaments
+    hasLeague: boolean;          // Round-robin league format
+    hasGroupKnockout: boolean;   // Group stage → knockout (World Cup style)
 }
 
 interface GameConfig {
@@ -39,17 +41,14 @@ interface GameConfig {
     passName: string;            // "Royal Pass" or "Elite Pass"
     passEmoji: string;           // "👑"
     idLabel: string;             // "BGMI ID" or "PES ID"
-    idPlaceholder: string;       // placeholder text for ID input
-    hasUID: boolean;             // whether the game uses a separate UID field
-    // Scoring
-    scoringSystem: "bgmi" | "ffws" | "bracket";
-    booyahBonus: boolean;        // Free Fire has Booyah (1st place bonus)
-    // Tournament type
-    defaultTournamentType: "BR" | "BRACKET_1V1";
-    /** @deprecated Use features.hasBracket instead */
-    hasBracket: boolean;
-    /** @deprecated Use features.hasBR instead */
-    hasBR: boolean;
+    idPlaceholder: string;       // e.g. "Your BGMI ID (numeric)"
+    hasUID: boolean;             // Whether to show UID field in onboarding
+    scoringSystem: string;       // "bgmi" | "ffws" | "bracket"
+    booyahBonus: boolean;        // FFWS/Booyah bonus points
+    defaultTournamentType: string; // "BR" | "BRACKET_1V1" | "LEAGUE" | "GROUP_KNOCKOUT"
+    tournamentTypes: string[];   // All supported types for this game
+    hasBracket: boolean;         // Whether this game supports bracket tournaments
+    hasBR: boolean;              // Whether this game supports BR tournaments.
     // Feature flags
     features: GameFeatures;
 }
@@ -72,6 +71,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         scoringSystem: "bgmi",
         booyahBonus: false,
         defaultTournamentType: "BR",
+        tournamentTypes: ["BR"],
         hasBracket: false,
         hasBR: true,
         features: {
@@ -83,11 +83,13 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasTopUps: true,
             hasBracket: false,
             hasBR: true,
+            hasLeague: false,
+            hasGroupKnockout: false,
         },
     },
     freefire: {
         mode: "freefire",
-        name: "BOO-YAH",
+        name: "BOOYAH",
         fullName: "Free Fire Tournament Platform",
         gameName: "Free Fire",
         currency: "Diamonds",
@@ -102,6 +104,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         scoringSystem: "ffws",
         booyahBonus: true,
         defaultTournamentType: "BR",
+        tournamentTypes: ["BR"],
         hasBracket: false,
         hasBR: true,
         features: {
@@ -113,6 +116,8 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasTopUps: true,
             hasBracket: false,
             hasBR: true,
+            hasLeague: false,
+            hasGroupKnockout: false,
         },
     },
     pes: {
@@ -132,6 +137,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         scoringSystem: "bracket",
         booyahBonus: false,
         defaultTournamentType: "BRACKET_1V1",
+        tournamentTypes: ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"],
         hasBracket: true,
         hasBR: false,
         features: {
@@ -143,6 +149,8 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasTopUps: true,            // Currency purchases still apply
             hasBracket: true,
             hasBR: false,
+            hasLeague: true,            // Round-robin league
+            hasGroupKnockout: true,     // Group → Knockout (World Cup)
         },
     },
 };

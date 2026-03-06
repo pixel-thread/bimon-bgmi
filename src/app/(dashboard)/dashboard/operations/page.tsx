@@ -35,6 +35,11 @@ import {
     Upload,
     Heart,
     UserCircle,
+    Swords,
+    Dice5,
+    AlertTriangle,
+    CheckCircle2,
+    Loader2,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion } from "motion/react";
@@ -51,6 +56,7 @@ interface TournamentDTO {
     description: string | null;
     fee: number | null;
     status: string;
+    type: string;
     isWinnerDeclared: boolean;
     season: { id: string; name: string } | null;
     startDate: string;
@@ -91,7 +97,7 @@ export default function OperationsPage() {
     const [tName, setTName] = useState("");
     const [tDescription, setTDescription] = useState("");
     const [tFee, setTFee] = useState("");
-    const [tType, setTType] = useState<"BR" | "BRACKET_1V1">("BR");
+    const [tType, setTType] = useState<"BR" | "BRACKET_1V1" | "LEAGUE" | "GROUP_KNOCKOUT">("BR");
     const [tSeasonId, setTSeasonId] = useState("");
     const [showDesc, setShowDesc] = useState(false);
 
@@ -106,7 +112,7 @@ export default function OperationsPage() {
         }
         setTName(`Lehkai sngewtynnad ${maxNum + 1}`);
         setTFee(String(settings?.defaultEntryFee ?? 30));
-        setTType(GAME.defaultTournamentType);
+        setTType(GAME.defaultTournamentType as typeof tType);
         // Auto-select current season
         const current = seasons.find((s) => s.isCurrent);
         setTSeasonId(current?.id ?? seasons[0]?.id ?? "");
@@ -564,6 +570,16 @@ export default function OperationsPage() {
                 </motion.div>
             )}
 
+            {/* Match Management — for 1v1 tournament types (Knockout, League, Group+KO) */}
+            {selected && selected.type !== "BR" && (
+                <BracketManagement
+                    tournamentId={selected.id}
+                    tournamentName={selected.name}
+                    tournamentType={selected.type}
+                    hasVotes={(selected.poll?.voteCount ?? 0) >= 2}
+                />
+            )}
+
             {/* Donation Modal */}
             {selected && (
                 <DonationModal
@@ -687,26 +703,55 @@ export default function OperationsPage() {
                             onValueChange={setTFee}
                             type="number"
                         />
-                        {(GAME.hasBR && GAME.hasBracket) && (
-                            <div className="flex gap-2">
-                                <Button
-                                    size="sm"
-                                    variant={tType === "BR" ? "solid" : "flat"}
-                                    color={tType === "BR" ? "primary" : "default"}
-                                    onPress={() => setTType("BR")}
-                                    className="flex-1"
-                                >
-                                    🎯 Battle Royale
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    variant={tType === "BRACKET_1V1" ? "solid" : "flat"}
-                                    color={tType === "BRACKET_1V1" ? "secondary" : "default"}
-                                    onPress={() => setTType("BRACKET_1V1")}
-                                    className="flex-1"
-                                >
-                                    ⚔️ 1v1 Bracket
-                                </Button>
+                        {GAME.tournamentTypes.length > 1 && (
+                            <div className="space-y-1">
+                                <p className="text-xs text-foreground/50 font-medium">Format</p>
+                                <div className="flex gap-2 flex-wrap">
+                                    {GAME.tournamentTypes.includes("BR") && (
+                                        <Button
+                                            size="sm"
+                                            variant={tType === "BR" ? "solid" : "flat"}
+                                            color={tType === "BR" ? "primary" : "default"}
+                                            onPress={() => setTType("BR")}
+                                            className="flex-1 min-w-[100px]"
+                                        >
+                                            🎯 Battle Royale
+                                        </Button>
+                                    )}
+                                    {GAME.tournamentTypes.includes("BRACKET_1V1") && (
+                                        <Button
+                                            size="sm"
+                                            variant={tType === "BRACKET_1V1" ? "solid" : "flat"}
+                                            color={tType === "BRACKET_1V1" ? "secondary" : "default"}
+                                            onPress={() => setTType("BRACKET_1V1")}
+                                            className="flex-1 min-w-[100px]"
+                                        >
+                                            ⚔️ Knockout
+                                        </Button>
+                                    )}
+                                    {GAME.tournamentTypes.includes("LEAGUE") && (
+                                        <Button
+                                            size="sm"
+                                            variant={tType === "LEAGUE" ? "solid" : "flat"}
+                                            color={tType === "LEAGUE" ? "success" : "default"}
+                                            onPress={() => setTType("LEAGUE")}
+                                            className="flex-1 min-w-[100px]"
+                                        >
+                                            🏟️ League
+                                        </Button>
+                                    )}
+                                    {GAME.tournamentTypes.includes("GROUP_KNOCKOUT") && (
+                                        <Button
+                                            size="sm"
+                                            variant={tType === "GROUP_KNOCKOUT" ? "solid" : "flat"}
+                                            color={tType === "GROUP_KNOCKOUT" ? "warning" : "default"}
+                                            onPress={() => setTType("GROUP_KNOCKOUT")}
+                                            className="flex-1 min-w-[100px]"
+                                        >
+                                            🌍 Group + KO
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                         )}
                         {showDesc ? (
@@ -1010,5 +1055,303 @@ function DonationModal({ tournamentId, isOpen, onClose }: { tournamentId: string
                 </ModalBody>
             </ModalContent>
         </Modal>
+    );
+}
+
+// ─── Bracket Management ─────────────────────────────────────
+
+interface BracketMatch {
+    id: string;
+    round: number;
+    position: number;
+    player1Id: string | null;
+    player2Id: string | null;
+    winnerId: string | null;
+    score1: number | null;
+    score2: number | null;
+    status: string;
+    player1: { displayName: string } | null;
+    player2: { displayName: string } | null;
+}
+
+function BracketManagement({
+    tournamentId,
+    tournamentName,
+    tournamentType,
+    hasVotes,
+}: {
+    tournamentId: string;
+    tournamentName: string;
+    tournamentType: string;
+    hasVotes: boolean;
+}) {
+    const formatLabel = tournamentType === "LEAGUE" ? "League"
+        : tournamentType === "GROUP_KNOCKOUT" ? "Group + Knockout"
+            : "Bracket";
+    const formatEmoji = tournamentType === "LEAGUE" ? "🏟️"
+        : tournamentType === "GROUP_KNOCKOUT" ? "🌍"
+            : "⚔️";
+    const queryClient = useQueryClient();
+
+    // Fetch bracket matches
+    const { data: bracketData, isLoading } = useQuery<{
+        rounds: { round: number; name: string; matches: BracketMatch[] }[];
+        totalRounds: number;
+        totalPlayers: number;
+    } | null>({
+        queryKey: ["admin-bracket", tournamentId],
+        queryFn: async () => {
+            const res = await fetch(`/api/tournaments/${tournamentId}/bracket`);
+            if (!res.ok) return null;
+            const json = await res.json();
+            return json.data ?? null;
+        },
+    });
+
+    const hasMatches = bracketData && bracketData.rounds.length > 0;
+    const allMatches = bracketData?.rounds?.flatMap((r) => r.matches) ?? [];
+    const pendingMatches = allMatches.filter((m) => m.status === "PENDING" && m.player1Id && m.player2Id);
+    const disputedMatches = allMatches.filter((m) => m.status === "DISPUTED");
+    const confirmedMatches = allMatches.filter((m) => m.status === "CONFIRMED");
+
+    // Generate bracket
+    const generateBracket = useMutation({
+        mutationFn: async () => {
+            const res = await fetch(`/api/tournaments/${tournamentId}/generate-bracket`, {
+                method: "POST",
+            });
+            if (!res.ok) {
+                const json = await res.json();
+                throw new Error(json.error || "Failed");
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Bracket generated!");
+            queryClient.invalidateQueries({ queryKey: ["admin-bracket", tournamentId] });
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+
+    // Resolve dispute
+    const resolveMatch = useMutation({
+        mutationFn: async ({ matchId, winnerId, score1, score2 }: {
+            matchId: string; winnerId: string; score1: number; score2: number;
+        }) => {
+            const res = await fetch(`/api/bracket-matches/${matchId}/resolve`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ winnerId, score1, score2 }),
+            });
+            if (!res.ok) throw new Error("Failed to resolve");
+        },
+        onSuccess: () => {
+            toast.success("Match resolved!");
+            queryClient.invalidateQueries({ queryKey: ["admin-bracket", tournamentId] });
+        },
+        onError: () => toast.error("Failed to resolve match"),
+    });
+
+    // Random pick
+    const randomPick = useMutation({
+        mutationFn: async (matchId: string) => {
+            const res = await fetch(`/api/bracket-matches/${matchId}/random-pick`, {
+                method: "POST",
+            });
+            if (!res.ok) throw new Error("Failed");
+            return res.json();
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Winner randomly selected!");
+            queryClient.invalidateQueries({ queryKey: ["admin-bracket", tournamentId] });
+        },
+        onError: () => toast.error("Failed to random pick"),
+    });
+
+    const statusColor = (s: string) => {
+        switch (s) {
+            case "CONFIRMED": return "success";
+            case "SUBMITTED": return "warning";
+            case "DISPUTED": return "danger";
+            case "BYE": return "secondary";
+            default: return "default";
+        }
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+        >
+            <Card className="border border-divider">
+                <CardBody className="p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Swords className="h-4 w-4 text-primary" />
+                            <div>
+                                <p className="text-sm font-semibold">{formatEmoji} {formatLabel} Management</p>
+                                <p className="text-xs text-foreground/40">
+                                    {hasMatches
+                                        ? `${allMatches.length} matches • ${confirmedMatches.length} confirmed`
+                                        : `Generate ${formatLabel.toLowerCase()} from poll voters`
+                                    }
+                                </p>
+                            </div>
+                        </div>
+
+                        {!hasMatches && (
+                            <Button
+                                size="sm"
+                                color="primary"
+                                isLoading={generateBracket.isPending}
+                                isDisabled={!hasVotes}
+                                startContent={<Swords className="h-3 w-3" />}
+                                onPress={() => generateBracket.mutate()}
+                            >
+                                Generate {formatLabel}
+                            </Button>
+                        )}
+                    </div>
+
+                    {isLoading && (
+                        <div className="flex items-center justify-center py-6">
+                            <Loader2 className="h-5 w-5 animate-spin text-foreground/30" />
+                        </div>
+                    )}
+
+                    {/* Disputed matches — needs immediate admin attention */}
+                    {disputedMatches.length > 0 && (
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-1.5">
+                                <AlertTriangle className="h-3.5 w-3.5 text-danger" />
+                                <span className="text-xs font-bold text-danger uppercase">
+                                    Disputed ({disputedMatches.length})
+                                </span>
+                            </div>
+                            {disputedMatches.map((m) => (
+                                <div key={m.id} className="flex items-center justify-between p-3 rounded-xl bg-danger-50/50 dark:bg-danger-900/10 border border-danger/20">
+                                    <div>
+                                        <p className="text-sm font-medium">
+                                            {m.player1?.displayName ?? "TBD"} vs {m.player2?.displayName ?? "TBD"}
+                                        </p>
+                                        <p className="text-xs text-foreground/40">Round {m.round} • Position {m.position + 1}</p>
+                                    </div>
+                                    <div className="flex gap-1.5">
+                                        {m.player1Id && (
+                                            <Button
+                                                size="sm"
+                                                color="success"
+                                                variant="flat"
+                                                onPress={() => resolveMatch.mutate({
+                                                    matchId: m.id, winnerId: m.player1Id!, score1: 1, score2: 0,
+                                                })}
+                                                isLoading={resolveMatch.isPending}
+                                            >
+                                                {m.player1?.displayName?.slice(0, 8)} wins
+                                            </Button>
+                                        )}
+                                        {m.player2Id && (
+                                            <Button
+                                                size="sm"
+                                                color="success"
+                                                variant="flat"
+                                                onPress={() => resolveMatch.mutate({
+                                                    matchId: m.id, winnerId: m.player2Id!, score1: 0, score2: 1,
+                                                })}
+                                                isLoading={resolveMatch.isPending}
+                                            >
+                                                {m.player2?.displayName?.slice(0, 8)} wins
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Pending matches with both players */}
+                    {pendingMatches.length > 0 && (
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-1.5">
+                                <Gamepad2 className="h-3.5 w-3.5 text-foreground/40" />
+                                <span className="text-xs font-bold text-foreground/40 uppercase">
+                                    Awaiting Results ({pendingMatches.length})
+                                </span>
+                            </div>
+                            {pendingMatches.map((m) => (
+                                <div key={m.id} className="flex items-center justify-between p-3 rounded-xl bg-foreground/5 border border-divider">
+                                    <div>
+                                        <p className="text-sm font-medium">
+                                            {m.player1?.displayName ?? "TBD"} vs {m.player2?.displayName ?? "TBD"}
+                                        </p>
+                                        <p className="text-xs text-foreground/40">Round {m.round} • Position {m.position + 1}</p>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        variant="flat"
+                                        color="warning"
+                                        startContent={<Dice5 className="h-3 w-3" />}
+                                        onPress={() => {
+                                            if (confirm(`Random pick winner for ${m.player1?.displayName} vs ${m.player2?.displayName}?`)) {
+                                                randomPick.mutate(m.id);
+                                            }
+                                        }}
+                                        isLoading={randomPick.isPending}
+                                    >
+                                        Random Pick
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Summary of all matches */}
+                    {hasMatches && (
+                        <div className="grid grid-cols-5 gap-2 text-center">
+                            {[
+                                { label: "Pending", count: allMatches.filter((m) => m.status === "PENDING").length, color: "text-foreground/40" },
+                                { label: "Submitted", count: allMatches.filter((m) => m.status === "SUBMITTED").length, color: "text-warning" },
+                                { label: "Disputed", count: disputedMatches.length, color: "text-danger" },
+                                { label: "Confirmed", count: confirmedMatches.length, color: "text-success" },
+                                { label: "BYE", count: allMatches.filter((m) => m.status === "BYE").length, color: "text-secondary" },
+                            ].map((s) => (
+                                <div key={s.label} className="rounded-lg bg-foreground/5 p-2">
+                                    <p className={`text-lg font-bold ${s.color}`}>{s.count}</p>
+                                    <p className="text-[10px] text-foreground/40">{s.label}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Advance Groups → Knockout (GROUP_KNOCKOUT only) */}
+                    {tournamentType === "GROUP_KNOCKOUT" && hasMatches && (
+                        <Button
+                            size="sm"
+                            color="warning"
+                            variant="flat"
+                            className="w-full"
+                            startContent={<Swords className="h-3 w-3" />}
+                            onPress={async () => {
+                                if (!confirm("Advance top 2 from each group to knockout stage?")) return;
+                                try {
+                                    const res = await fetch(`/api/tournaments/${tournamentId}/advance-groups`, {
+                                        method: "POST",
+                                    });
+                                    const json = await res.json();
+                                    if (!res.ok) throw new Error(json.error || "Failed");
+                                    toast.success(json.message || "Groups advanced to knockout!");
+                                    queryClient.invalidateQueries({ queryKey: ["admin-bracket", tournamentId] });
+                                } catch (err: any) {
+                                    toast.error(err.message || "Failed to advance groups");
+                                }
+                            }}
+                        >
+                            🌍 Advance Groups → Knockout
+                        </Button>
+                    )}
+                </CardBody>
+            </Card>
+        </motion.div>
     );
 }

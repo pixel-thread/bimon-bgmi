@@ -54,6 +54,7 @@ interface BracketViewProps {
     onSubmitResult?: (matchId: string) => void;
     onConfirmResult?: (matchId: string) => void;
     onDispute?: (matchId: string) => void;
+    onViewResult?: (matchId: string) => void;
 }
 
 /* ─── Status Colors ─────────────────────────────────────────── */
@@ -97,10 +98,10 @@ function PlayerSlot({
     return (
         <div
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${isWinner
-                    ? "bg-success-50 dark:bg-success-50/10 border border-success-200 dark:border-success-800"
-                    : isCurrent
-                        ? "bg-primary-50 dark:bg-primary-50/10 border border-primary-200 dark:border-primary-800"
-                        : "bg-default-100/50"
+                ? "bg-success-50 dark:bg-success-50/10 border border-success-200 dark:border-success-800"
+                : isCurrent
+                    ? "bg-primary-50 dark:bg-primary-50/10 border border-primary-200 dark:border-primary-800"
+                    : "bg-default-100/50"
                 }`}
         >
             <Avatar
@@ -132,12 +133,14 @@ function MatchCard({
     onSubmitResult,
     onConfirmResult,
     onDispute,
+    onViewResult,
 }: {
     match: BracketMatchData;
     currentPlayerId?: string;
     onSubmitResult?: (matchId: string) => void;
     onConfirmResult?: (matchId: string) => void;
     onDispute?: (matchId: string) => void;
+    onViewResult?: (matchId: string) => void;
 }) {
     const config = statusConfig(match.status);
     const StatusIcon = config.icon;
@@ -150,12 +153,13 @@ function MatchCard({
     const canSubmit = isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id;
     const canConfirm = isParticipant && match.status === "SUBMITTED" && match.winnerId !== currentPlayerId;
     const canDispute = isParticipant && match.status === "SUBMITTED" && match.winnerId !== currentPlayerId;
+    const hasResult = match.status === "CONFIRMED" || match.status === "SUBMITTED";
 
     return (
         <Card
             className={`border transition-all ${isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
-                    ? "border-primary shadow-md shadow-primary/10"
-                    : "border-divider"
+                ? "border-primary shadow-md shadow-primary/10"
+                : "border-divider"
                 }`}
         >
             <CardBody className="p-3 space-y-2">
@@ -219,11 +223,19 @@ function MatchCard({
                             ✕ Dispute
                         </button>
                     )}
+                    {hasResult && !canConfirm && !canDispute && onViewResult && (
+                        <button
+                            onClick={() => onViewResult(match.id)}
+                            className="text-[11px] font-semibold text-foreground/50 hover:text-foreground/80 transition-colors"
+                        >
+                            View Result →
+                        </button>
+                    )}
                 </div>
 
                 {/* Dispute deadline */}
                 {match.status === "SUBMITTED" && match.disputeDeadline && (
-                    <p className="text-[10px] text-warning-600 dark:text-warning-400">
+                    <p className="text-[10px] text-warning-600 dark:text-warning-400" suppressHydrationWarning>
                         ⏰ Auto-confirms {new Date(match.disputeDeadline).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </p>
                 )}
@@ -241,6 +253,7 @@ export function BracketView({
     onSubmitResult,
     onConfirmResult,
     onDispute,
+    onViewResult,
 }: BracketViewProps) {
     if (rounds.length === 0) {
         return (
@@ -282,6 +295,7 @@ export function BracketView({
                                     onSubmitResult={onSubmitResult}
                                     onConfirmResult={onConfirmResult}
                                     onDispute={onDispute}
+                                    onViewResult={onViewResult}
                                 />
                             ))}
                         </div>

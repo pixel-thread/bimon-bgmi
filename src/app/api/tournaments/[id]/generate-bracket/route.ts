@@ -2,12 +2,29 @@ import { prisma } from "@/lib/database";
 import { requireSuperAdmin } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { generateBracket } from "@/lib/logic/generateBracket";
+import { generateLeague } from "@/lib/logic/generateLeague";
+import { generateGroupKnockout } from "@/lib/logic/generateGroupKnockout";
 import { type NextRequest } from "next/server";
 
 /**
+ * Largest power of 2 ≤ n.
+ * e.g. 17 → 16, 15 → 8, 8 → 8, 4 → 4, 3 → 2
+ */
+function floorPow2(n: number): number {
+    if (n < 2) return 0;
+    let p = 2;
+    while (p * 2 <= n) p *= 2;
+    return p;
+}
+
+/**
  * POST /api/tournaments/[id]/generate-bracket
- * Generate a 1v1 bracket from poll voters (IN/SOLO).
- * Only for BRACKET_1V1 tournaments.
+ * Generate matches from poll voters (FCFS).
+ *
+ * Supports:
+ *   BRACKET_1V1    — Single elimination knockout
+ *   LEAGUE         — Round-robin (everyone plays everyone)
+ *   GROUP_KNOCKOUT — Groups of 4, round-robin → knockout
  */
 export async function POST(
     _req: NextRequest,
@@ -17,7 +34,6 @@ export async function POST(
         await requireSuperAdmin();
         const { id } = await params;
 
-        // Verify tournament exists and is the right type
         const tournament = await prisma.tournament.findUnique({
             where: { id },
             select: {
@@ -30,7 +46,8 @@ export async function POST(
                         isActive: true,
                         votes: {
                             where: { vote: { in: ["IN", "SOLO"] } },
-                            select: { playerId: true },
+                            select: { playerId: true, createdAt: true },
+                            orderBy: { createdAt: "asc" }, // FCFS — earliest votes first
                         },
                     },
                 },
@@ -42,16 +59,17 @@ export async function POST(
             return ErrorResponse({ message: "Tournament not found", status: 404 });
         }
 
-        if (tournament.type !== "BRACKET_1V1") {
+        const VALID_TYPES = ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"];
+        if (!VALID_TYPES.includes(tournament.type)) {
             return ErrorResponse({
-                message: "This tournament is not a 1v1 bracket tournament",
+                message: "This tournament type does not support match generation",
                 status: 400,
             });
         }
 
         if (tournament.bracketMatches.length > 0) {
             return ErrorResponse({
-                message: "Bracket already generated. Delete existing bracket first.",
+                message: "Matches already generated. Delete existing first.",
                 status: 400,
             });
         }
@@ -60,11 +78,11 @@ export async function POST(
             return ErrorResponse({ message: "No poll found for this tournament", status: 400 });
         }
 
-        const playerIds = tournament.poll.votes.map((v) => v.playerId);
+        const allVoterIds = tournament.poll.votes.map((v) => v.playerId);
 
-        if (playerIds.length < 2) {
+        if (allVoterIds.length < 2) {
             return ErrorResponse({
-                message: `Need at least 2 players. Currently ${playerIds.length} voted IN.`,
+                message: `Need at least 2 players. Currently ${allVoterIds.length} voted IN.`,
                 status: 400,
             });
         }
@@ -77,14 +95,57 @@ export async function POST(
             });
         }
 
-        // Generate the bracket
-        const result = await generateBracket(id, playerIds);
+        // Dispatch to the right generator
+        let result: any;
+        let message: string;
+
+        switch (tournament.type) {
+            case "BRACKET_1V1": {
+                // FCFS: trim to nearest power of 2
+                const bracketSize = floorPow2(allVoterIds.length);
+                const includedIds = allVoterIds.slice(0, bracketSize);
+                const excludedCount = allVoterIds.length - bracketSize;
+
+                result = await generateBracket(id, includedIds);
+                result.excludedCount = excludedCount;
+                result.bracketSize = bracketSize;
+
+                message = excludedCount > 0
+                    ? `Knockout bracket generated! ${bracketSize} players included, ${excludedCount} excluded (voted too late).`
+                    : `Knockout bracket generated! ${bracketSize} players, ${result.totalRounds} rounds.`;
+                break;
+            }
+
+            case "LEAGUE": {
+                // League: all voters play, no FCFS trimming needed
+                result = await generateLeague(id, allVoterIds);
+                const totalMatches = (allVoterIds.length * (allVoterIds.length - 1)) / 2;
+                message = `League generated! ${allVoterIds.length} players, ${totalMatches} matches across ${result.totalRounds} match days.`;
+                break;
+            }
+
+            case "GROUP_KNOCKOUT": {
+                // Group+KO: minimum 4 players
+                if (allVoterIds.length < 4) {
+                    return ErrorResponse({
+                        message: `Need at least 4 players for Group + Knockout. Currently ${allVoterIds.length}.`,
+                        status: 400,
+                    });
+                }
+                result = await generateGroupKnockout(id, allVoterIds);
+                message = `Group + Knockout generated! ${result.numGroups} groups of ${result.groupSize}, then knockout (${result.knockoutPlayers} players).`;
+                break;
+            }
+
+            default:
+                return ErrorResponse({ message: "Unknown tournament type", status: 400 });
+        }
 
         return SuccessResponse({
             data: result,
-            message: `Bracket generated! ${result.totalPlayers} players, ${result.totalRounds} rounds.`,
+            message,
         });
     } catch (error) {
-        return ErrorResponse({ message: "Failed to generate bracket", error });
+        return ErrorResponse({ message: "Failed to generate matches", error });
     }
 }

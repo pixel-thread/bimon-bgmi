@@ -44,10 +44,13 @@ import { GAME } from "@/lib/game-config";
 const navItems = [
     { label: "Players", href: "/players", icon: Users },
     { label: "Vote", href: "/vote", icon: Vote },
-    { label: "Community", href: "/community", icon: MessageCircle },
+    ...(GAME.features.hasBracket
+        ? [{ label: "Bracket", href: "/bracket", icon: Swords }]
+        : []),
 ];
 
 const moreItems = [
+    { label: "Community", href: "/community", icon: MessageCircle },
     { label: "Winners", href: "/winners", icon: Trophy },
     { label: "Jobs", href: "/jobs", icon: Briefcase },
     { label: "Refer", href: "/refer", icon: Gift },
