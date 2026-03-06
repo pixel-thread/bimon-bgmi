@@ -138,7 +138,7 @@ export default function OperationsPage() {
     const { data: seasons = [] } = useQuery<SeasonDTO[]>({
         queryKey: ["seasons"],
         queryFn: async () => {
-            const res = await fetch("/api/seasons");
+            const res = await fetch(`/api/seasons?_t=${Date.now()}`);
             if (!res.ok) return [];
             const json = await res.json();
             return json.data || [];
@@ -247,13 +247,19 @@ export default function OperationsPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name: sName.trim() }),
             });
+            const json = await res.json();
             if (!res.ok) {
-                const d = await res.json();
-                throw new Error(d.error || "Failed");
+                throw new Error(json.error || "Failed");
             }
+            return json;
         },
-        onSuccess: async () => {
+        onSuccess: async (result: any) => {
             toast.success("Season created!");
+            // Immediately set the new season as selected so next tournament creation uses it
+            const newId = result?.data?.id;
+            if (newId) {
+                setSeasonId(newId);
+            }
             queryClient.removeQueries({ queryKey: ["seasons"] });
             await queryClient.invalidateQueries({ queryKey: ["seasons"] });
             seasonModal.onClose();
