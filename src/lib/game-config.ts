@@ -5,8 +5,10 @@
  * To add a new game:
  *   1. Add entry to GameMode union type
  *   2. Add config object to GAME_CONFIGS
- *   3. Create new Vercel project with NEXT_PUBLIC_GAME_MODE=<mode>
- *   4. Create new Supabase DB & push schema
+ *   3. Add domain mapping in proxy.ts DOMAIN_GAME_MAP
+ *   4. Add DATABASE_URL_<GAME> env var in Vercel
+ *   5. Add domain to Vercel project settings
+ *   6. Create Supabase DB & push schema
  *   That's it — all UI adapts automatically via feature flags.
  *
  * Usage: import { GAME } from "@/lib/game-config";
@@ -156,8 +158,48 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
 };
 
 /**
- * Current game config — reads from NEXT_PUBLIC_GAME_MODE env var.
- * Defaults to "bgmi" if not set (safe for existing BGMI deployment).
+ * Current game config — reads game mode at runtime.
+ *
+ * Priority:
+ *   1. Cookie "game-mode" (set by proxy.ts from domain detection)
+ *   2. Env var NEXT_PUBLIC_GAME_MODE (local dev fallback)
+ *   3. Default "bgmi"
+ *
+ * This allows a single deployment to serve all games via domain detection.
  */
-export const GAME_MODE: GameMode = (process.env.NEXT_PUBLIC_GAME_MODE as GameMode) || "bgmi";
+function resolveGameMode(): GameMode {
+    // Client-side: read from cookie (set by proxy)
+    if (typeof window !== "undefined") {
+        const match = document.cookie.match(/(?:^|;\s*)game-mode=(\w+)/);
+        if (match && match[1] in GAME_CONFIGS) return match[1] as GameMode;
+    }
+
+    // Server-side: try to read from headers (set by proxy)
+    // Note: headers() is async in Next.js 16, so we use the env fallback for module-level usage
+    // API routes and server components should use getGameConfig() for dynamic detection
+
+    // Fallback: env var (for local dev and build time)
+    const envMode = process.env.NEXT_PUBLIC_GAME_MODE as GameMode;
+    if (envMode && envMode in GAME_CONFIGS) return envMode;
+
+    return "bgmi";
+}
+
+export const GAME_MODE: GameMode = resolveGameMode();
 export const GAME: GameConfig = GAME_CONFIGS[GAME_MODE];
+
+/**
+ * For server-side dynamic detection in API routes:
+ *   import { getGameConfig } from "@/lib/game-config";
+ *   const { GAME, GAME_MODE } = getGameConfig(request);
+ */
+export function getGameConfig(request?: Request) {
+    const gameMode = (request?.headers.get("x-game-mode") as GameMode) || GAME_MODE;
+    return {
+        GAME_MODE: gameMode,
+        GAME: GAME_CONFIGS[gameMode] || GAME_CONFIGS.bgmi,
+    };
+}
+
+/** Export configs for direct access if needed */
+export { GAME_CONFIGS };

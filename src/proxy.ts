@@ -32,14 +32,42 @@ const publicRoutes = [
     "/api/payments/webhook",
 ];
 
+// ─── Domain → Game Mode mapping ─────────────────────────────
+const DOMAIN_GAME_MAP: Record<string, string> = {
+    "bimon-bgmi": "bgmi",
+    "bimon-boo-yah": "freefire",
+    "bimon-pes": "pes",
+    // Add future games here
+};
+
+function detectGameMode(hostname: string): string {
+    for (const [domain, mode] of Object.entries(DOMAIN_GAME_MAP)) {
+        if (hostname.includes(domain)) return mode;
+    }
+    // Local dev fallback: use env var or default
+    return process.env.NEXT_PUBLIC_GAME_MODE || "bgmi";
+}
+
 export default auth((req) => {
     const { pathname } = req.nextUrl;
+    const hostname = req.headers.get("host") || "";
+
+    // ─── Detect game mode from domain ───
+    const gameMode = detectGameMode(hostname);
 
     // Check if it's a public route
     const isPublic = publicRoutes.some(
         (route) => pathname === route || pathname.startsWith(route + "/")
     );
-    if (isPublic) return NextResponse.next();
+
+    if (isPublic) {
+        const response = NextResponse.next({
+            request: { headers: new Headers(req.headers) },
+        });
+        response.headers.set("x-game-mode", gameMode);
+        response.cookies.set("game-mode", gameMode, { path: "/", sameSite: "lax" });
+        return response;
+    }
 
     // Check if it's a protected route
     const isProtected = protectedRoutes.some(
@@ -52,7 +80,12 @@ export default auth((req) => {
         return NextResponse.redirect(signInUrl);
     }
 
-    return NextResponse.next();
+    const response = NextResponse.next({
+        request: { headers: new Headers(req.headers) },
+    });
+    response.headers.set("x-game-mode", gameMode);
+    response.cookies.set("game-mode", gameMode, { path: "/", sameSite: "lax" });
+    return response;
 });
 
 export const config = {
