@@ -166,7 +166,7 @@ export async function POST(request: Request) {
             ];
 
         const pollOptions = Array.isArray(customOptions) && customOptions.length > 0
-            ? customOptions.map((o: { name: string; vote: string }) => ({ name: o.name, vote: o.vote }))
+            ? customOptions.map((o: { name: string; vote: string }) => ({ name: o.name, vote: o.vote as "IN" | "OUT" | "SOLO" }))
             : defaultOptions;
 
         const poll = await prisma.poll.create({
