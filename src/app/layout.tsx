@@ -15,7 +15,8 @@ const rajdhani = Rajdhani({
   variable: "--font-rajdhani",
 });
 
-const ICON_DIR = `/icons/${GAME_MODE === "freefire" ? "freefire" : "bgmi"}`;
+const ICON_DIRS: Record<string, string> = { freefire: "freefire", pes: "pes" };
+const ICON_DIR = `/icons/${ICON_DIRS[GAME_MODE] ?? "bgmi"}`;
 
 export const metadata: Metadata = {
   applicationName: GAME.name,
