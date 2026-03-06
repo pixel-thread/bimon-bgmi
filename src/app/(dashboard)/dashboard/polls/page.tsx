@@ -343,9 +343,9 @@ export default function PollsAdminPage() {
                                                 {/* Vote distribution */}
                                                 <div className="space-y-2">
                                                     <div className="flex items-center justify-between text-xs">
-                                                        <span className="text-success">IN {inPct}%</span>
-                                                        <span className="text-warning">SOLO {soloPct}%</span>
-                                                        <span className="text-danger">OUT {outPct}%</span>
+                                                        <span className="text-success">IN {poll.inVotes}</span>
+                                                        <span className="text-warning">SOLO {poll.soloVotes}</span>
+                                                        <span className="text-danger">OUT {poll.outVotes}</span>
                                                     </div>
                                                     <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-full">
                                                         <div
