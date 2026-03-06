@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { BracketView, MyBracketMatch } from "@/components/bracket/bracket-view";
 import { SubmitResultModal } from "@/components/bracket/submit-result-modal";
-import { Trophy, Swords, Users, Globe } from "lucide-react";
+import { Trophy, Swords, Users, Globe, Eye, Upload } from "lucide-react";
 import { Chip, Tabs, Tab, Card, CardBody, Progress } from "@heroui/react";
 
 /**
@@ -340,8 +340,8 @@ export default function BracketDemoPage() {
                                                 <div
                                                     key={i}
                                                     className={`flex items-center p-2.5 rounded-xl transition-colors ${m.done ? "bg-success/5 cursor-pointer hover:bg-success/10" :
-                                                            isYou ? "bg-primary/5 border border-primary/20" :
-                                                                "bg-foreground/5"
+                                                        isYou ? "bg-primary/5 border border-primary/20" :
+                                                            "bg-foreground/5"
                                                         }`}
                                                 >
                                                     <span className={`text-sm font-medium flex-1 text-right ${m.home === "NeymarSkillz" ? "text-primary" : ""}`}>
@@ -355,14 +355,16 @@ export default function BracketDemoPage() {
                                                         {m.away}
                                                     </span>
                                                     {/* Action */}
-                                                    <div className="ml-2 min-w-[90px] text-right">
+                                                    <div className="ml-2 shrink-0">
                                                         {m.done ? (
-                                                            <span className="text-[11px] text-foreground/40 font-medium">View Result →</span>
+                                                            <button className="p-1.5 rounded-lg hover:bg-foreground/10 transition-colors">
+                                                                <Eye className="h-4 w-4 text-foreground/40" />
+                                                            </button>
                                                         ) : isYou ? (
-                                                            <span className="text-[11px] text-primary font-semibold">Submit Result →</span>
-                                                        ) : (
-                                                            <span className="text-[11px] text-foreground/20">Pending</span>
-                                                        )}
+                                                            <button className="p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors">
+                                                                <Upload className="h-4 w-4 text-primary" />
+                                                            </button>
+                                                        ) : null}
                                                     </div>
                                                 </div>
                                             );
