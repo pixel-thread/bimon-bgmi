@@ -244,34 +244,7 @@ function MatchCard({
     );
 }
 
-/* ─── Bracket Connector Lines ───────────────────────────────── */
-
-function BracketConnector({ matchCount }: { matchCount: number }) {
-    // SVG connectors: pairs of matches connect to one next-round match
-    const pairs = Math.floor(matchCount / 2);
-    if (pairs === 0) return null;
-
-    return (
-        <div className="flex flex-col justify-around flex-1 min-w-[32px]">
-            {Array.from({ length: pairs }).map((_, i) => (
-                <div key={i} className="flex items-center h-full">
-                    <svg width="32" height="100%" viewBox="0 0 32 100" preserveAspectRatio="none" className="h-full">
-                        {/* Top line going right */}
-                        <line x1="0" y1="25" x2="16" y2="25" stroke="currentColor" strokeWidth="1" className="text-foreground/15" />
-                        {/* Bottom line going right */}
-                        <line x1="0" y1="75" x2="16" y2="75" stroke="currentColor" strokeWidth="1" className="text-foreground/15" />
-                        {/* Vertical connector */}
-                        <line x1="16" y1="25" x2="16" y2="75" stroke="currentColor" strokeWidth="1" className="text-foreground/15" />
-                        {/* Middle line going right to next match */}
-                        <line x1="16" y1="50" x2="32" y2="50" stroke="currentColor" strokeWidth="1" className="text-foreground/15" />
-                    </svg>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-/* ─── Bracket View (Horizontal Scrollable with connectors) ─── */
+/* ─── Bracket View (Horizontal Scrollable with CSS connectors) ─── */
 
 export function BracketView({
     rounds,
@@ -295,9 +268,6 @@ export function BracketView({
         <div className="overflow-x-auto pb-4">
             <div className="flex items-stretch min-w-max">
                 {rounds.map((round, idx) => {
-                    // Increasing spacing between matches for each round
-                    const gapClass = idx === 0 ? "gap-3" : idx === 1 ? "gap-8" : idx === 2 ? "gap-16" : "gap-24";
-
                     return (
                         <div key={round.round} className="flex items-stretch">
                             <motion.div
@@ -316,25 +286,76 @@ export function BracketView({
                                     </p>
                                 </div>
 
-                                {/* Matches in this round */}
-                                <div className={`flex flex-col ${gapClass} justify-around flex-1`}>
-                                    {round.matches.map((match) => (
-                                        <MatchCard
-                                            key={match.id}
-                                            match={match}
-                                            currentPlayerId={currentPlayerId}
-                                            onSubmitResult={onSubmitResult}
-                                            onConfirmResult={onConfirmResult}
-                                            onDispute={onDispute}
-                                            onViewResult={onViewResult}
-                                        />
-                                    ))}
+                                {/* Matches in this round with connectors */}
+                                <div className="flex flex-col justify-around flex-1">
+                                    {round.matches.map((match) => {
+                                        // Color based on match status
+                                        const lineColor =
+                                            match.status === "CONFIRMED" ? "border-success/40" :
+                                                match.status === "SUBMITTED" ? "border-warning/40" :
+                                                    match.status === "DISPUTED" ? "border-danger/40" :
+                                                        match.status === "BYE" ? "border-secondary/30" :
+                                                            "border-foreground/10";
+                                        const bgColor =
+                                            match.status === "CONFIRMED" ? "bg-success/40" :
+                                                match.status === "SUBMITTED" ? "bg-warning/40" :
+                                                    match.status === "DISPUTED" ? "bg-danger/40" :
+                                                        match.status === "BYE" ? "bg-secondary/30" :
+                                                            "bg-foreground/10";
+
+                                        return (
+                                            <div key={match.id} className="flex items-center">
+                                                {/* Left connector (from previous round) */}
+                                                {idx > 0 && (
+                                                    <div className={`w-4 border-t ${lineColor}`} />
+                                                )}
+                                                {/* Match card */}
+                                                <div className="flex-1">
+                                                    <MatchCard
+                                                        match={match}
+                                                        currentPlayerId={currentPlayerId}
+                                                        onSubmitResult={onSubmitResult}
+                                                        onConfirmResult={onConfirmResult}
+                                                        onDispute={onDispute}
+                                                        onViewResult={onViewResult}
+                                                    />
+                                                </div>
+                                                {/* Right connector (to next round) */}
+                                                {idx < rounds.length - 1 && (
+                                                    <div className={`w-4 border-t ${lineColor}`} />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </motion.div>
 
-                            {/* Connector lines between this round and next */}
-                            {idx < rounds.length - 1 && (
-                                <BracketConnector matchCount={round.matches.length} />
+                            {/* Vertical merge connectors between rounds */}
+                            {idx < rounds.length - 1 && round.matches.length > 1 && (
+                                <div className="flex flex-col justify-around flex-shrink-0 w-5">
+                                    {Array.from({ length: Math.floor(round.matches.length / 2) }).map((_, pairIdx) => {
+                                        // Color vertical connector based on whether both matches in the pair are done
+                                        const pair = round.matches.slice(pairIdx * 2, pairIdx * 2 + 2);
+                                        const bothDone = pair.every(m => m.status === "CONFIRMED" || m.status === "BYE");
+                                        const vColor = bothDone ? "bg-success/40" : "bg-foreground/10";
+                                        const hColor = bothDone ? "border-success/40" : "border-foreground/10";
+
+                                        return (
+                                            <div key={pairIdx} className="flex-1 flex flex-col justify-center relative">
+                                                {/* Vertical line connecting pairs */}
+                                                <div
+                                                    className={`absolute left-0 w-px ${vColor}`}
+                                                    style={{
+                                                        top: "25%",
+                                                        bottom: "25%",
+                                                    }}
+                                                />
+                                                {/* Horizontal line to next round */}
+                                                <div className={`absolute left-0 right-0 top-1/2 border-t ${hColor}`} />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             )}
                         </div>
                     );
@@ -344,13 +365,15 @@ export function BracketView({
                 {rounds.length > 0 && (() => {
                     const final = rounds[rounds.length - 1]?.matches[0];
                     const winner = final?.winner;
+                    const finalColor = winner ? "border-warning/60" : "border-foreground/10";
                     return (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: rounds.length * 0.1 }}
-                            className="flex flex-col items-center justify-center min-w-[120px] gap-2"
+                            className="flex flex-col items-center justify-center min-w-[100px] gap-2 ml-2"
                         >
+                            <div className={`w-4 border-t ${finalColor} self-start`} />
                             <Trophy className={`h-8 w-8 ${winner ? "text-warning-500" : "text-foreground/20"}`} />
                             {winner ? (
                                 <>
