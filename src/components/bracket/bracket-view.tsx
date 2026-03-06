@@ -1,7 +1,7 @@
 "use client";
 
 import { Avatar, Card, CardBody, Chip, Spinner } from "@heroui/react";
-import { Trophy, Clock, AlertTriangle, CheckCircle2, Minus } from "lucide-react";
+import { Trophy, Clock, AlertTriangle, CheckCircle2, Minus, Eye } from "lucide-react";
 import { motion } from "framer-motion";
 
 /* ─── Types ─────────────────────────────────────────────────── */
@@ -292,15 +292,23 @@ function CompactMatch({
     );
 
     return (
-        <div
-            className={`border rounded-lg w-[170px] transition-all relative ${borderClass} ${hasResult ? "cursor-pointer hover:border-foreground/30" : ""
-                }`}
-            onClick={() => hasResult && onViewResult?.(match.id)}
-        >
-            <div className={`absolute -right-1 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${statusColor}`} />
-            {renderRow(match.player1, match.score1, match.winnerId === match.player1Id && match.winnerId !== null, currentPlayerId === match.player1Id, true)}
-            <div className="h-px bg-divider" />
-            {renderRow(match.player2, match.score2, match.winnerId === match.player2Id && match.winnerId !== null, currentPlayerId === match.player2Id, false)}
+        <div className={`border rounded-lg w-[170px] transition-all relative ${borderClass} flex items-center`}>
+            <div className="flex-1 min-w-0">
+                {renderRow(match.player1, match.score1, match.winnerId === match.player1Id && match.winnerId !== null, currentPlayerId === match.player1Id, true)}
+                <div className="h-px bg-divider" />
+                {renderRow(match.player2, match.score2, match.winnerId === match.player2Id && match.winnerId !== null, currentPlayerId === match.player2Id, false)}
+            </div>
+            {/* Eye icon for completed matches */}
+            {hasResult ? (
+                <button
+                    className="p-1 mr-1 rounded hover:bg-foreground/10 transition-colors shrink-0"
+                    onClick={() => onViewResult?.(match.id)}
+                >
+                    <Eye className="h-3.5 w-3.5 text-foreground/30" />
+                </button>
+            ) : (
+                <div className={`absolute -right-1 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${statusColor}`} />
+            )}
         </div>
     );
 }
