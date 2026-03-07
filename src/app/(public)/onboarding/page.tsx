@@ -26,7 +26,7 @@ export default function OnboardingPage() {
     const { data: session, status } = useSession();
     const isLoaded = status !== "loading";
     const router = useRouter();
-    const { user: authUser } = useAuthUser();
+    const { user: authUser, refetch } = useAuthUser();
 
     const [displayName, setDisplayName] = useState("");
     const [displayNameError, setDisplayNameError] = useState("");
@@ -164,7 +164,8 @@ export default function OnboardingPage() {
             <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-primary/5 via-background to-background px-4">
                 <WhatsAppJoinModal
                     isOpen={true}
-                    onClose={() => {
+                    onClose={async () => {
+                        await refetch(); // Refresh auth cache so OnboardingGuard sees isOnboarded=true
                         router.push("/vote");
                         router.refresh();
                     }}

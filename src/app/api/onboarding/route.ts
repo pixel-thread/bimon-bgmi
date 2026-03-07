@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/database";
+import { getRequestPrisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail, getAuthName, getAuthImage } from "@/lib/auth";
 import { type NextRequest } from "next/server";
@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Find or create the user
-        let user = await prisma.user.findUnique({
+        const db = await getRequestPrisma();
+        let user = await db.user.findUnique({
             where: { email: userId },
             include: { player: true },
         });
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
                     .replace(/[^a-z0-9_]/g, "") +
                 Math.floor(Math.random() * 9000 + 1000);
 
-            user = await prisma.user.create({
+            user = await db.user.create({
                 data: {
                     clerkId: `google_${Date.now()}`, // placeholder for backward compat
                     username,
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Create player + wallet + streak in a transaction
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await db.$transaction(async (tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => {
             // Create player if doesn't exist
             let player = user.player;
 

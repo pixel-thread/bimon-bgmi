@@ -65,7 +65,48 @@ export function getPrisma(gameMode?: string): PrismaClient {
 }
 
 /**
+ * Get the correct Prisma client for the current request.
+ * Reads the game mode from the `x-game-mode` request header (set by proxy.ts)
+ * or falls back to `game-mode` cookie, then env var.
+ *
+ * Use this in API routes and server-side code to ensure multi-game support:
+ *   const db = await getRequestPrisma();
+ */
+export async function getRequestPrisma(): Promise<PrismaClient> {
+    try {
+        const { headers } = await import("next/headers");
+        const headerStore = await headers();
+
+        // 1. Try x-game-mode request header (set by proxy)
+        const headerMode = headerStore.get("x-game-mode");
+        if (headerMode && headerMode in getDatabaseUrlMap()) {
+            return getPrisma(headerMode);
+        }
+
+        // 2. Try game-mode cookie (also set by proxy)
+        const { cookies } = await import("next/headers");
+        const cookieStore = await cookies();
+        const cookieMode = cookieStore.get("game-mode")?.value;
+        if (cookieMode && cookieMode in getDatabaseUrlMap()) {
+            return getPrisma(cookieMode);
+        }
+    } catch {
+        // Not in request context (scripts, cron jobs, etc.) — use default
+    }
+
+    return getPrisma(process.env.NEXT_PUBLIC_GAME_MODE || "bgmi");
+}
+
+/** Map of valid game modes for validation */
+function getDatabaseUrlMap(): Record<string, boolean> {
+    return { bgmi: true, freefire: true, pes: true };
+}
+
+/**
  * Default prisma client — uses DATABASE_URL or NEXT_PUBLIC_GAME_MODE.
  * This keeps all existing `import { prisma }` usage working without changes.
+ *
+ * ⚠️  For multi-game deployments, prefer `getRequestPrisma()` in API routes
+ *     to ensure the correct database is used per domain.
  */
 export const prisma = getPrisma(process.env.NEXT_PUBLIC_GAME_MODE || "bgmi");

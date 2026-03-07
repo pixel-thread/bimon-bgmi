@@ -1,21 +1,25 @@
 import { auth as nextAuth } from "@/lib/auth-config";
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/database";
+import { prisma, getRequestPrisma } from "@/lib/database";
 
 /**
  * Get the current authenticated user from the database.
  * Looks up by email (from NextAuth Google session).
  * Auto-creates a DB user record for new users.
  * Cached per request — safe to call multiple times.
+ *
+ * Uses getRequestPrisma() to ensure the correct game database is queried
+ * based on the domain the user is visiting (set by proxy.ts).
  */
 export const getCurrentUser = cache(async () => {
     const session = await nextAuth();
     if (!session?.user?.email) return null;
 
     const email = session.user.email;
+    const db = await getRequestPrisma();
 
-    let user = await prisma.user.findUnique({
+    let user = await db.user.findUnique({
         where: { email },
         include: {
             player: {
@@ -34,7 +38,7 @@ export const getCurrentUser = cache(async () => {
                 .replace(/[^a-z0-9_]/g, "") +
             Math.floor(Math.random() * 9000 + 1000);
 
-        user = await prisma.user.create({
+        user = await db.user.create({
             data: {
                 clerkId: `google_${Date.now()}`, // placeholder for backward compat
                 username,

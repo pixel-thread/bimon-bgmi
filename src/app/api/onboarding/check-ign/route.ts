@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/database";
+import { getRequestPrisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { type NextRequest } from "next/server";
 
@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
             return ErrorResponse({ message: "displayName is required", status: 400 });
         }
 
-        const existing = await prisma.player.findFirst({
+        const db = await getRequestPrisma();
+        const existing = await db.player.findFirst({
             where: {
                 displayName: {
                     equals: displayName.trim(),

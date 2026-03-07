@@ -61,8 +61,10 @@ export default auth((req) => {
     );
 
     if (isPublic) {
+        const requestHeaders = new Headers(req.headers);
+        requestHeaders.set("x-game-mode", gameMode);
         const response = NextResponse.next({
-            request: { headers: new Headers(req.headers) },
+            request: { headers: requestHeaders },
         });
         response.headers.set("x-game-mode", gameMode);
         response.cookies.set("game-mode", gameMode, { path: "/", sameSite: "lax" });
@@ -80,8 +82,10 @@ export default auth((req) => {
         return NextResponse.redirect(signInUrl);
     }
 
+    const reqHeaders = new Headers(req.headers);
+    reqHeaders.set("x-game-mode", gameMode);
     const response = NextResponse.next({
-        request: { headers: new Headers(req.headers) },
+        request: { headers: reqHeaders },
     });
     response.headers.set("x-game-mode", gameMode);
     response.cookies.set("game-mode", gameMode, { path: "/", sameSite: "lax" });
