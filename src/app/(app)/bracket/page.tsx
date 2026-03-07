@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BracketView, MyBracketMatch } from "@/components/bracket/bracket-view";
+import { GroupKnockoutView } from "@/components/bracket/group-knockout-view";
 import { SubmitResultModal } from "@/components/bracket/submit-result-modal";
 import { ViewResultModal } from "@/components/bracket/view-result-modal";
 import { useConfirmResult, useDisputeResult } from "@/components/bracket/submit-result-modal";
@@ -229,18 +230,30 @@ function TournamentContent({
             <div>
                 <h2 className="text-lg font-bold mb-4">
                     {tournamentType === "LEAGUE" ? "All Matches" :
-                        tournamentType === "GROUP_KNOCKOUT" ? "Tournament Matches" :
+                        tournamentType === "GROUP_KNOCKOUT" ? "Tournament" :
                             "Tournament Bracket"}
                 </h2>
-                <BracketView
-                    rounds={bracketData.rounds}
-                    totalRounds={bracketData.totalRounds}
-                    currentPlayerId={playerId}
-                    onSubmitResult={(id) => onSelectMatch(id)}
-                    onConfirmResult={(id) => confirmResult.mutate(id)}
-                    onDispute={(id) => disputeResult.mutate(id)}
-                    onViewResult={(id) => onViewMatch(id)}
-                />
+                {tournamentType === "GROUP_KNOCKOUT" ? (
+                    <GroupKnockoutView
+                        rounds={bracketData.rounds}
+                        totalRounds={bracketData.totalRounds}
+                        currentPlayerId={playerId}
+                        onSubmitResult={(id) => onSelectMatch(id)}
+                        onConfirmResult={(id) => confirmResult.mutate(id)}
+                        onDispute={(id) => disputeResult.mutate(id)}
+                        onViewResult={(id) => onViewMatch(id)}
+                    />
+                ) : (
+                    <BracketView
+                        rounds={bracketData.rounds}
+                        totalRounds={bracketData.totalRounds}
+                        currentPlayerId={playerId}
+                        onSubmitResult={(id) => onSelectMatch(id)}
+                        onConfirmResult={(id) => confirmResult.mutate(id)}
+                        onDispute={(id) => disputeResult.mutate(id)}
+                        onViewResult={(id) => onViewMatch(id)}
+                    />
+                )}
             </div>
 
             {/* Winner banner */}
