@@ -22,6 +22,7 @@ import {
     Save,
     RotateCcw,
     Shield,
+    Swords,
 } from "lucide-react";
 import { toast } from "sonner";
 import { GAME } from "@/lib/game-config";
@@ -58,6 +59,8 @@ interface Settings {
     customRules: string;
     meritBanThreshold: number;
     meritSoloRestrictThreshold: number;
+    matchDeadlineGroupHours: number;
+    matchDeadlineKOHours: number;
 }
 
 export default function SettingsPage() {
@@ -419,7 +422,44 @@ export default function SettingsPage() {
                 </CardBody>
             </Card>
 
-            {/* Merit System — BR games only */}
+            {/* Bracket Deadlines */}
+            <Card>
+                <CardHeader className="flex gap-2 items-center pb-0">
+                    <Swords className="h-5 w-5 text-primary" />
+                    <div>
+                        <h2 className="text-lg font-semibold">Bracket Deadlines</h2>
+                        <p className="text-xs text-foreground/50">How long players have to complete each match before admin intervention</p>
+                    </div>
+                </CardHeader>
+                <CardBody className="gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                            label="Group Stage Deadline"
+                            type="number"
+                            size="sm"
+                            value={String(settings.matchDeadlineGroupHours ?? 48)}
+                            onValueChange={(v) => update("matchDeadlineGroupHours", Number(v))}
+                            description="Hours to complete a group match"
+                            endContent={<span className="text-foreground/40 text-xs">hrs</span>}
+                            min={1}
+                        />
+                        <Input
+                            label="Knockout Stage Deadline"
+                            type="number"
+                            size="sm"
+                            value={String(settings.matchDeadlineKOHours ?? 72)}
+                            onValueChange={(v) => update("matchDeadlineKOHours", Number(v))}
+                            description="Hours to complete a KO match"
+                            endContent={<span className="text-foreground/40 text-xs">hrs</span>}
+                            min={1}
+                        />
+                    </div>
+                    <p className="text-[11px] text-foreground/30">
+                        ⏰ After the deadline, admins can override the result manually. Defaults: Group = 48h, KO = 72h.
+                    </p>
+                </CardBody>
+            </Card>
+
             {GAME.features.hasMerit && (
                 <Card>
                     <CardHeader className="flex gap-2 items-center pb-0">

@@ -31,6 +31,10 @@ export interface AppSettings {
     maxIGNLength: number;
     defaultPollDays: number;
 
+    // ⚔️ Bracket
+    matchDeadlineGroupHours: number;  // Hours to complete a group stage match
+    matchDeadlineKOHours: number;     // Hours to complete a KO stage match
+
     // 📢 Community
     whatsAppGroups: string[];
     welcomeMessage: string;
@@ -63,6 +67,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
     allowedTeamSizes: "SOLO,DUO,TRIO,SQUAD",
     maxIGNLength: 20,
     defaultPollDays: 3,
+
+    matchDeadlineGroupHours: 48,
+    matchDeadlineKOHours: 72,
 
     whatsAppGroups: [],
     welcomeMessage: "",
