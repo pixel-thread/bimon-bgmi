@@ -54,8 +54,23 @@ function getSortMetric(player: PlayerDTO, sortBy: string): { label: string; valu
             return { label: "Kills", value: player.stats.kills.toLocaleString() };
         case "matches":
             return { label: "Matches", value: player.stats.matches.toLocaleString() };
+        case "wins":
+            return { label: "Wins", value: (player.stats.wins ?? 0).toLocaleString() };
+        case "winRate": {
+            const wr = player.stats.matches > 0
+                ? Math.round((player.stats.wins ?? 0) / player.stats.matches * 100)
+                : 0;
+            return { label: "Win%", value: `${wr}%` };
+        }
         case "kd":
         default: {
+            if (!GAME.features.hasBR) {
+                // PES: show Win% instead of K/D
+                const wr = player.stats.matches > 0
+                    ? Math.round((player.stats.wins ?? 0) / player.stats.matches * 100)
+                    : 0;
+                return { label: "Win%", value: `${wr}%` };
+            }
             const kd = player.stats.kd;
             return { label: "KD", value: isFinite(kd) ? kd.toFixed(2) : "0.00" };
         }
@@ -77,7 +92,7 @@ export const PodiumCard = memo(function PodiumCard({
     player,
     position,
     onPlayerClick,
-    sortBy = "kd",
+    sortBy = "matches",
 }: PodiumCardProps) {
     const config = positionConfig[position];
     const Icon = config.icon;
@@ -210,7 +225,7 @@ export const PodiumCard = memo(function PodiumCard({
 export function PlayerPodium({
     players,
     onPlayerClick,
-    sortBy = "kd",
+    sortBy = "matches",
 }: {
     players: PlayerDTO[];
     onPlayerClick: (id: string) => void;

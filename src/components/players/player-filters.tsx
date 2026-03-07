@@ -15,13 +15,23 @@ const tiers = [
     { value: "BOT", label: "Bot" },
 ];
 
-const sortOptions = [
-    { label: "K/D Ratio", value: "kd" },
-    { label: "Total Kills", value: "kills" },
-    { label: "Matches", value: "matches" },
-    { label: "Name", value: "name" },
-    { label: "Balance", value: "balance" },
-];
+import { GAME } from "@/lib/game-config";
+
+const sortOptions = GAME.features.hasBR
+    ? [
+        { label: "K/D Ratio", value: "kd" },
+        { label: "Total Kills", value: "kills" },
+        { label: "Matches", value: "matches" },
+        { label: "Name", value: "name" },
+        { label: "Balance", value: "balance" },
+    ]
+    : [
+        { label: "Win Rate", value: "winRate" },
+        { label: "Wins", value: "wins" },
+        { label: "Matches", value: "matches" },
+        { label: "Name", value: "name" },
+        { label: "Balance", value: "balance" },
+    ];
 
 interface PlayerFiltersProps {
     search: string;
