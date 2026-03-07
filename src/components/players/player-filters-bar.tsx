@@ -153,10 +153,19 @@ export function PlayerFiltersBar({
                                 }}
                                 aria-label="Sort by"
                             >
-                                <SelectItem key="kd">K/D Ratio</SelectItem>
+                                {GAME.features.hasBR ? (
+                                    <>
+                                        <SelectItem key="kd">K/D Ratio</SelectItem>
+                                        <SelectItem key="kills">Total Kills</SelectItem>
+                                    </>
+                                ) : (
+                                    <>
+                                        <SelectItem key="wins">Wins</SelectItem>
+                                        <SelectItem key="winRate">Win Rate</SelectItem>
+                                    </>
+                                )}
                                 <SelectItem key="balance">Balance ({GAME.currency})</SelectItem>
                                 <SelectItem key="matches">Matches Played</SelectItem>
-                                <SelectItem key="kills">Total Kills</SelectItem>
                             </Select>
                         </div>
 

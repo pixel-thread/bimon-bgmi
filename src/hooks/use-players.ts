@@ -21,6 +21,8 @@ export interface PlayerDTO {
         deaths: number;
         matches: number;
         kd: number;
+        wins: number;     // bracket/league: matches won
+        losses: number;   // bracket/league: matches lost
     };
     balance: number;
     hasRoyalPass: boolean;
@@ -56,7 +58,7 @@ interface UsePlayersOptions {
 export function usePlayers({
     search = "",
     tier = "All",
-    sortBy = "kd",
+    sortBy = "matches",
     sortOrder = "desc",
     season = "",
     limit = 10,

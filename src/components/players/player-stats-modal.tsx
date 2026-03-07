@@ -110,7 +110,7 @@ export function PlayerStatsModal({
     const { stats, characterImage } = player;
     const kd = isFinite(stats.kd) ? stats.kd.toFixed(2) : "0.00";
 
-    const statCards = [
+    const statCards = GAME.features.hasBR ? [
         {
             label: "K/D Ratio",
             value: kd,
@@ -128,6 +128,33 @@ export function PlayerStatsModal({
             value: (stats.matches ?? 0).toLocaleString(),
             icon: Gamepad2,
             color: "text-success",
+        },
+        {
+            label: "Balance",
+            value: `${player.balance.toLocaleString()} ${GAME.currencyLabel}`,
+            icon: Wallet,
+            color: "text-warning",
+        },
+    ] : [
+        {
+            label: "Win Rate",
+            value: stats.matches > 0
+                ? `${Math.round((stats.wins ?? 0) / stats.matches * 100)}%`
+                : "—",
+            icon: Target,
+            color: "text-primary",
+        },
+        {
+            label: "Wins",
+            value: (stats.wins ?? 0).toLocaleString(),
+            icon: Swords,
+            color: "text-success",
+        },
+        {
+            label: "Matches",
+            value: (stats.matches ?? 0).toLocaleString(),
+            icon: Gamepad2,
+            color: "text-foreground/60",
         },
         {
             label: "Balance",

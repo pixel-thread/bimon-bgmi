@@ -65,8 +65,17 @@ export function PlayerTable({
                 <span className="w-8 text-center">#</span>
                 <span className="flex-1">Player</span>
                 <span className="w-14 text-center">Tier</span>
-                <span className="w-16 text-right">K/D</span>
-                <span className="w-16 text-right">Kills</span>
+                {GAME.features.hasBR ? (
+                    <>
+                        <span className="w-16 text-right">K/D</span>
+                        <span className="w-16 text-right">Kills</span>
+                    </>
+                ) : (
+                    <>
+                        <span className="w-16 text-right">Win%</span>
+                        <span className="w-16 text-right">Wins</span>
+                    </>
+                )}
                 <span className="w-16 text-right">Matches</span>
                 {isAdmin && <span className="w-20 text-right">Balance</span>}
             </div>
@@ -121,14 +130,29 @@ export function PlayerTable({
                             </span>
 
                             {/* Stats - desktop */}
-                            <div className="hidden w-16 text-right sm:block">
-                                <span className="text-sm font-semibold">{displayKd}</span>
-                            </div>
-                            <div className="hidden w-16 text-right sm:block">
-                                <span className="text-sm text-foreground/60">
-                                    {player.stats.kills}
-                                </span>
-                            </div>
+                            {GAME.features.hasBR ? (
+                                <>
+                                    <div className="hidden w-16 text-right sm:block">
+                                        <span className="text-sm font-semibold">{displayKd}</span>
+                                    </div>
+                                    <div className="hidden w-16 text-right sm:block">
+                                        <span className="text-sm text-foreground/60">{player.stats.kills}</span>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="hidden w-16 text-right sm:block">
+                                        <span className="text-sm font-semibold">
+                                            {player.stats.matches > 0
+                                                ? `${Math.round((player.stats.wins ?? 0) / player.stats.matches * 100)}%`
+                                                : "—"}
+                                        </span>
+                                    </div>
+                                    <div className="hidden w-16 text-right sm:block">
+                                        <span className="text-sm text-foreground/60">{player.stats.wins ?? 0}</span>
+                                    </div>
+                                </>
+                            )}
                             <div className="hidden w-16 text-right sm:block">
                                 <span className="text-sm text-foreground/60">
                                     {player.stats.matches}
@@ -157,12 +181,18 @@ export function PlayerTable({
                                     <span className={player.balance < 0 ? "text-danger" : player.balance > 0 ? "text-success" : ""}>
                                         {player.balance.toLocaleString()} {GAME.currencyLabel}
                                     </span>
+                                ) : sortBy === "wins" || (!GAME.features.hasBR && sortBy === "kd") ? (
+                                    `${player.stats.wins ?? 0} W`
                                 ) : sortBy === "kills" ? (
                                     `${player.stats.kills} K`
                                 ) : sortBy === "matches" ? (
                                     `${player.stats.matches} M`
-                                ) : (
+                                ) : GAME.features.hasBR ? (
                                     displayKd
+                                ) : (
+                                    player.stats.matches > 0
+                                        ? `${Math.round((player.stats.wins ?? 0) / player.stats.matches * 100)}%`
+                                        : "—"
                                 )}
                             </span>
                         </div>

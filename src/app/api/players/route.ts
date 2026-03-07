@@ -118,10 +118,41 @@ export async function GET(request: NextRequest) {
         });
         const statsMap = new Map(tpsAgg.map((s) => [s.playerId, { kills: s._sum.kills ?? 0, matches: s._count.matchId }]));
 
+        // Bracket wins/losses from BracketMatch (for PES / non-BR games)
+        const bracketWins = await prisma.bracketMatch.groupBy({
+            by: ["winnerId"],
+            where: {
+                winnerId: { in: playerIds },
+                status: "CONFIRMED",
+            },
+            _count: { id: true },
+        });
+        const bracketPlayed = await prisma.bracketMatch.findMany({
+            where: {
+                status: "CONFIRMED",
+                OR: [
+                    { player1Id: { in: playerIds } },
+                    { player2Id: { in: playerIds } },
+                ],
+            },
+            select: { player1Id: true, player2Id: true },
+        });
+        const winsMap = new Map(bracketWins.map((w) => [w.winnerId!, w._count.id]));
+        const bracketMatchCountMap = new Map<string, number>();
+        for (const m of bracketPlayed) {
+            if (m.player1Id) bracketMatchCountMap.set(m.player1Id, (bracketMatchCountMap.get(m.player1Id) ?? 0) + 1);
+            if (m.player2Id) bracketMatchCountMap.set(m.player2Id, (bracketMatchCountMap.get(m.player2Id) ?? 0) + 1);
+        }
+
         // Flatten the data — compute category from K/D (always fresh)
         const allData = players.map((p) => {
             const st = statsMap.get(p.id) ?? { kills: 0, matches: 0 };
+            const wins = winsMap.get(p.id) ?? 0;
+            const bracketMatches = bracketMatchCountMap.get(p.id) ?? 0;
+            // For bracket games, use bracket matches; for BR use TeamPlayerStats matches
+            const totalMatches = st.matches > 0 ? st.matches : bracketMatches;
             const kd = st.matches > 0 ? st.kills / st.matches : 0;
+            const losses = bracketMatches - wins;
             return {
                 id: p.id,
                 displayName: p.displayName,
@@ -130,7 +161,14 @@ export async function GET(request: NextRequest) {
                 imageUrl: p.customProfileImageUrl || p.user.imageUrl,
                 category: getCategoryFromKDValue(kd),
                 isBanned: p.isBanned,
-                stats: { kills: st.kills, matches: st.matches, kd: Number(kd.toFixed(2)) },
+                stats: {
+                    kills: st.kills,
+                    matches: totalMatches,
+                    kd: Number(kd.toFixed(2)),
+                    wins,
+                    losses: losses > 0 ? losses : 0,
+                    deaths: 0,
+                },
                 balance: p.wallet?.balance ?? 0,
                 hasRoyalPass: p.hasRoyalPass,
                 characterImage: p.characterImage
@@ -154,11 +192,21 @@ export async function GET(request: NextRequest) {
             data = hasMore ? allData.slice(0, limit) : allData;
             nextCursor = hasMore ? data[data.length - 1]?.id : null;
         } else {
-            // JS sort for kd/kills/matches/balance
-            const sortKey = sortBy as "kd" | "kills" | "matches" | "balance";
+            // JS sort for kd/kills/matches/balance/wins/winRate
+            const sortKey = sortBy as "kd" | "kills" | "matches" | "balance" | "wins" | "winRate";
             allData.sort((a, b) => {
-                const aVal = sortKey === "balance" ? a.balance : a.stats[sortKey as keyof typeof a.stats] as number;
-                const bVal = sortKey === "balance" ? b.balance : b.stats[sortKey as keyof typeof b.stats] as number;
+                let aVal: number, bVal: number;
+                if (sortKey === "balance") {
+                    aVal = a.balance; bVal = b.balance;
+                } else if (sortKey === "wins") {
+                    aVal = a.stats.wins; bVal = b.stats.wins;
+                } else if (sortKey === "winRate") {
+                    aVal = a.stats.matches > 0 ? a.stats.wins / a.stats.matches : 0;
+                    bVal = b.stats.matches > 0 ? b.stats.wins / b.stats.matches : 0;
+                } else {
+                    aVal = a.stats[sortKey as keyof typeof a.stats] as number;
+                    bVal = b.stats[sortKey as keyof typeof b.stats] as number;
+                }
                 return sortOrder === "desc" ? bVal - aVal : aVal - bVal;
             });
 
