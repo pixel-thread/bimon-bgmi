@@ -74,6 +74,7 @@ type Props = {
     tournamentName: string;
     isWinnerDeclared: boolean;
     seasonId?: string;
+    tournamentType?: string;
 };
 
 const getMedal = (i: number) => ["🥇", "🥈", "🥉", "🏅", "🎖️"][i] ?? "🎖️";
@@ -92,8 +93,10 @@ export function DeclareWinnersModal({
     tournamentName,
     isWinnerDeclared,
     seasonId,
+    tournamentType,
 }: Props) {
     const queryClient = useQueryClient();
+    const isBracket = ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"].includes(tournamentType ?? "");
     const [placementCount, setPlacementCount] = useState(2);
     const [poolOpen, setPoolOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<string>("simple");
@@ -112,7 +115,7 @@ export function DeclareWinnersModal({
     const orgPercent = publicSettings?.orgCutPercent ?? 0;
     const enableFund = publicSettings?.enableFund ?? false;
 
-    // Fetch rankings (always)
+    // Fetch rankings (BGMI) OR bracket results (PES)
     const { data: rankingsData, isLoading } = useQuery<{
         data: TeamRanking[];
         meta: RankingsMeta;
@@ -123,9 +126,57 @@ export function DeclareWinnersModal({
             if (!res.ok) throw new Error("Failed");
             return res.json();
         },
-        enabled: isOpen && !!tournamentId,
-        staleTime: 0, // Always fetch fresh data when modal opens
+        enabled: isOpen && !!tournamentId && !isBracket,
+        staleTime: 0,
     });
+
+    // Bracket: fetch bracket placements from bracket API
+    type BracketPlayer = { id: string; name: string };
+    type BracketPlacement = { position: number; amount: number; player: BracketPlayer };
+    const { data: bracketData, isLoading: bracketLoading } = useQuery<{
+        rounds: { round: number; matches: { id: string; status: string; winnerId: string | null; player1Id: string | null; player2Id: string | null; player1?: { id: string; displayName: string | null } | null; player2?: { id: string; displayName: string | null } | null }[] }[];
+        totalPlayers: number;
+        deadlines?: unknown;
+    }>({
+        queryKey: ["bracket", tournamentId],
+        queryFn: async () => {
+            const res = await fetch(`/api/tournaments/${tournamentId}/bracket`);
+            if (!res.ok) return null;
+            const json = await res.json();
+            return json.data;
+        },
+        enabled: isOpen && !!tournamentId && isBracket,
+        staleTime: 0,
+    });
+
+    // Derive bracket placements from bracket data
+    const bracketPlacements = useMemo((): BracketPlacement[] => {
+        if (!bracketData?.rounds || !isBracket) return [];
+        const confirmed = bracketData.rounds
+            .flatMap(r => r.matches.map(m => ({ ...m, _round: r.round })))
+            .filter(m => m.status === "CONFIRMED" && m.winnerId);
+        if (confirmed.length === 0) return [];
+        const maxRound = Math.max(...confirmed.map(m => m._round));
+        const result: BracketPlacement[] = [];
+        const getPlayer = (m: typeof confirmed[0], id: string | null) =>
+            id === m.player1Id ? m.player1 : m.player2;
+        const getLoser = (m: typeof confirmed[0]) =>
+            getPlayer(m, m.winnerId === m.player1Id ? m.player2Id : m.player1Id);
+        const finals = confirmed.filter(m => m._round === maxRound);
+        const semis = confirmed.filter(m => m._round === maxRound - 1);
+        let pos = 3;
+        for (const m of finals) {
+            const w = getPlayer(m, m.winnerId);
+            const l = getLoser(m);
+            if (w) result.push({ position: 1, amount: 0, player: { id: w.id, name: w.displayName || "?" } });
+            if (l) result.push({ position: 2, amount: 0, player: { id: l.id, name: l.displayName || "?" } });
+        }
+        for (const m of semis) {
+            const l = getLoser(m);
+            if (l) result.push({ position: pos++, amount: 0, player: { id: l.id, name: l.displayName || "?" } });
+        }
+        return result;
+    }, [bracketData, isBracket]);
 
     const rankings = rankingsData?.data ?? [];
     const meta = rankingsData?.meta;
@@ -153,11 +204,15 @@ export function DeclareWinnersModal({
 
     // Auto-set placement count from tier
     useEffect(() => {
-        if (isOpen && basePrizePool > 0) {
-            const tier = getTierInfo(basePrizePool);
-            setPlacementCount(Math.min(tier.winnerCount, rankings.length || tier.winnerCount));
+        if (isOpen) {
+            if (isBracket) {
+                setPlacementCount(2); // Default 1st + 2nd for bracket
+            } else if (basePrizePool > 0) {
+                const tier = getTierInfo(basePrizePool);
+                setPlacementCount(Math.min(tier.winnerCount, rankings.length || tier.winnerCount));
+            }
         }
-    }, [isOpen, basePrizePool, rankings.length]);
+    }, [isOpen, isBracket, basePrizePool, rankings.length]);
 
     // Get player IDs for tax preview
     const topTeamPlayerIds = useMemo(() => {
@@ -364,23 +419,29 @@ export function DeclareWinnersModal({
             // Step 1: Declare winners
             setDeclareStatus({ step: "Declaring winners..." });
 
-            // Build placements with exact per-player amounts from preview
-            const placements = rankings.slice(0, placementCount).map((team, i) => {
-                const pos = i + 1;
-                const teamAmount = baseDist?.prizes.get(pos)?.amount ?? 0;
-                const playerCount = team.players?.length || 0;
-                const perPlayer = getPerPlayerAmount(pos, playerCount);
-
-                // Compute exact per-player amounts using preview helpers
-                const pa = getParticipationAdjustedAmounts(team.players || [], perPlayer);
-                const players = (team.players || []).map(p => {
-                    const adjusted = pa.get(p.id)?.adjusted ?? perPlayer;
-                    const final = getTaxedAmount(p.id, adjusted);
-                    return { playerId: p.id, amount: final };
+            let placements;
+            if (isBracket) {
+                // Bracket: send position + amount — backend resolves players from BracketMatch
+                placements = bracketPlacements.slice(0, placementCount).map((bp) => ({
+                    position: bp.position,
+                    amount: baseDist?.prizes.get(bp.position)?.amount ?? 0,
+                }));
+            } else {
+                // BGMI: build placements with exact per-player amounts from preview
+                placements = rankings.slice(0, placementCount).map((team, i) => {
+                    const pos = i + 1;
+                    const teamAmount = baseDist?.prizes.get(pos)?.amount ?? 0;
+                    const playerCount = team.players?.length || 0;
+                    const perPlayer = getPerPlayerAmount(pos, playerCount);
+                    const pa = getParticipationAdjustedAmounts(team.players || [], perPlayer);
+                    const players = (team.players || []).map(p => {
+                        const adjusted = pa.get(p.id)?.adjusted ?? perPlayer;
+                        const final = getTaxedAmount(p.id, adjusted);
+                        return { playerId: p.id, amount: final };
+                    });
+                    return { position: pos, amount: teamAmount, teamId: team.teamId, players };
                 });
-
-                return { position: pos, amount: teamAmount, teamId: team.teamId, players };
-            });
+            }
 
             const res1 = await fetch(`/api/tournaments/${tournamentId}/declare-winners`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
@@ -584,8 +645,62 @@ export function DeclareWinnersModal({
                 </ModalHeader>
 
                 <ModalBody className="gap-3">
-                    {isLoading ? (
+                    {isLoading || bracketLoading ? (
                         <div className="flex justify-center py-8"><Spinner /></div>
+                    ) : isBracket ? (
+                        // ── Bracket mode: show results from bracket ──
+                        bracketPlacements.length === 0 ? (
+                            <div className="text-center py-8 text-foreground/40 text-sm">
+                                No confirmed matches yet. Bracket needs a final match confirmed.
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <p className="text-xs font-semibold text-foreground/40 uppercase tracking-wider mb-2">
+                                    {isWinnerDeclared ? "Declared Winners" : `Bracket Results (Top ${placementCount})`}
+                                </p>
+                                {isWinnerDeclared && declaredWinners && declaredWinners.length > 0 ? (
+                                    declaredWinners.map((winner, idx) => (
+                                        <div key={winner.teamId} className={`rounded-lg border p-3 ${idx === 0 ? "border-warning/40 bg-warning/[0.04]" : idx === 1 ? "border-foreground/15 bg-foreground/[0.02]" : "border-divider"}`}>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xl shrink-0">{getMedal(idx)}</span>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium">{winner.players.map(p => p.displayName || p.username).join(", ")}</p>
+                                                </div>
+                                                <Chip size="sm" color="success" variant="flat" className="font-semibold">₹{winner.amount.toLocaleString()}</Chip>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    bracketPlacements.slice(0, placementCount).map((bp, idx) => (
+                                        <div key={bp.player.id} className={`rounded-lg border p-3 ${idx === 0 ? "border-warning/40 bg-warning/[0.04]" : idx === 1 ? "border-foreground/15 bg-foreground/[0.02]" : "border-divider"}`}>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xl shrink-0">{getMedal(idx)}</span>
+                                                <p className="text-sm font-medium flex-1">{bp.player.name}</p>
+                                                {baseDist?.prizes.get(bp.position)?.amount ? (
+                                                    <Chip size="sm" color="success" variant="flat" className="font-semibold">₹{baseDist.prizes.get(bp.position)!.amount.toLocaleString()}</Chip>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                                {!isWinnerDeclared && (
+                                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                                        {placementCount < bracketPlacements.length && placementCount < 8 && (
+                                            <Button size="sm" variant="flat" startContent={<Plus className="h-3.5 w-3.5" />}
+                                                onPress={() => setPlacementCount(c => c + 1)} className="gap-1 text-xs h-8">
+                                                Add {getOrdinal(placementCount + 1)} Place
+                                            </Button>
+                                        )}
+                                        {placementCount > 2 && (
+                                            <Button size="sm" variant="flat" color="danger" startContent={<Trash2 className="h-3.5 w-3.5" />}
+                                                onPress={() => setPlacementCount(c => c - 1)} className="gap-1 text-xs h-8">
+                                                Remove {getOrdinal(placementCount)} Place
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )
                     ) : rankings.length === 0 ? (
                         <div className="text-center py-8 text-foreground/40 text-sm">
                             No team stats found for this tournament.

@@ -28,20 +28,21 @@ const PLACEMENT_PTS: Record<number, number> = {
 
 
 
+const BRACKET_TYPES = ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"];
+
 /**
  * POST /api/tournaments/[id]/declare-winners
  *
- * Full v1 parity — optimized for fewer DB roundtrips.
+ * Supports two paths:
+ * - BGMI / BR tournaments: uses TeamStats (kills + placement points)
+ * - PES / Bracket tournaments: reads winners from BracketMatch directly
  *
- * Flow:
- * 1. Aggregate team rankings
- * 2. Per-player: participation adjustment → repeat winner tax → solo tax → final amount
- * 3. Create TournamentWinner + PendingReward (WINNER) records
- * 4. Solo tax distribution (loser support + bonus pool)
- * 5. Income records (Fund/Org with tax contributions)
- * 6. Merit reset for solo-restricted players
- * 7. Referral commission processing
- * 8. Mark tournament INACTIVE + isWinnerDeclared
+ * Flow (bracket path):
+ * 1. Read BracketMatch results (final winner = 1st, runner-up = 2nd, etc.)
+ * 2. Prize = entry fee × players + donations, split by placement config
+ * 3. Repeat winner tax (if fund enabled), NO solo tax, NO participation adj
+ * 4. TournamentWinner + PendingReward + Notification
+ * 5. Income records + mark INACTIVE
  */
 export async function POST(
     req: NextRequest,
@@ -63,10 +64,15 @@ export async function POST(
         // ── 1. Fetch tournament ──────────────────────────────
         const tournament = await prisma.tournament.findUnique({
             where: { id },
-            select: { id: true, name: true, fee: true, seasonId: true, isWinnerDeclared: true },
+            select: { id: true, name: true, fee: true, seasonId: true, isWinnerDeclared: true, type: true },
         });
         if (!tournament) return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
         if (!dryRun && tournament.isWinnerDeclared) return NextResponse.json({ error: "Winners already declared" }, { status: 400 });
+
+        // Route to bracket path for PES / bracket tournaments
+        if (BRACKET_TYPES.includes(tournament.type)) {
+            return declareBracketWinners({ tournament, placements, dryRun, req });
+        }
 
         // ── Fetch settings for org percentage & fund toggle ──────────
         const settings = await getSettings();
@@ -551,6 +557,273 @@ export async function POST(
         console.error("Error declaring winners:", error);
         return NextResponse.json({ error: "Failed to declare winners" }, { status: 500 });
     }
+}
+
+// ─── Bracket-aware declare-winners (PES / League / Group+KO) ────────────────
+// Reads winners directly from BracketMatch results instead of TeamStats.
+// 1st place = final match winner, 2nd place = final match runner-up.
+// 3rd/4th = semi-final losers, etc. Admin can also pass custom placements.
+
+async function declareBracketWinners({
+    tournament,
+    placements: customPlacements,
+    dryRun,
+}: {
+    tournament: { id: string; name: string; fee: number | null; seasonId: string | null; type: string };
+    placements?: { position: number; amount: number; teamId?: string; players?: { playerId: string; amount: number }[] }[];
+    dryRun?: boolean;
+    req: Request;
+}): Promise<Response> {
+    const id = tournament.id;
+    const settings = await getSettings();
+    const orgPercent = settings.orgCutPercent ?? 0;
+    const enableFund = settings.enableFund ?? false;
+
+    // ── Fetch all bracket matches grouped by round ───────────────
+    const allMatches = await prisma.bracketMatch.findMany({
+        where: { tournamentId: id, status: "CONFIRMED" },
+        include: {
+            player1: { select: { id: true, userId: true, displayName: true } },
+            player2: { select: { id: true, userId: true, displayName: true } },
+            winner: { select: { id: true, userId: true, displayName: true } },
+        },
+        orderBy: [{ round: "asc" }, { position: "asc" }],
+    });
+
+    if (allMatches.length === 0) {
+        return NextResponse.json({ error: "No confirmed bracket matches found." }, { status: 400 });
+    }
+
+    // Compute max round (= final)
+    const maxRound = Math.max(...allMatches.map(m => m.round));
+
+    // Helper: get loser of a match
+    const getLoser = (m: typeof allMatches[0]) => {
+        if (!m.winnerId) return null;
+        return m.winnerId === m.player1Id ? m.player2 : m.player1;
+    };
+
+    // Build ordered placements from bracket structure:
+    // Pos 1 = final winner, Pos 2 = final runner-up
+    // Pos 3+4 = semi-final losers, Pos 5-8 = quarter-final losers, etc.
+    type BracketPlayer = { id: string; userId: string; displayName: string | null };
+    const bracketPlacements: { position: number; player: BracketPlayer }[] = [];
+
+    const finalMatches = allMatches.filter(m => m.round === maxRound);
+    const semiMatches = allMatches.filter(m => m.round === maxRound - 1);
+    const qfMatches = allMatches.filter(m => m.round === maxRound - 2);
+
+    // 1st and 2nd from final(s)
+    for (const m of finalMatches) {
+        if (m.winner) bracketPlacements.push({ position: 1, player: m.winner as BracketPlayer });
+        const loser = getLoser(m);
+        if (loser) bracketPlacements.push({ position: 2, player: loser as BracketPlayer });
+    }
+    // 3rd/4th from semis
+    let pos = 3;
+    for (const m of semiMatches) {
+        const loser = getLoser(m);
+        if (loser) bracketPlacements.push({ position: pos++, player: loser as BracketPlayer });
+    }
+    // 5th–8th from quarters
+    for (const m of qfMatches) {
+        const loser = getLoser(m);
+        if (loser) bracketPlacements.push({ position: pos++, player: loser as BracketPlayer });
+    }
+
+    // ── Prize pool ────────────────────────────────────────────────
+    const entryFee = tournament.fee ?? 0;
+    const totalPlayers = new Set(
+        allMatches.flatMap(m => [m.player1Id, m.player2Id]).filter(Boolean)
+    ).size;
+    const donations = await prisma.prizePoolDonation.findMany({
+        where: { tournamentId: id },
+        select: { amount: true },
+    });
+    const totalDonations = donations.reduce((s, d) => s + d.amount, 0);
+    const prizePool = entryFee * totalPlayers + totalDonations;
+
+    // Org cut
+    const orgAmount = orgPercent > 0 ? Math.floor(prizePool * orgPercent / 100) : 0;
+    const remainingPool = prizePool - orgAmount;
+
+    // ── Determine placements to award ────────────────────────────
+    // If admin passes custom placements (with amounts), use those.
+    // Otherwise default: 1st gets ~60%, 2nd gets ~25%, 3rd+ share rest.
+    const defaultAmounts = buildBracketPrizeAmounts(remainingPool, Math.min(2, bracketPlacements.length));
+    const placementsToUse: { position: number; amount: number; playerId: string; userId: string; displayName: string | null }[] = [];
+
+    if (customPlacements && customPlacements.length > 0) {
+        // Admin-specified placements — player is picked from bracketPlacements or custom players array
+        for (const cp of customPlacements) {
+            if (cp.players && cp.players.length > 0) {
+                // Custom override: admin specified exact player + amount
+                for (const pp of cp.players) {
+                    const p = await prisma.player.findUnique({
+                        where: { id: pp.playerId },
+                        select: { id: true, userId: true, displayName: true },
+                    });
+                    if (p) placementsToUse.push({ position: cp.position, amount: pp.amount, playerId: p.id, userId: p.userId, displayName: p.displayName });
+                }
+            } else {
+                // Derive player from bracket structure
+                const bp = bracketPlacements.find(b => b.position === cp.position);
+                if (bp) placementsToUse.push({ position: cp.position, amount: cp.amount, playerId: bp.player.id, userId: bp.player.userId, displayName: bp.player.displayName });
+            }
+        }
+    } else {
+        // Auto from bracket results
+        for (const bp of bracketPlacements.filter(b => b.position <= 2)) {
+            const amount = defaultAmounts.get(bp.position) ?? 0;
+            placementsToUse.push({ position: bp.position, amount, playerId: bp.player.id, userId: bp.player.userId, displayName: bp.player.displayName });
+        }
+    }
+
+    if (placementsToUse.length === 0) {
+        return NextResponse.json({ error: "Could not determine bracket placements. Ensure at least the final match is confirmed." }, { status: 400 });
+    }
+
+    // ── Repeat winner tax (if Fund enabled) ──────────────────────
+    const winnerIds = placementsToUse.filter(p => p.position === 1).map(p => p.playerId);
+    const recentWins = await getPlayerRecentWins(winnerIds, tournament.seasonId ?? "", 6);
+
+    const finalPlacements = placementsToUse.map(p => {
+        let finalAmount = p.amount;
+        let taxAmount = 0;
+        if (enableFund && p.position === 1) {
+            const prevWins = recentWins.get(p.playerId) ?? 0;
+            const tax = calculateRepeatWinnerTax(p.playerId, p.amount, prevWins + 1);
+            finalAmount = tax.netAmount;
+            taxAmount = tax.taxAmount;
+        }
+        return { ...p, finalAmount, taxAmount };
+    });
+
+    const totalTax = finalPlacements.reduce((s, p) => s + p.taxAmount, 0);
+    const finalFund = enableFund ? totalTax : 0;
+    const finalOrg = orgAmount;
+
+    // ── DRY RUN ───────────────────────────────────────────────────
+    if (dryRun) {
+        return NextResponse.json({
+            success: true,
+            dryRun: true,
+            data: {
+                finalOrg,
+                finalFund,
+                prizePool,
+                totalPlayers,
+                winners: finalPlacements.map(p => ({
+                    position: p.position,
+                    teamAmount: p.amount,
+                    playerName: p.displayName,
+                    players: [{ playerId: p.playerId, finalAmount: p.finalAmount, repeatTax: p.taxAmount, soloTax: 0 }],
+                })),
+            },
+        });
+    }
+
+    // ── Write to DB ───────────────────────────────────────────────
+    await prisma.$transaction(async (tx) => {
+        for (const p of finalPlacements) {
+            // Each 1v1 player is their own "team" in the winners table
+            // Find or create a solo team for them for this tournament
+            let soloTeam = await tx.team.findFirst({
+                where: { tournamentId: id, players: { some: { id: p.playerId } } },
+            });
+            if (!soloTeam) {
+                const existingCount = await tx.team.count({ where: { tournamentId: id } });
+                soloTeam = await tx.team.create({
+                    data: {
+                        name: p.displayName || "Unknown",
+                        tournamentId: id,
+                        teamNumber: existingCount + 1,
+                        players: { connect: { id: p.playerId } },
+                    },
+                });
+            }
+
+            await tx.tournamentWinner.create({
+                data: {
+                    amount: p.amount,
+                    position: p.position,
+                    team: { connect: { id: soloTeam.id } },
+                    tournament: { connect: { id } },
+                    isDistributed: true,
+                },
+            });
+
+            await tx.pendingReward.create({
+                data: {
+                    playerId: p.playerId,
+                    type: "WINNER",
+                    amount: p.finalAmount,
+                    position: p.position,
+                    message: `${getOrdinal(p.position)} Place - ${tournament.name}`,
+                    details: {
+                        tournamentId: id,
+                        tournamentName: tournament.name,
+                        teamPrize: p.amount,
+                        playerCount: 1,
+                        baseShare: p.amount,
+                        participationAdj: 0,
+                        matchesPlayed: 1,
+                        totalMatches: allMatches.length,
+                        repeatTax: p.taxAmount,
+                        soloTax: 0,
+                        wasRepeatWinner: p.taxAmount > 0,
+                        wasSolo: false,
+                    },
+                },
+            });
+
+            await tx.notification.create({
+                data: {
+                    userId: p.userId,
+                    playerId: p.playerId,
+                    title: `🏆 You won ${getOrdinal(p.position)} place!`,
+                    message: `You earned ${p.finalAmount} ${GAME.currency} in ${tournament.name}. Tap to claim!`,
+                    type: "tournament",
+                    link: "/notifications",
+                },
+            });
+        }
+
+        // Income records
+        if (finalOrg > 0) {
+            await tx.income.create({
+                data: { amount: finalOrg, description: `Org - ${tournament.name}`, tournamentId: id, tournamentName: tournament.name, createdBy: "system" },
+            });
+        }
+        if (finalFund > 0) {
+            await tx.income.create({
+                data: { amount: finalFund, description: `Fund - ${tournament.name} (repeat winner tax)`, tournamentId: id, tournamentName: tournament.name, createdBy: "system" },
+            });
+        }
+
+        await tx.tournament.update({
+            where: { id },
+            data: { isWinnerDeclared: true, status: "INACTIVE" },
+        });
+    }, { timeout: 30000, maxWait: 35000 });
+
+    return NextResponse.json({ success: true, message: "Bracket winners declared and rewards created" });
+}
+
+/** Split remainingPool into prize amounts for top N places (60/25/10/5 split) */
+function buildBracketPrizeAmounts(pool: number, count: number): Map<number, number> {
+    const ratios: Record<number, number[]> = {
+        1: [1],
+        2: [0.65, 0.35],
+        3: [0.60, 0.25, 0.15],
+        4: [0.55, 0.25, 0.12, 0.08],
+    };
+    const r = ratios[Math.min(count, 4)] ?? ratios[4];
+    const map = new Map<number, number>();
+    for (let i = 0; i < count; i++) {
+        map.set(i + 1, Math.floor(pool * (r[i] ?? 0)));
+    }
+    return map;
 }
 
 // ── Helper functions (inlined from v1 services, optimized) ──

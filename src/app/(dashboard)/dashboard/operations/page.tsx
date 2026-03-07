@@ -835,6 +835,7 @@ export default function OperationsPage() {
                     tournamentName={selected.name}
                     isWinnerDeclared={selected.isWinnerDeclared}
                     seasonId={seasonId}
+                    tournamentType={selected.type}
                 />
             )}
         </div>
