@@ -498,13 +498,15 @@ export function roundLabel(roundNum: number, rounds: RoundData[]): string {
 }
 
 export function MyBracketMatch({
-    rounds, currentPlayerId, onSubmitResult, onConfirmResult, onDispute,
+    rounds, currentPlayerId, onSubmitResult, onConfirmResult, onDispute, deadlines, tournamentType,
 }: {
     rounds: RoundData[];
     currentPlayerId: string;
     onSubmitResult?: (id: string) => void;
     onConfirmResult?: (id: string) => void;
     onDispute?: (id: string) => void;
+    deadlines?: { groupHours: number; koHours: number };
+    tournamentType?: string;
 }) {
     const [idx, setIdx] = useState(0);
 
@@ -563,6 +565,14 @@ export function MyBracketMatch({
                 onSubmitResult={onSubmitResult}
                 onConfirmResult={onConfirmResult}
                 onDispute={onDispute}
+                deadlineHours={deadlines
+                    ? (tournamentType === "GROUP_KNOCKOUT" && myMatch._roundNum <= 0
+                        ? deadlines.groupHours
+                        : tournamentType === "LEAGUE"
+                            ? deadlines.groupHours
+                            : deadlines.koHours)
+                    : undefined
+                }
             />
         </motion.div>
     );

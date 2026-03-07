@@ -238,6 +238,8 @@ function TournamentContent({
                     onSubmitResult={(id) => onSelectMatch(id)}
                     onConfirmResult={(id) => confirmResult.mutate(id)}
                     onDispute={(id) => disputeResult.mutate(id)}
+                    deadlines={bracketData.deadlines}
+                    tournamentType={tournamentType}
                 />
             )}
 
