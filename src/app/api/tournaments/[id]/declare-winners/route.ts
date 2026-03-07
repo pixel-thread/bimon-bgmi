@@ -350,12 +350,14 @@ export async function POST(
             finalOrg = distribution.finalOrgAmount;
             finalFund = enableFund ? taxTotals.totalTax : 0;
 
-            // Reconcile rounding remainders
+            // Reconcile rounding remainders — use effective pool (after UC exempt)
+            const ucExemptCost = ucExemptCount * entryFee;
+            const effectivePool = prizePool - ucExemptCost;
             const totalToPlayers = winnerTeamsData.reduce(
                 (sum, t) => sum + t.players.reduce((s, p) => s + p.finalAmount, 0), 0
             );
             const distributed = totalToPlayers + finalOrg + finalFund;
-            const roundingRemainder = prizePool - distributed;
+            const roundingRemainder = effectivePool - distributed;
             if (roundingRemainder > 0) {
                 if (orgPercent > 0) {
                     finalOrg += roundingRemainder;
