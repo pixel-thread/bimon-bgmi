@@ -87,13 +87,10 @@ export async function generateBracket(tournamentId: string, playerIds: string[])
         });
     }
 
-    // Create all matches in a transaction
-    type MatchInput = (typeof allMatches)[number];
-    const created = await prisma.$transaction(
-        allMatches.map((m: MatchInput) =>
-            prisma.bracketMatch.create({ data: m })
-        )
-    );
+    // Create all matches in bulk
+    const result = await prisma.bracketMatch.createMany({
+        data: allMatches,
+    });
 
     return {
         totalPlayers: shuffled.length,
@@ -101,7 +98,7 @@ export async function generateBracket(tournamentId: string, playerIds: string[])
         totalRounds,
         numByes: 0,
         has3rdPlaceMatch,
-        matchesCreated: created.length,
+        matchesCreated: result.count,
     };
 }
 

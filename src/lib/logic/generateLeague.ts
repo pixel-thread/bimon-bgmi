@@ -61,17 +61,15 @@ export async function generateLeague(tournamentId: string, playerIds: string[]) 
         players.splice(1, 0, last);
     }
 
-    // Create all matches
-    const created = await prisma.$transaction(
-        matches.map((m) =>
-            prisma.bracketMatch.create({ data: m })
-        )
-    );
+    // Create all matches in bulk
+    const result = await prisma.bracketMatch.createMany({
+        data: matches,
+    });
 
     return {
         totalPlayers: playerIds.length,
         totalRounds,
-        matchesCreated: created.length,
+        matchesCreated: result.count,
         format: "LEAGUE",
     };
 }

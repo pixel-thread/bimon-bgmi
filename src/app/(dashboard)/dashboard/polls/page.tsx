@@ -403,53 +403,28 @@ export default function PollsAdminPage() {
                                                             </Button>
                                                         )}
                                                         {poll.tournament && ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"].includes(poll.tournament.type) && (
-                                                            <div className="flex items-center gap-1">
-                                                                <select
-                                                                    className="h-7 rounded-lg bg-default-100 px-1.5 text-xs border-none outline-none cursor-pointer"
-                                                                    defaultValue={poll.tournament.type}
-                                                                    onChange={async (e) => {
-                                                                        const newType = e.target.value;
-                                                                        try {
-                                                                            const res = await fetch(`/api/tournaments/${poll.tournament!.id}`, {
-                                                                                method: "PUT",
-                                                                                headers: { "Content-Type": "application/json" },
-                                                                                body: JSON.stringify({ type: newType }),
-                                                                            });
-                                                                            if (!res.ok) throw new Error("Failed");
-                                                                            toast.success(`Format → ${newType === "BRACKET_1V1" ? "Knockout" : newType === "LEAGUE" ? "League" : "Group+KO"}`);
-                                                                            queryClient.invalidateQueries({ queryKey: ["admin-polls"] });
-                                                                        } catch {
-                                                                            toast.error("Failed to change format");
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    <option value="BRACKET_1V1">KO</option>
-                                                                    <option value="LEAGUE">League</option>
-                                                                    <option value="GROUP_KNOCKOUT">Group+KO</option>
-                                                                </select>
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="flat"
-                                                                    color="secondary"
-                                                                    startContent={<Swords className="h-3 w-3" />}
-                                                                    className="min-w-0 h-7 px-2 text-xs"
-                                                                    isDisabled={poll.inVotes < 2}
-                                                                    onPress={async () => {
-                                                                        if (!confirm(`Generate matches for "${poll.tournament!.name}"? This will close the poll.`)) return;
-                                                                        try {
-                                                                            const res = await fetch(`/api/tournaments/${poll.tournament!.id}/generate-bracket`, { method: "POST" });
-                                                                            const json = await res.json();
-                                                                            if (!res.ok) throw new Error(json.message || "Failed");
-                                                                            toast.success(json.message);
-                                                                            queryClient.invalidateQueries({ queryKey: ["admin-polls"] });
-                                                                        } catch (err: any) {
-                                                                            toast.error(err.message);
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    Bracket
-                                                                </Button>
-                                                            </div>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="flat"
+                                                                color="secondary"
+                                                                startContent={<Swords className="h-3 w-3" />}
+                                                                className="min-w-0 h-7 px-2 text-xs"
+                                                                isDisabled={poll.inVotes < 2}
+                                                                onPress={async () => {
+                                                                    if (!confirm(`Generate matches for "${poll.tournament!.name}"? This will close the poll.`)) return;
+                                                                    try {
+                                                                        const res = await fetch(`/api/tournaments/${poll.tournament!.id}/generate-bracket`, { method: "POST" });
+                                                                        const json = await res.json();
+                                                                        if (!res.ok) throw new Error(json.message || "Failed");
+                                                                        toast.success(json.message);
+                                                                        queryClient.invalidateQueries({ queryKey: ["admin-polls"] });
+                                                                    } catch (err: any) {
+                                                                        toast.error(err.message);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                Bracket
+                                                            </Button>
                                                         )}
                                                     </div>
                                                 </div>

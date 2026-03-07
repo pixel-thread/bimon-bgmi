@@ -140,18 +140,14 @@ export async function generateGroupKnockout(tournamentId: string, playerIds: str
         });
     }
 
-    // Create all matches
-    const created = await prisma.$transaction(
-        allMatches.map((m) =>
-            prisma.bracketMatch.create({
-                data: {
-                    ...m,
-                    player1Id: m.player1Id || null,
-                    player2Id: m.player2Id || null,
-                },
-            })
-        )
-    );
+    // Create all matches in bulk
+    const result = await prisma.bracketMatch.createMany({
+        data: allMatches.map((m) => ({
+            ...m,
+            player1Id: m.player1Id || null,
+            player2Id: m.player2Id || null,
+        })),
+    });
 
     // Save group compositions as tournament metadata
     await prisma.tournament.update({
@@ -178,7 +174,7 @@ export async function generateGroupKnockout(tournamentId: string, playerIds: str
         knockoutRounds,
         groupMatches: allMatches.filter((m) => m.round < 0).length,
         knockoutSlots: allMatches.filter((m) => m.round > 0).length,
-        matchesCreated: created.length,
+        matchesCreated: result.count,
         groups: groups.map((g, i) => ({
             name: String.fromCharCode(65 + i),
             players: g,
