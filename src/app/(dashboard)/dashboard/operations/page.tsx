@@ -1113,7 +1113,7 @@ function BracketManagement({
         },
     });
 
-    const hasMatches = bracketData && bracketData.rounds.length > 0;
+    const hasMatches = bracketData?.rounds && bracketData.rounds.length > 0;
     const allMatches = bracketData?.rounds?.flatMap((r) => r.matches) ?? [];
     const pendingMatches = allMatches.filter((m) => m.status === "PENDING" && m.player1Id && m.player2Id);
     const disputedMatches = allMatches.filter((m) => m.status === "DISPUTED");
