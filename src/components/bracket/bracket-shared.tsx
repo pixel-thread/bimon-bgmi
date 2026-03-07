@@ -353,6 +353,11 @@ export function MatchRow({
     const canDispute = isParticipant && match.status === "SUBMITTED" && match.winnerId !== currentPlayerId;
     const hasResult = match.status === "CONFIRMED" || match.status === "SUBMITTED";
 
+    // Prefer confirmed score, fall back to claimed score from submitted result
+    const claimed = match.results?.[0];
+    const displayScore1 = match.score1 ?? (claimed ? claimed.claimedScore1 : null);
+    const displayScore2 = match.score2 ?? (claimed ? claimed.claimedScore2 : null);
+
     const statusDot =
         match.status === "CONFIRMED" ? "bg-success" :
             match.status === "SUBMITTED" ? "bg-warning" :
@@ -360,8 +365,8 @@ export function MatchRow({
 
     return (
         <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs transition-all ${isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
-            ? "border-primary/40 bg-primary/5"
-            : "border-divider bg-default-50/30"
+                ? "border-primary/40 bg-primary/5"
+                : "border-divider bg-default-50/30"
             }`}>
             {/* Player 1 */}
             <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
@@ -371,13 +376,21 @@ export function MatchRow({
                 <Avatar src={match.player1Avatar || undefined} name={match.player1?.displayName?.[0] || "?"} size="sm" className="h-5 w-5 text-[10px] shrink-0" />
             </div>
 
-            {/* Score / VS / Status */}
+            {/* Score / VS */}
             <div className="flex items-center gap-1.5 shrink-0">
-                {match.score1 !== null ? (
+                {displayScore1 !== null ? (
                     <>
-                        <span className={`font-bold tabular-nums min-w-[14px] text-center ${match.winnerId === match.player1Id ? "text-success-600" : "text-foreground/60"}`}>{match.score1}</span>
-                        <span className="text-foreground/30">-</span>
-                        <span className={`font-bold tabular-nums min-w-[14px] text-center ${match.winnerId === match.player2Id ? "text-success-600" : "text-foreground/60"}`}>{match.score2}</span>
+                        <span className={`font-bold tabular-nums min-w-[14px] text-center ${match.winnerId === match.player1Id ? "text-success-600" : "text-foreground/60"}`}>
+                            {displayScore1}
+                        </span>
+                        <span className={`text-foreground/30 ${match.status === "SUBMITTED" ? "text-warning/60" : ""}`}>-</span>
+                        <span className={`font-bold tabular-nums min-w-[14px] text-center ${match.winnerId === match.player2Id ? "text-success-600" : "text-foreground/60"}`}>
+                            {displayScore2}
+                        </span>
+                        {/* Pending confirmation badge */}
+                        {match.status === "SUBMITTED" && (
+                            <div className="h-1.5 w-1.5 rounded-full bg-warning shrink-0" title="Awaiting confirmation" />
+                        )}
                     </>
                 ) : (
                     <>
@@ -396,7 +409,7 @@ export function MatchRow({
                 </span>
             </div>
 
-            {/* Action */}
+            {/* Actions + Eye */}
             <div className="flex items-center gap-1 shrink-0 ml-1">
                 {canSubmit && onSubmitResult && (
                     <button onClick={() => onSubmitResult(match.id)} className="text-[10px] font-bold text-primary hover:underline">Submit</button>
@@ -407,15 +420,17 @@ export function MatchRow({
                 {canDispute && onDispute && (
                     <button onClick={() => onDispute(match.id)} className="text-[10px] font-bold text-danger hover:underline ml-1">✕</button>
                 )}
-                {hasResult && !canConfirm && !canDispute && onViewResult && (
-                    <button onClick={() => onViewResult(match.id)}>
-                        <Eye className="h-3.5 w-3.5 text-foreground/25 hover:text-foreground/60" />
+                {/* Eye icon: always visible when there's a result (screenshot) */}
+                {hasResult && onViewResult && (
+                    <button onClick={() => onViewResult(match.id)} className="ml-0.5" title="View screenshot">
+                        <Eye className="h-3.5 w-3.5 text-foreground/30 hover:text-foreground/70 transition-colors" />
                     </button>
                 )}
             </div>
         </div>
     );
 }
+
 
 /* ─── My Match Highlight (shared across all types) ─────────── */
 
