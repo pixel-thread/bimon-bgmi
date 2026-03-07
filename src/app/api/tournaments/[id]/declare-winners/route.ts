@@ -345,10 +345,10 @@ export async function POST(
             const distribution = getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount, orgPercent);
             const taxTotals = aggregateTaxTotals(allTaxResults);
 
-            // Org gets its pool cut + all repeat winner taxes
-            // Fund gets ₹0 from prize pool (fund only accumulates from solo/b2b tax system)
-            finalOrg = distribution.finalOrgAmount + taxTotals.totalTax;
-            finalFund = 0;
+            // Org gets ONLY its pool cut (orgPercent% of pool)
+            // Fund gets repeat winner taxes (when enableFund is ON)
+            finalOrg = distribution.finalOrgAmount;
+            finalFund = enableFund ? taxTotals.totalTax : 0;
 
             // Reconcile rounding remainders — any leftover goes to Org
             const totalToPlayers = winnerTeamsData.reduce(
