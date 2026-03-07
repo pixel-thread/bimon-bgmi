@@ -215,15 +215,19 @@ export function MatchCard({
     const isCurrentP2 = currentPlayerId === match.player2Id;
     const isParticipant = isCurrentP1 || isCurrentP2;
     const canSubmit = isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id;
-    const canConfirm = isParticipant && match.status === "SUBMITTED" && match.winnerId !== currentPlayerId;
-    const canDispute = isParticipant && match.status === "SUBMITTED" && match.winnerId !== currentPlayerId;
+    // Opponent submitted but we haven't confirmed/disputed yet — can raise dispute by submitting own score
+    const canRaiseDispute = isParticipant && match.status === "SUBMITTED" && match.winnerId !== currentPlayerId;
     const hasResult = match.status === "CONFIRMED" || match.status === "SUBMITTED";
+    const isDisputed = match.status === "DISPUTED";
+
+    const borderClass =
+        isDisputed ? "border-warning/60 shadow-md shadow-warning/10" :
+            isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
+                ? "border-primary shadow-md shadow-primary/10"
+                : "border-divider";
 
     return (
-        <div className={`border rounded-2xl transition-all bg-content1 ${isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
-            ? "border-primary shadow-md shadow-primary/10"
-            : "border-divider"
-            }`}>
+        <div className={`border rounded-2xl transition-all bg-content1 ${borderClass}`}>
             <div className="p-3 space-y-2">
                 <PlayerSlot
                     player={match.player1} avatar={match.player1Avatar} score={match.score1}
@@ -244,26 +248,34 @@ export function MatchCard({
                     <Chip size="sm" variant="flat" color={config.color} startContent={<StatusIcon className="h-3 w-3" />} className="text-[10px]">
                         {config.label}
                     </Chip>
-                    {canSubmit && onSubmitResult && (
-                        <button onClick={() => onSubmitResult(match.id)} className="text-[11px] font-semibold text-primary hover:text-primary-600 transition-colors">
-                            Submit Result →
-                        </button>
-                    )}
-                    {canConfirm && onConfirmResult && (
-                        <button onClick={() => onConfirmResult(match.id)} className="text-[11px] font-semibold text-success hover:text-success-600 transition-colors">
-                            ✓ Confirm
-                        </button>
-                    )}
-                    {canDispute && onDispute && (
-                        <button onClick={() => onDispute(match.id)} className="text-[11px] font-semibold text-danger hover:text-danger-600 transition-colors ml-2">
-                            ✕ Dispute
-                        </button>
-                    )}
-                    {hasResult && !canConfirm && !canDispute && onViewResult && (
-                        <button onClick={() => onViewResult(match.id)} className="text-[11px] font-semibold text-foreground/50 hover:text-foreground/80 transition-colors">
-                            View Result →
-                        </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {canSubmit && onSubmitResult && (
+                            <button onClick={() => onSubmitResult(match.id)} className="text-[11px] font-semibold text-primary hover:text-primary-600 transition-colors">
+                                Submit Result →
+                            </button>
+                        )}
+                        {/* Opponent already submitted — user can submit their own score to raise a dispute */}
+                        {canRaiseDispute && onSubmitResult && (
+                            <button
+                                onClick={() => onSubmitResult(match.id)}
+                                className="text-[11px] font-semibold text-warning-500 hover:text-warning-400 transition-colors flex items-center gap-1"
+                                title="Submit your score to raise a dispute"
+                            >
+                                <span className="h-1.5 w-1.5 rounded-full bg-warning-400 inline-block" />
+                                Raise Dispute →
+                            </button>
+                        )}
+                        {canRaiseDispute && onConfirmResult && (
+                            <button onClick={() => onConfirmResult(match.id)} className="text-[11px] font-semibold text-success hover:text-success-600 transition-colors">
+                                ✓ Confirm
+                            </button>
+                        )}
+                        {hasResult && !canRaiseDispute && onViewResult && (
+                            <button onClick={() => onViewResult(match.id)} className="text-[11px] font-semibold text-foreground/50 hover:text-foreground/80 transition-colors">
+                                View Result →
+                            </button>
+                        )}
+                    </div>
                 </div>
                 {match.status === "SUBMITTED" && match.disputeDeadline && (
                     <p className="text-[10px] text-warning-600 dark:text-warning-400" suppressHydrationWarning>
@@ -286,6 +298,13 @@ export function CompactMatch({
 }) {
     const isParticipant = currentPlayerId === match.player1Id || currentPlayerId === match.player2Id;
     const hasResult = match.status === "CONFIRMED" || match.status === "SUBMITTED";
+    const isDisputed = match.status === "DISPUTED";
+
+    const dotColor =
+        match.status === "CONFIRMED" ? "bg-success" :
+            match.status === "SUBMITTED" ? "bg-warning" :
+                match.status === "DISPUTED" ? "bg-danger animate-pulse" :
+                    match.status === "BYE" ? "bg-secondary" : "bg-foreground/20";
 
     const row = (
         player: BracketPlayer | null,
@@ -310,8 +329,9 @@ export function CompactMatch({
     );
 
     return (
-        <div className={`border rounded-lg w-[170px] transition-all relative flex items-center ${isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
-            ? "border-primary/60" : "border-divider"
+        <div className={`border rounded-lg w-[170px] transition-all relative flex items-center ${isDisputed ? "border-warning/60" :
+                isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
+                    ? "border-primary/60" : "border-divider"
             }`}>
             <div className="flex-1 min-w-0">
                 {row(match.player1, match.score1, match.winnerId === match.player1Id && match.winnerId !== null, currentPlayerId === match.player1Id, true)}
@@ -322,13 +342,9 @@ export function CompactMatch({
                 <button className="p-1 mr-1 rounded hover:bg-foreground/10 transition-colors shrink-0" onClick={() => onViewResult?.(match.id)}>
                     <Eye className="h-3.5 w-3.5 text-foreground/30" />
                 </button>
-            ) : (
-                <div className={`absolute -right-1 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${match.status === "CONFIRMED" ? "bg-success" :
-                    match.status === "SUBMITTED" ? "bg-warning" :
-                        match.status === "DISPUTED" ? "bg-danger" :
-                            match.status === "BYE" ? "bg-secondary" : "bg-foreground/20"
-                    }`} />
-            )}
+            ) : null}
+            {/* Status dot — always visible on right connector side */}
+            <div className={`absolute -right-1 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${dotColor}`} />
         </div>
     );
 }
@@ -336,10 +352,11 @@ export function CompactMatch({
 /* ─── Match Row (horizontal, for league & group matches) ──────── */
 
 export function MatchRow({
-    match, currentPlayerId, onSubmitResult, onConfirmResult, onDispute, onViewResult,
+    match, currentPlayerId, isAdmin, onSubmitResult, onConfirmResult, onDispute, onViewResult,
 }: {
     match: BracketMatchData;
     currentPlayerId?: string;
+    isAdmin?: boolean;
     onSubmitResult?: (id: string) => void;
     onConfirmResult?: (id: string) => void;
     onDispute?: (id: string) => void;
@@ -348,7 +365,8 @@ export function MatchRow({
     const isP1 = currentPlayerId === match.player1Id;
     const isP2 = currentPlayerId === match.player2Id;
     const isParticipant = isP1 || isP2;
-    const canSubmit = isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id;
+    const canSubmit = (isParticipant || isAdmin) && match.status === "PENDING" && match.player1Id && match.player2Id;
+    const canEdit = isAdmin && match.status !== "PENDING"; // admin can re-edit even after submission
     const canConfirm = isParticipant && match.status === "SUBMITTED" && match.winnerId !== currentPlayerId;
     const canDispute = isParticipant && match.status === "SUBMITTED" && match.winnerId !== currentPlayerId;
     const hasResult = match.status === "CONFIRMED" || match.status === "SUBMITTED";
@@ -411,13 +429,23 @@ export function MatchRow({
 
             {/* Actions + Eye */}
             <div className="flex items-center gap-1 shrink-0 ml-1">
+                {/* Admin edit button — on any match */}
+                {isAdmin && onSubmitResult && match.player1Id && match.player2Id && (
+                    <button
+                        onClick={() => onSubmitResult(match.id)}
+                        className="text-[10px] font-bold text-warning-400 hover:text-warning-600 transition-colors"
+                        title="Admin: edit result"
+                    >
+                        Edit
+                    </button>
+                )}
                 {canConfirm && onConfirmResult && (
                     <button onClick={() => onConfirmResult(match.id)} className="text-[10px] font-bold text-success hover:underline">✓</button>
                 )}
                 {canDispute && onDispute && (
                     <button onClick={() => onDispute(match.id)} className="text-[10px] font-bold text-danger hover:underline ml-1">✕</button>
                 )}
-                {/* Eye icon: always visible when there's a result (screenshot) */}
+                {/* Eye icon: always visible when there's a result */}
                 {hasResult && onViewResult && (
                     <button onClick={() => onViewResult(match.id)} className="ml-0.5" title="View screenshot">
                         <Eye className="h-3.5 w-3.5 text-foreground/30 hover:text-foreground/70 transition-colors" />

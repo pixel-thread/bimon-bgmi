@@ -12,6 +12,7 @@ interface BracketViewProps {
     rounds: RoundData[];
     totalRounds: number;
     currentPlayerId?: string;
+    isAdmin?: boolean;
     onSubmitResult?: (id: string) => void;
     onConfirmResult?: (id: string) => void;
     onDispute?: (id: string) => void;
@@ -22,6 +23,7 @@ export function BracketView({
     rounds,
     totalRounds,
     currentPlayerId,
+    isAdmin,
     onSubmitResult,
     onConfirmResult,
     onDispute,
@@ -45,6 +47,7 @@ export function BracketView({
             <LeagueView
                 rounds={positiveRounds}
                 currentPlayerId={currentPlayerId}
+                isAdmin={isAdmin}
                 onSubmitResult={onSubmitResult}
                 onConfirmResult={onConfirmResult}
                 onDispute={onDispute}
@@ -176,6 +179,7 @@ function KOBracketTree({
 function LeagueView({
     rounds,
     currentPlayerId,
+    isAdmin,
     onSubmitResult,
     onConfirmResult,
     onDispute,
@@ -183,6 +187,7 @@ function LeagueView({
 }: {
     rounds: RoundData[];
     currentPlayerId?: string;
+    isAdmin?: boolean;
     onSubmitResult?: (id: string) => void;
     onConfirmResult?: (id: string) => void;
     onDispute?: (id: string) => void;
@@ -209,6 +214,7 @@ function LeagueView({
                                     key={m.id}
                                     match={m}
                                     currentPlayerId={currentPlayerId}
+                                    isAdmin={isAdmin}
                                     onSubmitResult={onSubmitResult}
                                     onConfirmResult={onConfirmResult}
                                     onDispute={onDispute}

@@ -15,6 +15,7 @@ interface GroupKnockoutViewProps {
     rounds: RoundData[];
     totalRounds: number;
     currentPlayerId?: string;
+    isAdmin?: boolean;
     onSubmitResult?: (id: string) => void;
     onConfirmResult?: (id: string) => void;
     onDispute?: (id: string) => void;
@@ -77,13 +78,14 @@ function computeGroupStandings(matches: BracketMatchData[]): Standing[] {
 /* ─── Group Section (collapsible) ───────────────────────────── */
 
 function GroupSection({
-    groupLetter, matches, isDefaultOpen, currentPlayerId,
+    groupLetter, matches, isDefaultOpen, currentPlayerId, isAdmin,
     onSubmitResult, onConfirmResult, onDispute, onViewResult,
 }: {
     groupLetter: string;
     matches: BracketMatchData[];
     isDefaultOpen: boolean;
     currentPlayerId?: string;
+    isAdmin?: boolean;
     onSubmitResult?: (id: string) => void;
     onConfirmResult?: (id: string) => void;
     onDispute?: (id: string) => void;
@@ -94,6 +96,7 @@ function GroupSection({
     const confirmedCount = matches.filter(m => m.status === "CONFIRMED").length;
     const totalMatches = matches.filter(m => m.player1Id && m.player2Id).length;
     const allDone = confirmedCount === totalMatches && totalMatches > 0;
+    const hasDispute = matches.some(m => m.status === "DISPUTED");
 
     return (
         <div className="rounded-2xl overflow-hidden border border-divider">
@@ -107,6 +110,13 @@ function GroupSection({
                     <Chip size="sm" variant="flat" color={allDone ? "success" : "default"} className="text-[10px] h-5">
                         {confirmedCount}/{totalMatches} done
                     </Chip>
+                    {/* Only show for disputed matches — needs admin attention */}
+                    {hasDispute && (
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warning/15 border border-warning/30">
+                            <div className="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" />
+                            <span className="text-[10px] font-bold text-warning-500">Dispute</span>
+                        </div>
+                    )}
                 </div>
                 {open ? <ChevronUp className="h-4 w-4 text-foreground/50" /> : <ChevronDown className="h-4 w-4 text-foreground/50" />}
             </button>
@@ -180,6 +190,7 @@ function GroupSection({
                                     key={m.id}
                                     match={m}
                                     currentPlayerId={currentPlayerId}
+                                    isAdmin={isAdmin}
                                     onSubmitResult={onSubmitResult}
                                     onConfirmResult={onConfirmResult}
                                     onDispute={onDispute}
@@ -197,7 +208,7 @@ function GroupSection({
 /* ─── Group + Knockout View ─────────────────────────────────── */
 
 export function GroupKnockoutView({
-    rounds, totalRounds, currentPlayerId,
+    rounds, totalRounds, currentPlayerId, isAdmin,
     onSubmitResult, onConfirmResult, onDispute, onViewResult,
 }: GroupKnockoutViewProps) {
     // Group A (-1) first, then B (-2), etc.  Sort descending by round (least negative first)
@@ -239,6 +250,7 @@ export function GroupKnockoutView({
                                 matches={r.matches}
                                 isDefaultOpen={userInGroup}
                                 currentPlayerId={currentPlayerId}
+                                isAdmin={isAdmin}
                                 onSubmitResult={onSubmitResult}
                                 onConfirmResult={onConfirmResult}
                                 onDispute={onDispute}

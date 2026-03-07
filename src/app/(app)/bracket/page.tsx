@@ -253,6 +253,7 @@ function TournamentContent({
                         rounds={bracketData.rounds}
                         totalRounds={bracketData.totalRounds}
                         currentPlayerId={playerId}
+                        isAdmin={isAdmin}
                         onSubmitResult={(id) => onSelectMatch(id)}
                         onConfirmResult={(id) => confirmResult.mutate(id)}
                         onDispute={(id) => disputeResult.mutate(id)}
@@ -263,6 +264,7 @@ function TournamentContent({
                         rounds={bracketData.rounds}
                         totalRounds={bracketData.totalRounds}
                         currentPlayerId={playerId}
+                        isAdmin={isAdmin}
                         onSubmitResult={(id) => onSelectMatch(id)}
                         onConfirmResult={(id) => confirmResult.mutate(id)}
                         onDispute={(id) => disputeResult.mutate(id)}
