@@ -144,11 +144,6 @@ export function SubmitResultModal({ isOpen, onClose, matchId, tournamentId }: Su
                         <ScoreStepper label="Opponent" value={score2} onChange={setScore2} />
                     </div>
 
-                    {isDraw && (
-                        <p className="text-[11px] text-warning-400 text-center -mt-1">
-                            ⚠️ Draw not allowed — one player must win
-                        </p>
-                    )}
 
                     {/* Screenshot — optional */}
                     <div className="space-y-1.5">
