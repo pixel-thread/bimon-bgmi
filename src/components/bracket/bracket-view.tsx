@@ -1,7 +1,7 @@
 "use client";
 
 import { Trophy } from "lucide-react";
-import { CompactMatch, MatchRow, MyBracketMatch, BracketMatchData, RoundData, useZoom, ZoomControls } from "./bracket-shared";
+import { CompactMatch, MatchRow, MyBracketMatch, BracketMatchData, RoundData, usePinchZoom, ZoomControls } from "./bracket-shared";
 
 export type { BracketMatchData, RoundData };
 export { MyBracketMatch };
@@ -73,7 +73,7 @@ function KOBracketTree({
     currentPlayerId?: string;
     onViewResult?: (id: string) => void;
 }) {
-    const { zoom, zoomIn, zoomOut, reset } = useZoom(1, 0.4, 1.5, 0.15);
+    const { zoom, zoomIn, zoomOut, reset, containerRef } = usePinchZoom();
     const MATCH_H = 48;
     const GAP = 8;
 
@@ -95,7 +95,7 @@ function KOBracketTree({
             <div className="flex items-center justify-end">
                 <ZoomControls zoom={zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onReset={reset} />
             </div>
-            <div className="overflow-x-auto pb-4">
+            <div ref={containerRef} className="overflow-x-auto pb-4">
                 <div style={{ zoom }} className="flex items-start w-max">
                     {bracketRounds.map((round, ri) => {
                         const mult = Math.pow(2, ri);

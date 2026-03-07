@@ -1,18 +1,69 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Avatar, Chip } from "@heroui/react";
-import { Trophy, Clock, AlertTriangle, CheckCircle2, Minus, Eye, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Trophy, Clock, AlertTriangle, CheckCircle2, Minus, Eye, ZoomIn, ZoomOut } from "lucide-react";
 import { motion } from "framer-motion";
 
-/* ─── Zoom Hook + Controls ──────────────────────────────────── */
+/* ─── Zoom ───────────────────────────────────────────── */
 
-export function useZoom(initial = 1, min = 0.4, max = 1.5, step = 0.15) {
+/**
+ * Handles button +/-, trackpad pinch (Ctrl+wheel) and
+ * two-finger touch pinch on the returned containerRef.
+ */
+export function usePinchZoom(initial = 1, min = 0.4, max = 1.5) {
     const [zoom, setZoom] = useState(initial);
-    const zoomIn = () => setZoom(z => Math.min(max, +(z + step).toFixed(2)));
-    const zoomOut = () => setZoom(z => Math.max(min, +(z - step).toFixed(2)));
+    const containerRef = useRef<HTMLDivElement>(null);
+    const lastDistRef = useRef<number | null>(null);
+
+    const clamp = (v: number) => +Math.min(max, Math.max(min, v)).toFixed(2);
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+
+        // Trackpad pinch: browser fires wheel + ctrlKey
+        const onWheel = (e: WheelEvent) => {
+            if (!e.ctrlKey) return;
+            e.preventDefault();
+            // deltaY is positive = pinch in (zoom out), negative = spread (zoom in)
+            const delta = e.deltaY * -0.005;
+            setZoom(z => clamp(z + delta));
+        };
+
+        // Two-finger touch pinch
+        const onTouchMove = (e: TouchEvent) => {
+            if (e.touches.length !== 2) return;
+            e.preventDefault();
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const dist = Math.hypot(dx, dy);
+            if (lastDistRef.current !== null) {
+                const ratio = dist / lastDistRef.current;
+                setZoom(z => clamp(z * ratio));
+            }
+            lastDistRef.current = dist;
+        };
+
+        const onTouchEnd = () => { lastDistRef.current = null; };
+
+        // Must be { passive: false } to allow preventDefault()
+        el.addEventListener("wheel", onWheel, { passive: false });
+        el.addEventListener("touchmove", onTouchMove, { passive: false });
+        el.addEventListener("touchend", onTouchEnd);
+        return () => {
+            el.removeEventListener("wheel", onWheel);
+            el.removeEventListener("touchmove", onTouchMove);
+            el.removeEventListener("touchend", onTouchEnd);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const step = 0.15;
+    const zoomIn = () => setZoom(z => clamp(z + step));
+    const zoomOut = () => setZoom(z => clamp(z - step));
     const reset = () => setZoom(initial);
-    return { zoom, zoomIn, zoomOut, reset };
+    return { zoom, zoomIn, zoomOut, reset, containerRef };
 }
 
 export function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset }: {
@@ -22,20 +73,33 @@ export function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset }: {
     onReset: () => void;
 }) {
     return (
-        <div className="flex items-center gap-1 bg-default-100 rounded-xl px-2 py-1">
-            <button onClick={onZoomOut} className="p-1 rounded-lg hover:bg-default-200 transition-colors disabled:opacity-30" disabled={zoom <= 0.4}>
+        <div className="flex items-center gap-1 bg-default-100 rounded-xl px-2 py-1 select-none">
+            <button
+                onClick={onZoomOut}
+                className="p-1 rounded-lg hover:bg-default-200 active:scale-90 transition-all disabled:opacity-30"
+                disabled={zoom <= 0.4}
+                aria-label="Zoom out"
+            >
                 <ZoomOut className="h-3.5 w-3.5 text-foreground/60" />
             </button>
-            <button onClick={onReset} className="text-[10px] font-bold text-foreground/50 min-w-[36px] text-center hover:text-foreground/80 transition-colors">
+            <button
+                onClick={onReset}
+                className="text-[10px] font-bold text-foreground/50 min-w-[36px] text-center hover:text-foreground/80 transition-colors"
+                aria-label="Reset zoom"
+            >
                 {Math.round(zoom * 100)}%
             </button>
-            <button onClick={onZoomIn} className="p-1 rounded-lg hover:bg-default-200 transition-colors disabled:opacity-30" disabled={zoom >= 1.5}>
+            <button
+                onClick={onZoomIn}
+                className="p-1 rounded-lg hover:bg-default-200 active:scale-90 transition-all disabled:opacity-30"
+                disabled={zoom >= 1.5}
+                aria-label="Zoom in"
+            >
                 <ZoomIn className="h-3.5 w-3.5 text-foreground/60" />
             </button>
         </div>
     );
 }
-
 
 /* ─── Shared Types ───────────────────────────────────────────── */
 
