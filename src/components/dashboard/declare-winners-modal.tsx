@@ -175,9 +175,13 @@ export function DeclareWinnersModal({
         [basePrizePool, entryFee, teamSize, ucExemptCount, orgPercent]
     );
 
+    // baseDist calculates prize placements — must use pool AFTER UC exempt deduction
+    // UC exempt players didn't pay, so their entry fee reduces what's available for prizes
+    const ucExemptCost = ucExemptCount * entryFee;
+    const effectivePool = prizePool - ucExemptCost;
     const baseDist = useMemo(
-        () => prizePool > 0 ? getPrizeDistribution(prizePool, entryFee, teamSize, orgPercent) : null,
-        [prizePool, entryFee, teamSize, orgPercent]
+        () => effectivePool > 0 ? getPrizeDistribution(effectivePool, entryFee, teamSize, orgPercent) : null,
+        [effectivePool, entryFee, teamSize, orgPercent]
     );
 
     // Build placements param: "pos:amount:p1|p2,pos:amount:p1|p2"
@@ -637,43 +641,11 @@ export function DeclareWinnersModal({
                                                 {Array.from(baseDist.prizes.entries())
                                                     .sort(([a], [b]) => a - b)
                                                     .map(([pos, prize]) => {
-                                                        const team = rankings[pos - 1];
-                                                        let teamTax = 0;
-
-                                                        if (enableFund) {
-                                                            // Use exact server dry-run amounts when available
-                                                            const dryRunTeam = dryRunRes?.data?.winners?.find(w => w.position === pos);
-                                                            if (dryRunTeam) {
-                                                                // Exact: sum of per-player taxes from server
-                                                                teamTax = dryRunTeam.players.reduce((s, p) => s + p.repeatTax + p.soloTax, 0);
-                                                            } else if (team?.players) {
-                                                                // Fallback: local approximation
-                                                                const perPlayer = getPerPlayerAmount(pos, team.players.length);
-                                                                const pa = getParticipationAdjustedAmounts(team.players, perPlayer);
-                                                                team.players.forEach(p => {
-                                                                    const tax = taxPreview[p.id];
-                                                                    if (tax) {
-                                                                        const adj = pa.get(p.id)?.adjusted ?? perPlayer;
-                                                                        if (tax.repeatWinnerTaxRate > 0) teamTax += Math.floor(adj * tax.repeatWinnerTaxRate);
-                                                                        if (tax.soloTaxRate > 0) teamTax += Math.floor(adj * tax.soloTaxRate);
-                                                                    }
-                                                                });
-                                                            }
-                                                        }
                                                         const label = prize.isFixed ? `${getOrdinal(pos)} (refund)` : `${getOrdinal(pos)} (${prize.percentage}%)`;
                                                         return (
                                                             <div key={pos} className="flex justify-between">
                                                                 <span>{getMedal(pos - 1)} {label}:</span>
-                                                                <span className="font-medium">
-                                                                    {teamTax > 0 ? (
-                                                                        <>
-                                                                            <span className="text-foreground/30 line-through mr-1">₹{prize.amount.toLocaleString()}</span>
-                                                                            <span className="text-warning">-₹{teamTax}</span>
-                                                                            <span className="mx-0.5">=</span>
-                                                                            <span>₹{(prize.amount - teamTax).toLocaleString()}</span>
-                                                                        </>
-                                                                    ) : <>₹{prize.amount.toLocaleString()}</>}
-                                                                </span>
+                                                                <span className="font-medium">₹{prize.amount.toLocaleString()}</span>
                                                             </div>
                                                         );
                                                     })}
