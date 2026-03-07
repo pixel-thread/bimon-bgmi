@@ -147,18 +147,6 @@ export function SubmitResultModal({ isOpen, onClose, matchId, tournamentId }: Su
 
                     {/* Screenshot — optional */}
                     <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                            <label className="text-xs font-medium text-foreground/50 flex items-center gap-1.5">
-                                <Camera className="h-3.5 w-3.5" />
-                                Screenshot <span className="text-foreground/30">(optional)</span>
-                            </label>
-                            {screenshot && (
-                                <button onClick={removeScreenshot} className="text-[10px] text-danger/70 hover:text-danger transition-colors flex items-center gap-0.5">
-                                    <X className="h-3 w-3" /> Remove
-                                </button>
-                            )}
-                        </div>
-
                         {previewUrl ? (
                             <div className="relative rounded-xl overflow-hidden border border-divider">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -173,15 +161,25 @@ export function SubmitResultModal({ isOpen, onClose, matchId, tournamentId }: Su
                         ) : (
                             <button
                                 onClick={() => fileInputRef.current?.click()}
-                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-default-100 hover:bg-default-200 active:scale-[0.98] border border-default-200 px-4 py-3 transition-all"
+                                className="w-full rounded-2xl border-2 border-dashed border-foreground/15 hover:border-primary/40 bg-default-50/30 hover:bg-primary/5 transition-all group p-6 flex flex-col items-center gap-3"
                             >
-                                <Upload className="h-4 w-4 text-foreground/60 shrink-0" />
-                                <span className="text-sm font-semibold text-foreground/70">Upload Screenshot</span>
-                                <span className="text-[10px] text-foreground/30 ml-1">optional</span>
+                                {/* Image icon */}
+                                <div className="p-3 rounded-2xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                                    <Camera className="h-6 w-6 text-primary/60 group-hover:text-primary transition-colors" />
+                                </div>
+                                <div className="text-center space-y-0.5">
+                                    <p className="text-sm font-semibold text-foreground/60 group-hover:text-foreground/80 transition-colors">
+                                        Tap to upload, <span className="text-primary">browse</span>
+                                    </p>
+                                    <p className="text-[11px] text-foreground/30">
+                                        JPG, PNG · Max 5MB · Optional
+                                    </p>
+                                </div>
                             </button>
                         )}
                         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
                     </div>
+
                 </ModalBody>
 
                 <ModalFooter className="pt-0">
