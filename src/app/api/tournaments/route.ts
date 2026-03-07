@@ -145,9 +145,8 @@ export async function GET(request: NextRequest) {
             meta: { hasMore, nextCursor, count: results.length },
         });
     } catch (error) {
-        console.error("Failed to fetch tournaments:", error);
         return ErrorResponse({
-            message: `Failed to fetch tournaments: ${error instanceof Error ? error.message : String(error)}`,
+            message: "Failed to fetch tournaments",
             error,
         });
     }
