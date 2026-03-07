@@ -6,7 +6,6 @@ const SETTINGS_KEY = "app_settings";
 export interface AppSettings {
     // 💰 Financial
     orgCutPercent: number;
-    fundPercent: number;
     defaultEntryFee: number;
     enableTopUps: boolean;
     nameChangeFee: number;
@@ -42,8 +41,7 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-    orgCutPercent: 10,
-    fundPercent: 4,
+    orgCutPercent: 0,
     defaultEntryFee: 30,
     enableTopUps: true,
     nameChangeFee: 1,

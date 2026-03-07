@@ -103,14 +103,13 @@ export function DeclareWinnersModal({
         queryKey: ["public-settings"],
         queryFn: async () => {
             const res = await fetch("/api/settings/public");
-            if (!res.ok) return { orgCutPercent: 10, fundPercent: 4 };
+            if (!res.ok) return { orgCutPercent: 0 };
             const json = await res.json();
-            return json.data ?? { orgCutPercent: 10, fundPercent: 4 };
+            return json.data ?? { orgCutPercent: 0 };
         },
         staleTime: 0, // Always fetch fresh — admin may have just changed settings
     });
-    const orgPercent = publicSettings?.orgCutPercent ?? 10;
-    const fundPercent = publicSettings?.fundPercent ?? 4;
+    const orgPercent = publicSettings?.orgCutPercent ?? 0;
 
     // Fetch rankings (always)
     const { data: rankingsData, isLoading } = useQuery<{
@@ -171,13 +170,13 @@ export function DeclareWinnersModal({
     // Prize distribution (must be before placementsParam which uses baseDist)
     // distribution uses basePrizePool for Org/Fund (matching declare-winners which excludes bonus pool)
     const distribution = useMemo(
-        () => basePrizePool > 0 ? getFinalDistribution(basePrizePool, entryFee, teamSize, ucExemptCount, orgPercent, fundPercent) : null,
-        [basePrizePool, entryFee, teamSize, ucExemptCount, orgPercent, fundPercent]
+        () => basePrizePool > 0 ? getFinalDistribution(basePrizePool, entryFee, teamSize, ucExemptCount, orgPercent) : null,
+        [basePrizePool, entryFee, teamSize, ucExemptCount, orgPercent]
     );
 
     const baseDist = useMemo(
-        () => prizePool > 0 ? getPrizeDistribution(prizePool, entryFee, teamSize, orgPercent, fundPercent) : null,
-        [prizePool, entryFee, teamSize, orgPercent, fundPercent]
+        () => prizePool > 0 ? getPrizeDistribution(prizePool, entryFee, teamSize, orgPercent) : null,
+        [prizePool, entryFee, teamSize, orgPercent]
     );
 
     // Build placements param: "pos:amount:p1|p2,pos:amount:p1|p2"

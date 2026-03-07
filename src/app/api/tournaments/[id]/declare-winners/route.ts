@@ -70,8 +70,7 @@ export async function POST(
 
         // ── Fetch settings for org/fund percentages ──────────
         const settings = await getSettings();
-        const orgPercent = settings.orgCutPercent ?? 10;
-        const fundPercent = settings.fundPercent ?? 4;
+        const orgPercent = settings.orgCutPercent ?? 0;
 
         // ── 2. Aggregate team rankings ───────────────────────
         const teamStats = await prisma.teamStats.findMany({
@@ -326,25 +325,18 @@ export async function POST(
             winnerTeamsData.push({ teamId: team.teamId, amount: placement.amount, position: placement.position, players: playersData });
         }
 
-        // ── 5. Calculate final amounts (simplified 70/30 split) ──
+        // ── 5. Calculate final amounts ──
         let finalOrg = 0, finalFund = 0;
         if (prizePool > 0) {
-            const distribution = getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount, orgPercent, fundPercent);
+            const distribution = getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount, orgPercent);
             const taxTotals = aggregateTaxTotals(allTaxResults);
 
-            // Combined = base org/fund (already 70/30 split) + all repeat winner taxes
-            const combined = distribution.finalOrgAmount + distribution.finalFundAmount + taxTotals.totalTax;
-            const totalCutPercent = orgPercent + fundPercent;
-            if (totalCutPercent <= 0 || fundPercent <= 0) {
-                finalOrg = combined;
-                finalFund = 0;
-            } else {
-                const orgRatio = orgPercent / totalCutPercent;
-                finalOrg = Math.floor(combined * orgRatio);
-                finalFund = combined - finalOrg;
-            }
+            // Org gets its pool cut + all repeat winner taxes
+            // Fund gets ₹0 from prize pool (fund only accumulates from solo/b2b tax system)
+            finalOrg = distribution.finalOrgAmount + taxTotals.totalTax;
+            finalFund = 0;
 
-            // Reconcile rounding remainders — any leftover UC goes to Org
+            // Reconcile rounding remainders — any leftover goes to Org
             const totalToPlayers = winnerTeamsData.reduce(
                 (sum, t) => sum + t.players.reduce((s, p) => s + p.finalAmount, 0), 0
             );
@@ -357,7 +349,7 @@ export async function POST(
 
         // ── DRY RUN: return preview without writing ──────────
         if (dryRun) {
-            const dist = prizePool > 0 ? getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount, orgPercent, fundPercent) : null;
+            const dist = prizePool > 0 ? getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount, orgPercent) : null;
             const taxTots = aggregateTaxTotals(allTaxResults);
             return NextResponse.json({
                 success: true,
