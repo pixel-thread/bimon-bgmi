@@ -68,9 +68,10 @@ export async function POST(
         if (!tournament) return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
         if (!dryRun && tournament.isWinnerDeclared) return NextResponse.json({ error: "Winners already declared" }, { status: 400 });
 
-        // ── Fetch settings for org/fund percentages ──────────
+        // ── Fetch settings for org percentage & fund toggle ──────────
         const settings = await getSettings();
         const orgPercent = settings.orgCutPercent ?? 0;
+        const enableFund = settings.enableFund ?? false;
 
         // ── 2. Aggregate team rankings ───────────────────────
         const teamStats = await prisma.teamStats.findMany({
@@ -280,18 +281,31 @@ export async function POST(
                     if (precomputedAmounts.has(player.playerId)) {
                         // Use exact amount from preview — no recalculation
                         finalAmount = precomputedAmounts.get(player.playerId)!;
-                        // Still compute tax results for accounting (Fund/Org splits)
-                        const previousWins = playerWinCounts.get(player.playerId) || 0;
-                        taxResult = calculateRepeatWinnerTax(player.playerId, pa.adjusted, previousWins + 1);
-                        const isSolo = playerSoloMap.get(player.playerId) || false;
-                        soloTaxResult = calculateSoloTax(player.playerId, taxResult.netAmount, isSolo);
+                        if (enableFund) {
+                            // Compute tax results for accounting (Fund splits)
+                            const previousWins = playerWinCounts.get(player.playerId) || 0;
+                            taxResult = calculateRepeatWinnerTax(player.playerId, pa.adjusted, previousWins + 1);
+                            const isSolo = playerSoloMap.get(player.playerId) || false;
+                            soloTaxResult = calculateSoloTax(player.playerId, taxResult.netAmount, isSolo);
+                        } else {
+                            // Fund OFF — no taxes
+                            taxResult = { playerId: player.playerId, originalAmount: pa.adjusted, taxAmount: 0, taxRate: 0, netAmount: pa.adjusted, winCount: 1 };
+                            soloTaxResult = { playerId: player.playerId, originalAmount: pa.adjusted, taxAmount: 0, netAmount: pa.adjusted, isSolo: false };
+                        }
                     } else {
                         // Fallback: server-side calculation (dry run / simple mode)
-                        const previousWins = playerWinCounts.get(player.playerId) || 0;
-                        taxResult = calculateRepeatWinnerTax(player.playerId, pa.adjusted, previousWins + 1);
-                        const isSolo = playerSoloMap.get(player.playerId) || false;
-                        soloTaxResult = calculateSoloTax(player.playerId, taxResult.netAmount, isSolo);
-                        finalAmount = soloTaxResult.netAmount;
+                        if (enableFund) {
+                            const previousWins = playerWinCounts.get(player.playerId) || 0;
+                            taxResult = calculateRepeatWinnerTax(player.playerId, pa.adjusted, previousWins + 1);
+                            const isSolo = playerSoloMap.get(player.playerId) || false;
+                            soloTaxResult = calculateSoloTax(player.playerId, taxResult.netAmount, isSolo);
+                            finalAmount = soloTaxResult.netAmount;
+                        } else {
+                            // Fund OFF — no taxes, full amount
+                            taxResult = { playerId: player.playerId, originalAmount: pa.adjusted, taxAmount: 0, taxRate: 0, netAmount: pa.adjusted, winCount: 1 };
+                            soloTaxResult = { playerId: player.playerId, originalAmount: pa.adjusted, taxAmount: 0, netAmount: pa.adjusted, isSolo: false };
+                            finalAmount = pa.adjusted;
+                        }
                     }
 
                     playersData.push({

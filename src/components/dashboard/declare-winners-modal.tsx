@@ -110,6 +110,7 @@ export function DeclareWinnersModal({
         staleTime: 0, // Always fetch fresh — admin may have just changed settings
     });
     const orgPercent = publicSettings?.orgCutPercent ?? 0;
+    const enableFund = publicSettings?.enableFund ?? false;
 
     // Fetch rankings (always)
     const { data: rankingsData, isLoading } = useQuery<{

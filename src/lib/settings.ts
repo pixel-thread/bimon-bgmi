@@ -6,6 +6,7 @@ const SETTINGS_KEY = "app_settings";
 export interface AppSettings {
     // 💰 Financial
     orgCutPercent: number;
+    enableFund: boolean;  // When false: no solo/b2b taxes, winners get full prize
     defaultEntryFee: number;
     enableTopUps: boolean;
     nameChangeFee: number;
@@ -42,6 +43,7 @@ export interface AppSettings {
 
 export const DEFAULT_SETTINGS: AppSettings = {
     orgCutPercent: 0,
+    enableFund: false,
     defaultEntryFee: 30,
     enableTopUps: true,
     nameChangeFee: 1,

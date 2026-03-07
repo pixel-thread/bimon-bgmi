@@ -22,6 +22,7 @@ export async function GET() {
                 passName: GAME.passName,
                 // Feature flags & values
                 orgCutPercent: settings.orgCutPercent,
+                enableFund: settings.enableFund,
                 enableTopUps: settings.enableTopUps,
                 enableElitePass: settings.enableElitePass,
                 elitePassPrice: settings.elitePassPrice,

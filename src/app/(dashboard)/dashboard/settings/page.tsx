@@ -37,6 +37,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 interface Settings {
     orgCutPercent: number;
+    enableFund: boolean;
     defaultEntryFee: number;
     enableTopUps: boolean;
     nameChangeFee: number;
@@ -199,6 +200,21 @@ export default function SettingsPage() {
                             endContent={<span className="text-foreground/40">{GAME.currency}</span>}
                         />
                     </div>
+                    <Divider />
+                    <Switch
+                        size="sm"
+                        isSelected={settings.enableFund}
+                        onValueChange={(v) => update("enableFund", v)}
+                    >
+                        <div>
+                            <p className="text-sm">Community Fund</p>
+                            <p className="text-xs text-foreground/40">
+                                {settings.enableFund
+                                    ? "ON — Solo & back-to-back taxes go to fund"
+                                    : "OFF — No taxes, winners get full prize"}
+                            </p>
+                        </div>
+                    </Switch>
                     {GAME.features.hasTopUps && (
                         <>
                             <Divider />
