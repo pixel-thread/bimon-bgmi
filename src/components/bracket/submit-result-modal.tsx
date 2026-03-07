@@ -90,17 +90,22 @@ export function SubmitResultModal({ isOpen, onClose, matchId, tournamentId }: Su
 
             setUploading(true);
 
-            // Upload screenshot if provided (optional)
+            // Upload screenshot to ImgBB if provided (free, no storage cost)
             let screenshotUrl: string | null = null;
             if (screenshot) {
                 try {
+                    const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
+                    if (!apiKey) throw new Error("ImgBB API key not configured");
                     const formData = new FormData();
-                    formData.append("file", screenshot);
-                    formData.append("folder", `bracket-results/${matchId}`);
-                    const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+                    formData.append("image", screenshot);
+                    formData.append("name", `bracket-${matchId}-${Date.now()}`);
+                    const uploadRes = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+                        method: "POST",
+                        body: formData,
+                    });
                     const uploadData = await uploadRes.json();
-                    if (!uploadRes.ok) throw new Error(uploadData.error || "Failed to upload screenshot");
-                    screenshotUrl = uploadData.url;
+                    if (!uploadData.success) throw new Error(uploadData.error?.message || "ImgBB upload failed");
+                    screenshotUrl = uploadData.data.url;
                 } catch (err: any) {
                     throw new Error(`Screenshot upload failed: ${err.message}`);
                 }
