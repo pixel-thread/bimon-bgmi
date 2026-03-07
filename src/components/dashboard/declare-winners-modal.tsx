@@ -506,10 +506,23 @@ export function DeclareWinnersModal({
                                 // Prefer exact server-computed amounts
                                 const dryRunTeam = dryRunRes?.data?.winners?.find(w => w.position === idx + 1);
                                 const dryRunPlayer = dryRunTeam?.players.find(dp => dp.playerId === p.id);
-                                const finalAmount = dryRunPlayer?.finalAmount ?? getTaxedAmount(p.id, afterParticipation);
-                                const taxDeduction = dryRunPlayer
-                                    ? (dryRunPlayer.repeatTax + dryRunPlayer.soloTax)
-                                    : (afterParticipation - finalAmount);
+
+                                let finalAmount: number;
+                                let taxDeduction: number;
+
+                                if (!enableFund) {
+                                    // Fund OFF — no taxes at all
+                                    finalAmount = afterParticipation;
+                                    taxDeduction = 0;
+                                } else if (dryRunPlayer) {
+                                    // Exact server amounts
+                                    finalAmount = dryRunPlayer.finalAmount;
+                                    taxDeduction = dryRunPlayer.repeatTax + dryRunPlayer.soloTax;
+                                } else {
+                                    // Fallback: local approximation
+                                    finalAmount = getTaxedAmount(p.id, afterParticipation);
+                                    taxDeduction = afterParticipation - finalAmount;
+                                }
 
                                 return (
                                     <div key={p.id} className="text-xs space-y-0.5">
@@ -627,23 +640,25 @@ export function DeclareWinnersModal({
                                                         const team = rankings[pos - 1];
                                                         let teamTax = 0;
 
-                                                        // Use exact server dry-run amounts when available
-                                                        const dryRunTeam = dryRunRes?.data?.winners?.find(w => w.position === pos);
-                                                        if (dryRunTeam) {
-                                                            // Exact: sum of per-player taxes from server
-                                                            teamTax = dryRunTeam.players.reduce((s, p) => s + p.repeatTax + p.soloTax, 0);
-                                                        } else if (team?.players) {
-                                                            // Fallback: local approximation
-                                                            const perPlayer = getPerPlayerAmount(pos, team.players.length);
-                                                            const pa = getParticipationAdjustedAmounts(team.players, perPlayer);
-                                                            team.players.forEach(p => {
-                                                                const tax = taxPreview[p.id];
-                                                                if (tax) {
-                                                                    const adj = pa.get(p.id)?.adjusted ?? perPlayer;
-                                                                    if (tax.repeatWinnerTaxRate > 0) teamTax += Math.floor(adj * tax.repeatWinnerTaxRate);
-                                                                    if (tax.soloTaxRate > 0) teamTax += Math.floor(adj * tax.soloTaxRate);
-                                                                }
-                                                            });
+                                                        if (enableFund) {
+                                                            // Use exact server dry-run amounts when available
+                                                            const dryRunTeam = dryRunRes?.data?.winners?.find(w => w.position === pos);
+                                                            if (dryRunTeam) {
+                                                                // Exact: sum of per-player taxes from server
+                                                                teamTax = dryRunTeam.players.reduce((s, p) => s + p.repeatTax + p.soloTax, 0);
+                                                            } else if (team?.players) {
+                                                                // Fallback: local approximation
+                                                                const perPlayer = getPerPlayerAmount(pos, team.players.length);
+                                                                const pa = getParticipationAdjustedAmounts(team.players, perPlayer);
+                                                                team.players.forEach(p => {
+                                                                    const tax = taxPreview[p.id];
+                                                                    if (tax) {
+                                                                        const adj = pa.get(p.id)?.adjusted ?? perPlayer;
+                                                                        if (tax.repeatWinnerTaxRate > 0) teamTax += Math.floor(adj * tax.repeatWinnerTaxRate);
+                                                                        if (tax.soloTaxRate > 0) teamTax += Math.floor(adj * tax.soloTaxRate);
+                                                                    }
+                                                                });
+                                                            }
                                                         }
                                                         const label = prize.isFixed ? `${getOrdinal(pos)} (refund)` : `${getOrdinal(pos)} (${prize.percentage}%)`;
                                                         return (
