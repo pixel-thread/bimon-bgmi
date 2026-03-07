@@ -1436,6 +1436,25 @@ function BracketManagement({
         onError: () => toast.error("Failed to random pick"),
     });
 
+    // Deadline check — auto-resolves all expired PENDING matches (all tournaments)
+    const deadlineCheck = useMutation({
+        mutationFn: async () => {
+            const res = await fetch("/api/bracket-matches/deadline-check", { method: "POST" });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Failed");
+            return data;
+        },
+        onSuccess: (data) => {
+            const { resolved } = data.data ?? {};
+            toast.success(resolved > 0
+                ? `Auto-resolved ${resolved} expired match${resolved > 1 ? "es" : ""} (1–0 random winner)`
+                : "No expired matches found."
+            );
+            queryClient.invalidateQueries({ queryKey: ["admin-bracket", tournamentId] });
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+
     const statusColor = (s: string) => {
         switch (s) {
             case "CONFIRMED": return "success";
@@ -1478,6 +1497,23 @@ function BracketManagement({
                                 onPress={() => generateBracket.mutate()}
                             >
                                 Generate {formatLabel}
+                            </Button>
+                        )}
+                        {/* Deadline check — available when bracket exists */}
+                        {hasMatches && (
+                            <Button
+                                size="sm"
+                                color="warning"
+                                variant="flat"
+                                isLoading={deadlineCheck.isPending}
+                                startContent={<Clock className="h-3 w-3" />}
+                                onPress={() => {
+                                    if (confirm("Auto-resolve all expired PENDING matches with a random 1–0 winner?"))
+                                        deadlineCheck.mutate();
+                                }}
+                                title="Resolves matches where deadline has passed and neither player submitted"
+                            >
+                                Deadline Check
                             </Button>
                         )}
                     </div>
