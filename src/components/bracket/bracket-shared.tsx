@@ -130,6 +130,7 @@ export interface BracketMatchData {
     score2: number | null;
     status: "PENDING" | "SUBMITTED" | "DISPUTED" | "CONFIRMED" | "BYE";
     disputeDeadline: string | null;
+    createdAt: string | null;          // used for deadline countdown
     player1: BracketPlayer | null;
     player2: BracketPlayer | null;
     player1Avatar: string | null;
@@ -200,7 +201,7 @@ export function PlayerSlot({
 /* ─── Match Card (full vertical card, for "My Match") ─────────── */
 
 export function MatchCard({
-    match, currentPlayerId, onSubmitResult, onConfirmResult, onDispute, onViewResult,
+    match, currentPlayerId, onSubmitResult, onConfirmResult, onDispute, onViewResult, deadlineHours,
 }: {
     match: BracketMatchData;
     currentPlayerId?: string;
@@ -208,6 +209,7 @@ export function MatchCard({
     onConfirmResult?: (id: string) => void;
     onDispute?: (id: string) => void;
     onViewResult?: (id: string) => void;
+    deadlineHours?: number;   // pass from bracket API response — shows countdown for PENDING
 }) {
     const config = statusConfig(match.status);
     const StatusIcon = config.icon;
@@ -219,6 +221,18 @@ export function MatchCard({
     const canRaiseDispute = isParticipant && match.status === "SUBMITTED" && match.winnerId !== currentPlayerId;
     const hasResult = match.status === "CONFIRMED" || match.status === "SUBMITTED";
     const isDisputed = match.status === "DISPUTED";
+
+    // Deadline countdown for PENDING matches
+    const deadlineLabel = (() => {
+        if (match.status !== "PENDING" || !match.createdAt || !deadlineHours) return null;
+        const deadline = new Date(new Date(match.createdAt).getTime() + deadlineHours * 3600_000);
+        const msLeft = deadline.getTime() - Date.now();
+        if (msLeft <= 0) return { text: "Deadline passed", urgent: true };
+        const hLeft = Math.floor(msLeft / 3600_000);
+        const mLeft = Math.floor((msLeft % 3600_000) / 60_000);
+        const urgent = hLeft < 6;
+        return { text: hLeft > 0 ? `${hLeft}h ${mLeft}m left` : `${mLeft}m left`, urgent };
+    })();
 
     const borderClass =
         isDisputed ? "border-warning/60 shadow-md shadow-warning/10" :
@@ -245,9 +259,19 @@ export function MatchCard({
                     isBye={match.status === "BYE" && !match.player1Id}
                 />
                 <div className="flex items-center justify-between pt-1">
-                    <Chip size="sm" variant="flat" color={config.color} startContent={<StatusIcon className="h-3 w-3" />} className="text-[10px]">
-                        {config.label}
-                    </Chip>
+                    <div className="flex items-center gap-2">
+                        <Chip size="sm" variant="flat" color={config.color} startContent={<StatusIcon className="h-3 w-3" />} className="text-[10px]">
+                            {config.label}
+                        </Chip>
+                        {/* Deadline countdown for PENDING matches */}
+                        {deadlineLabel && (
+                            <span className={`text-[10px] font-medium flex items-center gap-0.5 ${deadlineLabel.urgent ? "text-danger animate-pulse" : "text-foreground/40"
+                                }`}>
+                                <Clock className="h-2.5 w-2.5" />
+                                {deadlineLabel.text}
+                            </span>
+                        )}
+                    </div>
                     <div className="flex items-center gap-2">
                         {canSubmit && onSubmitResult && (
                             <button onClick={() => onSubmitResult(match.id)} className="text-[11px] font-semibold text-primary hover:text-primary-600 transition-colors">
@@ -330,8 +354,8 @@ export function CompactMatch({
 
     return (
         <div className={`border rounded-lg w-[170px] transition-all relative flex items-center ${isDisputed ? "border-warning/60" :
-                isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
-                    ? "border-primary/60" : "border-divider"
+            isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
+                ? "border-primary/60" : "border-divider"
             }`}>
             <div className="flex-1 min-w-0">
                 {row(match.player1, match.score1, match.winnerId === match.player1Id && match.winnerId !== null, currentPlayerId === match.player1Id, true)}

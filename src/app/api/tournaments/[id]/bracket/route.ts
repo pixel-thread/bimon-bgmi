@@ -1,10 +1,12 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
+import { getSettings } from "@/lib/settings";
 
 /**
  * GET /api/tournaments/[id]/bracket
  * Fetch bracket matches for a tournament, grouped by round.
+ * Also returns deadline settings so the player UI can show countdowns.
  * Public — any authenticated user can view brackets.
  */
 export async function GET(
@@ -14,10 +16,13 @@ export async function GET(
     try {
         const { id } = await params;
 
-        const tournament = await prisma.tournament.findUnique({
-            where: { id },
-            select: { id: true, type: true },
-        });
+        const [tournament, settings] = await Promise.all([
+            prisma.tournament.findUnique({
+                where: { id },
+                select: { id: true, type: true },
+            }),
+            getSettings(),
+        ]);
 
         if (!tournament) {
             return ErrorResponse({ message: "Tournament not found", status: 404 });
@@ -85,11 +90,7 @@ export async function GET(
         // Generate round names
         function getRoundName(round: number, total: number, type: string): string {
             if (type === "LEAGUE") return `Match Day ${round}`;
-            if (type === "GROUP_KNOCKOUT") {
-                // Group stage rounds come first, then knockout
-                return `Round ${round}`;
-            }
-            // Bracket knockout naming
+            if (type === "GROUP_KNOCKOUT") return `Round ${round}`;
             if (round === total) return "Final";
             if (round === total - 1) return "Semi-Final";
             if (round === total - 2) return "Quarter-Final";
@@ -112,6 +113,7 @@ export async function GET(
                     score2: m.score2,
                     status: m.status,
                     disputeDeadline: m.disputeDeadline,
+                    createdAt: m.createdAt,          // for deadline countdown on /bracket
                     player1: m.player1
                         ? { displayName: m.player1.displayName }
                         : null,
@@ -131,9 +133,7 @@ export async function GET(
             }));
 
         // Check if there's a final winner
-        const finalMatch = matches.find(
-            (m) => m.round === totalRounds && m.winnerId
-        );
+        const finalMatch = matches.find((m) => m.round === totalRounds && m.winnerId);
         const winner = finalMatch?.winner
             ? { displayName: finalMatch.winner.displayName }
             : null;
@@ -144,6 +144,11 @@ export async function GET(
                 totalRounds,
                 totalPlayers: playerIds.size,
                 winner,
+                // Deadline settings — player UI shows countdown for PENDING matches
+                deadlines: {
+                    groupHours: settings.matchDeadlineGroupHours,
+                    koHours: settings.matchDeadlineKOHours,
+                },
             },
         });
     } catch (error) {
