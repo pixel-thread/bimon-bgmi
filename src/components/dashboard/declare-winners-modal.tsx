@@ -638,17 +638,6 @@ export function DeclareWinnersModal({
                                             </div>
 
                                             <div className="pt-2 border-t border-success/20 space-y-0.5 text-xs">
-                                                {Array.from(baseDist.prizes.entries())
-                                                    .sort(([a], [b]) => a - b)
-                                                    .map(([pos, prize]) => {
-                                                        const label = prize.isFixed ? `${getOrdinal(pos)} (refund)` : `${getOrdinal(pos)} (${prize.percentage}%)`;
-                                                        return (
-                                                            <div key={pos} className="flex justify-between">
-                                                                <span>{getMedal(pos - 1)} {label}:</span>
-                                                                <span className="font-medium">₹{prize.amount.toLocaleString()}</span>
-                                                            </div>
-                                                        );
-                                                    })}
 
                                                 <div className="flex justify-between text-foreground/50">
                                                     <span>💼 Org ({orgPercent}%):</span>
