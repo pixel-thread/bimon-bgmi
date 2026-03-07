@@ -40,6 +40,8 @@ import {
     AlertTriangle,
     CheckCircle2,
     Loader2,
+    Clock,
+    Camera,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion } from "motion/react";
@@ -1063,6 +1065,267 @@ function DonationModal({ tournamentId, isOpen, onClose }: { tournamentId: string
     );
 }
 
+// ─── Admin Match Row (editable scores) ──────────────────────
+
+function AdminMatchRow({
+    match,
+    bg,
+    onResolve,
+    onRandomPick,
+    isLoading,
+}: {
+    match: BracketMatch;
+    bg: string;
+    onResolve: (winnerId: string, score1: number, score2: number) => void;
+    onRandomPick: () => void;
+    isLoading: boolean;
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+
+    const p1Name = match.player1?.displayName ?? "TBD";
+    const p2Name = match.player2?.displayName ?? "TBD";
+    const statusLabel = match.status === "SUBMITTED" && match.score1 !== null
+        ? `${match.score1} - ${match.score2}`
+        : match.status;
+
+    return (
+        <>
+            <button
+                type="button"
+                onClick={() => setIsOpen(true)}
+                className={`w-full p-3 rounded-xl border ${bg} text-left hover:opacity-80 
+                    transition-all cursor-pointer flex items-center justify-between`}
+            >
+                <div>
+                    <p className="text-sm font-medium">{p1Name} vs {p2Name}</p>
+                    <p className="text-xs text-foreground/40">Round {match.round} • Pos {match.position + 1}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Chip size="sm" variant="flat" color={
+                        match.status === "DISPUTED" ? "danger"
+                            : match.status === "SUBMITTED" ? "warning"
+                                : "default"
+                    }>
+                        {statusLabel}
+                    </Chip>
+                    <Pencil className="h-3 w-3 text-foreground/30" />
+                </div>
+            </button>
+
+            <AdminResolveModal
+                isOpen={isOpen}
+                onClose={() => setIsOpen(false)}
+                match={match}
+                onResolve={(winnerId, s1, s2) => {
+                    onResolve(winnerId, s1, s2);
+                    setIsOpen(false);
+                }}
+                onRandomPick={() => {
+                    onRandomPick();
+                    setIsOpen(false);
+                }}
+                isLoading={isLoading}
+            />
+        </>
+    );
+}
+
+function AdminResolveModal({
+    isOpen,
+    onClose,
+    match,
+    onResolve,
+    onRandomPick,
+    isLoading,
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    match: BracketMatch;
+    onResolve: (winnerId: string, score1: number, score2: number) => void;
+    onRandomPick: () => void;
+    isLoading: boolean;
+}) {
+    const [s1, setS1] = useState(String(match.score1 ?? 0));
+    const [s2, setS2] = useState(String(match.score2 ?? 0));
+    const [screenshot, setScreenshot] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const p1Name = match.player1?.displayName ?? "TBD";
+    const p2Name = match.player2?.displayName ?? "TBD";
+    const score1Num = parseInt(s1) || 0;
+    const score2Num = parseInt(s2) || 0;
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !file.type.startsWith("image/")) return;
+        if (file.size > 5 * 1024 * 1024) { toast.error("Max 5MB"); return; }
+        setScreenshot(file);
+        setPreviewUrl(URL.createObjectURL(file));
+    };
+
+    const handleResolve = async (winnerId: string) => {
+        let screenshotUrl: string | undefined;
+
+        // Upload screenshot if selected
+        if (screenshot) {
+            setUploading(true);
+            try {
+                const formData = new FormData();
+                formData.append("file", screenshot);
+                formData.append("folder", `bracket-results/${match.id}`);
+                const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+                const uploadData = await uploadRes.json();
+                if (!uploadRes.ok) throw new Error(uploadData.error || "Upload failed");
+                screenshotUrl = uploadData.url;
+            } catch (err: any) {
+                toast.error(err.message);
+                setUploading(false);
+                return;
+            }
+            setUploading(false);
+        }
+
+        onResolve(winnerId, score1Num, score2Num);
+    };
+
+    // Grab screenshot URL from bracket results if available
+    const existingScreenshot = (match as any).screenshotUrl || (match as any).results?.[0]?.screenshotUrl;
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} placement="center" size="md">
+            <ModalContent>
+                <ModalHeader className="flex items-center gap-2 pb-1">
+                    <Swords className="h-4 w-4 text-primary" />
+                    Resolve Match
+                </ModalHeader>
+                <ModalBody className="gap-4">
+                    {/* Round info */}
+                    <p className="text-xs text-foreground/40">
+                        Round {match.round} • Position {match.position + 1}
+                        {match.status === "DISPUTED" && (
+                            <span className="text-danger ml-2 font-semibold">⚠️ DISPUTED</span>
+                        )}
+                        {match.status === "SUBMITTED" && (
+                            <span className="text-warning ml-2 font-semibold">⏳ Awaiting confirmation</span>
+                        )}
+                    </p>
+
+                    {/* Score inputs */}
+                    <div className="flex items-center gap-3">
+                        <div className="flex-1 text-center space-y-1.5">
+                            <p className="text-xs font-medium text-foreground/60 truncate">{p1Name}</p>
+                            <Input
+                                type="number"
+                                min="0"
+                                value={s1}
+                                onValueChange={setS1}
+                                size="lg"
+                                classNames={{ input: "text-center text-3xl font-bold" }}
+                            />
+                        </div>
+                        <span className="text-foreground/20 font-bold text-2xl mt-5">—</span>
+                        <div className="flex-1 text-center space-y-1.5">
+                            <p className="text-xs font-medium text-foreground/60 truncate">{p2Name}</p>
+                            <Input
+                                type="number"
+                                min="0"
+                                value={s2}
+                                onValueChange={setS2}
+                                size="lg"
+                                classNames={{ input: "text-center text-3xl font-bold" }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Existing screenshot preview */}
+                    {existingScreenshot && (
+                        <div className="space-y-1">
+                            <p className="text-xs text-foreground/40 flex items-center gap-1"><Camera className="h-3 w-3" /> Submitted screenshot</p>
+                            <div className="rounded-xl overflow-hidden border border-divider">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={existingScreenshot} alt="Submitted proof" className="w-full max-h-40 object-contain bg-black/30" />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Screenshot upload (optional for admin) */}
+                    <div className="space-y-1">
+                        <p className="text-xs text-foreground/40 flex items-center gap-1">
+                            <Camera className="h-3 w-3" /> Upload screenshot (optional)
+                        </p>
+                        {previewUrl ? (
+                            <div className="relative rounded-xl overflow-hidden border border-divider">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={previewUrl} alt="Screenshot" className="w-full max-h-32 object-contain bg-black/30" />
+                                <button onClick={() => { setScreenshot(null); setPreviewUrl(null); }}
+                                    className="absolute top-1.5 right-1.5 p-0.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors">
+                                    <X className="h-3 w-3" />
+                                </button>
+                            </div>
+                        ) : (
+                            <button onClick={() => fileInputRef.current?.click()}
+                                className="w-full flex items-center gap-2 rounded-lg border border-dashed border-foreground/15 hover:border-primary/40 p-3 transition-colors text-xs text-foreground/40 hover:text-foreground/60">
+                                <ImageIcon className="h-4 w-4" /> Tap to upload
+                            </button>
+                        )}
+                        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+                    </div>
+
+                    {/* Winner selection */}
+                    <div className="space-y-2">
+                        <p className="text-xs font-medium text-foreground/50">Pick Winner</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            {match.player1Id && (
+                                <Button
+                                    color={score1Num > score2Num ? "success" : "default"}
+                                    variant={score1Num > score2Num ? "solid" : "flat"}
+                                    className="h-12"
+                                    onPress={() => handleResolve(match.player1Id!)}
+                                    isLoading={isLoading || uploading}
+                                >
+                                    <div className="text-center">
+                                        <p className="text-sm font-bold truncate">{p1Name}</p>
+                                        <p className="text-[10px] opacity-70">wins</p>
+                                    </div>
+                                </Button>
+                            )}
+                            {match.player2Id && (
+                                <Button
+                                    color={score2Num > score1Num ? "success" : "default"}
+                                    variant={score2Num > score1Num ? "solid" : "flat"}
+                                    className="h-12"
+                                    onPress={() => handleResolve(match.player2Id!)}
+                                    isLoading={isLoading || uploading}
+                                >
+                                    <div className="text-center">
+                                        <p className="text-sm font-bold truncate">{p2Name}</p>
+                                        <p className="text-[10px] opacity-70">wins</p>
+                                    </div>
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </ModalBody>
+                <ModalFooter className="justify-between">
+                    <Button
+                        size="sm"
+                        variant="flat"
+                        color="warning"
+                        startContent={<Dice5 className="h-3 w-3" />}
+                        onPress={onRandomPick}
+                        isLoading={isLoading}
+                    >
+                        Random Pick
+                    </Button>
+                    <Button variant="flat" onPress={onClose}>Cancel</Button>
+                </ModalFooter>
+            </ModalContent>
+        </Modal>
+    );
+}
+
 // ─── Bracket Management ─────────────────────────────────────
 
 interface BracketMatch {
@@ -1225,91 +1488,53 @@ function BracketManagement({
                         </div>
                     )}
 
-                    {/* Disputed matches — needs immediate admin attention */}
-                    {disputedMatches.length > 0 && (
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-1.5">
-                                <AlertTriangle className="h-3.5 w-3.5 text-danger" />
-                                <span className="text-xs font-bold text-danger uppercase">
-                                    Disputed ({disputedMatches.length})
-                                </span>
-                            </div>
-                            {disputedMatches.map((m) => (
-                                <div key={m.id} className="flex items-center justify-between p-3 rounded-xl bg-danger-50/50 dark:bg-danger-900/10 border border-danger/20">
-                                    <div>
-                                        <p className="text-sm font-medium">
-                                            {m.player1?.displayName ?? "TBD"} vs {m.player2?.displayName ?? "TBD"}
-                                        </p>
-                                        <p className="text-xs text-foreground/40">Round {m.round} • Position {m.position + 1}</p>
-                                    </div>
-                                    <div className="flex gap-1.5">
-                                        {m.player1Id && (
-                                            <Button
-                                                size="sm"
-                                                color="success"
-                                                variant="flat"
-                                                onPress={() => resolveMatch.mutate({
-                                                    matchId: m.id, winnerId: m.player1Id!, score1: 1, score2: 0,
-                                                })}
-                                                isLoading={resolveMatch.isPending}
-                                            >
-                                                {m.player1?.displayName?.slice(0, 8)} wins
-                                            </Button>
-                                        )}
-                                        {m.player2Id && (
-                                            <Button
-                                                size="sm"
-                                                color="success"
-                                                variant="flat"
-                                                onPress={() => resolveMatch.mutate({
-                                                    matchId: m.id, winnerId: m.player2Id!, score1: 0, score2: 1,
-                                                })}
-                                                isLoading={resolveMatch.isPending}
-                                            >
-                                                {m.player2?.displayName?.slice(0, 8)} wins
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    {/* All active matches (disputed + submitted + pending) */}
+                    {(() => {
+                        const activeMatches = allMatches.filter(m =>
+                            ["DISPUTED", "SUBMITTED", "PENDING"].includes(m.status) && m.player1Id && m.player2Id
+                        );
 
-                    {/* Pending matches with both players */}
-                    {pendingMatches.length > 0 && (
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-1.5">
-                                <Gamepad2 className="h-3.5 w-3.5 text-foreground/40" />
-                                <span className="text-xs font-bold text-foreground/40 uppercase">
-                                    Awaiting Results ({pendingMatches.length})
-                                </span>
-                            </div>
-                            {pendingMatches.map((m) => (
-                                <div key={m.id} className="flex items-center justify-between p-3 rounded-xl bg-foreground/5 border border-divider">
-                                    <div>
-                                        <p className="text-sm font-medium">
-                                            {m.player1?.displayName ?? "TBD"} vs {m.player2?.displayName ?? "TBD"}
-                                        </p>
-                                        <p className="text-xs text-foreground/40">Round {m.round} • Position {m.position + 1}</p>
+                        if (activeMatches.length === 0) return null;
+
+                        // Group by status for section headers
+                        const sections = [
+                            { status: "DISPUTED", label: "Disputed", icon: <AlertTriangle className="h-3.5 w-3.5 text-danger" />, color: "text-danger", bg: "bg-danger-50/50 dark:bg-danger-900/10 border-danger/20" },
+                            { status: "SUBMITTED", label: "Awaiting Confirmation", icon: <Clock className="h-3.5 w-3.5 text-warning" />, color: "text-warning", bg: "bg-warning-50/50 dark:bg-warning-900/10 border-warning/20" },
+                            { status: "PENDING", label: "Awaiting Results", icon: <Gamepad2 className="h-3.5 w-3.5 text-foreground/40" />, color: "text-foreground/40", bg: "bg-foreground/5 border-divider" },
+                        ];
+
+                        return sections.map(({ status, label, icon, color, bg }) => {
+                            const matches = activeMatches.filter(m => m.status === status);
+                            if (matches.length === 0) return null;
+
+                            return (
+                                <div key={status} className="space-y-2">
+                                    <div className="flex items-center gap-1.5">
+                                        {icon}
+                                        <span className={`text-xs font-bold uppercase ${color}`}>
+                                            {label} ({matches.length})
+                                        </span>
                                     </div>
-                                    <Button
-                                        size="sm"
-                                        variant="flat"
-                                        color="warning"
-                                        startContent={<Dice5 className="h-3 w-3" />}
-                                        onPress={() => {
-                                            if (confirm(`Random pick winner for ${m.player1?.displayName} vs ${m.player2?.displayName}?`)) {
-                                                randomPick.mutate(m.id);
+                                    {matches.map((m) => (
+                                        <AdminMatchRow
+                                            key={m.id}
+                                            match={m}
+                                            bg={bg}
+                                            onResolve={(winnerId, s1, s2) =>
+                                                resolveMatch.mutate({ matchId: m.id, winnerId, score1: s1, score2: s2 })
                                             }
-                                        }}
-                                        isLoading={randomPick.isPending}
-                                    >
-                                        Random Pick
-                                    </Button>
+                                            onRandomPick={() => {
+                                                if (confirm(`Random pick winner for ${m.player1?.displayName} vs ${m.player2?.displayName}?`)) {
+                                                    randomPick.mutate(m.id);
+                                                }
+                                            }}
+                                            isLoading={resolveMatch.isPending || randomPick.isPending}
+                                        />
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    )}
+                            );
+                        });
+                    })()}
 
                     {/* Summary of all matches */}
                     {hasMatches && (
