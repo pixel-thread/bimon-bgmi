@@ -8,6 +8,7 @@ import { Avatar } from "@heroui/react";
 import {
     BracketMatchData, BracketPlayer, RoundData,
     CompactMatch, MatchRow,
+    useZoom, ZoomControls,
 } from "./bracket-shared";
 
 interface GroupKnockoutViewProps {
@@ -212,6 +213,8 @@ export function GroupKnockoutView({
         return `Round ${round}`;
     };
 
+    const { zoom, zoomIn, zoomOut, reset } = useZoom(1, 0.4, 1.5, 0.15);
+
     return (
         <div className="space-y-6">
             {/* ── Group Stage ── */}
@@ -245,8 +248,11 @@ export function GroupKnockoutView({
                     <h3 className="text-xs font-bold text-foreground/50 uppercase tracking-wider flex items-center gap-2">
                         ⚔️ Knockout Stage
                     </h3>
+                    <div className="flex items-center justify-end">
+                        <ZoomControls zoom={zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onReset={reset} />
+                    </div>
                     <div className="overflow-x-auto pb-4">
-                        <div className="flex items-start min-w-max">
+                        <div style={{ zoom }} className="flex items-start w-max">
                             {koRounds.map((round, ri) => {
                                 const mult = Math.pow(2, ri);
                                 const gap = ri === 0 ? GAP : (MATCH_H + GAP) * mult - MATCH_H;

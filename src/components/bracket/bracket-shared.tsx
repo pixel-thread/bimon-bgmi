@@ -1,8 +1,41 @@
 "use client";
 
+import { useState } from "react";
 import { Avatar, Chip } from "@heroui/react";
-import { Trophy, Clock, AlertTriangle, CheckCircle2, Minus, Eye } from "lucide-react";
+import { Trophy, Clock, AlertTriangle, CheckCircle2, Minus, Eye, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
+
+/* ─── Zoom Hook + Controls ──────────────────────────────────── */
+
+export function useZoom(initial = 1, min = 0.4, max = 1.5, step = 0.15) {
+    const [zoom, setZoom] = useState(initial);
+    const zoomIn = () => setZoom(z => Math.min(max, +(z + step).toFixed(2)));
+    const zoomOut = () => setZoom(z => Math.max(min, +(z - step).toFixed(2)));
+    const reset = () => setZoom(initial);
+    return { zoom, zoomIn, zoomOut, reset };
+}
+
+export function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset }: {
+    zoom: number;
+    onZoomIn: () => void;
+    onZoomOut: () => void;
+    onReset: () => void;
+}) {
+    return (
+        <div className="flex items-center gap-1 bg-default-100 rounded-xl px-2 py-1">
+            <button onClick={onZoomOut} className="p-1 rounded-lg hover:bg-default-200 transition-colors disabled:opacity-30" disabled={zoom <= 0.4}>
+                <ZoomOut className="h-3.5 w-3.5 text-foreground/60" />
+            </button>
+            <button onClick={onReset} className="text-[10px] font-bold text-foreground/50 min-w-[36px] text-center hover:text-foreground/80 transition-colors">
+                {Math.round(zoom * 100)}%
+            </button>
+            <button onClick={onZoomIn} className="p-1 rounded-lg hover:bg-default-200 transition-colors disabled:opacity-30" disabled={zoom >= 1.5}>
+                <ZoomIn className="h-3.5 w-3.5 text-foreground/60" />
+            </button>
+        </div>
+    );
+}
+
 
 /* ─── Shared Types ───────────────────────────────────────────── */
 
@@ -81,8 +114,8 @@ export function PlayerSlot({
     }
     return (
         <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${isWinner ? "bg-success-50 dark:bg-success-50/10 border border-success-200 dark:border-success-800"
-                : isCurrent ? "bg-primary-50 dark:bg-primary-50/10 border border-primary-200 dark:border-primary-800"
-                    : "bg-default-100/50"
+            : isCurrent ? "bg-primary-50 dark:bg-primary-50/10 border border-primary-200 dark:border-primary-800"
+                : "bg-default-100/50"
             }`}>
             <Avatar src={avatar || undefined} name={player.displayName?.[0] || "?"} size="sm" className="h-6 w-6 text-tiny" />
             <span className={`text-xs font-medium flex-1 truncate ${isWinner ? "text-success-700 dark:text-success-400" : ""}`}>
@@ -124,8 +157,8 @@ export function MatchCard({
 
     return (
         <div className={`border rounded-2xl transition-all bg-content1 ${isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
-                ? "border-primary shadow-md shadow-primary/10"
-                : "border-divider"
+            ? "border-primary shadow-md shadow-primary/10"
+            : "border-divider"
             }`}>
             <div className="p-3 space-y-2">
                 <PlayerSlot
@@ -199,9 +232,9 @@ export function CompactMatch({
     ) => (
         <div className={`flex items-center gap-1.5 px-2 py-1 ${isTop ? "rounded-t-lg" : "rounded-b-lg"} ${isWinner ? "bg-success/10" : ""}`}>
             <span className={`text-[11px] truncate flex-1 ${isCurrent ? "text-primary font-semibold"
-                    : isWinner ? "text-success font-medium"
-                        : player ? "text-foreground/80"
-                            : "text-foreground/25 italic"
+                : isWinner ? "text-success font-medium"
+                    : player ? "text-foreground/80"
+                        : "text-foreground/25 italic"
                 }`}>
                 {player?.displayName ?? "TBD"}
             </span>
@@ -214,7 +247,7 @@ export function CompactMatch({
 
     return (
         <div className={`border rounded-lg w-[170px] transition-all relative flex items-center ${isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
-                ? "border-primary/60" : "border-divider"
+            ? "border-primary/60" : "border-divider"
             }`}>
             <div className="flex-1 min-w-0">
                 {row(match.player1, match.score1, match.winnerId === match.player1Id && match.winnerId !== null, currentPlayerId === match.player1Id, true)}
@@ -227,9 +260,9 @@ export function CompactMatch({
                 </button>
             ) : (
                 <div className={`absolute -right-1 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${match.status === "CONFIRMED" ? "bg-success" :
-                        match.status === "SUBMITTED" ? "bg-warning" :
-                            match.status === "DISPUTED" ? "bg-danger" :
-                                match.status === "BYE" ? "bg-secondary" : "bg-foreground/20"
+                    match.status === "SUBMITTED" ? "bg-warning" :
+                        match.status === "DISPUTED" ? "bg-danger" :
+                            match.status === "BYE" ? "bg-secondary" : "bg-foreground/20"
                     }`} />
             )}
         </div>
@@ -263,8 +296,8 @@ export function MatchRow({
 
     return (
         <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs transition-all ${isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
-                ? "border-primary/40 bg-primary/5"
-                : "border-divider bg-default-50/30"
+            ? "border-primary/40 bg-primary/5"
+            : "border-divider bg-default-50/30"
             }`}>
             {/* Player 1 */}
             <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
