@@ -112,9 +112,9 @@ function GroupSection({
                     </Chip>
                     {/* Only show for disputed matches — needs admin attention */}
                     {hasDispute && (
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warning/15 border border-warning/30">
-                            <div className="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" />
-                            <span className="text-[10px] font-bold text-warning-500">Dispute</span>
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-danger/15 border border-danger/30">
+                            <div className="h-1.5 w-1.5 rounded-full bg-danger animate-pulse" />
+                            <span className="text-[10px] font-bold text-danger-500">Dispute</span>
                         </div>
                     )}
                 </div>
