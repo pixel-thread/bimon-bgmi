@@ -162,7 +162,7 @@ export default function OperationsPage() {
             const res = await fetch(url);
             if (!res.ok) throw new Error("Failed");
             const json = await res.json();
-            return json.data;
+            return json.data ?? [];
         },
     });
 
