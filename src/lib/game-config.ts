@@ -152,7 +152,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         hasBR: false,
         features: {
             hasTeamSizes: false,       // PES is 1v1 only
-            hasLuckyVoters: false,      // Not applicable for 1v1
+            hasLuckyVoters: true,       // Lucky voter draws work for any tournament
             hasRoyalPass: false,        // No pass system for PES
             hasMerit: false,            // No merit rating for 1v1
             hasReferrals: true,         // Referrals still make sense

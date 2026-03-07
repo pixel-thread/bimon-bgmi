@@ -334,27 +334,25 @@ export default function SettingsPage() {
                 </Card>
             )}
 
-            {/* Lucky Voters — BR games only */}
-            {GAME.features.hasLuckyVoters && (
-                <Card>
-                    <CardHeader className="flex gap-2 items-center pb-0">
-                        <Clover className="h-5 w-5 text-success" />
-                        <div>
-                            <h2 className="text-lg font-semibold">Lucky Voters</h2>
-                            <p className="text-xs text-foreground/50">Random voter rewards</p>
-                        </div>
-                    </CardHeader>
-                    <CardBody>
-                        <Switch
-                            isSelected={settings.enableLuckyVoters}
-                            onValueChange={(v) => update("enableLuckyVoters", v)}
-                            size="sm"
-                        >
-                            Enable Lucky Voters
-                        </Switch>
-                    </CardBody>
-                </Card>
-            )}
+            {/* Lucky Voters — all games */}
+            <Card>
+                <CardHeader className="flex gap-2 items-center pb-0">
+                    <Clover className="h-5 w-5 text-success" />
+                    <div>
+                        <h2 className="text-lg font-semibold">Lucky Voters</h2>
+                        <p className="text-xs text-foreground/50">Random voter rewards</p>
+                    </div>
+                </CardHeader>
+                <CardBody>
+                    <Switch
+                        isSelected={settings.enableLuckyVoters}
+                        onValueChange={(v) => update("enableLuckyVoters", v)}
+                        size="sm"
+                    >
+                        Enable Lucky Voters
+                    </Switch>
+                </CardBody>
+            </Card>
 
             {/* Gameplay */}
             <Card>
@@ -422,43 +420,45 @@ export default function SettingsPage() {
                 </CardBody>
             </Card>
 
-            {/* Bracket Deadlines */}
-            <Card>
-                <CardHeader className="flex gap-2 items-center pb-0">
-                    <Swords className="h-5 w-5 text-primary" />
-                    <div>
-                        <h2 className="text-lg font-semibold">Bracket Deadlines</h2>
-                        <p className="text-xs text-foreground/50">How long players have to complete each match before admin intervention</p>
-                    </div>
-                </CardHeader>
-                <CardBody className="gap-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                            label="Group / League Deadline"
-                            type="number"
-                            size="sm"
-                            value={String(settings.matchDeadlineGroupHours ?? 48)}
-                            onValueChange={(v) => update("matchDeadlineGroupHours", Number(v))}
-                            description="Hours for a group or league match"
-                            endContent={<span className="text-foreground/40 text-xs">hrs</span>}
-                            min={1}
-                        />
-                        <Input
-                            label="Knockout Stage Deadline"
-                            type="number"
-                            size="sm"
-                            value={String(settings.matchDeadlineKOHours ?? 72)}
-                            onValueChange={(v) => update("matchDeadlineKOHours", Number(v))}
-                            description="Hours to complete a KO match"
-                            endContent={<span className="text-foreground/40 text-xs">hrs</span>}
-                            min={1}
-                        />
-                    </div>
-                    <p className="text-[11px] text-foreground/30">
-                        ⏰ After the deadline, admins can override the result manually. Defaults: Group = 48h, KO = 72h.
-                    </p>
-                </CardBody>
-            </Card>
+            {/* Bracket Deadlines — only for games with bracket/league support */}
+            {GAME.features.hasBracket && (
+                <Card>
+                    <CardHeader className="flex gap-2 items-center pb-0">
+                        <Swords className="h-5 w-5 text-primary" />
+                        <div>
+                            <h2 className="text-lg font-semibold">Bracket Deadlines</h2>
+                            <p className="text-xs text-foreground/50">How long players have to complete each match before admin intervention</p>
+                        </div>
+                    </CardHeader>
+                    <CardBody className="gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input
+                                label="Group / League Deadline"
+                                type="number"
+                                size="sm"
+                                value={String(settings.matchDeadlineGroupHours ?? 48)}
+                                onValueChange={(v) => update("matchDeadlineGroupHours", Number(v))}
+                                description="Hours for a group or league match"
+                                endContent={<span className="text-foreground/40 text-xs">hrs</span>}
+                                min={1}
+                            />
+                            <Input
+                                label="Knockout Stage Deadline"
+                                type="number"
+                                size="sm"
+                                value={String(settings.matchDeadlineKOHours ?? 72)}
+                                onValueChange={(v) => update("matchDeadlineKOHours", Number(v))}
+                                description="Hours to complete a KO match"
+                                endContent={<span className="text-foreground/40 text-xs">hrs</span>}
+                                min={1}
+                            />
+                        </div>
+                        <p className="text-[11px] text-foreground/30">
+                            ⏰ After the deadline, admins can override the result manually. Defaults: Group = 48h, KO = 72h.
+                        </p>
+                    </CardBody>
+                </Card>
+            )}
 
             {GAME.features.hasMerit && (
                 <Card>
