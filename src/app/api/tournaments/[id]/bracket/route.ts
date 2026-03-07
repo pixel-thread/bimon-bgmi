@@ -1,178 +1,152 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/database";
-import { getCurrentUser } from "@/lib/auth";
-
-// BGMI placement points — must match standings-modal.tsx
-const PLACEMENT_PTS: Record<number, number> = {
-    1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1,
-};
+import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 
 /**
- * GET /api/tournaments/[id]/rankings
- * Fetch team rankings for a tournament (admin only).
- * Uses teamPlayerStats for player rosters (works for both migrated & new data).
+ * GET /api/tournaments/[id]/bracket
+ * Fetch bracket matches for a tournament, grouped by round.
+ * Public — any authenticated user can view brackets.
  */
 export async function GET(
     _req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const user = await getCurrentUser();
-        if (!user || (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN")) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-        }
-
         const { id } = await params;
 
         const tournament = await prisma.tournament.findUnique({
             where: { id },
-            select: {
-                id: true,
-                name: true,
-                fee: true,
-                isWinnerDeclared: true,
-            },
+            select: { id: true, type: true },
         });
 
         if (!tournament) {
-            return NextResponse.json({ error: "Not found" }, { status: 404 });
+            return ErrorResponse({ message: "Tournament not found", status: 404 });
         }
 
-        // Fetch team stats — use teamPlayerStats for player info (reliable for migrated data)
-        const teamStats = await prisma.teamStats.findMany({
+        const matches = await prisma.bracketMatch.findMany({
             where: { tournamentId: id },
             include: {
-                team: {
+                player1: {
                     select: {
                         id: true,
-                        name: true,
-                        // Try team.players (works for v2-created teams)
-                        players: {
-                            select: {
-                                id: true,
-                                displayName: true,
-                                isUCExempt: true,
-                                user: { select: { username: true } },
-                            },
-                        },
+                        displayName: true,
+                        customProfileImageUrl: true,
+                        user: { select: { imageUrl: true } },
                     },
                 },
-                teamPlayerStats: {
+                player2: {
                     select: {
-                        playerId: true,
-                        kills: true,
-                        player: {
-                            select: {
-                                id: true,
-                                displayName: true,
-                                isUCExempt: true,
-                                user: { select: { username: true } },
-                            },
-                        },
+                        id: true,
+                        displayName: true,
+                        customProfileImageUrl: true,
+                        user: { select: { imageUrl: true } },
                     },
+                },
+                winner: {
+                    select: { id: true, displayName: true },
+                },
+                results: {
+                    select: {
+                        id: true,
+                        submittedById: true,
+                        claimedScore1: true,
+                        claimedScore2: true,
+                        screenshotUrl: true,
+                        isDispute: true,
+                        createdAt: true,
+                    },
+                    orderBy: { createdAt: "desc" },
                 },
             },
+            orderBy: [{ round: "asc" }, { position: "asc" }],
         });
 
-        // Aggregate stats per team
-        const teamMap = new Map<string, {
-            teamId: string;
-            name: string;
-            total: number;
-            kills: number;
-            pts: number;
-            players: { id: string; name: string }[];
-        }>();
-
-        // Track all unique players across all teams for prize pool
-        const allPlayerIds = new Set<string>();
-        const ucExemptPlayerIds = new Set<string>();
-
-        for (const stat of teamStats) {
-            const kills = stat.teamPlayerStats.reduce((sum, ps) => sum + ps.kills, 0);
-            const pts = PLACEMENT_PTS[stat.position] ?? 0;
-            const total = kills + pts;
-
-            const existing = teamMap.get(stat.teamId);
-            if (existing) {
-                existing.kills += kills;
-                existing.pts += pts;
-                existing.total += total;
-
-                // Add any new players from this match's teamPlayerStats
-                for (const ps of stat.teamPlayerStats) {
-                    allPlayerIds.add(ps.playerId);
-                    if (!existing.players.some(p => p.id === ps.playerId)) {
-                        existing.players.push({
-                            id: ps.player.id,
-                            name: ps.player.displayName || ps.player.user?.username || "Unknown",
-                        });
-                    }
-                }
-            } else {
-                // Build player list: prefer team.players (v2 created), fallback to teamPlayerStats
-                const playerMap = new Map<string, string>();
-
-                // First add from team.players (complete roster if available)
-                for (const p of stat.team.players) {
-                    playerMap.set(p.id, p.displayName || p.user?.username || "Unknown");
-                    allPlayerIds.add(p.id);
-                    if (p.isUCExempt) ucExemptPlayerIds.add(p.id);
-                }
-
-                // Then add from teamPlayerStats (catches migrated data without team.players)
-                for (const ps of stat.teamPlayerStats) {
-                    if (!playerMap.has(ps.playerId)) {
-                        playerMap.set(ps.player.id, ps.player.displayName || ps.player.user?.username || "Unknown");
-                    }
-                    allPlayerIds.add(ps.playerId);
-                    if (ps.player.isUCExempt) ucExemptPlayerIds.add(ps.playerId);
-                }
-
-                const players = Array.from(playerMap.entries()).map(([pId, name]) => ({ id: pId, name }));
-
-                teamMap.set(stat.teamId, {
-                    teamId: stat.teamId,
-                    name: stat.team.name,
-                    total,
-                    kills,
-                    pts,
-                    players,
-                });
-            }
+        if (matches.length === 0) {
+            return SuccessResponse({ data: { rounds: [], totalRounds: 0, totalPlayers: 0 } });
         }
 
-        // Sort by total points desc
-        const rankings = Array.from(teamMap.values()).sort(
-            (a, b) => b.total - a.total
+        // Group by round
+        const roundMap = new Map<number, typeof matches>();
+        for (const m of matches) {
+            const existing = roundMap.get(m.round) || [];
+            existing.push(m);
+            roundMap.set(m.round, existing);
+        }
+
+        const totalRounds = Math.max(...Array.from(roundMap.keys()));
+
+        // Count unique players
+        const playerIds = new Set<string>();
+        for (const m of matches) {
+            if (m.player1Id) playerIds.add(m.player1Id);
+            if (m.player2Id) playerIds.add(m.player2Id);
+        }
+
+        // Generate round names
+        function getRoundName(round: number, total: number, type: string): string {
+            if (type === "LEAGUE") return `Match Day ${round}`;
+            if (type === "GROUP_KNOCKOUT") {
+                // Group stage rounds come first, then knockout
+                return `Round ${round}`;
+            }
+            // Bracket knockout naming
+            if (round === total) return "Final";
+            if (round === total - 1) return "Semi-Final";
+            if (round === total - 2) return "Quarter-Final";
+            return `Round ${round}`;
+        }
+
+        const rounds = Array.from(roundMap.entries())
+            .sort(([a], [b]) => a - b)
+            .map(([round, roundMatches]) => ({
+                round,
+                name: getRoundName(round, totalRounds, tournament.type),
+                matches: roundMatches.map((m) => ({
+                    id: m.id,
+                    round: m.round,
+                    position: m.position,
+                    player1Id: m.player1Id,
+                    player2Id: m.player2Id,
+                    winnerId: m.winnerId,
+                    score1: m.score1,
+                    score2: m.score2,
+                    status: m.status,
+                    disputeDeadline: m.disputeDeadline,
+                    player1: m.player1
+                        ? { displayName: m.player1.displayName }
+                        : null,
+                    player2: m.player2
+                        ? { displayName: m.player2.displayName }
+                        : null,
+                    player1Avatar:
+                        m.player1?.customProfileImageUrl ??
+                        m.player1?.user?.imageUrl ??
+                        null,
+                    player2Avatar:
+                        m.player2?.customProfileImageUrl ??
+                        m.player2?.user?.imageUrl ??
+                        null,
+                    results: m.results,
+                })),
+            }));
+
+        // Check if there's a final winner
+        const finalMatch = matches.find(
+            (m) => m.round === totalRounds && m.winnerId
         );
+        const winner = finalMatch?.winner
+            ? { displayName: finalMatch.winner.displayName }
+            : null;
 
-        // Determine team type from average team size
-        const teamCount = teamMap.size;
-        const avgTeamSize = teamCount > 0 ? Math.round(allPlayerIds.size / teamCount) : 2;
-
-        // Include donations in prize pool
-        const donations = await prisma.prizePoolDonation.findMany({
-            where: { tournamentId: id },
-            select: { amount: true },
-        });
-        const totalDonations = donations.reduce((sum: number, d: { amount: number }) => sum + d.amount, 0);
-
-        return NextResponse.json({
-            success: true,
-            data: rankings,
-            meta: {
-                entryFee: tournament.fee ?? 0,
-                totalPlayers: allPlayerIds.size,
-                prizePool: ((tournament.fee ?? 0) * allPlayerIds.size) + totalDonations,
-                donations: totalDonations,
-                teamType: avgTeamSize === 1 ? "SOLO" : avgTeamSize === 2 ? "DUO" : avgTeamSize === 3 ? "TRIO" : "SQUAD",
-                isWinnerDeclared: tournament.isWinnerDeclared,
-                ucExemptCount: ucExemptPlayerIds.size,
+        return SuccessResponse({
+            data: {
+                rounds,
+                totalRounds,
+                totalPlayers: playerIds.size,
+                winner,
             },
         });
     } catch (error) {
-        console.error("Error fetching rankings:", error);
-        return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
+        return ErrorResponse({ message: "Failed to fetch bracket", error });
     }
 }
