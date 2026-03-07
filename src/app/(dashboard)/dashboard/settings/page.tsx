@@ -173,7 +173,7 @@ export default function SettingsPage() {
                 <CardBody className="gap-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Input
-                            label="Platform Cut %"
+                            label="Org %"
                             type="number"
                             size="sm"
                             value={String(settings.orgCutPercent)}

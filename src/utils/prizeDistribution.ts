@@ -179,10 +179,11 @@ export function getPrizeDistribution(
         const refundAmount = Math.min(teamRefund, totalPool - orgFee - fundAmount);
         const remainingForWinners = totalPool - orgFee - fundAmount - refundAmount;
 
-        // Distribute by percentage to all positions except last
+        // Distribute by relative percentage to all positions except last
+        const totalPct = tier.percentages.reduce((s, p) => s + p, 0);
         tier.percentages.forEach((percent, idx) => {
             const position = idx + 1;
-            const amount = Math.floor(remainingForWinners * (percent / 100));
+            const amount = Math.floor(remainingForWinners * (percent / totalPct));
             prizes.set(position, {
                 position,
                 percentage: percent,
@@ -199,10 +200,13 @@ export function getPrizeDistribution(
             isFixed: true,
         });
     } else {
-        // Tier 1: Standard percentage-based distribution (no refund)
+        // Tier 1: Calculate from winner pool (totalPool minus org and fund)
+        const winnerPool = totalPool - orgFee - fundAmount;
+        const totalPct = tier.percentages.reduce((s, p) => s + p, 0);
+
         tier.percentages.forEach((percent, idx) => {
             const position = idx + 1;
-            const amount = Math.floor(totalPool * (percent / 100));
+            const amount = Math.floor(winnerPool * (percent / totalPct));
             prizes.set(position, {
                 position,
                 percentage: percent,
@@ -230,8 +234,17 @@ export function getPrizeDistribution(
         carryOver = remainder;
     }
 
-    // Any remaining amount from rounding goes to org
-    let adjustedOrgFee = orgFee + carryOver;
+    // Any remaining from rounding: goes to org if org > 0, otherwise to 1st place
+    let adjustedOrgFee = orgFee;
+    if (orgPercent > 0) {
+        adjustedOrgFee += carryOver;
+    } else {
+        // Org is 0% — give rounding remainder to 1st place winner
+        const first = prizes.get(1);
+        if (first) {
+            prizes.set(1, { ...first, amount: first.amount + carryOver });
+        }
+    }
 
     // Calculate total winner payout
     let totalWinnerPayout = 0;
@@ -239,10 +252,18 @@ export function getPrizeDistribution(
         totalWinnerPayout += prize.amount;
     });
 
-    // Ensure total adds up exactly - any remainder from floor() goes to org
+    // Ensure total adds up exactly — remainder goes to 1st place if org=0, else org
     const totalDistributed = adjustedOrgFee + fundAmount + totalWinnerPayout;
     const remainder = totalPool - totalDistributed;
-    adjustedOrgFee += remainder;
+    if (orgPercent > 0) {
+        adjustedOrgFee += remainder;
+    } else if (remainder > 0) {
+        const first = prizes.get(1);
+        if (first) {
+            prizes.set(1, { ...first, amount: first.amount + remainder });
+            totalWinnerPayout += remainder;
+        }
+    }
 
     // Generate summary texts
     const teamRefund = entryFee * teamSize;
