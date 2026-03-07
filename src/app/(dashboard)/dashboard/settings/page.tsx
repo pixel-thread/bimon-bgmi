@@ -434,12 +434,12 @@ export default function SettingsPage() {
                 <CardBody className="gap-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Input
-                            label="Group Stage Deadline"
+                            label="Group / League Deadline"
                             type="number"
                             size="sm"
                             value={String(settings.matchDeadlineGroupHours ?? 48)}
                             onValueChange={(v) => update("matchDeadlineGroupHours", Number(v))}
-                            description="Hours to complete a group match"
+                            description="Hours for a group or league match"
                             endContent={<span className="text-foreground/40 text-xs">hrs</span>}
                             min={1}
                         />
