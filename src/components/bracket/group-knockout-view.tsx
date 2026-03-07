@@ -6,7 +6,7 @@ import { ChevronDown, ChevronUp, Trophy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar } from "@heroui/react";
 import {
-    BracketMatchData, BracketPlayer, RoundData,
+    BracketMatchData, RoundData,
     CompactMatch, MatchRow,
     usePinchZoom, ZoomControls,
 } from "./bracket-shared";
@@ -77,18 +77,19 @@ function computeGroupStandings(matches: BracketMatchData[]): Standing[] {
 /* ─── Group Section (collapsible) ───────────────────────────── */
 
 function GroupSection({
-    groupLetter, matches, currentPlayerId,
+    groupLetter, matches, isDefaultOpen, currentPlayerId,
     onSubmitResult, onConfirmResult, onDispute, onViewResult,
 }: {
     groupLetter: string;
     matches: BracketMatchData[];
+    isDefaultOpen: boolean;
     currentPlayerId?: string;
     onSubmitResult?: (id: string) => void;
     onConfirmResult?: (id: string) => void;
     onDispute?: (id: string) => void;
     onViewResult?: (id: string) => void;
 }) {
-    const [open, setOpen] = useState(groupLetter === "A");
+    const [open, setOpen] = useState(isDefaultOpen);
     const standings = computeGroupStandings(matches);
     const confirmedCount = matches.filter(m => m.status === "CONFIRMED").length;
     const totalMatches = matches.filter(m => m.player1Id && m.player2Id).length;
@@ -199,7 +200,8 @@ export function GroupKnockoutView({
     rounds, totalRounds, currentPlayerId,
     onSubmitResult, onConfirmResult, onDispute, onViewResult,
 }: GroupKnockoutViewProps) {
-    const groupRounds = rounds.filter(r => r.round < 0).sort((a, b) => a.round - b.round);
+    // Group A (-1) first, then B (-2), etc.  Sort descending by round (least negative first)
+    const groupRounds = rounds.filter(r => r.round < 0).sort((a, b) => b.round - a.round);
     const koRounds = rounds.filter(r => r.round > 0).sort((a, b) => a.round - b.round);
 
     const MATCH_H = 48;
@@ -226,11 +228,16 @@ export function GroupKnockoutView({
                     {groupRounds.map(r => {
                         const groupIndex = -r.round - 1;
                         const letter = String.fromCharCode(65 + groupIndex);
+                        // Auto-expand if user is in this group
+                        const userInGroup = r.matches.some(
+                            m => m.player1Id === currentPlayerId || m.player2Id === currentPlayerId
+                        );
                         return (
                             <GroupSection
                                 key={r.round}
                                 groupLetter={letter}
                                 matches={r.matches}
+                                isDefaultOpen={userInGroup}
                                 currentPlayerId={currentPlayerId}
                                 onSubmitResult={onSubmitResult}
                                 onConfirmResult={onConfirmResult}

@@ -419,6 +419,20 @@ export function MatchRow({
 
 /* ─── My Match Highlight (shared across all types) ─────────── */
 
+/** Convert a raw round number to a display-friendly name */
+export function roundLabel(roundNum: number, rounds: RoundData[]): string {
+    if (roundNum < 0) {
+        // Group stage: -1 → Group A, -2 → Group B, etc.
+        return `Group ${String.fromCharCode(65 + (-roundNum - 1))}`;
+    }
+    // Knockout: find the max positive round to label Final / Semi / Quarter
+    const maxRound = Math.max(...rounds.filter(r => r.round > 0).map(r => r.round));
+    if (roundNum === maxRound) return "Final";
+    if (roundNum === maxRound - 1) return "Semi-Final";
+    if (roundNum === maxRound - 2) return "Quarter-Final";
+    return `Round ${roundNum}`;
+}
+
 export function MyBracketMatch({
     rounds, currentPlayerId, onSubmitResult, onConfirmResult, onDispute,
 }: {
@@ -428,24 +442,56 @@ export function MyBracketMatch({
     onConfirmResult?: (id: string) => void;
     onDispute?: (id: string) => void;
 }) {
-    const myMatch = rounds
-        .flatMap(r => r.matches)
-        .find(m =>
+    const [idx, setIdx] = useState(0);
+
+    // All matches involving this player that need action
+    const myMatches = rounds
+        .flatMap(r => r.matches.map(m => ({ ...m, _roundNum: r.round })))
+        .filter(m =>
             (m.player1Id === currentPlayerId || m.player2Id === currentPlayerId) &&
             (m.status === "PENDING" || m.status === "SUBMITTED" || m.status === "DISPUTED")
         );
 
-    if (!myMatch) return null;
+    if (myMatches.length === 0) return null;
 
-    const round = rounds.find(r => r.matches.some(m => m.id === myMatch.id));
+    const safeIdx = Math.min(idx, myMatches.length - 1);
+    const myMatch = myMatches[safeIdx];
+    const label = roundLabel(myMatch._roundNum, rounds);
+    const total = myMatches.length;
 
     return (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
-            <div className="mb-2 flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                <span className="text-xs font-bold text-primary uppercase">
-                    Your Match — {round?.name}
-                </span>
+            <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                    <span className="text-xs font-bold text-primary uppercase">
+                        Your Match — {label}
+                    </span>
+                    {total > 1 && (
+                        <span className="text-[10px] text-foreground/40 font-medium">
+                            ({safeIdx + 1}/{total})
+                        </span>
+                    )}
+                </div>
+                {/* Prev / Next when multiple matches */}
+                {total > 1 && (
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setIdx(i => Math.max(0, i - 1))}
+                            disabled={safeIdx === 0}
+                            className="text-[11px] font-bold text-primary px-2 py-0.5 rounded-lg hover:bg-primary/10 disabled:opacity-30 transition-colors"
+                        >
+                            ← Prev
+                        </button>
+                        <button
+                            onClick={() => setIdx(i => Math.min(total - 1, i + 1))}
+                            disabled={safeIdx === total - 1}
+                            className="text-[11px] font-bold text-primary px-2 py-0.5 rounded-lg hover:bg-primary/10 disabled:opacity-30 transition-colors"
+                        >
+                            Next →
+                        </button>
+                    </div>
+                )}
             </div>
             <MatchCard
                 match={myMatch}
@@ -457,3 +503,4 @@ export function MyBracketMatch({
         </motion.div>
     );
 }
+
