@@ -24,6 +24,7 @@ export async function PUT(
             return NextResponse.json({ error: "Not found" }, { status: 404 });
         }
 
+        const VALID_TYPES = ["BR", "BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"];
         const updated = await prisma.tournament.update({
             where: { id },
             data: {
@@ -32,6 +33,7 @@ export async function PUT(
                 fee: body.fee !== undefined ? (body.fee !== null ? Number(body.fee) : null) : tournament.fee,
                 seasonId: body.seasonId !== undefined ? (body.seasonId || null) : tournament.seasonId,
                 status: body.status ?? tournament.status,
+                ...(body.type && VALID_TYPES.includes(body.type) && { type: body.type }),
             },
         });
 
