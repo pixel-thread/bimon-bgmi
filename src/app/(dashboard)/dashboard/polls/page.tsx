@@ -409,7 +409,7 @@ export default function PollsAdminPage() {
                                                                 color="secondary"
                                                                 startContent={<Swords className="h-3 w-3" />}
                                                                 className="min-w-0 h-7 px-2 text-xs"
-                                                                isDisabled={!poll.isActive || poll.inVotes < 2}
+                                                                isDisabled={poll.inVotes < 2}
                                                                 onPress={async () => {
                                                                     if (!confirm(`Generate matches for "${poll.tournament!.name}"? This will close the poll.`)) return;
                                                                     try {

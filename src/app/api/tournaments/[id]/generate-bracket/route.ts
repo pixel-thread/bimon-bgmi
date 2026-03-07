@@ -67,10 +67,10 @@ export async function POST(
             });
         }
 
+        // Delete existing matches if any (allows regeneration)
         if (tournament.bracketMatches.length > 0) {
-            return ErrorResponse({
-                message: "Matches already generated. Delete existing first.",
-                status: 400,
+            await prisma.bracketMatch.deleteMany({
+                where: { tournamentId: id },
             });
         }
 
