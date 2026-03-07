@@ -643,25 +643,27 @@ export function DeclareWinnersModal({
                                                     })}
 
                                                 <div className="flex justify-between text-foreground/50">
-                                                    <span>💼 Org (70%):</span>
+                                                    <span>💼 Org ({orgPercent}%):</span>
                                                     <span className="font-medium text-foreground">
                                                         ₹{(dryRunRes?.data?.finalOrg ?? taxPreviewRes?.finalOrg ?? organizerAmount).toLocaleString()}
                                                     </span>
                                                 </div>
 
-                                                <div className="flex justify-between text-foreground/50">
-                                                    <span>🏦 Fund (30%):</span>
-                                                    <span className="font-medium text-foreground">
-                                                        ₹{(dryRunRes?.data?.finalFund ?? taxPreviewRes?.finalFund ?? distribution.finalFundAmount).toLocaleString()}
-                                                    </span>
-                                                </div>
+                                                {enableFund && (
+                                                    <div className="flex justify-between text-foreground/50">
+                                                        <span>🏦 Fund:</span>
+                                                        <span className="font-medium text-foreground">
+                                                            ₹{(dryRunRes?.data?.finalFund ?? taxPreviewRes?.finalFund ?? distribution.finalFundAmount).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {taxTotals.total > 0 && (
                                                 <div className="mt-2 pt-2 border-t border-dashed border-success/20 space-y-1 opacity-80 italic">
                                                     {taxTotals.repeatTax > 0 && (
                                                         <p className="text-[10px] text-warning">
-                                                            Note: ₹{taxTotals.repeatTax} Repeat Winner Tax added to Org/Fund pool (70/30 split).
+                                                            Note: ₹{taxTotals.repeatTax} Repeat Winner Tax added to Org.
                                                         </p>
                                                     )}
                                                     {taxTotals.soloTax > 0 && (
