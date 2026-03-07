@@ -45,7 +45,7 @@ interface PollDTO {
     totalVotes: number;
     createdAt: string;
     options?: { id: string; name: string; vote: string }[];
-    tournament?: { id: string; name: string; fee: number };
+    tournament?: { id: string; name: string; fee: number; type: string };
 }
 
 type JobStatus = "idle" | "loading" | "completed" | "failed";
@@ -390,7 +390,7 @@ export default function PollsAdminPage() {
                                                         >
                                                             <Pencil className="h-3 w-3" />
                                                         </Button>
-                                                        {poll.tournament && (
+                                                        {poll.tournament && poll.tournament.type === "BR" && (
                                                             <Button
                                                                 size="sm"
                                                                 variant="flat"
@@ -400,6 +400,30 @@ export default function PollsAdminPage() {
                                                                 onPress={() => fetchPreview(poll)}
                                                             >
                                                                 Teams
+                                                            </Button>
+                                                        )}
+                                                        {poll.tournament && ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"].includes(poll.tournament.type) && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="flat"
+                                                                color="secondary"
+                                                                startContent={<Swords className="h-3 w-3" />}
+                                                                className="min-w-0 h-7 px-2 text-xs"
+                                                                isDisabled={!poll.isActive || poll.inVotes < 2}
+                                                                onPress={async () => {
+                                                                    if (!confirm(`Generate matches for "${poll.tournament!.name}"? This will close the poll.`)) return;
+                                                                    try {
+                                                                        const res = await fetch(`/api/tournaments/${poll.tournament!.id}/generate-bracket`, { method: "POST" });
+                                                                        const json = await res.json();
+                                                                        if (!res.ok) throw new Error(json.message || "Failed");
+                                                                        toast.success(json.message);
+                                                                        queryClient.invalidateQueries({ queryKey: ["admin-polls"] });
+                                                                    } catch (err: any) {
+                                                                        toast.error(err.message);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                Bracket
                                                             </Button>
                                                         )}
                                                     </div>

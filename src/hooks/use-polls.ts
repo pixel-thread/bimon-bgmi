@@ -13,6 +13,7 @@ export interface PollDTO {
         id: string;
         name: string;
         fee: number | null;
+        type: string;
         seasonId: string | null;
     };
     luckyVoterId: string | null;

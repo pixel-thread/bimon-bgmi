@@ -403,41 +403,91 @@ function VotersDialog({
                             <p className="text-xs text-foreground/50 mb-2">
                                 Voters for &quot;{getLabel(selectedGroup)}&quot;
                             </p>
-                            <div className="space-y-1">
-                                {selectedVoters.map((v, i) => (
-                                    <div
-                                        key={v.playerId}
-                                        className="flex items-center gap-3 p-2.5 rounded-lg bg-default-50 hover:bg-default-100 transition-colors"
-                                    >
-                                        <span className="text-[10px] font-mono text-foreground/30 w-4 text-right">
-                                            {i + 1}
-                                        </span>
-                                        <Avatar
-                                            src={v.imageUrl}
-                                            name={v.displayName}
-                                            size="sm"
-                                            className="w-8 h-8 flex-shrink-0"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium truncate flex items-center gap-1.5">
-                                                {v.displayName}
-                                            </p>
-                                            {v.createdAt && (
-                                                <p className="text-[11px] text-foreground/40">
-                                                    {new Date(v.createdAt).toLocaleString("en-US", {
-                                                        day: "numeric",
-                                                        month: "short",
-                                                        hour: "numeric",
-                                                        minute: "2-digit",
-                                                        second: "2-digit",
-                                                        hour12: true,
-                                                    })}
-                                                </p>
-                                            )}
-                                        </div>
+                            {(() => {
+                                // For knockout: calculate power-of-2 cutoff
+                                const isKnockout = poll.tournament?.type === "BRACKET_1V1";
+                                const inSoloVoters = selectedGroup === "IN" || selectedGroup === "SOLO";
+                                let bracketSize = 0;
+                                if (isKnockout && inSoloVoters) {
+                                    const totalIn = (votersByVote["IN"]?.length ?? 0) + (votersByVote["SOLO"]?.length ?? 0);
+                                    let p = 2;
+                                    while (p * 2 <= totalIn) p *= 2;
+                                    bracketSize = totalIn >= 2 ? p : 0;
+                                }
+
+                                // Sort by createdAt ascending (FCFS) for IN voters in knockout
+                                const sorted = [...selectedVoters].sort((a, b) =>
+                                    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                                );
+
+                                // Track global FCFS position across IN + SOLO
+                                const allInSolo = isKnockout && inSoloVoters
+                                    ? [...(votersByVote["IN"] ?? []), ...(votersByVote["SOLO"] ?? [])]
+                                        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                                    : [];
+
+                                return (
+                                    <div className="space-y-1">
+                                        {isKnockout && inSoloVoters && bracketSize > 0 && (
+                                            <div className="text-xs text-foreground/40 mb-2 flex items-center gap-1.5">
+                                                <span>⚔️ Bracket: {bracketSize} players</span>
+                                                {allInSolo.length > bracketSize && (
+                                                    <span className="text-warning">• {allInSolo.length - bracketSize} on waitlist</span>
+                                                )}
+                                            </div>
+                                        )}
+                                        {sorted.map((v, i) => {
+                                            // Check if this voter is waitlisted
+                                            const globalIdx = isKnockout && inSoloVoters
+                                                ? allInSolo.findIndex(x => x.playerId === v.playerId)
+                                                : -1;
+                                            const isWaitlisted = isKnockout && inSoloVoters && bracketSize > 0 && globalIdx >= bracketSize;
+
+                                            return (
+                                                <div
+                                                    key={v.playerId}
+                                                    className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors ${isWaitlisted
+                                                            ? "bg-warning/5 hover:bg-warning/10 border border-warning/20"
+                                                            : "bg-default-50 hover:bg-default-100"
+                                                        }`}
+                                                >
+                                                    <span className="text-[10px] font-mono text-foreground/30 w-4 text-right">
+                                                        {i + 1}
+                                                    </span>
+                                                    <Avatar
+                                                        src={v.imageUrl}
+                                                        name={v.displayName}
+                                                        size="sm"
+                                                        className="w-8 h-8 flex-shrink-0"
+                                                    />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-medium truncate flex items-center gap-1.5">
+                                                            {v.displayName}
+                                                            {isWaitlisted && (
+                                                                <span className="text-warning text-[10px] flex items-center gap-0.5">
+                                                                    🕐 Waitlist
+                                                                </span>
+                                                            )}
+                                                        </p>
+                                                        {v.createdAt && (
+                                                            <p className="text-[11px] text-foreground/40">
+                                                                {new Date(v.createdAt).toLocaleString("en-US", {
+                                                                    day: "numeric",
+                                                                    month: "short",
+                                                                    hour: "numeric",
+                                                                    minute: "2-digit",
+                                                                    second: "2-digit",
+                                                                    hour12: true,
+                                                                })}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                ))}
-                            </div>
+                                );
+                            })()}
                         </div>
                     )}
                 </ModalBody>

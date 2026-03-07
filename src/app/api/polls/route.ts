@@ -27,6 +27,7 @@ export async function GET(request: Request) {
                         id: true,
                         name: true,
                         fee: true,
+                        type: true,
                         seasonId: true,
                     },
                 },
@@ -181,7 +182,7 @@ export async function POST(request: Request) {
                 },
             },
             include: {
-                tournament: { select: { id: true, name: true, fee: true } },
+                tournament: { select: { id: true, name: true, fee: true, type: true } },
             },
         });
 
@@ -225,7 +226,7 @@ export async function PATCH(request: Request) {
                     where: { id },
                     data: updateData,
                     include: {
-                        tournament: { select: { id: true, name: true, fee: true } },
+                        tournament: { select: { id: true, name: true, fee: true, type: true } },
                         options: { select: { id: true, name: true, vote: true } },
                     },
                 });
@@ -233,7 +234,7 @@ export async function PATCH(request: Request) {
                 updatedPoll = await tx.poll.findUniqueOrThrow({
                     where: { id },
                     include: {
-                        tournament: { select: { id: true, name: true, fee: true } },
+                        tournament: { select: { id: true, name: true, fee: true, type: true } },
                         options: { select: { id: true, name: true, vote: true } },
                     },
                 });
@@ -253,7 +254,7 @@ export async function PATCH(request: Request) {
                 updatedPoll = await tx.poll.findUniqueOrThrow({
                     where: { id },
                     include: {
-                        tournament: { select: { id: true, name: true, fee: true } },
+                        tournament: { select: { id: true, name: true, fee: true, type: true } },
                         options: { select: { id: true, name: true, vote: true } },
                     },
                 });
