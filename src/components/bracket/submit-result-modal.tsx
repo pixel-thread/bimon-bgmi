@@ -5,7 +5,7 @@ import {
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
     Button,
 } from "@heroui/react";
-import { Upload, Trophy, Camera, X, Image as ImageIcon, Plus, Minus } from "lucide-react";
+import { Upload, Trophy, Camera, X, Plus, Minus } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -165,19 +165,24 @@ export function SubmitResultModal({ isOpen, onClose, matchId, tournamentId }: Su
                         </div>
 
                         {previewUrl ? (
-                            <div className="rounded-xl overflow-hidden border border-divider">
+                            <div className="relative rounded-xl overflow-hidden border border-divider">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={previewUrl} alt="Score screenshot" className="w-full max-h-36 object-contain bg-black/50" />
+                                <button
+                                    onClick={removeScreenshot}
+                                    className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                                >
+                                    <X className="h-3.5 w-3.5" />
+                                </button>
                             </div>
                         ) : (
                             <button
                                 onClick={() => fileInputRef.current?.click()}
-                                className="w-full flex items-center gap-2.5 rounded-xl border border-dashed border-foreground/15 hover:border-primary/30 px-4 py-3 transition-colors group"
+                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-default-100 hover:bg-default-200 active:scale-[0.98] border border-default-200 px-4 py-3 transition-all"
                             >
-                                <ImageIcon className="h-4 w-4 text-foreground/25 group-hover:text-primary/50 shrink-0 transition-colors" />
-                                <span className="text-xs text-foreground/40 group-hover:text-foreground/60 transition-colors">
-                                    Tap to upload screenshot · PNG / JPG · Max 5MB
-                                </span>
+                                <Upload className="h-4 w-4 text-foreground/60 shrink-0" />
+                                <span className="text-sm font-semibold text-foreground/70">Upload Screenshot</span>
+                                <span className="text-[10px] text-foreground/30 ml-1">optional</span>
                             </button>
                         )}
                         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
