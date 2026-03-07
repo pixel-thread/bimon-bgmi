@@ -652,6 +652,15 @@ export function DeclareWinnersModal({
                                                     </span>
                                                 </div>
 
+                                                {ucExemptCount > 0 && (
+                                                    <div className="flex justify-between text-foreground/50">
+                                                        <span>🎫 UC Exempt ({ucExemptCount}):</span>
+                                                        <span className="font-medium text-foreground">
+                                                            -₹{(ucExemptCount * entryFee).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                )}
+
                                                 {enableFund && (
                                                     <div className="flex justify-between text-foreground/50">
                                                         <span>🏦 Fund:</span>

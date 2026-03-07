@@ -350,14 +350,19 @@ export async function POST(
             finalOrg = distribution.finalOrgAmount;
             finalFund = enableFund ? taxTotals.totalTax : 0;
 
-            // Reconcile rounding remainders — any leftover goes to Org
+            // Reconcile rounding remainders
             const totalToPlayers = winnerTeamsData.reduce(
                 (sum, t) => sum + t.players.reduce((s, p) => s + p.finalAmount, 0), 0
             );
             const distributed = totalToPlayers + finalOrg + finalFund;
             const roundingRemainder = prizePool - distributed;
             if (roundingRemainder > 0) {
-                finalOrg += roundingRemainder;
+                if (orgPercent > 0) {
+                    finalOrg += roundingRemainder;
+                } else if (enableFund) {
+                    finalFund += roundingRemainder;
+                }
+                // else: remainder is negligible, absorbed
             }
         }
 
