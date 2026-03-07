@@ -365,8 +365,8 @@ export function MatchRow({
 
     return (
         <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs transition-all ${isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
-                ? "border-primary/40 bg-primary/5"
-                : "border-divider bg-default-50/30"
+            ? "border-primary/40 bg-primary/5"
+            : "border-divider bg-default-50/30"
             }`}>
             {/* Player 1 */}
             <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
@@ -411,9 +411,6 @@ export function MatchRow({
 
             {/* Actions + Eye */}
             <div className="flex items-center gap-1 shrink-0 ml-1">
-                {canSubmit && onSubmitResult && (
-                    <button onClick={() => onSubmitResult(match.id)} className="text-[10px] font-bold text-primary hover:underline">Submit</button>
-                )}
                 {canConfirm && onConfirmResult && (
                     <button onClick={() => onConfirmResult(match.id)} className="text-[10px] font-bold text-success hover:underline">✓</button>
                 )}
