@@ -3,6 +3,7 @@ import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { getTaxRate } from "@/lib/logic/repeatWinnerTax";
 import { getSoloTaxRate } from "@/lib/logic/soloTax";
+import { getSettings } from "@/lib/settings";
 
 /**
  * GET /api/tournaments/[id]/tax-preview?playerIds=id1,id2,...&placements=pos:amount:p1|p2,pos:amount:p1|p2
@@ -111,13 +112,17 @@ export async function GET(
             participationRate: number;
         }> = {};
 
+        // Check if fund is enabled
+        const settings = await getSettings();
+        const enableFund = settings.enableFund ?? false;
+
         for (const pid of playerIds) {
             const previousWins = recentWins.get(pid) || 0;
-            const totalWins = previousWins + 1; // including this potential win
-            const repeatRate = getTaxRate(totalWins);
+            const totalWins = previousWins + 1;
+            const repeatRate = enableFund ? getTaxRate(totalWins) : 0;
             const isSolo = playerSoloMap.get(pid) || false;
-            const soloRate = isSolo ? getSoloTaxRate() : 0;
-            const combinedRate = 1 - ((1 - repeatRate) * (1 - soloRate));
+            const soloRate = enableFund && isSolo ? getSoloTaxRate() : 0;
+            const combinedRate = enableFund ? 1 - ((1 - repeatRate) * (1 - soloRate)) : 0;
             const matchesPlayed = matchesPlayedMap.get(pid) || 0;
 
             result[pid] = {

@@ -209,6 +209,7 @@ export function DeclareWinnersModal({
             return res.json();
         },
         enabled: isOpen && activeTab === "detailed" && topTeamPlayerIds.length > 0,
+        staleTime: 0, // Always refetch — settings may have changed
     });
 
     // Fetch stored results when already declared (no recalculation)
@@ -221,6 +222,7 @@ export function DeclareWinnersModal({
             return json.data ?? [];
         },
         enabled: isOpen && isWinnerDeclared,
+        staleTime: 0,
     });
 
     // Fetch declared winners (same source as /winners page)
@@ -276,6 +278,7 @@ export function DeclareWinnersModal({
             return res.json();
         },
         enabled: isOpen && activeTab === "detailed" && !!baseDist && placementCount > 0 && !isWinnerDeclared,
+        staleTime: 0, // Always refetch — settings may have changed
     });
 
     const taxPreview = taxPreviewRes?.data || {};

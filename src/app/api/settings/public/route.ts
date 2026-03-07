@@ -41,7 +41,7 @@ export async function GET() {
                 welcomeMessage: settings.welcomeMessage,
                 customRules: settings.customRules,
             },
-            cache: CACHE.LONG,
+            cache: CACHE.NONE, // Settings must be fresh — admin may change at any time
         });
     } catch (error) {
         return ErrorResponse({ message: "Failed to fetch settings", error });
