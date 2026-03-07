@@ -25,7 +25,7 @@ export default function MatchesPage() {
     const { data: tournaments, isLoading } = useQuery({
         queryKey: ["active-tournaments"],
         queryFn: async () => {
-            const res = await fetch("/api/tournaments?type=BRACKET_1V1,LEAGUE,GROUP_KNOCKOUT&status=ACTIVE,IN_PROGRESS");
+            const res = await fetch("/api/tournaments?type=BRACKET_1V1,LEAGUE,GROUP_KNOCKOUT&status=ACTIVE");
             if (!res.ok) return [];
             const json = await res.json();
             return json.data ?? [];
