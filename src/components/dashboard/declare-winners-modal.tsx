@@ -261,6 +261,11 @@ export function DeclareWinnersModal({
                 totalRepeatTax: number;
                 roundingRemainder: number;
             };
+            winners?: {
+                position: number;
+                teamAmount: number;
+                players: { playerId: string; finalAmount: number; repeatTax: number; soloTax: number }[];
+            }[];
         };
     }>({
         queryKey: ["declare-dryrun", tournamentId, placementsParam],
@@ -493,12 +498,18 @@ export function DeclareWinnersModal({
                                     }
                                 }
 
-                                // Preview mode: calculate from tax preview
+                                // Preview mode: use server dry-run amounts when available
                                 const tax = taxPreview[p.id];
                                 const pa = getParticipationAdjustedAmounts(team.players || [], perPlayer).get(p.id);
                                 const afterParticipation = pa?.adjusted ?? perPlayer;
-                                const finalAmount = getTaxedAmount(p.id, afterParticipation);
-                                const taxDeduction = afterParticipation - finalAmount;
+
+                                // Prefer exact server-computed amounts
+                                const dryRunTeam = dryRunRes?.data?.winners?.find(w => w.position === idx + 1);
+                                const dryRunPlayer = dryRunTeam?.players.find(dp => dp.playerId === p.id);
+                                const finalAmount = dryRunPlayer?.finalAmount ?? getTaxedAmount(p.id, afterParticipation);
+                                const taxDeduction = dryRunPlayer
+                                    ? (dryRunPlayer.repeatTax + dryRunPlayer.soloTax)
+                                    : (afterParticipation - finalAmount);
 
                                 return (
                                     <div key={p.id} className="text-xs space-y-0.5">
@@ -615,7 +626,14 @@ export function DeclareWinnersModal({
                                                     .map(([pos, prize]) => {
                                                         const team = rankings[pos - 1];
                                                         let teamTax = 0;
-                                                        if (team?.players) {
+
+                                                        // Use exact server dry-run amounts when available
+                                                        const dryRunTeam = dryRunRes?.data?.winners?.find(w => w.position === pos);
+                                                        if (dryRunTeam) {
+                                                            // Exact: sum of per-player taxes from server
+                                                            teamTax = dryRunTeam.players.reduce((s, p) => s + p.repeatTax + p.soloTax, 0);
+                                                        } else if (team?.players) {
+                                                            // Fallback: local approximation
                                                             const perPlayer = getPerPlayerAmount(pos, team.players.length);
                                                             const pa = getParticipationAdjustedAmounts(team.players, perPlayer);
                                                             team.players.forEach(p => {

@@ -381,7 +381,6 @@ export async function POST(
                         ucExemptCost: dist?.ucExemptCost ?? 0,
                         totalRepeatTax: taxTots.totalTax,
                         combined: (dist?.finalOrgAmount ?? 0) + (dist?.finalFundAmount ?? 0) + taxTots.totalTax,
-                        splitRatio: "70/30",
                         roundingRemainder: prizePool - winnerTeamsData.reduce(
                             (sum, t) => sum + t.players.reduce((s, p) => s + p.finalAmount, 0), 0
                         ) - finalOrg - finalFund,
