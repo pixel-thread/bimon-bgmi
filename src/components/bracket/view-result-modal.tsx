@@ -5,7 +5,7 @@ import {
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
     Chip, Avatar, Button,
 } from "@heroui/react";
-import { Trophy, Camera, Pencil, Save, Minus, Plus, X, Maximize2 } from "lucide-react";
+import { Camera, Pencil, Save, Minus, Plus, X, Maximize2, Trophy } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -258,17 +258,11 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
 
                                 <div className="flex items-stretch">
                                     {/* P1 */}
-                                    <div className={`flex flex-col items-center gap-2 flex-1 px-3 py-4 transition-opacity ${!p1Won && hasResult ? "opacity-40" : ""}`}>
-                                        <Avatar src={match.player1Avatar || undefined} name={match.player1?.[0] || "?"}
-                                            size="md" className={p1Won ? "ring-2 ring-success ring-offset-2 ring-offset-background" : ""} />
-                                        <span className="text-[11px] font-semibold text-center leading-tight line-clamp-2 max-w-[80px]">
+                                    <div className="flex flex-col items-center gap-2 flex-1 px-3 py-4">
+                                        <Avatar src={match.player1Avatar || undefined} name={match.player1?.[0] || "?"} size="md" />
+                                        <span className="text-[11px] font-semibold truncate w-full text-center max-w-[80px]">
                                             {match.player1 || "TBD"}
                                         </span>
-                                        {p1Won && (
-                                            <Chip size="sm" color="success" variant="flat"
-                                                startContent={<Trophy className="h-2.5 w-2.5" />}
-                                                className="text-[10px] px-2">Winner</Chip>
-                                        )}
                                     </div>
 
                                     {/* Score */}
@@ -288,17 +282,11 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                     </div>
 
                                     {/* P2 */}
-                                    <div className={`flex flex-col items-center gap-2 flex-1 px-3 py-4 transition-opacity ${!p2Won && hasResult ? "opacity-40" : ""}`}>
-                                        <Avatar src={match.player2Avatar || undefined} name={match.player2?.[0] || "?"}
-                                            size="md" className={p2Won ? "ring-2 ring-success ring-offset-2 ring-offset-background" : ""} />
-                                        <span className="text-[11px] font-semibold text-center leading-tight line-clamp-2 max-w-[80px]">
+                                    <div className="flex flex-col items-center gap-2 flex-1 px-3 py-4">
+                                        <Avatar src={match.player2Avatar || undefined} name={match.player2?.[0] || "?"} size="md" />
+                                        <span className="text-[11px] font-semibold truncate w-full text-center max-w-[80px]">
                                             {match.player2 || "TBD"}
                                         </span>
-                                        {p2Won && (
-                                            <Chip size="sm" color="success" variant="flat"
-                                                startContent={<Trophy className="h-2.5 w-2.5" />}
-                                                className="text-[10px] px-2">Winner</Chip>
-                                        )}
                                     </div>
                                 </div>
                             </div>
