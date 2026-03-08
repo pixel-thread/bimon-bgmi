@@ -42,15 +42,14 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
     const fileInputRef = useRef<HTMLInputElement>(null);
     const queryClient = useQueryClient();
 
-    if (!match) return null;
-
-    const p1Won = match.winnerId === match.player1Id;
-    const p2Won = match.winnerId === match.player2Id;
-    const hasResult = match.score1 !== null && match.score2 !== null;
+    // ── All hooks above — early return must come AFTER ──
+    const p1Won = match?.winnerId === match?.player1Id;
+    const p2Won = match?.winnerId === match?.player2Id;
+    const hasResult = match?.score1 !== null && match?.score2 !== null;
 
     const startEditing = () => {
-        setScore1(match.score1?.toString() ?? "");
-        setScore2(match.score2?.toString() ?? "");
+        setScore1(match?.score1?.toString() ?? "");
+        setScore2(match?.score2?.toString() ?? "");
         setPreviewUrl(null);
         setScreenshot(null);
         setEditing(true);
@@ -99,23 +98,29 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
 
             setUploading(true);
 
-            // Upload screenshot if provided
-            let screenshotUrl = match.screenshotUrl || null;
+            // Upload screenshot if provided (use ImgBB to avoid storage cost)
+            let screenshotUrl = match?.screenshotUrl || null;
             if (screenshot) {
-                const formData = new FormData();
-                formData.append("file", screenshot);
-                formData.append("folder", `bracket-results/${match.id}`);
-                const uploadRes = await fetch("/api/upload", {
-                    method: "POST",
-                    body: formData,
-                });
-                const uploadData = await uploadRes.json();
-                if (!uploadRes.ok) throw new Error(uploadData.error || "Failed to upload");
-                screenshotUrl = uploadData.url;
+                try {
+                    const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
+                    if (!apiKey) throw new Error("ImgBB API key not configured");
+                    const formData = new FormData();
+                    formData.append("image", screenshot);
+                    formData.append("name", `bracket-admin-${match?.id}-${Date.now()}`);
+                    const uploadRes = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+                        method: "POST",
+                        body: formData,
+                    });
+                    const uploadData = await uploadRes.json();
+                    if (!uploadData.success) throw new Error(uploadData.error?.message || "ImgBB upload failed");
+                    screenshotUrl = uploadData.data.url;
+                } catch (err: any) {
+                    throw new Error(`Screenshot upload failed: ${err.message}`);
+                }
             }
 
             // Submit result as admin
-            const res = await fetch(`/api/bracket-matches/${match.id}/submit-result`, {
+            const res = await fetch(`/api/bracket-matches/${match?.id}/submit-result`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -139,6 +144,9 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
         onError: (err: Error) => toast.error(err.message),
         onSettled: () => setUploading(false),
     });
+
+    // Guard AFTER all hooks
+    if (!match) return null;
 
     return (
         <Modal isOpen={isOpen} onClose={handleClose} placement="center" size="lg">

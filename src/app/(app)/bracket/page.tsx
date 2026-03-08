@@ -15,9 +15,17 @@ import { Chip, Tabs, Tab } from "@heroui/react";
  * /bracket — Matches page.
  * Shows all active tournaments with tabs to switch between them.
  */
+type SelectedMatch = {
+    id: string;
+    player1Id: string | null;
+    player1Name: string | null;
+    player2Name: string | null;
+    isDisputing?: boolean;
+} | null;
+
 export default function MatchesPage() {
     const { user, isAdmin } = useAuthUser();
-    const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
+    const [selectedMatch, setSelectedMatch] = useState<SelectedMatch>(null);
     const [viewingMatch, setViewingMatch] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<string>("");
     const playerId = user?.player?.id;
@@ -132,9 +140,9 @@ function TournamentContent({
     tournament: any;
     playerId?: string;
     isAdmin?: boolean;
-    selectedMatch: string | null;
+    selectedMatch: SelectedMatch;
     viewingMatch: string | null;
-    onSelectMatch: (id: string | null) => void;
+    onSelectMatch: (m: SelectedMatch) => void;
     onViewMatch: (id: string | null) => void;
 }) {
     const tournamentId = tournament.id;
@@ -155,8 +163,21 @@ function TournamentContent({
     const confirmResult = useConfirmResult(tournamentId);
     const disputeResult = useDisputeResult(tournamentId);
 
-    // View result modal data
     const allMatches = bracketData?.rounds?.flatMap((r: any) => r.matches) ?? [];
+
+    // Helper — build submit context from a match id
+    const matchContext = (matchId: string, isDisputing = false): SelectedMatch => {
+        const m = allMatches.find((x: any) => x.id === matchId);
+        if (!m) return { id: matchId, player1Id: null, player1Name: null, player2Name: null, isDisputing };
+        return {
+            id: matchId,
+            player1Id: m.player1Id ?? null,
+            player1Name: m.player1?.displayName ?? null,
+            player2Name: m.player2?.displayName ?? null,
+            isDisputing,
+        };
+    };
+
     const viewMatch = viewingMatch ? allMatches.find((m: any) => m.id === viewingMatch) : null;
     const viewMatchData = viewMatch ? {
         id: viewMatch.id,
@@ -235,9 +256,9 @@ function TournamentContent({
                 <MyBracketMatch
                     rounds={bracketData.rounds}
                     currentPlayerId={playerId}
-                    onSubmitResult={(id) => onSelectMatch(id)}
+                    onSubmitResult={(id) => onSelectMatch(matchContext(id))}
                     onConfirmResult={(id) => confirmResult.mutate(id)}
-                    onDispute={(id) => disputeResult.mutate(id)}
+                    onDispute={(id) => onSelectMatch(matchContext(id, true))}
                     deadlines={bracketData.deadlines}
                     tournamentType={tournamentType}
                 />
@@ -256,9 +277,9 @@ function TournamentContent({
                         totalRounds={bracketData.totalRounds}
                         currentPlayerId={playerId}
                         isAdmin={isAdmin}
-                        onSubmitResult={(id) => onSelectMatch(id)}
+                        onSubmitResult={(id) => onSelectMatch(matchContext(id))}
                         onConfirmResult={(id) => confirmResult.mutate(id)}
-                        onDispute={(id) => disputeResult.mutate(id)}
+                        onDispute={(id) => onSelectMatch(matchContext(id, true))}
                         onViewResult={(id) => onViewMatch(id)}
                     />
                 ) : (
@@ -267,9 +288,9 @@ function TournamentContent({
                         totalRounds={bracketData.totalRounds}
                         currentPlayerId={playerId}
                         isAdmin={isAdmin}
-                        onSubmitResult={(id) => onSelectMatch(id)}
+                        onSubmitResult={(id) => onSelectMatch(matchContext(id))}
                         onConfirmResult={(id) => confirmResult.mutate(id)}
-                        onDispute={(id) => disputeResult.mutate(id)}
+                        onDispute={(id) => onSelectMatch(matchContext(id, true))}
                         onViewResult={(id) => onViewMatch(id)}
                     />
                 )}
@@ -290,10 +311,16 @@ function TournamentContent({
             {/* Submit Result Modal */}
             {selectedMatch && (
                 <SubmitResultModal
-                    matchId={selectedMatch}
+                    matchId={selectedMatch.id}
                     tournamentId={tournamentId}
                     isOpen={!!selectedMatch}
                     onClose={() => onSelectMatch(null)}
+                    player1Id={selectedMatch.player1Id}
+                    player1Name={selectedMatch.player1Name}
+                    player2Name={selectedMatch.player2Name}
+                    currentPlayerId={playerId}
+                    isAdmin={isAdmin}
+                    isDisputing={selectedMatch.isDisputing}
                 />
             )}
 

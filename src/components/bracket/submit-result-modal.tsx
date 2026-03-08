@@ -14,6 +14,13 @@ interface SubmitResultModalProps {
     onClose: () => void;
     matchId: string | null;
     tournamentId?: string;
+    // Player context — needed to submit scores in the correct order
+    player1Id?: string | null;
+    player1Name?: string | null;
+    player2Name?: string | null;
+    currentPlayerId?: string | null;
+    isAdmin?: boolean;
+    isDisputing?: boolean; // true when raising a dispute (opponent already submitted)
 }
 
 /* ─── Score Stepper ─────────────────────────────────────────── */
@@ -49,16 +56,31 @@ function ScoreStepper({ label, value, onChange }: {
 
 /* ─── Submit Result Modal ───────────────────────────────────── */
 
-export function SubmitResultModal({ isOpen, onClose, matchId, tournamentId }: SubmitResultModalProps) {
-    const [score1, setScore1] = useState(0);
-    const [score2, setScore2] = useState(0);
+export function SubmitResultModal({
+    isOpen, onClose, matchId, tournamentId,
+    player1Id, player1Name, player2Name, currentPlayerId, isAdmin = false, isDisputing = false,
+}: SubmitResultModalProps) {
+    // Determine if current user is player2 (scores need to be swapped before sending)
+    const isPlayer2 = !!currentPlayerId && currentPlayerId !== player1Id;
+
+    // Labels: admin sees actual names; players see "My Goals" / "Opponent"
+    const myLabel = isAdmin
+        ? (player1Name ?? "Player 1")
+        : "My Goals";
+    const opponentLabel = isAdmin
+        ? (player2Name ?? "Player 2")
+        : "Opponent";
+
+    // myScore = what this UI calls "mine", oppScore = opponent's
+    const [myScore, setMyScore] = useState(0);
+    const [oppScore, setOppScore] = useState(0);
     const [screenshot, setScreenshot] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const queryClient = useQueryClient();
 
-    const isDraw = score1 === score2;
+    const isDraw = myScore === oppScore;
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -78,8 +100,8 @@ export function SubmitResultModal({ isOpen, onClose, matchId, tournamentId }: Su
 
     const handleClose = () => {
         removeScreenshot();
-        setScore1(0);
-        setScore2(0);
+        setMyScore(0);
+        setOppScore(0);
         onClose();
     };
 
@@ -111,10 +133,18 @@ export function SubmitResultModal({ isOpen, onClose, matchId, tournamentId }: Su
                 }
             }
 
+            // Build score1/score2 correctly for the API:
+            // score1 = player1's goals, score2 = player2's goals
+            // If admin: myScore IS score1 (admin sees player1 label first)
+            // If player1: myScore IS score1 ✓
+            // If player2: myScore IS score2, oppScore IS score1 → swap
+            const finalScore1 = isAdmin || !isPlayer2 ? myScore : oppScore;
+            const finalScore2 = isAdmin || !isPlayer2 ? oppScore : myScore;
+
             const res = await fetch(`/api/bracket-matches/${matchId}/submit-result`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ score1, score2, screenshotUrl }),
+                body: JSON.stringify({ score1: finalScore1, score2: finalScore2, screenshotUrl }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Failed to submit");
@@ -134,21 +164,22 @@ export function SubmitResultModal({ isOpen, onClose, matchId, tournamentId }: Su
             <ModalContent>
                 <ModalHeader className="flex items-center gap-2 pb-1">
                     <Trophy className="h-4 w-4 text-primary" />
-                    Submit Result
+                    {isDisputing ? "Submit Your Version" : "Submit Result"}
                 </ModalHeader>
 
                 <ModalBody className="gap-4 py-4">
                     <p className="text-xs text-foreground/50 text-center">
-                        Your opponent has <strong className="text-foreground/70">30 minutes</strong> to confirm or dispute.
+                        {isDisputing
+                            ? <>Enter the score <strong className="text-foreground/70">as you saw it</strong>. This will raise a dispute for admin review.</>
+                            : <>Your opponent has <strong className="text-foreground/70">30 minutes</strong> to confirm or dispute.</>}
                     </p>
 
                     {/* Score steppers */}
                     <div className="flex items-center gap-2 py-2">
-                        <ScoreStepper label="Your Goals" value={score1} onChange={setScore1} />
+                        <ScoreStepper label={myLabel} value={myScore} onChange={setMyScore} />
                         <span className="text-2xl font-light text-foreground/20 mb-1">—</span>
-                        <ScoreStepper label="Opponent" value={score2} onChange={setScore2} />
+                        <ScoreStepper label={opponentLabel} value={oppScore} onChange={setOppScore} />
                     </div>
-
 
                     {/* Screenshot — optional */}
                     <div className="space-y-1.5">
