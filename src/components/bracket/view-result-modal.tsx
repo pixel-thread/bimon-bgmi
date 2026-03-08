@@ -204,7 +204,9 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                             </div>
 
                             {score1 === score2 && (
-                                <p className="text-xs text-danger text-center font-medium">Draws not allowed — there must be a winner</p>
+                                <p className="text-xs text-warning text-center font-medium">
+                                    ⚠️ Equal scores — saving will reset the match to Pending so players can re-submit
+                                </p>
                             )}
                         </>
                     ) : (
@@ -272,12 +274,12 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                 isDisabled={adminSave.isPending || uploading}>
                                 Cancel
                             </Button>
-                            <Button color="primary" size="sm"
+                            <Button color={score1 === score2 ? "warning" : "primary"} size="sm"
                                 isLoading={adminSave.isPending || uploading}
-                                isDisabled={score1 === score2}
+                                isDisabled={adminSave.isPending || uploading}
                                 onPress={() => adminSave.mutate()}
                                 startContent={!adminSave.isPending && !uploading ? <Save className="h-3.5 w-3.5" /> : undefined}>
-                                {uploading ? "Uploading..." : "Save Result"}
+                                {uploading ? "Uploading..." : score1 === score2 ? "Reset Match" : "Save Result"}
                             </Button>
                         </>
                     ) : (

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Avatar, Chip } from "@heroui/react";
-import { Trophy, Clock, AlertTriangle, CheckCircle2, Minus, Eye, ZoomIn, ZoomOut } from "lucide-react";
+import { Trophy, Clock, AlertTriangle, CheckCircle2, Minus, Eye, ZoomIn, ZoomOut, Phone } from "lucide-react";
 import { motion } from "framer-motion";
 
 /* ─── Zoom ───────────────────────────────────────────── */
@@ -217,10 +217,31 @@ export function MatchCard({
     const isCurrentP2 = currentPlayerId === match.player2Id;
     const isParticipant = isCurrentP1 || isCurrentP2;
     const canSubmit = isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id;
-    // Opponent submitted but we haven't confirmed/disputed yet — can raise dispute by submitting own score
     const canRaiseDispute = isParticipant && match.status === "SUBMITTED" && match.winnerId !== currentPlayerId;
     const hasResult = match.status === "CONFIRMED" || match.status === "SUBMITTED";
     const isDisputed = match.status === "DISPUTED";
+    const [callingOpponent, setCallingOpponent] = useState(false);
+
+    async function callOpponent() {
+        setCallingOpponent(true);
+        try {
+            const res = await fetch(`/api/bracket-matches/${match.id}/opponent-phone`);
+            const json = await res.json();
+            const phone: string | null = json.data?.phoneNumber ?? null;
+            if (!phone) {
+                // Dynamic import toast to avoid adding dep at top level
+                const { toast } = await import("sonner");
+                toast.error("Opponent hasn't added their phone number yet");
+                return;
+            }
+            window.location.href = `tel:${phone}`;
+        } catch {
+            const { toast } = await import("sonner");
+            toast.error("Could not fetch opponent's number");
+        } finally {
+            setCallingOpponent(false);
+        }
+    }
 
     // Deadline countdown for PENDING matches
     const deadlineLabel = (() => {
@@ -273,6 +294,19 @@ export function MatchCard({
                         )}
                     </div>
                     <div className="flex items-center gap-2">
+                        {/* Call opponent button — only for participants in PES (has phone) */}
+                        {isParticipant && match.player1Id && match.player2Id && (
+                            <button
+                                onClick={callOpponent}
+                                disabled={callingOpponent}
+                                title="Call opponent"
+                                className="flex items-center justify-center h-6 w-6 rounded-full bg-success/10 hover:bg-success/20 active:scale-95 transition-all disabled:opacity-50"
+                            >
+                                {callingOpponent
+                                    ? <span className="h-3 w-3 border-2 border-success/40 border-t-success rounded-full animate-spin" />
+                                    : <Phone className="h-3 w-3 text-success" />}
+                            </button>
+                        )}
                         {canSubmit && onSubmitResult && (
                             <button onClick={() => onSubmitResult(match.id)} className="text-[11px] font-semibold text-primary hover:text-primary-600 transition-colors">
                                 Submit Result →

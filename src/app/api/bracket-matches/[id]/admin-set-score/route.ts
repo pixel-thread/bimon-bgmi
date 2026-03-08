@@ -52,12 +52,24 @@ export async function PATCH(
         const isGroupStage = tournament?.type === "GROUP_KNOCKOUT" && match.round < 0;
         const drawsAllowed = isLeague || isGroupStage;
 
+        // Determine outcome
+        // Equal scores = admin intentionally resetting the match to PENDING
+        // so players can re-submit / re-upload. Works for all match types.
+        const isDraw = score1 === score2;
         let winnerId: string | null = null;
-        if (score1 === score2) {
-            if (!drawsAllowed)
-                return ErrorResponse({ message: "Draws not allowed — there must be a winner", status: 400 });
-        } else {
+        if (!isDraw) {
             winnerId = score1 > score2 ? match.player1Id : match.player2Id;
+        }
+
+        if (isDraw) {
+            // RESET: clear result and send back to PENDING for players to re-submit
+            await prisma.bracketMatch.update({
+                where: { id: matchId },
+                data: { score1: null, score2: null, winnerId: null, status: "PENDING" },
+            });
+            // Delete all existing BracketResults so players start fresh
+            await prisma.bracketResult.deleteMany({ where: { bracketMatchId: matchId } });
+            return SuccessResponse({ message: "Match reset to Pending. Players can now re-submit." });
         }
 
         // Update match scores + status
