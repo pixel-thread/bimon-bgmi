@@ -103,7 +103,7 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
     // Admin save mutation — uses dedicated admin PATCH endpoint
     const adminSave = useMutation({
         mutationFn: async () => {
-            if (score1 === score2) throw new Error("Draws not allowed — there must be a winner");
+            // Equal scores = reset (handled server-side in admin-set-score)
             setUploading(true);
 
             // Upload screenshot to ImgBB

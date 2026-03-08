@@ -161,25 +161,24 @@ function KOBracketTree({
                         style={{ position: "absolute", top: LABEL_H, left: 0, width: totalW, height: totalMatchH, overflow: "visible" }}
                         className="pointer-events-none"
                     >
-                        {connectors.map((c, i) => (
-                            <g key={i}
-                                stroke="currentColor"
-                                fill="none"
-                                strokeWidth={1}
-                                strokeOpacity={c.done ? 0.45 : 0.18}
-                                className={c.done ? "text-success" : "text-foreground"}>
-                                {/* Horizontal stub from match 1 center → midX */}
-                                <line x1={c.x1} y1={c.y1a} x2={c.midX} y2={c.y1a} />
-                                {c.y1b !== null && <>
-                                    {/* Horizontal stub from match 2 center → midX */}
-                                    <line x1={c.x1} y1={c.y1b} x2={c.midX} y2={c.y1b} />
-                                    {/* Vertical bar joining both stubs */}
-                                    <line x1={c.midX} y1={c.y1a} x2={c.midX} y2={c.y1b} />
-                                </>}
-                                {/* Horizontal exit → left edge of next round */}
-                                <line x1={c.midX} y1={c.y2} x2={c.x1 + COL_GAP} y2={c.y2} />
-                            </g>
-                        ))}
+                        {connectors.map((c, i) => {
+                            const color = c.done ? "#22c55e" : "#6b7280"; // green-500 or gray-500
+                            const opac = c.done ? 0.6 : 0.35;
+                            return (
+                                <g key={i} stroke={color} strokeOpacity={opac} fill="none" strokeWidth={1.5}>
+                                    {/* Stub from match-1 center to midX */}
+                                    <line x1={c.x1} y1={c.y1a} x2={c.midX} y2={c.y1a} />
+                                    {c.y1b !== null && <>
+                                        {/* Stub from match-2 center to midX */}
+                                        <line x1={c.x1} y1={c.y1b} x2={c.midX} y2={c.y1b} />
+                                        {/* Vertical bar joining both stubs */}
+                                        <line x1={c.midX} y1={c.y1a} x2={c.midX} y2={c.y1b} />
+                                    </>}
+                                    {/* Exit line from midX to left edge of next column */}
+                                    <line x1={c.midX} y1={c.y2} x2={c.x1 + COL_GAP} y2={c.y2} />
+                                </g>
+                            );
+                        })}
                     </svg>
 
                     {/* ── Round columns (absolutely positioned) ──────────── */}
