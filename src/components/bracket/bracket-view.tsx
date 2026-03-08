@@ -134,6 +134,7 @@ function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: RoundDat
     if (N === 0) return null;
     const n0 = bRounds[0].matches.length;
     const totalMatchH = n0 * MATCH_H + (n0 - 1) * ROW_GAP;
+    const totalW = N * MATCH_W + (N - 1) * COL_GAP + 72; // 72px trophy column
     const winner = bRounds[N - 1]?.matches[0]?.winner;
 
     return (
@@ -143,8 +144,8 @@ function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: RoundDat
             </div>
 
             <div ref={scrollRef} className="overflow-x-auto pb-4">
-                {/* zoom wrapper */}
-                <div style={{ zoom }} className="relative" ref={wrapperRef}>
+                {/* zoom wrapper — explicit width so overflow-x-auto triggers */}
+                <div style={{ zoom, width: totalW }} className="relative" ref={wrapperRef}>
 
                     {/* ── Label row: all at same y, fixed height ── */}
                     <div className="flex" style={{ height: LABEL_H, marginBottom: 4 }}>
@@ -161,7 +162,7 @@ function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: RoundDat
                     </div>
 
                     {/* ── Match area with SVG overlay ── */}
-                    <div className="relative" style={{ height: totalMatchH }}>
+                    <div className="relative" style={{ height: totalMatchH, width: totalW }}>
                         {/* SVG covers the match area */}
                         <svg className="absolute inset-0 pointer-events-none"
                             style={{ width: "100%", height: "100%", overflow: "visible" }}>
