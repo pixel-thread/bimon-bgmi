@@ -44,7 +44,7 @@ const ROW_GAP = 8;
 const COL_GAP = 36;
 const LABEL_H = 28;  // fixed height for all round labels
 
-function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: RoundData[]; currentPlayerId?: string; onViewResult?: (id: string) => void }) {
+export function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: RoundData[]; currentPlayerId?: string; onViewResult?: (id: string) => void }) {
     const { zoom, zoomIn, zoomOut, reset, containerRef: scrollRef } = usePinchZoom();
     const wrapperRef = useRef<HTMLDivElement>(null);
     const svgGroupRef = useRef<SVGGElement>(null);
