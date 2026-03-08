@@ -5,7 +5,7 @@ import {
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
     Chip, Avatar, Button,
 } from "@heroui/react";
-import { Trophy, Camera, Pencil, Upload, X, Image as ImageIcon, Save, Plus, Minus } from "lucide-react";
+import { Trophy, Camera, Pencil, Save, Minus, Plus, X, Maximize2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -30,25 +30,97 @@ interface ViewResultModalProps {
     tournamentId?: string;
 }
 
+/* ─── Score stepper (edit mode) ─────────────────────────────── */
 function ScoreStepper({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
     return (
-        <div className="flex flex-col items-center gap-1.5 flex-1">
-            <span className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider truncate max-w-[110px] text-center">{label}</span>
-            <div className="flex items-center gap-2">
+        <div className="flex flex-col items-center gap-2 flex-1">
+            <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest truncate max-w-[110px] text-center">{label}</span>
+            <div className="flex items-center gap-3">
                 <button type="button" onClick={() => onChange(Math.max(0, value - 1))}
-                    className="h-8 w-8 rounded-full bg-default-100 hover:bg-default-200 active:scale-95 flex items-center justify-center transition-all">
-                    <Minus className="h-3.5 w-3.5 text-foreground/60" />
+                    className="h-9 w-9 rounded-full bg-default-100 hover:bg-default-200 active:scale-90 flex items-center justify-center transition-all">
+                    <Minus className="h-4 w-4 text-foreground/60" />
                 </button>
-                <span className="text-3xl font-black tabular-nums w-10 text-center select-none">{value}</span>
+                <span className="text-4xl font-black tabular-nums w-12 text-center select-none">{value}</span>
                 <button type="button" onClick={() => onChange(value + 1)}
-                    className="h-8 w-8 rounded-full bg-primary/15 hover:bg-primary/25 active:scale-95 flex items-center justify-center transition-all">
-                    <Plus className="h-3.5 w-3.5 text-primary" />
+                    className="h-9 w-9 rounded-full bg-primary/15 hover:bg-primary/25 active:scale-90 flex items-center justify-center transition-all">
+                    <Plus className="h-4 w-4 text-primary" />
                 </button>
             </div>
         </div>
     );
 }
 
+/* ─── Screenshot with lazy load + lightbox ───────────────────── */
+function ScreenshotView({ url }: { url: string }) {
+    const [loaded, setLoaded] = useState(false);
+    const [error, setError] = useState(false);
+    const [lightbox, setLightbox] = useState(false);
+
+    return (
+        <>
+            {/* Thumbnail */}
+            <div
+                className="relative rounded-2xl overflow-hidden border border-white/8 cursor-zoom-in group"
+                style={{ background: "rgba(0,0,0,0.5)" }}
+                onClick={() => loaded && setLightbox(true)}
+            >
+                {/* Skeleton while loading */}
+                {!loaded && !error && (
+                    <div className="w-full h-44 flex items-center justify-center animate-pulse bg-default-100/40">
+                        <Camera className="h-8 w-8 text-foreground/20" />
+                    </div>
+                )}
+
+                {error ? (
+                    <div className="w-full h-28 flex flex-col items-center justify-center gap-2 text-foreground/30">
+                        <Camera className="h-6 w-6" />
+                        <span className="text-xs">Failed to load image</span>
+                    </div>
+                ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                        src={url}
+                        alt="Match result"
+                        className={`w-full max-h-64 object-contain transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0 absolute inset-0"}`}
+                        onLoad={() => setLoaded(true)}
+                        onError={() => setError(true)}
+                    />
+                )}
+
+                {/* Expand hint */}
+                {loaded && (
+                    <div className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Maximize2 className="h-3.5 w-3.5" />
+                    </div>
+                )}
+            </div>
+
+            {/* Lightbox */}
+            {lightbox && (
+                <div
+                    className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4"
+                    onClick={() => setLightbox(false)}
+                >
+                    <button
+                        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                        onClick={() => setLightbox(false)}
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={url}
+                        alt="Match result full"
+                        className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+                        onClick={e => e.stopPropagation()}
+                    />
+                </div>
+            )}
+        </>
+    );
+}
+
+/* ─── Main Modal ─────────────────────────────────────────────── */
 export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tournamentId }: ViewResultModalProps) {
     const [editing, setEditing] = useState(false);
     const [score1, setScore1] = useState(0);
@@ -59,26 +131,15 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
     const fileInputRef = useRef<HTMLInputElement>(null);
     const queryClient = useQueryClient();
 
-    // Pre-load existing scores when entering edit mode
     useEffect(() => {
-        if (editing && match) {
-            setScore1(match.score1 ?? 0);
-            setScore2(match.score2 ?? 0);
-        }
+        if (editing && match) { setScore1(match.score1 ?? 0); setScore2(match.score2 ?? 0); }
     }, [editing, match]);
 
-    // Reset on close
     useEffect(() => {
-        if (!isOpen) {
-            setEditing(false);
-            setScore1(0);
-            setScore2(0);
-            setScreenshot(null);
-            setPreviewUrl(null);
-        }
+        if (!isOpen) { setEditing(false); setScore1(0); setScore2(0); clearFile(); }
     }, [isOpen]);
 
-    const removeScreenshot = () => {
+    const clearFile = () => {
         setScreenshot(null);
         if (previewUrl) URL.revokeObjectURL(previewUrl);
         setPreviewUrl(null);
@@ -94,19 +155,11 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
         setPreviewUrl(URL.createObjectURL(file));
     };
 
-    const handleClose = () => {
-        setEditing(false);
-        removeScreenshot();
-        onClose();
-    };
+    const handleClose = () => { setEditing(false); clearFile(); onClose(); };
 
-    // Admin save mutation — uses dedicated admin PATCH endpoint
     const adminSave = useMutation({
         mutationFn: async () => {
-            // Equal scores = reset (handled server-side in admin-set-score)
             setUploading(true);
-
-            // Upload screenshot to ImgBB
             let finalScreenshotUrl: string | null = match?.screenshotUrl || null;
             if (screenshot) {
                 const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
@@ -119,7 +172,6 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                 if (!upData.success) throw new Error(upData.error?.message || "Upload failed");
                 finalScreenshotUrl = upData.data.url;
             }
-
             const res = await fetch(`/api/bracket-matches/${match?.id}/admin-set-score`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
@@ -131,134 +183,131 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
         },
         onSuccess: async (data) => {
             toast.success(data.message || "Score updated!");
-            // Force immediate refetch so new screenshot appears when the eye is opened again
-            if (tournamentId) {
-                await queryClient.refetchQueries({ queryKey: ["bracket", tournamentId], type: "active" });
-            }
+            if (tournamentId) await queryClient.refetchQueries({ queryKey: ["bracket", tournamentId], type: "active" });
             handleClose();
         },
         onError: (err: Error) => toast.error(err.message),
         onSettled: () => setUploading(false),
     });
 
-    // Must be after all hooks
     if (!match) return null;
 
     const p1Won = match.winnerId === match.player1Id;
     const p2Won = match.winnerId === match.player2Id;
-    const hasResult = match.score1 !== null && match.score2 !== null && match.score1 !== undefined && match.score2 !== undefined;
+    const hasResult = match.score1 != null && match.score2 != null;
     const screenshotToShow = previewUrl ?? match.screenshotUrl ?? null;
+
+    const statusColor = match.status === "CONFIRMED" ? "success" : match.status === "SUBMITTED" ? "warning" : match.status === "DISPUTED" ? "danger" : "default";
+    const statusLabel = match.status === "CONFIRMED" ? "✅ Confirmed" : match.status === "SUBMITTED" ? "⏰ Awaiting confirmation" : match.status === "DISPUTED" ? "⚠️ Disputed" : match.status;
 
     return (
         <Modal isOpen={isOpen} onClose={handleClose} placement="center" size="sm">
             <ModalContent>
-                <ModalHeader className="flex items-center gap-2 pb-1">
+                <ModalHeader className="flex items-center gap-2 pb-0">
                     <Trophy className="h-4 w-4 text-primary" />
                     {editing ? "Edit Result" : "Match Result"}
                 </ModalHeader>
 
-                <ModalBody className="gap-4 py-3">
+                <ModalBody className="gap-4 py-4">
                     {editing ? (
-                        /* ── Edit mode: score steppers + screenshot ── */
+                        /* ── Edit mode ── */
                         <>
-                            <div className="flex items-center gap-2 py-2">
-                                <ScoreStepper
-                                    label={match.player1 ?? "Player 1"}
-                                    value={score1}
-                                    onChange={setScore1}
-                                />
-                                <span className="text-xl font-light text-foreground/20 mb-1">—</span>
-                                <ScoreStepper
-                                    label={match.player2 ?? "Player 2"}
-                                    value={score2}
-                                    onChange={setScore2}
-                                />
+                            <div className="flex items-center gap-2 py-1">
+                                <ScoreStepper label={match.player1 ?? "Player 1"} value={score1} onChange={setScore1} />
+                                <span className="text-2xl font-light text-foreground/20">—</span>
+                                <ScoreStepper label={match.player2 ?? "Player 2"} value={score2} onChange={setScore2} />
                             </div>
 
                             {/* Screenshot upload */}
                             <div className="space-y-2">
-                                <label className="text-xs font-medium text-foreground/50 flex items-center gap-1.5">
-                                    <Camera className="h-3.5 w-3.5" />
-                                    Screenshot {match.screenshotUrl ? "(existing)" : "(optional)"}
-                                </label>
-
+                                <p className="text-[11px] font-medium text-foreground/40">
+                                    Screenshot {match.screenshotUrl ? "(existing — tap to replace)" : "(optional)"}
+                                </p>
                                 {screenshotToShow ? (
-                                    <div className="relative rounded-xl overflow-hidden border border-divider">
+                                    <div className="relative rounded-2xl overflow-hidden border border-divider">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={screenshotToShow} alt="Score screenshot" className="w-full max-h-48 object-contain bg-black/50" />
+                                        <img src={screenshotToShow} alt="Score screenshot" className="w-full max-h-44 object-contain bg-black/40" />
                                         {previewUrl && (
-                                            <button onClick={removeScreenshot}
-                                                className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors">
+                                            <button onClick={clearFile}
+                                                className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors">
                                                 <X className="h-3.5 w-3.5" />
                                             </button>
                                         )}
                                     </div>
                                 ) : null}
-
                                 <button onClick={() => fileInputRef.current?.click()}
-                                    className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-foreground/15 hover:border-primary/40 p-3 transition-colors text-sm text-foreground/50 hover:text-foreground/70">
-                                    <ImageIcon className="h-4 w-4" />
+                                    className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-foreground/10 hover:border-primary/40 p-3.5 transition-colors text-sm text-foreground/40 hover:text-foreground/60">
+                                    <Camera className="h-4 w-4" />
                                     {screenshotToShow ? "Replace screenshot" : "Upload screenshot"}
                                 </button>
                                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
                             </div>
 
                             {score1 === score2 && (
-                                <p className="text-xs text-warning text-center font-medium">
-                                    ⚠️ Equal scores — saving will reset the match to Pending so players can re-submit
+                                <p className="text-xs text-warning text-center font-medium bg-warning/10 rounded-xl py-2 px-3">
+                                    ⚠️ Equal scores — saving will reset to Pending so players can re-submit
                                 </p>
                             )}
                         </>
                     ) : (
-                        /* ── View mode: players + score + screenshot ── */
+                        /* ── View mode ── */
                         <>
-                            {/* Score display */}
-                            <div className="flex items-center justify-center gap-4 py-2">
-                                {/* P1 */}
-                                <div className={`flex flex-col items-center gap-1.5 flex-1 ${!p1Won ? "opacity-50" : ""}`}>
-                                    <Avatar src={match.player1Avatar || undefined} name={match.player1?.[0] || "?"}
-                                        size="md" className={p1Won ? "ring-2 ring-success" : ""} />
-                                    <span className="text-xs font-medium truncate max-w-[90px] text-center">{match.player1 || "TBD"}</span>
-                                    {p1Won && <Chip size="sm" color="success" variant="flat" startContent={<Trophy className="h-3 w-3" />}>Winner</Chip>}
-                                </div>
+                            {/* Scoreboard */}
+                            <div className="relative rounded-2xl border border-white/8 overflow-hidden"
+                                style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)" }}>
 
-                                {/* Score */}
-                                <div className="flex flex-col items-center gap-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className={`text-4xl font-black tabular-nums ${p1Won ? "text-success" : "text-foreground/40"}`}>
-                                            {hasResult ? match.score1 : "—"}
+                                <div className="flex items-stretch">
+                                    {/* P1 */}
+                                    <div className={`flex flex-col items-center gap-2 flex-1 px-3 py-4 transition-opacity ${!p1Won && hasResult ? "opacity-40" : ""}`}>
+                                        <Avatar src={match.player1Avatar || undefined} name={match.player1?.[0] || "?"}
+                                            size="md" className={p1Won ? "ring-2 ring-success ring-offset-2 ring-offset-background" : ""} />
+                                        <span className="text-[11px] font-semibold text-center leading-tight line-clamp-2 max-w-[80px]">
+                                            {match.player1 || "TBD"}
                                         </span>
-                                        <span className="text-foreground/20 font-bold text-xl">—</span>
-                                        <span className={`text-4xl font-black tabular-nums ${p2Won ? "text-success" : "text-foreground/40"}`}>
-                                            {hasResult ? match.score2 : "—"}
-                                        </span>
+                                        {p1Won && (
+                                            <Chip size="sm" color="success" variant="flat"
+                                                startContent={<Trophy className="h-2.5 w-2.5" />}
+                                                className="text-[10px] px-2">Winner</Chip>
+                                        )}
                                     </div>
-                                    <Chip size="sm" variant="flat"
-                                        color={match.status === "CONFIRMED" ? "success" : match.status === "SUBMITTED" ? "warning" : "default"}
-                                        className="text-[10px]">
-                                        {match.status === "CONFIRMED" ? "✅ Confirmed" :
-                                            match.status === "SUBMITTED" ? "⏰ Pending confirmation" : match.status}
-                                    </Chip>
-                                </div>
 
-                                {/* P2 */}
-                                <div className={`flex flex-col items-center gap-1.5 flex-1 ${!p2Won ? "opacity-50" : ""}`}>
-                                    <Avatar src={match.player2Avatar || undefined} name={match.player2?.[0] || "?"}
-                                        size="md" className={p2Won ? "ring-2 ring-success" : ""} />
-                                    <span className="text-xs font-medium truncate max-w-[90px] text-center">{match.player2 || "TBD"}</span>
-                                    {p2Won && <Chip size="sm" color="success" variant="flat" startContent={<Trophy className="h-3 w-3" />}>Winner</Chip>}
+                                    {/* Score */}
+                                    <div className="flex flex-col items-center justify-center gap-1.5 px-2">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className={`text-5xl font-black tabular-nums leading-none ${p1Won ? "text-success" : hasResult ? "text-foreground/50" : "text-foreground/20"}`}>
+                                                {hasResult ? match.score1 : "—"}
+                                            </span>
+                                            <span className="text-foreground/15 font-bold text-2xl">:</span>
+                                            <span className={`text-5xl font-black tabular-nums leading-none ${p2Won ? "text-success" : hasResult ? "text-foreground/50" : "text-foreground/20"}`}>
+                                                {hasResult ? match.score2 : "—"}
+                                            </span>
+                                        </div>
+                                        <Chip size="sm" variant="flat" color={statusColor} className="text-[10px]">
+                                            {statusLabel}
+                                        </Chip>
+                                    </div>
+
+                                    {/* P2 */}
+                                    <div className={`flex flex-col items-center gap-2 flex-1 px-3 py-4 transition-opacity ${!p2Won && hasResult ? "opacity-40" : ""}`}>
+                                        <Avatar src={match.player2Avatar || undefined} name={match.player2?.[0] || "?"}
+                                            size="md" className={p2Won ? "ring-2 ring-success ring-offset-2 ring-offset-background" : ""} />
+                                        <span className="text-[11px] font-semibold text-center leading-tight line-clamp-2 max-w-[80px]">
+                                            {match.player2 || "TBD"}
+                                        </span>
+                                        {p2Won && (
+                                            <Chip size="sm" color="success" variant="flat"
+                                                startContent={<Trophy className="h-2.5 w-2.5" />}
+                                                className="text-[10px] px-2">Winner</Chip>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Screenshot */}
-                            {match.screenshotUrl ? (
-                                <div className="rounded-xl overflow-hidden border border-divider">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={match.screenshotUrl} alt="Match result screenshot"
-                                        className="w-full max-h-64 object-contain bg-black/50" />
-                                </div>
+                            {screenshotToShow ? (
+                                <ScreenshotView url={screenshotToShow} />
                             ) : (
-                                <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-foreground/5 border border-dashed border-divider">
+                                <div className="flex items-center justify-center gap-2 py-4 rounded-2xl border border-dashed border-divider">
                                     <Camera className="h-4 w-4 text-foreground/20" />
                                     <span className="text-xs text-foreground/30">No screenshot uploaded</span>
                                 </div>
@@ -270,16 +319,14 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                 <ModalFooter className="pt-1 gap-2">
                     {editing ? (
                         <>
-                            <Button variant="flat" size="sm" onPress={() => { setEditing(false); removeScreenshot(); }}
-                                isDisabled={adminSave.isPending || uploading}>
-                                Cancel
-                            </Button>
+                            <Button variant="flat" size="sm" onPress={() => { setEditing(false); clearFile(); }}
+                                isDisabled={adminSave.isPending || uploading}>Cancel</Button>
                             <Button color={score1 === score2 ? "warning" : "primary"} size="sm"
                                 isLoading={adminSave.isPending || uploading}
                                 isDisabled={adminSave.isPending || uploading}
                                 onPress={() => adminSave.mutate()}
                                 startContent={!adminSave.isPending && !uploading ? <Save className="h-3.5 w-3.5" /> : undefined}>
-                                {uploading ? "Uploading..." : score1 === score2 ? "Reset Match" : "Save Result"}
+                                {uploading ? "Uploading…" : score1 === score2 ? "Reset Match" : "Save Result"}
                             </Button>
                         </>
                     ) : (
