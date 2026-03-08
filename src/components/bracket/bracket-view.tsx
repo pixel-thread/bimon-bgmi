@@ -110,10 +110,13 @@ export function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: R
                 const y2 = py(rN.top + rN.height / 2);
                 const midX = (x1 + x2) / 2;
 
-                const done = (m1.status === "CONFIRMED" || m1.status === "BYE") &&
-                    (!m2 || m2.status === "CONFIRMED" || m2.status === "BYE");
-                const color = done ? "#22c55e" : "#6b7280";
-                const op = done ? 0.6 : 0.35;
+                const statuses = [m1.status, m2?.status].filter(Boolean);
+                const color =
+                    statuses.some(s => s === "DISPUTED") ? "#ef4444" :  // red   — dispute
+                        statuses.some(s => s === "SUBMITTED") ? "#f59e0b" :  // amber — awaiting confirm
+                            statuses.every(s => s === "CONFIRMED" || s === "BYE") ? "#22c55e" : // green — done
+                                "#6b7280";                                              // gray  — pending
+                const op = color === "#6b7280" ? 0.3 : 0.55;
 
                 if (m2) {
                     const e2 = cardRefs.current[m2.id];
