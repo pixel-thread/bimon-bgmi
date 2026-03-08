@@ -23,55 +23,20 @@ interface SubmitResultModalProps {
     isDisputing?: boolean; // true when raising a dispute (opponent already submitted)
 }
 
-/* ─── Score Stepper ─────────────────────────────────────────── */
-
-function ScoreStepper({ label, value, onChange }: {
-    label: string;
-    value: number;
-    onChange: (v: number) => void;
-}) {
-    return (
-        <div className="flex flex-col items-center gap-2 flex-1">
-            <span className="text-xs font-semibold text-foreground/50 uppercase tracking-wider">{label}</span>
-            <div className="flex items-center gap-3">
-                <button
-                    type="button"
-                    onClick={() => onChange(Math.max(0, value - 1))}
-                    className="h-9 w-9 rounded-full bg-default-100 hover:bg-default-200 active:scale-95 flex items-center justify-center transition-all"
-                >
-                    <Minus className="h-4 w-4 text-foreground/60" />
-                </button>
-                <span className="text-4xl font-black tabular-nums w-12 text-center select-none">{value}</span>
-                <button
-                    type="button"
-                    onClick={() => onChange(value + 1)}
-                    className="h-9 w-9 rounded-full bg-primary/15 hover:bg-primary/25 active:scale-95 flex items-center justify-center transition-all"
-                >
-                    <Plus className="h-4 w-4 text-primary" />
-                </button>
-            </div>
-        </div>
-    );
-}
-
 /* ─── Submit Result Modal ───────────────────────────────────── */
 
 export function SubmitResultModal({
     isOpen, onClose, matchId, tournamentId,
     player1Id, player1Name, player2Name, currentPlayerId, isAdmin = false, isDisputing = false,
 }: SubmitResultModalProps) {
-    // Determine if current user is player2 (scores need to be swapped before sending)
     const isPlayer2 = !!currentPlayerId && currentPlayerId !== player1Id;
 
-    // Labels: admin sees actual names; players see "My Goals" / "Opponent"
-    const myLabel = isAdmin
-        ? (player1Name ?? "Player 1")
-        : "My Goals";
-    const opponentLabel = isAdmin
+    // From the current player's perspective
+    const myName = isAdmin ? (player1Name ?? "Player 1") : "You";
+    const oppName = isAdmin
         ? (player2Name ?? "Player 2")
-        : "Opponent";
+        : (isPlayer2 ? (player1Name ?? "Opponent") : (player2Name ?? "Opponent"));
 
-    // myScore = what this UI calls "mine", oppScore = opponent's
     const [myScore, setMyScore] = useState(0);
     const [oppScore, setOppScore] = useState(0);
     const [screenshot, setScreenshot] = useState<File | null>(null);
@@ -112,7 +77,6 @@ export function SubmitResultModal({
 
             setUploading(true);
 
-            // Upload screenshot to ImgBB if provided (free, no storage cost)
             let screenshotUrl: string | null = null;
             if (screenshot) {
                 try {
@@ -121,23 +85,16 @@ export function SubmitResultModal({
                     const formData = new FormData();
                     formData.append("image", screenshot);
                     formData.append("name", `bracket-${matchId}-${Date.now()}`);
-                    const uploadRes = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
-                        method: "POST",
-                        body: formData,
-                    });
+                    const uploadRes = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: formData });
                     const uploadData = await uploadRes.json();
                     if (!uploadData.success) throw new Error(uploadData.error?.message || "ImgBB upload failed");
                     screenshotUrl = uploadData.data.url;
-                } catch (err: any) {
-                    throw new Error(`Screenshot upload failed: ${err.message}`);
+                } catch (err: unknown) {
+                    throw new Error(`Screenshot upload failed: ${err instanceof Error ? err.message : String(err)}`);
                 }
             }
 
-            // Build score1/score2 correctly for the API:
             // score1 = player1's goals, score2 = player2's goals
-            // If admin: myScore IS score1 (admin sees player1 label first)
-            // If player1: myScore IS score1 ✓
-            // If player2: myScore IS score2, oppScore IS score1 → swap
             const finalScore1 = isAdmin || !isPlayer2 ? myScore : oppScore;
             const finalScore2 = isAdmin || !isPlayer2 ? oppScore : myScore;
 
@@ -162,63 +119,101 @@ export function SubmitResultModal({
     return (
         <Modal isOpen={isOpen} onClose={handleClose} placement="center" size="sm">
             <ModalContent>
-                <ModalHeader className="flex items-center gap-2 pb-1">
+                <ModalHeader className="flex items-center gap-2 pb-0">
                     <Trophy className="h-4 w-4 text-primary" />
                     {isDisputing ? "Submit Your Version" : "Submit Result"}
                 </ModalHeader>
 
-                <ModalBody className="gap-4 py-4">
-                    <p className="text-xs text-foreground/50 text-center">
+                <ModalBody className="gap-3 pt-2 pb-3">
+                    <p className="text-[11px] text-foreground/40 text-center">
                         {isDisputing
-                            ? <>Enter the score <strong className="text-foreground/70">as you saw it</strong>. This will raise a dispute for admin review.</>
-                            : <>Your opponent has <strong className="text-foreground/70">30 minutes</strong> to confirm or dispute.</>}
+                            ? <>Enter the score <strong className="text-foreground/60">as you saw it</strong> to raise a dispute.</>
+                            : <>Opponent has <strong className="text-foreground/60">30 min</strong> to confirm or dispute.</>
+                        }
                     </p>
 
-                    {/* Score steppers */}
-                    <div className="flex items-center gap-2 py-2">
-                        <ScoreStepper label={myLabel} value={myScore} onChange={setMyScore} />
-                        <span className="text-2xl font-light text-foreground/20 mb-1">—</span>
-                        <ScoreStepper label={opponentLabel} value={oppScore} onChange={setOppScore} />
+                    {/* VS Score cards */}
+                    <div className="flex items-stretch gap-2">
+                        {/* My side — prominent */}
+                        <div className="flex-1 flex flex-col items-center gap-2 rounded-2xl bg-primary/8 border border-primary/20 py-3 px-2">
+                            <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
+                                <span className="text-xs font-bold text-primary">{myName[0]?.toUpperCase() ?? "?"}</span>
+                            </div>
+                            <span className="text-[10px] font-semibold text-primary/80 uppercase tracking-wider truncate max-w-full px-1 text-center leading-none">
+                                {myName}
+                            </span>
+                            <span className="text-5xl font-black tabular-nums text-primary leading-none select-none">{myScore}</span>
+                            <div className="flex gap-2">
+                                <button type="button" onClick={() => setMyScore(Math.max(0, myScore - 1))}
+                                    className="h-8 w-8 rounded-full bg-primary/15 hover:bg-primary/25 active:scale-95 flex items-center justify-center transition-all">
+                                    <Minus className="h-3.5 w-3.5 text-primary" />
+                                </button>
+                                <button type="button" onClick={() => setMyScore(myScore + 1)}
+                                    className="h-8 w-8 rounded-full bg-primary/20 hover:bg-primary/30 active:scale-95 flex items-center justify-center transition-all">
+                                    <Plus className="h-3.5 w-3.5 text-primary" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* VS divider */}
+                        <div className="flex flex-col items-center justify-center gap-1 shrink-0">
+                            <div className="flex-1 w-px bg-divider" />
+                            <span className="text-[10px] font-bold text-foreground/20 tracking-widest px-1">VS</span>
+                            <div className="flex-1 w-px bg-divider" />
+                        </div>
+
+                        {/* Opponent side — muted */}
+                        <div className="flex-1 flex flex-col items-center gap-2 rounded-2xl bg-default-100/60 border border-divider py-3 px-2">
+                            <div className="h-8 w-8 rounded-full bg-default-200 flex items-center justify-center">
+                                <span className="text-xs font-bold text-foreground/40">{oppName[0]?.toUpperCase() ?? "?"}</span>
+                            </div>
+                            <span className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider truncate max-w-full px-1 text-center leading-none">
+                                {oppName}
+                            </span>
+                            <span className="text-5xl font-black tabular-nums text-foreground/40 leading-none select-none">{oppScore}</span>
+                            <div className="flex gap-2">
+                                <button type="button" onClick={() => setOppScore(Math.max(0, oppScore - 1))}
+                                    className="h-8 w-8 rounded-full bg-default-200 hover:bg-default-300 active:scale-95 flex items-center justify-center transition-all">
+                                    <Minus className="h-3.5 w-3.5 text-foreground/50" />
+                                </button>
+                                <button type="button" onClick={() => setOppScore(oppScore + 1)}
+                                    className="h-8 w-8 rounded-full bg-default-200 hover:bg-default-300 active:scale-95 flex items-center justify-center transition-all">
+                                    <Plus className="h-3.5 w-3.5 text-foreground/50" />
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Screenshot — optional */}
-                    <div className="space-y-1.5">
+                    {/* Draw warning */}
+                    {isDraw && (
+                        <p className="text-[11px] text-danger text-center font-medium">
+                            There must be a winner — scores can&apos;t be equal
+                        </p>
+                    )}
+
+                    {/* Screenshot — compact */}
+                    <div>
                         {previewUrl ? (
                             <div className="relative rounded-xl overflow-hidden border border-divider">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={previewUrl} alt="Score screenshot" className="w-full max-h-36 object-contain bg-black/50" />
-                                <button
-                                    onClick={removeScreenshot}
-                                    className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
-                                >
-                                    <X className="h-3.5 w-3.5" />
+                                <img src={previewUrl} alt="Score screenshot" className="w-full max-h-32 object-contain bg-black/50" />
+                                <button onClick={removeScreenshot}
+                                    className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors">
+                                    <X className="h-3 w-3" />
                                 </button>
                             </div>
                         ) : (
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="w-full rounded-2xl border-2 border-dashed border-foreground/15 hover:border-primary/40 bg-default-50/30 hover:bg-primary/5 transition-all group p-6 flex flex-col items-center gap-3"
-                            >
-                                {/* Image icon */}
-                                <div className="p-3 rounded-2xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
-                                    <Camera className="h-6 w-6 text-primary/60 group-hover:text-primary transition-colors" />
-                                </div>
-                                <div className="text-center space-y-0.5">
-                                    <p className="text-sm font-semibold text-foreground/60 group-hover:text-foreground/80 transition-colors">
-                                        Tap to upload, <span className="text-primary">browse</span>
-                                    </p>
-                                    <p className="text-[11px] text-foreground/30">
-                                        JPG, PNG · Max 5MB · Optional
-                                    </p>
-                                </div>
+                            <button onClick={() => fileInputRef.current?.click()}
+                                className="w-full rounded-xl border border-dashed border-foreground/12 hover:border-primary/40 bg-default-50/40 hover:bg-primary/4 transition-all flex items-center justify-center gap-2 py-2.5 text-foreground/40 hover:text-primary/60">
+                                <Camera className="h-4 w-4" />
+                                <span className="text-xs">Add screenshot <span className="text-foreground/25">(optional)</span></span>
                             </button>
                         )}
                         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
                     </div>
-
                 </ModalBody>
 
-                <ModalFooter className="pt-0">
+                <ModalFooter className="pt-0 gap-2">
                     <Button variant="flat" onPress={handleClose} size="sm">Cancel</Button>
                     <Button
                         color="primary"
