@@ -81,7 +81,13 @@ function ScreenshotView({ url }: { url: string }) {
                     <img
                         src={url}
                         alt="Match result"
-                        className={`w-full max-h-64 object-contain transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0 absolute inset-0"}`}
+                        loading="lazy"
+                        style={{
+                            filter: loaded ? "blur(0px)" : "blur(12px)",
+                            transform: loaded ? "scale(1)" : "scale(1.04)",
+                            transition: "filter 0.6s ease, transform 0.6s ease, opacity 0.3s ease",
+                        }}
+                        className={`w-full max-h-64 object-contain ${loaded ? "opacity-100" : "opacity-0 absolute inset-0"}`}
                         onLoad={() => setLoaded(true)}
                         onError={() => setError(true)}
                     />
@@ -252,43 +258,44 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                     ) : (
                         /* ── View mode ── */
                         <>
-                            {/* Scoreboard */}
+                            {/* Scoreboard card — no status inside, more room for names */}
                             <div className="relative rounded-2xl border border-white/8 overflow-hidden"
                                 style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)" }}>
-
-                                <div className="flex items-stretch">
+                                <div className="flex items-center">
                                     {/* P1 */}
-                                    <div className="flex flex-col items-center gap-2 flex-1 px-3 py-4">
+                                    <div className="flex flex-col items-center gap-2 flex-1 min-w-0 px-3 py-4">
                                         <Avatar src={match.player1Avatar || undefined} name={match.player1?.[0] || "?"} size="md" />
-                                        <span className="text-[10px] font-semibold truncate w-full text-center max-w-[80px]">
+                                        <span className="text-[10px] font-semibold truncate w-full text-center">
                                             {match.player1 || "TBD"}
                                         </span>
                                     </div>
 
-                                    {/* Score */}
-                                    <div className="flex flex-col items-center justify-center gap-1.5 px-2">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className={`text-5xl font-black tabular-nums leading-none ${p1Won ? "text-success" : hasResult ? "text-foreground/50" : "text-foreground/20"}`}>
-                                                {hasResult ? match.score1 : "—"}
-                                            </span>
-                                            <span className="text-foreground/15 font-bold text-2xl">:</span>
-                                            <span className={`text-5xl font-black tabular-nums leading-none ${p2Won ? "text-success" : hasResult ? "text-foreground/50" : "text-foreground/20"}`}>
-                                                {hasResult ? match.score2 : "—"}
-                                            </span>
-                                        </div>
-                                        <Chip size="sm" variant="flat" color={statusColor} className="text-[10px]">
-                                            {statusLabel}
-                                        </Chip>
+                                    {/* Score only — no status badge here */}
+                                    <div className="flex items-center gap-1.5 shrink-0 px-2">
+                                        <span className={`text-5xl font-black tabular-nums leading-none ${p1Won ? "text-success" : hasResult ? "text-foreground/50" : "text-foreground/20"}`}>
+                                            {hasResult ? match.score1 : "—"}
+                                        </span>
+                                        <span className="text-foreground/15 font-bold text-2xl">:</span>
+                                        <span className={`text-5xl font-black tabular-nums leading-none ${p2Won ? "text-success" : hasResult ? "text-foreground/50" : "text-foreground/20"}`}>
+                                            {hasResult ? match.score2 : "—"}
+                                        </span>
                                     </div>
 
                                     {/* P2 */}
-                                    <div className="flex flex-col items-center gap-2 flex-1 px-3 py-4">
+                                    <div className="flex flex-col items-center gap-2 flex-1 min-w-0 px-3 py-4">
                                         <Avatar src={match.player2Avatar || undefined} name={match.player2?.[0] || "?"} size="md" />
-                                        <span className="text-[10px] font-semibold truncate w-full text-center max-w-[80px]">
+                                        <span className="text-[10px] font-semibold truncate w-full text-center">
                                             {match.player2 || "TBD"}
                                         </span>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Status badge — below the card, centered */}
+                            <div className="flex justify-center -mt-1">
+                                <Chip size="sm" variant="flat" color={statusColor} className="text-[10px]">
+                                    {statusLabel}
+                                </Chip>
                             </div>
 
                             {/* Screenshot */}
