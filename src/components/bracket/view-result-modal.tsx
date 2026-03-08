@@ -107,7 +107,7 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
             setUploading(true);
 
             // Upload screenshot to ImgBB
-            let screenshotUrl: string | null = match?.screenshotUrl || null;
+            let finalScreenshotUrl: string | null = match?.screenshotUrl || null;
             if (screenshot) {
                 const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
                 if (!apiKey) throw new Error("ImgBB API key not configured");
@@ -117,21 +117,24 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                 const up = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: fd });
                 const upData = await up.json();
                 if (!upData.success) throw new Error(upData.error?.message || "Upload failed");
-                screenshotUrl = upData.data.url;
+                finalScreenshotUrl = upData.data.url;
             }
 
             const res = await fetch(`/api/bracket-matches/${match?.id}/admin-set-score`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ score1, score2, screenshotUrl }),
+                body: JSON.stringify({ score1, score2, screenshotUrl: finalScreenshotUrl }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || data.message || "Failed to save");
-            return data;
+            return { ...data, screenshotUrl: finalScreenshotUrl };
         },
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
             toast.success(data.message || "Score updated!");
-            if (tournamentId) queryClient.invalidateQueries({ queryKey: ["bracket", tournamentId] });
+            // Force immediate refetch so new screenshot appears when the eye is opened again
+            if (tournamentId) {
+                await queryClient.refetchQueries({ queryKey: ["bracket", tournamentId], type: "active" });
+            }
             handleClose();
         },
         onError: (err: Error) => toast.error(err.message),

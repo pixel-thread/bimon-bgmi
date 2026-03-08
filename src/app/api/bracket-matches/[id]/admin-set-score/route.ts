@@ -72,26 +72,36 @@ export async function PATCH(
             },
         });
 
-        // Upsert bracketResult to track screenshot
-        if (screenshotUrl) {
-            const existing = await prisma.bracketResult.findFirst({ where: { bracketMatchId: matchId } });
+        // Always upsert a BracketResult so the screenshot is reliably stored
+        const adminPlayer = await prisma.player.findFirst({
+            where: { user: { email: userId } },
+            select: { id: true },
+        });
+        if (adminPlayer) {
+            const existing = await prisma.bracketResult.findFirst({
+                where: { bracketMatchId: matchId },
+                orderBy: { createdAt: "asc" },
+            });
             if (existing) {
-                await prisma.bracketResult.update({ where: { id: existing.id }, data: { screenshotUrl } });
+                await prisma.bracketResult.update({
+                    where: { id: existing.id },
+                    data: {
+                        claimedScore1: score1,
+                        claimedScore2: score2,
+                        ...(screenshotUrl !== undefined ? { screenshotUrl } : {}),
+                    },
+                });
             } else {
-                // Need a submittedById — use a system/admin player id
-                const adminPlayer = await prisma.player.findFirst({ where: { user: { email: userId } }, select: { id: true } });
-                if (adminPlayer) {
-                    await prisma.bracketResult.create({
-                        data: {
-                            bracketMatchId: matchId,
-                            submittedById: adminPlayer.id,
-                            claimedScore1: score1,
-                            claimedScore2: score2,
-                            screenshotUrl,
-                            isDispute: false,
-                        },
-                    });
-                }
+                await prisma.bracketResult.create({
+                    data: {
+                        bracketMatchId: matchId,
+                        submittedById: adminPlayer.id,
+                        claimedScore1: score1,
+                        claimedScore2: score2,
+                        screenshotUrl: screenshotUrl ?? null,
+                        isDispute: false,
+                    },
+                });
             }
         }
 
