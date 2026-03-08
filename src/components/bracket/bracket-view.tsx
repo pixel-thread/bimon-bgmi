@@ -8,7 +8,6 @@ export type { BracketMatchData, RoundData };
 export { MyBracketMatch };
 
 /* ─── Entry point ───────────────────────────────────────────── */
-
 interface BracketViewProps {
     rounds: RoundData[];
     totalRounds: number;
@@ -29,122 +28,113 @@ export function BracketView({ rounds, totalRounds, currentPlayerId, isAdmin, onS
             </div>
         );
     }
-
-    const positiveRounds = rounds.filter(r => r.round > 0).sort((a, b) => a.round - b.round);
-    const isLeague = positiveRounds.length > 0 && positiveRounds[0].matches.length > 1 && rounds.every(r => r.round > 0);
-
+    const positive = rounds.filter(r => r.round > 0).sort((a, b) => a.round - b.round);
+    const isLeague = positive.length > 0 && positive[0].matches.length > 1 && rounds.every(r => r.round > 0);
     if (isLeague) {
-        return <LeagueView rounds={positiveRounds} currentPlayerId={currentPlayerId} isAdmin={isAdmin} onSubmitResult={onSubmitResult} onConfirmResult={onConfirmResult} onDispute={onDispute} onViewResult={onViewResult} />;
+        return <LeagueView rounds={positive} currentPlayerId={currentPlayerId} isAdmin={isAdmin}
+            onSubmitResult={onSubmitResult} onConfirmResult={onConfirmResult} onDispute={onDispute} onViewResult={onViewResult} />;
     }
-
-    return <KOBracketTree rounds={rounds} currentPlayerId={currentPlayerId} onViewResult={onViewResult} />;
+    return <KOBracket rounds={rounds} currentPlayerId={currentPlayerId} onViewResult={onViewResult} />;
 }
 
-/* ─── KO Bracket (ref-based SVG connectors) ─────────────────── */
+/* ─── KO Bracket ────────────────────────────────────────────── */
+const MATCH_W = 170;
+const MATCH_H = 51;  // 2×h-6(24px) + 1px divider + 2px border
+const ROW_GAP = 8;
+const COL_GAP = 36;
+const LABEL_H = 28;  // fixed height for all round labels
 
-function KOBracketTree({ rounds, currentPlayerId, onViewResult }: {
-    rounds: RoundData[];
-    currentPlayerId?: string;
-    onViewResult?: (id: string) => void;
-}) {
+function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: RoundData[]; currentPlayerId?: string; onViewResult?: (id: string) => void }) {
     const { zoom, zoomIn, zoomOut, reset, containerRef: scrollRef } = usePinchZoom();
-
     const wrapperRef = useRef<HTMLDivElement>(null);
-    const svgRef = useRef<SVGGElement>(null);
+    const svgGroupRef = useRef<SVGGElement>(null);
     const cardRefs = useRef<Record<string, HTMLDivElement>>({});
 
-    const MATCH_H = 51;
-    const ROW_GAP = 8;
-    const COL_GAP = 40;
+    /* 3rd place */
+    const thirdPlace = rounds.at(-1)?.matches.find(m => m.position === 1) ?? null;
+    const bRounds = rounds.map((r, ri) =>
+        ri === rounds.length - 1 && thirdPlace
+            ? { ...r, name: "Final", matches: r.matches.filter(m => m.position !== 1) }
+            : r
+    );
+    const N = bRounds.length;
 
-    const thirdPlaceMatch = rounds.length > 0
-        ? rounds[rounds.length - 1]?.matches.find(m => m.position === 1)
-        : null;
+    /* Geometry */
+    const spacing = (ri: number) => (MATCH_H + ROW_GAP) * Math.pow(2, ri);
+    const padTop = (ri: number) => ri === 0 ? 0 : (spacing(ri) - MATCH_H - ROW_GAP) / 2;
+    const itemGap = (ri: number) => spacing(ri) - MATCH_H;
+    const colLeft = (ri: number) => ri * (MATCH_W + COL_GAP);
 
-    const bracketRounds = rounds.map((round, ri) => {
-        if (ri === rounds.length - 1 && thirdPlaceMatch) {
-            return { ...round, name: "Final", matches: round.matches.filter(m => m.position !== 1) };
-        }
-        return round;
-    });
-
-    const N = bracketRounds.length;
-
-    const matchSpacing = (ri: number) => (MATCH_H + ROW_GAP) * Math.pow(2, ri);
-    const colPadTop = (ri: number) => ri === 0 ? 0 : (matchSpacing(ri) - MATCH_H - ROW_GAP) / 2;
-    const colItemGap = (ri: number) => matchSpacing(ri) - MATCH_H;
-
-    /* Draw SVG lines directly — no state, no re-render loop */
+    /* Draw SVG lines directly into DOM — no state needed */
     useLayoutEffect(() => {
-        const g = svgRef.current;
+        const g = svgGroupRef.current;
         const wrapper = wrapperRef.current;
         if (!g || !wrapper || N === 0) return;
 
-        // Clear old lines
         while (g.firstChild) g.removeChild(g.firstChild);
 
-        const wRect = wrapper.getBoundingClientRect();
-        // CSS zoom: getBoundingClientRect returns visual (scaled) coords in Chrome
-        const toX = (sx: number) => (sx - wRect.left) / zoom;
-        const toY = (sy: number) => (sy - wRect.top) / zoom;
+        const wr = wrapper.getBoundingClientRect();
+        const px = (sx: number) => (sx - wr.left) / zoom;
+        const py = (sy: number) => (sy - wr.top) / zoom;
 
-        const mkLine = (x1: number, y1: number, x2: number, y2: number, color: string, opacity: number) => {
+        const line = (x1: number, y1: number, x2: number, y2: number, stroke: string, op: number) => {
             const el = document.createElementNS("http://www.w3.org/2000/svg", "line");
             el.setAttribute("x1", `${x1}`); el.setAttribute("y1", `${y1}`);
             el.setAttribute("x2", `${x2}`); el.setAttribute("y2", `${y2}`);
-            el.setAttribute("stroke", color);
+            el.setAttribute("stroke", stroke);
             el.setAttribute("stroke-width", "1.5");
-            el.setAttribute("stroke-opacity", `${opacity}`);
+            el.setAttribute("stroke-opacity", `${op}`);
             el.setAttribute("stroke-linecap", "round");
             g.appendChild(el);
         };
 
         for (let ri = 0; ri < N - 1; ri++) {
-            const cur = bracketRounds[ri];
-            const next = bracketRounds[ri + 1];
-            if (!next) continue;
-
+            const cur = bRounds[ri];
+            const nxt = bRounds[ri + 1];
+            if (!nxt) continue;
             for (let p = 0; p < Math.ceil(cur.matches.length / 2); p++) {
                 const m1 = cur.matches[p * 2];
                 const m2 = cur.matches[p * 2 + 1] ?? null;
-                const mN = next.matches[p];
+                const mN = nxt.matches[p];
                 if (!mN) continue;
+                const e1 = cardRefs.current[m1.id];
+                const eN = cardRefs.current[mN.id];
+                if (!e1 || !eN) continue;
 
-                const el1 = cardRefs.current[m1.id];
-                const elN = cardRefs.current[mN.id];
-                if (!el1 || !elN) continue;
-
-                const r1 = el1.getBoundingClientRect();
-                const rN = elN.getBoundingClientRect();
-                const x1 = toX(r1.right);
-                const y1a = toY(r1.top + r1.height / 2);
-                const x2 = toX(rN.left);
-                const y2 = toY(rN.top + rN.height / 2);
+                const r1 = e1.getBoundingClientRect();
+                const rN = eN.getBoundingClientRect();
+                const x1 = px(r1.right);
+                const y1a = py(r1.top + r1.height / 2);
+                const x2 = px(rN.left);
+                const y2 = py(rN.top + rN.height / 2);
                 const midX = (x1 + x2) / 2;
 
                 const done = (m1.status === "CONFIRMED" || m1.status === "BYE") &&
                     (!m2 || m2.status === "CONFIRMED" || m2.status === "BYE");
                 const color = done ? "#22c55e" : "#6b7280";
-                const opac = done ? 0.55 : 0.35;
+                const op = done ? 0.6 : 0.35;
 
                 if (m2) {
-                    const el2 = cardRefs.current[m2.id];
-                    if (el2) {
-                        const r2 = el2.getBoundingClientRect();
-                        const y1b = toY(r2.top + r2.height / 2);
-                        mkLine(x1, y1a, midX, y1a, color, opac); // top stub
-                        mkLine(x1, y1b, midX, y1b, color, opac); // bottom stub
-                        mkLine(midX, y1a, midX, y1b, color, opac); // vertical
-                        mkLine(midX, y2, x2, y2, color, opac); // exit
+                    const e2 = cardRefs.current[m2.id];
+                    if (e2) {
+                        const r2 = e2.getBoundingClientRect();
+                        const y1b = py(r2.top + r2.height / 2);
+                        line(x1, y1a, midX, y1a, color, op);
+                        line(x1, y1b, midX, y1b, color, op);
+                        line(midX, y1a, midX, y1b, color, op);
+                        line(midX, y2, x2, y2, color, op);
                     }
                 } else {
-                    mkLine(x1, y1a, x2, y2, color, opac); // bye: straight through
+                    line(x1, y1a, x2, y1a, color, op);
                 }
             }
         }
-    }); // intentionally no deps — runs after every render so zoom/data changes update lines
+    }); // no deps → runs after every render
 
     if (N === 0) return null;
+    const n0 = bRounds[0].matches.length;
+    const totalMatchH = n0 * MATCH_H + (n0 - 1) * ROW_GAP;
+    const winner = bRounds[N - 1]?.matches[0]?.winner;
 
     return (
         <div className="space-y-3">
@@ -153,22 +143,37 @@ function KOBracketTree({ rounds, currentPlayerId, onViewResult }: {
             </div>
 
             <div ref={scrollRef} className="overflow-x-auto pb-4">
-                <div style={{ zoom }} className="relative inline-flex" ref={wrapperRef}>
-                    {/* SVG layer — covers entire wrapper */}
-                    <svg className="absolute inset-0 pointer-events-none"
-                        style={{ width: "100%", height: "100%", overflow: "visible" }}>
-                        <g ref={svgRef} />
-                    </svg>
+                {/* zoom wrapper */}
+                <div style={{ zoom }} className="relative" ref={wrapperRef}>
 
-                    {/* Round columns */}
-                    <div className="flex items-start">
-                        {bracketRounds.map((round, ri) => (
-                            <div key={round.round} style={{ paddingTop: colPadTop(ri), width: 170, marginRight: ri < N - 1 ? COL_GAP : 0 }}>
-                                <p className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest text-center mb-2">
-                                    {round.name}
-                                </p>
-                                <div style={{ display: "flex", flexDirection: "column", gap: colItemGap(ri) }}>
-                                    {round.matches.map(m => (
+                    {/* ── Label row: all at same y, fixed height ── */}
+                    <div className="flex" style={{ height: LABEL_H, marginBottom: 4 }}>
+                        {bRounds.map((r, ri) => (
+                            <div key={`lbl-${ri}`} style={{ width: MATCH_W, marginRight: ri < N - 1 ? COL_GAP : 0, flexShrink: 0 }}
+                                className="flex items-end justify-center pb-1">
+                                <span className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest">
+                                    {r.name}
+                                </span>
+                            </div>
+                        ))}
+                        {/* trophy column spacer */}
+                        <div style={{ width: 72 }} />
+                    </div>
+
+                    {/* ── Match area with SVG overlay ── */}
+                    <div className="relative" style={{ height: totalMatchH }}>
+                        {/* SVG covers the match area */}
+                        <svg className="absolute inset-0 pointer-events-none"
+                            style={{ width: "100%", height: "100%", overflow: "visible" }}>
+                            <g ref={svgGroupRef} />
+                        </svg>
+
+                        {/* Round columns — absolutely positioned so labels are decoupled */}
+                        {bRounds.map((r, ri) => (
+                            <div key={r.round}
+                                style={{ position: "absolute", left: colLeft(ri), top: padTop(ri), width: MATCH_W }}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: itemGap(ri) }}>
+                                    {r.matches.map(m => (
                                         <div key={m.id} ref={el => { if (el) cardRefs.current[m.id] = el; }}>
                                             <CompactMatch match={m} currentPlayerId={currentPlayerId} onViewResult={onViewResult} />
                                         </div>
@@ -177,28 +182,23 @@ function KOBracketTree({ rounds, currentPlayerId, onViewResult }: {
                             </div>
                         ))}
 
-                        {/* Winner trophy */}
-                        {(() => {
-                            const winner = bracketRounds[N - 1]?.matches[0]?.winner;
-                            return (
-                                <div style={{ paddingTop: colPadTop(N - 1) + MATCH_H / 2 - 28, width: 72 }}
-                                    className="flex flex-col items-center gap-1 pl-2">
-                                    <Trophy className={`h-7 w-7 ${winner ? "text-yellow-400" : "text-foreground/15"}`} />
-                                    <p className={`text-[10px] font-semibold text-center leading-tight ${winner ? "text-yellow-400" : "text-foreground/25"}`}>
-                                        {winner?.displayName ?? "TBD"}
-                                    </p>
-                                </div>
-                            );
-                        })()}
+                        {/* Trophy */}
+                        <div style={{ position: "absolute", left: colLeft(N), top: padTop(N - 1) + MATCH_H / 2 - 26, width: 60 }}
+                            className="flex flex-col items-center gap-1 pl-2">
+                            <Trophy className={`h-6 w-6 ${winner ? "text-yellow-400" : "text-foreground/15"}`} />
+                            <p className={`text-[9px] font-semibold text-center leading-tight ${winner ? "text-yellow-400" : "text-foreground/25"}`}>
+                                {winner?.displayName ?? "TBD"}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {thirdPlaceMatch && (
-                <div className="max-w-xs">
-                    <p className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest mb-2">🥉 3rd Place</p>
-                    <div ref={el => { if (el) cardRefs.current[thirdPlaceMatch.id] = el; }}>
-                        <CompactMatch match={thirdPlaceMatch} currentPlayerId={currentPlayerId} onViewResult={onViewResult} />
+            {thirdPlace && (
+                <div className="max-w-[170px]">
+                    <p className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest mb-2">🥉 3rd Place</p>
+                    <div ref={el => { if (el) cardRefs.current[thirdPlace.id] = el; }}>
+                        <CompactMatch match={thirdPlace} currentPlayerId={currentPlayerId} onViewResult={onViewResult} />
                     </div>
                 </div>
             )}
@@ -207,15 +207,10 @@ function KOBracketTree({ rounds, currentPlayerId, onViewResult }: {
 }
 
 /* ─── League View ───────────────────────────────────────────── */
-
 function LeagueView({ rounds, currentPlayerId, isAdmin, onSubmitResult, onConfirmResult, onDispute, onViewResult }: {
-    rounds: RoundData[];
-    currentPlayerId?: string;
-    isAdmin?: boolean;
-    onSubmitResult?: (id: string) => void;
-    onConfirmResult?: (id: string) => void;
-    onDispute?: (id: string) => void;
-    onViewResult?: (id: string) => void;
+    rounds: RoundData[]; currentPlayerId?: string; isAdmin?: boolean;
+    onSubmitResult?: (id: string) => void; onConfirmResult?: (id: string) => void;
+    onDispute?: (id: string) => void; onViewResult?: (id: string) => void;
 }) {
     return (
         <div className="space-y-4">
