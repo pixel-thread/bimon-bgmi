@@ -33,8 +33,8 @@ interface ViewResultModalProps {
 /* ─── Score stepper (edit mode) ─────────────────────────────── */
 function ScoreStepper({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
     return (
-        <div className="flex flex-col items-center gap-2 flex-1">
-            <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest truncate max-w-[110px] text-center">{label}</span>
+        <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
+            <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest truncate w-full text-center">{label}</span>
             <div className="flex items-center gap-3">
                 <button type="button" onClick={() => onChange(Math.max(0, value - 1))}
                     className="h-9 w-9 rounded-full bg-default-100 hover:bg-default-200 active:scale-90 flex items-center justify-center transition-all">
