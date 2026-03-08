@@ -337,7 +337,8 @@ export function CompactMatch({
         isCurrent: boolean,
         isTop: boolean,
     ) => (
-        <div className={`flex items-center gap-1.5 px-2 py-1 ${isTop ? "rounded-t-lg" : "rounded-b-lg"} ${isWinner ? "bg-success/10" : ""}`}>
+        // h-6 = 24px exact → total card = 24+1+24 + 2px border = 51px = MATCH_H in bracket-view
+        <div className={`flex items-center gap-1.5 px-2 h-6 ${isTop ? "rounded-t-lg" : "rounded-b-lg"} ${isWinner ? "bg-success/10" : ""}`}>
             <span className={`text-[11px] truncate flex-1 ${isCurrent ? "text-primary font-semibold"
                 : isWinner ? "text-success font-medium"
                     : player ? "text-foreground/80"
@@ -409,10 +410,10 @@ export function MatchRow({
 
     return (
         <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs transition-all ${isDisputed
-                ? "border-danger/60 bg-danger/5 shadow-sm shadow-danger/10"
-                : isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
-                    ? "border-primary/40 bg-primary/5"
-                    : "border-divider bg-default-50/30"
+            ? "border-danger/60 bg-danger/5 shadow-sm shadow-danger/10"
+            : isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
+                ? "border-primary/40 bg-primary/5"
+                : "border-divider bg-default-50/30"
             }`}>
             {/* Player 1 */}
             <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">

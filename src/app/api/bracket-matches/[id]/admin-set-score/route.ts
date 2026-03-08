@@ -60,16 +60,10 @@ export async function PATCH(
             winnerId = score1 > score2 ? match.player1Id : match.player2Id;
         }
 
-        // Update match
+        // Update match scores + status
         await prisma.bracketMatch.update({
             where: { id: matchId },
-            data: {
-                score1,
-                score2,
-                winnerId,
-                status: "CONFIRMED",
-                ...(screenshotUrl !== undefined ? {} : {}), // screenshotUrl lives on BracketResult
-            },
+            data: { score1, score2, winnerId, status: "CONFIRMED" },
         });
 
         // Always upsert a BracketResult so the screenshot is reliably stored
@@ -80,7 +74,7 @@ export async function PATCH(
         if (adminPlayer) {
             const existing = await prisma.bracketResult.findFirst({
                 where: { bracketMatchId: matchId },
-                orderBy: { createdAt: "asc" },
+                orderBy: { createdAt: "desc" }, // desc = newest first, same as bracket API
             });
             if (existing) {
                 await prisma.bracketResult.update({

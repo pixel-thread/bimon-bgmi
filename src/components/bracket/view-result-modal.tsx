@@ -155,9 +155,6 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                 <ModalHeader className="flex items-center gap-2 pb-1">
                     <Trophy className="h-4 w-4 text-primary" />
                     {editing ? "Edit Result" : "Match Result"}
-                    {isAdmin && !editing && (
-                        <Chip size="sm" color="warning" variant="flat" className="ml-auto text-[10px]">Admin</Chip>
-                    )}
                 </ModalHeader>
 
                 <ModalBody className="gap-4 py-3">
