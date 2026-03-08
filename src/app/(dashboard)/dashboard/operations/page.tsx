@@ -1474,49 +1474,18 @@ function BracketManagement({
         >
             <Card className="border border-divider">
                 <CardBody className="p-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Swords className="h-4 w-4 text-primary" />
-                            <div>
-                                <p className="text-sm font-semibold">{formatEmoji} {formatLabel} Management</p>
-                                <p className="text-xs text-foreground/40">
-                                    {hasMatches
-                                        ? `${allMatches.length} matches • ${confirmedMatches.length} confirmed`
-                                        : `Generate ${formatLabel.toLowerCase()} from poll voters`
-                                    }
-                                </p>
-                            </div>
+                    {/* Header */}
+                    <div className="flex items-center gap-2">
+                        <Swords className="h-4 w-4 text-primary" />
+                        <div>
+                            <p className="text-sm font-semibold">{formatEmoji} {formatLabel} Overview</p>
+                            <p className="text-xs text-foreground/40">
+                                {hasMatches
+                                    ? `${allMatches.length} matches · ${confirmedMatches.length} confirmed · ${disputedMatches.length} disputed`
+                                    : "No bracket generated yet — go to the Bracket page to generate"
+                                }
+                            </p>
                         </div>
-
-                        {!hasMatches && (
-                            <Button
-                                size="sm"
-                                color="primary"
-                                isLoading={generateBracket.isPending}
-                                isDisabled={!hasVotes}
-                                startContent={<Swords className="h-3 w-3" />}
-                                onPress={() => generateBracket.mutate()}
-                            >
-                                Generate {formatLabel}
-                            </Button>
-                        )}
-                        {/* Deadline check — available when bracket exists */}
-                        {hasMatches && (
-                            <Button
-                                size="sm"
-                                color="warning"
-                                variant="flat"
-                                isLoading={deadlineCheck.isPending}
-                                startContent={<Clock className="h-3 w-3" />}
-                                onPress={() => {
-                                    if (confirm("Auto-resolve all expired PENDING matches with a random 1–0 winner?"))
-                                        deadlineCheck.mutate();
-                                }}
-                                title="Resolves matches where deadline has passed and neither player submitted"
-                            >
-                                Deadline Check
-                            </Button>
-                        )}
                     </div>
 
                     {isLoading && (
@@ -1525,100 +1494,78 @@ function BracketManagement({
                         </div>
                     )}
 
-                    {/* All active matches (disputed + submitted + pending) */}
-                    {(() => {
-                        const activeMatches = allMatches.filter(m =>
-                            ["DISPUTED", "SUBMITTED", "PENDING"].includes(m.status) && m.player1Id && m.player2Id
-                        );
-
-                        if (activeMatches.length === 0) return null;
-
-                        // Group by status for section headers
-                        const sections = [
-                            { status: "DISPUTED", label: "Disputed", icon: <AlertTriangle className="h-3.5 w-3.5 text-danger" />, color: "text-danger", bg: "bg-danger-50/50 dark:bg-danger-900/10 border-danger/20" },
-                            { status: "SUBMITTED", label: "Awaiting Confirmation", icon: <Clock className="h-3.5 w-3.5 text-warning" />, color: "text-warning", bg: "bg-warning-50/50 dark:bg-warning-900/10 border-warning/20" },
-                            { status: "PENDING", label: "Awaiting Results", icon: <Gamepad2 className="h-3.5 w-3.5 text-foreground/40" />, color: "text-foreground/40", bg: "bg-foreground/5 border-divider" },
-                        ];
-
-                        return sections.map(({ status, label, icon, color, bg }) => {
-                            const matches = activeMatches.filter(m => m.status === status);
-                            if (matches.length === 0) return null;
-
-                            return (
-                                <div key={status} className="space-y-2">
-                                    <div className="flex items-center gap-1.5">
-                                        {icon}
-                                        <span className={`text-xs font-bold uppercase ${color}`}>
-                                            {label} ({matches.length})
-                                        </span>
-                                    </div>
-                                    {matches.map((m) => (
-                                        <AdminMatchRow
-                                            key={m.id}
-                                            match={m}
-                                            bg={bg}
-                                            onResolve={(winnerId, s1, s2) =>
-                                                resolveMatch.mutate({ matchId: m.id, winnerId, score1: s1, score2: s2 })
-                                            }
-                                            onRandomPick={() => {
-                                                if (confirm(`Random pick winner for ${m.player1?.displayName} vs ${m.player2?.displayName}?`)) {
-                                                    randomPick.mutate(m.id);
-                                                }
-                                            }}
-                                            isLoading={resolveMatch.isPending || randomPick.isPending}
-                                        />
-                                    ))}
-                                </div>
-                            );
-                        });
-                    })()}
-
-                    {/* Summary of all matches */}
+                    {/* Match status summary grid */}
                     {hasMatches && (
-                        <div className="grid grid-cols-5 gap-2 text-center">
+                        <div className="grid grid-cols-5 gap-1.5 text-center">
                             {[
                                 { label: "Pending", count: allMatches.filter((m) => m.status === "PENDING").length, color: "text-foreground/40" },
-                                { label: "Submitted", count: allMatches.filter((m) => m.status === "SUBMITTED").length, color: "text-warning" },
-                                { label: "Disputed", count: disputedMatches.length, color: "text-danger" },
-                                { label: "Confirmed", count: confirmedMatches.length, color: "text-success" },
+                                { label: "Submit", count: allMatches.filter((m) => m.status === "SUBMITTED").length, color: "text-warning" },
+                                { label: "Dispute", count: disputedMatches.length, color: "text-danger" },
+                                { label: "Done", count: confirmedMatches.length, color: "text-success" },
                                 { label: "BYE", count: allMatches.filter((m) => m.status === "BYE").length, color: "text-secondary" },
                             ].map((s) => (
                                 <div key={s.label} className="rounded-lg bg-foreground/5 p-2">
                                     <p className={`text-lg font-bold ${s.color}`}>{s.count}</p>
-                                    <p className="text-[10px] text-foreground/40">{s.label}</p>
+                                    <p className="text-[9px] text-foreground/40 whitespace-nowrap">{s.label}</p>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    {/* Advance Groups → Knockout (GROUP_KNOCKOUT only) */}
-                    {tournamentType === "GROUP_KNOCKOUT" && hasMatches && (
-                        <Button
-                            size="sm"
-                            color="warning"
-                            variant="flat"
-                            className="w-full"
-                            startContent={<Swords className="h-3 w-3" />}
-                            onPress={async () => {
-                                if (!confirm("Advance top 2 from each group to knockout stage?")) return;
-                                try {
-                                    const res = await fetch(`/api/tournaments/${tournamentId}/advance-groups`, {
-                                        method: "POST",
-                                    });
-                                    const json = await res.json();
-                                    if (!res.ok) throw new Error(json.error || "Failed");
-                                    toast.success(json.message || "Groups advanced to knockout!");
-                                    queryClient.invalidateQueries({ queryKey: ["admin-bracket", tournamentId] });
-                                } catch (err: any) {
-                                    toast.error(err.message || "Failed to advance groups");
-                                }
-                            }}
-                        >
-                            🌍 Advance Groups → Knockout
-                        </Button>
+                    {/* Actions */}
+                    {hasMatches && (
+                        <div className="flex flex-col gap-2">
+                            {/* Deadline Check */}
+                            <Button
+                                size="sm"
+                                color="warning"
+                                variant="flat"
+                                className="w-full"
+                                isLoading={deadlineCheck.isPending}
+                                startContent={<Clock className="h-3 w-3" />}
+                                onPress={() => {
+                                    if (confirm("Auto-resolve all expired PENDING matches with a random 1–0 winner?\n\nThis affects matches where the deadline passed and neither player submitted a result."))
+                                        deadlineCheck.mutate();
+                                }}
+                            >
+                                ⏰ Auto-resolve Expired Matches
+                            </Button>
+
+                            {/* Advance Groups → Knockout (GROUP_KNOCKOUT only) */}
+                            {tournamentType === "GROUP_KNOCKOUT" && (
+                                <Button
+                                    size="sm"
+                                    color="primary"
+                                    variant="flat"
+                                    className="w-full"
+                                    startContent={<Swords className="h-3 w-3" />}
+                                    onPress={async () => {
+                                        if (!confirm("Advance top 2 from each group to the knockout stage?")) return;
+                                        try {
+                                            const res = await fetch(`/api/tournaments/${tournamentId}/advance-groups`, { method: "POST" });
+                                            const json = await res.json();
+                                            if (!res.ok) throw new Error(json.error || "Failed");
+                                            toast.success(json.message || "Groups advanced to knockout!");
+                                            queryClient.invalidateQueries({ queryKey: ["admin-bracket", tournamentId] });
+                                        } catch (err: unknown) {
+                                            toast.error(err instanceof Error ? err.message : "Failed to advance groups");
+                                        }
+                                    }}
+                                >
+                                    🌍 Advance Groups → Knockout
+                                </Button>
+                            )}
+                        </div>
+                    )}
+
+                    {!hasMatches && !isLoading && (
+                        <p className="text-xs text-foreground/30 text-center py-2">
+                            Visit the <strong className="text-foreground/50">Bracket</strong> page to generate and manage matches.
+                        </p>
                     )}
                 </CardBody>
             </Card>
         </motion.div>
     );
 }
+
