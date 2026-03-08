@@ -46,7 +46,8 @@ const LABEL_H = 28;  // fixed height for all round labels
 
 export function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: RoundData[]; currentPlayerId?: string; onViewResult?: (id: string) => void }) {
     const { zoom, zoomIn, zoomOut, reset, containerRef: scrollRef } = usePinchZoom();
-    const wrapperRef = useRef<HTMLDivElement>(null);
+    const outerRef = useRef<HTMLDivElement>(null);  // zoom wrapper (width only)
+    const wrapperRef = useRef<HTMLDivElement>(null);  // match area — SVG origin
     const svgGroupRef = useRef<SVGGElement>(null);
     const cardRefs = useRef<Record<string, HTMLDivElement>>({});
 
@@ -145,7 +146,7 @@ export function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: R
 
             <div ref={scrollRef} className="overflow-x-auto pb-4">
                 {/* zoom wrapper — explicit width so overflow-x-auto triggers */}
-                <div style={{ zoom, width: totalW }} className="relative" ref={wrapperRef}>
+                <div style={{ zoom, width: totalW }} className="relative" ref={outerRef}>
 
                     {/* ── Label row: all at same y, fixed height ── */}
                     <div className="flex" style={{ height: LABEL_H, marginBottom: 4 }}>
@@ -157,12 +158,11 @@ export function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: R
                                 </span>
                             </div>
                         ))}
-                        {/* trophy column spacer */}
                         <div style={{ width: 72 }} />
                     </div>
 
-                    {/* ── Match area with SVG overlay ── */}
-                    <div className="relative" style={{ height: totalMatchH, width: totalW }}>
+                    {/* ── Match area: wrapperRef HERE so SVG origin = match area top ── */}
+                    <div className="relative" ref={wrapperRef} style={{ height: totalMatchH, width: totalW }}>
                         {/* SVG covers the match area */}
                         <svg className="absolute inset-0 pointer-events-none"
                             style={{ width: "100%", height: "100%", overflow: "visible" }}>
