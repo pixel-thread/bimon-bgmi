@@ -260,7 +260,7 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                     {/* P1 */}
                                     <div className="flex flex-col items-center gap-2 flex-1 px-3 py-4">
                                         <Avatar src={match.player1Avatar || undefined} name={match.player1?.[0] || "?"} size="md" />
-                                        <span className="text-[11px] font-semibold truncate w-full text-center max-w-[80px]">
+                                        <span className="text-[10px] font-semibold truncate w-full text-center max-w-[80px]">
                                             {match.player1 || "TBD"}
                                         </span>
                                     </div>
@@ -284,7 +284,7 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                     {/* P2 */}
                                     <div className="flex flex-col items-center gap-2 flex-1 px-3 py-4">
                                         <Avatar src={match.player2Avatar || undefined} name={match.player2?.[0] || "?"} size="md" />
-                                        <span className="text-[11px] font-semibold truncate w-full text-center max-w-[80px]">
+                                        <span className="text-[10px] font-semibold truncate w-full text-center max-w-[80px]">
                                             {match.player2 || "TBD"}
                                         </span>
                                     </div>
