@@ -77,10 +77,11 @@ function KOBracketTree({
     onViewResult?: (id: string) => void;
 }) {
     const { zoom, zoomIn, zoomOut, reset, containerRef } = usePinchZoom();
-    const MATCH_H = 48;
+    const MATCH_H = 51; // 2×h-6(24px) rows + 1px divider + 2px border = 51px exact
     const GAP = 8;
+    const CONN_W = 20; // width of connector column
 
-    // Separate 3rd place match from final round
+    // Separate 3rd place match from final round (position===1 in last round = 3rd place)
     const thirdPlaceMatch = rounds.length > 0
         ? rounds[rounds.length - 1]?.matches.find(m => m.position === 1)
         : null;
@@ -123,18 +124,26 @@ function KOBracketTree({
                                             {Array.from({ length: Math.ceil(round.matches.length / 2) }).map((_, pi) => {
                                                 const pair = round.matches.slice(pi * 2, pi * 2 + 2);
                                                 const done = pair.every(m => m.status === "CONFIRMED" || m.status === "BYE");
-                                                const lc = done ? "border-success/30" : "border-foreground/10";
+                                                const lc = done ? "border-success/40" : "border-foreground/15";
                                                 const h = pair.length === 2 ? MATCH_H * 2 + gap : MATCH_H;
+                                                const mid1 = MATCH_H / 2;           // mid of first match
+                                                const mid2 = MATCH_H + gap + MATCH_H / 2; // mid of second match
+                                                const centerY = (mid1 + mid2) / 2;   // vertical midpoint
                                                 return (
-                                                    <div key={pi} className="relative" style={{ height: h, width: 24 }}>
+                                                    <div key={pi} className="relative" style={{ height: h, width: CONN_W }}>
                                                         {pair.length === 2 ? (
                                                             <>
-                                                                <div className={`absolute left-0 border-t ${lc}`} style={{ width: 8, top: MATCH_H / 2 }} />
-                                                                <div className={`absolute left-0 border-t ${lc}`} style={{ width: 8, top: MATCH_H + gap + MATCH_H / 2 }} />
-                                                                <div className={`absolute left-[8px] border-r ${lc}`} style={{ top: MATCH_H / 2, bottom: h - MATCH_H - gap - MATCH_H / 2 }} />
-                                                                <div className={`absolute left-[8px] right-0 border-t ${lc}`} style={{ top: h / 2 }} />
+                                                                {/* Top horizontal stub from match 1 */}
+                                                                <div className={`absolute left-0 border-t ${lc}`} style={{ width: CONN_W / 2, top: mid1 }} />
+                                                                {/* Bottom horizontal stub from match 2 */}
+                                                                <div className={`absolute left-0 border-t ${lc}`} style={{ width: CONN_W / 2, top: mid2 }} />
+                                                                {/* Vertical bar connecting mid1 to mid2 */}
+                                                                <div className={`absolute border-r ${lc}`} style={{ left: CONN_W / 2, top: mid1, bottom: h - mid2 }} />
+                                                                {/* Horizontal out to next round */}
+                                                                <div className={`absolute border-t ${lc}`} style={{ left: CONN_W / 2, right: 0, top: centerY }} />
                                                             </>
                                                         ) : (
+                                                            // Bye / single match — straight through
                                                             <div className={`absolute left-0 right-0 border-t ${lc}`} style={{ top: MATCH_H / 2 }} />
                                                         )}
                                                     </div>
@@ -228,3 +237,4 @@ function LeagueView({
         </div>
     );
 }
+

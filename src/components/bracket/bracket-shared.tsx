@@ -405,10 +405,14 @@ export function MatchRow({
             match.status === "SUBMITTED" ? "bg-warning" :
                 match.status === "DISPUTED" ? "bg-danger" : "bg-foreground/20";
 
+    const isDisputed = match.status === "DISPUTED";
+
     return (
-        <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs transition-all ${isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
-            ? "border-primary/40 bg-primary/5"
-            : "border-divider bg-default-50/30"
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs transition-all ${isDisputed
+                ? "border-danger/60 bg-danger/5 shadow-sm shadow-danger/10"
+                : isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
+                    ? "border-primary/40 bg-primary/5"
+                    : "border-divider bg-default-50/30"
             }`}>
             {/* Player 1 */}
             <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
@@ -429,7 +433,13 @@ export function MatchRow({
                         <span className={`font-bold tabular-nums min-w-[14px] text-center ${match.winnerId === match.player2Id ? "text-success-600" : "text-foreground/60"}`}>
                             {displayScore2}
                         </span>
-                        {/* Pending confirmation badge */}
+                        {/* Dispute badge — pulsing red pill */}
+                        {isDisputed && (
+                            <span className="flex items-center gap-0.5 bg-danger/15 text-danger text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                                ⚠️ DISPUTE
+                            </span>
+                        )}
+                        {/* Submitted — awaiting confirmation */}
                         {match.status === "SUBMITTED" && (
                             <div className="h-1.5 w-1.5 rounded-full bg-warning shrink-0" title="Awaiting confirmation" />
                         )}
@@ -453,7 +463,6 @@ export function MatchRow({
 
             {/* Actions + Eye */}
             <div className="flex items-center gap-1 shrink-0 ml-1">
-
                 {canConfirm && onConfirmResult && (
                     <button onClick={() => onConfirmResult(match.id)} className="text-[10px] font-bold text-success hover:underline">✓</button>
                 )}
@@ -463,7 +472,7 @@ export function MatchRow({
                 {/* Eye icon: for result-bearing matches to everyone; for all matches to admin */}
                 {(hasResult || isAdmin) && onViewResult && match.player1Id && match.player2Id && (
                     <button onClick={() => onViewResult(match.id)} className="ml-0.5" title={isAdmin ? "View / edit result" : "View screenshot"}>
-                        <Eye className="h-3.5 w-3.5 text-foreground/30 hover:text-foreground/70 transition-colors" />
+                        <Eye className={`h-3.5 w-3.5 transition-colors ${isDisputed ? "text-danger/60 hover:text-danger" : "text-foreground/30 hover:text-foreground/70"}`} />
                     </button>
                 )}
             </div>
