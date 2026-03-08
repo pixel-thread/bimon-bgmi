@@ -6,7 +6,7 @@ import { CompactMatch, MatchRow, MyBracketMatch, BracketMatchData, RoundData, us
 export type { BracketMatchData, RoundData };
 export { MyBracketMatch };
 
-/* ─── KO Bracket Tree ───────────────────────────────────────── */
+/* ─── BracketView (entry point) ─────────────────────────────── */
 
 interface BracketViewProps {
     rounds: RoundData[];
@@ -38,7 +38,7 @@ export function BracketView({
         );
     }
 
-    // Detect tournament type: if all rounds are positive it's KO, otherwise it has groups
+    // Detect tournament type: if all rounds are positive it's a league/round-robin
     const positiveRounds = rounds.filter(r => r.round > 0).sort((a, b) => a.round - b.round);
     const isLeague = positiveRounds.length > 0 && positiveRounds[0].matches.length > 1 && rounds.every(r => r.round > 0);
 
@@ -65,7 +65,7 @@ export function BracketView({
     );
 }
 
-/* ─── KO Bracket Tree ──────────────────────────────────────── */
+/* ─── KO Bracket Tree (SVG connectors) ─────────────────────── */
 
 function KOBracketTree({
     rounds,
@@ -77,11 +77,16 @@ function KOBracketTree({
     onViewResult?: (id: string) => void;
 }) {
     const { zoom, zoomIn, zoomOut, reset, containerRef } = usePinchZoom();
-    const MATCH_H = 51; // 2×h-6(24px) rows + 1px divider + 2px border = 51px exact
-    const GAP = 8;
-    const CONN_W = 20; // width of connector column
 
-    // Separate 3rd place match from final round (position===1 in last round = 3rd place)
+    /* ── Layout constants ─────────────────────────────────────── */
+    const MATCH_W = 170; // CompactMatch width (w-[170px])
+    const MATCH_H = 51;  // 2×h-6(24px) + 1px divider + 2px border = 51px exact
+    const ROW_GAP = 8;   // gap between matches in round 0
+    const COL_GAP = 28;  // horizontal gap between round columns (SVG lines go here)
+    const LABEL_H = 22;  // height reserved for round name labels
+    const TROPHY_W = 90;  // width for winner display
+
+    /* ── 3rd place handling ───────────────────────────────────── */
     const thirdPlaceMatch = rounds.length > 0
         ? rounds[rounds.length - 1]?.matches.find(m => m.position === 1)
         : null;
@@ -93,79 +98,135 @@ function KOBracketTree({
         return round;
     });
 
+    const N = bracketRounds.length;
+    if (N === 0) return null;
+
+    /* ── Geometry helpers ─────────────────────────────────────── */
+
+    /** Center-to-center vertical distance between matches in round ri */
+    const matchSpacing = (ri: number) => (MATCH_H + ROW_GAP) * Math.pow(2, ri);
+
+    /** Top padding of match column for round ri so centers align with round 0 */
+    const colPadTop = (ri: number) =>
+        ri === 0 ? 0 : (matchSpacing(ri) - MATCH_H - ROW_GAP) / 2;
+
+    /** Absolute center-Y of match j in round ri (within the match area, below labels) */
+    const matchCY = (ri: number, j: number) =>
+        colPadTop(ri) + j * matchSpacing(ri) + MATCH_H / 2;
+
+    /** Absolute left-X of round ri's column */
+    const colLeft = (ri: number) => ri * (MATCH_W + COL_GAP);
+
+    const n0 = bracketRounds[0].matches.length;
+    const totalMatchH = n0 * MATCH_H + (n0 - 1) * ROW_GAP;
+    const totalW = N * MATCH_W + (N - 1) * COL_GAP;
+
+    /* ── Build SVG connector specs ────────────────────────────── */
+    type Conn = { x1: number; y1a: number; y1b: number | null; midX: number; y2: number; done: boolean };
+    const connectors: Conn[] = [];
+
+    for (let ri = 0; ri < N - 1; ri++) {
+        const round = bracketRounds[ri];
+        const x1 = colLeft(ri) + MATCH_W;  // right edge of current round
+        const x2 = colLeft(ri + 1);         // left edge of next round
+        const midX = (x1 + x2) / 2;
+        const pairs = Math.ceil(round.matches.length / 2);
+
+        for (let p = 0; p < pairs; p++) {
+            const m1 = round.matches[p * 2];
+            const m2 = round.matches[p * 2 + 1] ?? null;
+            const y1a = matchCY(ri, p * 2);
+            const y1b = m2 ? matchCY(ri, p * 2 + 1) : null;
+            const y2 = matchCY(ri + 1, p);
+            const done = (m1.status === "CONFIRMED" || m1.status === "BYE") &&
+                (!m2 || m2.status === "CONFIRMED" || m2.status === "BYE");
+            connectors.push({ x1, y1a, y1b, midX, y2, done });
+        }
+    }
+
+    /* ── Render ───────────────────────────────────────────────── */
     return (
         <div className="space-y-3">
             {/* Zoom controls */}
             <div className="flex items-center justify-end">
                 <ZoomControls zoom={zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onReset={reset} />
             </div>
+
             <div ref={containerRef} className="overflow-x-auto pb-4">
-                <div style={{ zoom }} className="flex items-start w-max">
+                {/* Zoom wrapper — explicit size so absolute children position correctly */}
+                <div style={{ zoom, position: "relative", width: totalW + TROPHY_W, height: LABEL_H + totalMatchH }}>
+
+                    {/* ── SVG connector layer ─────────────────────────────── */}
+                    <svg
+                        style={{ position: "absolute", top: LABEL_H, left: 0, width: totalW, height: totalMatchH, overflow: "visible" }}
+                        className="pointer-events-none"
+                    >
+                        {connectors.map((c, i) => (
+                            <g key={i}
+                                stroke="currentColor"
+                                fill="none"
+                                strokeWidth={1}
+                                strokeOpacity={c.done ? 0.45 : 0.18}
+                                className={c.done ? "text-success" : "text-foreground"}>
+                                {/* Horizontal stub from match 1 center → midX */}
+                                <line x1={c.x1} y1={c.y1a} x2={c.midX} y2={c.y1a} />
+                                {c.y1b !== null && <>
+                                    {/* Horizontal stub from match 2 center → midX */}
+                                    <line x1={c.x1} y1={c.y1b} x2={c.midX} y2={c.y1b} />
+                                    {/* Vertical bar joining both stubs */}
+                                    <line x1={c.midX} y1={c.y1a} x2={c.midX} y2={c.y1b} />
+                                </>}
+                                {/* Horizontal exit → left edge of next round */}
+                                <line x1={c.midX} y1={c.y2} x2={c.x1 + COL_GAP} y2={c.y2} />
+                            </g>
+                        ))}
+                    </svg>
+
+                    {/* ── Round columns (absolutely positioned) ──────────── */}
                     {bracketRounds.map((round, ri) => {
-                        const mult = Math.pow(2, ri);
-                        const gap = ri === 0 ? GAP : (MATCH_H + GAP) * mult - MATCH_H;
-                        const padTop = ri === 0 ? 0 : ((MATCH_H + GAP) * mult - MATCH_H - GAP) / 2;
-
+                        const padTop = colPadTop(ri);
+                        const itemGap = matchSpacing(ri) - MATCH_H; // gap between CompactMatch cards
                         return (
-                            <div key={round.round} className="flex items-start">
-                                <div style={{ paddingTop: padTop }}>
-                                    <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider text-center mb-2">{round.name}</p>
-                                    <div className="flex flex-col" style={{ gap }}>
-                                        {round.matches.map(m => (
-                                            <CompactMatch key={m.id} match={m} currentPlayerId={currentPlayerId} onViewResult={onViewResult} />
-                                        ))}
-                                    </div>
+                            <div
+                                key={round.round}
+                                style={{ position: "absolute", left: colLeft(ri), top: 0, width: MATCH_W }}
+                            >
+                                {/* Round label */}
+                                <p
+                                    className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider text-center"
+                                    style={{ height: LABEL_H, display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 3 }}
+                                >
+                                    {round.name}
+                                </p>
+                                {/* Match cards */}
+                                <div style={{ display: "flex", flexDirection: "column", gap: itemGap, marginTop: padTop }}>
+                                    {round.matches.map(m => (
+                                        <CompactMatch
+                                            key={m.id}
+                                            match={m}
+                                            currentPlayerId={currentPlayerId}
+                                            onViewResult={onViewResult}
+                                        />
+                                    ))}
                                 </div>
-
-                                {ri < bracketRounds.length - 1 && (
-                                    <div style={{ paddingTop: padTop }}>
-                                        <p className="text-[10px] opacity-0 mb-2">.</p>
-                                        <div className="flex flex-col" style={{ gap }}>
-                                            {Array.from({ length: Math.ceil(round.matches.length / 2) }).map((_, pi) => {
-                                                const pair = round.matches.slice(pi * 2, pi * 2 + 2);
-                                                const done = pair.every(m => m.status === "CONFIRMED" || m.status === "BYE");
-                                                const lc = done ? "border-success/40" : "border-foreground/15";
-                                                const h = pair.length === 2 ? MATCH_H * 2 + gap : MATCH_H;
-                                                const mid1 = MATCH_H / 2;           // mid of first match
-                                                const mid2 = MATCH_H + gap + MATCH_H / 2; // mid of second match
-                                                const centerY = (mid1 + mid2) / 2;   // vertical midpoint
-                                                return (
-                                                    <div key={pi} className="relative" style={{ height: h, width: CONN_W }}>
-                                                        {pair.length === 2 ? (
-                                                            <>
-                                                                {/* Top horizontal stub from match 1 */}
-                                                                <div className={`absolute left-0 border-t ${lc}`} style={{ width: CONN_W / 2, top: mid1 }} />
-                                                                {/* Bottom horizontal stub from match 2 */}
-                                                                <div className={`absolute left-0 border-t ${lc}`} style={{ width: CONN_W / 2, top: mid2 }} />
-                                                                {/* Vertical bar connecting mid1 to mid2 */}
-                                                                <div className={`absolute border-r ${lc}`} style={{ left: CONN_W / 2, top: mid1, bottom: h - mid2 }} />
-                                                                {/* Horizontal out to next round */}
-                                                                <div className={`absolute border-t ${lc}`} style={{ left: CONN_W / 2, right: 0, top: centerY }} />
-                                                            </>
-                                                        ) : (
-                                                            // Bye / single match — straight through
-                                                            <div className={`absolute left-0 right-0 border-t ${lc}`} style={{ top: MATCH_H / 2 }} />
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         );
                     })}
 
-                    {bracketRounds.length > 0 && (() => {
-                        const winner = bracketRounds[bracketRounds.length - 1]?.matches[0]?.winner;
+                    {/* ── Winner trophy ───────────────────────────────────── */}
+                    {(() => {
+                        const winner = bracketRounds[N - 1]?.matches[0]?.winner;
+                        const trophyTop = LABEL_H + matchCY(N - 1, 0) - 28;
                         return (
-                            <div className="flex flex-col items-center justify-center min-w-[80px] gap-1 self-center ml-2">
+                            <div
+                                style={{ position: "absolute", left: totalW + 8, top: trophyTop, width: TROPHY_W - 8 }}
+                                className="flex flex-col items-center gap-1"
+                            >
                                 <Trophy className={`h-7 w-7 ${winner ? "text-warning-500" : "text-foreground/15"}`} />
-                                {winner ? (
-                                    <p className="text-[11px] font-semibold text-center">{winner.displayName}</p>
-                                ) : (
-                                    <p className="text-[10px] text-foreground/25">TBD</p>
-                                )}
+                                {winner
+                                    ? <p className="text-[11px] font-semibold text-center">{winner.displayName}</p>
+                                    : <p className="text-[10px] text-foreground/25">TBD</p>
+                                }
                             </div>
                         );
                     })()}
@@ -237,4 +298,3 @@ function LeagueView({
         </div>
     );
 }
-
