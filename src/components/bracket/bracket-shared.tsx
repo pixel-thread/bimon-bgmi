@@ -160,7 +160,7 @@ export function statusConfig(status: BracketMatchData["status"]) {
 /* ─── Player Slot (vertical card row) ───────────────────────── */
 
 export function PlayerSlot({
-    player, avatar, score, isWinner, isCurrent, isBye,
+    player, avatar, score, isWinner, isCurrent, isBye, onCall, calling,
 }: {
     player: BracketPlayer | null;
     avatar: string | null;
@@ -168,6 +168,8 @@ export function PlayerSlot({
     isWinner: boolean;
     isCurrent: boolean;
     isBye: boolean;
+    onCall?: () => void;
+    calling?: boolean;
 }) {
     if (!player) {
         return (
@@ -194,6 +196,19 @@ export function PlayerSlot({
             )}
             {isWinner && <Trophy className="h-3.5 w-3.5 text-success-500 shrink-0" />}
             {isBye && <Chip size="sm" variant="flat" color="secondary" className="text-[10px] h-4">BYE</Chip>}
+            {/* Call button — only shown on the opponent's row */}
+            {onCall && (
+                <button
+                    onClick={onCall}
+                    disabled={calling}
+                    title="Call opponent"
+                    className="flex items-center justify-center h-5 w-5 rounded-full bg-success/15 hover:bg-success/30 active:scale-95 transition-all disabled:opacity-50 shrink-0"
+                >
+                    {calling
+                        ? <span className="h-2.5 w-2.5 border-2 border-success/40 border-t-success rounded-full animate-spin" />
+                        : <Phone className="h-2.5 w-2.5 text-success" />}
+                </button>
+            )}
         </div>
     );
 }
@@ -268,6 +283,8 @@ export function MatchCard({
                     player={match.player1} avatar={match.player1Avatar} score={match.score1}
                     isWinner={match.winnerId === match.player1Id} isCurrent={isCurrentP1}
                     isBye={match.status === "BYE" && !match.player2Id}
+                    onCall={isCurrentP2 && match.player1Id ? callOpponent : undefined}
+                    calling={isCurrentP2 ? callingOpponent : false}
                 />
                 <div className="flex items-center gap-2 px-2">
                     <div className="flex-1 h-px bg-divider" />
@@ -278,6 +295,8 @@ export function MatchCard({
                     player={match.player2} avatar={match.player2Avatar} score={match.score2}
                     isWinner={match.winnerId === match.player2Id} isCurrent={isCurrentP2}
                     isBye={match.status === "BYE" && !match.player1Id}
+                    onCall={isCurrentP1 && match.player2Id ? callOpponent : undefined}
+                    calling={isCurrentP1 ? callingOpponent : false}
                 />
                 <div className="flex items-center justify-between pt-1">
                     <div className="flex items-center gap-2">
@@ -294,19 +313,6 @@ export function MatchCard({
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* Call opponent button — only for participants in PES (has phone) */}
-                        {isParticipant && match.player1Id && match.player2Id && (
-                            <button
-                                onClick={callOpponent}
-                                disabled={callingOpponent}
-                                title="Call opponent"
-                                className="flex items-center justify-center h-6 w-6 rounded-full bg-success/10 hover:bg-success/20 active:scale-95 transition-all disabled:opacity-50"
-                            >
-                                {callingOpponent
-                                    ? <span className="h-3 w-3 border-2 border-success/40 border-t-success rounded-full animate-spin" />
-                                    : <Phone className="h-3 w-3 text-success" />}
-                            </button>
-                        )}
                         {canSubmit && onSubmitResult && (
                             <button onClick={() => onSubmitResult(match.id)} className="text-[11px] font-semibold text-primary hover:text-primary-600 transition-colors">
                                 Submit Result →
