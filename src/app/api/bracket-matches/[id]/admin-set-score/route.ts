@@ -1,0 +1,115 @@
+import { prisma } from "@/lib/database";
+import { getAuthEmail } from "@/lib/auth";
+import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
+import { advanceWinners } from "@/lib/logic/generateBracket";
+import { type NextRequest } from "next/server";
+
+/**
+ * PATCH /api/bracket-matches/[id]/admin-set-score
+ * Admin-only: set or override a match score regardless of current status.
+ * Body: { score1: number, score2: number, screenshotUrl?: string }
+ */
+export async function PATCH(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const userId = await getAuthEmail();
+        if (!userId) return ErrorResponse({ message: "Unauthorized", status: 401 });
+
+        const { id: matchId } = await params;
+        const body = await req.json();
+        const { score1, score2, screenshotUrl } = body as {
+            score1: number;
+            score2: number;
+            screenshotUrl?: string | null;
+        };
+
+        if (score1 === undefined || score2 === undefined)
+            return ErrorResponse({ message: "score1 and score2 are required", status: 400 });
+
+        // Verify admin
+        const user = await prisma.user.findUnique({
+            where: { email: userId },
+            select: { role: true },
+        });
+        const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+        if (!isAdmin) return ErrorResponse({ message: "Admin access required", status: 403 });
+
+        // Get match
+        const match = await prisma.bracketMatch.findUnique({
+            where: { id: matchId },
+            select: { id: true, player1Id: true, player2Id: true, tournamentId: true, round: true },
+        });
+        if (!match) return ErrorResponse({ message: "Match not found", status: 404 });
+
+        // Draws not allowed in knockout
+        const tournament = await prisma.tournament.findUnique({
+            where: { id: match.tournamentId },
+            select: { type: true },
+        });
+        const isLeague = tournament?.type === "LEAGUE";
+        const isGroupStage = tournament?.type === "GROUP_KNOCKOUT" && match.round < 0;
+        const drawsAllowed = isLeague || isGroupStage;
+
+        let winnerId: string | null = null;
+        if (score1 === score2) {
+            if (!drawsAllowed)
+                return ErrorResponse({ message: "Draws not allowed — there must be a winner", status: 400 });
+        } else {
+            winnerId = score1 > score2 ? match.player1Id : match.player2Id;
+        }
+
+        // Update match
+        await prisma.bracketMatch.update({
+            where: { id: matchId },
+            data: {
+                score1,
+                score2,
+                winnerId,
+                status: "CONFIRMED",
+                ...(screenshotUrl !== undefined ? {} : {}), // screenshotUrl lives on BracketResult
+            },
+        });
+
+        // Upsert bracketResult to track screenshot
+        if (screenshotUrl) {
+            const existing = await prisma.bracketResult.findFirst({ where: { bracketMatchId: matchId } });
+            if (existing) {
+                await prisma.bracketResult.update({ where: { id: existing.id }, data: { screenshotUrl } });
+            } else {
+                // Need a submittedById — use a system/admin player id
+                const adminPlayer = await prisma.player.findFirst({ where: { user: { email: userId } }, select: { id: true } });
+                if (adminPlayer) {
+                    await prisma.bracketResult.create({
+                        data: {
+                            bracketMatchId: matchId,
+                            submittedById: adminPlayer.id,
+                            claimedScore1: score1,
+                            claimedScore2: score2,
+                            screenshotUrl,
+                            isDispute: false,
+                        },
+                    });
+                }
+            }
+        }
+
+        // Advance winners for knockout matches
+        const isKnockoutMatch =
+            tournament?.type === "BRACKET_1V1" ||
+            (tournament?.type === "GROUP_KNOCKOUT" && match.round > 0);
+
+        if (isKnockoutMatch) {
+            await advanceWinners(match.tournamentId, match.round);
+        }
+
+        return SuccessResponse({
+            message: isKnockoutMatch
+                ? "Score updated! Winner advances to next round."
+                : "Score updated successfully.",
+        });
+    } catch (error) {
+        return ErrorResponse({ message: "Failed to update match score", error });
+    }
+}

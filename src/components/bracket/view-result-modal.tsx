@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-    Chip, Avatar, Button, Input,
+    Chip, Avatar, Button,
 } from "@heroui/react";
-import { Trophy, Camera, User, Pencil, Upload, X, Image as ImageIcon, Save } from "lucide-react";
+import { Trophy, Camera, Pencil, Upload, X, Image as ImageIcon, Save, Plus, Minus } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -26,56 +26,57 @@ interface ViewResultModalProps {
         status: string;
         screenshotUrl?: string | null;
     } | null;
-    /** Whether the viewer is an admin (shows edit controls) */
     isAdmin?: boolean;
-    /** Tournament ID for cache invalidation */
     tournamentId?: string;
+}
+
+function ScoreStepper({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+    return (
+        <div className="flex flex-col items-center gap-1.5 flex-1">
+            <span className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider truncate max-w-[110px] text-center">{label}</span>
+            <div className="flex items-center gap-2">
+                <button type="button" onClick={() => onChange(Math.max(0, value - 1))}
+                    className="h-8 w-8 rounded-full bg-default-100 hover:bg-default-200 active:scale-95 flex items-center justify-center transition-all">
+                    <Minus className="h-3.5 w-3.5 text-foreground/60" />
+                </button>
+                <span className="text-3xl font-black tabular-nums w-10 text-center select-none">{value}</span>
+                <button type="button" onClick={() => onChange(value + 1)}
+                    className="h-8 w-8 rounded-full bg-primary/15 hover:bg-primary/25 active:scale-95 flex items-center justify-center transition-all">
+                    <Plus className="h-3.5 w-3.5 text-primary" />
+                </button>
+            </div>
+        </div>
+    );
 }
 
 export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tournamentId }: ViewResultModalProps) {
     const [editing, setEditing] = useState(false);
-    const [score1, setScore1] = useState("");
-    const [score2, setScore2] = useState("");
+    const [score1, setScore1] = useState(0);
+    const [score2, setScore2] = useState(0);
     const [screenshot, setScreenshot] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const queryClient = useQueryClient();
 
-    // ── All hooks above — early return must come AFTER ──
-    const p1Won = match?.winnerId === match?.player1Id;
-    const p2Won = match?.winnerId === match?.player2Id;
-    const hasResult = match?.score1 !== null && match?.score2 !== null;
-
-    const startEditing = () => {
-        setScore1(match?.score1?.toString() ?? "");
-        setScore2(match?.score2?.toString() ?? "");
-        setPreviewUrl(null);
-        setScreenshot(null);
-        setEditing(true);
-    };
-
-    const cancelEditing = () => {
-        setEditing(false);
-        setScore1("");
-        setScore2("");
-        removeScreenshot();
-    };
-
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        if (!file.type.startsWith("image/")) {
-            toast.error("Please upload an image file");
-            return;
+    // Pre-load existing scores when entering edit mode
+    useEffect(() => {
+        if (editing && match) {
+            setScore1(match.score1 ?? 0);
+            setScore2(match.score2 ?? 0);
         }
-        if (file.size > 5 * 1024 * 1024) {
-            toast.error("Image must be under 5MB");
-            return;
+    }, [editing, match]);
+
+    // Reset on close
+    useEffect(() => {
+        if (!isOpen) {
+            setEditing(false);
+            setScore1(0);
+            setScore2(0);
+            setScreenshot(null);
+            setPreviewUrl(null);
         }
-        setScreenshot(file);
-        setPreviewUrl(URL.createObjectURL(file));
-    };
+    }, [isOpen]);
 
     const removeScreenshot = () => {
         setScreenshot(null);
@@ -84,263 +85,214 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/")) { toast.error("Please upload an image file"); return; }
+        if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
+        setScreenshot(file);
+        setPreviewUrl(URL.createObjectURL(file));
+    };
+
     const handleClose = () => {
-        cancelEditing();
+        setEditing(false);
+        removeScreenshot();
         onClose();
     };
 
-    const adminSubmit = useMutation({
+    // Admin save mutation — uses dedicated admin PATCH endpoint
+    const adminSave = useMutation({
         mutationFn: async () => {
-            const s1 = parseInt(score1);
-            const s2 = parseInt(score2);
-            if (isNaN(s1) || isNaN(s2)) throw new Error("Enter valid scores");
-            if (s1 === s2) throw new Error("Draws not allowed — there must be a winner");
-
+            if (score1 === score2) throw new Error("Draws not allowed — there must be a winner");
             setUploading(true);
 
-            // Upload screenshot if provided (use ImgBB to avoid storage cost)
-            let screenshotUrl = match?.screenshotUrl || null;
+            // Upload screenshot to ImgBB
+            let screenshotUrl: string | null = match?.screenshotUrl || null;
             if (screenshot) {
-                try {
-                    const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
-                    if (!apiKey) throw new Error("ImgBB API key not configured");
-                    const formData = new FormData();
-                    formData.append("image", screenshot);
-                    formData.append("name", `bracket-admin-${match?.id}-${Date.now()}`);
-                    const uploadRes = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
-                        method: "POST",
-                        body: formData,
-                    });
-                    const uploadData = await uploadRes.json();
-                    if (!uploadData.success) throw new Error(uploadData.error?.message || "ImgBB upload failed");
-                    screenshotUrl = uploadData.data.url;
-                } catch (err: any) {
-                    throw new Error(`Screenshot upload failed: ${err.message}`);
-                }
+                const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
+                if (!apiKey) throw new Error("ImgBB API key not configured");
+                const fd = new FormData();
+                fd.append("image", screenshot);
+                fd.append("name", `bracket-admin-${match?.id}-${Date.now()}`);
+                const up = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: fd });
+                const upData = await up.json();
+                if (!upData.success) throw new Error(upData.error?.message || "Upload failed");
+                screenshotUrl = upData.data.url;
             }
 
-            // Submit result as admin
-            const res = await fetch(`/api/bracket-matches/${match?.id}/submit-result`, {
-                method: "POST",
+            const res = await fetch(`/api/bracket-matches/${match?.id}/admin-set-score`, {
+                method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    score1: s1,
-                    score2: s2,
-                    screenshotUrl,
-                    adminOverride: true,
-                }),
+                body: JSON.stringify({ score1, score2, screenshotUrl }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Failed to submit");
+            if (!res.ok) throw new Error(data.error || data.message || "Failed to save");
             return data;
         },
         onSuccess: (data) => {
-            toast.success(data.message || "Result updated!");
-            if (tournamentId) {
-                queryClient.invalidateQueries({ queryKey: ["bracket", tournamentId] });
-            }
+            toast.success(data.message || "Score updated!");
+            if (tournamentId) queryClient.invalidateQueries({ queryKey: ["bracket", tournamentId] });
             handleClose();
         },
         onError: (err: Error) => toast.error(err.message),
         onSettled: () => setUploading(false),
     });
 
-    // Guard AFTER all hooks
+    // Must be after all hooks
     if (!match) return null;
 
+    const p1Won = match.winnerId === match.player1Id;
+    const p2Won = match.winnerId === match.player2Id;
+    const hasResult = match.score1 !== null && match.score2 !== null && match.score1 !== undefined && match.score2 !== undefined;
+    const screenshotToShow = previewUrl ?? match.screenshotUrl ?? null;
+
     return (
-        <Modal isOpen={isOpen} onClose={handleClose} placement="center" size="lg">
+        <Modal isOpen={isOpen} onClose={handleClose} placement="center" size="sm">
             <ModalContent>
-                <ModalHeader className="flex items-center gap-2">
+                <ModalHeader className="flex items-center gap-2 pb-1">
                     <Trophy className="h-4 w-4 text-primary" />
-                    {editing ? "Edit Match Result" : "Match Result"}
-                </ModalHeader>
-                <ModalBody className="pb-6 space-y-4">
-                    {/* Score display / edit */}
-                    <div className="flex items-center justify-center gap-4 py-4">
-                        {/* Player 1 */}
-                        <div className={`flex flex-col items-center gap-2 flex-1 ${!editing && p1Won ? "" : !editing ? "opacity-50" : ""}`}>
-                            <Avatar
-                                src={match.player1Avatar || undefined}
-                                name={match.player1?.[0] || "?"}
-                                size="lg"
-                                className={!editing && p1Won ? "ring-2 ring-success" : ""}
-                            />
-                            <span className="text-sm font-medium truncate max-w-[120px]">
-                                {match.player1 || "TBD"}
-                            </span>
-                            {!editing && p1Won && (
-                                <Chip size="sm" color="success" variant="flat" startContent={<Trophy className="h-3 w-3" />}>
-                                    Winner
-                                </Chip>
-                            )}
-                        </div>
-
-                        {/* Score */}
-                        {editing ? (
-                            <div className="flex items-center gap-3">
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    value={score1}
-                                    onValueChange={setScore1}
-                                    size="lg"
-                                    className="w-20"
-                                    classNames={{ input: "text-center text-2xl font-bold" }}
-                                />
-                                <span className="text-foreground/20 font-bold text-xl">—</span>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    value={score2}
-                                    onValueChange={setScore2}
-                                    size="lg"
-                                    className="w-20"
-                                    classNames={{ input: "text-center text-2xl font-bold" }}
-                                />
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-3">
-                                <span className={`text-4xl font-black ${p1Won ? "text-success" : "text-foreground/40"}`}>
-                                    {match.score1 ?? "-"}
-                                </span>
-                                <span className="text-foreground/20 font-bold text-xl">—</span>
-                                <span className={`text-4xl font-black ${p2Won ? "text-success" : "text-foreground/40"}`}>
-                                    {match.score2 ?? "-"}
-                                </span>
-                            </div>
-                        )}
-
-                        {/* Player 2 */}
-                        <div className={`flex flex-col items-center gap-2 flex-1 ${!editing && p2Won ? "" : !editing ? "opacity-50" : ""}`}>
-                            <Avatar
-                                src={match.player2Avatar || undefined}
-                                name={match.player2?.[0] || "?"}
-                                size="lg"
-                                className={!editing && p2Won ? "ring-2 ring-success" : ""}
-                            />
-                            <span className="text-sm font-medium truncate max-w-[120px]">
-                                {match.player2 || "TBD"}
-                            </span>
-                            {!editing && p2Won && (
-                                <Chip size="sm" color="success" variant="flat" startContent={<Trophy className="h-3 w-3" />}>
-                                    Winner
-                                </Chip>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Status */}
-                    {!editing && (
-                        <div className="flex justify-center">
-                            <Chip
-                                size="sm"
-                                variant="flat"
-                                color={match.status === "CONFIRMED" ? "success" : match.status === "SUBMITTED" ? "warning" : "default"}
-                            >
-                                {match.status === "CONFIRMED" ? "✅ Confirmed" :
-                                    match.status === "SUBMITTED" ? "⏰ Awaiting Confirmation" :
-                                        match.status}
-                            </Chip>
-                        </div>
+                    {editing ? "Edit Result" : "Match Result"}
+                    {isAdmin && !editing && (
+                        <Chip size="sm" color="warning" variant="flat" className="ml-auto text-[10px]">Admin</Chip>
                     )}
+                </ModalHeader>
 
-                    {/* Screenshot — view or upload */}
+                <ModalBody className="gap-4 py-3">
                     {editing ? (
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-foreground/70 flex items-center gap-1.5">
-                                <Camera className="h-3.5 w-3.5" />
-                                Screenshot
-                            </label>
-
-                            {(previewUrl || match.screenshotUrl) ? (
-                                <div className="relative rounded-xl overflow-hidden border border-divider">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
-                                        src={previewUrl || match.screenshotUrl || ""}
-                                        alt="Score screenshot"
-                                        className="w-full max-h-48 object-contain bg-black/50"
-                                    />
-                                    {previewUrl && (
-                                        <button
-                                            onClick={removeScreenshot}
-                                            className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </button>
-                                    )}
-                                </div>
-                            ) : null}
-
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-foreground/15 hover:border-primary/40 p-3 transition-colors text-sm text-foreground/50 hover:text-foreground/70"
-                            >
-                                <ImageIcon className="h-4 w-4" />
-                                {previewUrl || match.screenshotUrl ? "Replace screenshot" : "Upload screenshot"}
-                            </button>
-
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                onChange={handleFileSelect}
-                                className="hidden"
-                            />
-                        </div>
-                    ) : match.screenshotUrl ? (
-                        <div className="space-y-2">
-                            <label className="text-xs font-medium text-foreground/50 flex items-center gap-1.5">
-                                <Camera className="h-3 w-3" />
-                                Screenshot Proof
-                            </label>
-                            <div className="rounded-xl overflow-hidden border border-divider">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src={match.screenshotUrl}
-                                    alt="Match result screenshot"
-                                    className="w-full max-h-64 object-contain bg-black/50"
+                        /* ── Edit mode: score steppers + screenshot ── */
+                        <>
+                            <div className="flex items-center gap-2 py-2">
+                                <ScoreStepper
+                                    label={match.player1 ?? "Player 1"}
+                                    value={score1}
+                                    onChange={setScore1}
+                                />
+                                <span className="text-xl font-light text-foreground/20 mb-1">—</span>
+                                <ScoreStepper
+                                    label={match.player2 ?? "Player 2"}
+                                    value={score2}
+                                    onChange={setScore2}
                                 />
                             </div>
-                        </div>
+
+                            {/* Screenshot upload */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-medium text-foreground/50 flex items-center gap-1.5">
+                                    <Camera className="h-3.5 w-3.5" />
+                                    Screenshot {match.screenshotUrl ? "(existing)" : "(optional)"}
+                                </label>
+
+                                {screenshotToShow ? (
+                                    <div className="relative rounded-xl overflow-hidden border border-divider">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={screenshotToShow} alt="Score screenshot" className="w-full max-h-48 object-contain bg-black/50" />
+                                        {previewUrl && (
+                                            <button onClick={removeScreenshot}
+                                                className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors">
+                                                <X className="h-3.5 w-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ) : null}
+
+                                <button onClick={() => fileInputRef.current?.click()}
+                                    className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-foreground/15 hover:border-primary/40 p-3 transition-colors text-sm text-foreground/50 hover:text-foreground/70">
+                                    <ImageIcon className="h-4 w-4" />
+                                    {screenshotToShow ? "Replace screenshot" : "Upload screenshot"}
+                                </button>
+                                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+                            </div>
+
+                            {score1 === score2 && (
+                                <p className="text-xs text-danger text-center font-medium">Draws not allowed — there must be a winner</p>
+                            )}
+                        </>
                     ) : (
-                        <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-foreground/5 border border-divider">
-                            <Camera className="h-4 w-4 text-foreground/30" />
-                            <span className="text-xs text-foreground/40">No screenshot uploaded</span>
-                        </div>
+                        /* ── View mode: players + score + screenshot ── */
+                        <>
+                            {/* Score display */}
+                            <div className="flex items-center justify-center gap-4 py-2">
+                                {/* P1 */}
+                                <div className={`flex flex-col items-center gap-1.5 flex-1 ${!p1Won ? "opacity-50" : ""}`}>
+                                    <Avatar src={match.player1Avatar || undefined} name={match.player1?.[0] || "?"}
+                                        size="md" className={p1Won ? "ring-2 ring-success" : ""} />
+                                    <span className="text-xs font-medium truncate max-w-[90px] text-center">{match.player1 || "TBD"}</span>
+                                    {p1Won && <Chip size="sm" color="success" variant="flat" startContent={<Trophy className="h-3 w-3" />}>Winner</Chip>}
+                                </div>
+
+                                {/* Score */}
+                                <div className="flex flex-col items-center gap-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-4xl font-black tabular-nums ${p1Won ? "text-success" : "text-foreground/40"}`}>
+                                            {hasResult ? match.score1 : "—"}
+                                        </span>
+                                        <span className="text-foreground/20 font-bold text-xl">—</span>
+                                        <span className={`text-4xl font-black tabular-nums ${p2Won ? "text-success" : "text-foreground/40"}`}>
+                                            {hasResult ? match.score2 : "—"}
+                                        </span>
+                                    </div>
+                                    <Chip size="sm" variant="flat"
+                                        color={match.status === "CONFIRMED" ? "success" : match.status === "SUBMITTED" ? "warning" : "default"}
+                                        className="text-[10px]">
+                                        {match.status === "CONFIRMED" ? "✅ Confirmed" :
+                                            match.status === "SUBMITTED" ? "⏰ Pending confirmation" : match.status}
+                                    </Chip>
+                                </div>
+
+                                {/* P2 */}
+                                <div className={`flex flex-col items-center gap-1.5 flex-1 ${!p2Won ? "opacity-50" : ""}`}>
+                                    <Avatar src={match.player2Avatar || undefined} name={match.player2?.[0] || "?"}
+                                        size="md" className={p2Won ? "ring-2 ring-success" : ""} />
+                                    <span className="text-xs font-medium truncate max-w-[90px] text-center">{match.player2 || "TBD"}</span>
+                                    {p2Won && <Chip size="sm" color="success" variant="flat" startContent={<Trophy className="h-3 w-3" />}>Winner</Chip>}
+                                </div>
+                            </div>
+
+                            {/* Screenshot */}
+                            {match.screenshotUrl ? (
+                                <div className="rounded-xl overflow-hidden border border-divider">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={match.screenshotUrl} alt="Match result screenshot"
+                                        className="w-full max-h-64 object-contain bg-black/50" />
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-foreground/5 border border-dashed border-divider">
+                                    <Camera className="h-4 w-4 text-foreground/20" />
+                                    <span className="text-xs text-foreground/30">No screenshot uploaded</span>
+                                </div>
+                            )}
+                        </>
                     )}
                 </ModalBody>
 
-                {/* Admin footer with edit/save */}
-                {isAdmin && (
-                    <ModalFooter>
-                        {editing ? (
-                            <>
-                                <Button variant="flat" onPress={cancelEditing} isDisabled={uploading}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    color="primary"
-                                    isLoading={adminSubmit.isPending || uploading}
-                                    isDisabled={!score1 || !score2 || score1 === score2}
-                                    onPress={() => adminSubmit.mutate()}
-                                    startContent={!adminSubmit.isPending && !uploading ? <Save className="h-4 w-4" /> : undefined}
-                                >
-                                    {uploading ? "Uploading..." : "Save Result"}
-                                </Button>
-                            </>
-                        ) : (
-                            <Button
-                                color="primary"
-                                variant="flat"
-                                onPress={startEditing}
-                                startContent={<Pencil className="h-4 w-4" />}
-                            >
-                                {hasResult ? "Edit Result" : "Enter Result"}
+                <ModalFooter className="pt-1 gap-2">
+                    {editing ? (
+                        <>
+                            <Button variant="flat" size="sm" onPress={() => { setEditing(false); removeScreenshot(); }}
+                                isDisabled={adminSave.isPending || uploading}>
+                                Cancel
                             </Button>
-                        )}
-                    </ModalFooter>
-                )}
+                            <Button color="primary" size="sm"
+                                isLoading={adminSave.isPending || uploading}
+                                isDisabled={score1 === score2}
+                                onPress={() => adminSave.mutate()}
+                                startContent={!adminSave.isPending && !uploading ? <Save className="h-3.5 w-3.5" /> : undefined}>
+                                {uploading ? "Uploading..." : "Save Result"}
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button variant="flat" size="sm" onPress={handleClose}>Close</Button>
+                            {isAdmin && (
+                                <Button color="warning" variant="flat" size="sm"
+                                    startContent={<Pencil className="h-3.5 w-3.5" />}
+                                    onPress={() => setEditing(true)}>
+                                    {hasResult ? "Edit Result" : "Enter Result"}
+                                </Button>
+                            )}
+                        </>
+                    )}
+                </ModalFooter>
             </ModalContent>
         </Modal>
     );

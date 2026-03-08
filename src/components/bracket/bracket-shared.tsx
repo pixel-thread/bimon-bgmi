@@ -453,25 +453,16 @@ export function MatchRow({
 
             {/* Actions + Eye */}
             <div className="flex items-center gap-1 shrink-0 ml-1">
-                {/* Admin edit button — on any match */}
-                {isAdmin && onSubmitResult && match.player1Id && match.player2Id && (
-                    <button
-                        onClick={() => onSubmitResult(match.id)}
-                        className="text-[10px] font-bold text-warning-400 hover:text-warning-600 transition-colors"
-                        title="Admin: edit result"
-                    >
-                        Edit
-                    </button>
-                )}
+
                 {canConfirm && onConfirmResult && (
                     <button onClick={() => onConfirmResult(match.id)} className="text-[10px] font-bold text-success hover:underline">✓</button>
                 )}
                 {canDispute && onDispute && (
                     <button onClick={() => onDispute(match.id)} className="text-[10px] font-bold text-danger hover:underline ml-1">✕</button>
                 )}
-                {/* Eye icon: always visible when there's a result */}
-                {hasResult && onViewResult && (
-                    <button onClick={() => onViewResult(match.id)} className="ml-0.5" title="View screenshot">
+                {/* Eye icon: for result-bearing matches to everyone; for all matches to admin */}
+                {(hasResult || isAdmin) && onViewResult && match.player1Id && match.player2Id && (
+                    <button onClick={() => onViewResult(match.id)} className="ml-0.5" title={isAdmin ? "View / edit result" : "View screenshot"}>
                         <Eye className="h-3.5 w-3.5 text-foreground/30 hover:text-foreground/70 transition-colors" />
                     </button>
                 )}
