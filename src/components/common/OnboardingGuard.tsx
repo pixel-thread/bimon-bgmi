@@ -3,31 +3,47 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuthUser } from "@/hooks/use-auth-user";
+import { GAME } from "@/lib/game-config";
+import { PhoneRequiredModal } from "./PhoneRequiredModal";
 
 const SKIP_PATHS = ["/onboarding", "/sign-in", "/sign-up"];
+const requiresPhone = !GAME.features.hasBR; // PES only
 
 /**
  * Redirects signed-in but non-onboarded users to /onboarding.
- * Place in (app) layout to guard all authenticated pages.
+ * For PES: shows a phone-required modal for existing players missing a phone.
  */
 export function OnboardingGuard({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
     const { user, isLoading, isSignedIn } = useAuthUser();
 
-    useEffect(() => {
-        if (isLoading || !isSignedIn || !user) return;
-        if (SKIP_PATHS.some((p) => pathname.startsWith(p))) return;
+    const isSkipped = SKIP_PATHS.some((p) => pathname.startsWith(p));
 
+    useEffect(() => {
+        if (isLoading || !isSignedIn || !user || isSkipped) return;
         if (!user.isOnboarded) {
             router.push("/onboarding");
         }
-    }, [user, isLoading, isSignedIn, pathname, router]);
+    }, [user, isLoading, isSignedIn, isSkipped, router]);
 
-    // Block rendering if user needs onboarding
-    if (isSignedIn && user && !user.isOnboarded && !SKIP_PATHS.some((p) => pathname.startsWith(p))) {
+    // Block render if full onboarding needed
+    if (isSignedIn && user && !user.isOnboarded && !isSkipped) {
         return null;
     }
 
-    return <>{children}</>;
+    // PES: existing player missing phone — show modal overlay, don't block page
+    const showPhoneModal =
+        requiresPhone &&
+        isSignedIn &&
+        !!user?.player &&
+        !user.player.phoneNumber &&
+        !isSkipped;
+
+    return (
+        <>
+            {children}
+            {showPhoneModal && <PhoneRequiredModal isOpen />}
+        </>
+    );
 }

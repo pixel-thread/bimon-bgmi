@@ -69,6 +69,7 @@ export const getCurrentUser = cache(async () => {
                 displayName: user.player.displayName || user.username,
                 category: user.player.category,
                 isBanned: user.player.isBanned,
+                phoneNumber: user.player.phoneNumber ?? null,
                 wallet: user.player.wallet
                     ? {
                         id: user.player.wallet.id,

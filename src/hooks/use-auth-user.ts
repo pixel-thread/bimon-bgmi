@@ -16,6 +16,7 @@ interface AuthUser {
         displayName: string | null;
         category: string;
         isBanned: boolean;
+        phoneNumber: string | null;
         wallet: {
             id: string;
             balance: number;

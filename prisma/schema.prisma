@@ -162,6 +162,7 @@ model Player {
   bio                     String?  @db.VarChar(100)
   characterImageId        String?  @unique
   customProfileImageUrl   String?
+  phoneNumber             String?
 
   // Game attributes
   category          PlayerCategory @default(NOOB)

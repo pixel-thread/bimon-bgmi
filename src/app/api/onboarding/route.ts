@@ -3,6 +3,7 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail, getAuthName, getAuthImage } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 import { getSettings } from "@/lib/settings";
+import { GAME } from "@/lib/game-config";
 
 /**
  * POST /api/onboarding
@@ -17,12 +18,37 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { displayName, uid, referralCode } = body as {
-            displayName: string;
+        const { displayName, uid, referralCode, phoneNumber } = body as {
+            displayName?: string;
             uid?: string;
             referralCode?: string;
+            phoneNumber?: string;
         };
 
+        const requiresPhone = !GAME.features.hasBR; // PES only
+
+        // Find user
+        const db = await getRequestPrisma();
+        let user = await db.user.findUnique({
+            where: { email: userId },
+            include: { player: true },
+        });
+
+        // ── Phone-only update for existing PES players ──────────────────
+        // Called when addPhone=1 param is set (existing user missing phone)
+        if (user?.isOnboarded && user.player && requiresPhone) {
+            const cleaned = phoneNumber?.replace(/\D/g, "") ?? "";
+            if (!cleaned || cleaned.length < 10) {
+                return ErrorResponse({ message: "Enter a valid 10-digit phone number", status: 400 });
+            }
+            await db.player.update({
+                where: { id: user.player.id },
+                data: { phoneNumber: `+91${cleaned.slice(-10)}` },
+            });
+            return SuccessResponse({ message: "Phone number saved" });
+        }
+
+        // ── Full onboarding ─────────────────────────────────────────────
         if (!displayName?.trim() || displayName.trim().length < 3) {
             return ErrorResponse({
                 message: "Display name must be at least 3 characters",
@@ -30,13 +56,15 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Find or create the user
-        const db = await getRequestPrisma();
-        let user = await db.user.findUnique({
-            where: { email: userId },
-            include: { player: true },
-        });
+        // Phone is required for PES
+        if (requiresPhone) {
+            const cleaned = phoneNumber?.replace(/\D/g, "") ?? "";
+            if (!cleaned || cleaned.length < 10) {
+                return ErrorResponse({ message: "Enter a valid 10-digit phone number", status: 400 });
+            }
+        }
 
+        // Find or create the user
         if (!user) {
             // New user — create DB record using NextAuth session data
             const name = await getAuthName();
@@ -75,8 +103,11 @@ export async function POST(request: NextRequest) {
                 player = await tx.player.create({
                     data: {
                         userId: user.id,
-                        displayName: displayName.trim(),
+                        displayName: (displayName ?? "").trim(),
                         ...(uid?.trim() && { uid: uid.trim() }),
+                        ...(requiresPhone && phoneNumber && {
+                            phoneNumber: `+91${phoneNumber.replace(/\D/g, "").slice(-10)}`,
+                        }),
                     },
                 });
 

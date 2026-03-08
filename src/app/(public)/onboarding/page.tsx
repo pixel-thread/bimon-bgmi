@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Avatar, Chip, Input } from "@heroui/react";
 import { GAME } from "@/lib/game-config";
 import { useSession, signOut } from "next-auth/react";
-import { Gamepad2, Loader2, CheckCircle } from "lucide-react";
+import { Gamepad2, Loader2, CheckCircle, Phone } from "lucide-react";
 import { PubgmiLogo } from "@/components/common/pubgmi-logo";
 import { motion } from "motion/react";
 import { toast } from "sonner";
@@ -33,12 +33,14 @@ export default function OnboardingPage() {
     const [userName, setUserName] = useState("");
     const [isUserNameAutoFilled, setIsUserNameAutoFilled] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [phoneNumber, setPhoneNumber] = useState("");
     const [showWhatsApp, setShowWhatsApp] = useState(false);
     const [justCompleted, setJustCompleted] = useState(false);
     const [uid, setUid] = useState("");
     const [isCheckingIGN, setIsCheckingIGN] = useState(false);
     const ignCheckTimer = useRef<NodeJS.Timeout | null>(null);
     const ignTutorial = useIGNTutorial({ autoOpen: GAME.pasteOnlyIGN });
+    const requiresPhone = !GAME.features.hasBR; // PES only
 
     // Redirect already-onboarded users to home
     useEffect(() => {
@@ -114,6 +116,10 @@ export default function OnboardingPage() {
             toast.error("Username must be at least 3 characters");
             return;
         }
+        if (requiresPhone && phoneNumber.replace(/\D/g, "").length < 10) {
+            toast.error("Enter a valid 10-digit phone number");
+            return;
+        }
 
         setIsSubmitting(true);
         try {
@@ -127,6 +133,7 @@ export default function OnboardingPage() {
                     displayName: displayName.trim(),
                     uid: uid.trim() || undefined,
                     referralCode,
+                    phoneNumber: phoneNumber.replace(/\D/g, "") || undefined,
                 }),
             });
 
@@ -333,7 +340,35 @@ export default function OnboardingPage() {
                             )}
                         </div>
 
-                        {/* Free Fire UID — paste only (only shown when GAME.hasUID) */}
+                        {/* Phone number — PES only, required */}
+                        {requiresPhone && (
+                            <div>
+                                <label className="text-sm font-medium text-foreground/70 mb-2 block">
+                                    Phone Number <span className="text-danger text-xs">*</span>
+                                </label>
+                                <Input
+                                    value={phoneNumber}
+                                    onValueChange={(v) => setPhoneNumber(v.replace(/\D/g, "").slice(0, 10))}
+                                    placeholder="9876543210"
+                                    size="lg"
+                                    variant="bordered"
+                                    type="tel"
+                                    inputMode="numeric"
+                                    maxLength={10}
+                                    isDisabled={isSubmitting}
+                                    isInvalid={phoneNumber.length > 0 && phoneNumber.replace(/\D/g, "").length < 10}
+                                    errorMessage="Enter all 10 digits"
+                                    description="WhatsApp preferred — visible to your match opponent only"
+                                    startContent={
+                                        <span className="text-sm font-semibold text-foreground/60 select-none pr-2 border-r border-divider mr-1 flex items-center gap-1">
+                                            <Phone className="h-3 w-3" /> +91
+                                        </span>
+                                    }
+                                />
+                            </div>
+                        )}
+
+                        {/* Free Fire UID — paste only */}
                         {GAME.hasUID && (
                             <div>
                                 <label className="text-sm font-medium text-foreground/70 mb-2 block">
@@ -374,7 +409,8 @@ export default function OnboardingPage() {
                                 isSubmitting ||
                                 !displayName.trim() ||
                                 !!displayNameError ||
-                                isCheckingIGN
+                                isCheckingIGN ||
+                                (requiresPhone && phoneNumber.replace(/\D/g, "").length < 10)
                             }
                             isLoading={isSubmitting}
                         >
