@@ -19,7 +19,9 @@ type SelectedMatch = {
     id: string;
     player1Id: string | null;
     player1Name: string | null;
+    player1Avatar: string | null;
     player2Name: string | null;
+    player2Avatar: string | null;
     isDisputing?: boolean;
 } | null;
 
@@ -168,12 +170,14 @@ function TournamentContent({
     // Helper — build submit context from a match id
     const matchContext = (matchId: string, isDisputing = false): SelectedMatch => {
         const m = allMatches.find((x: any) => x.id === matchId);
-        if (!m) return { id: matchId, player1Id: null, player1Name: null, player2Name: null, isDisputing };
+        if (!m) return { id: matchId, player1Id: null, player1Name: null, player1Avatar: null, player2Name: null, player2Avatar: null, isDisputing };
         return {
             id: matchId,
             player1Id: m.player1Id ?? null,
             player1Name: m.player1?.displayName ?? null,
+            player1Avatar: m.player1Avatar ?? null,
             player2Name: m.player2?.displayName ?? null,
+            player2Avatar: m.player2Avatar ?? null,
             isDisputing,
         };
     };
@@ -317,7 +321,9 @@ function TournamentContent({
                     onClose={() => onSelectMatch(null)}
                     player1Id={selectedMatch.player1Id}
                     player1Name={selectedMatch.player1Name}
+                    player1Avatar={selectedMatch.player1Avatar}
                     player2Name={selectedMatch.player2Name}
+                    player2Avatar={selectedMatch.player2Avatar}
                     currentPlayerId={playerId}
                     isAdmin={isAdmin}
                     isDisputing={selectedMatch.isDisputing}

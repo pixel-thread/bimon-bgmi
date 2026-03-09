@@ -6,6 +6,7 @@ import {
     Button,
 } from "@heroui/react";
 import { Upload, Trophy, Camera, X, Plus, Minus } from "lucide-react";
+import { Avatar } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -17,7 +18,9 @@ interface SubmitResultModalProps {
     // Player context — needed to submit scores in the correct order
     player1Id?: string | null;
     player1Name?: string | null;
+    player1Avatar?: string | null;
     player2Name?: string | null;
+    player2Avatar?: string | null;
     currentPlayerId?: string | null;
     isAdmin?: boolean;
     isDisputing?: boolean; // true when raising a dispute (opponent already submitted)
@@ -27,15 +30,14 @@ interface SubmitResultModalProps {
 
 export function SubmitResultModal({
     isOpen, onClose, matchId, tournamentId,
-    player1Id, player1Name, player2Name, currentPlayerId, isAdmin = false, isDisputing = false,
+    player1Id, player1Name, player1Avatar, player2Name, player2Avatar, currentPlayerId, isAdmin = false, isDisputing = false,
 }: SubmitResultModalProps) {
     const isPlayer2 = !!currentPlayerId && currentPlayerId !== player1Id;
 
-    // From the current player's perspective
     const myName = isAdmin ? (player1Name ?? "Player 1") : "You";
-    const oppName = isAdmin
-        ? (player2Name ?? "Player 2")
-        : (isPlayer2 ? (player1Name ?? "Opponent") : (player2Name ?? "Opponent"));
+    const oppName = isAdmin ? (player2Name ?? "Player 2") : (isPlayer2 ? (player1Name ?? "Opponent") : (player2Name ?? "Opponent"));
+    const myAvatar = isAdmin || !isPlayer2 ? player1Avatar : player2Avatar;
+    const oppAvatar = isAdmin || !isPlayer2 ? player2Avatar : player1Avatar;
 
     const [myScore, setMyScore] = useState(0);
     const [oppScore, setOppScore] = useState(0);
@@ -136,9 +138,8 @@ export function SubmitResultModal({
                     <div className="flex items-stretch gap-2">
                         {/* My side — prominent */}
                         <div className="flex-1 flex flex-col items-center gap-2 rounded-2xl bg-primary/8 border border-primary/20 py-3 px-2">
-                            <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
-                                <span className="text-xs font-bold text-primary">{myName[0]?.toUpperCase() ?? "?"}</span>
-                            </div>
+                            <Avatar src={myAvatar || undefined} name={myName[0]?.toUpperCase() ?? "?"} size="sm"
+                                classNames={{ base: "bg-primary/20", name: "text-primary font-bold" }} />
                             <span className="text-[10px] font-semibold text-primary/80 uppercase tracking-wider truncate max-w-full px-1 text-center leading-none">
                                 {myName}
                             </span>
@@ -164,9 +165,8 @@ export function SubmitResultModal({
 
                         {/* Opponent side — muted */}
                         <div className="flex-1 flex flex-col items-center gap-2 rounded-2xl bg-default-100/60 border border-divider py-3 px-2">
-                            <div className="h-8 w-8 rounded-full bg-default-200 flex items-center justify-center">
-                                <span className="text-xs font-bold text-foreground/40">{oppName[0]?.toUpperCase() ?? "?"}</span>
-                            </div>
+                            <Avatar src={oppAvatar || undefined} name={oppName[0]?.toUpperCase() ?? "?"} size="sm"
+                                classNames={{ base: "bg-default-200", name: "text-foreground/40 font-bold" }} />
                             <span className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider truncate max-w-full px-1 text-center leading-none">
                                 {oppName}
                             </span>
