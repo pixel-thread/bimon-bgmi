@@ -2,6 +2,61 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getSettings } from "@/lib/settings";
+import { advanceWinners } from "@/lib/logic/generateBracket";
+
+const CONFIRM_DEADLINE_MS = 30 * 60 * 1000; // 30 minutes
+
+/**
+ * Silently auto-confirm any SUBMITTED matches in a tournament
+ * that the opponent has ignored for more than 30 minutes.
+ * Called on every bracket page load — no admin needed.
+ */
+async function silentAutoConfirm(tournamentId: string, tournamentType: string) {
+    try {
+        const now = new Date();
+        const settings = await getSettings();
+
+        // 1. SUBMITTED > 30 min → confirm the claimed result
+        const stale = await prisma.bracketMatch.findMany({
+            where: { tournamentId, status: "SUBMITTED", updatedAt: { lt: new Date(now.getTime() - CONFIRM_DEADLINE_MS) } },
+            select: {
+                id: true, round: true, player1Id: true, player2Id: true,
+                results: { orderBy: { createdAt: "desc" }, take: 1, select: { claimedScore1: true, claimedScore2: true } },
+            },
+        });
+        for (const match of stale) {
+            const latest = match.results[0];
+            if (!latest) continue;
+            const { claimedScore1: s1, claimedScore2: s2 } = latest;
+            const winnerId = s1 > s2 ? match.player1Id : match.player2Id;
+            if (!winnerId) continue;
+            await prisma.bracketMatch.update({ where: { id: match.id }, data: { score1: s1, score2: s2, winnerId, status: "CONFIRMED" } });
+            const isKO = tournamentType === "BRACKET_1V1" || (tournamentType === "GROUP_KNOCKOUT" && match.round > 0);
+            if (isKO) await advanceWinners(tournamentId, match.round);
+        }
+
+        // 2. PENDING past play deadline → random winner (1-0)
+        const pending = await prisma.bracketMatch.findMany({
+            where: { tournamentId, status: "PENDING", player1Id: { not: null }, player2Id: { not: null } },
+            select: { id: true, round: true, player1Id: true, player2Id: true, createdAt: true },
+        });
+        for (const match of pending) {
+            const isKO = tournamentType === "BRACKET_1V1" || (tournamentType === "GROUP_KNOCKOUT" && match.round > 0);
+            const deadlineHours = isKO ? settings.matchDeadlineKOHours : settings.matchDeadlineGroupHours;
+            if (now < new Date(match.createdAt.getTime() + deadlineHours * 60 * 60 * 1000)) continue;
+            const winnerId = Math.random() < 0.5 ? match.player1Id! : match.player2Id!;
+            const winnerIsP1 = winnerId === match.player1Id;
+            await prisma.bracketMatch.update({
+                where: { id: match.id },
+                data: { winnerId, score1: winnerIsP1 ? 1 : 0, score2: winnerIsP1 ? 0 : 1, status: "CONFIRMED" },
+            });
+            if (isKO) await advanceWinners(tournamentId, match.round);
+        }
+    } catch {
+        // Silently swallow — never break the main response
+    }
+}
+
 
 /**
  * GET /api/tournaments/[id]/bracket
@@ -27,6 +82,9 @@ export async function GET(
         if (!tournament) {
             return ErrorResponse({ message: "Tournament not found", status: 404 });
         }
+
+        // Auto-confirm any SUBMITTED matches that the opponent has ignored >30 min
+        await silentAutoConfirm(id, tournament.type);
 
         const matches = await prisma.bracketMatch.findMany({
             where: { tournamentId: id },
