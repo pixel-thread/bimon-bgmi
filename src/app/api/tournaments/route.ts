@@ -96,6 +96,7 @@ export async function GET(request: NextRequest) {
                         matches: true,
                         winners: true,
                         teamStats: true,
+                        bracketMatches: true,
                     },
                 },
                 poll: {
@@ -130,6 +131,7 @@ export async function GET(request: NextRequest) {
                 teamCount: t._count.teams > 0 ? t._count.teams : t._count.teamStats,
                 matchCount: t._count.matches,
                 winnerCount: t._count.winners,
+                bracketMatchCount: t._count.bracketMatches,
                 poll: t.poll
                     ? {
                         id: t.poll.id,

@@ -44,7 +44,8 @@ export default function MatchesPage() {
     });
 
     // Auto-select first tab
-    const activeTournaments = tournaments ?? [];
+    // Only show tournaments that have bracket matches generated (not still voting)
+    const activeTournaments = (tournaments ?? []).filter((t: any) => t.bracketMatchCount > 0);
     const currentId = activeTab || activeTournaments[0]?.id || "";
     const currentTournament = activeTournaments.find((t: any) => t.id === currentId);
 
@@ -93,8 +94,8 @@ export default function MatchesPage() {
                     color="primary"
                     variant="solid"
                     classNames={{
-                        tabList: "bg-foreground/5 w-full",
-                        tab: "font-semibold",
+                        tabList: "bg-foreground/5 w-full overflow-x-auto flex-nowrap",
+                        tab: "font-semibold whitespace-nowrap",
                     }}
                     fullWidth
                 >
@@ -104,7 +105,7 @@ export default function MatchesPage() {
                             title={
                                 <span className="flex items-center gap-1.5">
                                     <span>{formatIcon(t.type)}</span>
-                                    <span className="truncate max-w-[120px]">{t.name}</span>
+                                    <span>{t.name}</span>
                                 </span>
                             }
                         />
