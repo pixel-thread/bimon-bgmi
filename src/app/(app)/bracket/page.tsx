@@ -119,6 +119,7 @@ export default function MatchesPage() {
                     tournament={currentTournament}
                     playerId={playerId}
                     isAdmin={isAdmin}
+                    showName={activeTournaments.length <= 1}
                     selectedMatch={selectedMatch}
                     viewingMatch={viewingMatch}
                     onSelectMatch={setSelectedMatch}
@@ -135,6 +136,7 @@ function TournamentContent({
     tournament,
     playerId,
     isAdmin,
+    showName = true,
     selectedMatch,
     viewingMatch,
     onSelectMatch,
@@ -143,6 +145,7 @@ function TournamentContent({
     tournament: any;
     playerId?: string;
     isAdmin?: boolean;
+    showName?: boolean;
     selectedMatch: SelectedMatch;
     viewingMatch: string | null;
     onSelectMatch: (m: SelectedMatch) => void;
@@ -239,8 +242,10 @@ function TournamentContent({
                         {tournamentType === "LEAGUE" ? "🏟️" : tournamentType === "GROUP_KNOCKOUT" ? "🌍" : "⚔️"}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="font-bold text-base leading-tight truncate">{tournament.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
+                        {showName && (
+                            <p className="font-bold text-base leading-tight truncate">{tournament.name}</p>
+                        )}
+                        <div className={`flex items-center gap-2 ${showName ? 'mt-0.5' : ''}`}>
                             <span className="text-[11px] text-foreground/40 font-medium">
                                 {bracketData.totalPlayers} players
                             </span>
