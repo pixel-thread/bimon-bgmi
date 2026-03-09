@@ -106,7 +106,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         passEmoji: "👑",
         idLabel: "Free Fire UID",
         idPlaceholder: "Your Free Fire UID (numeric)",
-        hasUID: false,
+        hasUID: true,
         pasteOnlyIGN: false,         // FF allows typed input
         locale: "kha",
         scoringSystem: "ffws",

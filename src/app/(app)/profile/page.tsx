@@ -51,6 +51,7 @@ interface ProfileData {
         id: string;
         displayName: string | null;
         uid: string | null;
+        phoneNumber: string | null;
         bio: string | null;
         category: string;
         hasRoyalPass: boolean;
@@ -111,6 +112,7 @@ export default function ProfilePage() {
     const [editing, setEditing] = useState(false);
     const [newIGN, setNewIGN] = useState("");
     const [newUID, setNewUID] = useState("");
+    const [newPhone, setNewPhone] = useState("");
     const [newBio, setNewBio] = useState("");
     const [ignError, setIgnError] = useState("");
     const [saving, setSaving] = useState(false);
@@ -143,6 +145,7 @@ export default function ProfilePage() {
                 body: JSON.stringify({
                     ...(newIGN.trim() ? { displayName: newIGN.trim() } : {}),
                     ...(newUID.trim() ? { uid: newUID.trim() } : {}),
+                    ...(!GAME.features.hasBR ? { phoneNumber: newPhone.trim() } : {}),
                     ...(newBio !== undefined ? { bio: newBio.trim() } : {}),
                     ...(forceChange ? { forceChange: true } : {}),
                 }),
@@ -508,6 +511,7 @@ export default function ProfilePage() {
                                             setEditing(true);
                                             setNewIGN(player.displayName || profile.username);
                                             setNewUID(player.uid || "");
+                                            setNewPhone(player.phoneNumber || "");
                                             setNewBio(player.bio || "");
                                             setIgnError("");
                                         }}
@@ -613,6 +617,28 @@ export default function ProfilePage() {
                                         </div>
                                     )}
 
+                                    {/* Phone number — PES only */}
+                                    {!GAME.features.hasBR && (
+                                        <div>
+                                            <label className="text-sm font-medium text-foreground/70 mb-2 block">
+                                                Phone Number
+                                            </label>
+                                            <Input
+                                                value={newPhone}
+                                                onChange={(e) => setNewPhone(e.target.value)}
+                                                placeholder="e.g. +91 9876543210"
+                                                size="lg"
+                                                variant="bordered"
+                                                type="tel"
+                                                isDisabled={saving}
+                                                description="Used for prize delivery & contact"
+                                                startContent={
+                                                    <span className="text-foreground/30 text-sm">📱</span>
+                                                }
+                                            />
+                                        </div>
+                                    )}
+
                                     {/* Bio */}
                                     <div>
                                         <p className="text-xs text-foreground/40 mb-1">Bio</p>
@@ -661,6 +687,12 @@ export default function ProfilePage() {
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs text-foreground/40">{GAME.idLabel}:</span>
                                             <span className="text-sm font-mono">{player.uid}</span>
+                                        </div>
+                                    )}
+                                    {!GAME.features.hasBR && player.phoneNumber && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-foreground/40">Phone:</span>
+                                            <span className="text-sm font-mono">{player.phoneNumber}</span>
                                         </div>
                                     )}
                                     {player.bio && (

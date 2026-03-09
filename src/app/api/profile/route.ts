@@ -149,6 +149,7 @@ export async function GET() {
                     id: player.id,
                     displayName: player.displayName || user.username,
                     uid: player.uid || null,
+                    phoneNumber: player.phoneNumber || null,
                     bio: player.bio || `Nga u ${player.displayName || user.username} dei u ${player.category.charAt(0) + player.category.slice(1).toLowerCase()}`,
                     category: player.category,
                     hasRoyalPass: player.hasRoyalPass,

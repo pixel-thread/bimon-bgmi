@@ -24,7 +24,8 @@ export async function POST(req: NextRequest) {
         const displayName = body.displayName?.trim();
         const uid = typeof body.uid === "string" ? body.uid.trim() : undefined;
         const bio = typeof body.bio === "string" ? body.bio.trim() : undefined;
-        const forceChange = body.forceChange === true; // client confirms paying 1 UC
+        const phoneNumber = typeof body.phoneNumber === "string" ? body.phoneNumber.trim() : undefined;
+        const forceChange = body.forceChange === true;
 
         // Validate displayName if provided
         if (displayName) {
@@ -113,6 +114,7 @@ export async function POST(req: NextRequest) {
 
         if (bio !== undefined) updateData.bio = bio;
         if (uid !== undefined) updateData.uid = uid;
+        if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber || null;
 
         if (Object.keys(updateData).length === 0) {
             return SuccessResponse({ message: "Nothing to update" });
