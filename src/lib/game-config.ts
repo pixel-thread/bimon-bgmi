@@ -39,6 +39,7 @@ interface GameConfig {
     currency: string;            // "UC" or "Diamonds" or "Coins"
     currencyLabel: string;       // Compact inline label
     currencyEmoji: string;       // Emoji for currency
+    currencyIconPath?: string;   // Optional PNG path (overrides emoji in UI)
     currencyPlural: string;      // Plural form
     passName: string;            // "Royal Pass" or "Elite Pass"
     passEmoji: string;           // "👑"
@@ -63,10 +64,11 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         name: "PUBGMI",
         fullName: "PUBG Mobile India Tournament Platform",
         gameName: "BGMI",
-        currency: "UC",
-        currencyLabel: "UC",
-        currencyEmoji: "💰",
-        currencyPlural: "UC",
+        currency: "B-Coin",
+        currencyLabel: "B-Coin",
+        currencyEmoji: "🪙",
+        currencyIconPath: "/images/coin.png",
+        currencyPlural: "B-Coins",
         passName: "Royal Pass",
         passEmoji: "👑",
         idLabel: "BGMI ID",
@@ -98,10 +100,11 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         name: "BOOYAH",
         fullName: "Free Fire Tournament Platform",
         gameName: "Free Fire",
-        currency: "Diamonds",
-        currencyLabel: "💎",
-        currencyEmoji: "💎",
-        currencyPlural: "Diamonds",
+        currency: "B-Coin",
+        currencyLabel: "B-Coin",
+        currencyEmoji: "🪙",
+        currencyIconPath: "/images/coin.png",
+        currencyPlural: "B-Coins",
         passName: "Elite Pass",
         passEmoji: "👑",
         idLabel: "Free Fire UID",
@@ -133,10 +136,11 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         name: "KICKOFF",
         fullName: "eFootball Tournament Platform",
         gameName: "eFootball (PES)",
-        currency: "Coins",
-        currencyLabel: "🪙",
+        currency: "B-Coin",
+        currencyLabel: "B-Coin",
         currencyEmoji: "🪙",
-        currencyPlural: "Coins",
+        currencyIconPath: "/images/coin.png",
+        currencyPlural: "B-Coins",
         passName: "Season Pass",
         passEmoji: "⚽",
         idLabel: "eFootball ID",

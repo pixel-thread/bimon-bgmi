@@ -40,6 +40,7 @@ import { useAuthUser } from "@/hooks/use-auth-user";
 import { sidebarItems } from "./admin-sidebar";
 import { PubgmiLogo } from "@/components/common/pubgmi-logo";
 import { GAME } from "@/lib/game-config";
+import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 
 const navItems = [
     { label: "Players", href: "/players", icon: Users },
@@ -210,7 +211,7 @@ export function Header() {
                                     {item.label === "Wallet" ? (
                                         <span className={
                                             (balance ?? 0) > 0 ? "text-success" : (balance ?? 0) < 0 ? "text-danger" : ""
-                                        }>{(balance ?? 0).toLocaleString()} {GAME.currencyLabel}</span>
+                                        }>{(balance ?? 0).toLocaleString()} <CurrencyIcon size={14} /></span>
                                     ) : item.label}
                                 </Link>
                             </NavbarItem>

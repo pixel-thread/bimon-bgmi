@@ -39,6 +39,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { GAME } from "@/lib/game-config";
+import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 
 interface Notification {
     id: string;
@@ -234,7 +235,7 @@ export default function NotificationsPage() {
         },
         onSuccess: (data) => {
             const amount = data?.data?.amount ?? 0;
-            toast.success(`🎉 Claimed ${amount} ${GAME.currencyLabel}!`);
+            toast.success(`🎉 Claimed ${amount} ${GAME.currencyPlural}!`);
             queryClient.invalidateQueries({ queryKey: ["notifications"] });
             queryClient.invalidateQueries({ queryKey: ["notification-count"] });
             queryClient.invalidateQueries({ queryKey: ["wallet"] });
@@ -537,7 +538,7 @@ export default function NotificationsPage() {
                                     </span>{" "}
                                     requested{" "}
                                     <span className="font-semibold text-foreground">
-                                        {selectedRequest.amount.toLocaleString()} {GAME.currencyLabel}
+                                        {selectedRequest.amount.toLocaleString()} <CurrencyIcon size={14} />
                                     </span>
                                 </p>
                                 <p className="text-xs text-foreground/50">
@@ -548,7 +549,7 @@ export default function NotificationsPage() {
                                             : "text-danger"
                                             }`}
                                     >
-                                        {(selectedRequest.fromPlayer.wallet?.balance ?? 0).toLocaleString()} {GAME.currencyLabel}
+                                        {(selectedRequest.fromPlayer.wallet?.balance ?? 0).toLocaleString()} <CurrencyIcon size={12} />
                                     </span>
                                 </p>
                                 {selectedRequest.message && (
@@ -629,7 +630,7 @@ export default function NotificationsPage() {
                                     {/* Amount */}
                                     <div className="rounded-xl bg-success/10 py-3">
                                         <p className="text-2xl font-bold text-success">
-                                            +{selectedReward.amount} {GAME.currencyLabel}
+                                            +{selectedReward.amount} <CurrencyIcon size={18} />
                                         </p>
                                     </div>
 
@@ -652,27 +653,27 @@ export default function NotificationsPage() {
                                             {details.baseShare != null && (
                                                 <div className="flex items-center justify-between text-xs">
                                                     <span className="text-foreground/50">Base Share</span>
-                                                    <span className="font-medium">{Number(details.baseShare)} {GAME.currencyLabel}</span>
+                                                    <span className="font-medium">{Number(details.baseShare)} <CurrencyIcon size={11} /></span>
                                                 </div>
                                             )}
                                             {Number(details.participationAdj) !== 0 && details.participationAdj != null && (
                                                 <div className="flex items-center justify-between text-xs">
                                                     <span className="text-foreground/50">Participation Adjustment</span>
                                                     <span className={`font-medium ${Number(details.participationAdj) > 0 ? "text-success" : "text-danger"}`}>
-                                                        {Number(details.participationAdj) > 0 ? "+" : ""}{Number(details.participationAdj)} {GAME.currencyLabel}
+                                                        {Number(details.participationAdj) > 0 ? "+" : ""}{Number(details.participationAdj)} <CurrencyIcon size={11} />
                                                     </span>
                                                 </div>
                                             )}
                                             {Number(details.repeatTax) > 0 && (
                                                 <div className="flex items-center justify-between text-xs">
                                                     <span className="text-foreground/50">Repeat Winner Tax</span>
-                                                    <span className="font-medium text-danger">-{Number(details.repeatTax)} {GAME.currencyLabel}</span>
+                                                    <span className="font-medium text-danger">-{Number(details.repeatTax)} <CurrencyIcon size={11} /></span>
                                                 </div>
                                             )}
                                             {Number(details.soloTax) > 0 && (
                                                 <div className="flex items-center justify-between text-xs">
                                                     <span className="text-foreground/50">Solo Tax</span>
-                                                    <span className="font-medium text-danger">-{Number(details.soloTax)} {GAME.currencyLabel}</span>
+                                                    <span className="font-medium text-danger">-{Number(details.soloTax)} <CurrencyIcon size={11} /></span>
                                                 </div>
                                             )}
                                             {details.matchesPlayed != null && (
@@ -702,7 +703,7 @@ export default function NotificationsPage() {
                                         }
                                         onPress={() => claimReward.mutate(selectedReward.id)}
                                     >
-                                        Claim {selectedReward.amount} {GAME.currencyLabel}
+                                        Claim {selectedReward.amount} <CurrencyIcon size={16} />
                                     </Button>
                                 </ModalFooter>
                             </>

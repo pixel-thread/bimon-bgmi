@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { BracketView, MyBracketMatch } from "@/components/bracket/bracket-view";
 import { SubmitResultModal, useConfirmResult, useDisputeResult } from "@/components/bracket/submit-result-modal";
 import { GAME } from "@/lib/game-config";
+import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 
 interface BracketPageProps {
     params: Promise<{ id: string }>;
@@ -64,7 +65,7 @@ export default function BracketPage({ params }: BracketPageProps) {
                 </div>
                 {data?.tournament?.fee ? (
                     <p className="text-sm text-foreground/50 mt-1">
-                        {GAME.currencyEmoji} {data.tournament.fee} {GAME.currency} entry
+                        <CurrencyIcon size={14} /> {data.tournament.fee} {GAME.currency} entry
                         • {data.totalRounds} round{data.totalRounds !== 1 ? "s" : ""}
                         • {data.totalMatches} match{data.totalMatches !== 1 ? "es" : ""}
                     </p>

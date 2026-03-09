@@ -7,6 +7,7 @@ import Script from "next/script";
 import type { PlayerDTO, PlayersMeta } from "@/hooks/use-players";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { GAME } from "@/lib/game-config";
+import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 import { useRef, useEffect } from "react";
 
 function getDisplayName(
@@ -179,7 +180,7 @@ export function PlayerTable({
                             <span className="text-sm font-semibold text-foreground/70 sm:hidden">
                                 {sortBy === "balance" ? (
                                     <span className={player.balance < 0 ? "text-danger" : player.balance > 0 ? "text-success" : ""}>
-                                        {player.balance.toLocaleString()} {GAME.currencyLabel}
+                                        {player.balance.toLocaleString()} <CurrencyIcon size={12} />
                                     </span>
                                 ) : sortBy === "wins" || (!GAME.features.hasBR && sortBy === "kd") ? (
                                     `${player.stats.wins ?? 0} W`

@@ -24,6 +24,7 @@ import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { GAME } from "@/lib/game-config";
+import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 
 interface RoyalPassInfo {
     hasRoyalPass: boolean;
@@ -91,7 +92,7 @@ export default function RoyalPassPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="rounded-lg bg-gradient-to-r from-red-500 to-orange-500 py-2 px-4 text-center text-sm font-medium text-white"
                 >
-                    🎉 <span className="line-through opacity-75">20 {GAME.currencyLabel}</span> → 5 {GAME.currencyLabel} only! ⏳ Limited time — don't miss out!
+                    🎉 <span className="line-through opacity-75">20 <CurrencyIcon size={12} /></span> → 5 <CurrencyIcon size={12} /> only! ⏳ Limited time — don’t miss out!
                 </motion.div>
             )}
 
@@ -103,7 +104,7 @@ export default function RoyalPassPage() {
                 <h1 className="bg-gradient-to-r from-yellow-500 to-amber-500 bg-clip-text text-2xl font-bold text-transparent">
                     {GAME.passName}
                 </h1>
-                <p className="text-sm text-foreground/50">Play tournaments, earn {GAME.currencyLabel}!</p>
+                <p className="text-sm text-foreground/50">Play tournaments, earn <CurrencyIcon size={13} />!</p>
             </div>
 
             {error && (
@@ -197,7 +198,7 @@ export default function RoyalPassPage() {
                                                         animation: "textPop 3.5s ease-in-out infinite",
                                                     } : undefined}
                                                 >
-                                                    {wasting ? `Free ${data.nextRewardAt * 3 + 6} ${GAME.currencyLabel}` : `${data.nextRewardAt * 3 + 6} ${GAME.currencyLabel}`}
+                                                    {wasting ? `Free ${data.nextRewardAt * 3 + 6} ${GAME.currencyPlural}` : `${data.nextRewardAt * 3 + 6} ${GAME.currencyPlural}`}
                                                 </span>
                                             </div>
                                         </>
@@ -206,8 +207,8 @@ export default function RoyalPassPage() {
 
                                 <p className="text-center text-xs text-foreground/50">
                                     {data.hasRoyalPass
-                                        ? `Leh kai ban ban ${data.nextRewardAt} tournament ioh ei ${data.nextRewardAt * 3 + 6} ${GAME.currencyLabel} instant!`
-                                        : `Get ${GAME.passName} to earn ${data.nextRewardAt * 3 + 6} ${GAME.currencyLabel} when you hit ${data.nextRewardAt} streak!`}
+                                        ? `Leh kai ban ban ${data.nextRewardAt} tournament ioh ei ${data.nextRewardAt * 3 + 6} ${GAME.currencyPlural} instant!`
+                                        : `Get ${GAME.passName} to earn ${data.nextRewardAt * 3 + 6} ${GAME.currencyPlural} when you hit ${data.nextRewardAt} streak!`}
                                 </p>
                             </CardBody>
                         </Card>
@@ -249,16 +250,16 @@ export default function RoyalPassPage() {
                                 {!lostDiscount ? (
                                     <div className="bg-zinc-900 dark:bg-zinc-800 px-5 py-1 flex items-center justify-center gap-1.5">
                                         <span className="text-[10px] font-bold text-white/40 line-through decoration-red-500 decoration-1">
-                                            {RP_PRICE_FULL} {GAME.currencyLabel}
+                                            {RP_PRICE_FULL} <CurrencyIcon size={12} />
                                         </span>
                                         <span className="text-sm font-black text-white">
-                                            {RP_PRICE_DISCOUNTED} {GAME.currencyLabel}
+                                            {RP_PRICE_DISCOUNTED} <CurrencyIcon size={14} />
                                         </span>
                                     </div>
                                 ) : (
                                     <div className="bg-zinc-900 dark:bg-zinc-800 px-5 py-1 text-center">
                                         <span className="text-sm font-black text-white">
-                                            {RP_PRICE_FULL} {GAME.currencyLabel}
+                                            {RP_PRICE_FULL} <CurrencyIcon size={12} />
                                         </span>
                                     </div>
                                 )}
@@ -316,7 +317,7 @@ export default function RoyalPassPage() {
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm font-bold text-warning">
-                                                    {reward.amount} {GAME.currencyLabel}
+                                                    {reward.amount} <CurrencyIcon size={12} />
                                                 </span>
                                                 <Chip
                                                     size="sm"
@@ -345,7 +346,7 @@ export default function RoyalPassPage() {
                             <li>Rung ha ka tournament</li>
                             <li>Your streak increases by 1</li>
                             <li>Pep shi tournament? Ka streak la resets sha 0</li>
-                            <li>Khlem pep {data?.nextRewardAt ?? 8} tournament → Ioh {(data?.nextRewardAt ?? 8) * 3 + 6} {GAME.currencyLabel} bonus!</li>
+                            <li>Khlem pep {data?.nextRewardAt ?? 8} tournament → Ioh {(data?.nextRewardAt ?? 8) * 3 + 6} <CurrencyIcon size={12} /> bonus!</li>
                             <li className="text-amber-600 dark:text-amber-400">
                                 🎨 Upload custom character image/video for your podium card!
                             </li>

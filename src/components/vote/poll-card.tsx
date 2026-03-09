@@ -8,6 +8,7 @@ import type { PollDTO } from "@/hooks/use-polls";
 import { getPollTheme, getLuckyWinnerTheme, type PollTheme } from "./pollTheme";
 import { getPrizeDistribution, getTeamSize } from "@/utils/prizeDistribution";
 import { GAME } from "@/lib/game-config";
+import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 
 /* ─── Types ─────────────────────────────────────────────────── */
 
@@ -98,7 +99,7 @@ function PrizeBreakdownTooltip({
                                                     {medal} {position}{ordinal}
                                                 </span>
                                                 <span className="font-semibold">
-                                                    {prize.amount.toLocaleString()} {GAME.currency}
+                                                    {prize.amount.toLocaleString()} <CurrencyIcon size={14} />
                                                 </span>
                                             </div>
                                         );
@@ -628,7 +629,7 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                     {poll.donations.donations.map((d, i) => (
                         <div key={i} className={`inline-flex items-center px-4 py-1.5 rounded-lg bg-gradient-to-r ${theme.header} text-white text-sm font-semibold shadow-lg`}>
                             <span>{d.isAnonymous ? "Anonymous" : (d.playerName || "Community")} donated&nbsp;</span>
-                            <span>{d.amount} {GAME.currencyLabel}</span>
+                            <span>{d.amount} <CurrencyIcon size={13} /></span>
                         </div>
                     ))}
                 </div>
@@ -704,7 +705,7 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                         </p>
                                         <p className="text-2xl font-black text-white drop-shadow-lg inline-flex items-center">
                                             <AnimatedCounter value={prizePool} />
-                                            <span className="ml-1">{GAME.currency}</span>
+                                            <span className="ml-1"><CurrencyIcon size={20} /></span>
                                         </p>
                                     </div>
                                 </div>
@@ -775,7 +776,7 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                         {GAME.currency}
                                     </span>
                                 ) : entryFee > 0 ? (
-                                    `Entry: ${entryFee} ${GAME.currency}`
+                                    <span className="inline-flex items-center gap-1">Entry: {entryFee} <CurrencyIcon size={12} /></span>
                                 ) : (
                                     "Free Entry"
                                 )}

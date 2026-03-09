@@ -17,6 +17,7 @@ import { ArrowUpRight, ArrowDownLeft, Loader2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { GAME } from "@/lib/game-config";
+import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 
 interface UCTransferDialogProps {
     isOpen: boolean;
@@ -123,7 +124,7 @@ export function UCTransferDialog({
                                 className={`font-bold ${balance > 0 ? "text-success" : "text-danger"
                                     }`}
                             >
-                                {balance} {GAME.currencyLabel}
+                                {balance} <CurrencyIcon size={12} />
                             </span>
                         </p>
                     )}
@@ -141,7 +142,7 @@ export function UCTransferDialog({
                         placeholder="Enter amount"
                         value={amount}
                         onValueChange={(v) => setAmount(v.replace(/\D/g, ""))}
-                        endContent={<span className="text-foreground/40 text-xs font-medium">{GAME.currency}</span>}
+                        endContent={<span className="text-foreground/40 text-xs font-medium inline-flex items-center"><CurrencyIcon size={14} /></span>}
                         size="sm"
                         isInvalid={
                             activeTab === "send" &&

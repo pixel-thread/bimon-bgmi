@@ -20,6 +20,7 @@ import { PlayerDetailModal } from "@/components/dashboard/player-detail-modal";
 import { usePlayerFilters } from "@/hooks/use-player-filters";
 import { PlayerFiltersBar } from "@/components/players/player-filters-bar";
 import { GAME } from "@/lib/game-config";
+import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 
 interface PlayerDTO {
     id: string;
@@ -106,14 +107,14 @@ export default function AdminPlayersPage() {
                                 : "text-danger"
                                 }`}
                         >
-                            {(meta.totalBalance ?? 0).toLocaleString()} {GAME.currencyLabel}
+                            {(meta.totalBalance ?? 0).toLocaleString()} <CurrencyIcon size={12} />
                         </span>
                     </div>
                     {(meta.negativeBalance ?? 0) < 0 && (
                         <div className="flex items-center gap-1.5 rounded-lg bg-danger-50 px-3 py-1.5 dark:bg-danger-50/10">
                             <span className="text-foreground/50">Negative:</span>
                             <span className="font-semibold text-danger">
-                                {(meta.negativeBalance ?? 0).toLocaleString()} {GAME.currencyLabel}
+                                {(meta.negativeBalance ?? 0).toLocaleString()} <CurrencyIcon size={12} />
                             </span>
                         </div>
                     )}
@@ -183,7 +184,7 @@ export default function AdminPlayersPage() {
                                             {p.displayName || p.username}
                                         </p>
                                         <p className="truncate text-xs text-foreground/40 sm:hidden">
-                                            {p.category} · {p.balance} {GAME.currencyLabel}
+                                            {p.category} · {p.balance} <CurrencyIcon size={10} />
                                         </p>
                                     </div>
 
@@ -214,7 +215,7 @@ export default function AdminPlayersPage() {
                                                 : "text-foreground/40"
                                             }`}
                                     >
-                                        {p.balance} {GAME.currencyLabel}
+                                        {p.balance} <CurrencyIcon size={12} />
                                     </span>
 
                                     {/* Status */}

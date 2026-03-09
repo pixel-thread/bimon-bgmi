@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { UCTransferDialog } from "./uc-transfer-dialog";
 import { GAME } from "@/lib/game-config";
+import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 
 function getDisplayName(
     displayName: string | null,
@@ -131,7 +132,8 @@ export function PlayerStatsModal({
         },
         {
             label: "Balance",
-            value: `${player.balance.toLocaleString()} ${GAME.currencyLabel}`,
+            value: player.balance.toLocaleString(),
+            suffix: <CurrencyIcon size={16} />,
             icon: Wallet,
             color: "text-warning",
         },
@@ -158,7 +160,8 @@ export function PlayerStatsModal({
         },
         {
             label: "Balance",
-            value: `${player.balance.toLocaleString()} ${GAME.currencyLabel}`,
+            value: player.balance.toLocaleString(),
+            suffix: <CurrencyIcon size={16} />,
             icon: Wallet,
             color: "text-warning",
         },
@@ -324,8 +327,9 @@ export function PlayerStatsModal({
                                             {stat.label}
                                         </span>
                                     </div>
-                                    <p className="mt-1 text-xl font-bold">
+                                    <p className="mt-1 text-xl font-bold inline-flex items-center gap-1">
                                         {stat.value}
+                                        {(stat as any).suffix}
                                     </p>
                                 </motion.div>
                             ))}
