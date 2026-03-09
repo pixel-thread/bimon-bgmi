@@ -46,7 +46,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Player not found" }, { status: 404 });
         }
 
-        if (!user.player.hasRoyalPass) {
+        // Only require Royal Pass for games that have the RP feature (BGMI/FF)
+        if (GAME.features.hasRoyalPass && !user.player.hasRoyalPass) {
             return NextResponse.json(
                 { error: `${GAME.passName} required to upload a character image` },
                 { status: 403 }

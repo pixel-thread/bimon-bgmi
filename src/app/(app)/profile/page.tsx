@@ -231,34 +231,38 @@ export default function ProfilePage() {
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
-                        {/* Character upload */}
-                        <input
-                            ref={characterInputRef}
-                            type="file" accept="image/*,video/*" className="hidden"
-                            onChange={(e) => {
-                                const file = e.target.files?.[0]; if (!file) return;
-                                const url = URL.createObjectURL(file);
-                                const isVid = file.type.startsWith("video/");
-                                setPreviewCharacter({ url, isVideo: isVid });
-                                setPendingCharacterFile(file);
-                                setShowCharacterPreview(true);
-                                e.target.value = "";
-                            }}
-                        />
-                        <button
-                            onClick={() => {
-                                if (!player?.hasRoyalPass) {
-                                    setShowRPModal(true);
-                                    return;
-                                }
-                                characterInputRef.current?.click();
-                            }}
-                            disabled={uploadingCharacter}
-                            className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 disabled:opacity-50"
-                        >
-                            {uploadingCharacter ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
-                            {uploadingCharacter ? "Uploading..." : "Change"}
-                        </button>
+                        {/* Character upload — only for games with Royal Pass */}
+                        {GAME.features.hasRoyalPass && (
+                            <>
+                                <input
+                                    ref={characterInputRef}
+                                    type="file" accept="image/*,video/*" className="hidden"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0]; if (!file) return;
+                                        const url = URL.createObjectURL(file);
+                                        const isVid = file.type.startsWith("video/");
+                                        setPreviewCharacter({ url, isVideo: isVid });
+                                        setPendingCharacterFile(file);
+                                        setShowCharacterPreview(true);
+                                        e.target.value = "";
+                                    }}
+                                />
+                                <button
+                                    onClick={() => {
+                                        if (!player?.hasRoyalPass) {
+                                            setShowRPModal(true);
+                                            return;
+                                        }
+                                        characterInputRef.current?.click();
+                                    }}
+                                    disabled={uploadingCharacter}
+                                    className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 disabled:opacity-50"
+                                >
+                                    {uploadingCharacter ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
+                                    {uploadingCharacter ? "Uploading..." : "Change"}
+                                </button>
+                            </>
+                        )}
 
                         {/* Profile info overlay */}
                         <div className="absolute bottom-3 left-4 right-4 flex items-end gap-3">
