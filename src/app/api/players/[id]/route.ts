@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
-import { getCategoryFromKDValue } from "@/lib/logic/categoryUtils";
+import { getCategoryFromKDValue, getCategoryFromWinRate } from "@/lib/logic/categoryUtils";
 import { requireAdmin } from "@/lib/auth";
 import { getCentralBalance } from "@/lib/wallet-service";
+import { GAME } from "@/lib/game-config";
 
 const VALID_CATEGORIES = ["BOT", "ULTRA_NOOB", "NOOB", "PRO", "ULTRA_PRO", "LEGEND"] as const;
 
@@ -62,6 +63,29 @@ export async function GET(
         const totalMatches = statsAgg._count.matchId;
         const totalKills = statsAgg._sum.kills ?? 0;
         const totalKd = totalMatches > 0 ? totalKills / totalMatches : 0;
+        // Bracket wins/losses for PES
+        let bracketWins = 0;
+        let bracketPlayed = 0;
+        if (GAME.scoringSystem === "bracket") {
+            const [winsAgg, playedAgg] = await Promise.all([
+                prisma.bracketMatch.count({
+                    where: { winnerId: id, status: "CONFIRMED" },
+                }),
+                prisma.bracketMatch.count({
+                    where: {
+                        status: "CONFIRMED",
+                        OR: [{ player1Id: id }, { player2Id: id }],
+                    },
+                }),
+            ]);
+            bracketWins = winsAgg;
+            bracketPlayed = playedAgg;
+        }
+
+        const isBracketGame = GAME.scoringSystem === "bracket";
+        const category = isBracketGame
+            ? getCategoryFromWinRate(bracketWins, bracketPlayed)
+            : getCategoryFromKDValue(totalKd);
 
         return NextResponse.json({
             id: player.id,
@@ -69,7 +93,7 @@ export async function GET(
             username: player.user.username,
             email: player.user.email,
             imageUrl: player.customProfileImageUrl || player.user.imageUrl,
-            category: getCategoryFromKDValue(totalKd),
+            category,
             isBanned: player.isBanned,
             hasRoyalPass: player.hasRoyalPass,
             isUCExempt: player.isUCExempt,

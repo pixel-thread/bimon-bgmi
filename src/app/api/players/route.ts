@@ -2,7 +2,8 @@ import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth";
 import { type NextRequest } from "next/server";
-import { getCategoryFromKDValue } from "@/lib/logic/categoryUtils";
+import { getCategoryFromKDValue, getCategoryFromWinRate } from "@/lib/logic/categoryUtils";
+import { GAME } from "@/lib/game-config";
 
 /**
  * GET /api/players
@@ -144,7 +145,10 @@ export async function GET(request: NextRequest) {
             if (m.player2Id) bracketMatchCountMap.set(m.player2Id, (bracketMatchCountMap.get(m.player2Id) ?? 0) + 1);
         }
 
-        // Flatten the data — compute category from K/D (always fresh)
+        // Category: use win rate for bracket games (PES), K/D for BR games (BGMI/FF)
+        const isBracketGame = GAME.scoringSystem === "bracket";
+
+        // Flatten the data — compute category (always fresh)
         const allData = players.map((p) => {
             const st = statsMap.get(p.id) ?? { kills: 0, matches: 0 };
             const wins = winsMap.get(p.id) ?? 0;
@@ -153,13 +157,16 @@ export async function GET(request: NextRequest) {
             const totalMatches = st.matches > 0 ? st.matches : bracketMatches;
             const kd = st.matches > 0 ? st.kills / st.matches : 0;
             const losses = bracketMatches - wins;
+            const category = isBracketGame
+                ? getCategoryFromWinRate(wins, bracketMatches)
+                : getCategoryFromKDValue(kd);
             return {
                 id: p.id,
                 displayName: p.displayName,
-                bio: p.bio || `nga u ${p.displayName || p.user.username} dei u ${getCategoryFromKDValue(kd)}`,
+                bio: p.bio || `nga u ${p.displayName || p.user.username} dei u ${category}`,
                 username: p.user.username,
                 imageUrl: p.customProfileImageUrl || p.user.imageUrl,
-                category: getCategoryFromKDValue(kd),
+                category,
                 isBanned: p.isBanned,
                 stats: {
                     kills: st.kills,

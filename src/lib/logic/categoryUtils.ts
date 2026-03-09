@@ -46,6 +46,34 @@ export function getCategoryFromKDValue(kd: number): PlayerTier {
     return 'BOT';
 }
 
+// Win-rate thresholds for 1v1/bracket games (PES, etc.)
+const MIN_MATCHES_FOR_RANK = 3;
+const WIN_RATE_THRESHOLDS = {
+    LEGEND: 0.75,
+    ULTRA_PRO: 0.60,
+    PRO: 0.45,
+    NOOB: 0.30,
+    ULTRA_NOOB: 0.15,
+} as const;
+
+/**
+ * Get player category/tier based on win rate.
+ * Used for 1v1/bracket games (PES, eFootball) where K/D doesn't apply.
+ * Requires a minimum number of matches before ranking.
+ */
+export function getCategoryFromWinRate(wins: number, totalMatches: number): PlayerTier {
+    if (totalMatches < MIN_MATCHES_FOR_RANK) return 'BOT';
+
+    const winRate = wins / totalMatches;
+
+    if (winRate >= WIN_RATE_THRESHOLDS.LEGEND) return 'LEGEND';
+    if (winRate >= WIN_RATE_THRESHOLDS.ULTRA_PRO) return 'ULTRA_PRO';
+    if (winRate >= WIN_RATE_THRESHOLDS.PRO) return 'PRO';
+    if (winRate >= WIN_RATE_THRESHOLDS.NOOB) return 'NOOB';
+    if (winRate >= WIN_RATE_THRESHOLDS.ULTRA_NOOB) return 'ULTRA_NOOB';
+    return 'BOT';
+}
+
 /**
  * Get human-readable category label.
  */
