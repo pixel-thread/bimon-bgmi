@@ -242,14 +242,29 @@ export function createBalancedTrios(
   // Combine one from each tier per team
   for (let i = 0; i < third; i++) {
     const strong = shuffledStrong[i];
-    let medium = shuffledMedium[i];
-    let weak = shuffledWeak[i];
+
+    // Default to index i, but if a previous swap already consumed it, find next available
     let mediumIdx = i;
+    if (usedMediumIndices.has(mediumIdx)) {
+      for (let m = 0; m < third; m++) {
+        if (!usedMediumIndices.has(m)) { mediumIdx = m; break; }
+      }
+    }
     let weakIdx = i;
+    if (usedWeakIndices.has(weakIdx)) {
+      for (let w = 0; w < third; w++) {
+        if (!usedWeakIndices.has(w)) { weakIdx = w; break; }
+      }
+    }
+
+    let medium = shuffledMedium[mediumIdx];
+    let weak = shuffledWeak[weakIdx];
 
     // Try to find a combination without previous teammates
     if (previousTeammates && hasPreviousTeammate([strong.id, medium.id, weak.id])) {
-      // Try different medium players
+      const origMediumIdx = mediumIdx;
+      const origWeakIdx = weakIdx;
+      // Try different medium/weak players
       for (let m = 0; m < third; m++) {
         if (usedMediumIndices.has(m)) continue;
         for (let w = 0; w < third; w++) {
@@ -262,7 +277,7 @@ export function createBalancedTrios(
             break;
           }
         }
-        if (mediumIdx !== i || weakIdx !== i) break;
+        if (mediumIdx !== origMediumIdx || weakIdx !== origWeakIdx) break;
       }
     }
     usedMediumIndices.add(mediumIdx);
@@ -337,10 +352,30 @@ export function createBalancedQuads(
   // Combine one from each tier per team
   for (let i = 0; i < quarter; i++) {
     const p1 = shuffled1[i];
-    let p2 = shuffled2[i];
-    let p3 = shuffled3[i];
-    let p4 = shuffled4[i];
-    let idx2 = i, idx3 = i, idx4 = i;
+
+    // Default to index i, but if a previous swap already consumed it, find next available
+    let idx2 = i;
+    if (usedIdx2.has(idx2)) {
+      for (let a = 0; a < quarter; a++) {
+        if (!usedIdx2.has(a)) { idx2 = a; break; }
+      }
+    }
+    let idx3 = i;
+    if (usedIdx3.has(idx3)) {
+      for (let b = 0; b < quarter; b++) {
+        if (!usedIdx3.has(b)) { idx3 = b; break; }
+      }
+    }
+    let idx4 = i;
+    if (usedIdx4.has(idx4)) {
+      for (let c = 0; c < quarter; c++) {
+        if (!usedIdx4.has(c)) { idx4 = c; break; }
+      }
+    }
+
+    let p2 = shuffled2[idx2];
+    let p3 = shuffled3[idx3];
+    let p4 = shuffled4[idx4];
 
     // Try to find a combination without previous teammates
     if (previousTeammates && hasPreviousTeammate([p1.id, p2.id, p3.id, p4.id])) {
