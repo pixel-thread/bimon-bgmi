@@ -447,8 +447,8 @@ function VotersDialog({
                                                 <div
                                                     key={v.playerId}
                                                     className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors ${isWaitlisted
-                                                            ? "bg-warning/5 hover:bg-warning/10 border border-warning/20"
-                                                            : "bg-default-50 hover:bg-default-100"
+                                                        ? "bg-warning/5 hover:bg-warning/10 border border-warning/20"
+                                                        : "bg-default-50 hover:bg-default-100"
                                                         }`}
                                                 >
                                                     <span className="text-[10px] font-mono text-foreground/30 w-4 text-right">
@@ -708,14 +708,14 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                         </p>
                                     </div>
                                 </div>
-                                {/* Prize breakdown ? button */}
-                                <PrizeBreakdownTooltip
+                                {/* Prize breakdown ? button — only for BR games (BGMI tier system) */}
+                                {GAME.features.hasBR && <PrizeBreakdownTooltip
                                     prizePool={prizePool}
                                     entryFee={entryFee}
                                     teamSize={effectiveTeamType === "SOLO" ? 1 : effectiveTeamType === "DUO" ? 2 : effectiveTeamType === "TRIO" ? 3 : 4}
                                     theme={theme}
                                     onDoubleTap={onRefetch}
-                                />
+                                />}
                                 {/* Team type badge — only for BR games with team sizes */}
                                 {GAME.features.hasTeamSizes && effectiveTeamType && (
                                     <div className="absolute bottom-2 left-3">
