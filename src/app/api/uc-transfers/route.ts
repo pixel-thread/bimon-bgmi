@@ -81,6 +81,16 @@ export async function POST(req: NextRequest) {
                     },
                 });
 
+                const toName = toPlayer.displayName || toPlayer.user.username;
+
+                // Transaction records for wallet history
+                await tx.transaction.createMany({
+                    data: [
+                        { playerId, amount, type: "DEBIT", description: `Sent ${amount} ${GAME.currency} to ${toName}` },
+                        { playerId: toPlayerId, amount, type: "CREDIT", description: `Received ${amount} ${GAME.currency} from ${senderName}` },
+                    ],
+                });
+
                 // Notify recipient
                 await tx.notification.create({
                     data: {
