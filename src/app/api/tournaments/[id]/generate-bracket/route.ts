@@ -40,6 +40,8 @@ export async function POST(
                 id: true,
                 type: true,
                 status: true,
+                fee: true,
+                name: true,
                 poll: {
                     select: {
                         id: true,
@@ -47,8 +49,9 @@ export async function POST(
                         votes: {
                             where: { vote: { in: ["IN", "SOLO"] } },
                             select: { playerId: true, createdAt: true },
-                            orderBy: { createdAt: "asc" }, // FCFS — earliest votes first
+                            orderBy: { createdAt: "asc" },
                         },
+                        luckyVoterId: true,
                     },
                 },
                 bracketMatches: { select: { id: true }, take: 1 },
@@ -139,6 +142,53 @@ export async function POST(
 
             default:
                 return ErrorResponse({ message: "Unknown tournament type", status: 400 });
+        }
+
+        // Debit entry fees from participants (same as BGMI createTeamsByPoll)
+        const entryFee = tournament.fee ?? 0;
+        if (entryFee > 0) {
+            // Determine which players are actually in the bracket
+            const luckyVoterId = tournament.poll.luckyVoterId;
+            // For BRACKET_1V1 only the included players (power-of-2 trimmed), others get all voters
+            const participantIds = tournament.type === "BRACKET_1V1"
+                ? allVoterIds.slice(0, floorPow2(allVoterIds.length))
+                : allVoterIds;
+
+            // Get UC-exempt players
+            const players = await prisma.player.findMany({
+                where: { id: { in: participantIds } },
+                select: { id: true, isUCExempt: true },
+            });
+
+            const playersToCharge = players.filter(
+                (p) => !p.isUCExempt && p.id !== luckyVoterId
+            );
+
+            if (playersToCharge.length > 0) {
+                await prisma.transaction.createMany({
+                    data: playersToCharge.map((p) => ({
+                        amount: entryFee,
+                        type: "DEBIT" as const,
+                        description: `Entry fee for ${tournament.name}`,
+                        playerId: p.id,
+                    })),
+                });
+
+                // Batch wallet decrements
+                const BATCH = 5;
+                for (let i = 0; i < playersToCharge.length; i += BATCH) {
+                    const batch = playersToCharge.slice(i, i + BATCH);
+                    await Promise.all(
+                        batch.map((p) =>
+                            prisma.wallet.upsert({
+                                where: { playerId: p.id },
+                                create: { balance: -entryFee, playerId: p.id },
+                                update: { balance: { decrement: entryFee } },
+                            })
+                        )
+                    );
+                }
+            }
         }
 
         return SuccessResponse({

@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
             prisma.user.findUnique({
                 where: { email: userId },
                 select: {
+                    role: true,
                     player: {
                         select: {
                             id: true,
@@ -77,15 +78,30 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Balance gate for IN/SOLO votes (trusted players get extended credit)
+        // Balance gate for IN/SOLO votes
+        // USER role: must have balance >= entry fee (need coins first)
+        // PLAYER role / trusted: can go negative (extended credit)
         if (vote !== "OUT") {
             const balance = user.player.wallet?.balance ?? 0;
-            const minBalance = user.player.isTrusted ? -200 : -29;
-            if (balance < minBalance) {
-                return ErrorResponse({
-                    message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — your balance is ${balance} ${GAME.currency}. Top up your wallet to continue.`,
-                    status: 403,
-                });
+            const entryFee = poll.tournament?.fee ?? 0;
+            const isPlayer = user.role === "PLAYER" || user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+
+            if (user.player.isTrusted || isPlayer) {
+                // Trusted/player accounts: allow down to -200
+                if (balance < -200) {
+                    return ErrorResponse({
+                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — your balance is ${balance} ${GAME.currency}. Top up your wallet to continue.`,
+                        status: 403,
+                    });
+                }
+            } else {
+                // Regular users: must have enough for entry fee
+                if (balance < entryFee) {
+                    return ErrorResponse({
+                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — you need ${entryFee} ${GAME.currency} but have ${balance}. Top up your wallet to continue.`,
+                        status: 403,
+                    });
+                }
             }
         }
 
