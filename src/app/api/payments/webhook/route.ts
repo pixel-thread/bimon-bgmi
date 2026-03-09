@@ -103,7 +103,10 @@ export async function POST(req: Request) {
             await tx.wallet.upsert({
                 where: { playerId: payment.playerId },
                 create: { playerId: payment.playerId, balance: centralResult?.balance ?? ucAmount },
-                update: { balance: centralResult?.balance ?? { increment: ucAmount } },
+                update: {
+                    balance: centralResult?.balance ?? undefined,
+                    ...(centralResult ? {} : { balance: { increment: ucAmount } }),
+                },
             });
 
             await tx.transaction.create({

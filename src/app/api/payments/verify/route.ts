@@ -96,7 +96,8 @@ export async function POST(req: NextRequest) {
                     balance: centralResult?.balance ?? ucAmount,
                 },
                 update: {
-                    balance: centralResult?.balance ?? { increment: ucAmount },
+                    balance: centralResult?.balance ?? undefined,
+                    ...(centralResult ? {} : { balance: { increment: ucAmount } }),
                 },
             });
 
