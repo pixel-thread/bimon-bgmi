@@ -3,6 +3,7 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { GAME } from "@/lib/game-config";
+import { getCentralBalance, debitCentralWallet } from "@/lib/wallet-service";
 
 /**
  * POST /api/royal-pass/buy
@@ -53,7 +54,8 @@ export async function POST() {
         const lostDiscount = currentStreak >= STREAK_THRESHOLD;
         const rpPrice = lostDiscount ? RP_PRICE_FULL : RP_PRICE_DISCOUNTED;
 
-        if (!user.player.wallet || user.player.wallet.balance < rpPrice) {
+        const centralBalance = await getCentralBalance(email);
+        if (centralBalance < rpPrice) {
             return ErrorResponse({
                 message: `Not enough ${GAME.currency}. You need ${rpPrice} ${GAME.currency}.`,
                 status: 400,
@@ -65,20 +67,24 @@ export async function POST() {
             select: { id: true },
         });
 
+        // Debit central wallet
+        const description = lostDiscount ? `${GAME.passName} Purchase (full price)` : `${GAME.passName} Purchase (75% off)`;
+        const walletResult = await debitCentralWallet(email, rpPrice, description, "ROYAL_PASS_PURCHASE");
+
         await prisma.$transaction(async (tx) => {
-            // Deduct UC
-            await tx.wallet.update({
-                where: { id: user.player!.wallet!.id },
-                data: { balance: { decrement: rpPrice } },
+            // Sync game DB wallet + audit
+            await tx.wallet.upsert({
+                where: { playerId: user.player!.id },
+                create: { playerId: user.player!.id, balance: walletResult.balance },
+                update: { balance: walletResult.balance },
             });
 
-            // Create transaction record
             await tx.transaction.create({
                 data: {
                     playerId: user.player!.id,
                     amount: rpPrice,
                     type: "DEBIT",
-                    description: lostDiscount ? `${GAME.passName} Purchase (full price)` : `${GAME.passName} Purchase (75% off)`,
+                    description,
                 },
             });
 

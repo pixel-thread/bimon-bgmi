@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { type NextRequest } from "next/server";
 import { GAME } from "@/lib/game-config";
+import { debitCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * POST /api/teams/create
@@ -175,14 +176,22 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // 6. UC deduction (optional)
+        // 6. UC deduction via central wallet (optional)
         const entryFee = tournament.fee || 0;
         if (deductUC && entryFee > 0) {
-            const balanceMap = new Map(
-                orderedPlayers.map((p) => [p.id, p.wallet?.balance ?? 0])
-            );
+            // Debit central wallets
+            for (const playerId of playerIds) {
+                const email = await getEmailByPlayerId(playerId);
+                if (email) {
+                    const result = await debitCentralWallet(email, entryFee, `Entry fee for ${tournament.name}`, "TOURNAMENT_ENTRY");
+                    await prisma.wallet.upsert({
+                        where: { playerId },
+                        create: { playerId, balance: result.balance },
+                        update: { balance: result.balance },
+                    });
+                }
+            }
 
-            // Create debit transactions
             await prisma.transaction.createMany({
                 data: playerIds.map((playerId) => ({
                     amount: entryFee,
@@ -191,16 +200,6 @@ export async function POST(request: NextRequest) {
                     playerId,
                 })),
             });
-
-            // Update wallet balances
-            for (const playerId of playerIds) {
-                const current = balanceMap.get(playerId) ?? 0;
-                await prisma.wallet.upsert({
-                    where: { playerId },
-                    create: { playerId, balance: current - entryFee },
-                    update: { balance: current - entryFee },
-                });
-            }
         }
 
         const baseMsg = deductUC && entryFee > 0

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
+import { getCentralBalance } from "@/lib/wallet-service";
 
 /**
  * GET /api/profile
@@ -163,9 +164,7 @@ export async function GET() {
                         }
                         : null,
                     stats: detailedStats,
-                    wallet: player.wallet
-                        ? { balance: player.wallet.balance }
-                        : { balance: 0 },
+                    wallet: { balance: await getCentralBalance(userId) },
                     streak: player.streak
                         ? {
                             current: player.streak.current,

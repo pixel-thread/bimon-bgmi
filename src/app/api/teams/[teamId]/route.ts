@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { NextRequest, NextResponse } from "next/server";
 import { GAME } from "@/lib/game-config";
+import { creditCentralWallet, debitCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * PATCH /api/teams/[teamId]
@@ -60,14 +61,18 @@ export async function PATCH(
                     },
                 });
 
-                // Deduct UC from added players
+                // Deduct UC from added players via central wallet
                 if (deductUC && entryFee > 0) {
                     for (const playerId of addPlayerIds) {
-                        await tx.wallet.upsert({
-                            where: { playerId },
-                            create: { playerId, balance: -entryFee },
-                            update: { balance: { decrement: entryFee } },
-                        });
+                        const email = await getEmailByPlayerId(playerId);
+                        if (email) {
+                            const result = await debitCentralWallet(email, entryFee, `Entry fee: Added to team in ${tournamentName}`, "TOURNAMENT_ENTRY");
+                            await tx.wallet.upsert({
+                                where: { playerId },
+                                create: { playerId, balance: result.balance },
+                                update: { balance: result.balance },
+                            });
+                        }
                         await tx.transaction.create({
                             data: {
                                 amount: entryFee,
@@ -91,14 +96,18 @@ export async function PATCH(
                     },
                 });
 
-                // Refund UC to removed players
+                // Refund UC to removed players via central wallet
                 if (refund && entryFee > 0) {
                     for (const playerId of removePlayerIds) {
-                        await tx.wallet.upsert({
-                            where: { playerId },
-                            create: { playerId, balance: entryFee },
-                            update: { balance: { increment: entryFee } },
-                        });
+                        const email = await getEmailByPlayerId(playerId);
+                        if (email) {
+                            const result = await creditCentralWallet(email, entryFee, `Refund: Removed from team in ${tournamentName}`, "TOURNAMENT_ENTRY");
+                            await tx.wallet.upsert({
+                                where: { playerId },
+                                create: { playerId, balance: result.balance },
+                                update: { balance: result.balance },
+                            });
+                        }
                         await tx.transaction.create({
                             data: {
                                 amount: entryFee,
@@ -209,13 +218,17 @@ export async function DELETE(
                     })),
                 });
 
-                // Update wallet balances
+                // Refund via central wallet
                 for (const playerId of playerIds) {
-                    await tx.wallet.upsert({
-                        where: { playerId },
-                        create: { playerId, balance: entryFee },
-                        update: { balance: { increment: entryFee } },
-                    });
+                    const email = await getEmailByPlayerId(playerId);
+                    if (email) {
+                        const result = await creditCentralWallet(email, entryFee, `Refund: Team deleted from ${team.tournament?.name ?? "tournament"}`, "TOURNAMENT_ENTRY");
+                        await tx.wallet.upsert({
+                            where: { playerId },
+                            create: { playerId, balance: result.balance },
+                            update: { balance: result.balance },
+                        });
+                    }
                 }
 
                 refundedPlayers.push(...playerIds);

@@ -5,6 +5,7 @@ import { GAME } from "@/lib/game-config";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 import crypto from "crypto";
+import { creditCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 // Razorpay platform fee (2.4%)
 const PLATFORM_FEE_PERCENT = 2.4;
@@ -69,9 +70,16 @@ export async function POST(req: NextRequest) {
             amountInRupees * (1 - PLATFORM_FEE_PERCENT / 100)
         );
 
-        // Update payment status and credit UC balance in a transaction
+        // Credit central wallet
+        const playerEmail = await getEmailByPlayerId(payment.playerId);
+        const description = `Added ${ucAmount} ${GAME.currency} via Razorpay`;
+        let centralResult: any = null;
+        if (playerEmail) {
+            centralResult = await creditCentralWallet(playerEmail, ucAmount, description, "TOP_UP");
+        }
+
+        // Update payment status and sync game DB
         await prisma.$transaction(async (tx) => {
-            // Update payment status
             await tx.payment.update({
                 where: { razorpayOrderId: razorpay_order_id },
                 data: {
@@ -80,24 +88,23 @@ export async function POST(req: NextRequest) {
                 },
             });
 
-            // Ensure wallet exists, then credit UC balance
+            // Sync game DB wallet
             await tx.wallet.upsert({
                 where: { playerId: payment.playerId },
                 create: {
                     playerId: payment.playerId,
-                    balance: ucAmount,
+                    balance: centralResult?.balance ?? ucAmount,
                 },
                 update: {
-                    balance: { increment: ucAmount },
+                    balance: centralResult?.balance ?? { increment: ucAmount },
                 },
             });
 
-            // Create transaction record
             await tx.transaction.create({
                 data: {
                     amount: ucAmount,
                     type: "CREDIT",
-                    description: `Added ${ucAmount} ${GAME.currency} via Razorpay`,
+                    description,
                     playerId: payment.playerId,
                 },
             });

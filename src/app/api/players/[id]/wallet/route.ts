@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { clearTrustedOnBalanceRecovery } from "@/lib/logic/balanceRecovery";
+import { creditCentralWallet, debitCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * POST /api/players/[id]/wallet
- * Credit or debit UC from a player's wallet.
+ * Credit or debit B-Coins from a player's wallet (admin).
  * Body: { amount: number, type: "CREDIT" | "DEBIT", description: string }
  */
 export async function POST(
@@ -36,35 +37,33 @@ export async function POST(
             );
         }
 
-        // Use a Prisma transaction to ensure atomicity
-        const result = await prisma.$transaction(async (tx) => {
-            // Ensure wallet exists
-            const wallet = await tx.wallet.upsert({
-                where: { playerId: id },
-                create: { playerId: id, balance: 0 },
-                update: {},
-            });
+        // Get player's email for central wallet
+        const email = await getEmailByPlayerId(id);
+        if (!email) {
+            return NextResponse.json(
+                { error: "Player not found" },
+                { status: 404 }
+            );
+        }
 
-            const balanceChange = type === "CREDIT" ? amount : -amount;
-            const newBalance = wallet.balance + balanceChange;
+        // Update central wallet
+        let result;
+        if (type === "CREDIT") {
+            result = await creditCentralWallet(email, amount, description, "ADMIN_ADJUSTMENT");
+        } else {
+            result = await debitCentralWallet(email, amount, description, "ADMIN_ADJUSTMENT");
+        }
 
-            // Update wallet balance
-            const updatedWallet = await tx.wallet.update({
-                where: { playerId: id },
-                data: { balance: newBalance },
-            });
+        // Keep game DB transaction record for audit trail
+        await prisma.transaction.create({
+            data: { amount, type, description, playerId: id },
+        });
 
-            // Create transaction record
-            const transaction = await tx.transaction.create({
-                data: {
-                    amount,
-                    type,
-                    description,
-                    playerId: id,
-                },
-            });
-
-            return { balance: updatedWallet.balance, transaction };
+        // Also sync game DB wallet balance
+        await prisma.wallet.upsert({
+            where: { playerId: id },
+            create: { playerId: id, balance: result.balance },
+            update: { balance: result.balance },
         });
 
         // Auto-clear trusted if balance recovered (only on credits)

@@ -5,6 +5,7 @@ import { generateBracket } from "@/lib/logic/generateBracket";
 import { generateLeague } from "@/lib/logic/generateLeague";
 import { generateGroupKnockout } from "@/lib/logic/generateGroupKnockout";
 import { type NextRequest } from "next/server";
+import { debitCentralWallet } from "@/lib/wallet-service";
 
 /**
  * Largest power of 2 ≤ n.
@@ -144,20 +145,18 @@ export async function POST(
                 return ErrorResponse({ message: "Unknown tournament type", status: 400 });
         }
 
-        // Debit entry fees from participants (same as BGMI createTeamsByPoll)
+        // Debit entry fees from participants via central wallet
         const entryFee = tournament.fee ?? 0;
         if (entryFee > 0) {
-            // Determine which players are actually in the bracket
             const luckyVoterId = tournament.poll.luckyVoterId;
-            // For BRACKET_1V1 only the included players (power-of-2 trimmed), others get all voters
             const participantIds = tournament.type === "BRACKET_1V1"
                 ? allVoterIds.slice(0, floorPow2(allVoterIds.length))
                 : allVoterIds;
 
-            // Get UC-exempt players
+            // Get UC-exempt players with emails
             const players = await prisma.player.findMany({
                 where: { id: { in: participantIds } },
-                select: { id: true, isUCExempt: true },
+                select: { id: true, isUCExempt: true, user: { select: { email: true } } },
             });
 
             const playersToCharge = players.filter(
@@ -165,6 +164,25 @@ export async function POST(
             );
 
             if (playersToCharge.length > 0) {
+                // Debit central wallets + create game DB audit records
+                const BATCH = 5;
+                for (let i = 0; i < playersToCharge.length; i += BATCH) {
+                    const batch = playersToCharge.slice(i, i + BATCH);
+                    await Promise.all(
+                        batch.map(async (p) => {
+                            const email = p.user?.email;
+                            if (email) {
+                                const result = await debitCentralWallet(email, entryFee, `Entry fee for ${tournament.name}`, "TOURNAMENT_ENTRY");
+                                await prisma.wallet.upsert({
+                                    where: { playerId: p.id },
+                                    create: { balance: result.balance, playerId: p.id },
+                                    update: { balance: result.balance },
+                                });
+                            }
+                        })
+                    );
+                }
+
                 await prisma.transaction.createMany({
                     data: playersToCharge.map((p) => ({
                         amount: entryFee,
@@ -173,21 +191,6 @@ export async function POST(
                         playerId: p.id,
                     })),
                 });
-
-                // Batch wallet decrements
-                const BATCH = 5;
-                for (let i = 0; i < playersToCharge.length; i += BATCH) {
-                    const batch = playersToCharge.slice(i, i + BATCH);
-                    await Promise.all(
-                        batch.map((p) =>
-                            prisma.wallet.upsert({
-                                where: { playerId: p.id },
-                                create: { balance: -entryFee, playerId: p.id },
-                                update: { balance: { decrement: entryFee } },
-                            })
-                        )
-                    );
-                }
             }
         }
 

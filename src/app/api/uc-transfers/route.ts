@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
+import { getCentralBalance, transferCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * POST /api/uc-transfers
@@ -46,9 +47,15 @@ export async function POST(req: NextRequest) {
 
         const senderName = fromPlayer.displayName || fromPlayer.user.username;
 
-        // SEND — immediate transfer
+        // SEND — immediate transfer via central wallet
         if (type === "SEND") {
-            const balance = fromPlayer.wallet?.balance ?? 0;
+            const senderEmail = await getEmailByPlayerId(playerId);
+            const recipientEmail = await getEmailByPlayerId(toPlayerId);
+            if (!senderEmail || !recipientEmail) {
+                return NextResponse.json({ error: "Could not resolve emails" }, { status: 400 });
+            }
+
+            const balance = await getCentralBalance(senderEmail);
             if (balance < amount) {
                 return NextResponse.json(
                     { error: `Insufficient balance. You have ${balance} ${GAME.currency}.` },
@@ -56,20 +63,18 @@ export async function POST(req: NextRequest) {
                 );
             }
 
+            const toName = toPlayer.displayName || toPlayer.user.username;
+
+            // Transfer via central wallet
+            await transferCentralWallet(
+                senderEmail,
+                recipientEmail,
+                amount,
+                `Transfer: ${senderName} → ${toName}`,
+            );
+
+            // Game DB audit + sync
             const transfer = await prisma.$transaction(async (tx) => {
-                // Deduct from sender
-                await tx.wallet.update({
-                    where: { playerId },
-                    data: { balance: { decrement: amount } },
-                });
-
-                // Add to recipient (upsert wallet)
-                await tx.wallet.upsert({
-                    where: { playerId: toPlayerId },
-                    update: { balance: { increment: amount } },
-                    create: { playerId: toPlayerId, balance: amount },
-                });
-
                 const created = await tx.uCTransfer.create({
                     data: {
                         amount,
@@ -81,9 +86,6 @@ export async function POST(req: NextRequest) {
                     },
                 });
 
-                const toName = toPlayer.displayName || toPlayer.user.username;
-
-                // Transaction records for wallet history
                 await tx.transaction.createMany({
                     data: [
                         { playerId, amount, type: "DEBIT", description: `Sent ${amount} ${GAME.currency} to ${toName}` },
@@ -91,7 +93,6 @@ export async function POST(req: NextRequest) {
                     ],
                 });
 
-                // Notify recipient
                 await tx.notification.create({
                     data: {
                         title: `${GAME.currency} Received`,
@@ -106,7 +107,6 @@ export async function POST(req: NextRequest) {
                 return created;
             });
 
-            const toName = toPlayer.displayName || toPlayer.user.username;
             return NextResponse.json({
                 success: true,
                 data: transfer,

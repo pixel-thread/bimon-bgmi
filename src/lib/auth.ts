@@ -1,7 +1,8 @@
-import { auth as nextAuth } from "@/lib/auth-config";
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { prisma, getRequestPrisma } from "@/lib/database";
+import { auth as nextAuth } from "@/lib/auth-config";
+import { getRequestPrisma } from "@/lib/database";
+import { getCentralBalance } from "@/lib/wallet-service";
 
 /**
  * Get the current authenticated user from the database.
@@ -40,7 +41,7 @@ export const getCurrentUser = cache(async () => {
 
         user = await db.user.create({
             data: {
-                clerkId: `google_${Date.now()}`, // placeholder for backward compat
+                clerkId: `google_${Date.now()} `, // placeholder for backward compat
                 username,
                 email,
                 imageUrl: session.user.image || null,
@@ -70,12 +71,10 @@ export const getCurrentUser = cache(async () => {
                 category: user.player.category,
                 isBanned: user.player.isBanned,
                 phoneNumber: user.player.phoneNumber ?? null,
-                wallet: user.player.wallet
-                    ? {
-                        id: user.player.wallet.id,
-                        balance: user.player.wallet.balance,
-                    }
-                    : { id: "", balance: 0 },
+                wallet: {
+                    id: user.player.wallet?.id ?? "",
+                    balance: await getCentralBalance(email),
+                },
             }
             : null,
     };

@@ -4,6 +4,7 @@ import { getAuthEmail } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { getSettings } from "@/lib/settings";
 import { GAME } from "@/lib/game-config";
+import { debitCentralWallet } from "@/lib/wallet-service";
 
 const NAME_CHANGE_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
 
@@ -120,19 +121,19 @@ export async function POST(req: NextRequest) {
             return SuccessResponse({ message: "Nothing to update" });
         }
 
-        // Atomic: update player + charge UC if breaking cooldown
+        // Charge name change fee via central wallet if applicable
         const player = user.player!;
-        await prisma.$transaction(async (tx) => {
-            await tx.player.update({
-                where: { id: player.id },
-                data: updateData,
-            });
-
-            if (nameChangeFee > 0) {
+        if (nameChangeFee > 0) {
+            const walletResult = await debitCentralWallet(userId, nameChangeFee, "Name Change Fee", "OTHER");
+            await prisma.$transaction(async (tx) => {
+                await tx.player.update({
+                    where: { id: player.id },
+                    data: updateData,
+                });
                 await tx.wallet.upsert({
                     where: { playerId: player.id },
-                    create: { playerId: player.id, balance: -nameChangeFee },
-                    update: { balance: { decrement: nameChangeFee } },
+                    create: { playerId: player.id, balance: walletResult.balance },
+                    update: { balance: walletResult.balance },
                 });
                 await tx.transaction.create({
                     data: {
@@ -142,8 +143,13 @@ export async function POST(req: NextRequest) {
                         description: "Name Change Fee",
                     },
                 });
-            }
-        });
+            });
+        } else {
+            await prisma.player.update({
+                where: { id: player.id },
+                data: updateData,
+            });
+        }
 
         return SuccessResponse({
             message: nameChangeFee > 0

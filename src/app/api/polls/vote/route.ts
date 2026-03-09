@@ -4,6 +4,7 @@ import { getAuthEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 import { getSettings } from "@/lib/settings";
 import { GAME } from "@/lib/game-config";
+import { getCentralBalance } from "@/lib/wallet-service";
 
 /**
  * POST /api/polls/vote
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
         // USER role: must have balance >= entry fee (need coins first)
         // PLAYER role / trusted: can go negative (extended credit)
         if (vote !== "OUT") {
-            const balance = user.player.wallet?.balance ?? 0;
+            const balance = await getCentralBalance(userId);
             const entryFee = poll.tournament?.fee ?? 0;
             const isPlayer = user.role === "PLAYER" || user.role === "ADMIN" || user.role === "SUPER_ADMIN";
 

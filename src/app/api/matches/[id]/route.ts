@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { type NextRequest } from "next/server";
 import { GAME } from "@/lib/game-config";
+import { creditCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * DELETE /api/matches/[id]
@@ -89,10 +90,15 @@ export async function DELETE(
                         }
 
                         for (const [playerId, amount] of refundsByPlayer) {
-                            await tx.wallet.update({
-                                where: { playerId },
-                                data: { balance: { increment: amount } },
-                            });
+                            const email = await getEmailByPlayerId(playerId, tx);
+                            if (email) {
+                                const result = await creditCentralWallet(email, amount, `Entry fee refund — tournament reset`, "TOURNAMENT_ENTRY");
+                                await tx.wallet.upsert({
+                                    where: { playerId },
+                                    create: { playerId, balance: result.balance },
+                                    update: { balance: result.balance },
+                                });
+                            }
                         }
 
                         // Delete original debit transactions — clean slate

@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
+import { debitCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * POST /api/tournaments/[id]/undo-winner
@@ -77,10 +78,15 @@ export async function POST(
                 },
             });
             for (const reward of claimedRewards) {
-                await tx.wallet.update({
-                    where: { playerId: reward.playerId },
-                    data: { balance: { decrement: reward.amount } },
-                });
+                const email = await getEmailByPlayerId(reward.playerId, tx);
+                if (email) {
+                    const result = await debitCentralWallet(email, reward.amount, `Adjustment - ${tournament.name}`, "ADMIN_ADJUSTMENT");
+                    await tx.wallet.upsert({
+                        where: { playerId: reward.playerId },
+                        create: { playerId: reward.playerId, balance: result.balance },
+                        update: { balance: result.balance },
+                    });
+                }
                 await tx.transaction.create({
                     data: {
                         playerId: reward.playerId,

@@ -2,10 +2,11 @@ import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
 import { clearTrustedOnBalanceRecovery } from "@/lib/logic/balanceRecovery";
+import { creditCentralWallet } from "@/lib/wallet-service";
 
 /**
  * POST /api/rewards/[id]/claim
- * Claims a pending reward — credits wallet and marks as claimed.
+ * Claims a pending reward — credits central wallet and marks as claimed.
  */
 export async function POST(
     _req: Request,
@@ -44,44 +45,49 @@ export async function POST(
             return ErrorResponse({ message: "Reward already claimed", status: 400 });
         }
 
-        // Atomic: credit wallet + mark claimed
-        await prisma.$transaction(async (tx) => {
-            await tx.wallet.update({
-                where: { playerId: user.player!.id },
-                data: { balance: { increment: reward.amount } },
-            });
+        const rewardLabels: Record<string, string> = {
+            WINNER: "Prize",
+            SOLO_SUPPORT: "Solo Support",
+            REFERRAL: "Referral Bonus",
+            STREAK: "Streak Reward",
+        };
+        const label = rewardLabels[reward.type] || reward.type;
+        const description = `${label}: ${reward.message || "Reward claimed"}`;
 
+        const reasonMap: Record<string, string> = {
+            WINNER: "TOURNAMENT_WIN",
+            SOLO_SUPPORT: "SOLO_SUPPORT",
+            REFERRAL: "REFERRAL_BONUS",
+            STREAK: "STREAK_BONUS",
+        };
+        const reason = reasonMap[reward.type] || "OTHER";
+
+        // Credit central wallet
+        const result = await creditCentralWallet(userId, reward.amount, description, reason);
+
+        // Mark as claimed + game DB audit + sync balance
+        await prisma.$transaction(async (tx) => {
             await tx.pendingReward.update({
                 where: { id },
                 data: { isClaimed: true, claimedAt: new Date() },
             });
-
-            // Create transaction record
-            const rewardLabels: Record<string, string> = {
-                WINNER: "Prize",
-                SOLO_SUPPORT: "Solo Support",
-                REFERRAL: "Referral Bonus",
-                STREAK: "Streak Reward",
-            };
-            const label = rewardLabels[reward.type] || reward.type;
 
             await tx.transaction.create({
                 data: {
                     playerId: user.player!.id,
                     amount: reward.amount,
                     type: "CREDIT",
-                    description: `${label}: ${reward.message || "Reward claimed"}`,
+                    description,
                 },
             });
 
-            // Auto-clear trusted if balance recovered above -30
-            const wallet = await tx.wallet.findUnique({
+            await tx.wallet.upsert({
                 where: { playerId: user.player!.id },
-                select: { balance: true },
+                create: { playerId: user.player!.id, balance: result.balance },
+                update: { balance: result.balance },
             });
-            if (wallet) {
-                await clearTrustedOnBalanceRecovery(user.player!.id, wallet.balance, tx);
-            }
+
+            await clearTrustedOnBalanceRecovery(user.player!.id, result.balance, tx);
         });
 
         return SuccessResponse({

@@ -1,0 +1,90 @@
+// ════════════════════════════════════════════════════════════════
+//  BIMON — Central Wallet Database
+//  Shared across all game deployments (BGMI, PES, Free Fire, etc.)
+//  Hosted on Neon (neon-charcoal-cave)
+// ════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/wallet-client"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+enum TransactionReason {
+  TOURNAMENT_WIN       // Won a tournament
+  TOURNAMENT_ENTRY     // Entry fee deducted
+  ROYAL_PASS_PURCHASE  // Bought Royal Pass
+  TOP_UP               // Razorpay top-up
+  TRANSFER_SENT        // Sent B-Coins to another player
+  TRANSFER_RECEIVED    // Received B-Coins from another player
+  REFERRAL_BONUS       // Referral reward
+  STREAK_BONUS         // Streak reward
+  SOLO_SUPPORT         // Solo support bonus
+  ADMIN_ADJUSTMENT     // Manual adjustment by admin
+  SYSTEM               // System-level adjustments
+  OTHER                // Catch-all
+}
+
+// ─── Models ──────────────────────────────────────────────────
+
+/// Central user — one per Google account across all games.
+model CentralUser {
+  id        String   @id @default(uuid())
+  email     String   @unique          // Google account email
+  name      String?                   // Display name from Google
+  imageUrl  String?                   // Google profile picture
+  
+  wallet    CentralWallet?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Single wallet per user — shared balance across all games.
+model CentralWallet {
+  id       String @id @default(uuid())
+  balance  Int    @default(0)
+  
+  userId   String      @unique
+  user     CentralUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  transactions CentralTransaction[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Ledger of all B-Coin credits and debits across all games.
+model CentralTransaction {
+  id            String            @id @default(uuid())
+  amount        Int                                         // Always positive
+  type          TransactionType                             // CREDIT or DEBIT
+  reason        TransactionReason @default(OTHER)
+  description   String                                      // Human-readable description
+  game          String                                      // "bgmi", "pes", "freefire"
+  
+  balanceBefore Int                                         // Balance before this transaction
+  balanceAfter  Int                                         // Balance after this transaction
+  
+  metadata      Json?                                       // Extra data (tournament name, player name, etc.)
+  
+  walletId      String
+  wallet        CentralWallet     @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime          @default(now())
+  
+  @@index([walletId])
+  @@index([walletId, createdAt(sort: Desc)])
+  @@index([game])
+  @@index([reason])
+}

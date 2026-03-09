@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { requireAdmin } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
+import { getCentralBalance, debitCentralWallet, creditCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * GET /api/tournaments/[id]/donations
@@ -70,7 +71,7 @@ export async function POST(
                 where: { id: playerId },
                 include: {
                     wallet: true,
-                    user: { select: { username: true } },
+                    user: { select: { username: true, email: true } },
                 },
             });
 
@@ -78,21 +79,30 @@ export async function POST(
                 return NextResponse.json({ error: "Player not found" }, { status: 404 });
             }
 
-            const balance = player.wallet?.balance ?? 0;
-            if (balance < amount) {
+            const email = player.user?.email;
+            if (!email) {
+                return NextResponse.json({ error: "Player email not found" }, { status: 400 });
+            }
+
+            const centralBalance = await getCentralBalance(email);
+            if (centralBalance < amount) {
                 return NextResponse.json(
-                    { error: `Insufficient balance. Player has ${balance} ${GAME.currency}.` },
+                    { error: `Insufficient balance. Player has ${centralBalance} ${GAME.currency}.` },
                     { status: 400 }
                 );
             }
 
             playerName = player.displayName || player.user.username;
 
-            // Deduct from wallet + create donation + transaction in one go
+            // Debit central wallet
+            const walletResult = await debitCentralWallet(email, amount, `Prize pool donation — ${tournament.name}`, "OTHER");
+
+            // Sync game DB
             await prisma.$transaction([
-                prisma.wallet.update({
+                prisma.wallet.upsert({
                     where: { playerId },
-                    data: { balance: { decrement: amount } },
+                    create: { playerId, balance: walletResult.balance },
+                    update: { balance: walletResult.balance },
                 }),
                 prisma.transaction.create({
                     data: {
@@ -161,11 +171,18 @@ export async function DELETE(
 
         // If it was a player donation, refund their wallet
         if (donation.playerId && !donation.isAnonymous) {
-            await prisma.$transaction([
-                prisma.wallet.update({
+            // Refund via central wallet
+            const email = await getEmailByPlayerId(donation.playerId);
+            if (email) {
+                const walletResult = await creditCentralWallet(email, donation.amount, `Prize pool donation refund`, "OTHER");
+                await prisma.wallet.upsert({
                     where: { playerId: donation.playerId },
-                    data: { balance: { increment: donation.amount } },
-                }),
+                    create: { playerId: donation.playerId, balance: walletResult.balance },
+                    update: { balance: walletResult.balance },
+                });
+            }
+
+            await prisma.$transaction([
                 prisma.transaction.create({
                     data: {
                         playerId: donation.playerId,

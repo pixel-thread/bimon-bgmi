@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
+import { getCentralBalance, transferCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * PATCH /api/uc-transfers/[id]/approve
@@ -58,8 +59,14 @@ export async function PATCH(
             return NextResponse.json({ error: "Not authorized" }, { status: 403 });
         }
 
-        // Check balance
-        const approverBalance = transfer.toPlayer.wallet?.balance ?? 0;
+        // Check central wallet balance
+        const approverEmail = await getEmailByPlayerId(transfer.toPlayerId);
+        const requesterEmail = await getEmailByPlayerId(transfer.fromPlayerId);
+        if (!approverEmail || !requesterEmail) {
+            return NextResponse.json({ error: "Could not resolve emails" }, { status: 400 });
+        }
+
+        const approverBalance = await getCentralBalance(approverEmail);
         if (approverBalance < transfer.amount) {
             return NextResponse.json(
                 { error: `Insufficient balance. You have ${approverBalance} ${GAME.currency}.` },
@@ -67,29 +74,25 @@ export async function PATCH(
             );
         }
 
+        const txApproverName = transfer.toPlayer.displayName || transfer.toPlayer.user.username;
+        const txRequesterName = transfer.fromPlayer.displayName || transfer.fromPlayer.user.username;
+
+        // Transfer via central wallet
+        await transferCentralWallet(
+            approverEmail,
+            requesterEmail,
+            transfer.amount,
+            `UC Request approved: ${txApproverName} → ${txRequesterName}`,
+        );
+
         const updatedTransfer = await prisma.$transaction(async (tx) => {
-            // Deduct from approver (toPlayer)
-            await tx.wallet.update({
-                where: { playerId: transfer.toPlayerId },
-                data: { balance: { decrement: transfer.amount } },
-            });
-
-            // Add to requester (fromPlayer) — upsert wallet
-            await tx.wallet.upsert({
-                where: { playerId: transfer.fromPlayerId },
-                update: { balance: { increment: transfer.amount } },
-                create: { playerId: transfer.fromPlayerId, balance: transfer.amount },
-            });
-
             // Update transfer status
             const updated = await tx.uCTransfer.update({
                 where: { id: transferId },
                 data: { status: "APPROVED", responseMessage },
             });
 
-            // Transaction records for wallet history
-            const txApproverName = transfer.toPlayer.displayName || transfer.toPlayer.user.username;
-            const txRequesterName = transfer.fromPlayer.displayName || transfer.fromPlayer.user.username;
+            // Game DB audit
             await tx.transaction.createMany({
                 data: [
                     { playerId: transfer.toPlayerId, amount: transfer.amount, type: "DEBIT", description: `Approved UC request from ${txRequesterName}` },

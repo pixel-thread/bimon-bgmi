@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import crypto from "crypto";
 import { GAME } from "@/lib/game-config";
+import { creditCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 // Razorpay platform fee (2.4%)
 const PLATFORM_FEE_PERCENT = 2.4;
@@ -84,32 +85,32 @@ export async function POST(req: Request) {
             amountInRupees * (1 - PLATFORM_FEE_PERCENT / 100)
         );
 
-        // Credit UC in a transaction
+        // Credit central wallet
+        const playerEmail = await getEmailByPlayerId(payment.playerId);
+        const description = `Added ${ucAmount} ${GAME.currency} via Razorpay`;
+        let centralResult: any = null;
+        if (playerEmail) {
+            centralResult = await creditCentralWallet(playerEmail, ucAmount, description, "TOP_UP");
+        }
+
+        // Sync game DB
         await prisma.$transaction(async (tx) => {
             await tx.payment.update({
                 where: { razorpayOrderId },
-                data: {
-                    razorpayPaymentId,
-                    status: "paid",
-                },
+                data: { razorpayPaymentId, status: "paid" },
             });
 
             await tx.wallet.upsert({
                 where: { playerId: payment.playerId },
-                create: {
-                    playerId: payment.playerId,
-                    balance: ucAmount,
-                },
-                update: {
-                    balance: { increment: ucAmount },
-                },
+                create: { playerId: payment.playerId, balance: centralResult?.balance ?? ucAmount },
+                update: { balance: centralResult?.balance ?? { increment: ucAmount } },
             });
 
             await tx.transaction.create({
                 data: {
                     amount: ucAmount,
                     type: "CREDIT",
-                    description: `Added ${ucAmount} ${GAME.currency} via Razorpay`,
+                    description,
                     playerId: payment.playerId,
                 },
             });
