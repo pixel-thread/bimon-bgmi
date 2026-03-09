@@ -31,7 +31,7 @@ interface PollDTO {
     teamType: string;
     isActive: boolean;
     options?: PollOptionDTO[];
-    tournament?: { id: string; name: string; fee: number };
+    tournament?: { id: string; name: string; fee: number; type?: string };
 }
 
 interface TournamentOption {
@@ -86,6 +86,7 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
             setDays(poll.days);
             setTeamType(poll.teamType);
             setTournamentId(poll.tournament?.id ?? "");
+            setTournamentFormat(poll.tournament?.type ?? GAME.defaultTournamentType ?? "BRACKET_1V1");
             setIsActive(poll.isActive);
             setOptions(poll.options?.map(o => ({ ...o })) ?? []);
         } else {
@@ -132,7 +133,12 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
         setSaving(true);
         try {
             const body = isEdit
-                ? { id: poll!.id, question, days, teamType, isActive, options: options.map(o => ({ id: o.id, name: o.name })) }
+                ? {
+                    id: poll!.id, question, days, teamType, isActive,
+                    options: options.map(o => ({ id: o.id, name: o.name })),
+                    // Send tournament format on edit too (PES)
+                    ...(!GAME.features.hasTeamSizes && { tournamentType: tournamentFormat }),
+                }
                 : {
                     question, days, teamType, tournamentId,
                     // For PES: send format so poll creation can update tournament type

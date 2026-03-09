@@ -205,7 +205,7 @@ export async function PATCH(request: Request) {
         }
 
         const body = await request.json();
-        const { id, question, days, teamType, isActive, options } = body;
+        const { id, question, days, teamType, isActive, options, tournamentType } = body;
 
         if (!id) {
             return ErrorResponse({ message: "id is required", status: 400 });
@@ -216,6 +216,20 @@ export async function PATCH(request: Request) {
         if (days !== undefined) updateData.days = days;
         if (teamType !== undefined) updateData.teamType = teamType;
         if (isActive !== undefined) updateData.isActive = isActive;
+
+        // If tournamentType is provided, update the linked tournament's type
+        if (tournamentType && ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT", "BR"].includes(tournamentType)) {
+            const poll = await prisma.poll.findUnique({
+                where: { id },
+                select: { tournamentId: true },
+            });
+            if (poll?.tournamentId) {
+                await prisma.tournament.update({
+                    where: { id: poll.tournamentId },
+                    data: { type: tournamentType },
+                });
+            }
+        }
 
         // Update poll + options in a transaction
         const poll = await prisma.$transaction(async (tx) => {
