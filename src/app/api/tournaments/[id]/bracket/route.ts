@@ -3,6 +3,7 @@ import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getSettings } from "@/lib/settings";
 import { advanceWinners } from "@/lib/logic/generateBracket";
+import { advanceGroupToKnockout } from "@/lib/logic/generateGroupKnockout";
 
 const CONFIRM_DEADLINE_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -51,6 +52,28 @@ async function silentAutoConfirm(tournamentId: string, tournamentType: string) {
                 data: { winnerId, score1: winnerIsP1 ? 1 : 0, score2: winnerIsP1 ? 0 : 1, status: "CONFIRMED" },
             });
             if (isKO) await advanceWinners(tournamentId, match.round);
+        }
+        // 3. GROUP_KNOCKOUT: if ALL group stage matches are now CONFIRMED
+        //    (and none are DISPUTED), silently seed the knockout bracket.
+        if (tournamentType === "GROUP_KNOCKOUT") {
+            const blockingGroupMatches = await prisma.bracketMatch.count({
+                where: {
+                    tournamentId,
+                    round: { lt: 0 },                         // group stage only
+                    status: { not: "CONFIRMED" },             // anything unfinished
+                },
+            });
+            if (blockingGroupMatches === 0) {
+                // Check KO slots aren't already filled (idempotency)
+                const koFilled = await prisma.bracketMatch.count({
+                    where: { tournamentId, round: 1, player1Id: { not: null } },
+                });
+                if (koFilled === 0) {
+                    await advanceGroupToKnockout(tournamentId).catch(() => {
+                        // Swallow — DISPUTED or already advanced
+                    });
+                }
+            }
         }
     } catch {
         // Silently swallow — never break the main response
