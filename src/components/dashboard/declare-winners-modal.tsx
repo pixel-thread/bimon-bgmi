@@ -184,11 +184,14 @@ export function DeclareWinnersModal({
     const bracketOrgCut = orgPercent > 0 ? Math.floor(bracketPrizePool * orgPercent / 100) : 0;
     const bracketDistributable = bracketPrizePool - bracketOrgCut;
 
-    // Auto-split: 65/35 (2 places) or 60/30/10 (3 places) — invisible to admin
+    // Auto-split: hidden from admin, amounts shown in ₹
     const SPLIT_2 = [65, 35];
     const SPLIT_3 = [60, 30, 10];
     const bracketSplit = placementCount >= 3 ? SPLIT_3 : SPLIT_2;
     const bracketAmounts = bracketSplit.map(pct => Math.floor(bracketDistributable * pct / 100));
+
+    // Max placements = 3 (1st, 2nd, 3rd) for all bracket types
+    const maxBracketPlacements = 3;
 
     const rankings = rankingsData?.data ?? [];
     const meta = rankingsData?.meta;
@@ -719,7 +722,8 @@ export function DeclareWinnersModal({
                                 )}
                                 {!isWinnerDeclared && (
                                     <div className="flex flex-wrap items-center gap-2 pt-1">
-                                        {placementCount < bracketPlacements.length && placementCount < 8 && (
+                                        {/* Allow up to confirmed bracket placements (min 3) */}
+                                        {placementCount < maxBracketPlacements && (
                                             <Button size="sm" variant="flat" startContent={<Plus className="h-3.5 w-3.5" />}
                                                 onPress={() => setPlacementCount(c => c + 1)} className="gap-1 text-xs h-8">
                                                 Add {getOrdinal(placementCount + 1)} Place
