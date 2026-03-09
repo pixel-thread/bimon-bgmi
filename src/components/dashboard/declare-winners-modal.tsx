@@ -130,12 +130,13 @@ export function DeclareWinnersModal({
         staleTime: 0,
     });
 
-    // Bracket: fetch bracket placements from bracket API
     type BracketPlayer = { id: string; name: string };
     type BracketPlacement = { position: number; amount: number; player: BracketPlayer };
     const { data: bracketData, isLoading: bracketLoading } = useQuery<{
         rounds: { round: number; matches: { id: string; status: string; winnerId: string | null; player1Id: string | null; player2Id: string | null; player1?: { id: string; displayName: string | null } | null; player2?: { id: string; displayName: string | null } | null }[] }[];
         totalPlayers: number;
+        prizePool?: number;
+        entryFee?: number;
         deadlines?: unknown;
     }>({
         queryKey: ["bracket", tournamentId],
@@ -177,6 +178,17 @@ export function DeclareWinnersModal({
         }
         return result;
     }, [bracketData, isBracket]);
+
+    // Bracket prize pool (from bracket route)
+    const bracketPrizePool = bracketData?.prizePool ?? 0;
+    const bracketOrgCut = orgPercent > 0 ? Math.floor(bracketPrizePool * orgPercent / 100) : 0;
+    const bracketDistributable = bracketPrizePool - bracketOrgCut;
+
+    // Auto-split: 65/35 (2 places) or 60/30/10 (3 places) — invisible to admin
+    const SPLIT_2 = [65, 35];
+    const SPLIT_3 = [60, 30, 10];
+    const bracketSplit = placementCount >= 3 ? SPLIT_3 : SPLIT_2;
+    const bracketAmounts = bracketSplit.map(pct => Math.floor(bracketDistributable * pct / 100));
 
     const rankings = rankingsData?.data ?? [];
     const meta = rankingsData?.meta;
@@ -421,10 +433,10 @@ export function DeclareWinnersModal({
 
             let placements;
             if (isBracket) {
-                // Bracket: send position + amount — backend resolves players from BracketMatch
-                placements = bracketPlacements.slice(0, placementCount).map((bp) => ({
+                // Bracket: send auto-computed amounts based on prize split
+                placements = bracketPlacements.slice(0, placementCount).map((bp, idx) => ({
                     position: bp.position,
-                    amount: baseDist?.prizes.get(bp.position)?.amount ?? 0,
+                    amount: bracketAmounts[idx] ?? 0,
                 }));
             } else {
                 // BGMI: build placements with exact per-player amounts from preview
@@ -655,6 +667,26 @@ export function DeclareWinnersModal({
                             </div>
                         ) : (
                             <div className="space-y-2">
+                                {/* Prize pool breakdown — bracket only */}
+                                {bracketPrizePool > 0 && (
+                                    <div className="rounded-xl border border-success/25 bg-success/5 p-3 space-y-1.5 mb-1">
+                                        <div className="flex justify-between text-xs">
+                                            <span className="text-foreground/50">Total Prize Pool</span>
+                                            <span className="font-semibold">₹{bracketPrizePool.toLocaleString()}</span>
+                                        </div>
+                                        {bracketOrgCut > 0 && (
+                                            <div className="flex justify-between text-xs text-foreground/40">
+                                                <span>💼 Org ({orgPercent}%)</span>
+                                                <span>- ₹{bracketOrgCut.toLocaleString()}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between text-xs border-t border-divider pt-1.5 font-semibold text-success">
+                                            <span>Distributable</span>
+                                            <span>₹{bracketDistributable.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <p className="text-xs font-semibold text-foreground/40 uppercase tracking-wider mb-2">
                                     {isWinnerDeclared ? "Declared Winners" : `Bracket Results (Top ${placementCount})`}
                                 </p>
@@ -676,9 +708,11 @@ export function DeclareWinnersModal({
                                             <div className="flex items-center gap-3">
                                                 <span className="text-xl shrink-0">{getMedal(idx)}</span>
                                                 <p className="text-sm font-medium flex-1">{bp.player.name}</p>
-                                                {baseDist?.prizes.get(bp.position)?.amount ? (
-                                                    <Chip size="sm" color="success" variant="flat" className="font-semibold">₹{baseDist.prizes.get(bp.position)!.amount.toLocaleString()}</Chip>
-                                                ) : null}
+                                                {bracketDistributable > 0 && (
+                                                    <Chip size="sm" color="success" variant="flat" className="font-semibold">
+                                                        ₹{(bracketAmounts[idx] ?? 0).toLocaleString()}
+                                                    </Chip>
+                                                )}
                                             </div>
                                         </div>
                                     ))

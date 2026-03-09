@@ -74,7 +74,7 @@ export async function GET(
         const [tournament, settings] = await Promise.all([
             prisma.tournament.findUnique({
                 where: { id },
-                select: { id: true, type: true },
+                select: { id: true, type: true, fee: true },
             }),
             getSettings(),
         ]);
@@ -196,12 +196,23 @@ export async function GET(
             ? { displayName: finalMatch.winner.displayName }
             : null;
 
+        // Compute prize pool for bracket mode
+        const donations = await prisma.prizePoolDonation.findMany({
+            where: { tournamentId: id },
+            select: { amount: true },
+        });
+        const totalDonations = donations.reduce((s, d) => s + d.amount, 0);
+        const entryFee = tournament.fee ?? 0;
+        const prizePool = entryFee * playerIds.size + totalDonations;
+
         return SuccessResponse({
             data: {
                 rounds,
                 totalRounds,
                 totalPlayers: playerIds.size,
                 winner,
+                entryFee,
+                prizePool,
                 // Deadline settings — player UI shows countdown for PENDING matches
                 deadlines: {
                     groupHours: settings.matchDeadlineGroupHours,
