@@ -50,11 +50,22 @@ function ScoreStepper({ label, value, onChange }: { label: string; value: number
     );
 }
 
-/* ─── Screenshot with lazy load + lightbox ───────────────────── */
+/* ─── Screenshot with preload + lightbox ─────────────────────── */
 function ScreenshotView({ url }: { url: string }) {
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(false);
     const [lightbox, setLightbox] = useState(false);
+
+    // Preload image immediately when URL changes
+    useEffect(() => {
+        setLoaded(false);
+        setError(false);
+        const img = new Image();
+        img.src = url;
+        img.onload = () => setLoaded(true);
+        img.onerror = () => setError(true);
+        return () => { img.onload = null; img.onerror = null; };
+    }, [url]);
 
     return (
         <>
@@ -64,11 +75,9 @@ function ScreenshotView({ url }: { url: string }) {
                 style={{ background: "rgba(0,0,0,0.5)" }}
                 onClick={() => loaded && setLightbox(true)}
             >
-                {/* Skeleton while loading */}
+                {/* Shimmer skeleton while loading */}
                 {!loaded && !error && (
-                    <div className="w-full h-44 flex items-center justify-center animate-pulse bg-default-100/40">
-                        <Camera className="h-8 w-8 text-foreground/20" />
-                    </div>
+                    <div className="w-full h-44 bg-default-100/30 animate-pulse rounded-2xl" />
                 )}
 
                 {error ? (
@@ -81,15 +90,12 @@ function ScreenshotView({ url }: { url: string }) {
                     <img
                         src={url}
                         alt="Match result"
-                        loading="lazy"
                         style={{
-                            filter: loaded ? "blur(0px)" : "blur(12px)",
-                            transform: loaded ? "scale(1)" : "scale(1.04)",
-                            transition: "filter 0.6s ease, transform 0.6s ease, opacity 0.3s ease",
+                            filter: loaded ? "blur(0px)" : "blur(8px)",
+                            transform: loaded ? "scale(1)" : "scale(1.02)",
+                            transition: "filter 0.3s ease, transform 0.3s ease, opacity 0.2s ease",
                         }}
                         className={`w-full max-h-64 object-contain ${loaded ? "opacity-100" : "opacity-0 absolute inset-0"}`}
-                        onLoad={() => setLoaded(true)}
-                        onError={() => setError(true)}
                     />
                 )}
 
