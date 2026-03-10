@@ -9,6 +9,7 @@ import { Upload, Trophy, Camera, X, Plus, Minus } from "lucide-react";
 import { Avatar } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/compress-image";
 
 interface SubmitResultModalProps {
     isOpen: boolean;
@@ -85,7 +86,8 @@ export function SubmitResultModal({
                     const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
                     if (!apiKey) throw new Error("ImgBB API key not configured");
                     const formData = new FormData();
-                    formData.append("image", screenshot);
+                    const compressed = await compressImage(screenshot);
+                    formData.append("image", compressed);
                     formData.append("name", `bracket-${matchId}-${Date.now()}`);
                     const uploadRes = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: formData });
                     const uploadData = await uploadRes.json();

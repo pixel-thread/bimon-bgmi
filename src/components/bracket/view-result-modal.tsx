@@ -8,6 +8,7 @@ import {
 import { Camera, Pencil, Save, Minus, Plus, X, Maximize2, Trophy } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/compress-image";
 
 interface ViewResultModalProps {
     isOpen: boolean;
@@ -75,9 +76,15 @@ function ScreenshotView({ url }: { url: string }) {
                 style={{ background: "rgba(0,0,0,0.5)" }}
                 onClick={() => loaded && setLightbox(true)}
             >
-                {/* Shimmer skeleton while loading */}
+                {/* Animated loader while image loads */}
                 {!loaded && !error && (
-                    <div className="w-full h-44 bg-default-100/30 animate-pulse rounded-2xl" />
+                    <div className="w-full h-44 flex flex-col items-center justify-center gap-3 bg-default-100/20 rounded-2xl">
+                        <Camera className="h-5 w-5 text-foreground/20 animate-pulse" />
+                        <div className="w-32 h-1.5 rounded-full bg-foreground/10 overflow-hidden">
+                            <div className="h-full w-1/3 rounded-full bg-primary/50 animate-[bounceBar_1.2s_ease-in-out_infinite]" />
+                        </div>
+                        <span className="text-[10px] text-foreground/30">Loading screenshot…</span>
+                    </div>
                 )}
 
                 {error ? (
@@ -177,7 +184,8 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                 const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
                 if (!apiKey) throw new Error("ImgBB API key not configured");
                 const fd = new FormData();
-                fd.append("image", screenshot);
+                const compressed = await compressImage(screenshot);
+                fd.append("image", compressed);
                 fd.append("name", `bracket-admin-${match?.id}-${Date.now()}`);
                 const up = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: fd });
                 const upData = await up.json();
