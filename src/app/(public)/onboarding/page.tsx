@@ -88,7 +88,7 @@ export default function OnboardingPage() {
                 const json = await res.json();
                 if (json.data?.isTaken) {
                     setDisplayNameError(
-                        "This Game Name is already taken by another player."
+                        `This ${GAME.ignLabel} is already taken by another player.`
                     );
                 }
             } catch {
@@ -275,11 +275,11 @@ export default function OnboardingPage() {
                             </div>
                         )}
 
-                        {/* Game Name input */}
+                        {/* Game Name / Team Name input */}
                         <div>
                             <div className="flex items-center gap-2 mb-2">
                                 <label className="text-sm font-medium text-foreground/70">
-                                    Game Name
+                                    {GAME.ignLabel}
                                 </label>
                                 {GAME.pasteOnlyIGN && ignTutorial.HelpButton}
                             </div>
@@ -326,7 +326,7 @@ export default function OnboardingPage() {
                                             setDisplayName(e.target.value);
                                             setDisplayNameError("");
                                         }}
-                                        placeholder="Enter your game name"
+                                        placeholder={`Enter your ${GAME.ignLabel.toLowerCase()}`}
                                         size="lg"
                                         variant="bordered"
                                         maxLength={20}

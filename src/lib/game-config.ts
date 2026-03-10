@@ -47,6 +47,7 @@ interface GameConfig {
     idLabel: string;             // "BGMI ID" or "PES ID"
     idPlaceholder: string;       // e.g. "Your BGMI ID (numeric)"
     hasUID: boolean;             // Whether to show UID field in onboarding
+    ignLabel: string;            // UI label for display name: "Game Name" or "Team Name"
     pasteOnlyIGN: boolean;       // Whether game name must be pasted (BGMI) or can be typed (PES/FF)
     locale: "kha" | "en";        // UI language: "kha" = Khasi, "en" = English
     scoringSystem: string;       // "bgmi" | "ffws" | "bracket"
@@ -75,6 +76,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         idLabel: "BGMI ID",
         idPlaceholder: "Your BGMI character ID",
         hasUID: false,
+        ignLabel: "Game Name",
         pasteOnlyIGN: true,          // BGMI requires paste to prevent fake names
         locale: "kha",
         scoringSystem: "bgmi",
@@ -112,7 +114,8 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         idLabel: "Free Fire UID",
         idPlaceholder: "Your Free Fire UID (numeric)",
         hasUID: true,
-        pasteOnlyIGN: false,         // FF allows typed input
+        ignLabel: "Game Name",
+        pasteOnlyIGN: false,         // FF players can type their name
         locale: "kha",
         scoringSystem: "ffws",
         booyahBonus: true,
@@ -149,6 +152,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         idLabel: "eFootball ID",
         idPlaceholder: "Your eFootball / Konami ID",
         hasUID: false,
+        ignLabel: "Team Name",
         pasteOnlyIGN: false,         // PES players can type any name
         locale: "en",
         scoringSystem: "bracket",

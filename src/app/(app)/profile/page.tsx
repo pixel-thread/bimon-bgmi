@@ -538,10 +538,10 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
 
-                                    {/* Game Name */}
+                                    {/* Game Name / Team Name */}
                                     <div>
                                         <div className="flex items-center gap-2 mb-2">
-                                            <label className="text-sm font-medium text-foreground/70">Game Name</label>
+                                            <label className="text-sm font-medium text-foreground/70">{GAME.ignLabel}</label>
                                             {GAME.pasteOnlyIGN && ignTutorial.HelpButton}
                                         </div>
                                         {GAME.pasteOnlyIGN ? (
@@ -578,7 +578,7 @@ export default function ProfilePage() {
                                                     setNewIGN(e.target.value);
                                                     setIgnError("");
                                                 }}
-                                                placeholder="Enter your game name"
+                                                placeholder={`Enter your ${GAME.ignLabel.toLowerCase()}`}
                                                 size="lg"
                                                 variant="bordered"
                                                 maxLength={20}
@@ -686,7 +686,7 @@ export default function ProfilePage() {
                                         <span className="text-sm">@{profile.username}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs text-foreground/40">Game Name:</span>
+                                        <span className="text-xs text-foreground/40">{GAME.ignLabel}:</span>
                                         <span className="text-sm font-bold">{player.displayName || profile.username}</span>
                                     </div>
                                     {GAME.hasUID && player.uid && (

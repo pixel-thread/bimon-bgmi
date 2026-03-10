@@ -32,10 +32,10 @@ export async function POST(req: NextRequest) {
         if (displayName) {
             const settings = await getSettings();
             if (displayName.length < 2) {
-                return ErrorResponse({ message: "Game Name must be at least 2 characters", status: 400 });
+                return ErrorResponse({ message: `${GAME.ignLabel} must be at least 2 characters`, status: 400 });
             }
             if (displayName.length > settings.maxIGNLength) {
-                return ErrorResponse({ message: `Game Name must be ${settings.maxIGNLength} characters or less`, status: 400 });
+                return ErrorResponse({ message: `${GAME.ignLabel} must be ${settings.maxIGNLength} characters or less`, status: 400 });
             }
         }
 
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
             });
 
             if (existing) {
-                return ErrorResponse({ message: "This Game Name is already taken", status: 409 });
+                return ErrorResponse({ message: `This ${GAME.ignLabel} is already taken`, status: 409 });
             }
         }
 
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
 
         return SuccessResponse({
             message: nameChangeFee > 0
-                ? `Game Name updated (${nameChangeFee} ${GAME.currency} charged)`
+                ? `${GAME.ignLabel} updated (${nameChangeFee} ${GAME.currency} charged)`
                 : "Profile updated",
         });
     } catch (error) {

@@ -164,9 +164,11 @@ export function GameNameInput({
 
 /** Validate display name */
 export function validateDisplayName(value: string): string {
-    if (value.length < 2) return "Game Name must be at least 2 characters";
+    const { GAME } = require("@/lib/game-config");
+    const label = GAME.ignLabel;
+    if (value.length < 2) return `${label} must be at least 2 characters`;
     if (value.length > MAX_IGN_LENGTH)
-        return `Game Name must be at most ${MAX_IGN_LENGTH} characters`;
+        return `${label} must be at most ${MAX_IGN_LENGTH} characters`;
     return "";
 }
 
