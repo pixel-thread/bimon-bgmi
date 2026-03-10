@@ -15,7 +15,7 @@ import { Chip, Tabs, Tab } from "@heroui/react";
 const FAMOUS_PLAYERS = [
     "Messi", "Cristiano Ronaldo", "Neymar", "Mbappe", "Haaland",
     "Ronaldinho", "Zidane", "Beckham", "Maradona", "Pele",
-    "Modric", "De Bruyne", "Salah", "Lewandowski", "Benzema",
+    "Modric", "De Bruyne", "Salah", "Lewandowski", "Benzema", "Kaka",
 ];
 
 /**
