@@ -10,6 +10,22 @@ import { useConfirmResult, useDisputeResult } from "@/components/bracket/submit-
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { Trophy, Swords, Loader2, Clock } from "lucide-react";
 import { Chip, Tabs, Tab } from "@heroui/react";
+import { GAME } from "@/lib/game-config";
+
+// Curated football/esports images for bracket backgrounds (public Unsplash — no upload)
+const FOOTBALL_BG = [
+    "https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=1200&q=60&auto=format",
+    "https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=1200&q=60&auto=format",
+    "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=1200&q=60&auto=format",
+    "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1200&q=60&auto=format",
+    "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&q=60&auto=format",
+    "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1200&q=60&auto=format",
+];
+const SHOOTER_BG = [
+    "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=60&auto=format",
+    "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1200&q=60&auto=format",
+];
+const BG_IMAGES = GAME.features.hasBR ? SHOOTER_BG : FOOTBALL_BG;
 
 /**
  * /bracket — Matches page.
@@ -79,53 +95,68 @@ export default function MatchesPage() {
     const formatIcon = (type: string) =>
         type === "LEAGUE" ? "🏟️" :
             type === "GROUP_KNOCKOUT" ? "🌍" : "⚔️";
+    const [bgUrl] = useState(() => BG_IMAGES[Math.floor(Math.random() * BG_IMAGES.length)]);
 
     return (
-        <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-            {/* Tournament tabs (only show if multiple) */}
-            {activeTournaments.length > 1 && (
-                <Tabs
-                    selectedKey={currentId}
-                    onSelectionChange={(key) => {
-                        setActiveTab(key as string);
-                        setSelectedMatch(null);
-                        setViewingMatch(null);
-                    }}
-                    color="primary"
-                    variant="solid"
-                    classNames={{
-                        tabList: "bg-foreground/5 w-full overflow-x-auto flex-nowrap",
-                        tab: "font-semibold whitespace-nowrap",
-                    }}
-                    fullWidth
-                >
-                    {activeTournaments.map((t: any) => (
-                        <Tab
-                            key={t.id}
-                            title={
-                                <span className="flex items-center gap-1.5">
-                                    <span>{formatIcon(t.type)}</span>
-                                    <span>{t.name}</span>
-                                </span>
-                            }
-                        />
-                    ))}
-                </Tabs>
-            )}
-
-            {/* Selected tournament content */}
-            {currentTournament && (
-                <TournamentContent
-                    tournament={currentTournament}
-                    playerId={playerId}
-                    isAdmin={isAdmin}
-                    showName={activeTournaments.length <= 1}
-                    selectedMatch={selectedMatch}
-                    viewingMatch={viewingMatch}
-                    onSelectMatch={setSelectedMatch}
-                    onViewMatch={setViewingMatch}
+        <div className="relative min-h-[80vh]">
+            {/* Hero background */}
+            <div className="absolute inset-0 -z-10 overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                    src={bgUrl}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover opacity-15 blur-[1px] scale-105"
                 />
-            )}
+                <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/90 to-background" />
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5" />
+            </div>
+
+            <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+                {/* Tournament tabs (only show if multiple) */}
+                {activeTournaments.length > 1 && (
+                    <Tabs
+                        selectedKey={currentId}
+                        onSelectionChange={(key) => {
+                            setActiveTab(key as string);
+                            setSelectedMatch(null);
+                            setViewingMatch(null);
+                        }}
+                        color="primary"
+                        variant="solid"
+                        classNames={{
+                            tabList: "bg-foreground/5 w-full overflow-x-auto flex-nowrap",
+                            tab: "font-semibold whitespace-nowrap",
+                        }}
+                        fullWidth
+                    >
+                        {activeTournaments.map((t: any) => (
+                            <Tab
+                                key={t.id}
+                                title={
+                                    <span className="flex items-center gap-1.5">
+                                        <span>{formatIcon(t.type)}</span>
+                                        <span>{t.name}</span>
+                                    </span>
+                                }
+                            />
+                        ))}
+                    </Tabs>
+                )}
+
+                {/* Selected tournament content */}
+                {currentTournament && (
+                    <TournamentContent
+                        tournament={currentTournament}
+                        playerId={playerId}
+                        isAdmin={isAdmin}
+                        showName={activeTournaments.length <= 1}
+                        selectedMatch={selectedMatch}
+                        viewingMatch={viewingMatch}
+                        onSelectMatch={setSelectedMatch}
+                        onViewMatch={setViewingMatch}
+                    />
+                )}
+            </div>
         </div>
     );
 }
