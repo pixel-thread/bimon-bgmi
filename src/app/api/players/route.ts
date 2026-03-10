@@ -244,25 +244,29 @@ export async function GET(request: NextRequest) {
             count: data.length,
         };
 
-        // Add balance totals for super admins (exclude admin wallets)
+        // Add balance totals for super admins from central wallet
         if (user?.role === "SUPER_ADMIN") {
-            const adminFilter = {
-                player: {
-                    user: {
-                        role: { notIn: ["SUPER_ADMIN" as const, "ADMIN" as const] },
-                    },
-                },
-            };
-            const aggregations = await prisma.wallet.aggregate({
-                where: adminFilter,
-                _sum: { balance: true },
-            });
-            const negativeSum = await prisma.wallet.aggregate({
-                where: { ...adminFilter, balance: { lt: 0 } },
-                _sum: { balance: true },
-            });
-            meta.totalBalance = aggregations._sum.balance ?? 0;
-            meta.negativeBalance = negativeSum._sum.balance ?? 0;
+            try {
+                const { walletDb } = await import("@/lib/wallet-db");
+                if (walletDb?.centralWallet) {
+                    const aggregations = await walletDb.centralWallet.aggregate({
+                        _sum: { balance: true },
+                    });
+                    const negativeSum = await walletDb.centralWallet.aggregate({
+                        where: { balance: { lt: 0 } },
+                        _sum: { balance: true },
+                    });
+                    meta.totalBalance = aggregations._sum.balance ?? 0;
+                    meta.negativeBalance = negativeSum._sum.balance ?? 0;
+                }
+            } catch {
+                // Fallback to local wallet if central is unavailable
+                const aggregations = await prisma.wallet.aggregate({
+                    _sum: { balance: true },
+                });
+                meta.totalBalance = aggregations._sum.balance ?? 0;
+                meta.negativeBalance = 0;
+            }
         }
 
         return SuccessResponse({
