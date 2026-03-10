@@ -171,6 +171,54 @@ function TournamentContent({
 
     const allMatches = bracketData?.rounds?.flatMap((r: any) => r.matches) ?? [];
 
+    // Compute stage end times from latest unfinished match + deadline hours
+    // NOTE: must be before early returns to comply with Rules of Hooks
+    const stageDeadlines = useMemo(() => {
+        if (!bracketData?.deadlines || !bracketData?.rounds) return null;
+        const matches = bracketData.rounds.flatMap((r: any) => r.matches);
+        const now = Date.now();
+
+        const formatDeadline = (date: Date) => {
+            const diff = date.getTime() - now;
+            if (diff <= 0) return "Ended";
+            if (diff < 24 * 60 * 60 * 1000) {
+                const hours = Math.floor(diff / (60 * 60 * 1000));
+                const mins = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
+                return hours > 0 ? `${hours}h ${mins}m left` : `${mins}m left`;
+            }
+            return date.toLocaleDateString("en-IN", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+        };
+
+        if (tournamentType === "GROUP_KNOCKOUT") {
+            const groupMatches = matches.filter((m: any) => m.round < 0 && m.status !== "CONFIRMED");
+            const koMatches = matches.filter((m: any) => m.round > 0 && m.status !== "CONFIRMED");
+
+            const latestGroup = groupMatches.length > 0
+                ? new Date(Math.max(...groupMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.groupHours * 3600000)
+                : null;
+            const latestKO = koMatches.length > 0
+                ? new Date(Math.max(...koMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.koHours * 3600000)
+                : null;
+
+            return {
+                group: latestGroup ? formatDeadline(latestGroup) : null,
+                ko: latestKO ? formatDeadline(latestKO) : null,
+                groupDone: groupMatches.length === 0,
+                koDone: koMatches.length === 0,
+            };
+        } else {
+            const pendingMatches = matches.filter((m: any) => m.status !== "CONFIRMED");
+            const latestEnd = pendingMatches.length > 0
+                ? new Date(Math.max(...pendingMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.koHours * 3600000)
+                : null;
+
+            return {
+                overall: latestEnd ? formatDeadline(latestEnd) : null,
+                done: pendingMatches.length === 0,
+            };
+        }
+    }, [bracketData, tournamentType]);
+
     // Helper — build submit context from a match id
     const matchContext = (matchId: string, isDisputing = false): SelectedMatch => {
         const m = allMatches.find((x: any) => x.id === matchId);
@@ -230,55 +278,7 @@ function TournamentContent({
         );
     }
 
-    // Compute stage end times from latest unfinished match + deadline hours
-    const stageDeadlines = useMemo(() => {
-        if (!bracketData?.deadlines || !bracketData?.rounds) return null;
-        const allMatches = bracketData.rounds.flatMap((r: any) => r.matches);
-        const now = Date.now();
 
-        const formatDeadline = (date: Date) => {
-            const diff = date.getTime() - now;
-            if (diff <= 0) return "Ended";
-            // Show relative if < 24h, otherwise date
-            if (diff < 24 * 60 * 60 * 1000) {
-                const hours = Math.floor(diff / (60 * 60 * 1000));
-                const mins = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
-                return hours > 0 ? `${hours}h ${mins}m left` : `${mins}m left`;
-            }
-            return date.toLocaleDateString("en-IN", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
-        };
-
-        if (tournamentType === "GROUP_KNOCKOUT") {
-            // Group = round < 0, KO = round > 0
-            const groupMatches = allMatches.filter((m: any) => m.round < 0 && m.status !== "CONFIRMED");
-            const koMatches = allMatches.filter((m: any) => m.round > 0 && m.status !== "CONFIRMED");
-
-            const latestGroup = groupMatches.length > 0
-                ? new Date(Math.max(...groupMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.groupHours * 3600000)
-                : null;
-            const latestKO = koMatches.length > 0
-                ? new Date(Math.max(...koMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.koHours * 3600000)
-                : null;
-
-            return {
-                group: latestGroup ? formatDeadline(latestGroup) : null,
-                ko: latestKO ? formatDeadline(latestKO) : null,
-                groupDone: groupMatches.length === 0,
-                koDone: koMatches.length === 0,
-            };
-        } else {
-            // 1v1 / League — all matches use koHours
-            const pendingMatches = allMatches.filter((m: any) => m.status !== "CONFIRMED");
-            const latestEnd = pendingMatches.length > 0
-                ? new Date(Math.max(...pendingMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.koHours * 3600000)
-                : null;
-
-            return {
-                overall: latestEnd ? formatDeadline(latestEnd) : null,
-                done: pendingMatches.length === 0,
-            };
-        }
-    }, [bracketData, tournamentType]);
 
     return (
         <>
