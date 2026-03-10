@@ -21,19 +21,22 @@ const globalForWallet = globalThis as unknown as {
 
 function createWalletClient() {
     if (!process.env.WALLET_DATABASE_URL) {
-        throw new Error(
-            "WALLET_DATABASE_URL is not set. This game uses the central wallet — " +
-            "add the env var to your Vercel project."
-        );
+        console.warn("[wallet-db] WALLET_DATABASE_URL not set — wallet operations will use local DB fallback.");
+        return null;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const WalletPrisma = require(".prisma/wallet-client");
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const WalletPrisma = require(".prisma/wallet-client");
 
-    return new WalletPrisma.PrismaClient({
-        datasourceUrl: process.env.WALLET_DATABASE_URL,
-        log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
-    });
+        return new WalletPrisma.PrismaClient({
+            datasourceUrl: process.env.WALLET_DATABASE_URL,
+            log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
+        });
+    } catch (e) {
+        console.error("[wallet-db] Failed to load wallet client — run: prisma generate --config=prisma.wallet.config.ts", e);
+        return null;
+    }
 }
 
 /** Lazy-initialized wallet client — only created on first access */

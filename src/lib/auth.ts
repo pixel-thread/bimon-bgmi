@@ -73,7 +73,7 @@ export const getCurrentUser = cache(async () => {
                 phoneNumber: user.player.phoneNumber ?? null,
                 wallet: {
                     id: user.player.wallet?.id ?? "",
-                    balance: await getCentralBalance(email),
+                    balance: await getCentralBalance(email).catch(() => user.player?.wallet?.balance ?? 0),
                 },
             }
             : null,
