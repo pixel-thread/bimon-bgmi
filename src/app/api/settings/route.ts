@@ -4,12 +4,12 @@ import { getSettings, saveSettings } from "@/lib/settings";
 
 /**
  * GET /api/settings — Fetch current app settings.
- * SUPER_ADMIN only.
+ * ADMIN or SUPER_ADMIN.
  */
 export async function GET() {
     try {
         const user = await getCurrentUser();
-        if (!user || user.role !== "SUPER_ADMIN") {
+        if (!user || (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN")) {
             return ErrorResponse({ message: "Forbidden", status: 403 });
         }
 
@@ -22,12 +22,12 @@ export async function GET() {
 
 /**
  * PUT /api/settings — Update app settings.
- * SUPER_ADMIN only. Accepts partial updates.
+ * ADMIN or SUPER_ADMIN. Accepts partial updates.
  */
 export async function PUT(request: Request) {
     try {
         const user = await getCurrentUser();
-        if (!user || user.role !== "SUPER_ADMIN") {
+        if (!user || (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN")) {
             return ErrorResponse({ message: "Forbidden", status: 403 });
         }
 
