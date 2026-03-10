@@ -128,7 +128,8 @@ export default function ProfilePage() {
             const json = await res.json();
             return json.data;
         },
-        staleTime: 60 * 1000,
+        staleTime: 30 * 1000,
+        refetchOnMount: "always",
     });
 
     const [onCooldown, setOnCooldown] = useState(false);
