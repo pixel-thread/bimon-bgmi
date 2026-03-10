@@ -34,7 +34,7 @@ export function BracketView({ rounds, totalRounds, currentPlayerId, isAdmin, onS
         return <LeagueView rounds={positive} currentPlayerId={currentPlayerId} isAdmin={isAdmin}
             onSubmitResult={onSubmitResult} onConfirmResult={onConfirmResult} onDispute={onDispute} onViewResult={onViewResult} />;
     }
-    return <KOBracket rounds={rounds} currentPlayerId={currentPlayerId} onViewResult={onViewResult} />;
+    return <KOBracket rounds={rounds} currentPlayerId={currentPlayerId} isAdmin={isAdmin} onViewResult={onViewResult} />;
 }
 
 /* ─── KO Bracket ────────────────────────────────────────────── */
@@ -44,7 +44,7 @@ const ROW_GAP = 12;
 const COL_GAP = 44;
 const LABEL_H = 28;  // fixed height for all round labels
 
-export function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: RoundData[]; currentPlayerId?: string; onViewResult?: (id: string) => void }) {
+export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { rounds: RoundData[]; currentPlayerId?: string; isAdmin?: boolean; onViewResult?: (id: string) => void }) {
     const { zoom, zoomIn, zoomOut, reset, containerRef: scrollRef } = usePinchZoom();
     const outerRef = useRef<HTMLDivElement>(null);  // zoom wrapper (width only)
     const wrapperRef = useRef<HTMLDivElement>(null);  // match area — SVG origin
@@ -179,7 +179,7 @@ export function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: R
                                 <div style={{ display: "flex", flexDirection: "column", gap: itemGap(ri) }}>
                                     {r.matches.map(m => (
                                         <div key={m.id} ref={el => { if (el) cardRefs.current[m.id] = el; }}>
-                                            <CompactMatch match={m} currentPlayerId={currentPlayerId} onViewResult={onViewResult} />
+                                            <CompactMatch match={m} currentPlayerId={currentPlayerId} isAdmin={isAdmin} onViewResult={onViewResult} />
                                         </div>
                                     ))}
                                 </div>
@@ -202,7 +202,7 @@ export function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: R
                 <div className="max-w-[200px]">
                     <p className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest mb-2">🥉 3rd Place</p>
                     <div ref={el => { if (el) cardRefs.current[thirdPlace.id] = el; }}>
-                        <CompactMatch match={thirdPlace} currentPlayerId={currentPlayerId} onViewResult={onViewResult} />
+                        <CompactMatch match={thirdPlace} currentPlayerId={currentPlayerId} isAdmin={isAdmin} onViewResult={onViewResult} />
                     </div>
                 </div>
             )}

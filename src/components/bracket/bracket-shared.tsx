@@ -354,10 +354,11 @@ export function MatchCard({
 /* ─── Compact Match (bracket tree node) ─────────────────────── */
 
 export function CompactMatch({
-    match, currentPlayerId, onViewResult,
+    match, currentPlayerId, isAdmin, onViewResult,
 }: {
     match: BracketMatchData;
     currentPlayerId?: string;
+    isAdmin?: boolean;
     onViewResult?: (id: string) => void;
 }) {
     const isParticipant = currentPlayerId === match.player1Id || currentPlayerId === match.player2Id;
@@ -409,6 +410,9 @@ export function CompactMatch({
         </div>
     );
 
+    // Show eye icon for: confirmed/submitted matches (everyone), or any match with players (admin)
+    const showEye = (hasResult || (isAdmin && match.player1Id && match.player2Id)) && onViewResult;
+
     return (
         <div className={`border rounded-lg w-[200px] transition-all relative flex items-center ${isDisputed ? "border-warning/60" :
             isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
@@ -419,9 +423,10 @@ export function CompactMatch({
                 <div className="h-px bg-divider" />
                 {row(match.player2, match.player2Avatar, match.score2, match.winnerId === match.player2Id && match.winnerId !== null, currentPlayerId === match.player2Id, false)}
             </div>
-            {hasResult ? (
-                <button className="p-1 mr-1 rounded hover:bg-foreground/10 transition-colors shrink-0" onClick={() => onViewResult?.(match.id)}>
-                    <Eye className="h-3.5 w-3.5 text-foreground/30" />
+            {showEye ? (
+                <button className="p-1 mr-1 rounded hover:bg-foreground/10 transition-colors shrink-0" onClick={() => onViewResult(match.id)}
+                    title={isAdmin ? "View / edit result" : "View screenshot"}>
+                    <Eye className={`h-3.5 w-3.5 ${isAdmin && !hasResult ? "text-warning/50 hover:text-warning" : "text-foreground/30"}`} />
                 </button>
             ) : null}
             {/* Status dot — always visible on right connector side */}
