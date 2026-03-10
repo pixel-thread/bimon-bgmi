@@ -137,6 +137,7 @@ export async function getOrCreateCentralWallet(email: string, name?: string | nu
 /**
  * Get wallet balance for a user by email.
  * Returns central balance for unified games, local balance for isolated games.
+ * Fast read-only — does NOT auto-create wallets.
  */
 export async function getCentralBalance(email: string): Promise<number> {
     if (!isCentralWalletEnabled()) {
@@ -144,9 +145,41 @@ export async function getCentralBalance(email: string): Promise<number> {
         return user?.player?.wallet?.balance ?? 0;
     }
 
-    // Auto-create central wallet on first access (seeds from local balance)
-    const { wallet } = await getOrCreateCentralWallet(email);
-    return wallet?.balance ?? 0;
+    const user = await walletDb.centralUser.findUnique({
+        where: { email },
+        select: { wallet: { select: { balance: true } } },
+    });
+    return user?.wallet?.balance ?? 0;
+}
+
+/**
+ * Batch-fetch central wallet balances for multiple emails.
+ * Much faster than calling getCentralBalance per player.
+ */
+export async function getCentralBalancesBatch(emails: string[]): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    if (emails.length === 0) return map;
+
+    if (!isCentralWalletEnabled()) {
+        // For isolated games, batch-read from local DB
+        const users = await prisma.user.findMany({
+            where: { email: { in: emails } },
+            include: { player: { include: { wallet: true } } },
+        });
+        for (const u of users) {
+            if (u.email) map.set(u.email, u.player?.wallet?.balance ?? 0);
+        }
+        return map;
+    }
+
+    const centralUsers = await walletDb.centralUser.findMany({
+        where: { email: { in: emails } },
+        select: { email: true, wallet: { select: { balance: true } } },
+    });
+    for (const u of centralUsers) {
+        map.set(u.email, u.wallet?.balance ?? 0);
+    }
+    return map;
 }
 
 /**

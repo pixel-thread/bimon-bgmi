@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 import { getCategoryFromKDValue, getCategoryFromWinRate } from "@/lib/logic/categoryUtils";
 import { GAME } from "@/lib/game-config";
+import { getCentralBalancesBatch } from "@/lib/wallet-service";
 
 /**
  * GET /api/players
@@ -69,6 +70,7 @@ export async function GET(request: NextRequest) {
                     select: {
                         username: true,
                         imageUrl: true,
+                        email: true,
                     },
                 },
                 wallet: {
@@ -145,6 +147,10 @@ export async function GET(request: NextRequest) {
             if (m.player2Id) bracketMatchCountMap.set(m.player2Id, (bracketMatchCountMap.get(m.player2Id) ?? 0) + 1);
         }
 
+        // Batch-fetch central wallet balances
+        const emails = players.map(p => p.user.email).filter((e): e is string => !!e);
+        const centralBalances = await getCentralBalancesBatch(emails).catch(() => new Map<string, number>());
+
         // Category: use win rate for bracket games (PES), K/D for BR games (BGMI/FF)
         const isBracketGame = GAME.scoringSystem === "bracket";
 
@@ -176,7 +182,7 @@ export async function GET(request: NextRequest) {
                     losses: losses > 0 ? losses : 0,
                     deaths: 0,
                 },
-                balance: p.wallet?.balance ?? 0,
+                balance: centralBalances.get(p.user.email ?? "") ?? p.wallet?.balance ?? 0,
                 hasRoyalPass: p.hasRoyalPass,
                 characterImage: p.characterImage
                     ? {
