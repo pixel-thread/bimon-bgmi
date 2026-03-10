@@ -11,14 +11,11 @@ import { useAuthUser } from "@/hooks/use-auth-user";
 import { Trophy, Swords, Loader2, Clock } from "lucide-react";
 import { Chip, Tabs, Tab } from "@heroui/react";
 
-// Football background images (Pexels CDN — free hotlinking)
-const BG_IMAGES = [
-    "https://images.pexels.com/photos/46798/the-ball-stadion-football-the-pitch-46798.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "https://images.pexels.com/photos/274422/pexels-photo-274422.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "https://images.pexels.com/photos/114296/pexels-photo-114296.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "https://images.pexels.com/photos/399187/pexels-photo-399187.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "https://images.pexels.com/photos/1171084/pexels-photo-1171084.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    "https://images.pexels.com/photos/47730/the-ball-stadion-football-the-pitch-47730.jpeg?auto=compress&cs=tinysrgb&w=1200",
+// Famous footballers to randomly show as bracket background
+const FAMOUS_PLAYERS = [
+    "Messi", "Cristiano Ronaldo", "Neymar", "Mbappe", "Haaland",
+    "Ronaldinho", "Zidane", "Beckham", "Maradona", "Pele",
+    "Modric", "De Bruyne", "Salah", "Lewandowski", "Benzema",
 ];
 
 /**
@@ -40,8 +37,23 @@ export default function MatchesPage() {
     const [selectedMatch, setSelectedMatch] = useState<SelectedMatch>(null);
     const [viewingMatch, setViewingMatch] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<string>("");
-    const [bgUrl] = useState(() => BG_IMAGES[Math.floor(Math.random() * BG_IMAGES.length)]);
+    const [playerBg, setPlayerBg] = useState<{ name: string; img: string } | null>(null);
     const playerId = user?.player?.id;
+
+    // Fetch random famous footballer image
+    const playerQuery = useQuery({
+        queryKey: ["bracket-bg-player"],
+        queryFn: async () => {
+            const name = FAMOUS_PLAYERS[Math.floor(Math.random() * FAMOUS_PLAYERS.length)];
+            const res = await fetch(`https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(name)}`);
+            const data = await res.json();
+            const player = data?.player?.find((p: any) => p.strCutout && p.strSport === "Soccer");
+            if (player) return { name: player.strPlayer, img: player.strCutout };
+            return null;
+        },
+        staleTime: Infinity, // Don't refetch during session
+        retry: false,
+    });
 
     // Fetch ALL active tournaments (any PES type)
     const { data: tournaments, isLoading } = useQuery({
@@ -93,16 +105,24 @@ export default function MatchesPage() {
 
     return (
         <div className="relative min-h-[80vh]">
-            {/* Football background image */}
-            <div className="absolute inset-0 -z-10 overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                    src={bgUrl}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover opacity-[0.12] blur-[2px] scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/85 to-background" />
-            </div>
+            {/* Famous footballer cutout background */}
+            {playerQuery.data?.img && (
+                <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={playerQuery.data.img}
+                        alt=""
+                        className="absolute right-0 top-0 h-[80vh] object-contain opacity-[0.07]"
+                        style={{ filter: "grayscale(100%)" }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+                    {/* Player name watermark */}
+                    <span className="absolute bottom-4 right-4 text-[9px] text-foreground/10 font-medium tracking-wider uppercase">
+                        {playerQuery.data.name}
+                    </span>
+                </div>
+            )}
 
             <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
                 {/* Tournament tabs (only show if multiple) */}
