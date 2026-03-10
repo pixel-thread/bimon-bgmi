@@ -46,6 +46,7 @@ export default function MatchesPage() {
     const [selectedMatch, setSelectedMatch] = useState<SelectedMatch>(null);
     const [viewingMatch, setViewingMatch] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<string>("");
+    const [bgUrl] = useState(() => BG_IMAGES[Math.floor(Math.random() * BG_IMAGES.length)]);
     const playerId = user?.player?.id;
 
     // Fetch ALL active tournaments (any PES type)
@@ -95,7 +96,6 @@ export default function MatchesPage() {
     const formatIcon = (type: string) =>
         type === "LEAGUE" ? "🏟️" :
             type === "GROUP_KNOCKOUT" ? "🌍" : "⚔️";
-    const [bgUrl] = useState(() => BG_IMAGES[Math.floor(Math.random() * BG_IMAGES.length)]);
 
     return (
         <div className="relative min-h-[80vh]">
