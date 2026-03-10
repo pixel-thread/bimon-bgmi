@@ -10,22 +10,16 @@ import { useConfirmResult, useDisputeResult } from "@/components/bracket/submit-
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { Trophy, Swords, Loader2, Clock } from "lucide-react";
 import { Chip, Tabs, Tab } from "@heroui/react";
-import { GAME } from "@/lib/game-config";
 
-// Curated football/esports images for bracket backgrounds (public Unsplash — no upload)
-const FOOTBALL_BG = [
-    "https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=1200&q=60&auto=format",
-    "https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=1200&q=60&auto=format",
-    "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=1200&q=60&auto=format",
-    "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1200&q=60&auto=format",
-    "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&q=60&auto=format",
-    "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1200&q=60&auto=format",
+// Football background images (Pexels CDN — free hotlinking)
+const BG_IMAGES = [
+    "https://images.pexels.com/photos/46798/the-ball-stadion-football-the-pitch-46798.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    "https://images.pexels.com/photos/274422/pexels-photo-274422.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    "https://images.pexels.com/photos/114296/pexels-photo-114296.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    "https://images.pexels.com/photos/399187/pexels-photo-399187.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    "https://images.pexels.com/photos/1171084/pexels-photo-1171084.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    "https://images.pexels.com/photos/47730/the-ball-stadion-football-the-pitch-47730.jpeg?auto=compress&cs=tinysrgb&w=1200",
 ];
-const SHOOTER_BG = [
-    "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=60&auto=format",
-    "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1200&q=60&auto=format",
-];
-const BG_IMAGES = GAME.features.hasBR ? SHOOTER_BG : FOOTBALL_BG;
 
 /**
  * /bracket — Matches page.
@@ -99,16 +93,15 @@ export default function MatchesPage() {
 
     return (
         <div className="relative min-h-[80vh]">
-            {/* Hero background */}
+            {/* Football background image */}
             <div className="absolute inset-0 -z-10 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                     src={bgUrl}
                     alt=""
-                    className="absolute inset-0 w-full h-full object-cover opacity-15 blur-[1px] scale-105"
+                    className="absolute inset-0 w-full h-full object-cover opacity-[0.12] blur-[2px] scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/90 to-background" />
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5" />
+                <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/85 to-background" />
             </div>
 
             <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
