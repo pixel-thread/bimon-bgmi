@@ -39,17 +39,17 @@ export default function MatchesPage() {
     const [activeTab, setActiveTab] = useState<string>("");
     const playerId = user?.player?.id;
 
-    // Fetch bracket background: gallery first, TheSportsDB fallback
+    // Fetch bracket background: existing gallery images, TheSportsDB fallback
     const [bgSeed] = useState(() => Math.random());
     const bgQuery = useQuery({
         queryKey: ["bracket-bg", bgSeed],
         queryFn: async () => {
-            // Try gallery first
+            // Try existing gallery (non-character images)
             try {
-                const res = await fetch("/api/gallery/backgrounds");
+                const res = await fetch("/api/gallery");
                 if (res.ok) {
                     const json = await res.json();
-                    const items = json.data ?? [];
+                    const items = (json.data ?? []).filter((g: any) => !g.isCharacterImg);
                     if (items.length > 0) {
                         const pick = items[Math.floor(Math.random() * items.length)];
                         return { name: pick.name, img: pick.publicUrl };

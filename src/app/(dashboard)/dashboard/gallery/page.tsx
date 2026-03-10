@@ -9,7 +9,8 @@ import { compressImage } from "@/lib/compress-image";
 
 /**
  * /dashboard/gallery — Manage bracket background images.
- * Admins can upload footballer images that appear as bracket page backgrounds.
+ * Upload images that appear as bracket page backgrounds (random per visit).
+ * Uses /api/gallery/upload (ImgBB server-side) for storage.
  */
 export default function GalleryPage() {
     const queryClient = useQueryClient();
@@ -19,57 +20,44 @@ export default function GalleryPage() {
     const [preview, setPreview] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-    // Fetch all background images
+    // Fetch all gallery images (non-character)
     const { data: images, isLoading } = useQuery({
-        queryKey: ["gallery-backgrounds"],
+        queryKey: ["gallery"],
         queryFn: async () => {
-            const res = await fetch("/api/gallery/backgrounds");
+            const res = await fetch("/api/gallery");
             if (!res.ok) return [];
             const json = await res.json();
-            return json.data ?? [];
+            return (json.data ?? []).filter((g: any) => !g.isCharacterImg);
         },
     });
 
-    // Upload mutation
+    // Upload via existing /api/gallery/upload endpoint
     const uploadMutation = useMutation({
         mutationFn: async () => {
             if (!selectedFile) throw new Error("No file selected");
-
             setUploading(true);
 
             // Compress before upload
             const compressed = await compressImage(selectedFile, 1200, 0.85);
 
-            // Upload to ImgBB
-            const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
-            if (!apiKey) throw new Error("ImgBB API key not configured");
-
+            // Upload via server endpoint (handles ImgBB)
             const formData = new FormData();
-            formData.append("image", compressed);
-            formData.append("name", `bracket-bg-${Date.now()}`);
+            formData.append("image", compressed, label || selectedFile.name);
 
-            const uploadRes = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+            const res = await fetch("/api/gallery/upload", {
                 method: "POST",
                 body: formData,
             });
-            const uploadData = await uploadRes.json();
-            if (!uploadData.success) throw new Error("Upload failed");
 
-            const url = uploadData.data.display_url;
-
-            // Save to database
-            const res = await fetch("/api/gallery/backgrounds", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url, label: label || undefined }),
-            });
-
-            if (!res.ok) throw new Error("Failed to save");
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || "Upload failed");
+            }
             return res.json();
         },
         onSuccess: () => {
-            toast.success("Background added!");
-            queryClient.invalidateQueries({ queryKey: ["gallery-backgrounds"] });
+            toast.success("Image uploaded!");
+            queryClient.invalidateQueries({ queryKey: ["gallery"] });
             setLabel("");
             setPreview(null);
             setSelectedFile(null);
@@ -81,19 +69,15 @@ export default function GalleryPage() {
         },
     });
 
-    // Delete mutation
+    // Delete image
     const deleteMutation = useMutation({
         mutationFn: async (id: string) => {
-            const res = await fetch("/api/gallery/backgrounds", {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id }),
-            });
+            const res = await fetch(`/api/gallery/${id}`, { method: "DELETE" });
             if (!res.ok) throw new Error("Failed to delete");
         },
         onSuccess: () => {
-            toast.success("Background removed");
-            queryClient.invalidateQueries({ queryKey: ["gallery-backgrounds"] });
+            toast.success("Image removed");
+            queryClient.invalidateQueries({ queryKey: ["gallery"] });
         },
         onError: () => toast.error("Failed to delete"),
     });
@@ -114,13 +98,13 @@ export default function GalleryPage() {
                     Bracket Backgrounds
                 </h1>
                 <p className="text-sm text-foreground/50 mt-1">
-                    Upload footballer images to show as bracket page backgrounds. Random one shown on each visit.
+                    Upload footballer images shown as bracket page backgrounds. Random one per visit.
                 </p>
             </div>
 
             {/* Upload Section */}
             <div className="rounded-2xl border border-divider bg-foreground/[0.02] p-5 space-y-4">
-                <h2 className="text-sm font-semibold text-foreground/70 uppercase tracking-wider">Add New Background</h2>
+                <h2 className="text-sm font-semibold text-foreground/70 uppercase tracking-wider">Add New</h2>
 
                 {preview ? (
                     <div className="relative group">
@@ -144,7 +128,7 @@ export default function GalleryPage() {
                     >
                         <Upload className="h-8 w-8" />
                         <span className="text-sm font-medium">Click to select image</span>
-                        <span className="text-[10px]">PNG, JPG — will be compressed automatically</span>
+                        <span className="text-[10px]">PNG, JPG — auto-compressed</span>
                     </button>
                 )}
 
@@ -159,7 +143,7 @@ export default function GalleryPage() {
                 <div className="flex items-center gap-3">
                     <Input
                         size="sm"
-                        placeholder="Label (e.g. Messi, Stadium)"
+                        placeholder="Label (e.g. Messi, Ronaldo)"
                         value={label}
                         onValueChange={setLabel}
                         className="flex-1"
@@ -195,7 +179,7 @@ export default function GalleryPage() {
                 ) : !images?.length ? (
                     <div className="flex flex-col items-center gap-3 py-12 text-center">
                         <ImageIcon className="h-10 w-10 text-foreground/15" />
-                        <p className="text-sm text-foreground/40">No backgrounds yet. Upload your first one above!</p>
+                        <p className="text-sm text-foreground/40">No backgrounds yet. Upload your first one!</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
