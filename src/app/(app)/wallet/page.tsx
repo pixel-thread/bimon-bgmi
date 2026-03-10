@@ -188,37 +188,40 @@ const SISTER_GAMES = [
     {
         mode: "bgmi",
         name: "PUBGMI",
-        game: "BGMI",
         emoji: "🔫",
         tagline: "Battle Royale tournaments",
         url: "https://bimon-bgmi.vercel.app",
         gradient: "from-amber-500/20 to-orange-500/20",
         border: "border-amber-500/20",
+        sharedWallet: true,
     },
     {
         mode: "pes",
         name: "KICKOFF",
-        game: "eFootball",
         emoji: "⚽",
         tagline: "1v1 football tournaments",
         url: "https://bimon-pes.vercel.app",
         gradient: "from-emerald-500/20 to-teal-500/20",
         border: "border-emerald-500/20",
+        sharedWallet: true,
     },
     {
         mode: "freefire",
         name: "BOOYAH",
-        game: "Free Fire",
         emoji: "🔥",
         tagline: "Battle Royale with Booyah",
         url: "https://bimon-boo-yah.vercel.app",
         gradient: "from-violet-500/20 to-purple-500/20",
         border: "border-violet-500/20",
+        sharedWallet: false,
     },
 ];
 
 function CrossGamePromo() {
-    const otherGames = SISTER_GAMES.filter((g) => g.mode !== GAME.mode);
+    // Only promote games that share the central wallet (and aren't the current game)
+    const otherGames = SISTER_GAMES.filter(
+        (g) => g.mode !== GAME.mode && g.sharedWallet
+    );
     if (otherGames.length === 0) return null;
 
     return (
@@ -232,7 +235,7 @@ function CrossGamePromo() {
                     <div className="flex items-center gap-2">
                         <span className="text-sm">🎮</span>
                         <p className="text-xs font-semibold text-foreground/70">
-                            Your {GAME.currencyPlural} work across all Bimon games!
+                            Your {GAME.currencyPlural} work on these games too!
                         </p>
                     </div>
 

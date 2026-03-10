@@ -6,7 +6,8 @@ import { creditCentralWallet } from "@/lib/wallet-service";
 
 /**
  * POST /api/rewards/[id]/claim
- * Claims a pending reward — credits central wallet and marks as claimed.
+ * Claims a pending reward — credits wallet and marks as claimed.
+ * The wallet service handles central vs local routing.
  */
 export async function POST(
     _req: Request,
@@ -62,7 +63,7 @@ export async function POST(
         };
         const reason = reasonMap[reward.type] || "OTHER";
 
-        // Credit central wallet
+        // Credit wallet (service handles central vs local routing)
         const result = await creditCentralWallet(userId, reward.amount, description, reason);
 
         // Mark as claimed + game DB audit + sync balance

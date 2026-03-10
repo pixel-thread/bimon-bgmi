@@ -7,6 +7,9 @@ import { creditCentralWallet, debitCentralWallet, getEmailByPlayerId } from "@/l
  * POST /api/players/[id]/wallet
  * Credit or debit B-Coins from a player's wallet (admin).
  * Body: { amount: number, type: "CREDIT" | "DEBIT", description: string }
+ *
+ * The wallet service handles routing: central wallet for unified games,
+ * local DB for isolated games (Free Fire).
  */
 export async function POST(
     req: NextRequest,
@@ -37,7 +40,6 @@ export async function POST(
             );
         }
 
-        // Get player's email for central wallet
         const email = await getEmailByPlayerId(id);
         if (!email) {
             return NextResponse.json(
@@ -46,27 +48,24 @@ export async function POST(
             );
         }
 
-        // Update central wallet
-        let result;
-        if (type === "CREDIT") {
-            result = await creditCentralWallet(email, amount, description, "ADMIN_ADJUSTMENT");
-        } else {
-            result = await debitCentralWallet(email, amount, description, "ADMIN_ADJUSTMENT");
-        }
+        // Wallet service handles central vs local routing
+        const result = type === "CREDIT"
+            ? await creditCentralWallet(email, amount, description, "ADMIN_ADJUSTMENT")
+            : await debitCentralWallet(email, amount, description, "ADMIN_ADJUSTMENT");
 
-        // Keep game DB transaction record for audit trail
-        await prisma.transaction.create({
+        // Game DB audit trail
+        const localTx = await prisma.transaction.create({
             data: { amount, type, description, playerId: id },
         });
 
-        // Also sync game DB wallet balance
+        // Sync game DB wallet
         await prisma.wallet.upsert({
             where: { playerId: id },
             create: { playerId: id, balance: result.balance },
             update: { balance: result.balance },
         });
 
-        // Auto-clear trusted if balance recovered (only on credits)
+        // Auto-clear trusted flag if balance recovered
         if (type === "CREDIT") {
             await prisma.$transaction(async (tx) => {
                 await clearTrustedOnBalanceRecovery(id, result.balance, tx);
@@ -75,12 +74,18 @@ export async function POST(
 
         return NextResponse.json({
             balance: result.balance,
-            transaction: {
+            transaction: result.transaction ? {
                 id: result.transaction.id,
                 amount: result.transaction.amount,
                 type: result.transaction.type,
                 description: result.transaction.description,
                 createdAt: result.transaction.createdAt,
+            } : {
+                id: localTx.id,
+                amount: localTx.amount,
+                type: localTx.type,
+                description: localTx.description,
+                createdAt: localTx.createdAt,
             },
         });
     } catch (error) {
