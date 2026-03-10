@@ -144,6 +144,10 @@ export function PlayerFiltersBar({
                                 size="sm"
                                 selectedKeys={[sortBy]}
                                 disallowEmptySelection
+                                classNames={{
+                                    trigger: "bg-default-100",
+                                    value: "text-foreground",
+                                }}
                                 onSelectionChange={(keys) => {
                                     const val = Array.from(keys)[0] as string;
                                     if (val) {
@@ -153,19 +157,19 @@ export function PlayerFiltersBar({
                                 }}
                                 aria-label="Sort by"
                             >
-                                {GAME.features.hasBR ? (
-                                    <>
-                                        <SelectItem key="kd">K/D Ratio</SelectItem>
-                                        <SelectItem key="kills">Total Kills</SelectItem>
-                                    </>
-                                ) : (
-                                    <>
-                                        <SelectItem key="wins">Wins</SelectItem>
-                                        <SelectItem key="winRate">Win Rate</SelectItem>
-                                    </>
-                                )}
-                                <SelectItem key="balance">Balance ({GAME.currency})</SelectItem>
-                                <SelectItem key="matches">Matches Played</SelectItem>
+                                {[
+                                    ...(GAME.features.hasBR
+                                        ? [
+                                            <SelectItem key="kd">K/D Ratio</SelectItem>,
+                                            <SelectItem key="kills">Total Kills</SelectItem>,
+                                        ]
+                                        : [
+                                            <SelectItem key="wins">Wins</SelectItem>,
+                                            <SelectItem key="winRate">Win Rate</SelectItem>,
+                                        ]),
+                                    <SelectItem key="balance">Balance ({GAME.currency})</SelectItem>,
+                                    <SelectItem key="matches">Matches Played</SelectItem>,
+                                ]}
                             </Select>
                         </div>
 
