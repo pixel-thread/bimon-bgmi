@@ -157,8 +157,16 @@ export function useVote() {
             if (context?.previous) {
                 queryClient.setQueryData(["polls"], context.previous);
             }
-            toast.error(err instanceof Error ? err.message : "Failed to cast vote", {
+            const message = err instanceof Error ? err.message : "Failed to cast vote";
+            const isBalanceError = message.toLowerCase().includes("not enough");
+            toast.error(message, {
                 duration: 5000,
+                ...(isBalanceError && {
+                    action: {
+                        label: "Top Up",
+                        onClick: () => window.location.assign("/wallet"),
+                    },
+                }),
             });
         },
         onSettled: () => {

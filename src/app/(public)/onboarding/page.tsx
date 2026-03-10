@@ -34,10 +34,12 @@ export default function OnboardingPage() {
     const [isUserNameAutoFilled, setIsUserNameAutoFilled] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState("");
+    const [phoneError, setPhoneError] = useState("");
     const [showWhatsApp, setShowWhatsApp] = useState(false);
     const [justCompleted, setJustCompleted] = useState(false);
     const [uid, setUid] = useState("");
     const [isCheckingIGN, setIsCheckingIGN] = useState(false);
+    const [phoneFocused, setPhoneFocused] = useState(false);
     const ignCheckTimer = useRef<NodeJS.Timeout | null>(null);
     const ignTutorial = useIGNTutorial({ autoOpen: GAME.pasteOnlyIGN });
     const requiresPhone = !GAME.features.hasBR; // PES only
@@ -117,7 +119,7 @@ export default function OnboardingPage() {
             return;
         }
         if (requiresPhone && phoneNumber.replace(/\D/g, "").length < 10) {
-            toast.error("Enter a valid 10-digit phone number");
+            setPhoneError("Enter all 10 digits");
             return;
         }
 
@@ -148,6 +150,9 @@ export default function OnboardingPage() {
 
             setJustCompleted(true);
             toast.success(`Welcome to ${GAME.name}! 🎮`);
+            // Refresh auth cache immediately so coming back from WhatsApp
+            // doesn't redirect to /onboarding again
+            await refetch();
             // Show WhatsApp groups before redirecting
             setShowWhatsApp(true);
         } catch {
@@ -318,12 +323,8 @@ export default function OnboardingPage() {
                                     <Input
                                         value={displayName}
                                         onChange={(e) => {
-                                            const val = e.target.value;
-                                            setDisplayName(val);
+                                            setDisplayName(e.target.value);
                                             setDisplayNameError("");
-                                            if (val.length >= 2) {
-                                                checkDuplicateIGN(val);
-                                            }
                                         }}
                                         placeholder="Enter your game name"
                                         size="lg"
@@ -348,17 +349,23 @@ export default function OnboardingPage() {
                                 </label>
                                 <Input
                                     value={phoneNumber}
-                                    onValueChange={(v) => setPhoneNumber(v.replace(/\D/g, "").slice(0, 10))}
-                                    placeholder="9876543210"
+                                    onValueChange={(v) => {
+                                        setPhoneNumber(v.replace(/\D/g, "").slice(0, 10));
+                                        setPhoneError("");
+                                    }}
+                                    placeholder=""
+                                    onFocus={() => setPhoneFocused(true)}
+                                    onBlur={() => setPhoneFocused(false)}
                                     size="lg"
                                     variant="bordered"
                                     type="tel"
                                     inputMode="numeric"
                                     maxLength={10}
                                     isDisabled={isSubmitting}
-                                    isInvalid={phoneNumber.length > 0 && phoneNumber.replace(/\D/g, "").length < 10}
-                                    errorMessage="Enter all 10 digits"
-                                    description="WhatsApp preferred — visible to your match opponent only"
+                                    isInvalid={!!phoneError}
+                                    errorMessage={phoneError}
+                                    color={phoneError ? "danger" : "default"}
+                                    description={!phoneError ? "WhatsApp preferred — visible to your match opponent only" : undefined}
                                     startContent={
                                         <span className="text-sm font-semibold text-foreground/60 select-none pr-2 border-r border-divider mr-1 flex items-center gap-1">
                                             <Phone className="h-3 w-3" /> +91

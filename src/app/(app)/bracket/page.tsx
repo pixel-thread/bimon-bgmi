@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BracketView, MyBracketMatch } from "@/components/bracket/bracket-view";
 import { GroupKnockoutView } from "@/components/bracket/group-knockout-view";
@@ -8,7 +8,7 @@ import { SubmitResultModal } from "@/components/bracket/submit-result-modal";
 import { ViewResultModal } from "@/components/bracket/view-result-modal";
 import { useConfirmResult, useDisputeResult } from "@/components/bracket/submit-result-modal";
 import { useAuthUser } from "@/hooks/use-auth-user";
-import { Trophy, Swords, Loader2 } from "lucide-react";
+import { Trophy, Swords, Loader2, Clock } from "lucide-react";
 import { Chip, Tabs, Tab } from "@heroui/react";
 
 /**
@@ -230,10 +230,60 @@ function TournamentContent({
         );
     }
 
+    // Compute stage end times from latest unfinished match + deadline hours
+    const stageDeadlines = useMemo(() => {
+        if (!bracketData?.deadlines || !bracketData?.rounds) return null;
+        const allMatches = bracketData.rounds.flatMap((r: any) => r.matches);
+        const now = Date.now();
+
+        const formatDeadline = (date: Date) => {
+            const diff = date.getTime() - now;
+            if (diff <= 0) return "Ended";
+            // Show relative if < 24h, otherwise date
+            if (diff < 24 * 60 * 60 * 1000) {
+                const hours = Math.floor(diff / (60 * 60 * 1000));
+                const mins = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
+                return hours > 0 ? `${hours}h ${mins}m left` : `${mins}m left`;
+            }
+            return date.toLocaleDateString("en-IN", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+        };
+
+        if (tournamentType === "GROUP_KNOCKOUT") {
+            // Group = round < 0, KO = round > 0
+            const groupMatches = allMatches.filter((m: any) => m.round < 0 && m.status !== "CONFIRMED");
+            const koMatches = allMatches.filter((m: any) => m.round > 0 && m.status !== "CONFIRMED");
+
+            const latestGroup = groupMatches.length > 0
+                ? new Date(Math.max(...groupMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.groupHours * 3600000)
+                : null;
+            const latestKO = koMatches.length > 0
+                ? new Date(Math.max(...koMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.koHours * 3600000)
+                : null;
+
+            return {
+                group: latestGroup ? formatDeadline(latestGroup) : null,
+                ko: latestKO ? formatDeadline(latestKO) : null,
+                groupDone: groupMatches.length === 0,
+                koDone: koMatches.length === 0,
+            };
+        } else {
+            // 1v1 / League — all matches use koHours
+            const pendingMatches = allMatches.filter((m: any) => m.status !== "CONFIRMED");
+            const latestEnd = pendingMatches.length > 0
+                ? new Date(Math.max(...pendingMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.koHours * 3600000)
+                : null;
+
+            return {
+                overall: latestEnd ? formatDeadline(latestEnd) : null,
+                done: pendingMatches.length === 0,
+            };
+        }
+    }, [bracketData, tournamentType]);
+
     return (
         <>
             {/* Tournament Info */}
-            <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4">
+            <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4 space-y-3">
                 {/* Glow blob */}
                 <div className="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-primary/15 blur-2xl pointer-events-none" />
 
@@ -245,7 +295,7 @@ function TournamentContent({
                         {showName && (
                             <p className="font-bold text-base leading-tight truncate">{tournament.name}</p>
                         )}
-                        <div className={`flex items-center gap-2 ${showName ? 'mt-0.5' : ''}`}>
+                        <div className={`flex items-center gap-2 flex-wrap ${showName ? 'mt-0.5' : ''}`}>
                             <span className="text-[11px] text-foreground/40 font-medium">
                                 {bracketData.totalPlayers} players
                             </span>
@@ -258,6 +308,28 @@ function TournamentContent({
                         <span className="text-[11px] font-bold text-success">Live</span>
                     </div>
                 </div>
+
+                {/* Stage deadlines */}
+                {stageDeadlines && (
+                    <div className="relative flex items-center gap-2 flex-wrap">
+                        <Clock className="h-3.5 w-3.5 text-warning shrink-0" />
+                        {tournamentType === "GROUP_KNOCKOUT" ? (
+                            <>
+                                <span className={`text-[11px] font-medium ${stageDeadlines.groupDone ? 'text-success' : 'text-warning'}`}>
+                                    Group: {stageDeadlines.groupDone ? "✓ Done" : stageDeadlines.group}
+                                </span>
+                                <span className="h-1 w-1 rounded-full bg-foreground/20" />
+                                <span className={`text-[11px] font-medium ${stageDeadlines.koDone ? 'text-success' : stageDeadlines.ko ? 'text-warning' : 'text-foreground/30'}`}>
+                                    KO: {stageDeadlines.koDone ? "✓ Done" : stageDeadlines.ko ?? "Not started"}
+                                </span>
+                            </>
+                        ) : (
+                            <span className={`text-[11px] font-medium ${stageDeadlines.done ? 'text-success' : 'text-warning'}`}>
+                                {stageDeadlines.done ? "✓ All matches complete" : `Ends: ${stageDeadlines.overall}`}
+                            </span>
+                        )}
+                    </div>
+                )}
             </div>
 
 

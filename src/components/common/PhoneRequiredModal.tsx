@@ -13,6 +13,7 @@ interface PhoneRequiredModalProps {
 export function PhoneRequiredModal({ isOpen }: PhoneRequiredModalProps) {
     const [phone, setPhone] = useState("");
     const [saving, setSaving] = useState(false);
+    const [focused, setFocused] = useState(false);
     const queryClient = useQueryClient();
 
     const digits = phone.replace(/\D/g, "");
@@ -64,9 +65,11 @@ export function PhoneRequiredModal({ isOpen }: PhoneRequiredModalProps) {
                 <ModalBody className="py-3">
                     <Input
                         label="Phone Number"
-                        placeholder="9876543210"
+                        placeholder=""
                         value={phone}
                         onValueChange={(v) => setPhone(v.replace(/\D/g, "").slice(0, 10))}
+                        onFocus={() => setFocused(true)}
+                        onBlur={() => setFocused(false)}
                         startContent={
                             <span className="text-sm font-semibold text-foreground/60 select-none pr-1 border-r border-divider mr-1">
                                 🇮🇳 +91
@@ -77,7 +80,8 @@ export function PhoneRequiredModal({ isOpen }: PhoneRequiredModalProps) {
                         maxLength={10}
                         isInvalid={phone.length > 0 && !isValid}
                         errorMessage="Enter all 10 digits"
-                        description="WhatsApp preferred"
+                        color={phone.length > 0 && !isValid ? "danger" : "default"}
+                        description={!phone ? "WhatsApp preferred" : undefined}
                         classNames={{ inputWrapper: "pl-1" }}
                     />
                     <div className="flex items-start gap-2 text-xs text-foreground/40 px-1">
