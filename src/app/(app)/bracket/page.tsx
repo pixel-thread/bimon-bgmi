@@ -191,7 +191,8 @@ function TournamentContent({
 
         if (tournamentType === "GROUP_KNOCKOUT") {
             const groupMatches = matches.filter((m: any) => m.round < 0 && m.status !== "CONFIRMED");
-            const koMatches = matches.filter((m: any) => m.round > 0 && m.status !== "CONFIRMED");
+            // Only count KO matches that have players assigned (KO stage actually started)
+            const koMatches = matches.filter((m: any) => m.round > 0 && m.status !== "CONFIRMED" && m.player1Id && m.player2Id);
 
             const latestGroup = groupMatches.length > 0
                 ? new Date(Math.max(...groupMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.groupHours * 3600000)
