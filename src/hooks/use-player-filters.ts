@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { GAME } from "@/lib/game-config";
+
+const DEFAULT_SORT = GAME.features.hasBR ? "kd" : "winRate";
 
 export interface SeasonDTO {
     id: string;
@@ -37,7 +40,7 @@ export interface PlayerFilters {
 export function usePlayerFilters(): PlayerFilters {
     const [search, setSearch] = useState("");
     const [tier, setTier] = useState("All");
-    const [sortBy, setSortBy] = useState("kd");
+    const [sortBy, setSortBy] = useState(DEFAULT_SORT);
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
     const [season, setSeason] = useState("");
     const [filterOpened, setFilterOpened] = useState(false);
@@ -81,14 +84,14 @@ export function usePlayerFilters(): PlayerFilters {
 
     const hasActiveFilters =
         tier !== "All" ||
-        sortBy !== "kd" ||
+        sortBy !== DEFAULT_SORT ||
         sortOrder !== "desc" ||
         (currentSeasonId && season !== currentSeasonId);
 
     function resetFilters() {
         setSeason(currentSeasonId);
         setTier("All");
-        setSortBy("kd");
+        setSortBy(DEFAULT_SORT);
         setSortOrder("desc");
     }
 
