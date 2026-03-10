@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:generate": "prisma generate && prisma generate --schema=prisma/wallet-schema.prisma",
-    "postinstall": "prisma generate && prisma generate --schema=prisma/wallet-schema.prisma"
+    "db:generate": "prisma generate && prisma generate --config=prisma.wallet.config.ts",
+    "postinstall": "prisma generate && prisma generate --config=prisma.wallet.config.ts"
   },
   "dependencies": {
     "@heroui/react": "^2.8.9",

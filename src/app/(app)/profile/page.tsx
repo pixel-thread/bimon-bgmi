@@ -296,13 +296,13 @@ export default function ProfilePage() {
                                     {uploadingProfile ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
                                 </button>
                             </div>
-                            <div className="pb-0.5">
+                            <div className="pb-0.5 min-w-0 overflow-hidden">
                                 <div className="flex items-center gap-2">
                                     <h1 className="text-2xl font-bold text-white drop-shadow truncate">{name}</h1>
                                     {player?.hasRoyalPass && <Crown className="h-5 w-5 text-yellow-400 shrink-0" />}
                                 </div>
                                 <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className="text-sm text-white/50">@{profile.username}</span>
+                                    <span className="text-sm text-white/50 truncate">@{profile.username}</span>
                                     {player && <CategoryBadge category={player.category} size="sm" />}
                                 </div>
                             </div>
