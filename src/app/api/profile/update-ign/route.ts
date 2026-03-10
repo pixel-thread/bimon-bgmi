@@ -63,28 +63,29 @@ export async function POST(req: NextRequest) {
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
 
-        // Check cooldown if display name is being changed
+        // Check cooldown if display name is being changed (only for BR games)
         const settings = await getSettings();
         const NAME_CHANGE_FEE = settings.nameChangeFee;
         let nameChangeFee = 0;
         if (displayName && displayName !== user.player.displayName) {
-            const lastChange = user.player.displayNameLastChangeAt;
-            if (lastChange) {
-                const elapsed = Date.now() - new Date(lastChange).getTime();
-                if (elapsed < NAME_CHANGE_COOLDOWN_MS) {
-                    const remainingMs = NAME_CHANGE_COOLDOWN_MS - elapsed;
-                    const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+            // PES: no cooldown or fee for name changes
+            if (GAME.features.hasBR) {
+                const lastChange = user.player.displayNameLastChangeAt;
+                if (lastChange) {
+                    const elapsed = Date.now() - new Date(lastChange).getTime();
+                    if (elapsed < NAME_CHANGE_COOLDOWN_MS) {
+                        const remainingMs = NAME_CHANGE_COOLDOWN_MS - elapsed;
+                        const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
 
-                    if (!forceChange) {
-                        // Tell client about cooldown — they can choose to pay
-                        return ErrorResponse({
-                            message: `Name change on cooldown (${remainingDays}d left). Pay ${NAME_CHANGE_FEE} ${GAME.currency} to change now.`,
-                            status: 429,
-                        });
+                        if (!forceChange) {
+                            return ErrorResponse({
+                                message: `Name change on cooldown (${remainingDays}d left). Pay ${NAME_CHANGE_FEE} ${GAME.currency} to change now.`,
+                                status: 429,
+                            });
+                        }
+
+                        nameChangeFee = NAME_CHANGE_FEE;
                     }
-
-                    // Player chose to pay — allow going into debt
-                    nameChangeFee = NAME_CHANGE_FEE;
                 }
             }
 
