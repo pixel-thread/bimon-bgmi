@@ -156,20 +156,25 @@ export function PlayerFiltersBar({
                                     }
                                 }}
                                 aria-label="Sort by"
-                            >
-                                {[
+                                items={[
                                     ...(GAME.features.hasBR
                                         ? [
-                                            <SelectItem key="kd">K/D Ratio</SelectItem>,
-                                            <SelectItem key="kills">Total Kills</SelectItem>,
+                                            { key: "kd", label: "K/D Ratio" },
+                                            { key: "kills", label: "Total Kills" },
                                         ]
                                         : [
-                                            <SelectItem key="wins">Wins</SelectItem>,
-                                            <SelectItem key="winRate">Win Rate</SelectItem>,
+                                            { key: "wins", label: "Wins" },
+                                            { key: "winRate", label: "Win Rate" },
                                         ]),
-                                    <SelectItem key="balance">Balance ({GAME.currency})</SelectItem>,
-                                    <SelectItem key="matches">Matches Played</SelectItem>,
+                                    { key: "balance", label: `Balance (${GAME.currency})` },
+                                    { key: "matches", label: "Matches Played" },
                                 ]}
+                            >
+                                {(item) => (
+                                    <SelectItem key={item.key} textValue={item.label}>
+                                        {item.label}
+                                    </SelectItem>
+                                )}
                             </Select>
                         </div>
 
