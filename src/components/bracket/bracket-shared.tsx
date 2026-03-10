@@ -370,15 +370,31 @@ export function CompactMatch({
                 match.status === "DISPUTED" ? "bg-danger animate-pulse" :
                     match.status === "BYE" ? "bg-secondary" : "bg-foreground/20";
 
+    const avatar = (url: string | null, name: string | null) => {
+        if (url) {
+            return <img src={url} alt="" className="h-5 w-5 rounded-full object-cover shrink-0 border border-foreground/10" />;
+        }
+        if (!name) return <div className="h-5 w-5 rounded-full bg-foreground/10 shrink-0" />;
+        const initial = name.charAt(0).toUpperCase();
+        const hue = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+        return (
+            <div className="h-5 w-5 rounded-full shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
+                style={{ background: `hsl(${hue}, 50%, 40%)` }}>
+                {initial}
+            </div>
+        );
+    };
+
     const row = (
         player: BracketPlayer | null,
+        playerAvatar: string | null,
         score: number | null,
         isWinner: boolean,
         isCurrent: boolean,
         isTop: boolean,
     ) => (
-        // h-6 = 24px exact → total card = 24+1+24 + 2px border = 51px = MATCH_H in bracket-view
-        <div className={`flex items-center gap-1.5 px-2 h-6 ${isTop ? "rounded-t-lg" : "rounded-b-lg"} ${isWinner ? "bg-success/10" : ""}`}>
+        <div className={`flex items-center gap-1.5 px-2 h-8 ${isTop ? "rounded-t-lg" : "rounded-b-lg"} ${isWinner ? "bg-success/10" : ""}`}>
+            {avatar(player ? playerAvatar : null, player?.displayName ?? null)}
             <span className={`text-[11px] truncate flex-1 ${isCurrent ? "text-primary font-semibold"
                 : isWinner ? "text-success font-medium"
                     : player ? "text-foreground/80"
@@ -394,14 +410,14 @@ export function CompactMatch({
     );
 
     return (
-        <div className={`border rounded-lg w-[170px] transition-all relative flex items-center ${isDisputed ? "border-warning/60" :
+        <div className={`border rounded-lg w-[200px] transition-all relative flex items-center ${isDisputed ? "border-warning/60" :
             isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
                 ? "border-primary/60" : "border-divider"
             }`}>
             <div className="flex-1 min-w-0">
-                {row(match.player1, match.score1, match.winnerId === match.player1Id && match.winnerId !== null, currentPlayerId === match.player1Id, true)}
+                {row(match.player1, match.player1Avatar, match.score1, match.winnerId === match.player1Id && match.winnerId !== null, currentPlayerId === match.player1Id, true)}
                 <div className="h-px bg-divider" />
-                {row(match.player2, match.score2, match.winnerId === match.player2Id && match.winnerId !== null, currentPlayerId === match.player2Id, false)}
+                {row(match.player2, match.player2Avatar, match.score2, match.winnerId === match.player2Id && match.winnerId !== null, currentPlayerId === match.player2Id, false)}
             </div>
             {hasResult ? (
                 <button className="p-1 mr-1 rounded hover:bg-foreground/10 transition-colors shrink-0" onClick={() => onViewResult?.(match.id)}>

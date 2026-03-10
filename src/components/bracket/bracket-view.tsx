@@ -38,10 +38,10 @@ export function BracketView({ rounds, totalRounds, currentPlayerId, isAdmin, onS
 }
 
 /* ─── KO Bracket ────────────────────────────────────────────── */
-const MATCH_W = 170;
-const MATCH_H = 51;  // 2×h-6(24px) + 1px divider + 2px border
-const ROW_GAP = 8;
-const COL_GAP = 36;
+const MATCH_W = 200;
+const MATCH_H = 67;  // 2×h-8(32px) + 1px divider + 2px border
+const ROW_GAP = 12;
+const COL_GAP = 44;
 const LABEL_H = 28;  // fixed height for all round labels
 
 export function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: RoundData[]; currentPlayerId?: string; onViewResult?: (id: string) => void }) {
@@ -199,7 +199,7 @@ export function KOBracket({ rounds, currentPlayerId, onViewResult }: { rounds: R
             </div>
 
             {thirdPlace && (
-                <div className="max-w-[170px]">
+                <div className="max-w-[200px]">
                     <p className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest mb-2">🥉 3rd Place</p>
                     <div ref={el => { if (el) cardRefs.current[thirdPlace.id] = el; }}>
                         <CompactMatch match={thirdPlace} currentPlayerId={currentPlayerId} onViewResult={onViewResult} />
