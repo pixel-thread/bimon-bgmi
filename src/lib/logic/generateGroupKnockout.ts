@@ -284,6 +284,7 @@ export async function advanceGroupToKnockout(tournamentId: string) {
                 data: {
                     player1Id: groupA[0]?.playerId ?? null,
                     player2Id: groupB[1]?.playerId ?? null,
+                    createdAt: new Date(), // Reset deadline start
                 },
             });
             matchIdx++;
@@ -296,6 +297,7 @@ export async function advanceGroupToKnockout(tournamentId: string) {
                 data: {
                     player1Id: groupB[0]?.playerId ?? null,
                     player2Id: groupA[1]?.playerId ?? null,
+                    createdAt: new Date(), // Reset deadline start
                 },
             });
             matchIdx++;
