@@ -156,25 +156,24 @@ export function PlayerFiltersBar({
                                     }
                                 }}
                                 aria-label="Sort by"
-                                items={[
-                                    ...(GAME.features.hasBR
-                                        ? [
-                                            { key: "kd", label: "K/D Ratio" },
-                                            { key: "kills", label: "Total Kills" },
-                                        ]
-                                        : [
-                                            { key: "wins", label: "Wins" },
-                                            { key: "winRate", label: "Win Rate" },
-                                        ]),
+                            >
+                                {(GAME.features.hasBR
+                                    ? [
+                                        { key: "kd", label: "K/D Ratio" },
+                                        { key: "kills", label: "Total Kills" },
+                                    ]
+                                    : [
+                                        { key: "wins", label: "Wins" },
+                                        { key: "winRate", label: "Win Rate" },
+                                    ]
+                                ).concat([
                                     { key: "balance", label: `Balance (${GAME.currency})` },
                                     { key: "matches", label: "Matches Played" },
-                                ]}
-                            >
-                                {(item) => (
+                                ]).map(item => (
                                     <SelectItem key={item.key} textValue={item.label}>
                                         {item.label}
                                     </SelectItem>
-                                )}
+                                ))}
                             </Select>
                         </div>
 

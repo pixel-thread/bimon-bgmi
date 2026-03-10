@@ -31,10 +31,15 @@ export async function POST(req: NextRequest) {
 
         const toPlayer = await prisma.player.findUnique({
             where: { id: toPlayerId },
-            include: { wallet: true, user: { select: { id: true, username: true } } },
+            include: { wallet: true, user: { select: { id: true, username: true, role: true } } },
         });
         if (!toPlayer) {
             return NextResponse.json({ error: "Recipient not found" }, { status: 404 });
+        }
+
+        // Block transfers to/from admin players
+        if (toPlayer.user.role === "SUPER_ADMIN" || toPlayer.user.role === "ADMIN") {
+            return NextResponse.json({ error: "Cannot transfer to admin accounts" }, { status: 403 });
         }
 
         const fromPlayer = await prisma.player.findUnique({

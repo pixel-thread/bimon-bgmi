@@ -244,16 +244,27 @@ export async function GET(request: NextRequest) {
             count: data.length,
         };
 
-        // Add balance totals for super admins from central wallet
+        // Add balance totals for super admins from central wallet (exclude admin wallets)
         if (user?.role === "SUPER_ADMIN") {
             try {
                 const { walletDb } = await import("@/lib/wallet-db");
                 if (walletDb?.centralWallet) {
+                    // Get admin emails to exclude from totals
+                    const adminUsers = await prisma.user.findMany({
+                        where: { role: { in: ["SUPER_ADMIN", "ADMIN"] } },
+                        select: { email: true },
+                    });
+                    const adminEmails = adminUsers.map(u => u.email).filter(Boolean) as string[];
+
+                    const excludeFilter = {
+                        user: { email: { notIn: adminEmails } },
+                    };
                     const aggregations = await walletDb.centralWallet.aggregate({
+                        where: excludeFilter,
                         _sum: { balance: true },
                     });
                     const negativeSum = await walletDb.centralWallet.aggregate({
-                        where: { balance: { lt: 0 } },
+                        where: { ...excludeFilter, balance: { lt: 0 } },
                         _sum: { balance: true },
                     });
                     meta.totalBalance = aggregations._sum.balance ?? 0;
