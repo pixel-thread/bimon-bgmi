@@ -326,8 +326,8 @@ function TournamentContent({
                                     Group: {stageDeadlines.groupDone ? "✓ Done" : stageDeadlines.group}
                                 </span>
                                 <span className="h-1 w-1 rounded-full bg-foreground/20" />
-                                <span className={`text-[11px] font-medium ${stageDeadlines.koDone ? 'text-success' : stageDeadlines.koStarted ? 'text-warning' : 'text-foreground/30'}`}>
-                                    KO: {stageDeadlines.koDone ? "✓ Done" : stageDeadlines.koStarted ? (stageDeadlines.ko ?? "In progress") : "Not started"}
+                                <span className={`text-[11px] font-medium ${stageDeadlines.koDone ? 'text-success' : stageDeadlines.koStarted ? 'text-warning' : stageDeadlines.groupDone ? 'text-primary' : 'text-foreground/30'}`}>
+                                    KO: {stageDeadlines.koDone ? "✓ Done" : stageDeadlines.koStarted ? (stageDeadlines.ko ?? "In progress") : stageDeadlines.groupDone ? "⏳ Starting soon" : "Not started"}
                                 </span>
                             </>
                         ) : (
