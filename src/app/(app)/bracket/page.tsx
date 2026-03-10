@@ -11,7 +11,7 @@ import { useAuthUser } from "@/hooks/use-auth-user";
 import { Trophy, Swords, Loader2, Clock } from "lucide-react";
 import { Chip, Tabs, Tab } from "@heroui/react";
 
-// Famous footballers to randomly show as bracket background
+// Fallback famous footballers (if gallery is empty)
 const FAMOUS_PLAYERS = [
     "Messi", "Cristiano Ronaldo", "Neymar", "Mbappe", "Haaland",
     "Ronaldinho", "Zidane", "Beckham", "Maradona", "Pele",
@@ -37,14 +37,27 @@ export default function MatchesPage() {
     const [selectedMatch, setSelectedMatch] = useState<SelectedMatch>(null);
     const [viewingMatch, setViewingMatch] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<string>("");
-    const [playerBg, setPlayerBg] = useState<{ name: string; img: string } | null>(null);
     const playerId = user?.player?.id;
 
-    // Fetch random famous footballer image — unique per page load
+    // Fetch bracket background: gallery first, TheSportsDB fallback
     const [bgSeed] = useState(() => Math.random());
-    const playerQuery = useQuery({
-        queryKey: ["bracket-bg-player", bgSeed],
+    const bgQuery = useQuery({
+        queryKey: ["bracket-bg", bgSeed],
         queryFn: async () => {
+            // Try gallery first
+            try {
+                const res = await fetch("/api/gallery/backgrounds");
+                if (res.ok) {
+                    const json = await res.json();
+                    const items = json.data ?? [];
+                    if (items.length > 0) {
+                        const pick = items[Math.floor(Math.random() * items.length)];
+                        return { name: pick.name, img: pick.publicUrl };
+                    }
+                }
+            } catch { /* fall through */ }
+
+            // Fallback: TheSportsDB
             const name = FAMOUS_PLAYERS[Math.floor(Math.random() * FAMOUS_PLAYERS.length)];
             const res = await fetch(`https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(name)}`);
             const data = await res.json();
@@ -106,21 +119,20 @@ export default function MatchesPage() {
 
     return (
         <div className="relative min-h-[80vh]">
-            {/* Famous footballer cutout background */}
-            {playerQuery.data?.img && (
+            {/* Background image from gallery or TheSportsDB */}
+            {bgQuery.data?.img && (
                 <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                        src={playerQuery.data.img}
+                        src={bgQuery.data.img}
                         alt=""
                         className="absolute right-0 top-0 h-[80vh] object-contain opacity-[0.07]"
                         style={{ filter: "grayscale(100%)" }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-transparent" />
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
-                    {/* Player name watermark */}
                     <span className="absolute bottom-4 right-4 text-[9px] text-foreground/10 font-medium tracking-wider uppercase">
-                        {playerQuery.data.name}
+                        {bgQuery.data.name}
                     </span>
                 </div>
             )}

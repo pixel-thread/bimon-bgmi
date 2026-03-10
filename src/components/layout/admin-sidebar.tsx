@@ -19,6 +19,7 @@ import {
     Eye,
     Clover,
     Star,
+    ImageIcon,
 } from "lucide-react";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { useState, useEffect, useCallback } from "react";
@@ -57,6 +58,7 @@ const sidebarItems: SidebarSection[] = [
             { label: "Job Listings", href: "/dashboard/job-listings", icon: Briefcase },
             { label: "Merit", href: "/dashboard/merit", icon: Star, superAdminOnly: true, feature: "hasMerit" },
             { label: "Rules", href: "/dashboard/rules", icon: BookOpen },
+            { label: "Gallery", href: "/dashboard/gallery", icon: ImageIcon },
         ],
     },
     {
