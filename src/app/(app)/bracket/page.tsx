@@ -40,9 +40,10 @@ export default function MatchesPage() {
     const [playerBg, setPlayerBg] = useState<{ name: string; img: string } | null>(null);
     const playerId = user?.player?.id;
 
-    // Fetch random famous footballer image
+    // Fetch random famous footballer image — unique per page load
+    const [bgSeed] = useState(() => Math.random());
     const playerQuery = useQuery({
-        queryKey: ["bracket-bg-player"],
+        queryKey: ["bracket-bg-player", bgSeed],
         queryFn: async () => {
             const name = FAMOUS_PLAYERS[Math.floor(Math.random() * FAMOUS_PLAYERS.length)];
             const res = await fetch(`https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(name)}`);
@@ -51,7 +52,7 @@ export default function MatchesPage() {
             if (player) return { name: player.strPlayer, img: player.strCutout };
             return null;
         },
-        staleTime: Infinity, // Don't refetch during session
+        staleTime: 0,
         retry: false,
     });
 
