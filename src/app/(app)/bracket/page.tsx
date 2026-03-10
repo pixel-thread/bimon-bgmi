@@ -201,11 +201,17 @@ function TournamentContent({
                 ? new Date(Math.max(...koMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.koHours * 3600000)
                 : null;
 
+            // Has the KO stage actually started? (any KO match with players)
+            const allKoMatches = matches.filter((m: any) => m.round > 0);
+            const koStarted = allKoMatches.some((m: any) => m.player1Id && m.player2Id);
+            const koAllConfirmed = koStarted && allKoMatches.every((m: any) => m.status === "CONFIRMED" || m.status === "BYE");
+
             return {
                 group: latestGroup ? formatDeadline(latestGroup) : null,
                 ko: latestKO ? formatDeadline(latestKO) : null,
                 groupDone: groupMatches.length === 0,
-                koDone: koMatches.length === 0,
+                koStarted,
+                koDone: koAllConfirmed,
             };
         } else {
             const pendingMatches = matches.filter((m: any) => m.status !== "CONFIRMED");
@@ -320,8 +326,8 @@ function TournamentContent({
                                     Group: {stageDeadlines.groupDone ? "✓ Done" : stageDeadlines.group}
                                 </span>
                                 <span className="h-1 w-1 rounded-full bg-foreground/20" />
-                                <span className={`text-[11px] font-medium ${stageDeadlines.koDone ? 'text-success' : stageDeadlines.ko ? 'text-warning' : 'text-foreground/30'}`}>
-                                    KO: {stageDeadlines.koDone ? "✓ Done" : stageDeadlines.ko ?? "Not started"}
+                                <span className={`text-[11px] font-medium ${stageDeadlines.koDone ? 'text-success' : stageDeadlines.koStarted ? 'text-warning' : 'text-foreground/30'}`}>
+                                    KO: {stageDeadlines.koDone ? "✓ Done" : stageDeadlines.koStarted ? (stageDeadlines.ko ?? "In progress") : "Not started"}
                                 </span>
                             </>
                         ) : (
