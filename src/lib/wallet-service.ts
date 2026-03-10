@@ -67,22 +67,68 @@ export async function getOrCreateCentralWallet(email: string, name?: string | nu
     });
 
     if (!user) {
+        // Seed initial balance from local game DB (one-time migration)
+        const localUser = await getLocalPlayerByEmail(email);
+        const localBalance = localUser?.player?.wallet?.balance ?? 0;
+
         user = await walletDb.centralUser.create({
             data: {
                 email,
                 name: name || null,
                 imageUrl: imageUrl || null,
-                wallet: { create: { balance: 0 } },
+                wallet: { create: { balance: localBalance } },
             },
             include: { wallet: true },
         });
     }
 
     if (!user.wallet) {
+        const localUser = await getLocalPlayerByEmail(email);
+        const localBalance = localUser?.player?.wallet?.balance ?? 0;
         const wallet = await walletDb.centralWallet.create({
-            data: { userId: user.id, balance: 0 },
+            data: { userId: user.id, balance: localBalance },
         });
         return { user, wallet };
+    }
+
+    // If central wallet exists, add local balance that hasn't been synced yet
+    // (one-time migration: each game adds its local balance on first access)
+    const localUser = await getLocalPlayerByEmail(email);
+    const localBalance = localUser?.player?.wallet?.balance ?? 0;
+    const syncKey = `wallet_synced_${GAME_MODE}_${email}`;
+
+    // Use a metadata check to avoid double-adding on repeated visits
+    // We store the sync flag in the wallet's balance itself isn't reliable,
+    // so we check via a transaction record
+    if (localBalance > 0) {
+        const alreadySynced = await walletDb.centralTransaction.findFirst({
+            where: {
+                walletId: user.wallet.id,
+                reason: "SYSTEM",
+                description: { contains: `seed:${GAME_MODE}` },
+            },
+        });
+
+        if (!alreadySynced) {
+            const updated = await walletDb.centralWallet.update({
+                where: { id: user.wallet.id },
+                data: { balance: { increment: localBalance } },
+            });
+            // Record the sync so we don't double-add
+            await walletDb.centralTransaction.create({
+                data: {
+                    walletId: user.wallet.id,
+                    amount: localBalance,
+                    type: "CREDIT",
+                    reason: "SYSTEM",
+                    description: `seed:${GAME_MODE} — migrated ${localBalance} B-Coin from local wallet`,
+                    game: GAME_MODE,
+                    balanceBefore: user.wallet.balance,
+                    balanceAfter: user.wallet.balance + localBalance,
+                },
+            });
+            return { user, wallet: updated };
+        }
     }
 
     return { user, wallet: user.wallet };
@@ -98,11 +144,9 @@ export async function getCentralBalance(email: string): Promise<number> {
         return user?.player?.wallet?.balance ?? 0;
     }
 
-    const user = await walletDb.centralUser.findUnique({
-        where: { email },
-        include: { wallet: true },
-    });
-    return user?.wallet?.balance ?? 0;
+    // Auto-create central wallet on first access (seeds from local balance)
+    const { wallet } = await getOrCreateCentralWallet(email);
+    return wallet?.balance ?? 0;
 }
 
 /**

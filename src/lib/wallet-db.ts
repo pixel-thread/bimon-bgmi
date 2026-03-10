@@ -15,6 +15,8 @@
  *   const wallet = await walletDb.centralWallet.findUnique({ ... });
  */
 
+import { PrismaPg } from "@prisma/adapter-pg";
+
 const globalForWallet = globalThis as unknown as {
     walletPrisma: any | undefined;
 };
@@ -26,15 +28,15 @@ function createWalletClient() {
     }
 
     try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const WalletPrisma = require(".prisma/wallet-client");
+        const adapter = new PrismaPg({ connectionString: process.env.WALLET_DATABASE_URL });
 
         return new WalletPrisma.PrismaClient({
-            datasourceUrl: process.env.WALLET_DATABASE_URL,
+            adapter,
             log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
         });
     } catch (e) {
-        console.error("[wallet-db] Failed to load wallet client — run: prisma generate --config=prisma.wallet.config.ts", e);
+        console.error("[wallet-db] Failed to load wallet client:", e);
         return null;
     }
 }
@@ -45,6 +47,6 @@ export const walletDb = new Proxy({} as any, {
         if (!globalForWallet.walletPrisma) {
             globalForWallet.walletPrisma = createWalletClient();
         }
-        return globalForWallet.walletPrisma[prop];
+        return globalForWallet.walletPrisma?.[prop];
     },
 });
