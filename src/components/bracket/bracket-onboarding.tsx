@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@heroui/react";
 import { createPortal } from "react-dom";
 
-const KEY_MAIN = "bracket-onboarding-done";
-const KEY_DISPUTE = "bracket-dispute-onboarding-done";
+const KEY_MAIN = "bracket-onboarding-v2";
+const KEY_DISPUTE = "bracket-dispute-onboarding-v2";
 
 /* ─── Step config ───────────────────────────────────────────── */
 
