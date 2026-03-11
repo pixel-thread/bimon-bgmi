@@ -343,11 +343,14 @@ export function MatchCard({
                         )}
                     </div>
                 </div>
-                {match.status === "SUBMITTED" && match.disputeDeadline && (
-                    <p className="text-[10px] text-warning-600 dark:text-warning-400" suppressHydrationWarning>
-                        ⏰ Auto-confirms {new Date(match.disputeDeadline).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                )}
+                {match.status === "SUBMITTED" && match.disputeDeadline && (() => {
+                    const msLeft = new Date(match.disputeDeadline).getTime() - Date.now();
+                    if (msLeft <= 0) return <p className="text-[10px] text-success">⏰ Auto-confirming...</p>;
+                    const mLeft = Math.ceil(msLeft / 60_000);
+                    return <p className="text-[10px] text-warning-600 dark:text-warning-400" suppressHydrationWarning>
+                        ⏰ Auto-confirms in {mLeft}m
+                    </p>;
+                })()}
             </div>
         </div>
     );
