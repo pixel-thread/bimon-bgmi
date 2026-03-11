@@ -75,19 +75,29 @@ export default function MatchesPage() {
     const { data: tournaments, isLoading } = useQuery({
         queryKey: ["active-tournaments"],
         queryFn: async () => {
-            const res = await fetch("/api/tournaments?type=BRACKET_1V1,LEAGUE,GROUP_KNOCKOUT&status=ACTIVE,COMPLETED");
+            // Fetch active tournaments
+            const res = await fetch("/api/tournaments?type=BRACKET_1V1,LEAGUE,GROUP_KNOCKOUT&status=ACTIVE&limit=50");
             if (!res.ok) return [];
             const json = await res.json();
-            return json.data ?? [];
+            const active = json.data ?? [];
+
+            // Also fetch inactive (winner-declared) tournaments from same types
+            const res2 = await fetch("/api/tournaments?type=BRACKET_1V1,LEAGUE,GROUP_KNOCKOUT&status=INACTIVE&limit=50");
+            const inactive = res2.ok ? ((await res2.json()).data ?? []) : [];
+
+            // Combine, dedup by id
+            const all = [...active, ...inactive];
+            const seen = new Set<string>();
+            return all.filter((t: any) => { if (seen.has(t.id)) return false; seen.add(t.id); return true; });
         },
     });
 
-    // Show active tournaments + completed-with-winner within last 24h
+    // Show active tournaments + winner-declared within last 24h
     const DAY_MS = 24 * 60 * 60 * 1000;
     const activeTournaments = (tournaments ?? []).filter((t: any) => {
         if (t.bracketMatchCount <= 0) return false;
         if (t.status === "ACTIVE") return true;
-        // Completed with winner declared — show for 24h after updatedAt
+        // Winner declared — show for 24h after updatedAt
         if (t.isWinnerDeclared && t.updatedAt) {
             return Date.now() - new Date(t.updatedAt).getTime() < DAY_MS;
         }
