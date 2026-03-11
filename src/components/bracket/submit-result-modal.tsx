@@ -186,13 +186,6 @@ export function SubmitResultModal({
                         </div>
                     </div>
 
-                    {/* Draw warning */}
-                    {isDraw && (
-                        <p className="text-[11px] text-danger text-center font-medium">
-                            There must be a winner — scores can&apos;t be equal
-                        </p>
-                    )}
-
                     {/* Screenshot — compact */}
                     <div>
                         {previewUrl ? (
@@ -208,7 +201,7 @@ export function SubmitResultModal({
                             <button onClick={() => fileInputRef.current?.click()}
                                 className="w-full rounded-xl border border-dashed border-foreground/12 hover:border-primary/40 bg-default-50/40 hover:bg-primary/4 transition-all flex items-center justify-center gap-2 py-2.5 text-foreground/40 hover:text-primary/60">
                                 <Camera className="h-4 w-4" />
-                                <span className="text-xs">Add screenshot <span className="text-foreground/25">(optional)</span></span>
+                                <span className="text-xs">Upload screenshot <span className="text-foreground/25">· {isAdmin ? "optional" : "required"}</span></span>
                             </button>
                         )}
                         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
@@ -221,8 +214,11 @@ export function SubmitResultModal({
                         color="primary"
                         size="sm"
                         isLoading={submitResult.isPending || uploading}
-                        isDisabled={isDraw}
-                        onPress={() => submitResult.mutate()}
+                        onPress={() => {
+                            if (isDraw) { toast.error("Draws not allowed — there must be a winner"); return; }
+                            if (!isAdmin && !screenshot) { toast.error("Please upload a screenshot of the result"); return; }
+                            submitResult.mutate();
+                        }}
                         startContent={!submitResult.isPending && !uploading ? <Upload className="h-3.5 w-3.5" /> : undefined}
                     >
                         {uploading ? "Uploading..." : "Submit"}
