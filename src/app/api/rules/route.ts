@@ -11,9 +11,7 @@ export async function GET() {
         const rules = await prisma.rule.findMany({
             orderBy: { order: "asc" },
         });
-        const response = NextResponse.json({ success: true, data: rules });
-        response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
-        return response;
+        return NextResponse.json({ success: true, data: rules });
     } catch (error) {
         console.error("Error fetching rules:", error);
         return NextResponse.json({ error: "Failed to fetch rules" }, { status: 500 });
