@@ -40,8 +40,6 @@ export default function MatchesPage() {
     const [activeTab, setActiveTab] = useState<string>("");
     const playerId = user?.player?.id;
 
-    // Onboarding
-    const { showOnboarding, dismissOnboarding } = useBracketOnboarding(playerId);
 
     // Fetch bracket background: existing gallery images, TheSportsDB fallback
     const [bgSeed] = useState(() => Math.random());
@@ -118,8 +116,6 @@ export default function MatchesPage() {
 
     return (
         <div className="relative min-h-[80vh]">
-            {/* Main onboarding (first visit) */}
-            {showOnboarding && <BracketOnboarding onDone={dismissOnboarding} />}
             {/* Background image from gallery or TheSportsDB */}
             {bgQuery.data?.img && (
                 <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
@@ -237,6 +233,7 @@ function TournamentContent({
             (m.player1Id === playerId || m.player2Id === playerId) &&
             m.winnerId !== playerId
     );
+    const { showOnboarding, dismissOnboarding } = useBracketOnboarding(playerId);
     const { showDisputeOnboarding, dismissDisputeOnboarding } = useDisputeOnboarding(playerId, hasSubmittedMatch);
 
     // Compute stage end times from latest unfinished match + deadline hours
@@ -381,7 +378,8 @@ function TournamentContent({
 
     return (
         <>
-            {/* Dispute onboarding (first time seeing confirm/dispute) */}
+            {/* Onboarding spotlights */}
+            {showOnboarding && <BracketOnboarding onDone={dismissOnboarding} />}
             {showDisputeOnboarding && <DisputeOnboarding onDone={dismissDisputeOnboarding} />}
 
             {/* Tournament Info */}

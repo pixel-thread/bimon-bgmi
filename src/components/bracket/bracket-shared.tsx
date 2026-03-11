@@ -202,6 +202,7 @@ export function PlayerSlot({
                     onClick={onCall}
                     disabled={calling}
                     title="Call opponent"
+                    data-onboarding="call-opponent"
                     className="flex items-center justify-center h-5 w-5 rounded-full bg-success/15 hover:bg-success/30 active:scale-95 transition-all disabled:opacity-50 shrink-0"
                 >
                     {calling
@@ -314,13 +315,14 @@ export function MatchCard({
                     </div>
                     <div className="flex items-center gap-2">
                         {canSubmit && onSubmitResult && (
-                            <button onClick={() => onSubmitResult(match.id)} className="text-[11px] font-semibold text-primary hover:text-primary-600 transition-colors">
+                            <button data-onboarding="submit-result" onClick={() => onSubmitResult(match.id)} className="text-[11px] font-semibold text-primary hover:text-primary-600 transition-colors">
                                 Submit Result →
                             </button>
                         )}
                         {/* Opponent already submitted — user can submit their own score to raise a dispute */}
                         {canRaiseDispute && onSubmitResult && (
                             <button
+                                data-onboarding="raise-dispute"
                                 onClick={() => onSubmitResult(match.id)}
                                 className="text-[11px] font-semibold text-warning-500 hover:text-warning-400 transition-colors flex items-center gap-1"
                                 title="Submit your score to raise a dispute"
@@ -330,7 +332,7 @@ export function MatchCard({
                             </button>
                         )}
                         {canRaiseDispute && onConfirmResult && (
-                            <button onClick={() => onConfirmResult(match.id)} className="text-[11px] font-semibold text-success hover:text-success-600 transition-colors">
+                            <button data-onboarding="confirm-result" onClick={() => onConfirmResult(match.id)} className="text-[11px] font-semibold text-success hover:text-success-600 transition-colors">
                                 ✓ Confirm
                             </button>
                         )}
