@@ -171,6 +171,9 @@ export function GroupKnockoutView({ rounds, totalRounds, currentPlayerId, isAdmi
     const groupRounds = rounds.filter(r => r.round < 0).sort((a, b) => b.round - a.round);
     const koRounds = rounds.filter(r => r.round > 0).sort((a, b) => a.round - b.round);
 
+    // Has KO stage started? (any KO match with players assigned)
+    const koStarted = koRounds.some(r => r.matches.some(m => m.player1Id && m.player2Id));
+
     const koRoundName = (round: number) => {
         const max = Math.max(...koRounds.map(r => r.round));
         if (round === max) return "Final";
@@ -193,9 +196,11 @@ export function GroupKnockoutView({ rounds, totalRounds, currentPlayerId, isAdmi
                     {groupRounds.map(r => {
                         const letter = String.fromCharCode(65 + (-r.round - 1));
                         const userInGroup = r.matches.some(m => m.player1Id === currentPlayerId || m.player2Id === currentPlayerId);
+                        // Auto-collapse groups once KO stage has started (unless user is in the group)
+                        const shouldAutoOpen = koStarted ? false : userInGroup;
                         return (
                             <GroupSection key={r.round} groupLetter={letter} matches={r.matches}
-                                isDefaultOpen={userInGroup} currentPlayerId={currentPlayerId} isAdmin={isAdmin}
+                                isDefaultOpen={shouldAutoOpen} currentPlayerId={currentPlayerId} isAdmin={isAdmin}
                                 onSubmitResult={onSubmitResult} onConfirmResult={onConfirmResult}
                                 onDispute={onDispute} onViewResult={onViewResult} />
                         );
@@ -209,7 +214,7 @@ export function GroupKnockoutView({ rounds, totalRounds, currentPlayerId, isAdmi
                     <h3 className="text-xs font-bold text-foreground/50 uppercase tracking-wider flex items-center gap-2">
                         ⚔️ Knockout Stage
                     </h3>
-                    <KOBracket rounds={koRoundsForBracket} currentPlayerId={currentPlayerId} onViewResult={onViewResult} />
+                    <KOBracket rounds={koRoundsForBracket} currentPlayerId={currentPlayerId} isAdmin={isAdmin} onViewResult={onViewResult} />
                 </div>
             )}
         </div>
