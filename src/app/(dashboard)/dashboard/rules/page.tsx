@@ -53,16 +53,16 @@ export default function AdminRulesPage() {
     });
 
     const saveRule = useMutation({
-        mutationFn: async () => {
-            const url = editingRule ? `/api/rules/${editingRule.id}` : "/api/rules";
-            const method = editingRule ? "PUT" : "POST";
+        mutationFn: async (vars: { title: string; content: string; editing: Rule | null }) => {
+            const url = vars.editing ? `/api/rules/${vars.editing.id}` : "/api/rules";
+            const method = vars.editing ? "PUT" : "POST";
             const res = await fetch(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    title,
-                    content,
-                    order: editingRule ? editingRule.order : rules.length + 1,
+                    title: vars.title,
+                    content: vars.content,
+                    order: vars.editing ? vars.editing.order : rules.length + 1,
                 }),
             });
             if (!res.ok) {
@@ -72,23 +72,23 @@ export default function AdminRulesPage() {
             const json = await res.json();
             return json.data as Rule;
         },
-        onMutate: async () => {
+        onMutate: async (vars) => {
             await queryClient.cancelQueries({ queryKey: ["rules"] });
             const previous = queryClient.getQueryData<Rule[]>(["rules"]);
 
-            if (editingRule) {
+            if (vars.editing) {
                 queryClient.setQueryData<Rule[]>(["rules"], (old = []) =>
                     old.map((r) =>
-                        r.id === editingRule.id
-                            ? { ...r, title: title.trim(), content: content.trim() }
+                        r.id === vars.editing!.id
+                            ? { ...r, title: vars.title.trim(), content: vars.content.trim() }
                             : r
                     )
                 );
             } else {
                 const tempRule: Rule = {
                     id: `temp-${Date.now()}`,
-                    title: title.trim(),
-                    content: content.trim(),
+                    title: vars.title.trim(),
+                    content: vars.content.trim(),
                     order: rules.length + 1,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
@@ -100,10 +100,10 @@ export default function AdminRulesPage() {
             }
 
             handleClose();
-            return { previous };
+            return { previous, wasEditing: !!vars.editing };
         },
-        onSuccess: (_data, _vars, _ctx) => {
-            toast.success(editingRule ? "Rule updated" : "Rule created");
+        onSuccess: (_data, vars) => {
+            toast.success(vars.editing ? "Rule updated" : "Rule created");
         },
         onError: (err, _vars, context) => {
             if (context?.previous) {
@@ -345,7 +345,7 @@ export default function AdminRulesPage() {
                             color="primary"
                             isLoading={saveRule.isPending}
                             isDisabled={!title.trim() || !content.trim()}
-                            onPress={() => saveRule.mutate()}
+                            onPress={() => saveRule.mutate({ title, content, editing: editingRule })}
                         >
                             {editingRule ? "Save" : "Create"}
                         </Button>
