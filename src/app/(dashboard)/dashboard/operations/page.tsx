@@ -18,6 +18,7 @@ import {
     Textarea,
     useDisclosure,
     Divider,
+    Switch,
 } from "@heroui/react";
 import {
     Trophy,
@@ -497,15 +498,11 @@ export default function OperationsPage() {
                                                 <p className="text-sm font-medium">🥉 3rd Place</p>
                                                 <p className="text-[10px] text-foreground/40">Award a 3rd place prize</p>
                                             </div>
-                                            <Button
+                                            <Switch
                                                 size="sm"
-                                                variant={editMaxPlacements >= 3 ? "solid" : "flat"}
-                                                color={editMaxPlacements >= 3 ? "success" : "default"}
-                                                onPress={() => setEditMaxPlacements(editMaxPlacements >= 3 ? 2 : 3)}
-                                                className="min-w-[60px]"
-                                            >
-                                                {editMaxPlacements >= 3 ? "On" : "Off"}
-                                            </Button>
+                                                isSelected={editMaxPlacements >= 3}
+                                                onValueChange={(v) => setEditMaxPlacements(v ? 3 : 2)}
+                                            />
                                         </div>
                                     )}
                                     <div className="flex gap-2 justify-end">
@@ -792,15 +789,11 @@ export default function OperationsPage() {
                                     <p className="text-sm font-medium">🥉 3rd Place</p>
                                     <p className="text-[10px] text-foreground/40">Award a 3rd place prize</p>
                                 </div>
-                                <Button
+                                <Switch
                                     size="sm"
-                                    variant={tMaxPlacements >= 3 ? "solid" : "flat"}
-                                    color={tMaxPlacements >= 3 ? "success" : "default"}
-                                    onPress={() => setTMaxPlacements(tMaxPlacements >= 3 ? 2 : 3)}
-                                    className="min-w-[60px]"
-                                >
-                                    {tMaxPlacements >= 3 ? "On" : "Off"}
-                                </Button>
+                                    isSelected={tMaxPlacements >= 3}
+                                    onValueChange={(v) => setTMaxPlacements(v ? 3 : 2)}
+                                />
                             </div>
                         )}
                         {showDesc ? (
