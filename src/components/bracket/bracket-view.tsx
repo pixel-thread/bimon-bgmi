@@ -39,15 +39,16 @@ export function BracketView({ rounds, totalRounds, currentPlayerId, isAdmin, onS
 
 /* ─── KO Bracket ────────────────────────────────────────────── */
 const MATCH_W = 200;
-const MATCH_H = 67;  // 2×h-8(32px) + 1px divider + 2px border
-const ROW_GAP = 12;
-const COL_GAP = 44;
-const LABEL_H = 28;  // fixed height for all round labels
+const MATCH_H = 63;  // 2×30px rows + 1px divider + 2px for accent bar
+const ROW_GAP = 16;
+const COL_GAP = 48;
+const LABEL_H = 28;
+const CURVE_R = 8;   // corner radius for connector curves
 
 export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { rounds: RoundData[]; currentPlayerId?: string; isAdmin?: boolean; onViewResult?: (id: string) => void }) {
     const { zoom, zoomIn, zoomOut, reset, containerRef: scrollRef } = usePinchZoom();
-    const outerRef = useRef<HTMLDivElement>(null);  // zoom wrapper (width only)
-    const wrapperRef = useRef<HTMLDivElement>(null);  // match area — SVG origin
+    const outerRef = useRef<HTMLDivElement>(null);
+    const wrapperRef = useRef<HTMLDivElement>(null);
     const svgGroupRef = useRef<SVGGElement>(null);
     const cardRefs = useRef<Record<string, HTMLDivElement>>({});
 
@@ -66,7 +67,7 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { 
     const itemGap = (ri: number) => spacing(ri) - MATCH_H;
     const colLeft = (ri: number) => ri * (MATCH_W + COL_GAP);
 
-    /* Draw SVG lines directly into DOM — no state needed */
+    /* Draw smooth SVG connectors */
     useLayoutEffect(() => {
         const g = svgGroupRef.current;
         const wrapper = wrapperRef.current;
@@ -78,11 +79,11 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { 
         const px = (sx: number) => (sx - wr.left) / zoom;
         const py = (sy: number) => (sy - wr.top) / zoom;
 
-        const line = (x1: number, y1: number, x2: number, y2: number, stroke: string, op: number) => {
-            const el = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            el.setAttribute("x1", `${x1}`); el.setAttribute("y1", `${y1}`);
-            el.setAttribute("x2", `${x2}`); el.setAttribute("y2", `${y2}`);
-            el.setAttribute("stroke", stroke);
+        const path = (d: string, color: string, op: number) => {
+            const el = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            el.setAttribute("d", d);
+            el.setAttribute("fill", "none");
+            el.setAttribute("stroke", color);
             el.setAttribute("stroke-width", "1.5");
             el.setAttribute("stroke-opacity", `${op}`);
             el.setAttribute("stroke-linecap", "round");
@@ -93,11 +94,13 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { 
             const cur = bRounds[ri];
             const nxt = bRounds[ri + 1];
             if (!nxt) continue;
+
             for (let p = 0; p < Math.ceil(cur.matches.length / 2); p++) {
                 const m1 = cur.matches[p * 2];
                 const m2 = cur.matches[p * 2 + 1] ?? null;
                 const mN = nxt.matches[p];
                 if (!mN) continue;
+
                 const e1 = cardRefs.current[m1.id];
                 const eN = cardRefs.current[mN.id];
                 if (!e1 || !eN) continue;
@@ -105,40 +108,49 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { 
                 const r1 = e1.getBoundingClientRect();
                 const rN = eN.getBoundingClientRect();
                 const x1 = px(r1.right);
-                const y1a = py(r1.top + r1.height / 2);
+                const y1 = py(r1.top + r1.height / 2);
                 const x2 = px(rN.left);
                 const y2 = py(rN.top + rN.height / 2);
                 const midX = (x1 + x2) / 2;
 
                 const statuses = [m1.status, m2?.status].filter(Boolean);
                 const color =
-                    statuses.some(s => s === "DISPUTED") ? "#ef4444" :  // red   — dispute
-                        statuses.some(s => s === "SUBMITTED") ? "#f59e0b" :  // amber — awaiting confirm
-                            statuses.every(s => s === "CONFIRMED" || s === "BYE") ? "#22c55e" : // green — done
-                                "#6b7280";                                              // gray  — pending
-                const op = color === "#6b7280" ? 0.3 : 0.55;
+                    statuses.some(s => s === "DISPUTED") ? "#ef4444" :
+                    statuses.some(s => s === "SUBMITTED") ? "#f59e0b" :
+                    statuses.every(s => s === "CONFIRMED" || s === "BYE") ? "#22c55e" :
+                    "#94a3b8";
+                const op = color === "#94a3b8" ? 0.3 : 0.5;
 
                 if (m2) {
                     const e2 = cardRefs.current[m2.id];
                     if (e2) {
                         const r2 = e2.getBoundingClientRect();
                         const y1b = py(r2.top + r2.height / 2);
-                        line(x1, y1a, midX, y1a, color, op);
-                        line(x1, y1b, midX, y1b, color, op);
-                        line(midX, y1a, midX, y1b, color, op);
-                        line(midX, y2, x2, y2, color, op);
+
+                        // Top match → vertical bar → next match (smooth curves)
+                        const r = Math.min(CURVE_R, Math.abs(y2 - y1) / 2);
+                        // Top arm: right from m1, curve down to midX vertical
+                        path(`M${x1},${y1} L${midX - r},${y1} Q${midX},${y1} ${midX},${y1 + r}`, color, op);
+                        // Vertical bar
+                        path(`M${midX},${y1 + r} L${midX},${y1b - r}`, color, op);
+                        // Bottom arm: from midX vertical, curve right to m2
+                        path(`M${midX},${y1b - r} Q${midX},${y1b} ${midX + r},${y1b}`, color, op);
+                        path(`M${midX - r},${y1b} L${x1},${y1b}`, color, op);
+                        // Center → next match
+                        path(`M${midX},${y2} L${x2},${y2}`, color, op);
                     }
                 } else {
-                    line(x1, y1a, x2, y1a, color, op);
+                    // Single match → next match (straight line)
+                    path(`M${x1},${y1} L${x2},${y2}`, color, op);
                 }
             }
         }
-    }); // no deps → runs after every render
+    });
 
     if (N === 0) return null;
     const n0 = bRounds[0].matches.length;
     const totalMatchH = n0 * MATCH_H + (n0 - 1) * ROW_GAP;
-    const totalW = N * MATCH_W + (N - 1) * COL_GAP + 72; // 72px trophy column
+    const totalW = N * MATCH_W + (N - 1) * COL_GAP + 72;
     const winner = bRounds[N - 1]?.matches[0]?.winner;
 
     return (
@@ -148,15 +160,14 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { 
             </div>
 
             <div ref={scrollRef} className="overflow-x-auto pb-4">
-                {/* zoom wrapper — explicit width so overflow-x-auto triggers */}
                 <div style={{ zoom, width: totalW }} className="relative" ref={outerRef}>
 
-                    {/* ── Label row: all at same y, fixed height ── */}
-                    <div className="flex" style={{ height: LABEL_H, marginBottom: 4 }}>
+                    {/* Round labels */}
+                    <div className="flex" style={{ height: LABEL_H, marginBottom: 6 }}>
                         {bRounds.map((r, ri) => (
                             <div key={`lbl-${ri}`} style={{ width: MATCH_W, marginRight: ri < N - 1 ? COL_GAP : 0, flexShrink: 0 }}
                                 className="flex items-end justify-center pb-1">
-                                <span className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest">
+                                <span className="text-[9px] font-bold text-foreground/30 uppercase tracking-[0.15em]">
                                     {r.name}
                                 </span>
                             </div>
@@ -164,15 +175,13 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { 
                         <div style={{ width: 72 }} />
                     </div>
 
-                    {/* ── Match area: wrapperRef HERE so SVG origin = match area top ── */}
+                    {/* Match area */}
                     <div className="relative" ref={wrapperRef} style={{ height: totalMatchH, width: totalW }}>
-                        {/* SVG covers the match area */}
                         <svg className="absolute inset-0 pointer-events-none"
                             style={{ width: "100%", height: "100%", overflow: "visible" }}>
                             <g ref={svgGroupRef} />
                         </svg>
 
-                        {/* Round columns — absolutely positioned so labels are decoupled */}
                         {bRounds.map((r, ri) => (
                             <div key={r.round}
                                 style={{ position: "absolute", left: colLeft(ri), top: padTop(ri), width: MATCH_W }}>
@@ -188,9 +197,11 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { 
 
                         {/* Trophy */}
                         <div style={{ position: "absolute", left: colLeft(N), top: padTop(N - 1) + MATCH_H / 2 - 26, width: 60 }}
-                            className="flex flex-col items-center gap-1 pl-2">
-                            <Trophy className={`h-6 w-6 ${winner ? "text-yellow-400" : "text-foreground/15"}`} />
-                            <p className={`text-[9px] font-semibold text-center leading-tight ${winner ? "text-yellow-400" : "text-foreground/25"}`}>
+                            className="flex flex-col items-center gap-1 pl-3">
+                            <div className={`p-2 rounded-full ${winner ? "bg-yellow-400/15" : "bg-foreground/5"}`}>
+                                <Trophy className={`h-5 w-5 ${winner ? "text-yellow-400" : "text-foreground/15"}`} />
+                            </div>
+                            <p className={`text-[8px] font-semibold text-center leading-tight ${winner ? "text-yellow-400" : "text-foreground/20"}`}>
                                 {winner?.displayName ?? "TBD"}
                             </p>
                         </div>
@@ -198,9 +209,10 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { 
                 </div>
             </div>
 
+            {/* 3rd place */}
             {thirdPlace && (
                 <div className="max-w-[200px]">
-                    <p className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest mb-2">🥉 3rd Place</p>
+                    <p className="text-[9px] font-bold text-foreground/30 uppercase tracking-[0.15em] mb-2">🥉 3rd Place</p>
                     <div ref={el => { if (el) cardRefs.current[thirdPlace.id] = el; }}>
                         <CompactMatch match={thirdPlace} currentPlayerId={currentPlayerId} isAdmin={isAdmin} onViewResult={onViewResult} />
                     </div>

@@ -369,73 +369,85 @@ export function CompactMatch({
     const isParticipant = currentPlayerId === match.player1Id || currentPlayerId === match.player2Id;
     const hasResult = match.status === "CONFIRMED" || match.status === "SUBMITTED";
     const isDisputed = match.status === "DISPUTED";
+    const isEmpty = !match.player1Id && !match.player2Id;
 
-    const dotColor =
+    const accentColor =
+        isDisputed ? "bg-danger" :
         match.status === "CONFIRMED" ? "bg-success" :
-            match.status === "SUBMITTED" ? "bg-warning" :
-                match.status === "DISPUTED" ? "bg-danger animate-pulse" :
-                    match.status === "BYE" ? "bg-secondary" : "bg-foreground/20";
+        match.status === "SUBMITTED" ? "bg-warning" :
+        match.status === "BYE" ? "bg-secondary" :
+        isParticipant && match.player1Id && match.player2Id ? "bg-primary" : "bg-foreground/15";
 
-    const avatar = (url: string | null, name: string | null) => {
-        if (url) {
-            return <img src={url} alt="" className="h-5 w-5 rounded-full object-cover shrink-0 border border-foreground/10" />;
-        }
-        if (!name) return <div className="h-5 w-5 rounded-full bg-foreground/10 shrink-0" />;
-        const initial = name.charAt(0).toUpperCase();
-        const hue = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
-        return (
-            <div className="h-5 w-5 rounded-full shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
-                style={{ background: `hsl(${hue}, 50%, 40%)` }}>
-                {initial}
-            </div>
-        );
-    };
+    const showEye = (hasResult || (isAdmin && match.player1Id && match.player2Id)) && onViewResult;
 
-    const row = (
+    const playerRow = (
         player: BracketPlayer | null,
         playerAvatar: string | null,
         score: number | null,
         isWinner: boolean,
         isCurrent: boolean,
         isTop: boolean,
-    ) => (
-        <div className={`flex items-center gap-1.5 px-2 h-8 ${isTop ? "rounded-t-lg" : "rounded-b-lg"} ${isWinner ? "bg-success/10" : ""}`}>
-            {avatar(player ? playerAvatar : null, player?.displayName ?? null)}
-            <span className={`text-[11px] truncate flex-1 ${isCurrent ? "text-primary font-semibold"
-                : isWinner ? "text-success font-medium"
-                    : player ? "text-foreground/80"
-                        : "text-foreground/25 italic"
+    ) => {
+        const hue = player?.displayName?.split("").reduce((a, c) => a + c.charCodeAt(0), 0) ?? 0;
+        return (
+            <div className={`flex items-center gap-1.5 px-2 h-[30px] ${isTop ? "rounded-t-[7px]" : "rounded-b-[7px]"} ${
+                isWinner ? "bg-success/8 dark:bg-success/10" : ""
+            }`}>
+                {/* Avatar */}
+                {player ? (
+                    playerAvatar ? (
+                        <img src={playerAvatar} alt="" className="h-[18px] w-[18px] rounded-full object-cover shrink-0 ring-1 ring-foreground/10" />
+                    ) : (
+                        <div className="h-[18px] w-[18px] rounded-full shrink-0 flex items-center justify-center text-[7px] font-bold text-white"
+                            style={{ background: `hsl(${hue % 360}, 45%, 45%)` }}>
+                            {player.displayName?.charAt(0).toUpperCase() ?? "?"}
+                        </div>
+                    )
+                ) : (
+                    <div className="h-[18px] w-[18px] rounded-full bg-foreground/8 shrink-0" />
+                )}
+                {/* Name */}
+                <span className={`text-[10px] truncate flex-1 leading-none ${
+                    isCurrent ? "text-primary font-semibold" :
+                    isWinner ? "font-semibold text-foreground" :
+                    player ? "text-foreground/60" : "text-foreground/20"
                 }`}>
-                {player?.displayName ?? "TBD"}
-            </span>
-            {score !== null && (
-                <span className={`text-[11px] font-bold tabular-nums ${isWinner ? "text-success" : "text-foreground/40"}`}>{score}</span>
-            )}
-            {isWinner && <Trophy className="h-2.5 w-2.5 text-success shrink-0" />}
-        </div>
-    );
-
-    // Show eye icon for: confirmed/submitted matches (everyone), or any match with players (admin)
-    const showEye = (hasResult || (isAdmin && match.player1Id && match.player2Id)) && onViewResult;
+                    {player?.displayName ?? "TBD"}
+                </span>
+                {/* Score */}
+                <span className={`text-[11px] font-bold tabular-nums min-w-[16px] text-right leading-none ${
+                    isWinner ? "text-success" : score !== null ? "text-foreground/35" : "text-transparent"
+                }`}>
+                    {score ?? "–"}
+                </span>
+            </div>
+        );
+    };
 
     return (
-        <div className={`border rounded-lg w-[200px] transition-all relative flex items-center ${isDisputed ? "border-warning/60" :
-            isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id
-                ? "border-primary/60" : "border-divider"
-            }`}>
+        <div className={`w-[200px] rounded-lg overflow-hidden flex transition-all ${
+            isDisputed ? "ring-1 ring-danger/50 shadow-sm shadow-danger/10" :
+            isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id ? "ring-1 ring-primary/40" :
+            ""
+        } ${isEmpty ? "opacity-40" : ""}`}
+            style={{ background: "var(--compact-match-bg, hsl(var(--nextui-default-100)))" }}
+        >
+            {/* Left accent bar */}
+            <div className={`w-[3px] shrink-0 ${accentColor}`} />
+            {/* Content */}
             <div className="flex-1 min-w-0">
-                {row(match.player1, match.player1Avatar, match.score1, match.winnerId === match.player1Id && match.winnerId !== null, currentPlayerId === match.player1Id, true)}
-                <div className="h-px bg-divider" />
-                {row(match.player2, match.player2Avatar, match.score2, match.winnerId === match.player2Id && match.winnerId !== null, currentPlayerId === match.player2Id, false)}
+                {playerRow(match.player1, match.player1Avatar, match.score1, match.winnerId === match.player1Id && match.winnerId !== null, currentPlayerId === match.player1Id, true)}
+                <div className="h-px bg-foreground/8 mx-1.5" />
+                {playerRow(match.player2, match.player2Avatar, match.score2, match.winnerId === match.player2Id && match.winnerId !== null, currentPlayerId === match.player2Id, false)}
             </div>
-            {showEye ? (
-                <button className="p-1 mr-1 rounded hover:bg-foreground/10 transition-colors shrink-0" onClick={() => onViewResult(match.id)}
+            {/* Eye button */}
+            {showEye && (
+                <button className="px-1.5 flex items-center shrink-0 hover:bg-foreground/5 transition-colors border-l border-foreground/5"
+                    onClick={() => onViewResult(match.id)}
                     title={isAdmin ? "View / edit result" : "View screenshot"}>
-                    <Eye className={`h-3.5 w-3.5 ${isAdmin && !hasResult ? "text-warning/50 hover:text-warning" : "text-foreground/30"}`} />
+                    <Eye className={`h-3 w-3 ${isAdmin && !hasResult ? "text-warning/60" : "text-foreground/25 hover:text-foreground/60"}`} />
                 </button>
-            ) : null}
-            {/* Status dot — always visible on right connector side */}
-            <div className={`absolute -right-1 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${dotColor}`} />
+            )}
         </div>
     );
 }
