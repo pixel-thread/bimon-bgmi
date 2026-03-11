@@ -8,7 +8,7 @@ import { SubmitResultModal } from "@/components/bracket/submit-result-modal";
 import { ViewResultModal } from "@/components/bracket/view-result-modal";
 import { useConfirmResult, useDisputeResult } from "@/components/bracket/submit-result-modal";
 import { useAuthUser } from "@/hooks/use-auth-user";
-import { Trophy, Swords, Loader2, Clock } from "lucide-react";
+import { Trophy, Swords, Clock } from "lucide-react";
 import { Chip, Tabs, Tab } from "@heroui/react";
 
 // Fallback famous footballers (if gallery is empty)
@@ -88,12 +88,7 @@ export default function MatchesPage() {
 
     // Loading
     if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center gap-3 py-24">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-foreground/50">Loading matches...</p>
-            </div>
-        );
+        return <FootballLoader />;
     }
 
     // No active tournaments
@@ -321,12 +316,7 @@ function TournamentContent({
                 "Knockout";
 
     if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center gap-3 py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <p className="text-sm text-foreground/50">Loading...</p>
-            </div>
-        );
+        return <FootballLoader compact />;
     }
 
     // No matches generated yet
@@ -482,5 +472,88 @@ function TournamentContent({
                 tournamentId={tournamentId}
             />
         </>
+    );
+}
+
+/* ─── Football-themed Loading Animation ──────────────────── */
+function FootballLoader({ compact }: { compact?: boolean }) {
+    return (
+        <div className={`flex flex-col items-center justify-center gap-5 ${compact ? "py-14" : "py-24"}`}>
+            {/* Mini pitch with bouncing ball */}
+            <div className="relative w-28 h-20">
+                {/* Pitch background */}
+                <div className="absolute inset-0 rounded-xl bg-emerald-500/10 border border-emerald-500/20 overflow-hidden">
+                    {/* Center line */}
+                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-emerald-500/20" />
+                    {/* Center circle */}
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-emerald-500/20" />
+                    {/* Goal areas */}
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-3 h-8 border-r border-y border-emerald-500/15 rounded-r-sm" />
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-8 border-l border-y border-emerald-500/15 rounded-l-sm" />
+                </div>
+
+                {/* Bouncing football */}
+                <div
+                    className="absolute left-1/2 -translate-x-1/2"
+                    style={{
+                        animation: "footballBounce 1s ease-in-out infinite",
+                    }}
+                >
+                    <span
+                        className="text-2xl block"
+                        style={{
+                            animation: "footballSpin 1s linear infinite",
+                        }}
+                    >
+                        ⚽
+                    </span>
+                </div>
+
+                {/* Shadow under ball */}
+                <div
+                    className="absolute left-1/2 bottom-2 -translate-x-1/2 w-6 h-1.5 rounded-full bg-black/15 blur-[2px]"
+                    style={{
+                        animation: "footballShadow 1s ease-in-out infinite",
+                    }}
+                />
+            </div>
+
+            {/* Loading text with pulsing dots */}
+            <div className="flex items-center gap-1.5">
+                <span className="text-sm font-medium text-foreground/40">Loading matches</span>
+                <span className="flex gap-0.5">
+                    {[0, 1, 2].map((i) => (
+                        <span
+                            key={i}
+                            className="w-1 h-1 rounded-full bg-foreground/30"
+                            style={{
+                                animation: "dotPulse 1.2s ease-in-out infinite",
+                                animationDelay: `${i * 0.2}s`,
+                            }}
+                        />
+                    ))}
+                </span>
+            </div>
+
+            {/* CSS Keyframes */}
+            <style>{`
+                @keyframes footballBounce {
+                    0%, 100% { top: 2px; }
+                    50% { top: 40px; }
+                }
+                @keyframes footballSpin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                @keyframes footballShadow {
+                    0%, 100% { opacity: 0.3; transform: translateX(-50%) scaleX(0.6); }
+                    50% { opacity: 0.8; transform: translateX(-50%) scaleX(1); }
+                }
+                @keyframes dotPulse {
+                    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+                    40% { opacity: 1; transform: scale(1.2); }
+                }
+            `}</style>
+        </div>
     );
 }
