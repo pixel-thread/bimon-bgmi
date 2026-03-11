@@ -126,7 +126,7 @@ export default function MatchesPage() {
                     <img
                         src={bgQuery.data.img}
                         alt=""
-                        className="absolute right-0 top-0 h-[80vh] object-contain opacity-[0.07]"
+                        className="absolute right-0 top-0 h-[80vh] object-contain opacity-[0.12]"
                         style={{ filter: "grayscale(100%)" }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-transparent" />
