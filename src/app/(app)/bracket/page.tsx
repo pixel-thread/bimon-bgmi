@@ -317,12 +317,31 @@ function TournamentContent({
 
     if (isLoading) {
         return (
-            <div className="space-y-4">
-                <Skeleton className="h-24 w-full rounded-2xl" />
-                <Skeleton className="h-10 w-48 rounded-xl" />
+            <div className="space-y-5">
+                {/* Tournament info skeleton */}
+                <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4 space-y-3">
+                    <div className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-xl" />
+                        <div className="flex-1 space-y-1.5">
+                            <Skeleton className="h-4 w-40 rounded-md" />
+                            <Skeleton className="h-3 w-24 rounded-md" />
+                        </div>
+                        <Skeleton className="h-6 w-14 rounded-full" />
+                    </div>
+                </div>
+
+                {/* Match rows skeleton */}
                 <div className="space-y-2">
-                    {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} className="h-16 w-full rounded-xl" />
+                    <Skeleton className="h-5 w-32 rounded-md" />
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-divider">
+                            <Skeleton className="h-4 w-24 rounded-md" />
+                            <span className="text-[10px] text-foreground/15 font-bold">VS</span>
+                            <Skeleton className="h-4 w-24 rounded-md" />
+                            <div className="ml-auto">
+                                <Skeleton className="h-5 w-16 rounded-full" />
+                            </div>
+                        </div>
                     ))}
                 </div>
             </div>
@@ -485,83 +504,32 @@ function TournamentContent({
     );
 }
 
-/* ─── Football-themed Loading Animation ──────────────────── */
-function FootballLoader({ compact }: { compact?: boolean }) {
+/* ─── Bouncing Football Loader ────────────────────────────── */
+function FootballLoader() {
     return (
-        <div className={`flex flex-col items-center justify-center gap-5 ${compact ? "py-14" : "py-24"}`}>
-            {/* Mini pitch with bouncing ball */}
-            <div className="relative w-28 h-20">
-                {/* Pitch background */}
-                <div className="absolute inset-0 rounded-xl bg-emerald-500/10 border border-emerald-500/20 overflow-hidden">
-                    {/* Center line */}
-                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-emerald-500/20" />
-                    {/* Center circle */}
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-emerald-500/20" />
-                    {/* Goal areas */}
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-3 h-8 border-r border-y border-emerald-500/15 rounded-r-sm" />
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-8 border-l border-y border-emerald-500/15 rounded-l-sm" />
-                </div>
-
-                {/* Bouncing football */}
-                <div
-                    className="absolute left-1/2 -translate-x-1/2"
-                    style={{
-                        animation: "footballBounce 1s ease-in-out infinite",
-                    }}
+        <div className="flex items-center justify-center py-32">
+            <div className="relative h-16">
+                {/* Ball */}
+                <span
+                    className="text-3xl block"
+                    style={{ animation: "ballBounce 0.6s ease-in-out infinite alternate" }}
                 >
-                    <span
-                        className="text-2xl block"
-                        style={{
-                            animation: "footballSpin 1s linear infinite",
-                        }}
-                    >
-                        ⚽
-                    </span>
-                </div>
-
-                {/* Shadow under ball */}
+                    ⚽
+                </span>
+                {/* Shadow */}
                 <div
-                    className="absolute left-1/2 bottom-2 -translate-x-1/2 w-6 h-1.5 rounded-full bg-black/15 blur-[2px]"
-                    style={{
-                        animation: "footballShadow 1s ease-in-out infinite",
-                    }}
+                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-7 h-1.5 rounded-full bg-foreground/10 blur-[2px]"
+                    style={{ animation: "ballShadow 0.6s ease-in-out infinite alternate" }}
                 />
             </div>
-
-            {/* Loading text with pulsing dots */}
-            <div className="flex items-center gap-1.5">
-                <span className="text-sm font-medium text-foreground/40">Loading matches</span>
-                <span className="flex gap-0.5">
-                    {[0, 1, 2].map((i) => (
-                        <span
-                            key={i}
-                            className="w-1 h-1 rounded-full bg-foreground/30"
-                            style={{
-                                animation: "dotPulse 1.2s ease-in-out infinite",
-                                animationDelay: `${i * 0.2}s`,
-                            }}
-                        />
-                    ))}
-                </span>
-            </div>
-
-            {/* CSS Keyframes */}
             <style>{`
-                @keyframes footballBounce {
-                    0%, 100% { top: 2px; }
-                    50% { top: 40px; }
+                @keyframes ballBounce {
+                    from { transform: translateY(0); }
+                    to { transform: translateY(-24px); }
                 }
-                @keyframes footballSpin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
-                @keyframes footballShadow {
-                    0%, 100% { opacity: 0.3; transform: translateX(-50%) scaleX(0.6); }
-                    50% { opacity: 0.8; transform: translateX(-50%) scaleX(1); }
-                }
-                @keyframes dotPulse {
-                    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
-                    40% { opacity: 1; transform: scale(1.2); }
+                @keyframes ballShadow {
+                    from { opacity: 0.8; transform: translateX(-50%) scaleX(1); }
+                    to { opacity: 0.2; transform: translateX(-50%) scaleX(0.5); }
                 }
             `}</style>
         </div>
