@@ -188,7 +188,7 @@ const SISTER_GAMES = [
     {
         mode: "bgmi",
         name: "PUBGMI",
-        emoji: "🔫",
+        icon: "/icons/bgmi/icon-192x192.png",
         tagline: "Battle Royale tournaments",
         url: "https://bimon-bgmi.vercel.app",
         gradient: "from-amber-500/20 to-orange-500/20",
@@ -198,7 +198,7 @@ const SISTER_GAMES = [
     {
         mode: "pes",
         name: "KICKOFF",
-        emoji: "⚽",
+        icon: "/icons/pes/icon-192x192.png",
         tagline: "1v1 football tournaments",
         url: "https://bimon-pes.vercel.app",
         gradient: "from-emerald-500/20 to-teal-500/20",
@@ -208,7 +208,7 @@ const SISTER_GAMES = [
     {
         mode: "freefire",
         name: "BOOYAH",
-        emoji: "🔥",
+        icon: "/icons/freefire/icon-192x192.png",
         tagline: "Battle Royale with Booyah",
         url: "https://bimon-boo-yah.vercel.app",
         gradient: "from-violet-500/20 to-purple-500/20",
@@ -248,7 +248,7 @@ function CrossGamePromo() {
                                 rel="noopener noreferrer"
                                 className={`flex items-center gap-3 rounded-xl border ${g.border} bg-gradient-to-r ${g.gradient} px-3.5 py-2.5 transition-all hover:scale-[1.02] active:scale-[0.98]`}
                             >
-                                <span className="text-xl">{g.emoji}</span>
+                                <img src={g.icon} alt={g.name} className="h-8 w-8 rounded-lg object-contain shrink-0" />
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs font-bold">{g.name}</p>
                                     <p className="text-[10px] text-foreground/50">{g.tagline}</p>
