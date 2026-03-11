@@ -130,6 +130,7 @@ export interface BracketMatchData {
     score2: number | null;
     status: "PENDING" | "SUBMITTED" | "DISPUTED" | "CONFIRMED" | "BYE";
     disputeDeadline: string | null;
+    disputeRemainingMs: number | null;
     createdAt: string | null;          // used for deadline countdown
     player1: BracketPlayer | null;
     player2: BracketPlayer | null;
@@ -343,10 +344,9 @@ export function MatchCard({
                         )}
                     </div>
                 </div>
-                {match.status === "SUBMITTED" && match.disputeDeadline && (() => {
-                    const msLeft = new Date(match.disputeDeadline).getTime() - Date.now();
-                    if (msLeft <= 0) return <p className="text-[10px] text-success">⏰ Auto-confirming...</p>;
-                    const mLeft = Math.ceil(msLeft / 60_000);
+                {match.status === "SUBMITTED" && match.disputeRemainingMs != null && (() => {
+                    if (match.disputeRemainingMs <= 0) return <p className="text-[10px] text-success">⏰ Auto-confirming...</p>;
+                    const mLeft = Math.ceil(match.disputeRemainingMs / 60_000);
                     return <p className="text-[10px] text-warning-600 dark:text-warning-400" suppressHydrationWarning>
                         ⏰ Auto-confirms in {mLeft}m
                     </p>;

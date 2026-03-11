@@ -178,6 +178,7 @@ export async function GET(
             return `Round ${round}`;
         }
 
+        const serverNow = Date.now();
         const rounds = Array.from(roundMap.entries())
             .sort(([a], [b]) => a - b)
             .map(([round, roundMatches]) => ({
@@ -194,6 +195,7 @@ export async function GET(
                     score2: m.score2,
                     status: m.status,
                     disputeDeadline: m.disputeDeadline,
+                    disputeRemainingMs: m.disputeDeadline ? Math.max(0, new Date(m.disputeDeadline).getTime() - serverNow) : null,
                     createdAt: m.createdAt,          // for deadline countdown on /bracket
                     player1: m.player1
                         ? { displayName: m.player1.displayName }

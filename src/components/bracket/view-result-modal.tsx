@@ -72,13 +72,13 @@ function ScreenshotView({ url }: { url: string }) {
         <>
             {/* Thumbnail */}
             <div
-                className="relative rounded-2xl overflow-hidden border border-white/8 cursor-zoom-in group"
-                style={{ background: "rgba(0,0,0,0.5)" }}
+                className="relative rounded-2xl overflow-hidden border border-divider cursor-zoom-in group bg-default-100"
+                style={{ background: "rgba(0,0,0,0.3)" }}
                 onClick={() => loaded && setLightbox(true)}
             >
                 {/* Animated loader while image loads */}
                 {!loaded && !error && (
-                    <div className="w-full h-44 flex flex-col items-center justify-center gap-3 bg-default-100/20 rounded-2xl">
+                    <div className="w-full h-44 flex flex-col items-center justify-center gap-3 bg-default-100 rounded-2xl">
                         <Camera className="h-5 w-5 text-foreground/20 animate-pulse" />
                         <div className="w-32 h-1.5 rounded-full bg-foreground/10 overflow-hidden">
                             <div className="h-full w-1/3 rounded-full bg-primary/50 animate-[bounceBar_1.2s_ease-in-out_infinite]" />
@@ -273,8 +273,7 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                         /* ── View mode ── */
                         <>
                             {/* Scoreboard card — no status inside, more room for names */}
-                            <div className="relative rounded-2xl border border-white/8 overflow-hidden"
-                                style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)" }}>
+                            <div className="relative rounded-2xl border border-divider overflow-hidden bg-default-50">
                                 <div className="flex items-center">
                                     {/* P1 */}
                                     <div className="flex flex-col items-center gap-2 flex-1 min-w-0 px-3 py-4">
