@@ -7,6 +7,7 @@ import { GroupKnockoutView } from "@/components/bracket/group-knockout-view";
 import { SubmitResultModal } from "@/components/bracket/submit-result-modal";
 import { ViewResultModal } from "@/components/bracket/view-result-modal";
 import { useConfirmResult, useDisputeResult } from "@/components/bracket/submit-result-modal";
+import { BracketOnboarding, DisputeOnboarding, useBracketOnboarding, useDisputeOnboarding } from "@/components/bracket/bracket-onboarding";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { Trophy, Swords, Clock } from "lucide-react";
 import { Chip, Tabs, Tab, Skeleton } from "@heroui/react";
@@ -38,6 +39,9 @@ export default function MatchesPage() {
     const [viewingMatch, setViewingMatch] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<string>("");
     const playerId = user?.player?.id;
+
+    // Onboarding
+    const { showOnboarding, dismissOnboarding } = useBracketOnboarding(playerId);
 
     // Fetch bracket background: existing gallery images, TheSportsDB fallback
     const [bgSeed] = useState(() => Math.random());
@@ -114,6 +118,8 @@ export default function MatchesPage() {
 
     return (
         <div className="relative min-h-[80vh]">
+            {/* Main onboarding (first visit) */}
+            {showOnboarding && <BracketOnboarding onDone={dismissOnboarding} />}
             {/* Background image from gallery or TheSportsDB */}
             {bgQuery.data?.img && (
                 <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
@@ -223,6 +229,15 @@ function TournamentContent({
     const disputeResult = useDisputeResult(tournamentId);
 
     const allMatches = bracketData?.rounds?.flatMap((r: any) => r.matches) ?? [];
+
+    // Does the player have a SUBMITTED match where they need to confirm/dispute?
+    const hasSubmittedMatch = allMatches.some(
+        (m: any) =>
+            m.status === "SUBMITTED" &&
+            (m.player1Id === playerId || m.player2Id === playerId) &&
+            m.winnerId !== playerId
+    );
+    const { showDisputeOnboarding, dismissDisputeOnboarding } = useDisputeOnboarding(playerId, hasSubmittedMatch);
 
     // Compute stage end times from latest unfinished match + deadline hours
     // NOTE: must be before early returns to comply with Rules of Hooks
@@ -366,6 +381,9 @@ function TournamentContent({
 
     return (
         <>
+            {/* Dispute onboarding (first time seeing confirm/dispute) */}
+            {showDisputeOnboarding && <DisputeOnboarding onDone={dismissDisputeOnboarding} />}
+
             {/* Tournament Info */}
             <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4 space-y-3">
                 {/* Glow blob */}
