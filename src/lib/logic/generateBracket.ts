@@ -135,9 +135,9 @@ export async function advanceWinners(
         .filter((m: MatchRow) => m.round === completedRound + 1)
         .sort((a: MatchRow, b: MatchRow) => a.position - b.position);
 
-    // This was the final round — check if auto-declare is ready
+    // This was the final round — no auto-declare.
+    // Admin will manually declare winners from the Operations dashboard.
     if (completedRound === totalRounds) {
-        await tryAutoDeclare(tournamentId, matches);
         return;
     }
 
