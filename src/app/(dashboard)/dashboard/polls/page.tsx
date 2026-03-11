@@ -403,28 +403,12 @@ export default function PollsAdminPage() {
                                                             </Button>
                                                         )}
                                                         {poll.tournament && ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"].includes(poll.tournament.type) && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="flat"
-                                                                color="secondary"
-                                                                startContent={<Swords className="h-3 w-3" />}
-                                                                className="min-w-0 h-7 px-2 text-xs"
-                                                                isDisabled={poll.inVotes < 2}
-                                                                onPress={async () => {
-                                                                    if (!confirm(`Generate matches for "${poll.tournament!.name}"? This will close the poll.`)) return;
-                                                                    try {
-                                                                        const res = await fetch(`/api/tournaments/${poll.tournament!.id}/generate-bracket`, { method: "POST" });
-                                                                        const json = await res.json();
-                                                                        if (!res.ok) throw new Error(json.message || "Failed");
-                                                                        toast.success(json.message);
-                                                                        queryClient.invalidateQueries({ queryKey: ["admin-polls"] });
-                                                                    } catch (err: any) {
-                                                                        toast.error(err.message);
-                                                                    }
-                                                                }}
-                                                            >
-                                                                Bracket
-                                                            </Button>
+                                                            <BracketButton
+                                                                tournamentId={poll.tournament.id}
+                                                                tournamentName={poll.tournament.name}
+                                                                disabled={poll.inVotes < 2}
+                                                                onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admin-polls"] })}
+                                                            />
                                                         )}
                                                     </div>
                                                 </div>
@@ -463,5 +447,50 @@ export default function PollsAdminPage() {
                 }}
             />
         </div>
+    );
+}
+
+/* ─── Bracket Button (inline loading, no confirm modal) ───── */
+function BracketButton({
+    tournamentId,
+    tournamentName,
+    disabled,
+    onSuccess,
+}: {
+    tournamentId: string;
+    tournamentName: string;
+    disabled: boolean;
+    onSuccess: () => void;
+}) {
+    const [loading, setLoading] = useState(false);
+
+    const handleGenerate = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/tournaments/${tournamentId}/generate-bracket`, { method: "POST" });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.message || json.error || "Failed");
+            toast.success(json.message || `Bracket generated for ${tournamentName}`);
+            onSuccess();
+        } catch (err: any) {
+            toast.error(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Button
+            size="sm"
+            variant="flat"
+            color="secondary"
+            startContent={!loading ? <Swords className="h-3 w-3" /> : undefined}
+            className="min-w-0 h-7 px-2 text-xs"
+            isDisabled={disabled}
+            isLoading={loading}
+            onPress={handleGenerate}
+        >
+            Bracket
+        </Button>
     );
 }
