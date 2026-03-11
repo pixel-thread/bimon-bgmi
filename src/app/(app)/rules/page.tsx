@@ -68,6 +68,7 @@ export default function RulesPage() {
                         >
                             <Card
                                 isPressable
+                                fullWidth
                                 onPress={() =>
                                     setExpandedRule(isExpanded ? null : rule.id)
                                 }
