@@ -154,9 +154,13 @@ export async function advanceWinners(
         if (nextMatch && match.winnerId) {
             await prisma.bracketMatch.update({
                 where: { id: nextMatch.id },
-                data: isPlayer1
-                    ? { player1Id: match.winnerId }
-                    : { player2Id: match.winnerId },
+                data: {
+                    ...(isPlayer1
+                        ? { player1Id: match.winnerId }
+                        : { player2Id: match.winnerId }),
+                    // Reset createdAt so deadline starts from when players are assigned
+                    createdAt: new Date(),
+                },
             });
         }
 
@@ -170,9 +174,13 @@ export async function advanceWinners(
             if (thirdPlaceMatch) {
                 await prisma.bracketMatch.update({
                     where: { id: thirdPlaceMatch.id },
-                    data: isPlayer1
-                        ? { player1Id: loserId }
-                        : { player2Id: loserId },
+                    data: {
+                        ...(isPlayer1
+                            ? { player1Id: loserId }
+                            : { player2Id: loserId }),
+                        // Reset createdAt so 3rd place match gets a fresh deadline
+                        createdAt: new Date(),
+                    },
                 });
             }
         }
