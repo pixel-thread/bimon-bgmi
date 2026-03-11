@@ -126,11 +126,12 @@ export default function MatchesPage() {
                     <img
                         src={bgQuery.data.img}
                         alt=""
-                        className="absolute right-0 top-0 h-[80vh] object-contain opacity-[0.12]"
+                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[90vh] w-auto object-contain opacity-[0.25]"
                         style={{ filter: "grayscale(100%)" }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+                    {/* Radial vignette — fades edges so content stays readable */}
+                    <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, transparent 20%, var(--background) 75%)" }} />
+                    <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-transparent to-background" />
                     <span className="absolute bottom-4 right-4 text-[9px] text-foreground/10 font-medium tracking-wider uppercase">
                         {bgQuery.data.name}
                     </span>
