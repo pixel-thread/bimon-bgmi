@@ -506,6 +506,7 @@ model Tournament {
   type             TournamentType   @default(BR)
   galleryId        String?
   taxPreviewCache  Json?
+  maxPlacements    Int              @default(3) // Max podium spots: 2 = no 3rd place
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

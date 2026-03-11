@@ -75,6 +75,7 @@ type Props = {
     isWinnerDeclared: boolean;
     seasonId?: string;
     tournamentType?: string;
+    maxPlacements?: number;
 };
 
 const getMedal = (i: number) => ["🥇", "🥈", "🥉", "🏅", "🎖️"][i] ?? "🎖️";
@@ -94,6 +95,7 @@ export function DeclareWinnersModal({
     isWinnerDeclared,
     seasonId,
     tournamentType,
+    maxPlacements: maxPlacementsProp,
 }: Props) {
     const queryClient = useQueryClient();
     const isBracket = ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"].includes(tournamentType ?? "");
@@ -191,7 +193,8 @@ export function DeclareWinnersModal({
     const bracketAmounts = bracketSplit.map(pct => Math.floor(bracketDistributable * pct / 100));
 
     // Max placements = 3 (1st, 2nd, 3rd) for all bracket types
-    const maxBracketPlacements = 3;
+    // Max placements — from tournament setting (default 3)
+    const maxBracketPlacements = maxPlacementsProp ?? 3;
 
     const rankings = rankingsData?.data ?? [];
     const meta = rankingsData?.meta;

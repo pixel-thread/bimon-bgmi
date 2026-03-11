@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { name, description, fee, seasonId, type } = body;
+        const { name, description, fee, seasonId, type, maxPlacements } = body;
 
         if (!name?.trim()) {
             return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
                 createdBy: user.id,
                 startDate: new Date(),
                 type: ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT", "BR"].includes(type) ? type : "BR",
+                maxPlacements: maxPlacements ? Math.min(Math.max(Number(maxPlacements), 1), 5) : 3,
             },
         });
 
@@ -125,6 +126,7 @@ export async function GET(request: NextRequest) {
                 status: t.status,
                 type: t.type,
                 isWinnerDeclared: t.isWinnerDeclared,
+                maxPlacements: t.maxPlacements,
                 season: t.season,
                 startDate: t.startDate,
                 createdAt: t.createdAt,

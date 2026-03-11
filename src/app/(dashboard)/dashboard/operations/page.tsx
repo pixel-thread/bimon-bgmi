@@ -60,6 +60,7 @@ interface TournamentDTO {
     status: string;
     type: string;
     isWinnerDeclared: boolean;
+    maxPlacements: number;
     season: { id: string; name: string } | null;
     startDate: string;
     teamCount: number;
@@ -102,6 +103,7 @@ export default function OperationsPage() {
     const [tType, setTType] = useState<"BR" | "BRACKET_1V1" | "LEAGUE" | "GROUP_KNOCKOUT">("BR");
     const [tSeasonId, setTSeasonId] = useState("");
     const [showDesc, setShowDesc] = useState(false);
+    const [tMaxPlacements, setTMaxPlacements] = useState(3);
 
     // Auto-fill create form when modal opens
     const openCreateModal = () => {
@@ -223,6 +225,7 @@ export default function OperationsPage() {
                     fee: tFee ? Number(tFee) : 0,
                     seasonId: tSeasonId || undefined,
                     type: tType,
+                    maxPlacements: tMaxPlacements,
                 }),
             });
             if (!res.ok) {
@@ -761,6 +764,24 @@ export default function OperationsPage() {
                                 </div>
                             </div>
                         )}
+                        {/* 3rd place toggle — only for bracket types */}
+                        {["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"].includes(tType) && (
+                            <div className="flex items-center justify-between rounded-lg border border-divider px-3 py-2">
+                                <div>
+                                    <p className="text-sm font-medium">🥉 3rd Place</p>
+                                    <p className="text-[10px] text-foreground/40">Award a 3rd place prize</p>
+                                </div>
+                                <Button
+                                    size="sm"
+                                    variant={tMaxPlacements >= 3 ? "solid" : "flat"}
+                                    color={tMaxPlacements >= 3 ? "success" : "default"}
+                                    onPress={() => setTMaxPlacements(tMaxPlacements >= 3 ? 2 : 3)}
+                                    className="min-w-[60px]"
+                                >
+                                    {tMaxPlacements >= 3 ? "On" : "Off"}
+                                </Button>
+                            </div>
+                        )}
                         {showDesc ? (
                             <Textarea
                                 label="Description"
@@ -836,6 +857,7 @@ export default function OperationsPage() {
                     isWinnerDeclared={selected.isWinnerDeclared}
                     seasonId={seasonId}
                     tournamentType={selected.type}
+                    maxPlacements={selected.maxPlacements}
                 />
             )}
         </div>
