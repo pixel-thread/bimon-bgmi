@@ -157,7 +157,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         locale: "en",
         scoringSystem: "bracket",
         booyahBonus: false,
-        defaultTournamentType: "BRACKET_1V1",
+        defaultTournamentType: "GROUP_KNOCKOUT",
         tournamentTypes: ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"],
         hasBracket: true,
         hasBR: false,
