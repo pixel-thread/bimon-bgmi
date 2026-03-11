@@ -9,7 +9,7 @@ import { ViewResultModal } from "@/components/bracket/view-result-modal";
 import { useConfirmResult, useDisputeResult } from "@/components/bracket/submit-result-modal";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { Trophy, Swords, Clock } from "lucide-react";
-import { Chip, Tabs, Tab } from "@heroui/react";
+import { Chip, Tabs, Tab, Skeleton } from "@heroui/react";
 
 // Fallback famous footballers (if gallery is empty)
 const FAMOUS_PLAYERS = [
@@ -316,7 +316,17 @@ function TournamentContent({
                 "Knockout";
 
     if (isLoading) {
-        return <FootballLoader compact />;
+        return (
+            <div className="space-y-4">
+                <Skeleton className="h-24 w-full rounded-2xl" />
+                <Skeleton className="h-10 w-48 rounded-xl" />
+                <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                        <Skeleton key={i} className="h-16 w-full rounded-xl" />
+                    ))}
+                </div>
+            </div>
+        );
     }
 
     // No matches generated yet
