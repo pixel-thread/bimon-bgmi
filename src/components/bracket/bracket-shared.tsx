@@ -302,9 +302,16 @@ export function MatchCard({
                 />
                 <div className="flex items-center justify-between pt-1">
                     <div className="flex items-center gap-2">
-                        <Chip size="sm" variant="flat" color={config.color} startContent={<StatusIcon className="h-3 w-3" />} className="text-[10px]">
-                            {config.label}
-                        </Chip>
+                        {/* For SUBMITTED with countdown: single merged chip */}
+                        {match.status === "SUBMITTED" && match.disputeRemainingMs != null ? (
+                            <Chip size="sm" variant="flat" color={match.disputeRemainingMs <= 0 ? "success" : "warning"} startContent={<StatusIcon className="h-3 w-3" />} className="text-[10px]" suppressHydrationWarning>
+                                {match.disputeRemainingMs <= 0 ? "Auto-confirming…" : `Awaiting · ${Math.ceil(match.disputeRemainingMs / 60_000)}m left`}
+                            </Chip>
+                        ) : (
+                            <Chip size="sm" variant="flat" color={config.color} startContent={<StatusIcon className="h-3 w-3" />} className="text-[10px]">
+                                {config.label}
+                            </Chip>
+                        )}
                         {/* Deadline countdown for PENDING matches */}
                         {deadlineLabel && (
                             <span className={`text-[10px] font-medium flex items-center gap-0.5 ${deadlineLabel.urgent ? "text-danger animate-pulse" : "text-foreground/40"
@@ -344,13 +351,6 @@ export function MatchCard({
                         )}
                     </div>
                 </div>
-                {match.status === "SUBMITTED" && match.disputeRemainingMs != null && (() => {
-                    if (match.disputeRemainingMs <= 0) return <p className="text-[10px] text-success">⏰ Auto-confirming...</p>;
-                    const mLeft = Math.ceil(match.disputeRemainingMs / 60_000);
-                    return <p className="text-[10px] text-warning-600 dark:text-warning-400" suppressHydrationWarning>
-                        ⏰ Auto-confirms in {mLeft}m
-                    </p>;
-                })()}
             </div>
         </div>
     );
