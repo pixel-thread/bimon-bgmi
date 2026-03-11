@@ -956,7 +956,7 @@ export function DeclareWinnersModal({
                             </Button>
                         ) : (
                             <Button className="bg-gradient-to-r from-warning to-[#f97316] text-white font-semibold"
-                                isLoading={declare.isPending} isDisabled={rankings.length === 0}
+                                isLoading={declare.isPending} isDisabled={isBracket ? bracketPlacements.length === 0 : rankings.length === 0}
                                 startContent={<Trophy className="h-4 w-4" />}
                                 onPress={() => declare.mutate()}>
                                 {declare.isPending ? (declareStatus?.step || "Processing...") : prizePool > 0 ? "Declare & Distribute" : "Declare Winners"}
