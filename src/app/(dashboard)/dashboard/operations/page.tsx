@@ -95,6 +95,7 @@ export default function OperationsPage() {
     const [editName, setEditName] = useState("");
     const [editDesc, setEditDesc] = useState("");
     const [editFee, setEditFee] = useState("");
+    const [editMaxPlacements, setEditMaxPlacements] = useState(3);
 
     // Create tournament form
     const [tName, setTName] = useState("");
@@ -188,6 +189,7 @@ export default function OperationsPage() {
             setEditName(selected.name);
             setEditDesc(selected.description || "");
             setEditFee(selected.fee?.toString() || "0");
+            setEditMaxPlacements(selected.maxPlacements ?? 3);
         }
     }, [selected?.id]);
 
@@ -201,6 +203,7 @@ export default function OperationsPage() {
                     name: editName.trim(),
                     description: editDesc.trim() || null,
                     fee: editFee ? Number(editFee) : 0,
+                    maxPlacements: editMaxPlacements,
                 }),
             });
             if (!res.ok) throw new Error("Failed to update");
@@ -487,6 +490,24 @@ export default function OperationsPage() {
                                         type="number"
                                         size="sm"
                                     />
+                                    {/* 3rd place toggle — only for bracket types */}
+                                    {selected && ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"].includes(selected.type) && (
+                                        <div className="flex items-center justify-between rounded-lg border border-divider px-3 py-2">
+                                            <div>
+                                                <p className="text-sm font-medium">🥉 3rd Place</p>
+                                                <p className="text-[10px] text-foreground/40">Award a 3rd place prize</p>
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                variant={editMaxPlacements >= 3 ? "solid" : "flat"}
+                                                color={editMaxPlacements >= 3 ? "success" : "default"}
+                                                onPress={() => setEditMaxPlacements(editMaxPlacements >= 3 ? 2 : 3)}
+                                                className="min-w-[60px]"
+                                            >
+                                                {editMaxPlacements >= 3 ? "On" : "Off"}
+                                            </Button>
+                                        </div>
+                                    )}
                                     <div className="flex gap-2 justify-end">
                                         <Button
                                             size="sm"
