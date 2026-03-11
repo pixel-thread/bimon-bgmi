@@ -523,29 +523,27 @@ function TournamentContent({
 /* ─── Bouncing Football Loader ────────────────────────────── */
 function FootballLoader() {
     return (
-        <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="relative h-16">
-                {/* Ball */}
-                <span
-                    className="text-3xl block"
-                    style={{ animation: "ballBounce 0.6s ease-in-out infinite alternate" }}
-                >
-                    ⚽
-                </span>
-                {/* Shadow */}
-                <div
-                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-7 h-1.5 rounded-full bg-foreground/10 blur-[2px]"
-                    style={{ animation: "ballShadow 0.6s ease-in-out infinite alternate" }}
-                />
-            </div>
+        <div className="flex flex-col items-center justify-center" style={{ height: "calc(100vh - 200px)" }}>
+            {/* Ball */}
+            <span
+                className="text-3xl block"
+                style={{ animation: "ballBounce 0.6s ease-in-out infinite alternate" }}
+            >
+                ⚽
+            </span>
+            {/* Shadow — sibling of ball so it stays fixed in place */}
+            <div
+                className="mt-1 w-7 h-1.5 rounded-full bg-foreground/10 blur-[2px]"
+                style={{ animation: "ballShadow 0.6s ease-in-out infinite alternate" }}
+            />
             <style>{`
                 @keyframes ballBounce {
                     from { transform: translateY(0); }
                     to { transform: translateY(-24px); }
                 }
                 @keyframes ballShadow {
-                    from { opacity: 0.8; transform: translateX(-50%) scaleX(1); }
-                    to { opacity: 0.2; transform: translateX(-50%) scaleX(0.5); }
+                    from { opacity: 0.8; transform: scaleX(1); }
+                    to { opacity: 0.2; transform: scaleX(0.5); }
                 }
             `}</style>
         </div>
