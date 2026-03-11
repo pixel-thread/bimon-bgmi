@@ -525,7 +525,7 @@ function TournamentContent({
 /* ─── Bouncing Football Loader ────────────────────────────── */
 function FootballLoader() {
     return (
-        <div className="flex items-center justify-center py-32">
+        <div className="flex items-center justify-center min-h-[60vh]">
             <div className="relative h-16">
                 {/* Ball */}
                 <span
