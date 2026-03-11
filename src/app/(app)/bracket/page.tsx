@@ -121,7 +121,7 @@ export default function MatchesPage() {
         <div className="relative min-h-[80vh]">
             {/* Background image from gallery or TheSportsDB */}
             {bgQuery.data?.img && (
-                <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+                <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         src={bgQuery.data.img}
