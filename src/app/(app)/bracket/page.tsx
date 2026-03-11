@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BracketView, MyBracketMatch } from "@/components/bracket/bracket-view";
 import { GroupKnockoutView } from "@/components/bracket/group-knockout-view";
@@ -71,20 +71,28 @@ export default function MatchesPage() {
         retry: false,
     });
 
-    // Fetch ALL active tournaments (any PES type)
+    // Fetch ALL active + recently completed tournaments
     const { data: tournaments, isLoading } = useQuery({
         queryKey: ["active-tournaments"],
         queryFn: async () => {
-            const res = await fetch("/api/tournaments?type=BRACKET_1V1,LEAGUE,GROUP_KNOCKOUT&status=ACTIVE");
+            const res = await fetch("/api/tournaments?type=BRACKET_1V1,LEAGUE,GROUP_KNOCKOUT&status=ACTIVE,COMPLETED");
             if (!res.ok) return [];
             const json = await res.json();
             return json.data ?? [];
         },
     });
 
-    // Auto-select first tab
-    // Only show tournaments that have bracket matches generated (not still voting)
-    const activeTournaments = (tournaments ?? []).filter((t: any) => t.bracketMatchCount > 0);
+    // Show active tournaments + completed-with-winner within last 24h
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const activeTournaments = (tournaments ?? []).filter((t: any) => {
+        if (t.bracketMatchCount <= 0) return false;
+        if (t.status === "ACTIVE") return true;
+        // Completed with winner declared — show for 24h after updatedAt
+        if (t.isWinnerDeclared && t.updatedAt) {
+            return Date.now() - new Date(t.updatedAt).getTime() < DAY_MS;
+        }
+        return false;
+    });
     const currentId = activeTab || activeTournaments[0]?.id || "";
     const currentTournament = activeTournaments.find((t: any) => t.id === currentId);
 
@@ -478,16 +486,19 @@ function TournamentContent({
                 )}
             </div>
 
-            {/* Winner banner */}
+            {/* Winner banner + confetti */}
             {bracketData.winner && (
-                <div className="flex items-center justify-center gap-3 p-6 rounded-2xl bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-yellow-500/10 border border-yellow-500/20">
-                    <Trophy className="h-8 w-8 text-yellow-500" />
-                    <div className="text-center">
-                        <p className="text-xs text-yellow-600/60 uppercase font-bold tracking-wider">Champion</p>
-                        <p className="text-xl font-black text-yellow-500">{bracketData.winner.displayName}</p>
+                <>
+                    <ConfettiBurst />
+                    <div className="flex items-center justify-center gap-3 p-6 rounded-2xl bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-yellow-500/10 border border-yellow-500/20">
+                        <Trophy className="h-8 w-8 text-yellow-500" />
+                        <div className="text-center">
+                            <p className="text-xs text-yellow-600/60 uppercase font-bold tracking-wider">Champion</p>
+                            <p className="text-xl font-black text-yellow-500">{bracketData.winner.displayName}</p>
+                        </div>
+                        <Trophy className="h-8 w-8 text-yellow-500" />
                     </div>
-                    <Trophy className="h-8 w-8 text-yellow-500" />
-                </div>
+                </>
             )}
 
             {/* Submit Result Modal */}
@@ -547,5 +558,96 @@ function FootballLoader() {
                 }
             `}</style>
         </div>
+    );
+}
+
+/* ─── Confetti Burst ──────────────────────────────────────── */
+function ConfettiBurst() {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const COLORS = [
+            "#fbbf24", "#f59e0b", "#d97706", "#fcd34d", "#fef3c7",
+            "#22c55e", "#3b82f6", "#ef4444", "#a855f7", "#ec4899",
+            "#ffffff", "#fef08a",
+        ];
+
+        type Particle = {
+            x: number; y: number; vx: number; vy: number;
+            w: number; h: number; color: string; rot: number; vr: number;
+            life: number; maxLife: number;
+        };
+
+        const particles: Particle[] = [];
+        const COUNT = 100;
+
+        for (let i = 0; i < COUNT; i++) {
+            particles.push({
+                x: canvas.width * 0.3 + Math.random() * canvas.width * 0.4,
+                y: -20 - Math.random() * 40,
+                vx: (Math.random() - 0.5) * 8,
+                vy: Math.random() * 3 + 2,
+                w: Math.random() * 8 + 4,
+                h: Math.random() * 6 + 2,
+                color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                rot: Math.random() * Math.PI * 2,
+                vr: (Math.random() - 0.5) * 0.3,
+                life: 0,
+                maxLife: 80 + Math.random() * 60,
+            });
+        }
+
+        let raf: number;
+        const animate = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let alive = false;
+
+            for (const p of particles) {
+                p.life++;
+                if (p.life > p.maxLife) continue;
+                alive = true;
+
+                p.x += p.vx;
+                p.vy += 0.12; // gravity
+                p.y += p.vy;
+                p.vx *= 0.99;
+                p.rot += p.vr;
+
+                const fade = Math.max(0, 1 - p.life / p.maxLife);
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rot);
+                ctx.globalAlpha = fade;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                ctx.restore();
+            }
+
+            if (alive) raf = requestAnimationFrame(animate);
+        };
+
+        // Small delay so the user sees the banner first
+        const timer = setTimeout(() => { raf = requestAnimationFrame(animate); }, 200);
+
+        return () => {
+            clearTimeout(timer);
+            cancelAnimationFrame(raf);
+        };
+    }, []);
+
+    return (
+        <canvas
+            ref={canvasRef}
+            className="fixed inset-0 pointer-events-none z-50"
+            style={{ width: "100vw", height: "100vh" }}
+        />
     );
 }

@@ -420,7 +420,7 @@ export default function OperationsPage() {
                     selectedKeys={selectedId ? [selectedId] : []}
                     onSelectionChange={(keys) => {
                         const id = Array.from(keys)[0] as string;
-                        if (id) { setSelectedId(id); setIsEditing(false); }
+                        if (id) { setSelectedId(id); }
                     }}
                     startContent={<Gamepad2 className="h-4 w-4 text-foreground/30" />}
                 >

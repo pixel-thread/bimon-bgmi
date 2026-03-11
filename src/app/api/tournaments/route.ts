@@ -130,6 +130,7 @@ export async function GET(request: NextRequest) {
                 season: t.season,
                 startDate: t.startDate,
                 createdAt: t.createdAt,
+                updatedAt: t.updatedAt,
                 teamCount: t._count.teams > 0 ? t._count.teams : t._count.teamStats,
                 matchCount: t._count.matches,
                 winnerCount: t._count.winners,
