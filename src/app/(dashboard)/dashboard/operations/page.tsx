@@ -86,11 +86,11 @@ export default function OperationsPage() {
     const seasonModal = useDisclosure();
     const winnersModal = useDisclosure();
     const donationModal = useDisclosure();
+    const editModal = useDisclosure();
     const { isSuperAdmin } = useAuthUser();
 
     const [selectedId, setSelectedId] = useState("");
     const [seasonId, setSeasonId] = useState("");
-    const [isEditing, setIsEditing] = useState(false);
 
     // Edit form
     const [editName, setEditName] = useState("");
@@ -213,7 +213,6 @@ export default function OperationsPage() {
             toast.success("Tournament updated!");
             queryClient.removeQueries({ queryKey: ["admin-tournaments", seasonId] });
             await queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
-            setIsEditing(false);
         },
         onError: () => toast.error("Failed to update"),
     });
@@ -468,96 +467,38 @@ export default function OperationsPage() {
 
                             <Divider />
 
-                            {/* Config */}
-                            {isEditing ? (
-                                <div className="space-y-3">
-                                    <Input
-                                        label="Name"
-                                        value={editName}
-                                        onValueChange={setEditName}
-                                        size="sm"
-                                    />
-                                    <Textarea
-                                        label="Description"
-                                        value={editDesc}
-                                        onValueChange={setEditDesc}
-                                        size="sm"
-                                        minRows={2}
-                                    />
-                                    <Input
-                                        label={`Entry Fee (${GAME.currency})`}
-                                        value={editFee}
-                                        onValueChange={setEditFee}
-                                        type="number"
-                                        size="sm"
-                                    />
-                                    {/* 3rd place toggle — only for bracket types */}
-                                    {selected && ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"].includes(selected.type) && (
-                                        <div className="flex items-center justify-between rounded-lg border border-divider px-3 py-2">
-                                            <div>
-                                                <p className="text-sm font-medium">🥉 3rd Place</p>
-                                                <p className="text-[10px] text-foreground/40">Award a 3rd place prize</p>
-                                            </div>
-                                            <Switch
+                            {/* Config — always show static view */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xs text-foreground/40">Entry Fee</p>
+                                        <p className="text-sm font-semibold">
+                                            {selected.fee ?? 0} {GAME.currency}
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs text-foreground/40">Status</p>
+                                        <div className="flex items-center gap-1.5">
+                                            <Chip
                                                 size="sm"
-                                                isSelected={editMaxPlacements >= 3}
-                                                onValueChange={(v) => setEditMaxPlacements(v ? 3 : 2)}
-                                            />
-                                        </div>
-                                    )}
-                                    <div className="flex gap-2 justify-end">
-                                        <Button
-                                            size="sm"
-                                            variant="flat"
-                                            startContent={<X className="h-3 w-3" />}
-                                            onPress={() => setIsEditing(false)}
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            color="primary"
-                                            isLoading={updateTournament.isPending}
-                                            startContent={<Save className="h-3 w-3" />}
-                                            onPress={() => updateTournament.mutate()}
-                                        >
-                                            Save
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs text-foreground/40">Entry Fee</p>
-                                            <p className="text-sm font-semibold">
-                                                {selected.fee ?? 0} {GAME.currency}
-                                            </p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xs text-foreground/40">Status</p>
-                                            <div className="flex items-center gap-1.5">
-                                                <Chip
-                                                    size="sm"
-                                                    variant="flat"
-                                                    color={
-                                                        selected.status === "ACTIVE" ? "success" :
-                                                            selected.status === "INACTIVE" ? "warning" : "danger"
-                                                    }
-                                                >
-                                                    {selected.status}
-                                                </Chip>
-                                                {selected.isWinnerDeclared && (
-                                                    <Medal className="h-3.5 w-3.5 text-warning" />
-                                                )}
-                                            </div>
+                                                variant="flat"
+                                                color={
+                                                    selected.status === "ACTIVE" ? "success" :
+                                                        selected.status === "INACTIVE" ? "warning" : "danger"
+                                                }
+                                            >
+                                                {selected.status}
+                                            </Chip>
+                                            {selected.isWinnerDeclared && (
+                                                <Medal className="h-3.5 w-3.5 text-warning" />
+                                            )}
                                         </div>
                                     </div>
-                                    {selected.description && (
-                                        <p className="text-xs text-foreground/50">{selected.description}</p>
-                                    )}
                                 </div>
-                            )}
+                                {selected.description && (
+                                    <p className="text-xs text-foreground/50">{selected.description}</p>
+                                )}
+                            </div>
 
                             <Divider />
 
@@ -567,8 +508,13 @@ export default function OperationsPage() {
                                     size="sm"
                                     variant="flat"
                                     startContent={<Pencil className="h-3 w-3" />}
-                                    onPress={() => setIsEditing(true)}
-                                    isDisabled={isEditing}
+                                    onPress={() => {
+                                        setEditName(selected.name);
+                                        setEditDesc(selected.description || "");
+                                        setEditFee(selected.fee?.toString() || "0");
+                                        setEditMaxPlacements(selected.maxPlacements ?? 3);
+                                        editModal.onOpen();
+                                    }}
                                 >
                                     Edit
                                 </Button>
@@ -860,6 +806,72 @@ export default function OperationsPage() {
                     </ModalFooter>
                 </ModalContent>
             </Modal>
+
+            {/* Edit Tournament Modal */}
+            {selected && (
+                <Modal isOpen={editModal.isOpen} onClose={editModal.onClose} size="md" placement="center">
+                    <ModalContent>
+                        <ModalHeader className="flex items-center gap-2 text-base">
+                            <Pencil className="h-4 w-4" />
+                            Edit Tournament
+                        </ModalHeader>
+                        <ModalBody className="space-y-3">
+                            <Input
+                                label="Name"
+                                value={editName}
+                                onValueChange={setEditName}
+                                size="sm"
+                            />
+                            <Textarea
+                                label="Description"
+                                value={editDesc}
+                                onValueChange={setEditDesc}
+                                size="sm"
+                                minRows={2}
+                            />
+                            <Input
+                                label={`Entry Fee (${GAME.currency})`}
+                                value={editFee}
+                                onValueChange={setEditFee}
+                                type="number"
+                                size="sm"
+                            />
+                            {/* 3rd place toggle — only for bracket types */}
+                            {["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"].includes(selected.type) && (
+                                <div className="flex items-center justify-between rounded-lg border border-divider px-3 py-2.5">
+                                    <div>
+                                        <p className="text-sm font-medium">🥉 3rd Place</p>
+                                        <p className="text-[10px] text-foreground/40">Award a 3rd place prize</p>
+                                    </div>
+                                    <Switch
+                                        size="sm"
+                                        isSelected={editMaxPlacements >= 3}
+                                        onValueChange={(v) => setEditMaxPlacements(v ? 3 : 2)}
+                                    />
+                                </div>
+                            )}
+                        </ModalBody>
+                        <ModalFooter>
+                            <Button size="sm" variant="flat" onPress={editModal.onClose}>
+                                Cancel
+                            </Button>
+                            <Button
+                                size="sm"
+                                color="primary"
+                                isLoading={updateTournament.isPending}
+                                startContent={<Save className="h-3 w-3" />}
+                                onPress={() => {
+                                    updateTournament.mutate(undefined, {
+                                        onSuccess: () => editModal.onClose(),
+                                    });
+                                }}
+                            >
+                                Save
+                            </Button>
+                        </ModalFooter>
+                    </ModalContent>
+                </Modal>
+            )}
 
             {/* Declare Winners Modal */}
             {selected && (
