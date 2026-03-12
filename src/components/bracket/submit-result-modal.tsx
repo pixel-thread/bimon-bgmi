@@ -5,7 +5,7 @@ import {
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
     Button,
 } from "@heroui/react";
-import { Upload, Trophy, Camera, X, Plus, Minus } from "lucide-react";
+import { Upload, Trophy, Camera, X, Plus, Minus, MessageSquare, UserX } from "lucide-react";
 import { Avatar } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -45,6 +45,8 @@ export function SubmitResultModal({
     const [screenshot, setScreenshot] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [notes, setNotes] = useState("");
+    const [showNotes, setShowNotes] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const queryClient = useQueryClient();
 
@@ -70,6 +72,8 @@ export function SubmitResultModal({
         removeScreenshot();
         setMyScore(0);
         setOppScore(0);
+        setNotes("");
+        setShowNotes(false);
         onClose();
     };
 
@@ -105,7 +109,7 @@ export function SubmitResultModal({
             const res = await fetch(`/api/bracket-matches/${matchId}/submit-result`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ score1: finalScore1, score2: finalScore2, screenshotUrl }),
+                body: JSON.stringify({ score1: finalScore1, score2: finalScore2, screenshotUrl, notes: notes.trim() || undefined }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Failed to submit");
@@ -118,6 +122,34 @@ export function SubmitResultModal({
         },
         onError: (err: Error) => toast.error(err.message),
         onSettled: () => setUploading(false),
+    });
+
+    /* Walkover — auto 3-0, no screenshot needed */
+    const submitWalkover = useMutation({
+        mutationFn: async () => {
+            if (!matchId) throw new Error("No match selected");
+            // 3-0 in favor of the claiming player
+            const finalScore1 = isAdmin || !isPlayer2 ? 3 : 0;
+            const finalScore2 = isAdmin || !isPlayer2 ? 0 : 3;
+            const res = await fetch(`/api/bracket-matches/${matchId}/submit-result`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    score1: finalScore1,
+                    score2: finalScore2,
+                    notes: "Walkover — opponent did not play",
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Failed to submit walkover");
+            return data;
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Walkover submitted! Opponent has 30 min to dispute.");
+            if (tournamentId) queryClient.invalidateQueries({ queryKey: ["bracket", tournamentId] });
+            handleClose();
+        },
+        onError: (err: Error) => toast.error(err.message),
     });
 
     return (
@@ -206,14 +238,63 @@ export function SubmitResultModal({
                         )}
                         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
                     </div>
+
+                    {/* Notes — collapsible */}
+                    {showNotes ? (
+                        <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-medium text-foreground/40 flex items-center gap-1">
+                                    <MessageSquare className="h-3 w-3" /> Note
+                                </span>
+                                <button onClick={() => { setShowNotes(false); setNotes(""); }}
+                                    className="text-foreground/30 hover:text-foreground/60 transition-colors">
+                                    <X className="h-3 w-3" />
+                                </button>
+                            </div>
+                            <textarea
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value.slice(0, 200))}
+                                placeholder="e.g. Game disconnected at 4-3, rematch ended 2-1"
+                                rows={2}
+                                className="w-full rounded-lg border border-divider bg-default-50/50 px-3 py-2 text-xs text-foreground placeholder:text-foreground/25 focus:outline-none focus:border-primary/40 resize-none"
+                            />
+                            <p className="text-[10px] text-foreground/25 text-right">{notes.length}/200</p>
+                        </div>
+                    ) : (
+                        <button onClick={() => setShowNotes(true)}
+                            className="flex items-center gap-1.5 text-[11px] text-foreground/30 hover:text-foreground/50 transition-colors self-start">
+                            <MessageSquare className="h-3 w-3" />
+                            + Add note <span className="text-foreground/20">· optional</span>
+                        </button>
+                    )}
                 </ModalBody>
 
-                <ModalFooter className="pt-0 gap-2">
+                <ModalFooter className="pt-0 gap-2 flex-wrap">
+                    {/* Walkover — only for players, not during disputes */}
+                    {!isDisputing && (
+                        <Button
+                            variant="flat"
+                            color="warning"
+                            size="sm"
+                            className="mr-auto"
+                            isLoading={submitWalkover.isPending}
+                            isDisabled={submitResult.isPending || uploading}
+                            onPress={() => {
+                                if (confirm("Claim walkover (3-0)? Your opponent will have 30 min to dispute.")) {
+                                    submitWalkover.mutate();
+                                }
+                            }}
+                            startContent={!submitWalkover.isPending ? <UserX className="h-3.5 w-3.5" /> : undefined}
+                        >
+                            Walkover
+                        </Button>
+                    )}
                     <Button variant="flat" onPress={handleClose} size="sm">Cancel</Button>
                     <Button
                         color="primary"
                         size="sm"
                         isLoading={submitResult.isPending || uploading}
+                        isDisabled={submitWalkover.isPending}
                         onPress={() => {
                             if (isDraw) { toast.error("Draws not allowed — there must be a winner"); return; }
                             if (!isAdmin && !screenshot) { toast.error("Please upload a screenshot of the result"); return; }

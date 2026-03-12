@@ -174,8 +174,22 @@ const GK_KNOCKOUT_ROUNDS = [
 
 // ─── Component ─────────────────────────────────────────────
 export default function BracketDemoPage() {
-    const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
+    type DemoMatch = { id: string; player1Id: string | null; player1Name: string | null; player1Avatar: string | null; player2Name: string | null; player2Avatar: string | null } | null;
+    const [selectedMatch, setSelectedMatch] = useState<DemoMatch>(null);
     const [activeTab, setActiveTab] = useState("knockout");
+
+    const allDemoMatches = [...KNOCKOUT_ROUNDS.flatMap(r => r.matches), ...GK_KNOCKOUT_ROUNDS.flatMap(r => r.matches)];
+    const openSubmit = (matchId: string) => {
+        const m = allDemoMatches.find(x => x.id === matchId) as any;
+        setSelectedMatch({
+            id: matchId,
+            player1Id: m?.player1Id ?? null,
+            player1Name: m?.player1?.displayName ?? null,
+            player1Avatar: m?.player1Avatar ?? null,
+            player2Name: m?.player2?.displayName ?? null,
+            player2Avatar: m?.player2Avatar ?? null,
+        });
+    };
 
     return (
         <div className="min-h-dvh bg-background text-foreground">
@@ -224,7 +238,7 @@ export default function BracketDemoPage() {
                         <MyBracketMatch
                             rounds={KNOCKOUT_ROUNDS}
                             currentPlayerId={CURRENT_PLAYER_ID}
-                            onSubmitResult={(id) => setSelectedMatch(id)}
+                            onSubmitResult={(id) => openSubmit(id)}
                             onConfirmResult={(id) => alert(`Confirm match: ${id}`)}
                             onDispute={(id) => alert(`Dispute match: ${id}`)}
                         />
@@ -235,7 +249,7 @@ export default function BracketDemoPage() {
                                 rounds={KNOCKOUT_ROUNDS}
                                 totalRounds={3}
                                 currentPlayerId={CURRENT_PLAYER_ID}
-                                onSubmitResult={(id) => setSelectedMatch(id)}
+                                onSubmitResult={(id) => openSubmit(id)}
                                 onConfirmResult={(id) => alert(`Confirm: ${id}`)}
                                 onDispute={(id) => alert(`Dispute: ${id}`)}
                                 onViewResult={(id) => alert(`View: ${id}`)}
@@ -545,7 +559,7 @@ export default function BracketDemoPage() {
                                 rounds={GK_KNOCKOUT_ROUNDS}
                                 totalRounds={2}
                                 currentPlayerId={CURRENT_PLAYER_ID}
-                                onSubmitResult={(id) => setSelectedMatch(id)}
+                                onSubmitResult={(id) => openSubmit(id)}
                                 onConfirmResult={(id) => alert(`Confirm: ${id}`)}
                                 onDispute={(id) => alert(`Dispute: ${id}`)}
                                 onViewResult={(id) => alert(`View: ${id}`)}
@@ -568,9 +582,15 @@ export default function BracketDemoPage() {
 
                 {selectedMatch && (
                     <SubmitResultModal
-                        matchId={selectedMatch}
+                        matchId={selectedMatch.id}
                         isOpen={!!selectedMatch}
                         onClose={() => setSelectedMatch(null)}
+                        player1Id={selectedMatch.player1Id}
+                        player1Name={selectedMatch.player1Name}
+                        player1Avatar={selectedMatch.player1Avatar}
+                        player2Name={selectedMatch.player2Name}
+                        player2Avatar={selectedMatch.player2Avatar}
+                        currentPlayerId={CURRENT_PLAYER_ID}
                     />
                 )}
             </div>

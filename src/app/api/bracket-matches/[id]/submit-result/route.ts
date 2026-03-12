@@ -21,11 +21,12 @@ export async function POST(
 
         const { id: matchId } = await params;
         const body = await req.json();
-        const { score1, score2, screenshotUrl, adminOverride } = body as {
+        const { score1, score2, screenshotUrl, adminOverride, notes } = body as {
             score1: number;
             score2: number;
             screenshotUrl?: string;
             adminOverride?: boolean;
+            notes?: string;
         };
 
         if (score1 === undefined || score2 === undefined) {
@@ -120,6 +121,7 @@ export async function POST(
                 claimedScore1: score1,
                 claimedScore2: score2,
                 screenshotUrl: screenshotUrl || null,
+                notes: notes?.trim().slice(0, 200) || null,
                 isDispute: false,
             },
         });

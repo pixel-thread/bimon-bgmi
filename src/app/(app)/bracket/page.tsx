@@ -338,6 +338,7 @@ function TournamentContent({
         player2Id: viewMatch.player2Id,
         status: viewMatch.status,
         screenshotUrl: viewMatch.results?.[0]?.screenshotUrl ?? null,
+        notes: viewMatch.results?.[0]?.notes ?? null,
     } : null;
 
     const formatLabel =
@@ -488,6 +489,8 @@ function TournamentContent({
                         totalRounds={bracketData.totalRounds}
                         currentPlayerId={playerId}
                         isAdmin={isAdmin}
+                        winner={bracketData.winner}
+                        maxPlacements={bracketData.maxPlacements}
                         onSubmitResult={(id) => onSelectMatch(matchContext(id))}
                         onConfirmResult={(id) => confirmResult.mutate(id)}
                         onDispute={(id) => onSelectMatch(matchContext(id, true))}

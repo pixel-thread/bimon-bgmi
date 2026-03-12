@@ -1124,6 +1124,7 @@ model BracketResult {
   claimedScore1   Int
   claimedScore2   Int
   screenshotUrl   String?
+  notes           String?   @db.VarChar(200)
   isDispute       Boolean @default(false)
 
   createdAt DateTime @default(now())

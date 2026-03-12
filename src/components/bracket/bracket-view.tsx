@@ -200,15 +200,34 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, winner: propWinner
                             </div>
                         ))}
 
-                        {/* Trophy */}
-                        <div style={{ position: "absolute", left: colLeft(N), top: padTop(N - 1) + MATCH_H / 2 - 26, width: 60 }}
-                            className="flex flex-col items-center gap-1 pl-3">
-                            <div className={`p-2 rounded-full ${winner ? "bg-yellow-400/15" : "bg-foreground/5"}`}>
-                                <Trophy className={`h-5 w-5 ${winner ? "text-yellow-400" : "text-foreground/15"}`} />
-                            </div>
-                            <p className={`text-[8px] font-semibold text-center leading-tight ${winner ? "text-yellow-400" : "text-foreground/20"}`}>
-                                {winner?.displayName ?? "TBD"}
-                            </p>
+                        {/* Trophy / Champion */}
+                        <div style={{ position: "absolute", left: colLeft(N), top: padTop(N - 1) + MATCH_H / 2 - (winner ? 44 : 26), width: 72 }}
+                            className="flex flex-col items-center gap-1.5 pl-2">
+                            {winner ? (
+                                /* Champion card — golden glow */
+                                <div className="flex flex-col items-center gap-1.5">
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-yellow-400/20 rounded-full blur-lg scale-150" />
+                                        <div className="relative p-2.5 rounded-full bg-gradient-to-b from-yellow-400/25 to-yellow-600/15 border border-yellow-400/30">
+                                            <Trophy className="h-5 w-5 text-yellow-400 drop-shadow-sm" />
+                                        </div>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-[7px] text-yellow-400/50 uppercase font-bold tracking-[0.15em] leading-none">Champion</p>
+                                        <p className="text-[9px] font-bold text-yellow-400 leading-tight mt-0.5 max-w-[68px] truncate">
+                                            {winner.displayName}
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                /* Pending — muted */
+                                <>
+                                    <div className="p-2 rounded-full bg-foreground/5">
+                                        <Trophy className="h-5 w-5 text-foreground/15" />
+                                    </div>
+                                    <p className="text-[8px] font-semibold text-foreground/20 text-center leading-tight">TBD</p>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

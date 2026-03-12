@@ -138,6 +138,7 @@ export async function GET(
                         claimedScore1: true,
                         claimedScore2: true,
                         screenshotUrl: true,
+                        notes: true,
                         isDispute: true,
                         createdAt: true,
                     },

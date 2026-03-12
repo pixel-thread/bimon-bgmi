@@ -5,7 +5,7 @@ import {
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
     Chip, Avatar, Button,
 } from "@heroui/react";
-import { Camera, Pencil, Save, Minus, Plus, X, Maximize2, Trophy, RotateCcw } from "lucide-react";
+import { Camera, Pencil, Save, Minus, Plus, X, Maximize2, Trophy, RotateCcw, MessageSquare } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/compress-image";
@@ -26,6 +26,7 @@ interface ViewResultModalProps {
         player2Id?: string | null;
         status: string;
         screenshotUrl?: string | null;
+        notes?: string | null;
     } | null;
     isAdmin?: boolean;
     tournamentId?: string;
@@ -350,6 +351,14 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                 <div className="flex items-center justify-center gap-2 py-4 rounded-2xl border border-dashed border-divider">
                                     <Camera className="h-4 w-4 text-foreground/20" />
                                     <span className="text-xs text-foreground/30">No screenshot uploaded</span>
+                                </div>
+                            )}
+
+                            {/* Player note */}
+                            {match.notes && (
+                                <div className="flex items-start gap-2 rounded-xl bg-default-50 border border-divider px-3 py-2">
+                                    <MessageSquare className="h-3.5 w-3.5 text-foreground/30 mt-0.5 shrink-0" />
+                                    <p className="text-xs text-foreground/60 leading-relaxed">{match.notes}</p>
                                 </div>
                             )}
                         </>
