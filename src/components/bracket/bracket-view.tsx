@@ -13,13 +13,15 @@ interface BracketViewProps {
     totalRounds: number;
     currentPlayerId?: string;
     isAdmin?: boolean;
+    winner?: { displayName: string | null } | null;
+    maxPlacements?: number;
     onSubmitResult?: (id: string) => void;
     onConfirmResult?: (id: string) => void;
     onDispute?: (id: string) => void;
     onViewResult?: (id: string) => void;
 }
 
-export function BracketView({ rounds, totalRounds, currentPlayerId, isAdmin, onSubmitResult, onConfirmResult, onDispute, onViewResult }: BracketViewProps) {
+export function BracketView({ rounds, totalRounds, currentPlayerId, isAdmin, winner, maxPlacements, onSubmitResult, onConfirmResult, onDispute, onViewResult }: BracketViewProps) {
     if (rounds.length === 0) {
         return (
             <div className="flex flex-col items-center gap-3 py-12 text-center">
@@ -34,7 +36,7 @@ export function BracketView({ rounds, totalRounds, currentPlayerId, isAdmin, onS
         return <LeagueView rounds={positive} currentPlayerId={currentPlayerId} isAdmin={isAdmin}
             onSubmitResult={onSubmitResult} onConfirmResult={onConfirmResult} onDispute={onDispute} onViewResult={onViewResult} />;
     }
-    return <KOBracket rounds={rounds} currentPlayerId={currentPlayerId} isAdmin={isAdmin} onViewResult={onViewResult} />;
+    return <KOBracket rounds={rounds} currentPlayerId={currentPlayerId} isAdmin={isAdmin} winner={winner} maxPlacements={maxPlacements} onViewResult={onViewResult} />;
 }
 
 /* ─── KO Bracket ────────────────────────────────────────────── */
@@ -45,7 +47,7 @@ const COL_GAP = 48;
 const LABEL_H = 28;
 const CURVE_R = 8;   // corner radius for connector curves
 
-export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { rounds: RoundData[]; currentPlayerId?: string; isAdmin?: boolean; onViewResult?: (id: string) => void }) {
+export function KOBracket({ rounds, currentPlayerId, isAdmin, winner: propWinner, maxPlacements = 3, onViewResult }: { rounds: RoundData[]; currentPlayerId?: string; isAdmin?: boolean; winner?: { displayName: string | null } | null; maxPlacements?: number; onViewResult?: (id: string) => void }) {
     const { zoom, zoomIn, zoomOut, reset, containerRef: scrollRef } = usePinchZoom();
     const outerRef = useRef<HTMLDivElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -150,7 +152,11 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { 
     const n0 = bRounds[0].matches.length;
     const totalMatchH = n0 * MATCH_H + (n0 - 1) * ROW_GAP;
     const totalW = N * MATCH_W + (N - 1) * COL_GAP + 72;
-    const winner = bRounds[N - 1]?.matches[0]?.winner;
+    // Use passed-in winner prop first; fall back to reading from the final match's winnerId + player data
+    const finalMatch = bRounds[N - 1]?.matches[0];
+    const winner = propWinner ?? (finalMatch?.winnerId
+        ? (finalMatch.winnerId === finalMatch.player1Id ? finalMatch.player1 : finalMatch.player2)
+        : null);
 
     return (
         <div className="space-y-3">
@@ -208,8 +214,8 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { 
                 </div>
             </div>
 
-            {/* 3rd place */}
-            {thirdPlace && (
+            {/* 3rd place — only when tournament allows it (maxPlacements >= 3) */}
+            {thirdPlace && maxPlacements >= 3 && (
                 <div className="max-w-[200px]">
                     <p className="text-[9px] font-bold text-foreground/30 uppercase tracking-[0.15em] mb-2">🥉 3rd Place</p>
                     <div ref={el => { if (el) cardRefs.current[thirdPlace.id] = el; }}>

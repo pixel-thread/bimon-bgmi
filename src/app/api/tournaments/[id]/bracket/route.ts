@@ -97,7 +97,7 @@ export async function GET(
         const [tournament, settings] = await Promise.all([
             prisma.tournament.findUnique({
                 where: { id },
-                select: { id: true, type: true, fee: true },
+                select: { id: true, type: true, fee: true, maxPlacements: true },
             }),
             getSettings(),
         ]);
@@ -238,6 +238,7 @@ export async function GET(
                 winner,
                 entryFee,
                 prizePool,
+                maxPlacements: tournament.maxPlacements ?? 3,
                 // Deadline settings — player UI shows countdown for PENDING matches
                 deadlines: {
                     groupHours: settings.matchDeadlineGroupHours,

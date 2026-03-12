@@ -28,10 +28,17 @@ export async function generateBracket(tournamentId: string, playerIds: string[])
         throw new Error("Need at least 2 players for a bracket");
     }
 
+    // Check if tournament has 3rd place enabled (maxPlacements >= 3)
+    const tournament = await prisma.tournament.findUnique({
+        where: { id: tournamentId },
+        select: { maxPlacements: true },
+    });
+    const include3rdPlace = (tournament?.maxPlacements ?? 3) >= 3;
+
     const shuffled = shuffle(playerIds);
     const bracketSize = shuffled.length; // Already a power of 2 from FCFS
     const totalRounds = Math.log2(bracketSize);
-    const has3rdPlaceMatch = totalRounds >= 2; // ≥4 players
+    const has3rdPlaceMatch = include3rdPlace && totalRounds >= 2; // ≥4 players AND setting enabled
 
     // Build all match data
     const allMatches: {
@@ -74,7 +81,7 @@ export async function generateBracket(tournamentId: string, playerIds: string[])
     }
 
     // Add 3rd place match at the final round (position 1)
-    // Only for brackets with ≥ 4 players (≥ 2 rounds)
+    // Only when maxPlacements >= 3 and ≥4 players (≥2 rounds)
     if (has3rdPlaceMatch) {
         allMatches.push({
             tournamentId,

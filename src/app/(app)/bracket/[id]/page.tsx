@@ -123,6 +123,8 @@ export default function BracketPage({ params }: BracketPageProps) {
                         rounds={data.rounds}
                         totalRounds={data.totalRounds}
                         currentPlayerId={currentPlayerId}
+                        winner={data.winner}
+                        maxPlacements={data.maxPlacements}
                         onSubmitResult={(id) => setSubmitMatchId(id)}
                         onConfirmResult={(id) => confirmResult.mutate(id)}
                         onDispute={(id) => {
