@@ -429,7 +429,7 @@ export function CompactMatch({
             isDisputed ? "ring-1 ring-danger/50 shadow-sm shadow-danger/10" :
             isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id ? "ring-1 ring-primary/40" :
             ""
-        } ${isEmpty ? "opacity-40" : ""}`}
+        } ${isEmpty ? "opacity-70" : ""}`}
             style={{ background: "var(--compact-match-bg, hsl(var(--nextui-default-100)))" }}
         >
             {/* Left accent bar */}
@@ -437,7 +437,7 @@ export function CompactMatch({
             {/* Content */}
             <div className="flex-1 min-w-0">
                 {playerRow(match.player1, match.player1Avatar, match.score1, match.winnerId === match.player1Id && match.winnerId !== null, currentPlayerId === match.player1Id, true)}
-                <div className="h-px bg-foreground/8 mx-1.5" />
+                <div className="h-px bg-foreground/15" />
                 {playerRow(match.player2, match.player2Avatar, match.score2, match.winnerId === match.player2Id && match.winnerId !== null, currentPlayerId === match.player2Id, false)}
             </div>
             {/* Eye button */}

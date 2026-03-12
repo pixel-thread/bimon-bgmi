@@ -119,7 +119,7 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { 
                     statuses.some(s => s === "SUBMITTED") ? "#f59e0b" :
                     statuses.every(s => s === "CONFIRMED" || s === "BYE") ? "#22c55e" :
                     "#94a3b8";
-                const op = color === "#94a3b8" ? 0.3 : 0.5;
+                const op = color === "#94a3b8" ? 0.4 : 0.6;
 
                 if (m2) {
                     const e2 = cardRefs.current[m2.id];
@@ -129,13 +129,12 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, onViewResult }: { 
 
                         // Top match → vertical bar → next match (smooth curves)
                         const r = Math.min(CURVE_R, Math.abs(y2 - y1) / 2);
-                        // Top arm: right from m1, curve down to midX vertical
+                        // Top arm: match → horizontal → curve down into vertical
                         path(`M${x1},${y1} L${midX - r},${y1} Q${midX},${y1} ${midX},${y1 + r}`, color, op);
                         // Vertical bar
                         path(`M${midX},${y1 + r} L${midX},${y1b - r}`, color, op);
-                        // Bottom arm: from midX vertical, curve right to m2
-                        path(`M${midX},${y1b - r} Q${midX},${y1b} ${midX + r},${y1b}`, color, op);
-                        path(`M${midX - r},${y1b} L${x1},${y1b}`, color, op);
+                        // Bottom arm: match → horizontal → curve up into vertical
+                        path(`M${x1},${y1b} L${midX - r},${y1b} Q${midX},${y1b} ${midX},${y1b - r}`, color, op);
                         // Center → next match
                         path(`M${midX},${y2} L${x2},${y2}`, color, op);
                     }
