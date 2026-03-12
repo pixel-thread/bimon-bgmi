@@ -425,7 +425,7 @@ export function CompactMatch({
     };
 
     return (
-        <div className={`w-[200px] rounded-lg overflow-hidden flex transition-all ${
+        <div className={`w-[200px] rounded-lg overflow-hidden flex transition-all border border-foreground/10 ${
             isDisputed ? "ring-1 ring-danger/50 shadow-sm shadow-danger/10" :
             isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id ? "ring-1 ring-primary/40" :
             ""
