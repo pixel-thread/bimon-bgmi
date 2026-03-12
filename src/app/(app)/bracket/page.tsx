@@ -500,13 +500,23 @@ function TournamentContent({
             {bracketData.winner && (
                 <>
                     <ConfettiBurst />
-                    <div className="flex items-center justify-center gap-3 p-6 rounded-2xl bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-yellow-500/10 border border-yellow-500/20">
-                        <Trophy className="h-8 w-8 text-yellow-500" />
-                        <div className="text-center">
-                            <p className="text-xs text-yellow-600/60 uppercase font-bold tracking-wider">Champion</p>
-                            <p className="text-xl font-black text-yellow-500">{bracketData.winner.displayName}</p>
+                    <div className="relative overflow-hidden rounded-2xl">
+                        {/* Golden gradient top border */}
+                        <div className="h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent" />
+                        <div className="flex flex-col items-center gap-3 px-6 py-5 bg-gradient-to-b from-yellow-500/8 to-transparent">
+                            {/* Trophy with glow */}
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-yellow-400/20 rounded-full blur-xl scale-150" />
+                                <div className="relative p-3 rounded-full bg-yellow-400/10 border border-yellow-400/20">
+                                    <Trophy className="h-6 w-6 text-yellow-400" />
+                                </div>
+                            </div>
+                            {/* Label + Name */}
+                            <div className="text-center space-y-0.5">
+                                <p className="text-[10px] text-yellow-400/60 uppercase font-bold tracking-[0.2em]">Champion</p>
+                                <p className="text-lg font-black text-yellow-400">{bracketData.winner.displayName}</p>
+                            </div>
                         </div>
-                        <Trophy className="h-8 w-8 text-yellow-500" />
                     </div>
                 </>
             )}
