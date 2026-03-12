@@ -5,7 +5,7 @@ import {
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
     Chip, Avatar, Button,
 } from "@heroui/react";
-import { Camera, Pencil, Save, Minus, Plus, X, Maximize2, Trophy } from "lucide-react";
+import { Camera, Pencil, Save, Minus, Plus, X, Maximize2, Trophy, RotateCcw } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/compress-image";
@@ -176,11 +176,19 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
 
     const handleClose = () => { setEditing(false); clearFile(); onClose(); };
 
+    const [removeScreenshot, setRemoveScreenshot] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) setRemoveScreenshot(false);
+    }, [isOpen]);
+
     const adminSave = useMutation({
         mutationFn: async () => {
             setUploading(true);
-            let finalScreenshotUrl: string | null = match?.screenshotUrl || null;
-            if (screenshot) {
+            let finalScreenshotUrl: string | null | undefined = undefined;
+            if (removeScreenshot) {
+                finalScreenshotUrl = null; // explicitly clear
+            } else if (screenshot) {
                 const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
                 if (!apiKey) throw new Error("ImgBB API key not configured");
                 const fd = new FormData();
@@ -191,6 +199,8 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                 const upData = await up.json();
                 if (!upData.success) throw new Error(upData.error?.message || "Upload failed");
                 finalScreenshotUrl = upData.data.url;
+            } else {
+                finalScreenshotUrl = match?.screenshotUrl || null;
             }
             const res = await fetch(`/api/bracket-matches/${match?.id}/admin-set-score`, {
                 method: "PATCH",
@@ -208,6 +218,25 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
         },
         onError: (err: Error) => toast.error(err.message),
         onSettled: () => setUploading(false),
+    });
+
+    const adminReset = useMutation({
+        mutationFn: async () => {
+            const res = await fetch(`/api/bracket-matches/${match?.id}/admin-set-score`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ score1: 0, score2: 0, screenshotUrl: null }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || data.message || "Failed to reset");
+            return data;
+        },
+        onSuccess: async (data) => {
+            toast.success(data.message || "Match reset to Pending!");
+            if (tournamentId) await queryClient.refetchQueries({ queryKey: ["bracket", tournamentId], type: "active" });
+            handleClose();
+        },
+        onError: (err: Error) => toast.error(err.message),
     });
 
     if (!match) return null;
@@ -241,24 +270,27 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                             {/* Screenshot upload */}
                             <div className="space-y-2">
                                 <p className="text-[11px] font-medium text-foreground/40">
-                                    Screenshot {match.screenshotUrl ? "(existing — tap to replace)" : "(optional)"}
+                                    Screenshot {(match.screenshotUrl && !removeScreenshot) ? "(existing — tap to replace)" : "(optional)"}
                                 </p>
-                                {screenshotToShow ? (
+                                {screenshotToShow && !removeScreenshot ? (
                                     <div className="relative rounded-2xl overflow-hidden border border-divider">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img src={screenshotToShow} alt="Score screenshot" className="w-full max-h-44 object-contain bg-black/40" />
-                                        {previewUrl && (
-                                            <button onClick={clearFile}
-                                                className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors">
-                                                <X className="h-3.5 w-3.5" />
-                                            </button>
-                                        )}
+                                        <button onClick={() => { clearFile(); setRemoveScreenshot(true); }}
+                                            className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-danger/80 transition-colors" title="Remove screenshot">
+                                            <X className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
+                                ) : removeScreenshot ? (
+                                    <div className="flex items-center justify-between rounded-2xl border border-dashed border-warning/40 bg-warning/5 px-3 py-2">
+                                        <span className="text-[11px] text-warning">Screenshot will be removed</span>
+                                        <button onClick={() => setRemoveScreenshot(false)} className="text-[10px] text-foreground/40 hover:text-foreground/70 underline">Undo</button>
                                     </div>
                                 ) : null}
                                 <button onClick={() => fileInputRef.current?.click()}
                                     className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-foreground/10 hover:border-primary/40 p-3.5 transition-colors text-sm text-foreground/40 hover:text-foreground/60">
                                     <Camera className="h-4 w-4" />
-                                    {screenshotToShow ? "Replace screenshot" : "Upload screenshot"}
+                                    {(screenshotToShow && !removeScreenshot) ? "Replace screenshot" : "Upload screenshot"}
                                 </button>
                                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
                             </div>
@@ -340,6 +372,15 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                     ) : (
                         <>
                             <Button variant="flat" size="sm" onPress={handleClose}>Close</Button>
+                            {isAdmin && hasResult && (
+                                <Button color="danger" variant="flat" size="sm"
+                                    startContent={<RotateCcw className="h-3.5 w-3.5" />}
+                                    isLoading={adminReset.isPending}
+                                    isDisabled={adminReset.isPending}
+                                    onPress={() => adminReset.mutate()}>
+                                    Reset
+                                </Button>
+                            )}
                             {isAdmin && (
                                 <Button color="warning" variant="flat" size="sm"
                                     startContent={<Pencil className="h-3.5 w-3.5" />}

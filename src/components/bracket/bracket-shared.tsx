@@ -437,7 +437,11 @@ export function CompactMatch({
             {/* Content */}
             <div className="flex-1 min-w-0">
                 {playerRow(match.player1, match.player1Avatar, match.score1, match.winnerId === match.player1Id && match.winnerId !== null, currentPlayerId === match.player1Id, true)}
-                <div className="h-px bg-foreground/15" />
+                <div className="flex items-center px-2" style={{ height: 0, zIndex: 1, position: "relative" }}>
+                    <div className="flex-1 h-px bg-foreground/15" />
+                    <span className="text-[8px] font-black text-foreground/25 px-1 leading-none select-none tracking-widest">VS</span>
+                    <div className="flex-1 h-px bg-foreground/15" />
+                </div>
                 {playerRow(match.player2, match.player2Avatar, match.score2, match.winnerId === match.player2Id && match.winnerId !== null, currentPlayerId === match.player2Id, false)}
             </div>
             {/* Eye button */}
