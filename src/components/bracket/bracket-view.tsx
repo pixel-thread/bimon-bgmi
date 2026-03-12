@@ -40,7 +40,7 @@ export function BracketView({ rounds, totalRounds, currentPlayerId, isAdmin, onS
 /* ─── KO Bracket ────────────────────────────────────────────── */
 const MATCH_W = 200;
 const MATCH_H = 63;  // 2×30px rows + 1px divider + 2px for accent bar
-const ROW_GAP = 16;
+const ROW_GAP = 28;
 const COL_GAP = 48;
 const LABEL_H = 28;
 const CURVE_R = 8;   // corner radius for connector curves
