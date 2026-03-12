@@ -201,15 +201,17 @@ export function PlayerTable({
                 })}
             </div>
 
+            {/* Load lottie script once for the page */}
+            <Script
+                src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.3/dist/dotlottie-wc.js"
+                type="module"
+                strategy="lazyOnload"
+            />
+
             {/* Infinite scroll sentinel */}
-            <div ref={sentinelRef} className="flex justify-center py-4">
+            <div ref={sentinelRef} className="flex justify-center py-4 min-h-[150px]">
                 {isFetchingNextPage && (
                     <>
-                        <Script
-                            src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.3/dist/dotlottie-wc.js"
-                            type="module"
-                            strategy="lazyOnload"
-                        />
                         {/* @ts-expect-error – dotlottie-wc is a web component */}
                         <dotlottie-wc
                             src="https://lottie.host/1e87a411-568e-4c3c-9636-d83afd6d26f4/WELgDwxSwC.lottie"
