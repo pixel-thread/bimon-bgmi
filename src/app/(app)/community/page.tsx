@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { GAME } from "@/lib/game-config";
 import { useAuthUser } from "@/hooks/use-auth-user";
+import { CrossGamePromo } from "@/components/common/cross-game-promo";
 
 const CATEGORIES = [
     { value: "feedback", label: "Feedback", icon: MessageCircle, color: "primary" as const },
@@ -524,6 +525,9 @@ export default function CommunityPage() {
                     <RotatingSubtitle />
                 </div>
             </motion.div>
+
+            {/* Cross-game promo — hidden for Free Fire */}
+            <CrossGamePromo />
 
             {/* Active polls */}
             {polls.length > 0 && (
