@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { Chip, Avatar, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
 import { Users, ChevronRight, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { useQuery } from "@tanstack/react-query";
 import type { PollDTO } from "@/hooks/use-polls";
 import { getPollTheme, getLuckyWinnerTheme, type PollTheme } from "./pollTheme";
 import { getPrizeDistribution, getTeamSize } from "@/utils/prizeDistribution";
@@ -45,12 +46,14 @@ function PrizeBreakdownTooltip({
     entryFee,
     teamSize,
     theme,
+    orgPercent,
     onDoubleTap,
 }: {
     prizePool: number;
     entryFee: number;
     teamSize: number;
     theme: PollTheme;
+    orgPercent: number;
     onDoubleTap?: () => void;
 }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -85,7 +88,7 @@ function PrizeBreakdownTooltip({
                         <div className="absolute inset-0 bg-black/10 rounded-lg" />
                         <div className="relative space-y-0.5 whitespace-nowrap text-white">
                             {(() => {
-                                const distribution = getPrizeDistribution(prizePool, entryFee, teamSize);
+                                const distribution = getPrizeDistribution(prizePool, entryFee, teamSize, orgPercent);
                                 const medals = ["🥇", "🥈", "🥉", "🏅", "🎖️"];
                                 return Array.from(distribution.prizes.entries())
                                     .sort(([a], [b]) => a - b)
@@ -521,6 +524,19 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
     const [showVoters, setShowVoters] = useState(false);
     const [selectedVoteGroup, setSelectedVoteGroup] = useState<"IN" | "OUT" | "SOLO" | null>(null);
 
+    // Fetch real settings so ? tooltip shows accurate org%
+    const { data: publicSettings } = useQuery({
+        queryKey: ["public-settings"],
+        queryFn: async () => {
+            const res = await fetch("/api/settings/public");
+            if (!res.ok) return { orgCutPercent: 0 };
+            const json = await res.json();
+            return json.data ?? { orgCutPercent: 0 };
+        },
+        staleTime: 60_000, // Cache for 1 min — settings rarely change
+    });
+    const orgPercent = publicSettings?.orgCutPercent ?? 0;
+
     // Marquee for long titles
     const titleRef = useRef<HTMLHeadingElement>(null);
     const [isTitleOverflowing, setIsTitleOverflowing] = useState(false);
@@ -715,6 +731,7 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                     entryFee={entryFee}
                                     teamSize={effectiveTeamType === "SOLO" ? 1 : effectiveTeamType === "DUO" ? 2 : effectiveTeamType === "TRIO" ? 3 : 4}
                                     theme={theme}
+                                    orgPercent={orgPercent}
                                     onDoubleTap={onRefetch}
                                 />}
                                 {/* Team type badge — only for BR games with team sizes */}
