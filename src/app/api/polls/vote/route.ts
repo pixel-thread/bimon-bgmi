@@ -80,16 +80,25 @@ export async function POST(request: NextRequest) {
         }
 
         // Balance gate for IN/SOLO votes
-        // USER role: must have balance >= entry fee (need coins first)
-        // PLAYER role / trusted: can go negative (extended credit)
+        // Trusted:  can go negative down to -200 (extended credit for loyal players)
+        // PLAYER:   can vote at 0 balance (one free chance) but blocked once negative
+        // USER:     must have balance >= entry fee (need coins first)
         if (vote !== "OUT") {
             const balance = await getCentralBalance(userId);
             const entryFee = poll.tournament?.fee ?? 0;
             const isPlayer = user.role === "PLAYER" || user.role === "ADMIN" || user.role === "SUPER_ADMIN";
 
-            if (user.player.isTrusted || isPlayer) {
-                // Trusted/player accounts: allow down to -200
+            if (user.player.isTrusted) {
+                // Trusted accounts: allow down to -200
                 if (balance < -200) {
+                    return ErrorResponse({
+                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — your balance is ${balance} ${GAME.currency}. Top up your wallet to continue.`,
+                        status: 403,
+                    });
+                }
+            } else if (isPlayer) {
+                // Player role: can go into debt up to 1 entry fee (2 tournaments from 0)
+                if (balance < -entryFee) {
                     return ErrorResponse({
                         message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — your balance is ${balance} ${GAME.currency}. Top up your wallet to continue.`,
                         status: 403,
