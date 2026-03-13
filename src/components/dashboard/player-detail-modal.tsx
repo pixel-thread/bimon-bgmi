@@ -489,7 +489,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                             )}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm">{tx.description}</p>
+                                            <p className="text-sm">{tx.description}</p>
                                             <p className="text-xs text-foreground/40">
                                                 {new Date(tx.createdAt).toLocaleDateString()} ·{" "}
                                                 {new Date(tx.createdAt).toLocaleTimeString([], {
