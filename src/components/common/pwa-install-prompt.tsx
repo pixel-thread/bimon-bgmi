@@ -22,6 +22,9 @@ export function PwaInstallPrompt() {
     const [visible, setVisible] = useState(false);
 
     useEffect(() => {
+        // Only show on Android devices
+        if (!/android/i.test(navigator.userAgent)) return;
+
         // Already installed as PWA
         if (window.matchMedia("(display-mode: standalone)").matches) return;
 
@@ -66,7 +69,7 @@ export function PwaInstallPrompt() {
             <div className="flex items-center gap-3 rounded-xl border border-divider bg-background/90 px-4 py-3 shadow-lg backdrop-blur-xl">
                 <Download className="h-5 w-5 shrink-0 text-primary" />
                 <p className="flex-1 text-sm text-foreground/80">
-                    Install for faster access
+                    Install app <span className="text-xs text-foreground/40">(~1.5 MB)</span>
                 </p>
                 <button
                     onClick={handleInstall}
