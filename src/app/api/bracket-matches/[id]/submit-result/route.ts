@@ -155,9 +155,10 @@ export async function POST(
             });
         }
 
-        // Walkover: auto-confirm immediately (opponent isn't present to dispute)
-        const isWalkover = notes?.toLowerCase().includes("walkover");
-        if (isWalkover) {
+        // Self-forfeit walkover: auto-confirm instantly (player is voluntarily giving up)
+        // Opponent-walkover claims go through normal SUBMITTED flow with dispute window
+        const isSelfForfeit = notes?.toLowerCase().includes("i choose to walkover");
+        if (isSelfForfeit) {
             await prisma.bracketMatch.update({
                 where: { id: matchId },
                 data: {
@@ -179,7 +180,7 @@ export async function POST(
             return SuccessResponse({
                 data: { matchId, score1, score2, winnerId: claimedWinnerId },
                 message: isKnockoutMatch
-                    ? "Walkover confirmed! You advance to the next round."
+                    ? "Walkover confirmed! Opponent advances to the next round."
                     : "Walkover confirmed!",
             });
         }

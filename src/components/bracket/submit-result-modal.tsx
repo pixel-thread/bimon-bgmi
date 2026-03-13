@@ -124,13 +124,16 @@ export function SubmitResultModal({
         onSettled: () => setUploading(false),
     });
 
-    /* Walkover — auto 3-0, no screenshot needed */
+    /* Walkover — auto 3-0 or 0-3, no screenshot needed */
     const [showWalkover, setShowWalkover] = useState(false);
     const submitWalkover = useMutation({
-        mutationFn: async (reason: string) => {
+        mutationFn: async ({ reason, isSelfForfeit }: { reason: string; isSelfForfeit: boolean }) => {
             if (!matchId) throw new Error("No match selected");
-            const finalScore1 = isAdmin || !isPlayer2 ? 3 : 0;
-            const finalScore2 = isAdmin || !isPlayer2 ? 0 : 3;
+            // If self-forfeit: give 0-3 (opponent wins). Otherwise: 3-0 (I win).
+            const myWinScore = isSelfForfeit ? 0 : 3;
+            const oppWinScore = isSelfForfeit ? 3 : 0;
+            const finalScore1 = isAdmin || !isPlayer2 ? myWinScore : oppWinScore;
+            const finalScore2 = isAdmin || !isPlayer2 ? oppWinScore : myWinScore;
             const res = await fetch(`/api/bracket-matches/${matchId}/submit-result`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -310,7 +313,7 @@ export function SubmitResultModal({
         <WalkoverModal
             isOpen={showWalkover}
             onClose={() => setShowWalkover(false)}
-            onSubmit={(reason) => submitWalkover.mutate(reason)}
+            onSubmit={(reason, isSelfForfeit) => submitWalkover.mutate({ reason, isSelfForfeit })}
             isPending={submitWalkover.isPending}
         />
         </>
@@ -319,27 +322,14 @@ export function SubmitResultModal({
 
 /* ─── Walkover Modal ────────────────────────────────────────── */
 
-const WALKOVER_REASONS = [
-    "Opponent did not show up",
-    "Opponent left mid-match",
-    "I choose to forfeit",
-    "Connection issues",
-];
-
 function WalkoverModal({
     isOpen, onClose, onSubmit, isPending,
 }: {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (reason: string) => void;
+    onSubmit: (reason: string, isSelfForfeit: boolean) => void;
     isPending: boolean;
 }) {
-    const [reason, setReason] = useState(WALKOVER_REASONS[0]);
-    const [customReason, setCustomReason] = useState("");
-
-    const isCustom = !WALKOVER_REASONS.includes(reason);
-    const finalReason = isCustom ? customReason.trim() || "No reason given" : reason;
-
     return (
         <Modal isOpen={isOpen} onClose={onClose} placement="center" size="sm">
             <ModalContent>
@@ -349,57 +339,34 @@ function WalkoverModal({
                 </ModalHeader>
                 <ModalBody className="gap-3 pt-2 pb-3">
                     <p className="text-[11px] text-foreground/40 text-center">
-                        Score will be recorded as <strong className="text-foreground/60">3-0</strong>. This confirms instantly — no dispute window.
+                        Score will be recorded as <strong className="text-foreground/60">3-0</strong>. Confirms instantly — no dispute window.
                     </p>
 
-                    <div className="flex flex-wrap gap-1.5">
-                        {WALKOVER_REASONS.map((r) => (
-                            <button
-                                key={r}
-                                onClick={() => { setReason(r); setCustomReason(""); }}
-                                className={`text-[11px] px-2.5 py-1.5 rounded-lg border transition-all ${
-                                    reason === r
-                                        ? "border-warning/50 bg-warning/15 text-warning font-medium"
-                                        : "border-divider bg-default-50 text-foreground/50 hover:border-foreground/20"
-                                }`}
-                            >
-                                {r}
-                            </button>
-                        ))}
-                        <button
-                            onClick={() => setReason("custom")}
-                            className={`text-[11px] px-2.5 py-1.5 rounded-lg border transition-all ${
-                                isCustom
-                                    ? "border-warning/50 bg-warning/15 text-warning font-medium"
-                                    : "border-divider bg-default-50 text-foreground/50 hover:border-foreground/20"
-                            }`}
+                    <div className="grid gap-2">
+                        <Button
+                            color="success"
+                            variant="flat"
+                            size="lg"
+                            className="w-full font-semibold"
+                            isLoading={isPending}
+                            onPress={() => onSubmit("Opponent chose to walkover", false)}
                         >
-                            Other...
-                        </button>
+                            Opponent walkover
+                        </Button>
+                        <Button
+                            color="danger"
+                            variant="flat"
+                            size="lg"
+                            className="w-full font-semibold"
+                            isLoading={isPending}
+                            onPress={() => onSubmit("I choose to walkover", true)}
+                        >
+                            I walkover
+                        </Button>
                     </div>
-
-                    {isCustom && (
-                        <input
-                            type="text"
-                            value={customReason}
-                            onChange={(e) => setCustomReason(e.target.value.slice(0, 100))}
-                            placeholder="Enter reason..."
-                            autoFocus
-                            className="w-full rounded-lg border border-divider bg-default-50/50 px-3 py-2 text-xs text-foreground placeholder:text-foreground/25 focus:outline-none focus:border-warning/40"
-                        />
-                    )}
                 </ModalBody>
-                <ModalFooter className="pt-0 gap-2">
+                <ModalFooter className="pt-0">
                     <Button variant="flat" onPress={onClose} size="sm">Cancel</Button>
-                    <Button
-                        color="warning"
-                        size="sm"
-                        isLoading={isPending}
-                        onPress={() => onSubmit(finalReason)}
-                        startContent={!isPending ? <UserX className="h-3.5 w-3.5" /> : undefined}
-                    >
-                        Confirm walkover
-                    </Button>
                 </ModalFooter>
             </ModalContent>
         </Modal>
