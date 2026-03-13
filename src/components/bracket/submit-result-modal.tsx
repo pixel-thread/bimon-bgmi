@@ -125,10 +125,10 @@ export function SubmitResultModal({
     });
 
     /* Walkover — auto 3-0, no screenshot needed */
+    const [showWalkover, setShowWalkover] = useState(false);
     const submitWalkover = useMutation({
-        mutationFn: async () => {
+        mutationFn: async (reason: string) => {
             if (!matchId) throw new Error("No match selected");
-            // 3-0 in favor of the claiming player
             const finalScore1 = isAdmin || !isPlayer2 ? 3 : 0;
             const finalScore2 = isAdmin || !isPlayer2 ? 0 : 3;
             const res = await fetch(`/api/bracket-matches/${matchId}/submit-result`, {
@@ -137,7 +137,7 @@ export function SubmitResultModal({
                 body: JSON.stringify({
                     score1: finalScore1,
                     score2: finalScore2,
-                    notes: "Walkover — opponent did not play",
+                    notes: `Walkover — ${reason}`,
                 }),
             });
             const data = await res.json();
@@ -145,14 +145,16 @@ export function SubmitResultModal({
             return data;
         },
         onSuccess: (data) => {
-            toast.success(data.message || "Walkover submitted! Opponent has 30 min to dispute.");
+            toast.success(data.message || "Walkover confirmed!");
             if (tournamentId) queryClient.invalidateQueries({ queryKey: ["bracket", tournamentId] });
+            setShowWalkover(false);
             handleClose();
         },
         onError: (err: Error) => toast.error(err.message),
     });
 
     return (
+        <>
         <Modal isOpen={isOpen} onClose={handleClose} placement="center" size="sm">
             <ModalContent>
                 <ModalHeader className="flex items-center gap-2 pb-0">
@@ -279,11 +281,7 @@ export function SubmitResultModal({
                             className="mr-auto"
                             isLoading={submitWalkover.isPending}
                             isDisabled={submitResult.isPending || uploading}
-                            onPress={() => {
-                                if (confirm("Claim walkover (3-0)? Your opponent will have 30 min to dispute.")) {
-                                    submitWalkover.mutate();
-                                }
-                            }}
+                            onPress={() => setShowWalkover(true)}
                             startContent={!submitWalkover.isPending ? <UserX className="h-3.5 w-3.5" /> : undefined}
                         >
                             Walkover
@@ -303,6 +301,104 @@ export function SubmitResultModal({
                         startContent={!submitResult.isPending && !uploading ? <Upload className="h-3.5 w-3.5" /> : undefined}
                     >
                         {uploading ? "Uploading..." : "Submit"}
+                    </Button>
+                </ModalFooter>
+            </ModalContent>
+        </Modal>
+
+        {/* Walkover reason modal */}
+        <WalkoverModal
+            isOpen={showWalkover}
+            onClose={() => setShowWalkover(false)}
+            onSubmit={(reason) => submitWalkover.mutate(reason)}
+            isPending={submitWalkover.isPending}
+        />
+        </>
+    );
+}
+
+/* ─── Walkover Modal ────────────────────────────────────────── */
+
+const WALKOVER_REASONS = [
+    "Opponent did not show up",
+    "Opponent left mid-match",
+    "I choose to forfeit",
+    "Connection issues",
+];
+
+function WalkoverModal({
+    isOpen, onClose, onSubmit, isPending,
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    onSubmit: (reason: string) => void;
+    isPending: boolean;
+}) {
+    const [reason, setReason] = useState(WALKOVER_REASONS[0]);
+    const [customReason, setCustomReason] = useState("");
+
+    const isCustom = !WALKOVER_REASONS.includes(reason);
+    const finalReason = isCustom ? customReason.trim() || "No reason given" : reason;
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} placement="center" size="sm">
+            <ModalContent>
+                <ModalHeader className="flex items-center gap-2 pb-0">
+                    <UserX className="h-4 w-4 text-warning" />
+                    Walkover
+                </ModalHeader>
+                <ModalBody className="gap-3 pt-2 pb-3">
+                    <p className="text-[11px] text-foreground/40 text-center">
+                        Score will be recorded as <strong className="text-foreground/60">3-0</strong>. This confirms instantly — no dispute window.
+                    </p>
+
+                    <div className="flex flex-wrap gap-1.5">
+                        {WALKOVER_REASONS.map((r) => (
+                            <button
+                                key={r}
+                                onClick={() => { setReason(r); setCustomReason(""); }}
+                                className={`text-[11px] px-2.5 py-1.5 rounded-lg border transition-all ${
+                                    reason === r
+                                        ? "border-warning/50 bg-warning/15 text-warning font-medium"
+                                        : "border-divider bg-default-50 text-foreground/50 hover:border-foreground/20"
+                                }`}
+                            >
+                                {r}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => setReason("custom")}
+                            className={`text-[11px] px-2.5 py-1.5 rounded-lg border transition-all ${
+                                isCustom
+                                    ? "border-warning/50 bg-warning/15 text-warning font-medium"
+                                    : "border-divider bg-default-50 text-foreground/50 hover:border-foreground/20"
+                            }`}
+                        >
+                            Other...
+                        </button>
+                    </div>
+
+                    {isCustom && (
+                        <input
+                            type="text"
+                            value={customReason}
+                            onChange={(e) => setCustomReason(e.target.value.slice(0, 100))}
+                            placeholder="Enter reason..."
+                            autoFocus
+                            className="w-full rounded-lg border border-divider bg-default-50/50 px-3 py-2 text-xs text-foreground placeholder:text-foreground/25 focus:outline-none focus:border-warning/40"
+                        />
+                    )}
+                </ModalBody>
+                <ModalFooter className="pt-0 gap-2">
+                    <Button variant="flat" onPress={onClose} size="sm">Cancel</Button>
+                    <Button
+                        color="warning"
+                        size="sm"
+                        isLoading={isPending}
+                        onPress={() => onSubmit(finalReason)}
+                        startContent={!isPending ? <UserX className="h-3.5 w-3.5" /> : undefined}
+                    >
+                        Confirm walkover
                     </Button>
                 </ModalFooter>
             </ModalContent>

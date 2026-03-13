@@ -155,6 +155,35 @@ export async function POST(
             });
         }
 
+        // Walkover: auto-confirm immediately (opponent isn't present to dispute)
+        const isWalkover = notes?.toLowerCase().includes("walkover");
+        if (isWalkover) {
+            await prisma.bracketMatch.update({
+                where: { id: matchId },
+                data: {
+                    score1,
+                    score2,
+                    winnerId: claimedWinnerId,
+                    status: "CONFIRMED",
+                },
+            });
+
+            const isKnockoutMatch =
+                tournament?.type === "BRACKET_1V1" ||
+                (tournament?.type === "GROUP_KNOCKOUT" && match.round > 0);
+
+            if (isKnockoutMatch) {
+                await advanceWinners(match.tournamentId, match.round);
+            }
+
+            return SuccessResponse({
+                data: { matchId, score1, score2, winnerId: claimedWinnerId },
+                message: isKnockoutMatch
+                    ? "Walkover confirmed! You advance to the next round."
+                    : "Walkover confirmed!",
+            });
+        }
+
         // Normal player flow: SUBMITTED status with dispute window
         const disputeDeadline = new Date(Date.now() + DISPUTE_WINDOW_MS);
 
