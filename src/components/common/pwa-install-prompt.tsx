@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Download, X } from "lucide-react";
+import { X } from "lucide-react";
+import { GAME } from "@/lib/game-config";
 
 interface BeforeInstallPromptEvent extends Event {
     prompt(): Promise<void>;
@@ -12,9 +13,10 @@ const DISMISS_KEY = "pwa-install-dismissed-at";
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * PWA install banner — shows on all pages.
+ * PWA install banner — mobile-only.
+ * Shows the app icon + game name (e.g. "Install PUBGMI").
  * Dismissed for 1 week, then re-appears.
- * Hides automatically if already installed as PWA.
+ * Hides if already installed as PWA or on desktop.
  */
 export function PwaInstallPrompt() {
     const [deferredPrompt, setDeferredPrompt] =
@@ -22,30 +24,39 @@ export function PwaInstallPrompt() {
     const [visible, setVisible] = useState(false);
 
     useEffect(() => {
-        // Only show on Android devices
-        if (!/android/i.test(navigator.userAgent)) return;
+        // Only show on mobile devices (not desktops/laptops including Mac)
+        const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
+        if (!isMobile) return;
 
-        // Already installed as PWA
+        // Already installed as PWA (standalone mode)
         if (window.matchMedia("(display-mode: standalone)").matches) return;
+        // iOS standalone check
+        if ("standalone" in window.navigator && (window.navigator as unknown as { standalone: boolean }).standalone) return;
 
         // Check if dismissed within the last week
         const dismissedAt = localStorage.getItem(DISMISS_KEY);
         if (dismissedAt) {
             const elapsed = Date.now() - Number(dismissedAt);
             if (elapsed < ONE_WEEK_MS) return;
-            // Expired — clear it so we show again
             localStorage.removeItem(DISMISS_KEY);
         }
-
-        setVisible(true);
 
         const handler = (e: Event) => {
             e.preventDefault();
             setDeferredPrompt(e as BeforeInstallPromptEvent);
+            setVisible(true);
         };
 
         window.addEventListener("beforeinstallprompt", handler);
-        return () => window.removeEventListener("beforeinstallprompt", handler);
+
+        // Listen for app installed -> hide
+        const installed = () => setVisible(false);
+        window.addEventListener("appinstalled", installed);
+
+        return () => {
+            window.removeEventListener("beforeinstallprompt", handler);
+            window.removeEventListener("appinstalled", installed);
+        };
     }, []);
 
     if (!visible || !deferredPrompt) return null;
@@ -67,10 +78,20 @@ export function PwaInstallPrompt() {
     return (
         <div className="fixed bottom-20 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 animate-[slideUp_0.3s_ease-out] lg:bottom-6">
             <div className="flex items-center gap-3 rounded-xl border border-divider bg-background/90 px-4 py-3 shadow-lg backdrop-blur-xl">
-                <Download className="h-5 w-5 shrink-0 text-primary" />
-                <p className="flex-1 text-sm text-foreground/80">
-                    Install app <span className="text-xs text-foreground/40">(~1.5 MB)</span>
-                </p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                    src="/favicon.ico"
+                    alt={GAME.name}
+                    className="h-8 w-8 shrink-0 rounded-lg"
+                />
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground/90 truncate">
+                        Install {GAME.name}
+                    </p>
+                    <p className="text-[10px] text-foreground/40">
+                        For faster access
+                    </p>
+                </div>
                 <button
                     onClick={handleInstall}
                     className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
