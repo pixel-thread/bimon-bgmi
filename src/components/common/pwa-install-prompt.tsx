@@ -92,7 +92,7 @@ export function PwaInstallPrompt() {
                         Install {GAME.name}
                     </p>
                     <p className="text-[10px] text-foreground/40">
-                        For faster access
+                        For faster access · ~1.5 MB
                     </p>
                 </div>
                 <button
