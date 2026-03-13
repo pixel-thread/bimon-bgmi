@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import { GAME } from "@/lib/game-config";
+import { GAME, GAME_MODE } from "@/lib/game-config";
+
+const ICON_DIRS: Record<string, string> = { freefire: "freefire", pes: "pes" };
+const PWA_ICON = `/icons/${ICON_DIRS[GAME_MODE] ?? "bgmi"}/icon-192x192.png`;
 
 interface BeforeInstallPromptEvent extends Event {
     prompt(): Promise<void>;
@@ -80,7 +83,7 @@ export function PwaInstallPrompt() {
             <div className="flex items-center gap-3 rounded-xl border border-divider bg-background/90 px-4 py-3 shadow-lg backdrop-blur-xl">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                    src="/favicon.ico"
+                    src={PWA_ICON}
                     alt={GAME.name}
                     className="h-8 w-8 shrink-0 rounded-lg"
                 />
