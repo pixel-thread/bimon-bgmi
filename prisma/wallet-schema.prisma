@@ -89,3 +89,100 @@ model CentralTransaction {
   @@index([game])
   @@index([reason])
 }
+
+// ─── Community (shared across all games) ─────────────────────
+
+/// Community message — feedback/suggestions visible on all game deployments.
+model CentralCommunityMessage {
+  id          String  @id @default(uuid())
+  message     String  @db.VarChar(500)
+  category    String  @default("feedback")
+  email       String                        // Author's email (cross-game identifier)
+  displayName String?                       // Cached display name at time of posting
+  imageUrl    String?                       // Cached avatar URL
+  game        String                        // Origin game: "bgmi", "pes", "freefire"
+  isAnonymous Boolean @default(false)
+  isRead      Boolean @default(false)
+  adminReply  String?
+  upvotes     Int     @default(0)
+  downvotes   Int     @default(0)
+  isPinned    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  votes CentralCommunityVote[]
+
+  @@index([email])
+  @@index([isRead])
+  @@index([createdAt(sort: Desc)])
+}
+
+/// Tracks who voted on which community message (one vote per email per message).
+model CentralCommunityVote {
+  id        String @id @default(uuid())
+  messageId String
+  email     String
+  vote      Int    // 1 = upvote, -1 = downvote
+
+  createdAt DateTime @default(now())
+
+  message CentralCommunityMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, email])
+  @@index([messageId])
+}
+
+/// Community poll — shared across all game deployments.
+model CentralCommunityPoll {
+  id          String  @id @default(uuid())
+  question    String  @db.VarChar(200)
+  email       String                        // Creator's email
+  displayName String?                       // Cached display name
+  game        String                        // Origin game
+  isActive    Boolean @default(true)
+  isPinned    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  options CentralCommunityPollOption[]
+  votes   CentralCommunityPollVote[]
+
+  @@index([email])
+  @@index([isActive])
+  @@index([createdAt(sort: Desc)])
+}
+
+/// An option in a community poll.
+model CentralCommunityPollOption {
+  id         String  @id @default(uuid())
+  pollId     String
+  text       String  @db.VarChar(100)
+  addedByEmail String
+  addedByName  String?
+  isApproved Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  poll  CentralCommunityPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes CentralCommunityPollVote[]
+
+  @@index([pollId])
+}
+
+/// A player's vote on a community poll (one vote per email per poll).
+model CentralCommunityPollVote {
+  id       String @id @default(uuid())
+  pollId   String
+  optionId String
+  email    String
+
+  createdAt DateTime @default(now())
+
+  poll   CentralCommunityPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  option CentralCommunityPollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, email])
+  @@index([optionId])
+}

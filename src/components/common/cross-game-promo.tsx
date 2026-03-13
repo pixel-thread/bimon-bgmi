@@ -38,15 +38,15 @@ const SISTER_GAMES = [
 ];
 
 /**
- * Cross-game promo banner — shows sister games that share the central wallet.
- * Hidden for Free Fire (sharedWallet: false) and on the current game's own card.
+ * Cross-game promo banner.
+ * - Default: shows only other games that share the central wallet (wallet page).
+ * - showAll: shows all three games regardless of current domain (community page).
  */
-export function CrossGamePromo() {
-    // Only promote games that share the central wallet (and aren't the current game)
-    const otherGames = SISTER_GAMES.filter(
-        (g) => g.mode !== GAME.mode && g.sharedWallet
-    );
-    if (otherGames.length === 0) return null;
+export function CrossGamePromo({ showAll = false }: { showAll?: boolean }) {
+    const games = showAll
+        ? SISTER_GAMES.filter((g) => g.mode !== GAME.mode)
+        : SISTER_GAMES.filter((g) => g.mode !== GAME.mode && g.sharedWallet);
+    if (games.length === 0) return null;
 
     return (
         <motion.div
@@ -64,7 +64,7 @@ export function CrossGamePromo() {
                     </div>
 
                     <div className="grid gap-2">
-                        {otherGames.map((g) => (
+                        {games.map((g) => (
                             <a
                                 key={g.mode}
                                 href={g.url}

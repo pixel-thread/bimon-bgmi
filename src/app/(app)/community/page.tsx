@@ -38,8 +38,15 @@ interface MessageDTO {
     isOwn: boolean;
     isPinned: boolean;
     myVote: number | null;
+    game: string;
     player: { displayName: string; imageUrl: string } | null;
 }
+
+const GAME_LABELS: Record<string, { label: string; color: string }> = {
+    bgmi: { label: "PUBGMI", color: "bg-amber-500/15 text-amber-500" },
+    pes: { label: "KICKOFF", color: "bg-emerald-500/15 text-emerald-500" },
+    freefire: { label: "BOOYAH", color: "bg-violet-500/15 text-violet-500" },
+};
 
 interface PollOptionDTO {
     id: string;
@@ -57,6 +64,7 @@ interface PollDTO {
     myVoteOptionId: string | null;
     createdAt: string;
     isPinned: boolean;
+    game: string;
     options: PollOptionDTO[];
     pendingSuggestions: { id: string; text: string; suggestedBy: string }[];
 }
@@ -132,9 +140,16 @@ function PollCard({ poll, isSuperAdmin, onVote, onSuggest, onApprove, onReject, 
                         ) : (
                             <p className="text-sm font-semibold">{poll.question}</p>
                         )}
-                        <p className="text-[10px] text-foreground/40">
-                            by {poll.creatorName} · {poll.totalVotes} vote{poll.totalVotes !== 1 ? "s" : ""}
-                        </p>
+                        <div className="flex items-center gap-1.5">
+                            <p className="text-[10px] text-foreground/40">
+                                by {poll.creatorName} · {poll.totalVotes} vote{poll.totalVotes !== 1 ? "s" : ""}
+                            </p>
+                            {poll.game && poll.game !== GAME.mode && GAME_LABELS[poll.game] && (
+                                <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${GAME_LABELS[poll.game].color}`}>
+                                    {GAME_LABELS[poll.game].label}
+                                </span>
+                            )}
+                        </div>
                     </div>
                     <div className="flex gap-0.5 shrink-0">
                         {poll.isOwn && (
@@ -526,8 +541,8 @@ export default function CommunityPage() {
                 </div>
             </motion.div>
 
-            {/* Cross-game promo — hidden for Free Fire */}
-            <CrossGamePromo />
+            {/* Cross-game promo — show all games on all domains */}
+            <CrossGamePromo showAll />
 
             {/* Active polls */}
             {polls.length > 0 && (
@@ -597,6 +612,11 @@ export default function CommunityPage() {
                                                 <span className="text-xs font-medium truncate">
                                                     {msg.isAnonymous ? "Anonymous" : (msg.player?.displayName || "Unknown")}
                                                 </span>
+                                                {msg.game && msg.game !== GAME.mode && GAME_LABELS[msg.game] && (
+                                                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${GAME_LABELS[msg.game].color}`}>
+                                                        {GAME_LABELS[msg.game].label}
+                                                    </span>
+                                                )}
                                                 <Chip size="sm" variant="flat" color={cat?.color || "default"} className="text-[9px] ml-auto shrink-0">
                                                     <CatIcon className="h-2.5 w-2.5 inline mr-0.5" />
                                                     {cat?.label || msg.category}

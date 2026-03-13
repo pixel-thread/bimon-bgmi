@@ -1,44 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/database";
-import { getCurrentUser, requireAdmin } from "@/lib/auth";
+import { walletDb } from "@/lib/wallet-db";
+import { getCurrentUser } from "@/lib/auth";
 
 const CATEGORIES = ["feedback", "suggestion", "bug", "appreciation", "other"];
+const GAME = process.env.NEXT_PUBLIC_GAME_MODE || "bgmi";
 
 /**
  * GET /api/community
- * Admin: list all messages (with player info for non-anonymous, hidden for anonymous).
- * Player: list all messages (community feed) + own messages.
+ * Returns all community messages from the central DB (shared across all games).
  */
 export async function GET(req: NextRequest) {
     try {
         const user = await getCurrentUser();
         if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+        const email = user.email;
         const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
-        const playerId = user.player?.id;
         const { searchParams } = new URL(req.url);
         const unreadOnly = searchParams.get("unread") === "true";
         const mine = searchParams.get("mine") === "true";
 
-        const where = mine && playerId
-            ? { playerId }
+        const where = mine && email
+            ? { email }
             : isAdmin && unreadOnly
                 ? { isRead: false }
                 : {};
 
-        const messages = await prisma.communityMessage.findMany({
+        const messages = await walletDb.centralCommunityMessage.findMany({
             where,
             include: {
-                player: {
-                    select: {
-                        id: true,
-                        displayName: true,
-                        customProfileImageUrl: true,
-                        user: { select: { username: true, imageUrl: true } },
-                    },
-                },
-                votes: playerId ? {
-                    where: { playerId },
+                votes: email ? {
+                    where: { email },
                     select: { vote: true },
                 } : false,
             },
@@ -46,8 +38,7 @@ export async function GET(req: NextRequest) {
             take: 100,
         });
 
-        // Transform: hide player info for anonymous messages (unless admin)
-        const data = messages.map((m) => ({
+        const data = messages.map((m: any) => ({
             id: m.id,
             message: m.message,
             category: m.category,
@@ -57,19 +48,20 @@ export async function GET(req: NextRequest) {
             upvotes: m.upvotes,
             downvotes: m.downvotes,
             createdAt: m.createdAt,
-            isOwn: playerId === m.playerId,
+            isOwn: email === m.email,
             isPinned: m.isPinned,
+            game: m.game,
             myVote: Array.isArray(m.votes) && m.votes.length > 0 ? m.votes[0].vote : null,
             player: m.isAnonymous && !isAdmin
                 ? null
                 : {
-                    displayName: m.player.displayName || m.player.user?.username || "Unknown",
-                    imageUrl: m.player.customProfileImageUrl || m.player.user?.imageUrl || "",
+                    displayName: m.displayName || "Unknown",
+                    imageUrl: m.imageUrl || "",
                 },
         }));
 
         const unreadCount = isAdmin
-            ? await prisma.communityMessage.count({ where: { isRead: false } })
+            ? await walletDb.centralCommunityMessage.count({ where: { isRead: false } })
             : 0;
 
         return NextResponse.json({ success: true, data: { messages: data, unreadCount } });
@@ -81,12 +73,15 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/community
- * Player sends a message to the org. Can be anonymous.
+ * Player sends a message. Stored in central DB with game origin tag.
  */
 export async function POST(req: NextRequest) {
     try {
         const user = await getCurrentUser();
         if (!user?.player?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        const email = user.email;
+        if (!email) return NextResponse.json({ error: "No email" }, { status: 400 });
 
         const body = await req.json();
         const { message, category = "feedback", isAnonymous = false } = body;
@@ -101,22 +96,29 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid category" }, { status: 400 });
         }
 
-        // Rate limit: max 5 messages per day per player
+        // Rate limit: max 5 messages per day per email
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const todayCount = await prisma.communityMessage.count({
-            where: { playerId: user.player.id, createdAt: { gte: today } },
+        const todayCount = await walletDb.centralCommunityMessage.count({
+            where: { email, createdAt: { gte: today } },
         });
         if (todayCount >= 5) {
             return NextResponse.json({ error: "You can send max 5 messages per day" }, { status: 429 });
         }
 
-        await prisma.communityMessage.create({
+        // Get display name and image for caching
+        const displayName = user.player.displayName || user.username || "Unknown";
+        const imageUrl = user.imageUrl || "";
+
+        await walletDb.centralCommunityMessage.create({
             data: {
                 message: message.trim(),
                 category,
                 isAnonymous: !!isAnonymous,
-                playerId: user.player.id,
+                email,
+                displayName,
+                imageUrl,
+                game: GAME,
             },
         });
 
@@ -129,8 +131,7 @@ export async function POST(req: NextRequest) {
 
 /**
  * PATCH /api/community
- * Admin: mark as read / reply.
- * Player: vote (upvote/downvote).
+ * Vote, edit, delete, pin messages — all via central DB.
  */
 export async function PATCH(req: NextRequest) {
     try {
@@ -139,36 +140,36 @@ export async function PATCH(req: NextRequest) {
 
         const body = await req.json();
         const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+        const email = user.email;
 
         // Vote action (any player)
         if (body.action === "vote") {
-            if (!user.player?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-            const { messageId, vote } = body; // vote: 1 or -1
+            if (!email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            const { messageId, vote } = body;
             if (!messageId || (vote !== 1 && vote !== -1)) {
                 return NextResponse.json({ error: "Invalid vote" }, { status: 400 });
             }
 
-            // Check if already voted
-            const existing = await prisma.communityVote.findUnique({
-                where: { messageId_playerId: { messageId, playerId: user.player.id } },
+            const existing = await walletDb.centralCommunityVote.findUnique({
+                where: { messageId_email: { messageId, email } },
             });
 
             if (existing) {
                 if (existing.vote === vote) {
-                    // Same vote → remove it (toggle off)
-                    await prisma.$transaction([
-                        prisma.communityVote.delete({ where: { id: existing.id } }),
-                        prisma.communityMessage.update({
+                    // Same vote → toggle off
+                    await walletDb.$transaction([
+                        walletDb.centralCommunityVote.delete({ where: { id: existing.id } }),
+                        walletDb.centralCommunityMessage.update({
                             where: { id: messageId },
                             data: vote === 1 ? { upvotes: { decrement: 1 } } : { downvotes: { decrement: 1 } },
                         }),
                     ]);
                     return NextResponse.json({ success: true, action: "removed" });
                 } else {
-                    // Different vote → switch
-                    await prisma.$transaction([
-                        prisma.communityVote.update({ where: { id: existing.id }, data: { vote } }),
-                        prisma.communityMessage.update({
+                    // Switch vote
+                    await walletDb.$transaction([
+                        walletDb.centralCommunityVote.update({ where: { id: existing.id }, data: { vote } }),
+                        walletDb.centralCommunityMessage.update({
                             where: { id: messageId },
                             data: vote === 1
                                 ? { upvotes: { increment: 1 }, downvotes: { decrement: 1 } }
@@ -179,9 +180,9 @@ export async function PATCH(req: NextRequest) {
                 }
             } else {
                 // New vote
-                await prisma.$transaction([
-                    prisma.communityVote.create({ data: { messageId, playerId: user.player.id, vote } }),
-                    prisma.communityMessage.update({
+                await walletDb.$transaction([
+                    walletDb.centralCommunityVote.create({ data: { messageId, email, vote } }),
+                    walletDb.centralCommunityMessage.update({
                         where: { id: messageId },
                         data: vote === 1 ? { upvotes: { increment: 1 } } : { downvotes: { increment: 1 } },
                     }),
@@ -192,52 +193,52 @@ export async function PATCH(req: NextRequest) {
 
         // Edit own message
         if (body.action === "edit") {
-            if (!user.player?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            if (!email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
             const { messageId, message: newMessage } = body;
             if (!messageId || !newMessage?.trim()) {
                 return NextResponse.json({ error: "Message required" }, { status: 400 });
             }
-            const msg = await prisma.communityMessage.findUnique({ where: { id: messageId } });
+            const msg = await walletDb.centralCommunityMessage.findUnique({ where: { id: messageId } });
             if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 });
-            if (msg.playerId !== user.player.id) {
+            if (msg.email !== email) {
                 return NextResponse.json({ error: "Not your message" }, { status: 403 });
             }
-            await prisma.communityMessage.update({
+            await walletDb.centralCommunityMessage.update({
                 where: { id: messageId },
                 data: { message: newMessage.trim().slice(0, 500) },
             });
             return NextResponse.json({ success: true, message: "Message updated!" });
         }
 
-        // Delete own message
+        // Delete own message (or admin)
         if (body.action === "delete") {
-            if (!user.player?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            if (!email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
             const { messageId } = body;
-            const msg = await prisma.communityMessage.findUnique({ where: { id: messageId } });
+            const msg = await walletDb.centralCommunityMessage.findUnique({ where: { id: messageId } });
             if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 });
-            if (msg.playerId !== user.player.id && !isAdmin) {
+            if (msg.email !== email && !isAdmin) {
                 return NextResponse.json({ error: "Not your message" }, { status: 403 });
             }
-            await prisma.communityMessage.delete({ where: { id: messageId } });
+            await walletDb.centralCommunityMessage.delete({ where: { id: messageId } });
             return NextResponse.json({ success: true, message: "Message deleted" });
         }
 
-        // Pin/unpin message (super admin only)
+        // Pin/unpin (super admin only)
         if (body.action === "pin") {
             if (user.role !== "SUPER_ADMIN") {
                 return NextResponse.json({ error: "Only super admin can pin" }, { status: 403 });
             }
             const { messageId } = body;
-            const msg = await prisma.communityMessage.findUnique({ where: { id: messageId } });
+            const msg = await walletDb.centralCommunityMessage.findUnique({ where: { id: messageId } });
             if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 });
-            await prisma.communityMessage.update({
+            await walletDb.centralCommunityMessage.update({
                 where: { id: messageId },
                 data: { isPinned: !msg.isPinned },
             });
             return NextResponse.json({ success: true, message: msg.isPinned ? "Unpinned" : "Pinned!" });
         }
 
-        // Admin actions
+        // Admin: mark as read / reply
         if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         const { id, isRead, adminReply } = body;
         if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
@@ -246,7 +247,7 @@ export async function PATCH(req: NextRequest) {
         if (isRead !== undefined) updateData.isRead = isRead;
         if (adminReply !== undefined) updateData.adminReply = adminReply;
 
-        await prisma.communityMessage.update({ where: { id }, data: updateData });
+        await walletDb.centralCommunityMessage.update({ where: { id }, data: updateData });
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Community PATCH error:", error);
@@ -255,17 +256,19 @@ export async function PATCH(req: NextRequest) {
 }
 
 /**
- * DELETE /api/community
- * Admin: delete a message.
+ * DELETE /api/community — Admin delete.
  */
 export async function DELETE(req: NextRequest) {
     try {
-        await requireAdmin();
+        const user = await getCurrentUser();
+        if (!user || (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN")) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
         const body = await req.json();
         const { id } = body;
         if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
-        await prisma.communityMessage.delete({ where: { id } });
+        await walletDb.centralCommunityMessage.delete({ where: { id } });
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Community DELETE error:", error);
