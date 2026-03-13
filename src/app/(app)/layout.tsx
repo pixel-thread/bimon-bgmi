@@ -3,6 +3,7 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { OnboardingGuard } from "@/components/common/OnboardingGuard";
 
 import { ReferralPromoModal } from "@/components/common/referral-promo-modal";
+import { PwaInstallPrompt } from "@/components/common/pwa-install-prompt";
 
 /**
  * Route group: (app)
@@ -24,6 +25,7 @@ export default function AppLayout({
                 <MobileNav />
 
                 <ReferralPromoModal />
+                <PwaInstallPrompt />
             </div>
         </OnboardingGuard>
     );
