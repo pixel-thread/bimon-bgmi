@@ -16,6 +16,7 @@ description: Core rules and guidelines for the AI assistant working on this proj
 - Tournament names like "Lehkai sngewtynnad 1" can exist across multiple seasons. They are NOT unique per season.
 - When querying tournament data, always account for same-named tournaments across different seasons.
 - For db push, use: `source .env && DATABASE_URL="$DIRECT_URL" npx prisma db push` (the pooled connection hangs).
+- **Prisma implicit M2M tables in raw SQL**: Prisma names implicit many-to-many join tables as `_ModelAToModelB` (alphabetical order), e.g. `_PlayerToTeam` (not `_PlayerTeams`). Column `"A"` = first model's ID, `"B"` = second model's ID. Always check the migration SQL if unsure.
 
 # Architecture Notes
 

@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/database";
-import { clearTrustedOnBalanceRecovery } from "@/lib/logic/balanceRecovery";
 import { creditCentralWallet, debitCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
@@ -53,25 +51,6 @@ export async function POST(
             ? await creditCentralWallet(email, amount, description, "ADMIN_ADJUSTMENT")
             : await debitCentralWallet(email, amount, description, "ADMIN_ADJUSTMENT");
 
-        // Game DB audit trail
-        const localTx = await prisma.transaction.create({
-            data: { amount, type, description, playerId: id },
-        });
-
-        // Sync game DB wallet
-        await prisma.wallet.upsert({
-            where: { playerId: id },
-            create: { playerId: id, balance: result.balance },
-            update: { balance: result.balance },
-        });
-
-        // Auto-clear trusted flag if balance recovered
-        if (type === "CREDIT") {
-            await prisma.$transaction(async (tx) => {
-                await clearTrustedOnBalanceRecovery(id, result.balance, tx);
-            });
-        }
-
         return NextResponse.json({
             balance: result.balance,
             transaction: result.transaction ? {
@@ -80,13 +59,7 @@ export async function POST(
                 type: result.transaction.type,
                 description: result.transaction.description,
                 createdAt: result.transaction.createdAt,
-            } : {
-                id: localTx.id,
-                amount: localTx.amount,
-                type: localTx.type,
-                description: localTx.description,
-                createdAt: localTx.createdAt,
-            },
+            } : null,
         });
     } catch (error) {
         console.error("Failed to update wallet:", error);

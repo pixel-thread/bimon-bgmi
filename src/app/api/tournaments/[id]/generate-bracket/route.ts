@@ -164,7 +164,7 @@ export async function POST(
             );
 
             if (playersToCharge.length > 0) {
-                // Debit central wallets + create game DB audit records
+                // Debit central wallets only — no local wallet/transaction records
                 const BATCH = 5;
                 for (let i = 0; i < playersToCharge.length; i += BATCH) {
                     const batch = playersToCharge.slice(i, i + BATCH);
@@ -172,25 +172,15 @@ export async function POST(
                         batch.map(async (p) => {
                             const email = p.user?.email;
                             if (email) {
-                                const result = await debitCentralWallet(email, entryFee, `Entry fee for ${tournament.name}`, "TOURNAMENT_ENTRY");
-                                await prisma.wallet.upsert({
-                                    where: { playerId: p.id },
-                                    create: { balance: result.balance, playerId: p.id },
-                                    update: { balance: result.balance },
-                                });
+                                try {
+                                    await debitCentralWallet(email, entryFee, `Entry fee for ${tournament.name}`, "TOURNAMENT_ENTRY");
+                                } catch (err) {
+                                    console.error(`[generate-bracket] Failed to debit ${p.id}:`, err);
+                                }
                             }
                         })
                     );
                 }
-
-                await prisma.transaction.createMany({
-                    data: playersToCharge.map((p) => ({
-                        amount: entryFee,
-                        type: "DEBIT" as const,
-                        description: `Entry fee for ${tournament.name}`,
-                        playerId: p.id,
-                    })),
-                });
             }
         }
 

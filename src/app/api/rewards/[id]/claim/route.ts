@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
-import { clearTrustedOnBalanceRecovery } from "@/lib/logic/balanceRecovery";
 import { creditCentralWallet } from "@/lib/wallet-service";
 
 /**
@@ -64,31 +63,12 @@ export async function POST(
         const reason = reasonMap[reward.type] || "OTHER";
 
         // Credit wallet (service handles central vs local routing)
-        const result = await creditCentralWallet(userId, reward.amount, description, reason);
+        await creditCentralWallet(userId, reward.amount, description, reason);
 
-        // Mark as claimed + game DB audit + sync balance
-        await prisma.$transaction(async (tx) => {
-            await tx.pendingReward.update({
-                where: { id },
-                data: { isClaimed: true, claimedAt: new Date() },
-            });
-
-            await tx.transaction.create({
-                data: {
-                    playerId: user.player!.id,
-                    amount: reward.amount,
-                    type: "CREDIT",
-                    description,
-                },
-            });
-
-            await tx.wallet.upsert({
-                where: { playerId: user.player!.id },
-                create: { playerId: user.player!.id, balance: result.balance },
-                update: { balance: result.balance },
-            });
-
-            await clearTrustedOnBalanceRecovery(user.player!.id, result.balance, tx);
+        // Mark as claimed
+        await prisma.pendingReward.update({
+            where: { id },
+            data: { isClaimed: true, claimedAt: new Date() },
         });
 
         return SuccessResponse({

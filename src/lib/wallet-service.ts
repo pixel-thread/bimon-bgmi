@@ -204,7 +204,11 @@ export async function creditCentralWallet(
             create: { playerId: user.player.id, balance: newBalance },
             update: { balance: newBalance },
         });
-        return { balance: newBalance, transaction: null };
+        // Local audit trail (Free Fire has no central transactions)
+        const tx = await prisma.transaction.create({
+            data: { playerId: user.player.id, amount, type: "CREDIT", description },
+        });
+        return { balance: newBalance, transaction: tx };
     }
 
     const { wallet } = await getOrCreateCentralWallet(email, name, imageUrl);
@@ -256,7 +260,11 @@ export async function debitCentralWallet(
             create: { playerId: user.player.id, balance: newBalance },
             update: { balance: newBalance },
         });
-        return { balance: newBalance, transaction: null };
+        // Local audit trail (Free Fire has no central transactions)
+        const tx = await prisma.transaction.create({
+            data: { playerId: user.player.id, amount, type: "DEBIT", description },
+        });
+        return { balance: newBalance, transaction: tx };
     }
 
     const { wallet } = await getOrCreateCentralWallet(email);

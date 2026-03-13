@@ -94,34 +94,19 @@ export async function POST(
 
             playerName = player.displayName || player.user.username;
 
-            // Debit central wallet
-            const walletResult = await debitCentralWallet(email, amount, `Prize pool donation — ${tournament.name}`, "OTHER");
+            // Debit central wallet (handles routing for Free Fire automatically)
+            await debitCentralWallet(email, amount, `Prize pool donation — ${tournament.name}`, "OTHER");
 
-            // Sync game DB
-            await prisma.$transaction([
-                prisma.wallet.upsert({
-                    where: { playerId },
-                    create: { playerId, balance: walletResult.balance },
-                    update: { balance: walletResult.balance },
-                }),
-                prisma.transaction.create({
-                    data: {
-                        playerId,
-                        amount,
-                        type: "DEBIT",
-                        description: `Prize pool donation — ${tournament.name}`,
-                    },
-                }),
-                prisma.prizePoolDonation.create({
-                    data: {
-                        amount,
-                        tournamentId,
-                        playerId,
-                        playerName,
-                        isAnonymous: false,
-                    },
-                }),
-            ]);
+            // Record the donation
+            await prisma.prizePoolDonation.create({
+                data: {
+                    amount,
+                    tournamentId,
+                    playerId,
+                    playerName,
+                    isAnonymous: false,
+                },
+            });
         } else {
             // Anonymous donation — no wallet deduction
             await prisma.prizePoolDonation.create({
@@ -171,35 +156,15 @@ export async function DELETE(
 
         // If it was a player donation, refund their wallet
         if (donation.playerId && !donation.isAnonymous) {
-            // Refund via central wallet
             const email = await getEmailByPlayerId(donation.playerId);
             if (email) {
-                const walletResult = await creditCentralWallet(email, donation.amount, `Prize pool donation refund`, "OTHER");
-                await prisma.wallet.upsert({
-                    where: { playerId: donation.playerId },
-                    create: { playerId: donation.playerId, balance: walletResult.balance },
-                    update: { balance: walletResult.balance },
-                });
+                await creditCentralWallet(email, donation.amount, `Prize pool donation refund`, "OTHER");
             }
-
-            await prisma.$transaction([
-                prisma.transaction.create({
-                    data: {
-                        playerId: donation.playerId,
-                        amount: donation.amount,
-                        type: "CREDIT",
-                        description: `Prize pool donation refund`,
-                    },
-                }),
-                prisma.prizePoolDonation.delete({
-                    where: { id: donationId },
-                }),
-            ]);
-        } else {
-            await prisma.prizePoolDonation.delete({
-                where: { id: donationId },
-            });
         }
+
+        await prisma.prizePoolDonation.delete({
+            where: { id: donationId },
+        });
 
         return NextResponse.json({
             success: true,

@@ -179,27 +179,17 @@ export async function POST(request: NextRequest) {
         // 6. UC deduction via central wallet (optional)
         const entryFee = tournament.fee || 0;
         if (deductUC && entryFee > 0) {
-            // Debit central wallets
+            // Debit central wallets only — no local wallet/transaction records
             for (const playerId of playerIds) {
                 const email = await getEmailByPlayerId(playerId);
                 if (email) {
-                    const result = await debitCentralWallet(email, entryFee, `Entry fee for ${tournament.name}`, "TOURNAMENT_ENTRY");
-                    await prisma.wallet.upsert({
-                        where: { playerId },
-                        create: { playerId, balance: result.balance },
-                        update: { balance: result.balance },
-                    });
+                    try {
+                        await debitCentralWallet(email, entryFee, `Entry fee for ${tournament.name}`, "TOURNAMENT_ENTRY");
+                    } catch (err) {
+                        console.error(`[teams/create] Failed to debit ${playerId}:`, err);
+                    }
                 }
             }
-
-            await prisma.transaction.createMany({
-                data: playerIds.map((playerId) => ({
-                    amount: entryFee,
-                    type: "DEBIT" as const,
-                    description: `Entry fee for ${tournament.name}`,
-                    playerId,
-                })),
-            });
         }
 
         const baseMsg = deductUC && entryFee > 0

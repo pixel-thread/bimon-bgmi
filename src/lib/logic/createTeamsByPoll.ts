@@ -11,6 +11,7 @@ import { computeWeightedScore, PlayerWithWins, SeasonScoringConfig } from "./sco
 import { PlayerWithWeightT } from "@/types/models";
 import { getPreviousTournamentTeammates } from "./previousTeammates";
 import { isBirthdayWithinWindow } from "./birthdayCheck";
+import { debitCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -366,7 +367,8 @@ export async function createTeamsByPoll({
                 }),
             );
 
-            // Debit UC (skip lucky voter, birthday, UC-exempt)
+            // Mark players to charge (skip lucky voter, birthday, UC-exempt)
+            // Actual debit happens AFTER the transaction commits (see below)
             if (entryFee > 0) {
                 const birthdayPlayerIds = new Set<string>();
                 for (const player of allPlayers) {
@@ -383,24 +385,8 @@ export async function createTeamsByPoll({
                         !birthdayPlayerIds.has(player.id),
                 );
 
-                if (playersToCharge.length > 0) {
-                    await tx.transaction.createMany({
-                        data: playersToCharge.map((player) => ({
-                            amount: entryFee,
-                            type: "DEBIT" as const,
-                            description: `Entry fee for ${tournamentName}`,
-                            playerId: player.id,
-                        })),
-                    });
-
-                    await processBatches(playersToCharge, BATCH_SIZE, (player) =>
-                        tx.wallet.upsert({
-                            where: { playerId: player.id },
-                            create: { balance: -entryFee, playerId: player.id },
-                            update: { balance: { decrement: entryFee } },
-                        }),
-                    );
-                }
+                // Store for post-transaction central wallet debit
+                (result as any)._playersToCharge = playersToCharge;
             }
 
             // Create MatchPlayerPlayed entries
@@ -455,6 +441,24 @@ export async function createTeamsByPoll({
             timeout: 600000,
         },
     );
+
+    // ── Post-transaction: debit central wallets ──────────────────
+    // Must happen OUTSIDE the prisma transaction because central wallet
+    // is a separate database (Neon). This ensures the game DB records
+    // are committed before we debit.
+    const playersToCharge = (result as any)._playersToCharge as typeof players | undefined;
+    if (entryFee > 0 && playersToCharge && playersToCharge.length > 0) {
+        await processBatches(playersToCharge, BATCH_SIZE, async (player) => {
+            const email = (player as any).user?.email || await getEmailByPlayerId(player.id);
+            if (email) {
+                try {
+                    await debitCentralWallet(email, entryFee, `Entry fee for ${tournamentName}`, "TOURNAMENT_ENTRY");
+                } catch (err) {
+                    console.error(`[createTeamsByPoll] Failed to debit central wallet for ${player.id}:`, err);
+                }
+            }
+        });
+    }
 
     return {
         ...result,
