@@ -27,9 +27,9 @@ export function PwaInstallPrompt() {
     const [visible, setVisible] = useState(false);
 
     useEffect(() => {
-        // Only show on mobile devices (not desktops/laptops including Mac)
-        const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
-        if (!isMobile) return;
+        // Banner only appears if the browser fires beforeinstallprompt.
+        // That means: Android Chrome, desktop Chrome/Edge.
+        // iOS Safari does NOT fire this event, so the banner never shows there.
 
         // Already installed as PWA (standalone mode)
         if (window.matchMedia("(display-mode: standalone)").matches) return;
