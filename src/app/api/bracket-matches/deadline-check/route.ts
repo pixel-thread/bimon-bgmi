@@ -58,6 +58,9 @@ export async function POST() {
                 where: { id: match.id },
                 data: { winnerId, score1: winnerIsP1 ? 1 : 0, score2: winnerIsP1 ? 0 : 1, status: "CONFIRMED" },
             });
+            await prisma.bracketResult.create({
+                data: { bracketMatchId: match.id, submittedById: winnerId, claimedScore1: winnerIsP1 ? 1 : 0, claimedScore2: winnerIsP1 ? 0 : 1, notes: "Auto-forfeit: no result submitted, random winner selected" },
+            }).catch(() => {});
 
             if (isKO) await advanceWinners(match.tournamentId, match.round);
             resolved.push(match.id);
@@ -100,6 +103,9 @@ export async function POST() {
                 where: { id: match.id },
                 data: { score1: s1, score2: s2, winnerId, status: "CONFIRMED" },
             });
+            await prisma.bracketResult.create({
+                data: { bracketMatchId: match.id, submittedById: winnerId!, claimedScore1: s1, claimedScore2: s2, notes: "Auto-confirmed: opponent did not respond within 30 minutes" },
+            }).catch(() => {});
 
             const isKO = match.tournament.type === "BRACKET_1V1" ||
                 (match.tournament.type === "GROUP_KNOCKOUT" && match.round > 0);

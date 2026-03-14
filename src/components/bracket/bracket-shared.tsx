@@ -115,6 +115,7 @@ export interface BracketMatchResult {
     claimedScore1: number;
     claimedScore2: number;
     screenshotUrl: string | null;
+    notes: string | null;
     isDispute: boolean;
     createdAt: string;
 }
@@ -312,6 +313,14 @@ export function MatchCard({
                                 {config.label}
                             </Chip>
                         )}
+                        {/* Resolution reason for auto-resolved matches */}
+                        {match.status === "CONFIRMED" && (() => {
+                            const lastNotes = match.results?.[0]?.notes?.toLowerCase() ?? "";
+                            if (lastNotes.includes("auto-forfeit")) return <span className="text-[9px] font-medium text-danger/70 bg-danger/10 px-1.5 py-0.5 rounded-full">Auto-forfeit</span>;
+                            if (lastNotes.includes("auto-confirmed") || lastNotes.includes("auto-confirm")) return <span className="text-[9px] font-medium text-warning/70 bg-warning/10 px-1.5 py-0.5 rounded-full">Auto-confirmed</span>;
+                            if (lastNotes.includes("walkover")) return <span className="text-[9px] font-medium text-secondary bg-secondary/10 px-1.5 py-0.5 rounded-full">Walkover</span>;
+                            return null;
+                        })()}
                         {/* Deadline countdown for PENDING matches */}
                         {deadlineLabel && (
                             <span className={`text-[10px] font-medium flex items-center gap-0.5 ${deadlineLabel.urgent ? "text-danger animate-pulse" : "text-foreground/40"
