@@ -459,14 +459,14 @@ function TournamentContent({
                         {tournamentType === "GROUP_KNOCKOUT" ? (
                             <>
                                 <span className={`text-[11px] font-medium ${stageDeadlines.groupDone ? 'text-success' : 'text-warning'}`}>
-                                    Group: {stageDeadlines.groupDone ? "✓ Done" : stageDeadlines.groupDeadlineMs ? <RoundTicker deadlineMs={stageDeadlines.groupDeadlineMs} /> : "—"}
+                                    Group: {stageDeadlines.groupDone ? "✓ Done" : stageDeadlines.groupDeadlineMs ? `~${Math.ceil((stageDeadlines.groupDeadlineMs - Date.now()) / 3600_000)}h` : "—"}
                                 </span>
                                 <span className="h-1 w-1 rounded-full bg-foreground/20" />
                                 {stageDeadlines.koDone ? (
                                     <span className="text-[11px] font-medium text-success">KO: ✓ Done</span>
                                 ) : stageDeadlines.koStarted && stageDeadlines.koDeadlineMs ? (
                                     <span className="text-[11px] font-medium text-warning">
-                                        {stageDeadlines.koRoundLabel}: <RoundTicker deadlineMs={stageDeadlines.koDeadlineMs} />
+                                        {stageDeadlines.koRoundLabel}: ~{Math.ceil((stageDeadlines.koDeadlineMs - Date.now()) / 3600_000)}h
                                     </span>
                                 ) : (
                                     <span className={`text-[11px] font-medium ${stageDeadlines.groupDone ? 'text-primary' : 'text-foreground/30'}`}>
@@ -479,7 +479,7 @@ function TournamentContent({
                                 <span className="text-[11px] font-medium text-success">✓ All matches complete</span>
                             ) : stageDeadlines.deadlineMs ? (
                                 <span className="text-[11px] font-medium text-warning">
-                                    {stageDeadlines.roundLabel}: <RoundTicker deadlineMs={stageDeadlines.deadlineMs} />
+                                    {stageDeadlines.roundLabel}: ~{Math.ceil((stageDeadlines.deadlineMs - Date.now()) / 3600_000)}h
                                 </span>
                             ) : (
                                 <span className="text-[11px] font-medium text-foreground/30">Not started</span>
@@ -500,6 +500,16 @@ function TournamentContent({
                     onDispute={(id) => onSelectMatch(matchContext(id, true))}
                     deadlines={bracketData.deadlines}
                     tournamentType={tournamentType}
+                    rolloverDeadlineMs={
+                        tournamentType === "GROUP_KNOCKOUT"
+                            ? stageDeadlines?.koDeadlineMs ?? undefined
+                            : stageDeadlines?.deadlineMs ?? undefined
+                    }
+                    roundLabel={
+                        tournamentType === "GROUP_KNOCKOUT"
+                            ? stageDeadlines?.koRoundLabel ?? undefined
+                            : stageDeadlines?.roundLabel ?? undefined
+                    }
                 />
             )}
 

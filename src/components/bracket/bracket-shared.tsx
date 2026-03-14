@@ -219,7 +219,7 @@ export function PlayerSlot({
 /* ─── Match Card (full vertical card, for "My Match") ─────────── */
 
 export function MatchCard({
-    match, currentPlayerId, onSubmitResult, onConfirmResult, onDispute, onViewResult, deadlineHours,
+    match, currentPlayerId, onSubmitResult, onConfirmResult, onDispute, onViewResult, deadlineHours, rolloverDeadlineMs, rolloverRoundLabel,
 }: {
     match: BracketMatchData;
     currentPlayerId?: string;
@@ -227,7 +227,9 @@ export function MatchCard({
     onConfirmResult?: (id: string) => void;
     onDispute?: (id: string) => void;
     onViewResult?: (id: string) => void;
-    deadlineHours?: number;   // pass from bracket API response — shows countdown for PENDING
+    deadlineHours?: number;   // fallback per-match deadline
+    rolloverDeadlineMs?: number;  // rollover-based deadline timestamp
+    rolloverRoundLabel?: string;  // e.g. "Quarter-Final"
 }) {
     const config = statusConfig(match.status);
     const StatusIcon = config.icon;
@@ -239,6 +241,14 @@ export function MatchCard({
     const hasResult = match.status === "CONFIRMED" || match.status === "SUBMITTED";
     const isDisputed = match.status === "DISPUTED";
     const [callingOpponent, setCallingOpponent] = useState(false);
+    const [now, setNow] = useState(Date.now());
+
+    // Live tick for rollover countdown
+    useEffect(() => {
+        if (!rolloverDeadlineMs || match.status !== "PENDING") return;
+        const id = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, [rolloverDeadlineMs, match.status]);
 
     async function callOpponent() {
         setCallingOpponent(true);
@@ -247,7 +257,6 @@ export function MatchCard({
             const json = await res.json();
             const phone: string | null = json.data?.phoneNumber ?? null;
             if (!phone) {
-                // Dynamic import toast to avoid adding dep at top level
                 const { toast } = await import("sonner");
                 toast.error("Opponent hasn't added their phone number yet");
                 return;
@@ -261,16 +270,28 @@ export function MatchCard({
         }
     }
 
-    // Deadline countdown for PENDING matches
+    // Rollover countdown (preferred) or fallback to per-match deadline
     const deadlineLabel = (() => {
-        if (match.status !== "PENDING" || !match.createdAt || !deadlineHours) return null;
+        if (match.status !== "PENDING" || !match.player1Id || !match.player2Id) return null;
+        if (rolloverDeadlineMs) {
+            const diff = rolloverDeadlineMs - now;
+            if (diff <= 0) return { text: "Time's up", urgent: true, ticking: true };
+            const h = Math.floor(diff / 3600_000);
+            const m = Math.floor((diff % 3600_000) / 60_000);
+            const s = Math.floor((diff % 60_000) / 1000);
+            const pad = (n: number) => String(n).padStart(2, "0");
+            const urgent = h < 2;
+            const text = h > 0 ? `${h}h ${pad(m)}m ${pad(s)}s` : m > 0 ? `${m}m ${pad(s)}s` : `${s}s`;
+            return { text, urgent, ticking: true };
+        }
+        if (!match.createdAt || !deadlineHours) return null;
         const deadline = new Date(new Date(match.createdAt).getTime() + deadlineHours * 3600_000);
-        const msLeft = deadline.getTime() - Date.now();
-        if (msLeft <= 0) return { text: "Deadline passed", urgent: true };
+        const msLeft = deadline.getTime() - now;
+        if (msLeft <= 0) return { text: "Deadline passed", urgent: true, ticking: false };
         const hLeft = Math.floor(msLeft / 3600_000);
         const mLeft = Math.floor((msLeft % 3600_000) / 60_000);
         const urgent = hLeft < 6;
-        return { text: hLeft > 0 ? `${hLeft}h ${mLeft}m left` : `${mLeft}m left`, urgent };
+        return { text: hLeft > 0 ? `${hLeft}h ${mLeft}m left` : `${mLeft}m left`, urgent, ticking: false };
     })();
 
     const borderClass =
@@ -324,9 +345,11 @@ export function MatchCard({
                         {/* Deadline countdown for PENDING matches */}
                         {deadlineLabel && (
                             <span className={`text-[10px] font-medium flex items-center gap-0.5 ${deadlineLabel.urgent ? "text-danger animate-pulse" : "text-foreground/40"
-                                }`}>
+                                }`} suppressHydrationWarning>
                                 <Clock className="h-2.5 w-2.5" />
-                                {deadlineLabel.text}
+                                {deadlineLabel.ticking ? (
+                                    <span className="tabular-nums font-mono font-bold">{deadlineLabel.text}</span>
+                                ) : deadlineLabel.text}
                             </span>
                         )}
                     </div>
@@ -590,7 +613,7 @@ export function roundLabel(roundNum: number, rounds: RoundData[]): string {
 }
 
 export function MyBracketMatch({
-    rounds, currentPlayerId, onSubmitResult, onConfirmResult, onDispute, deadlines, tournamentType,
+    rounds, currentPlayerId, onSubmitResult, onConfirmResult, onDispute, deadlines, tournamentType, rolloverDeadlineMs, roundLabel: roundLabelProp,
 }: {
     rounds: RoundData[];
     currentPlayerId: string;
@@ -599,6 +622,8 @@ export function MyBracketMatch({
     onDispute?: (id: string) => void;
     deadlines?: { groupHours: number; koHours: number };
     tournamentType?: string;
+    rolloverDeadlineMs?: number;
+    roundLabel?: string;
 }) {
     const [idx, setIdx] = useState(0);
 
@@ -665,6 +690,8 @@ export function MyBracketMatch({
                             : deadlines.koHours)
                     : undefined
                 }
+                rolloverDeadlineMs={rolloverDeadlineMs}
+                rolloverRoundLabel={roundLabelProp}
             />
         </motion.div>
     );
