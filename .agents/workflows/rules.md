@@ -16,6 +16,7 @@ description: Core rules and guidelines for the AI assistant working on this proj
 - Tournament names like "Lehkai sngewtynnad 1" can exist across multiple seasons. They are NOT unique per season.
 - When querying tournament data, always account for same-named tournaments across different seasons.
 - For db push, use: `source .env && DATABASE_URL="$DIRECT_URL" npx prisma db push` (the pooled connection hangs).
+- **`prisma db execute --stdin` does NOT return SELECT results** — it only prints "Script executed successfully." For any query that needs to return data, always use `psql "$DIRECT_URL"` instead.
 - **Prisma implicit M2M tables in raw SQL**: Prisma names implicit many-to-many join tables as `_ModelAToModelB` (alphabetical order), e.g. `_PlayerToTeam` (not `_PlayerTeams`). Column `"A"` = first model's ID, `"B"` = second model's ID. Always check the migration SQL if unsure.
 
 # Architecture Notes
@@ -29,4 +30,9 @@ description: Core rules and guidelines for the AI assistant working on this proj
   - `src/lib/wallet-service.ts` — All wallet operations (balance reads, transactions, batch fetches)
   - Wallet client generation: `prisma generate --config=prisma.wallet.config.ts`
   - The wallet Prisma client uses **Prisma 7 "client" engine** with `PrismaPg` adapter, NOT `datasources` or `datasourceUrl` constructor args.
-- **Database per game**: Each game has its own Supabase PostgreSQL database. The `.env` file has all 3 connection strings — uncomment the one you need. Always use `DIRECT_URL` (port 5432) for `db push` since the pooled connection (port 6543) hangs.
+- **Database per game**: Each game has its own Supabase PostgreSQL database. The `.env` file has all 4 connection blocks — only ONE game DB should be uncommented at a time. Always use `DIRECT_URL` (port 5432) for `db push` and `psql` queries since the pooled connection (port 6543) hangs.
+  - **BGMI** (Supabase project `tgggoqxtsdiihkdnnyxt`): `postgresql://postgres.tgggoqxtsdiihkdnnyxt:BIMONLl1.@aws-1-ap-south-1.pooler.supabase.com:5432/postgres`
+  - **PES** (Supabase project `svbdazapxgujekqnwtwz`): `postgresql://postgres.svbdazapxgujekqnwtwz:lRwMQioGddNcGXLg@aws-1-ap-south-1.pooler.supabase.com:5432/postgres`
+  - **Free Fire / BOOYAH** (Supabase project `cebofvqlcdncsvypvalt`): `postgresql://postgres.cebofvqlcdncsvypvalt:BIMONLANGg1.@aws-1-ap-south-1.pooler.supabase.com:5432/postgres`
+  - **Central Wallet** (Neon — always active, shared): `postgresql://neondb_owner:npg_tRM7gpbyCD6q@ep-bold-term-a1cxzny9.ap-southeast-1.aws.neon.tech/neondb?sslmode=require`
+  - **Check `.env` first** to see which game DB is currently active (uncommented). If the user asks to query a specific game's DB, use that game's DIRECT_URL explicitly rather than relying on `$DIRECT_URL` from `.env`.
