@@ -541,8 +541,8 @@ export default function CommunityPage() {
                 </div>
             </motion.div>
 
-            {/* Cross-game promo — show all games on all domains */}
-            <CrossGamePromo showAll />
+            {/* Cross-game promo — only games that share the central wallet */}
+            <CrossGamePromo />
 
             {/* Active polls */}
             {polls.length > 0 && (
