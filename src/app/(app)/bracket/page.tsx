@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BracketView, MyBracketMatch } from "@/components/bracket/bracket-view";
+import { roundLabel, type RoundData } from "@/components/bracket/bracket-shared";
 import { GroupKnockoutView } from "@/components/bracket/group-knockout-view";
 import { SubmitResultModal } from "@/components/bracket/submit-result-modal";
 import { ViewResultModal } from "@/components/bracket/view-result-modal";
@@ -254,57 +255,80 @@ function TournamentContent({
     const { showOnboarding, dismissOnboarding } = useBracketOnboarding(playerId);
     const { showDisputeOnboarding, dismissDisputeOnboarding } = useDisputeOnboarding(playerId, hasSubmittedMatch);
 
-    // Compute stage end times from latest unfinished match + deadline hours
+    // Compute stage deadlines with rollover:
+    // Each KO round deadline = T0 + (roundPosition × koHours)
+    // Unused time from a faster round rolls over to the next.
     // NOTE: must be before early returns to comply with Rules of Hooks
     const stageDeadlines = useMemo(() => {
         if (!bracketData?.deadlines || !bracketData?.rounds) return null;
         const matches = bracketData.rounds.flatMap((r: any) => r.matches);
-        const now = Date.now();
-
-        const formatDeadline = (date: Date) => {
-            const diff = date.getTime() - now;
-            if (diff <= 0) return "Ended";
-            if (diff < 24 * 60 * 60 * 1000) {
-                const hours = Math.floor(diff / (60 * 60 * 1000));
-                const mins = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
-                return hours > 0 ? `${hours}h ${mins}m left` : `${mins}m left`;
-            }
-            return date.toLocaleDateString("en-IN", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
-        };
+        const rounds: RoundData[] = bracketData.rounds;
 
         if (tournamentType === "GROUP_KNOCKOUT") {
             const groupMatches = matches.filter((m: any) => m.round < 0 && m.status !== "CONFIRMED");
-            // Only count KO matches that have players assigned (KO stage actually started)
-            const koMatches = matches.filter((m: any) => m.round > 0 && m.status !== "CONFIRMED" && m.player1Id && m.player2Id);
-
-            const latestGroup = groupMatches.length > 0
-                ? new Date(Math.max(...groupMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.groupHours * 3600000)
-                : null;
-            const latestKO = koMatches.length > 0
-                ? new Date(Math.max(...koMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.koHours * 3600000)
-                : null;
-
-            // Has the KO stage actually started? (any KO match with players)
             const allKoMatches = matches.filter((m: any) => m.round > 0);
             const koStarted = allKoMatches.some((m: any) => m.player1Id && m.player2Id);
             const koAllConfirmed = koStarted && allKoMatches.every((m: any) => m.status === "CONFIRMED" || m.status === "BYE");
 
-            return {
-                group: latestGroup ? formatDeadline(latestGroup) : null,
-                ko: latestKO ? formatDeadline(latestKO) : null,
-                groupDone: groupMatches.length === 0,
-                koStarted,
-                koDone: koAllConfirmed,
-            };
-        } else {
-            const pendingMatches = matches.filter((m: any) => m.status !== "CONFIRMED");
-            const latestEnd = pendingMatches.length > 0
-                ? new Date(Math.max(...pendingMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.koHours * 3600000)
+            // Group deadline (still uses the old approach — per match)
+            const groupDeadlineMs = groupMatches.length > 0
+                ? Math.max(...groupMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.groupHours * 3600000
                 : null;
 
+            // KO rollover: find T0 (earliest KO match creation), get sorted unique KO rounds
+            const koRoundNums = [...new Set<number>(allKoMatches.map((m: any) => m.round))].sort((a: number, b: number) => a - b);
+            const t0 = allKoMatches.length > 0
+                ? Math.min(...allKoMatches.map((m: any) => new Date(m.createdAt).getTime()))
+                : null;
+
+            // Current active KO round = lowest round with unfinished matches
+            const activeKoRound = koRoundNums.find(rn =>
+                allKoMatches.some((m: any) => m.round === rn && m.status !== "CONFIRMED" && m.status !== "BYE")
+            ) ?? null;
+
+            // Rollover deadline: T0 + (1-based position of active round) × koHours
+            let koDeadlineMs: number | null = null;
+            let activeRoundLabel: string | null = null;
+            if (t0 !== null && activeKoRound !== null) {
+                const roundPos = koRoundNums.indexOf(activeKoRound) + 1;
+                koDeadlineMs = t0 + roundPos * bracketData.deadlines.koHours * 3600000;
+                activeRoundLabel = roundLabel(activeKoRound, rounds);
+            }
+
             return {
-                overall: latestEnd ? formatDeadline(latestEnd) : null,
-                done: pendingMatches.length === 0,
+                groupDone: groupMatches.length === 0,
+                groupDeadlineMs,
+                koStarted,
+                koDone: koAllConfirmed,
+                koDeadlineMs,
+                koRoundLabel: activeRoundLabel,
+            };
+        } else {
+            // Pure bracket (BRACKET_1V1 / LEAGUE)
+            const allMatches = matches.filter((m: any) => m.player1Id && m.player2Id);
+            const done = allMatches.every((m: any) => m.status === "CONFIRMED" || m.status === "BYE");
+
+            const roundNums = [...new Set<number>(allMatches.map((m: any) => m.round))].sort((a: number, b: number) => a - b);
+            const t0 = allMatches.length > 0
+                ? Math.min(...allMatches.map((m: any) => new Date(m.createdAt).getTime()))
+                : null;
+
+            const activeRound = roundNums.find(rn =>
+                allMatches.some((m: any) => m.round === rn && m.status !== "CONFIRMED" && m.status !== "BYE")
+            ) ?? null;
+
+            let deadlineMs: number | null = null;
+            let activeRoundLbl: string | null = null;
+            if (t0 !== null && activeRound !== null) {
+                const roundPos = roundNums.indexOf(activeRound) + 1;
+                deadlineMs = t0 + roundPos * bracketData.deadlines.koHours * 3600000;
+                activeRoundLbl = roundLabel(activeRound, rounds);
+            }
+
+            return {
+                done,
+                deadlineMs,
+                roundLabel: activeRoundLbl,
             };
         }
     }, [bracketData, tournamentType]);
@@ -435,17 +459,31 @@ function TournamentContent({
                         {tournamentType === "GROUP_KNOCKOUT" ? (
                             <>
                                 <span className={`text-[11px] font-medium ${stageDeadlines.groupDone ? 'text-success' : 'text-warning'}`}>
-                                    Group: {stageDeadlines.groupDone ? "✓ Done" : stageDeadlines.group}
+                                    Group: {stageDeadlines.groupDone ? "✓ Done" : stageDeadlines.groupDeadlineMs ? <RoundTicker deadlineMs={stageDeadlines.groupDeadlineMs} /> : "—"}
                                 </span>
                                 <span className="h-1 w-1 rounded-full bg-foreground/20" />
-                                <span className={`text-[11px] font-medium ${stageDeadlines.koDone ? 'text-success' : stageDeadlines.koStarted ? 'text-warning' : stageDeadlines.groupDone ? 'text-primary' : 'text-foreground/30'}`}>
-                                    KO: {stageDeadlines.koDone ? "✓ Done" : stageDeadlines.koStarted ? (stageDeadlines.ko ?? "In progress") : stageDeadlines.groupDone ? "⏳ Starting soon" : "Not started"}
-                                </span>
+                                {stageDeadlines.koDone ? (
+                                    <span className="text-[11px] font-medium text-success">KO: ✓ Done</span>
+                                ) : stageDeadlines.koStarted && stageDeadlines.koDeadlineMs ? (
+                                    <span className="text-[11px] font-medium text-warning">
+                                        {stageDeadlines.koRoundLabel}: <RoundTicker deadlineMs={stageDeadlines.koDeadlineMs} />
+                                    </span>
+                                ) : (
+                                    <span className={`text-[11px] font-medium ${stageDeadlines.groupDone ? 'text-primary' : 'text-foreground/30'}`}>
+                                        KO: {stageDeadlines.groupDone ? "⏳ Starting soon" : "Not started"}
+                                    </span>
+                                )}
                             </>
                         ) : (
-                            <span className={`text-[11px] font-medium ${stageDeadlines.done ? 'text-success' : 'text-warning'}`}>
-                                {stageDeadlines.done ? "✓ All matches complete" : `Ends: ${stageDeadlines.overall}`}
-                            </span>
+                            stageDeadlines.done ? (
+                                <span className="text-[11px] font-medium text-success">✓ All matches complete</span>
+                            ) : stageDeadlines.deadlineMs ? (
+                                <span className="text-[11px] font-medium text-warning">
+                                    {stageDeadlines.roundLabel}: <RoundTicker deadlineMs={stageDeadlines.deadlineMs} />
+                                </span>
+                            ) : (
+                                <span className="text-[11px] font-medium text-foreground/30">Not started</span>
+                            )
                         )}
                     </div>
                 )}
@@ -551,6 +589,31 @@ function TournamentContent({
                 tournamentId={tournamentId}
             />
         </>
+    );
+}
+
+/* ─── Live Ticking Countdown ─────────────────────────────── */
+function RoundTicker({ deadlineMs }: { deadlineMs: number }) {
+    const [now, setNow] = useState(Date.now());
+
+    useEffect(() => {
+        const id = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, []);
+
+    const diff = deadlineMs - now;
+    if (diff <= 0) return <span className="text-danger font-bold">Time&apos;s up</span>;
+
+    const h = Math.floor(diff / 3600_000);
+    const m = Math.floor((diff % 3600_000) / 60_000);
+    const s = Math.floor((diff % 60_000) / 1000);
+    const urgent = h < 2;
+    const pad = (n: number) => String(n).padStart(2, "0");
+
+    return (
+        <span className={`tabular-nums font-mono font-bold ${urgent ? "text-danger animate-pulse" : ""}`} suppressHydrationWarning>
+            {h > 0 ? `${h}h ${pad(m)}m ${pad(s)}s` : m > 0 ? `${m}m ${pad(s)}s` : `${s}s`}
+        </span>
     );
 }
 
