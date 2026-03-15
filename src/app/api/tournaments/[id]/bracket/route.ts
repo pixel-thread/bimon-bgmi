@@ -232,8 +232,8 @@ export async function GET(
                 })),
             }));
 
-        // Check if there's a final winner
-        const finalMatch = matches.find((m) => m.round === totalRounds && m.winnerId);
+        // Check if there's a final winner (position 0 = Final, position 1 = 3rd Place)
+        const finalMatch = matches.find((m) => m.round === totalRounds && m.position === 0 && m.winnerId);
         const winner = finalMatch?.winner
             ? { displayName: finalMatch.winner.displayName }
             : null;
