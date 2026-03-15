@@ -192,10 +192,10 @@ function BgmiLogo({ className }: PubgmiLogoProps) {
     );
 }
 
-// ─── Free Fire Logo — BOO-YAH ↔ KG┊Dengstai alternating cascade ───
+// ─── Free Fire Logo — BOO-YAH ↔ Bimon Tournament alternating cascade ───
 const FF_WORDS = [
     ["B", "O", "O", "-", "Y", "A", "H"],
-    ["K", "G", "┊", "D", "e", "n", "g", "s", "t", "a", "i"],
+    ["B", "i", "m", "o", "n", " ", "T", "o", "u", "r", "n", "a", "m", "e", "n", "t"],
 ];
 
 function FreeFireLogo({ className }: PubgmiLogoProps) {
@@ -274,10 +274,10 @@ function FreeFireLogo({ className }: PubgmiLogoProps) {
     );
 }
 
-// ─── PES Logo — KICKOFF ↔ eFootball alternating cascade ───
+// ─── PES Logo — KICKOFF ↔ Bimon Tournament alternating cascade ───
 const PES_WORDS = [
     ["K", "I", "C", "K", "O", "F", "F"],
-    ["e", "F", "O", "O", "T", "B", "A", "L", "L"],
+    ["B", "i", "m", "o", "n", " ", "T", "o", "u", "r", "n", "a", "m", "e", "n", "t"],
 ];
 
 function PesLogo({ className }: PubgmiLogoProps) {
