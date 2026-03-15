@@ -120,7 +120,7 @@ export default function ProfilePage() {
     const ignTutorial = useIGNTutorial();
     const [showRPModal, setShowRPModal] = useState(false);
 
-    const { data: profile, isLoading, error } = useQuery<ProfileData>({
+    const { data: profile, isLoading, isFetching, error } = useQuery<ProfileData>({
         queryKey: ["profile"],
         queryFn: async () => {
             const res = await fetch("/api/profile");
@@ -175,7 +175,8 @@ export default function ProfilePage() {
         }
     };
 
-    if (isLoading) {
+    // Show skeleton on initial load, or when refetching and data is incomplete
+    if (isLoading || (isFetching && (!profile || !profile.player))) {
         return (
             <div className="mx-auto max-w-lg px-4 py-6 sm:px-6">
                 <div className="space-y-4">
