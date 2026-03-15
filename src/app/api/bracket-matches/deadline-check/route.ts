@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { advanceWinners } from "@/lib/logic/generateBracket";
 import { getSettings } from "@/lib/settings";
+import { getMatchDeadlineMs } from "@/lib/logic/koRolloverDeadline";
 
 /**
  * POST /api/bracket-matches/deadline-check
@@ -44,12 +45,8 @@ export async function POST() {
         const skipped: string[] = [];
 
         for (const match of pendingMatches) {
-            const isKO = match.tournament.type === "BRACKET_1V1" ||
-                (match.tournament.type === "GROUP_KNOCKOUT" && match.round > 0);
-            const deadlineHours = isKO ? settings.matchDeadlineKOHours : settings.matchDeadlineGroupHours;
-            const deadline = new Date(match.createdAt.getTime() + deadlineHours * 60 * 60 * 1000);
-
-            if (now < deadline) { skipped.push(match.id); continue; }
+            const deadlineMs = await getMatchDeadlineMs(match.tournamentId, match.tournament.type, match.round, match.createdAt, settings);
+            if (now.getTime() < deadlineMs) { skipped.push(match.id); continue; }
 
             const winnerId = Math.random() < 0.5 ? match.player1Id! : match.player2Id!;
             const winnerIsP1 = winnerId === match.player1Id;
@@ -62,6 +59,8 @@ export async function POST() {
                 data: { bracketMatchId: match.id, submittedById: winnerId, claimedScore1: winnerIsP1 ? 1 : 0, claimedScore2: winnerIsP1 ? 0 : 1, notes: "Auto-forfeit: no result submitted, random winner selected" },
             }).catch(() => {});
 
+            const isKO = match.tournament.type === "BRACKET_1V1" ||
+                (match.tournament.type === "GROUP_KNOCKOUT" && match.round > 0);
             if (isKO) await advanceWinners(match.tournamentId, match.round);
             resolved.push(match.id);
         }
@@ -94,12 +93,9 @@ export async function POST() {
             const latest = match.results[0];
             if (!latest) continue;
 
-            // Only auto-confirm when match deadline is nearly up (≤ 30 min left)
-            const isKO = match.tournament.type === "BRACKET_1V1" ||
-                (match.tournament.type === "GROUP_KNOCKOUT" && match.round > 0);
-            const deadlineHours = isKO ? settings.matchDeadlineKOHours : settings.matchDeadlineGroupHours;
-            const matchDeadline = new Date(match.createdAt.getTime() + deadlineHours * 3600_000);
-            const timeLeftMs = matchDeadline.getTime() - now.getTime();
+            // Only auto-confirm when rollover deadline is nearly up (≤ 30 min left)
+            const deadlineMs = await getMatchDeadlineMs(match.tournamentId, match.tournament.type, match.round, match.createdAt, settings);
+            const timeLeftMs = deadlineMs - now.getTime();
             if (timeLeftMs > CONFIRM_DEADLINE_MS) continue; // Still has time — skip
 
             const isWalkover = latest.notes?.toLowerCase().includes("walkover") ?? false;
@@ -116,6 +112,8 @@ export async function POST() {
                 data: { bracketMatchId: match.id, submittedById: winnerId!, claimedScore1: s1, claimedScore2: s2, notes: isWalkover ? "Walkover confirmed: opponent did not respond before deadline" : "Auto-confirmed: opponent did not verify before deadline" },
             }).catch(() => {});
 
+            const isKO = match.tournament.type === "BRACKET_1V1" ||
+                (match.tournament.type === "GROUP_KNOCKOUT" && match.round > 0);
             if (isKO) await advanceWinners(match.tournamentId, match.round);
 
             autoConfirmed.push(match.id);

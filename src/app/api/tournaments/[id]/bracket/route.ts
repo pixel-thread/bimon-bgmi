@@ -4,6 +4,7 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getSettings } from "@/lib/settings";
 import { advanceWinners } from "@/lib/logic/generateBracket";
 import { advanceGroupToKnockout } from "@/lib/logic/generateGroupKnockout";
+import { getMatchDeadlineMs } from "@/lib/logic/koRolloverDeadline";
 
 const CONFIRM_DEADLINE_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -30,11 +31,9 @@ async function silentAutoConfirm(tournamentId: string, tournamentType: string) {
             const latest = match.results[0];
             if (!latest) continue;
 
-            // Only auto-confirm when match deadline is nearly up (≤ 30 min left)
-            const isKO = tournamentType === "BRACKET_1V1" || (tournamentType === "GROUP_KNOCKOUT" && match.round > 0);
-            const deadlineHours = isKO ? settings.matchDeadlineKOHours : settings.matchDeadlineGroupHours;
-            const matchDeadline = new Date(match.createdAt.getTime() + deadlineHours * 3600_000);
-            const timeLeftMs = matchDeadline.getTime() - now.getTime();
+            // Only auto-confirm when rollover deadline is nearly up (≤ 30 min left)
+            const deadlineMs = await getMatchDeadlineMs(tournamentId, tournamentType, match.round, match.createdAt, settings);
+            const timeLeftMs = deadlineMs - now.getTime();
             if (timeLeftMs > CONFIRM_DEADLINE_MS) continue; // Still has time — skip
 
             const isWalkover = latest.notes?.toLowerCase().includes("walkover") ?? false;
@@ -45,6 +44,7 @@ async function silentAutoConfirm(tournamentId: string, tournamentType: string) {
             await prisma.bracketResult.create({
                 data: { bracketMatchId: match.id, submittedById: winnerId!, claimedScore1: s1, claimedScore2: s2, notes: isWalkover ? "Walkover confirmed: opponent did not respond before deadline" : "Auto-confirmed: opponent did not verify before deadline" },
             }).catch(() => {});
+            const isKO = tournamentType === "BRACKET_1V1" || (tournamentType === "GROUP_KNOCKOUT" && match.round > 0);
             if (isKO) await advanceWinners(tournamentId, match.round);
         }
 
@@ -54,9 +54,8 @@ async function silentAutoConfirm(tournamentId: string, tournamentType: string) {
             select: { id: true, round: true, player1Id: true, player2Id: true, createdAt: true },
         });
         for (const match of pending) {
-            const isKO = tournamentType === "BRACKET_1V1" || (tournamentType === "GROUP_KNOCKOUT" && match.round > 0);
-            const deadlineHours = isKO ? settings.matchDeadlineKOHours : settings.matchDeadlineGroupHours;
-            if (now < new Date(match.createdAt.getTime() + deadlineHours * 60 * 60 * 1000)) continue;
+            const deadlineMs = await getMatchDeadlineMs(tournamentId, tournamentType, match.round, match.createdAt, settings);
+            if (now.getTime() < deadlineMs) continue;
             const winnerId = Math.random() < 0.5 ? match.player1Id! : match.player2Id!;
             const winnerIsP1 = winnerId === match.player1Id;
             await prisma.bracketMatch.update({
@@ -67,6 +66,7 @@ async function silentAutoConfirm(tournamentId: string, tournamentType: string) {
             await prisma.bracketResult.create({
                 data: { bracketMatchId: match.id, submittedById: winnerId, claimedScore1: winnerIsP1 ? 1 : 0, claimedScore2: winnerIsP1 ? 0 : 1, notes: "Auto-forfeit: no result submitted, random winner selected" },
             }).catch(() => {});
+            const isKO = tournamentType === "BRACKET_1V1" || (tournamentType === "GROUP_KNOCKOUT" && match.round > 0);
             if (isKO) await advanceWinners(tournamentId, match.round);
         }
         // 3. GROUP_KNOCKOUT: if ALL group stage matches are now CONFIRMED
