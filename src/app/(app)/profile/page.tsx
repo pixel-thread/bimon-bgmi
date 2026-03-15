@@ -179,13 +179,83 @@ export default function ProfilePage() {
         return (
             <div className="mx-auto max-w-lg px-4 py-6 sm:px-6">
                 <div className="space-y-4">
-                    <Skeleton className="h-80 w-full rounded-xl" />
-                    <div className="grid grid-cols-4 gap-3">
-                        {[1, 2, 3, 4].map((i) => (
-                            <Skeleton key={i} className="h-16 rounded-xl" />
+                    {/* Hero card skeleton */}
+                    <div className="overflow-hidden rounded-xl border border-divider">
+                        <div className="relative aspect-[3/4] w-full">
+                            <Skeleton className="h-full w-full" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                            {/* Avatar + name overlay */}
+                            <div className="absolute bottom-3 left-4 right-4 flex items-end gap-3">
+                                <Skeleton className="h-16 w-16 rounded-full shrink-0" />
+                                <div className="flex-1 space-y-1.5 pb-0.5">
+                                    <Skeleton className="h-6 w-36 rounded-lg" />
+                                    <Skeleton className="h-4 w-24 rounded-lg" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Stats card skeleton */}
+                    <div className="rounded-xl border border-divider p-4 space-y-4">
+                        {/* K/D */}
+                        <div className="flex flex-col items-center gap-1">
+                            <Skeleton className="h-3 w-16 rounded" />
+                            <Skeleton className="h-10 w-20 rounded-lg" />
+                        </div>
+                        {/* Battle Stats 4-grid */}
+                        <div>
+                            <Skeleton className="h-3 w-20 rounded mb-2" />
+                            <div className="grid grid-cols-4 gap-3">
+                                {[1, 2, 3, 4].map((i) => (
+                                    <div key={i} className="flex flex-col items-center gap-1">
+                                        <Skeleton className="h-7 w-10 rounded" />
+                                        <Skeleton className="h-2.5 w-12 rounded" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        {/* Performance 3-grid */}
+                        <div className="border-t border-divider pt-3">
+                            <Skeleton className="h-3 w-24 rounded mb-2" />
+                            <div className="grid grid-cols-3 gap-3">
+                                {[1, 2, 3].map((i) => (
+                                    <div key={i} className="flex flex-col items-center gap-1">
+                                        <Skeleton className="h-6 w-12 rounded" />
+                                        <Skeleton className="h-2.5 w-14 rounded" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        {/* Career 3-grid */}
+                        <div className="border-t border-divider pt-3">
+                            <Skeleton className="h-3 w-16 rounded mb-2" />
+                            <div className="grid grid-cols-3 gap-3">
+                                {[1, 2, 3].map((i) => (
+                                    <div key={i} className="flex flex-col items-center gap-1">
+                                        <Skeleton className="h-6 w-10 rounded" />
+                                        <Skeleton className="h-2.5 w-16 rounded" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Profile settings skeleton */}
+                    <div className="rounded-xl border border-divider p-4 space-y-3">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Skeleton className="h-4 w-4 rounded" />
+                            <Skeleton className="h-3 w-14 rounded" />
+                        </div>
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="flex items-center gap-2">
+                                <Skeleton className="h-3 w-16 rounded" />
+                                <Skeleton className="h-3 w-28 rounded" />
+                            </div>
                         ))}
                     </div>
-                    <Skeleton className="h-24 rounded-xl" />
+
+                    {/* Sign out skeleton */}
+                    <Skeleton className="h-10 w-full rounded-xl" />
                 </div>
             </div>
         );
