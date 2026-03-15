@@ -192,10 +192,10 @@ function BgmiLogo({ className }: PubgmiLogoProps) {
     );
 }
 
-// ─── Free Fire Logo — BOO-YAH ↔ Boss-rangbah alternating cascade ───
+// ─── Free Fire Logo — BOO-YAH ↔ KG┊Dengstai alternating cascade ───
 const FF_WORDS = [
     ["B", "O", "O", "-", "Y", "A", "H"],
-    ["B", "O", "S", "S", "-", "R", "A", "N", "G", "B", "A", "H"],
+    ["K", "G", "┊", "D", "e", "n", "g", "s", "t", "a", "i"],
 ];
 
 function FreeFireLogo({ className }: PubgmiLogoProps) {
