@@ -106,6 +106,7 @@ export function ZoomControls({ zoom, onZoomIn, onZoomOut, onReset }: {
 export interface BracketPlayer {
     id: string;
     displayName: string | null;
+    phoneNumber?: string | null;
     userId?: string;
 }
 
@@ -251,6 +252,17 @@ export function MatchCard({
     }, [rolloverDeadlineMs, match.status]);
 
     async function callOpponent() {
+        // Use inline phone data from bracket response (instant)
+        const opponentPhone = isCurrentP1
+            ? match.player2?.phoneNumber
+            : match.player1?.phoneNumber;
+
+        if (opponentPhone) {
+            window.location.href = `tel:${opponentPhone}`;
+            return;
+        }
+
+        // Fallback to API if phone not in inline data
         setCallingOpponent(true);
         try {
             const res = await fetch(`/api/bracket-matches/${match.id}/opponent-phone`);

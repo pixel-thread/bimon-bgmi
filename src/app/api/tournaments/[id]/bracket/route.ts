@@ -132,6 +132,7 @@ export async function GET(
                     select: {
                         id: true,
                         displayName: true,
+                        phoneNumber: true,
                         customProfileImageUrl: true,
                         user: { select: { imageUrl: true } },
                     },
@@ -140,6 +141,7 @@ export async function GET(
                     select: {
                         id: true,
                         displayName: true,
+                        phoneNumber: true,
                         customProfileImageUrl: true,
                         user: { select: { imageUrl: true } },
                     },
@@ -215,10 +217,10 @@ export async function GET(
                     disputeRemainingMs: m.disputeDeadline ? Math.max(0, new Date(m.disputeDeadline).getTime() - serverNow) : null,
                     createdAt: m.createdAt,          // for deadline countdown on /bracket
                     player1: m.player1
-                        ? { displayName: m.player1.displayName }
+                        ? { displayName: m.player1.displayName, phoneNumber: m.player1.phoneNumber }
                         : null,
                     player2: m.player2
-                        ? { displayName: m.player2.displayName }
+                        ? { displayName: m.player2.displayName, phoneNumber: m.player2.phoneNumber }
                         : null,
                     player1Avatar:
                         m.player1?.customProfileImageUrl ??
