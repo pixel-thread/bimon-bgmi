@@ -17,11 +17,10 @@ async function silentAutoConfirm(tournamentId: string, tournamentType: string) {
         const now = new Date();
         const settings = await getSettings();
 
-        // 1. SUBMITTED > 30 min → confirm the claimed result
-        //    Exception: walkover claims only auto-confirm when the match's
-        //    play deadline has ≤ 30 min remaining (prevent early walkover abuse)
+        // 1. SUBMITTED matches → auto-confirm only when match deadline has ≤ 30 min left
+        //    This gives opponents the full deadline window to verify and dispute.
         const stale = await prisma.bracketMatch.findMany({
-            where: { tournamentId, status: "SUBMITTED", updatedAt: { lt: new Date(now.getTime() - CONFIRM_DEADLINE_MS) } },
+            where: { tournamentId, status: "SUBMITTED" },
             select: {
                 id: true, round: true, player1Id: true, player2Id: true, createdAt: true,
                 results: { orderBy: { createdAt: "desc" }, take: 1, select: { claimedScore1: true, claimedScore2: true, notes: true } },
@@ -31,26 +30,21 @@ async function silentAutoConfirm(tournamentId: string, tournamentType: string) {
             const latest = match.results[0];
             if (!latest) continue;
 
-            // Check if this is a walkover claim
-            const isWalkover = latest.notes?.toLowerCase().includes("walkover") ?? false;
-            if (isWalkover) {
-                // Only auto-confirm walkover when match deadline is nearly up
-                const isKO = tournamentType === "BRACKET_1V1" || (tournamentType === "GROUP_KNOCKOUT" && match.round > 0);
-                const deadlineHours = isKO ? settings.matchDeadlineKOHours : settings.matchDeadlineGroupHours;
-                const matchDeadline = new Date(match.createdAt.getTime() + deadlineHours * 3600_000);
-                const timeLeftMs = matchDeadline.getTime() - now.getTime();
-                if (timeLeftMs > CONFIRM_DEADLINE_MS) continue; // Still has time — skip
-            }
+            // Only auto-confirm when match deadline is nearly up (≤ 30 min left)
+            const isKO = tournamentType === "BRACKET_1V1" || (tournamentType === "GROUP_KNOCKOUT" && match.round > 0);
+            const deadlineHours = isKO ? settings.matchDeadlineKOHours : settings.matchDeadlineGroupHours;
+            const matchDeadline = new Date(match.createdAt.getTime() + deadlineHours * 3600_000);
+            const timeLeftMs = matchDeadline.getTime() - now.getTime();
+            if (timeLeftMs > CONFIRM_DEADLINE_MS) continue; // Still has time — skip
 
+            const isWalkover = latest.notes?.toLowerCase().includes("walkover") ?? false;
             const { claimedScore1: s1, claimedScore2: s2 } = latest;
             const winnerId = s1 > s2 ? match.player1Id : match.player2Id;
             if (!winnerId) continue;
             await prisma.bracketMatch.update({ where: { id: match.id }, data: { score1: s1, score2: s2, winnerId, status: "CONFIRMED" } });
-            // Create a result record so the UI can show how the match was resolved
             await prisma.bracketResult.create({
-                data: { bracketMatchId: match.id, submittedById: winnerId!, claimedScore1: s1, claimedScore2: s2, notes: isWalkover ? "Walkover confirmed: opponent did not respond before deadline" : "Auto-confirmed: opponent did not respond within 30 minutes" },
+                data: { bracketMatchId: match.id, submittedById: winnerId!, claimedScore1: s1, claimedScore2: s2, notes: isWalkover ? "Walkover confirmed: opponent did not respond before deadline" : "Auto-confirmed: opponent did not verify before deadline" },
             }).catch(() => {});
-            const isKO = tournamentType === "BRACKET_1V1" || (tournamentType === "GROUP_KNOCKOUT" && match.round > 0);
             if (isKO) await advanceWinners(tournamentId, match.round);
         }
 
