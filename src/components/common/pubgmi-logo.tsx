@@ -24,7 +24,12 @@ type BgmiPhase =
     | "DROP_MI"
     | "PUBG"
     | "ROLL_MI"
+    | "SWAP_BIMON"
+    | "BIMON"
+    | "SWAP_BACK"
     ;
+
+const BIMON_LETTERS = "Bimon Tournament".split("");
 
 const BGMI_TIMINGS = {
     PUBGMI: 2400,
@@ -35,6 +40,9 @@ const BGMI_TIMINGS = {
     DROP_MI: 900,
     PUBG: 1200,
     ROLL_MI: 1400,
+    SWAP_BIMON: 2200,
+    BIMON: 2500,
+    SWAP_BACK: 2200,
 };
 
 // ─── BGMI Logo ───
@@ -70,7 +78,16 @@ function BgmiLogo({ className }: PubgmiLogoProps) {
                 advance("ROLL_MI", BGMI_TIMINGS.PUBG);
                 break;
             case "ROLL_MI":
-                advance("PUBGMI", BGMI_TIMINGS.ROLL_MI + 600);
+                advance("SWAP_BIMON", BGMI_TIMINGS.ROLL_MI + 600);
+                break;
+            case "SWAP_BIMON":
+                advance("BIMON", BGMI_TIMINGS.SWAP_BIMON);
+                break;
+            case "BIMON":
+                advance("SWAP_BACK", BGMI_TIMINGS.BIMON);
+                break;
+            case "SWAP_BACK":
+                advance("PUBGMI", BGMI_TIMINGS.SWAP_BACK);
                 break;
         }
 
@@ -175,6 +192,67 @@ function BgmiLogo({ className }: PubgmiLogoProps) {
                         {s("P", 0)}{s("U", 1)}{s("B", 2)}{s("G", 3)}
                         {roll("M", 0, "mi")}{roll("I", 1, "mi")}
                     </>
+                );
+
+            case "SWAP_BIMON":
+                return (
+                    <span className="pubgmi-swap-container">
+                        <span className="pubgmi-swap-out">
+                            {"PUBGMI".split("").map((letter, i) => (
+                                <span
+                                    key={`bimon-out-${i}`}
+                                    className="pubgmi-letter pubgmi-fall-down"
+                                    style={{ "--fall-delay": `${i * 100}ms` } as React.CSSProperties}
+                                >
+                                    {letter}
+                                </span>
+                            ))}
+                        </span>
+                        {BIMON_LETTERS.map((letter, i) => (
+                            <span
+                                key={`bimon-in-${i}`}
+                                className="pubgmi-letter pubgmi-roll-in"
+                                style={{ "--roll-delay": `${300 + i * 80}ms` } as React.CSSProperties}
+                            >
+                                {letter}
+                            </span>
+                        ))}
+                    </span>
+                );
+
+            case "BIMON":
+                return (
+                    <>
+                        {BIMON_LETTERS.map((letter, i) => (
+                            <span key={`bimon-s-${i}`} className="pubgmi-letter">{letter}</span>
+                        ))}
+                    </>
+                );
+
+            case "SWAP_BACK":
+                return (
+                    <span className="pubgmi-swap-container">
+                        <span className="pubgmi-swap-out">
+                            {BIMON_LETTERS.map((letter, i) => (
+                                <span
+                                    key={`back-out-${i}`}
+                                    className="pubgmi-letter pubgmi-fall-down"
+                                    style={{ "--fall-delay": `${i * 80}ms` } as React.CSSProperties}
+                                >
+                                    {letter}
+                                </span>
+                            ))}
+                        </span>
+                        {"PUBGMI".split("").map((letter, i) => (
+                            <span
+                                key={`back-in-${i}`}
+                                className="pubgmi-letter pubgmi-roll-in"
+                                style={{ "--roll-delay": `${400 + i * 120}ms` } as React.CSSProperties}
+                            >
+                                {letter}
+                            </span>
+                        ))}
+                    </span>
                 );
 
             default:
