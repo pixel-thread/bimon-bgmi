@@ -29,7 +29,7 @@ type BgmiPhase =
     | "SWAP_BACK"
     ;
 
-const BIMON_LETTERS = "Bimon Tournament".split("");
+const BIMON_LETTERS = "Bimon\u00A0Tournament".split("");
 
 const BGMI_TIMINGS = {
     PUBGMI: 2400,
@@ -273,7 +273,7 @@ function BgmiLogo({ className }: PubgmiLogoProps) {
 // ─── Free Fire Logo — BOO-YAH ↔ Bimon Tournament alternating cascade ───
 const FF_WORDS = [
     ["B", "O", "O", "-", "Y", "A", "H"],
-    ["B", "i", "m", "o", "n", " ", "T", "o", "u", "r", "n", "a", "m", "e", "n", "t"],
+    ["B", "i", "m", "o", "n", "\u00A0", "T", "o", "u", "r", "n", "a", "m", "e", "n", "t"],
 ];
 
 function FreeFireLogo({ className }: PubgmiLogoProps) {
@@ -355,7 +355,7 @@ function FreeFireLogo({ className }: PubgmiLogoProps) {
 // ─── PES Logo — KICKOFF ↔ Bimon Tournament alternating cascade ───
 const PES_WORDS = [
     ["K", "I", "C", "K", "O", "F", "F"],
-    ["B", "i", "m", "o", "n", " ", "T", "o", "u", "r", "n", "a", "m", "e", "n", "t"],
+    ["B", "i", "m", "o", "n", "\u00A0", "T", "o", "u", "r", "n", "a", "m", "e", "n", "t"],
 ];
 
 function PesLogo({ className }: PubgmiLogoProps) {
