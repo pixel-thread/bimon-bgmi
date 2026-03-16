@@ -96,7 +96,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasBR: true,
             hasLeague: false,
             hasGroupKnockout: false,
-            usesCentralWallet: true,
+            usesCentralWallet: false,  // All games use local wallet now
         },
     },
     freefire: {
@@ -129,7 +129,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasRoyalPass: true,
             hasMerit: true,
             hasReferrals: true,
-            hasTopUps: true,
+            hasTopUps: false,            // Razorpay not configured for Free Fire yet
             hasBracket: false,
             hasBR: true,
             hasLeague: false,
@@ -167,12 +167,12 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasRoyalPass: false,        // No pass system for PES
             hasMerit: false,            // No merit rating for 1v1
             hasReferrals: true,         // Referrals still make sense
-            hasTopUps: true,            // Currency purchases still apply
+            hasTopUps: false,            // Razorpay not configured for Free Fire yet
             hasBracket: true,
             hasBR: false,
             hasLeague: true,            // Round-robin league
             hasGroupKnockout: true,     // Group → Knockout (World Cup)
-            usesCentralWallet: true,
+            usesCentralWallet: false,  // All games use local wallet now
         },
     },
 };

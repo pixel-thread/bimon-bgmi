@@ -415,6 +415,7 @@ export default function WalletPage() {
                                             </span>
                                         </p>
                                     </div>
+                                    {GAME.features.hasTopUps && (
                                     <Button
                                         size="sm"
                                         color="primary"
@@ -426,6 +427,7 @@ export default function WalletPage() {
                                     >
                                         Add {GAME.currency}
                                     </Button>
+                                    )}
                                 </div>
 
                                 {/* Lucky voter promo */}

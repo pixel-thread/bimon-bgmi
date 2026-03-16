@@ -17,9 +17,8 @@ const GAME_MODE = process.env.NEXT_PUBLIC_GAME_MODE || "bgmi";
 
 /** Check if the current game uses the central wallet */
 function isCentralWalletEnabled(): boolean {
-    // Match against game-config.ts feature flags
-    // Only bgmi and pes use central wallet; freefire is isolated
-    return GAME_MODE !== "freefire";
+    // All games use local wallet now — each instance is independently managed
+    return false;
 }
 
 // ─── Helpers ────────────────────────────────────────────────
