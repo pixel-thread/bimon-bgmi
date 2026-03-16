@@ -143,8 +143,11 @@ export async function POST(
         const allActiveStreaks = await prisma.playerStreak.findMany({
             where: {
                 current: { gt: 0 },
-                seasonId: tournament.seasonId,
-                lastTournamentId: { not: tournamentId },
+                // Include streaks with null lastTournamentId too (Prisma `not` skips nulls)
+                OR: [
+                    { lastTournamentId: { not: tournamentId } },
+                    { lastTournamentId: null },
+                ],
             },
             select: { playerId: true },
         });
