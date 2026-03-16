@@ -463,14 +463,21 @@ function TournamentContent({
                             <span className="text-[11px] text-foreground/40 font-medium">{formatLabel}</span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/15 border border-success/20 shrink-0">
-                        <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-                        <span className="text-[11px] font-bold text-success">Live</span>
-                    </div>
+                    {bracketData.winner ? (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/15 border border-primary/20 shrink-0">
+                            <Trophy className="h-3 w-3 text-primary" />
+                            <span className="text-[11px] font-bold text-primary">Completed</span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/15 border border-success/20 shrink-0">
+                            <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                            <span className="text-[11px] font-bold text-success">Live</span>
+                        </div>
+                    )}
                 </div>
 
-                {/* Stage deadlines */}
-                {stageDeadlines && (
+                {/* Stage deadlines — hide when tournament is completed */}
+                {stageDeadlines && !bracketData.winner && (
                     <div className="relative flex items-center gap-2 flex-wrap">
                         <Clock className="h-3.5 w-3.5 text-warning shrink-0" />
                         {tournamentType === "GROUP_KNOCKOUT" ? (
