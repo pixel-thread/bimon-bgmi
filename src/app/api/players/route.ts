@@ -4,7 +4,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 import { getCategoryFromKDValue, getCategoryFromWinRate } from "@/lib/logic/categoryUtils";
 import { GAME } from "@/lib/game-config";
-import { getCentralBalancesBatch } from "@/lib/wallet-service";
 
 /**
  * GET /api/players
@@ -147,9 +146,7 @@ export async function GET(request: NextRequest) {
             if (m.player2Id) bracketMatchCountMap.set(m.player2Id, (bracketMatchCountMap.get(m.player2Id) ?? 0) + 1);
         }
 
-        // Batch-fetch central wallet balances
-        const emails = players.map(p => p.user.email).filter((e): e is string => !!e);
-        const centralBalances = await getCentralBalancesBatch(emails).catch(() => new Map<string, number>());
+
 
         // Category: use win rate for bracket games (PES), K/D for BR games (BGMI/FF)
         const isBracketGame = GAME.scoringSystem === "bracket";
@@ -182,7 +179,7 @@ export async function GET(request: NextRequest) {
                     losses: losses > 0 ? losses : 0,
                     deaths: 0,
                 },
-                balance: centralBalances.get(p.user.email ?? "") ?? p.wallet?.balance ?? 0,
+                balance: p.wallet?.balance ?? 0,
                 hasRoyalPass: p.hasRoyalPass,
                 characterImage: p.characterImage
                     ? {
@@ -247,35 +244,28 @@ export async function GET(request: NextRequest) {
         // Add balance totals for super admins from central wallet (exclude admin wallets)
         if (user?.role === "SUPER_ADMIN") {
             try {
-                const { walletDb } = await import("@/lib/wallet-db");
-                if (walletDb?.centralWallet) {
-                    // Get admin emails to exclude from totals
-                    const adminUsers = await prisma.user.findMany({
-                        where: { role: { in: ["SUPER_ADMIN", "ADMIN"] } },
-                        select: { email: true },
-                    });
-                    const adminEmails = adminUsers.map(u => u.email).filter(Boolean) as string[];
+                // Get admin emails to exclude from totals
+                const adminUsers = await prisma.user.findMany({
+                    where: { role: { in: ["SUPER_ADMIN", "ADMIN"] } },
+                    select: { id: true },
+                });
+                const adminPlayerIds = (await prisma.player.findMany({
+                    where: { userId: { in: adminUsers.map(u => u.id) } },
+                    select: { id: true },
+                })).map(p => p.id);
 
-                    const excludeFilter = {
-                        user: { email: { notIn: adminEmails } },
-                    };
-                    const aggregations = await walletDb.centralWallet.aggregate({
-                        where: excludeFilter,
-                        _sum: { balance: true },
-                    });
-                    const negativeSum = await walletDb.centralWallet.aggregate({
-                        where: { ...excludeFilter, balance: { lt: 0 } },
-                        _sum: { balance: true },
-                    });
-                    meta.totalBalance = aggregations._sum.balance ?? 0;
-                    meta.negativeBalance = negativeSum._sum.balance ?? 0;
-                }
-            } catch {
-                // Fallback to local wallet if central is unavailable
                 const aggregations = await prisma.wallet.aggregate({
+                    where: { playerId: { notIn: adminPlayerIds } },
+                    _sum: { balance: true },
+                });
+                const negativeSum = await prisma.wallet.aggregate({
+                    where: { playerId: { notIn: adminPlayerIds }, balance: { lt: 0 } },
                     _sum: { balance: true },
                 });
                 meta.totalBalance = aggregations._sum.balance ?? 0;
+                meta.negativeBalance = negativeSum._sum.balance ?? 0;
+            } catch {
+                meta.totalBalance = 0;
                 meta.negativeBalance = 0;
             }
         }
