@@ -255,14 +255,28 @@ function TournamentContent({
     const { showOnboarding, dismissOnboarding } = useBracketOnboarding(playerId);
     const { showDisputeOnboarding, dismissDisputeOnboarding } = useDisputeOnboarding(playerId, hasSubmittedMatch);
 
-    // Compute stage deadlines with rollover:
-    // Each KO round deadline = T0 + (roundPosition × koHours)
+    // Snap a ms timestamp to the next occurrence of cutoffTime (HH:MM IST)
+    const snapToCutoff = (ms: number, cutoff: string): number => {
+        if (!cutoff) return ms;
+        const [hIST, mIST] = cutoff.split(":").map(Number);
+        const totalUTCMinutes = ((hIST * 60 + mIST - 330) % 1440 + 1440) % 1440;
+        const utcH = Math.floor(totalUTCMinutes / 60);
+        const utcM = totalUTCMinutes % 60;
+        const candidate = new Date(ms);
+        candidate.setUTCHours(utcH, utcM, 0, 0);
+        if (candidate.getTime() <= ms) candidate.setUTCDate(candidate.getUTCDate() + 1);
+        return candidate.getTime();
+    };
+
+    // Compute stage deadlines with rollover + cutoff snapping:
+    // Each KO round deadline = snapToCutoff(T0 + roundPosition × koHours)
     // Unused time from a faster round rolls over to the next.
     // NOTE: must be before early returns to comply with Rules of Hooks
     const stageDeadlines = useMemo(() => {
         if (!bracketData?.deadlines || !bracketData?.rounds) return null;
         const matches = bracketData.rounds.flatMap((r: any) => r.matches);
         const rounds: RoundData[] = bracketData.rounds;
+        const cutoff = bracketData.deadlines.cutoffTime || "";
 
         if (tournamentType === "GROUP_KNOCKOUT") {
             const groupMatches = matches.filter((m: any) => m.round < 0 && m.status !== "CONFIRMED");
@@ -270,10 +284,11 @@ function TournamentContent({
             const koStarted = allKoMatches.some((m: any) => m.player1Id && m.player2Id);
             const koAllConfirmed = koStarted && allKoMatches.every((m: any) => m.status === "CONFIRMED" || m.status === "BYE");
 
-            // Group deadline (still uses the old approach — per match)
-            const groupDeadlineMs = groupMatches.length > 0
+            // Group deadline: latest match creation + group hours → snap
+            let groupDeadlineMs = groupMatches.length > 0
                 ? Math.max(...groupMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.groupHours * 3600000
                 : null;
+            if (groupDeadlineMs && cutoff) groupDeadlineMs = snapToCutoff(groupDeadlineMs, cutoff);
 
             // KO rollover: find T0 (earliest KO match creation), get sorted unique KO rounds
             const koRoundNums = [...new Set<number>(allKoMatches.map((m: any) => m.round))].sort((a: number, b: number) => a - b);
@@ -286,12 +301,13 @@ function TournamentContent({
                 allKoMatches.some((m: any) => m.round === rn && m.status !== "CONFIRMED" && m.status !== "BYE")
             ) ?? null;
 
-            // Rollover deadline: T0 + (1-based position of active round) × koHours
+            // Rollover deadline: T0 + (1-based position of active round) × koHours → snap
             let koDeadlineMs: number | null = null;
             let activeRoundLabel: string | null = null;
             if (t0 !== null && activeKoRound !== null) {
                 const roundPos = koRoundNums.indexOf(activeKoRound) + 1;
-                koDeadlineMs = t0 + roundPos * bracketData.deadlines.koHours * 3600000;
+                const raw = t0 + roundPos * bracketData.deadlines.koHours * 3600000;
+                koDeadlineMs = cutoff ? snapToCutoff(raw, cutoff) : raw;
                 activeRoundLabel = roundLabel(activeKoRound, rounds);
             }
 
@@ -321,7 +337,8 @@ function TournamentContent({
             let activeRoundLbl: string | null = null;
             if (t0 !== null && activeRound !== null) {
                 const roundPos = roundNums.indexOf(activeRound) + 1;
-                deadlineMs = t0 + roundPos * bracketData.deadlines.koHours * 3600000;
+                const raw = t0 + roundPos * bracketData.deadlines.koHours * 3600000;
+                deadlineMs = cutoff ? snapToCutoff(raw, cutoff) : raw;
                 activeRoundLbl = roundLabel(activeRound, rounds);
             }
 

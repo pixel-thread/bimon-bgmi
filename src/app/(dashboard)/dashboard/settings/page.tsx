@@ -61,6 +61,7 @@ interface Settings {
     meritSoloRestrictThreshold: number;
     matchDeadlineGroupHours: number;
     matchDeadlineKOHours: number;
+    deadlineCutoffTime: string;
 }
 
 export default function SettingsPage() {
@@ -453,8 +454,19 @@ export default function SettingsPage() {
                                 min={1}
                             />
                         </div>
+                        <Divider />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input
+                                label="Deadline Cutoff Time (IST)"
+                                size="sm"
+                                value={settings.deadlineCutoffTime ?? "05:30"}
+                                onValueChange={(v) => update("deadlineCutoffTime", v)}
+                                description='All deadlines snap to this time, e.g. "05:30"'
+                                placeholder="05:30"
+                            />
+                        </div>
                         <p className="text-[11px] text-foreground/30">
-                            ⏰ After the deadline, admins can override the result manually. Defaults: Group = 48h, KO = 72h.
+                            ⏰ Deadlines snap forward to the cutoff time (IST). Example: 24h deadline started at 5PM → ends next day 5:30 AM. Leave empty to disable snapping.
                         </p>
                     </CardBody>
                 </Card>

@@ -262,6 +262,7 @@ export async function GET(
                 deadlines: {
                     groupHours: settings.matchDeadlineGroupHours,
                     koHours: settings.matchDeadlineKOHours,
+                    cutoffTime: settings.deadlineCutoffTime || "",
                 },
             },
         });
