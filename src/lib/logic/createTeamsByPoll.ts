@@ -305,6 +305,9 @@ export async function createTeamsByPoll({
         luckyVoterId = null;
     }
 
+    // Track players to charge (populated inside transaction, used after)
+    let playersToChargeList: any[] = [];
+
     // Persist in transaction
     const result = await prisma.$transaction(
         async (tx) => {
@@ -378,15 +381,12 @@ export async function createTeamsByPoll({
                     }
                 }
 
-                const playersToCharge = allPlayers.filter(
+                playersToChargeList = allPlayers.filter(
                     (player) =>
                         !player.isUCExempt &&
                         player.id !== luckyVoterId &&
                         !birthdayPlayerIds.has(player.id),
                 );
-
-                // Store for post-transaction central wallet debit
-                (result as any)._playersToCharge = playersToCharge;
             }
 
             // Create MatchPlayerPlayed entries
@@ -446,9 +446,8 @@ export async function createTeamsByPoll({
     // Must happen OUTSIDE the prisma transaction because central wallet
     // is a separate database (Neon). This ensures the game DB records
     // are committed before we debit.
-    const playersToCharge = (result as any)._playersToCharge as typeof players | undefined;
-    if (entryFee > 0 && playersToCharge && playersToCharge.length > 0) {
-        await processBatches(playersToCharge, BATCH_SIZE, async (player) => {
+    if (entryFee > 0 && playersToChargeList.length > 0) {
+        await processBatches(playersToChargeList, BATCH_SIZE, async (player) => {
             const email = (player as any).user?.email || await getEmailByPlayerId(player.id);
             if (email) {
                 try {
