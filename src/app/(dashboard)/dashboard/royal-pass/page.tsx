@@ -301,8 +301,8 @@ export default function RoyalPassAdminPage() {
                                                                         {h.pricePaid > 0 ? `${h.amount} ${GAME.currency}` : "Free"}
                                                                     </Chip>
                                                                 </div>
-                                                                <div className="flex items-center gap-2 mt-0.5 text-[11px] text-foreground/40">
-                                                                    <span>@{h.username}</span>
+                                                                <div className="flex items-center gap-2 mt-0.5 text-[11px] text-foreground/40 min-w-0">
+                                                                    <span className="truncate max-w-[140px]">@{h.username}</span>
                                                                     <span className="flex items-center gap-0.5">
                                                                         <Flame className="h-2.5 w-2.5 text-orange-500" />{h.streak}
                                                                     </span>
@@ -357,7 +357,7 @@ export default function RoyalPassAdminPage() {
                                                     <Avatar src={p.imageUrl} name={p.displayName} size="sm" className="shrink-0" />
                                                     <div className="min-w-0">
                                                         <p className="text-sm font-medium truncate">{p.displayName}</p>
-                                                        <p className="text-[11px] text-foreground/40">@{p.username}</p>
+                                                        <p className="text-[11px] text-foreground/40 truncate">@{p.username}</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3 shrink-0">
