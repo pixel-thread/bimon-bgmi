@@ -91,13 +91,6 @@ export async function POST(req: NextRequest) {
                     },
                 });
 
-                await tx.transaction.createMany({
-                    data: [
-                        { playerId, amount, type: "DEBIT", description: `Sent ${amount} ${GAME.currency} to ${toName}` },
-                        { playerId: toPlayerId, amount, type: "CREDIT", description: `Received ${amount} ${GAME.currency} from ${senderName}` },
-                    ],
-                });
-
                 await tx.notification.create({
                     data: {
                         title: `${GAME.currency} Received`,

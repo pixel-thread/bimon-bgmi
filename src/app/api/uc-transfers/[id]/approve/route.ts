@@ -92,14 +92,6 @@ export async function PATCH(
                 data: { status: "APPROVED", responseMessage },
             });
 
-            // Game DB audit
-            await tx.transaction.createMany({
-                data: [
-                    { playerId: transfer.toPlayerId, amount: transfer.amount, type: "DEBIT", description: `Approved UC request from ${txRequesterName}` },
-                    { playerId: transfer.fromPlayerId, amount: transfer.amount, type: "CREDIT", description: `UC request approved by ${txApproverName}` },
-                ],
-            });
-
             // Update original uc_request notification to approved
             await tx.notification.updateMany({
                 where: {
