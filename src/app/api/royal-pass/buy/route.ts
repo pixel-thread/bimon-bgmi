@@ -72,21 +72,6 @@ export async function POST() {
         const walletResult = await debitCentralWallet(email, rpPrice, description, "ROYAL_PASS_PURCHASE");
 
         await prisma.$transaction(async (tx) => {
-            // Sync game DB wallet + audit
-            await tx.wallet.upsert({
-                where: { playerId: user.player!.id },
-                create: { playerId: user.player!.id, balance: walletResult.balance },
-                update: { balance: walletResult.balance },
-            });
-
-            await tx.transaction.create({
-                data: {
-                    playerId: user.player!.id,
-                    amount: rpPrice,
-                    type: "DEBIT",
-                    description,
-                },
-            });
 
             // Create RoyalPass record
             await tx.royalPass.create({

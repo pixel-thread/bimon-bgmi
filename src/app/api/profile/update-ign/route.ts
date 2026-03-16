@@ -125,25 +125,10 @@ export async function POST(req: NextRequest) {
         // Charge name change fee via central wallet if applicable
         const player = user.player!;
         if (nameChangeFee > 0) {
-            const walletResult = await debitCentralWallet(userId, nameChangeFee, "Name Change Fee", "OTHER");
-            await prisma.$transaction(async (tx) => {
-                await tx.player.update({
-                    where: { id: player.id },
-                    data: updateData,
-                });
-                await tx.wallet.upsert({
-                    where: { playerId: player.id },
-                    create: { playerId: player.id, balance: walletResult.balance },
-                    update: { balance: walletResult.balance },
-                });
-                await tx.transaction.create({
-                    data: {
-                        playerId: player.id,
-                        amount: nameChangeFee,
-                        type: "DEBIT",
-                        description: "Name Change Fee",
-                    },
-                });
+            await debitCentralWallet(userId, nameChangeFee, "Name Change Fee", "OTHER");
+            await prisma.player.update({
+                where: { id: player.id },
+                data: updateData,
             });
         } else {
             await prisma.player.update({

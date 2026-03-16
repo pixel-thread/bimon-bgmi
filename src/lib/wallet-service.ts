@@ -323,6 +323,12 @@ export async function transferCentralWallet(
                 create: { playerId: toUser.player.id, balance: toBalance + amount },
                 update: { balance: toBalance + amount },
             }),
+            prisma.transaction.create({
+                data: { playerId: fromUser.player.id, amount, type: "DEBIT", description: description || "Transfer to player" },
+            }),
+            prisma.transaction.create({
+                data: { playerId: toUser.player.id, amount, type: "CREDIT", description: description || "Transfer from player" },
+            }),
         ]);
         return;
     }

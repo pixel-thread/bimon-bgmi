@@ -61,26 +61,13 @@ export async function PATCH(
                     },
                 });
 
-                // Deduct UC from added players via central wallet
+                // Deduct UC from added players via local wallet
                 if (deductUC && entryFee > 0) {
                     for (const playerId of addPlayerIds) {
                         const email = await getEmailByPlayerId(playerId);
                         if (email) {
-                            const result = await debitCentralWallet(email, entryFee, `Entry fee: Added to team in ${tournamentName}`, "TOURNAMENT_ENTRY");
-                            await tx.wallet.upsert({
-                                where: { playerId },
-                                create: { playerId, balance: result.balance },
-                                update: { balance: result.balance },
-                            });
+                            await debitCentralWallet(email, entryFee, `Entry fee: Added to team in ${tournamentName}`, "TOURNAMENT_ENTRY");
                         }
-                        await tx.transaction.create({
-                            data: {
-                                amount: entryFee,
-                                type: "DEBIT",
-                                description: `Entry fee: Added to team in ${tournamentName}`,
-                                playerId,
-                            },
-                        });
                     }
                 }
             }
@@ -96,26 +83,13 @@ export async function PATCH(
                     },
                 });
 
-                // Refund UC to removed players via central wallet
+                // Refund UC to removed players via local wallet
                 if (refund && entryFee > 0) {
                     for (const playerId of removePlayerIds) {
                         const email = await getEmailByPlayerId(playerId);
                         if (email) {
-                            const result = await creditCentralWallet(email, entryFee, `Refund: Removed from team in ${tournamentName}`, "TOURNAMENT_ENTRY");
-                            await tx.wallet.upsert({
-                                where: { playerId },
-                                create: { playerId, balance: result.balance },
-                                update: { balance: result.balance },
-                            });
+                            await creditCentralWallet(email, entryFee, `Refund: Removed from team in ${tournamentName}`, "TOURNAMENT_ENTRY");
                         }
-                        await tx.transaction.create({
-                            data: {
-                                amount: entryFee,
-                                type: "CREDIT",
-                                description: `Refund: Removed from team in ${tournamentName}`,
-                                playerId,
-                            },
-                        });
                     }
                 }
             }
@@ -208,26 +182,11 @@ export async function DELETE(
         await prisma.$transaction(async (tx) => {
             // 1. Refund UC to players if requested
             if (refund && entryFee > 0 && playerIds.length > 0) {
-                // Create credit transactions
-                await tx.transaction.createMany({
-                    data: playerIds.map((playerId) => ({
-                        amount: entryFee,
-                        type: "CREDIT" as const,
-                        description: `Refund: Team deleted from ${team.tournament?.name ?? "tournament"}`,
-                        playerId,
-                    })),
-                });
-
-                // Refund via central wallet
+                // Refund via local wallet (creates Transaction + updates balance)
                 for (const playerId of playerIds) {
                     const email = await getEmailByPlayerId(playerId);
                     if (email) {
-                        const result = await creditCentralWallet(email, entryFee, `Refund: Team deleted from ${team.tournament?.name ?? "tournament"}`, "TOURNAMENT_ENTRY");
-                        await tx.wallet.upsert({
-                            where: { playerId },
-                            create: { playerId, balance: result.balance },
-                            update: { balance: result.balance },
-                        });
+                        await creditCentralWallet(email, entryFee, `Refund: Team deleted from ${team.tournament?.name ?? "tournament"}`, "TOURNAMENT_ENTRY");
                     }
                 }
 

@@ -80,21 +80,8 @@ export async function POST(
             for (const reward of claimedRewards) {
                 const email = await getEmailByPlayerId(reward.playerId, tx);
                 if (email) {
-                    const result = await debitCentralWallet(email, reward.amount, `Adjustment - ${tournament.name}`, "ADMIN_ADJUSTMENT");
-                    await tx.wallet.upsert({
-                        where: { playerId: reward.playerId },
-                        create: { playerId: reward.playerId, balance: result.balance },
-                        update: { balance: result.balance },
-                    });
+                    await debitCentralWallet(email, reward.amount, `Adjustment - ${tournament.name}`, "ADMIN_ADJUSTMENT");
                 }
-                await tx.transaction.create({
-                    data: {
-                        playerId: reward.playerId,
-                        amount: reward.amount,
-                        type: "DEBIT",
-                        description: `Adjustment - ${tournament.name}`,
-                    },
-                });
             }
 
             // 2. Delete ALL rewards for this tournament (claimed + unclaimed)

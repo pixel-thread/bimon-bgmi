@@ -78,37 +78,13 @@ export async function POST(req: NextRequest) {
             centralResult = await creditCentralWallet(playerEmail, ucAmount, description, "TOP_UP");
         }
 
-        // Update payment status and sync game DB
-        await prisma.$transaction(async (tx) => {
-            await tx.payment.update({
-                where: { razorpayOrderId: razorpay_order_id },
-                data: {
-                    razorpayPaymentId: razorpay_payment_id,
-                    status: "paid",
-                },
-            });
-
-            // Sync game DB wallet
-            await tx.wallet.upsert({
-                where: { playerId: payment.playerId },
-                create: {
-                    playerId: payment.playerId,
-                    balance: centralResult?.balance ?? ucAmount,
-                },
-                update: {
-                    balance: centralResult?.balance ?? undefined,
-                    ...(centralResult ? {} : { balance: { increment: ucAmount } }),
-                },
-            });
-
-            await tx.transaction.create({
-                data: {
-                    amount: ucAmount,
-                    type: "CREDIT",
-                    description,
-                    playerId: payment.playerId,
-                },
-            });
+        // Update payment status
+        await prisma.payment.update({
+            where: { razorpayOrderId: razorpay_order_id },
+            data: {
+                razorpayPaymentId: razorpay_payment_id,
+                status: "paid",
+            },
         });
 
         return SuccessResponse({

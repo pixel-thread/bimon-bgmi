@@ -92,12 +92,7 @@ export async function DELETE(
                         for (const [playerId, amount] of refundsByPlayer) {
                             const email = await getEmailByPlayerId(playerId, tx);
                             if (email) {
-                                const result = await creditCentralWallet(email, amount, `Entry fee refund — tournament reset`, "TOURNAMENT_ENTRY");
-                                await tx.wallet.upsert({
-                                    where: { playerId },
-                                    create: { playerId, balance: result.balance },
-                                    update: { balance: result.balance },
-                                });
+                                await creditCentralWallet(email, amount, `Entry fee refund — tournament reset`, "TOURNAMENT_ENTRY");
                             }
                         }
 
