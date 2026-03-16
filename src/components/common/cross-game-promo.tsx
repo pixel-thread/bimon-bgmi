@@ -13,7 +13,7 @@ const SISTER_GAMES = [
         url: "https://bimon-bgmi.vercel.app",
         gradient: "from-amber-500/20 to-orange-500/20",
         border: "border-amber-500/20",
-        sharedWallet: true,
+        sharedWallet: false,
     },
     {
         mode: "pes",
@@ -23,7 +23,7 @@ const SISTER_GAMES = [
         url: "https://bimon-pes.vercel.app",
         gradient: "from-emerald-500/20 to-teal-500/20",
         border: "border-emerald-500/20",
-        sharedWallet: true,
+        sharedWallet: false,
     },
     {
         mode: "freefire",
