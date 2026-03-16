@@ -453,7 +453,7 @@ function TournamentContent({
                     </div>
                     <div className="flex-1 min-w-0">
                         {showName && (
-                            <p className="font-bold text-base leading-tight">{tournament.name}</p>
+                            <p className="font-bold text-base leading-tight line-clamp-2">{tournament.name}</p>
                         )}
                         <div className={`flex items-center gap-2 flex-wrap ${showName ? 'mt-0.5' : ''}`}>
                             <span className="text-[11px] text-foreground/40 font-medium">
