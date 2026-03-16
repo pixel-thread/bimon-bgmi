@@ -37,7 +37,7 @@ export function CurrencyIcon({ size = 16, className }: CurrencyIconProps) {
     }
 
     // Text-based currency (e.g. "UC" for BGMI)
-    const fontSize = Math.max(size * 0.6, 8);
+    const fontSize = Math.max(size * 0.85, 10);
     return (
         <span
             className={`inline-flex items-center justify-center font-bold text-primary ${className ?? ""}`}
