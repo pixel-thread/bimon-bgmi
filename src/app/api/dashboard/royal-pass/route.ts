@@ -99,6 +99,35 @@ export async function GET(request: Request) {
             .filter((tx) => currentSeasonPlayerIds.has(tx.playerId))
             .reduce((sum, tx) => sum + tx.amount, 0);
 
+        // Non-RP holder streaks
+        const nonRpStreaks = await prisma.playerStreak.findMany({
+            where: {
+                current: { gt: 0 },
+                player: { hasRoyalPass: false },
+            },
+            select: {
+                current: true,
+                longest: true,
+                player: {
+                    select: {
+                        id: true,
+                        displayName: true,
+                        userId: true,
+                    },
+                },
+            },
+            orderBy: { current: "desc" },
+        });
+
+        const nonRpUserIds = [...new Set(nonRpStreaks.map((s) => s.player.userId))];
+        const nonRpUsers = nonRpUserIds.length > 0
+            ? await prisma.user.findMany({
+                where: { id: { in: nonRpUserIds } },
+                select: { id: true, username: true, imageUrl: true },
+            })
+            : [];
+        const nonRpUserMap = new Map(nonRpUsers.map((u) => [u.id, u]));
+
         const data = {
             passes: royalPasses.map((rp) => {
                 const user = userMap.get(rp.player.userId);
@@ -117,6 +146,17 @@ export async function GET(request: Request) {
                     ucEarned: ucEarnedMap.get(rp.playerId) || 0,
                     seasonName: rp.season?.name ?? "None",
                     createdAt: rp.createdAt,
+                };
+            }),
+            nonRpStreaks: nonRpStreaks.map((s) => {
+                const user = nonRpUserMap.get(s.player.userId);
+                return {
+                    playerId: s.player.id,
+                    displayName: s.player.displayName ?? "Unknown",
+                    username: user?.username ?? "unknown",
+                    imageUrl: user?.imageUrl ?? "",
+                    streak: s.current,
+                    longest: s.longest,
                 };
             }),
             stats: {
