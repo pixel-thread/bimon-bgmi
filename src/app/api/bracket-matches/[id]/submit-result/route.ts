@@ -286,6 +286,29 @@ export async function PUT(
             data: { status: "CONFIRMED" },
         });
 
+        // Record who confirmed — fetch confirmer name for the note
+        const confirmerPlayer = await prisma.player.findUnique({
+            where: { id: playerId },
+            select: { displayName: true },
+        });
+        const confirmerName = confirmerPlayer?.displayName || "opponent";
+        const latestResult = await prisma.bracketResult.findFirst({
+            where: { bracketMatchId: matchId },
+            orderBy: { createdAt: "desc" },
+            select: { claimedScore1: true, claimedScore2: true },
+        });
+        await prisma.bracketResult.create({
+            data: {
+                bracketMatchId: matchId,
+                submittedById: playerId,
+                claimedScore1: latestResult?.claimedScore1 ?? 0,
+                claimedScore2: latestResult?.claimedScore2 ?? 0,
+                notes: isAdmin
+                    ? "Confirmed by admin"
+                    : `Confirmed by ${confirmerName}`,
+            },
+        });
+
         // Only advance winners for knockout-style matches
         // Skip for: League (all matches), Group+KO group stage (negative rounds)
         const tournament = await prisma.tournament.findUnique({

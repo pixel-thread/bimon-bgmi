@@ -360,12 +360,18 @@ export function MatchCard({
                                 {config.label}
                             </Chip>
                         )}
-                        {/* Resolution reason for auto-resolved matches */}
+                        {/* Resolution reason for confirmed matches */}
                         {match.status === "CONFIRMED" && (() => {
                             const lastNotes = match.results?.[0]?.notes?.toLowerCase() ?? "";
                             if (lastNotes.includes("auto-forfeit")) return <span className="text-[9px] font-medium text-danger/70 bg-danger/10 px-1.5 py-0.5 rounded-full">Auto-forfeit</span>;
                             if (lastNotes.includes("auto-confirmed") || lastNotes.includes("auto-confirm")) return <span className="text-[9px] font-medium text-warning/70 bg-warning/10 px-1.5 py-0.5 rounded-full">Auto-confirmed</span>;
                             if (lastNotes.includes("walkover")) return <span className="text-[9px] font-medium text-secondary bg-secondary/10 px-1.5 py-0.5 rounded-full">Walkover</span>;
+                            if (lastNotes.includes("confirmed by admin")) return <span className="text-[9px] font-medium text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full">Admin confirmed</span>;
+                            if (lastNotes.includes("confirmed by")) {
+                                const raw = match.results?.[0]?.notes ?? "";
+                                const name = raw.replace(/^confirmed by /i, "").trim();
+                                return <span className="text-[9px] font-medium text-success/70 bg-success/10 px-1.5 py-0.5 rounded-full">✓ {name}</span>;
+                            }
                             return null;
                         })()}
                         {/* Deadline countdown for PENDING matches */}
