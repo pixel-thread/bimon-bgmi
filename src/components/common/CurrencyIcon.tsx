@@ -11,7 +11,7 @@ interface CurrencyIconProps {
 }
 
 /**
- * Renders the game's currency icon — either a PNG image or emoji fallback.
+ * Renders the game's currency icon — PNG/SVG image, styled text badge, or emoji fallback.
  * Vertically aligned with adjacent text at any size.
  * Usage: <CurrencyIcon size={16} />
  */
@@ -36,5 +36,21 @@ export function CurrencyIcon({ size = 16, className }: CurrencyIconProps) {
         );
     }
 
-    return <span className={className}>{GAME.currencyEmoji}</span>;
+    // Text-based currency (e.g. "UC" for BGMI)
+    const fontSize = Math.max(size * 0.6, 8);
+    return (
+        <span
+            className={`inline-flex items-center justify-center font-bold text-primary ${className ?? ""}`}
+            style={{
+                fontSize,
+                lineHeight: 1,
+                verticalAlign: "middle",
+                position: "relative",
+                top: "-1px",
+            }}
+        >
+            {GAME.currency}
+        </span>
+    );
 }
+

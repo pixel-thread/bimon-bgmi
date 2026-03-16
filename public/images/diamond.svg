@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <path d="M12 2L2 9L12 22L22 9L12 2Z" fill="url(#diamond-gradient)" stroke="url(#diamond-stroke)" stroke-width="0.5"/>
+  <path d="M2 9H22L12 2L2 9Z" fill="url(#diamond-top)" opacity="0.9"/>
+  <path d="M7 9L12 2L17 9H7Z" fill="url(#diamond-inner)" opacity="0.6"/>
+  <defs>
+    <linearGradient id="diamond-gradient" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#67E8F9"/>
+      <stop offset="1" stop-color="#3B82F6"/>
+    </linearGradient>
+    <linearGradient id="diamond-stroke" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A5F3FC"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="diamond-top" x1="12" y1="2" x2="12" y2="9" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#BAE6FD"/>
+      <stop offset="1" stop-color="#38BDF8"/>
+    </linearGradient>
+    <linearGradient id="diamond-inner" x1="12" y1="2" x2="12" y2="9" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#7DD3FC"/>
+    </linearGradient>
+  </defs>
+</svg>
