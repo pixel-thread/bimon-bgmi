@@ -165,19 +165,39 @@ export function DeclareWinnersModal({
             id === m.player1Id ? m.player1 : m.player2;
         const getLoser = (m: typeof confirmed[0]) =>
             getPlayer(m, m.winnerId === m.player1Id ? m.player2Id : m.player1Id);
+
         const finals = confirmed.filter(m => m._round === maxRound);
         const semis = confirmed.filter(m => m._round === maxRound - 1);
-        let pos = 3;
-        for (const m of finals) {
+
+        // Actual Final = position 0, 3rd Place Match = position 1
+        const actualFinal = finals.filter(m => (m as any).position === 0);
+        const thirdPlaceMatch = finals.filter(m => (m as any).position === 1);
+
+        // 1st and 2nd from Final
+        for (const m of (actualFinal.length > 0 ? actualFinal : finals.slice(0, 1))) {
             const w = getPlayer(m, m.winnerId);
             const l = getLoser(m);
             if (w) result.push({ position: 1, amount: 0, player: { id: w.id, name: w.displayName || "?" } });
             if (l) result.push({ position: 2, amount: 0, player: { id: l.id, name: l.displayName || "?" } });
         }
-        for (const m of semis) {
+
+        // 3rd/4th from 3rd place match (if exists)
+        let pos = 3;
+        for (const m of thirdPlaceMatch) {
+            const w = getPlayer(m, m.winnerId);
             const l = getLoser(m);
+            if (w) result.push({ position: pos++, amount: 0, player: { id: w.id, name: w.displayName || "?" } });
             if (l) result.push({ position: pos++, amount: 0, player: { id: l.id, name: l.displayName || "?" } });
         }
+
+        // If no 3rd place match, derive from semi-final losers
+        if (thirdPlaceMatch.length === 0) {
+            for (const m of semis) {
+                const l = getLoser(m);
+                if (l) result.push({ position: pos++, amount: 0, player: { id: l.id, name: l.displayName || "?" } });
+            }
+        }
+
         return result;
     }, [bracketData, isBracket]);
 

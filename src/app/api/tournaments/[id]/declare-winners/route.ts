@@ -613,18 +613,33 @@ async function declareBracketWinners({
     const semiMatches = allMatches.filter(m => m.round === maxRound - 1);
     const qfMatches = allMatches.filter(m => m.round === maxRound - 2);
 
-    // 1st and 2nd from final(s)
-    for (const m of finalMatches) {
+    // 1st and 2nd from the actual Final (position 0 in the final round)
+    // 3rd place match is position 1 in the same round — handle separately
+    const actualFinal = finalMatches.filter(m => m.position === 0);
+    const thirdPlaceMatch = finalMatches.filter(m => m.position === 1);
+
+    for (const m of actualFinal) {
         if (m.winner) bracketPlacements.push({ position: 1, player: m.winner as BracketPlayer });
         const loser = getLoser(m);
         if (loser) bracketPlacements.push({ position: 2, player: loser as BracketPlayer });
     }
-    // 3rd/4th from semis
+
+    // 3rd/4th from 3rd place match (if exists)
     let pos = 3;
-    for (const m of semiMatches) {
+    for (const m of thirdPlaceMatch) {
+        if (m.winner) bracketPlacements.push({ position: pos++, player: m.winner as BracketPlayer });
         const loser = getLoser(m);
         if (loser) bracketPlacements.push({ position: pos++, player: loser as BracketPlayer });
     }
+
+    // If no 3rd place match, derive 3rd/4th from semi-final losers
+    if (thirdPlaceMatch.length === 0) {
+        for (const m of semiMatches) {
+            const loser = getLoser(m);
+            if (loser) bracketPlacements.push({ position: pos++, player: loser as BracketPlayer });
+        }
+    }
+
     // 5th–8th from quarters
     for (const m of qfMatches) {
         const loser = getLoser(m);
