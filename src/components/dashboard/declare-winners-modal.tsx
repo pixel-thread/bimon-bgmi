@@ -224,13 +224,14 @@ export function DeclareWinnersModal({
     useEffect(() => {
         if (isOpen) {
             if (isBracket) {
-                setPlacementCount(2); // Default 1st + 2nd for bracket
+                // Auto-include 3rd place if tournament has maxPlacements >= 3
+                setPlacementCount(maxPlacementsProp && maxPlacementsProp >= 3 ? 3 : 2);
             } else if (basePrizePool > 0) {
                 const tier = getTierInfo(basePrizePool);
                 setPlacementCount(Math.min(tier.winnerCount, rankings.length || tier.winnerCount));
             }
         }
-    }, [isOpen, isBracket, basePrizePool, rankings.length]);
+    }, [isOpen, isBracket, basePrizePool, rankings.length, maxPlacementsProp]);
 
     // Get player IDs for tax preview
     const topTeamPlayerIds = useMemo(() => {
@@ -465,14 +466,19 @@ export function DeclareWinnersModal({
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ placements }),
             });
-            if (!res1.ok) { const d = await res1.json(); throw new Error(d.error || "Declare failed"); }
+            if (!res1.ok) {
+                let msg = "Declare failed";
+                try { const d = await res1.json(); msg = d.error || msg; } catch {}
+                throw new Error(msg);
+            }
 
             // Step 2: Update streaks
             setDeclareStatus({ step: "Updating streaks..." });
             const res2 = await fetch(`/api/tournaments/${tournamentId}/update-streaks`, { method: "POST" });
             if (!res2.ok) {
-                const d = await res2.json();
-                setDeclareStatus({ step: "Streaks failed", error: d.error || "Unknown error" });
+                let msg = "Unknown error";
+                try { const d = await res2.json(); msg = d.error || msg; } catch {}
+                setDeclareStatus({ step: "Streaks failed", error: msg });
                 // Don't throw — declaration succeeded, just log the error
             }
 
@@ -480,8 +486,9 @@ export function DeclareWinnersModal({
             setDeclareStatus({ step: "Processing rewards..." });
             const res3 = await fetch(`/api/tournaments/${tournamentId}/post-declare`, { method: "POST" });
             if (!res3.ok) {
-                const d = await res3.json();
-                setDeclareStatus({ step: "Rewards failed", error: d.error || "Unknown error" });
+                let msg = "Unknown error";
+                try { const d = await res3.json(); msg = d.error || msg; } catch {}
+                setDeclareStatus({ step: "Rewards failed", error: msg });
             }
         },
         onSuccess: async () => {
