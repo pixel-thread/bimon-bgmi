@@ -24,12 +24,7 @@ type BgmiPhase =
     | "DROP_MI"
     | "PUBG"
     | "ROLL_MI"
-    | "SWAP_BIMON"
-    | "BIMON"
-    | "SWAP_BACK"
     ;
-
-const BIMON_LETTERS = "Bimon\u00A0Tournament".split("");
 
 const BGMI_TIMINGS = {
     PUBGMI: 2400,
@@ -40,9 +35,6 @@ const BGMI_TIMINGS = {
     DROP_MI: 900,
     PUBG: 1200,
     ROLL_MI: 1400,
-    SWAP_BIMON: 2200,
-    BIMON: 2500,
-    SWAP_BACK: 2200,
 };
 
 // ─── BGMI Logo ───
@@ -78,16 +70,7 @@ function BgmiLogo({ className }: PubgmiLogoProps) {
                 advance("ROLL_MI", BGMI_TIMINGS.PUBG);
                 break;
             case "ROLL_MI":
-                advance("SWAP_BIMON", BGMI_TIMINGS.ROLL_MI + 600);
-                break;
-            case "SWAP_BIMON":
-                advance("BIMON", BGMI_TIMINGS.SWAP_BIMON);
-                break;
-            case "BIMON":
-                advance("SWAP_BACK", BGMI_TIMINGS.BIMON);
-                break;
-            case "SWAP_BACK":
-                advance("PUBGMI", BGMI_TIMINGS.SWAP_BACK);
+                advance("PUBGMI", BGMI_TIMINGS.ROLL_MI + 600);
                 break;
         }
 
@@ -194,67 +177,6 @@ function BgmiLogo({ className }: PubgmiLogoProps) {
                     </>
                 );
 
-            case "SWAP_BIMON":
-                return (
-                    <span className="pubgmi-swap-container">
-                        <span className="pubgmi-swap-out">
-                            {"PUBGMI".split("").map((letter, i) => (
-                                <span
-                                    key={`bimon-out-${i}`}
-                                    className="pubgmi-letter pubgmi-fall-down"
-                                    style={{ "--fall-delay": `${i * 100}ms` } as React.CSSProperties}
-                                >
-                                    {letter}
-                                </span>
-                            ))}
-                        </span>
-                        {BIMON_LETTERS.map((letter, i) => (
-                            <span
-                                key={`bimon-in-${i}`}
-                                className="pubgmi-letter pubgmi-roll-in"
-                                style={{ "--roll-delay": `${300 + i * 80}ms` } as React.CSSProperties}
-                            >
-                                {letter}
-                            </span>
-                        ))}
-                    </span>
-                );
-
-            case "BIMON":
-                return (
-                    <>
-                        {BIMON_LETTERS.map((letter, i) => (
-                            <span key={`bimon-s-${i}`} className="pubgmi-letter">{letter}</span>
-                        ))}
-                    </>
-                );
-
-            case "SWAP_BACK":
-                return (
-                    <span className="pubgmi-swap-container">
-                        <span className="pubgmi-swap-out">
-                            {BIMON_LETTERS.map((letter, i) => (
-                                <span
-                                    key={`back-out-${i}`}
-                                    className="pubgmi-letter pubgmi-fall-down"
-                                    style={{ "--fall-delay": `${i * 80}ms` } as React.CSSProperties}
-                                >
-                                    {letter}
-                                </span>
-                            ))}
-                        </span>
-                        {"PUBGMI".split("").map((letter, i) => (
-                            <span
-                                key={`back-in-${i}`}
-                                className="pubgmi-letter pubgmi-roll-in"
-                                style={{ "--roll-delay": `${400 + i * 120}ms` } as React.CSSProperties}
-                            >
-                                {letter}
-                            </span>
-                        ))}
-                    </span>
-                );
-
             default:
                 return null;
         }
@@ -270,10 +192,10 @@ function BgmiLogo({ className }: PubgmiLogoProps) {
     );
 }
 
-// ─── Free Fire Logo — BOO-YAH ↔ Bimon Tournament alternating cascade ───
+// ─── Free Fire Logo — BOO-YAH ↔ BOOYAH alternating cascade ───
 const FF_WORDS = [
     ["B", "O", "O", "-", "Y", "A", "H"],
-    ["B", "i", "m", "o", "n", "\u00A0", "T", "o", "u", "r", "n", "a", "m", "e", "n", "t"],
+    ["B", "O", "O", "Y", "A", "H"],
 ];
 
 function FreeFireLogo({ className }: PubgmiLogoProps) {
@@ -352,10 +274,10 @@ function FreeFireLogo({ className }: PubgmiLogoProps) {
     );
 }
 
-// ─── PES Logo — KICKOFF ↔ Bimon Tournament alternating cascade ───
+// ─── PES Logo — KICKOFF ↔ eFootball alternating cascade ───
 const PES_WORDS = [
     ["K", "I", "C", "K", "O", "F", "F"],
-    ["B", "i", "m", "o", "n", "\u00A0", "T", "o", "u", "r", "n", "a", "m", "e", "n", "t"],
+    ["e", "F", "O", "O", "T", "B", "A", "L", "L"],
 ];
 
 function PesLogo({ className }: PubgmiLogoProps) {

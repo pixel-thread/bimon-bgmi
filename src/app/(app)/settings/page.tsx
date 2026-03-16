@@ -139,6 +139,11 @@ export default function SettingsPage() {
                             </div>
                             <Divider />
                             <div className="flex justify-between">
+                                <span>Platform</span>
+                                <span className="font-semibold text-primary">Bimon Tournament</span>
+                            </div>
+                            <Divider />
+                            <div className="flex justify-between">
                                 <span>Version</span>
                                 <span className="font-medium text-foreground/70">v2 · {process.env.NEXT_PUBLIC_BUILD_DATE}</span>
                             </div>
