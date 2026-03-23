@@ -473,7 +473,19 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                     <p className="text-sm text-foreground/50">No transactions yet</p>
                                 </div>
                             ) : (
-                                txData.data.map((tx) => (
+                                txData.data.map((tx, i) => {
+                                    // Compute balance after this tx by working backwards
+                                    // from current balance through all prior transactions
+                                    const laterTxs = txData.data.slice(0, i);
+                                    let balAfter = player?.balance ?? 0;
+                                    for (const lt of laterTxs) {
+                                        balAfter -= lt.type === "CREDIT" ? lt.amount : -lt.amount;
+                                    }
+                                    const balBefore = tx.type === "CREDIT"
+                                        ? balAfter - tx.amount
+                                        : balAfter + tx.amount;
+
+                                    return (
                                     <div
                                         key={tx.id}
                                         className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-default-100"
@@ -490,20 +502,26 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <p className="text-sm">{tx.description}</p>
-                                            <p className="text-xs text-foreground/40">
-                                                {new Date(tx.createdAt).toLocaleDateString()} ·{" "}
-                                                {new Date(tx.createdAt).toLocaleTimeString([], {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                })}
-                                            </p>
+                                            <div className="flex items-center gap-1.5 text-xs text-foreground/40">
+                                                <span>
+                                                    {new Date(tx.createdAt).toLocaleDateString("en-IN", {
+                                                        day: "numeric",
+                                                        month: "short",
+                                                    })}
+                                                </span>
+                                                <span>·</span>
+                                                <span>
+                                                    {balBefore.toLocaleString()} → {balAfter.toLocaleString()} {GAME.currency}
+                                                </span>
+                                            </div>
                                         </div>
                                         <span className={`text-sm font-semibold ${tx.type === "CREDIT" ? "text-success" : "text-danger"
                                             }`}>
                                             {tx.type === "CREDIT" ? "+" : "-"}{tx.amount} {GAME.currency}
                                         </span>
                                     </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
                     )}
