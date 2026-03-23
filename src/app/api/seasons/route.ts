@@ -56,6 +56,18 @@ export async function POST(req: NextRequest) {
             data: { status: "INACTIVE" },
         });
 
+        // Reset all RP holders — Royal Pass is per-season
+        await prisma.player.updateMany({
+            where: { hasRoyalPass: true },
+            data: { hasRoyalPass: false },
+        });
+
+        // Reset all player streaks for the new season
+        await prisma.playerStreak.updateMany({
+            where: { current: { gt: 0 } },
+            data: { current: 0 },
+        });
+
         const season = await prisma.season.create({
             data: {
                 name: name.trim(),

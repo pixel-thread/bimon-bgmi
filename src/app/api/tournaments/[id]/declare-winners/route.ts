@@ -74,9 +74,10 @@ export async function POST(
             return declareBracketWinners({ tournament, placements, dryRun, req });
         }
 
-        // ── Fetch settings for org percentage & fund toggle ──────────
+        // ── Fetch settings for org cut & fund toggle ──────────
         const settings = await getSettings();
-        const orgPercent = settings.orgCutPercent ?? 0;
+        const orgCutMode = settings.orgCutMode ?? "fixed";
+        const orgCut = orgCutMode === "percent" ? (settings.orgCutPercent ?? 0) : (settings.orgCutFixed ?? 0);
         const enableFund = settings.enableFund ?? false;
 
         // ── 2. Aggregate team rankings ───────────────────────
@@ -348,7 +349,7 @@ export async function POST(
         // ── 5. Calculate final amounts ──
         let finalOrg = 0, finalFund = 0;
         if (prizePool > 0) {
-            const distribution = getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount, orgPercent);
+            const distribution = getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount, orgCut, orgCutMode);
             const taxTotals = aggregateTaxTotals(allTaxResults);
 
             // Org gets ONLY its pool cut (orgPercent% of pool)
@@ -365,7 +366,7 @@ export async function POST(
             const distributed = totalToPlayers + finalOrg + finalFund;
             const roundingRemainder = effectivePool - distributed;
             if (roundingRemainder > 0) {
-                if (orgPercent > 0) {
+                if (orgCut > 0) {
                     finalOrg += roundingRemainder;
                 } else if (enableFund) {
                     finalFund += roundingRemainder;
@@ -376,7 +377,7 @@ export async function POST(
 
         // ── DRY RUN: return preview without writing ──────────
         if (dryRun) {
-            const dist = prizePool > 0 ? getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount, orgPercent) : null;
+            const dist = prizePool > 0 ? getFinalDistribution(prizePool, entryFee, teamSize, ucExemptCount, orgCut, orgCutMode) : null;
             const taxTots = aggregateTaxTotals(allTaxResults);
             return NextResponse.json({
                 success: true,
@@ -576,7 +577,8 @@ async function declareBracketWinners({
 }): Promise<Response> {
     const id = tournament.id;
     const settings = await getSettings();
-    const orgPercent = settings.orgCutPercent ?? 0;
+    const orgCutMode = settings.orgCutMode ?? "fixed";
+    const orgCut = orgCutMode === "percent" ? (settings.orgCutPercent ?? 0) : (settings.orgCutFixed ?? 0);
     const enableFund = settings.enableFund ?? false;
 
     // ── Fetch all bracket matches grouped by round ───────────────
@@ -658,8 +660,10 @@ async function declareBracketWinners({
     const totalDonations = donations.reduce((s, d) => s + d.amount, 0);
     const prizePool = entryFee * totalPlayers + totalDonations;
 
-    // Org cut
-    const orgAmount = orgPercent > 0 ? Math.floor(prizePool * orgPercent / 100) : 0;
+    // Org cut (computed based on mode)
+    const orgAmount = orgCutMode === "percent"
+        ? Math.floor(prizePool * (orgCut / 100))
+        : Math.min(orgCut, prizePool);
     const remainingPool = prizePool - orgAmount;
 
     // ── Determine placements to award ────────────────────────────

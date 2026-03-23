@@ -108,13 +108,14 @@ export function DeclareWinnersModal({
         queryKey: ["public-settings"],
         queryFn: async () => {
             const res = await fetch("/api/settings/public");
-            if (!res.ok) return { orgCutPercent: 0 };
+            if (!res.ok) return { orgCutFixed: 0, orgCutPercent: 0, orgCutMode: "fixed" };
             const json = await res.json();
-            return json.data ?? { orgCutPercent: 0 };
+            return json.data ?? { orgCutFixed: 0, orgCutPercent: 0, orgCutMode: "fixed" };
         },
         staleTime: 0, // Always fetch fresh — admin may have just changed settings
     });
-    const orgPercent = publicSettings?.orgCutPercent ?? 0;
+    const orgCutMode = publicSettings?.orgCutMode ?? "fixed";
+    const orgCut = orgCutMode === "percent" ? (publicSettings?.orgCutPercent ?? 0) : (publicSettings?.orgCutFixed ?? 0);
     const enableFund = publicSettings?.enableFund ?? false;
 
     // Fetch rankings (BGMI) OR bracket results (PES)
@@ -203,7 +204,9 @@ export function DeclareWinnersModal({
 
     // Bracket prize pool (from bracket route)
     const bracketPrizePool = bracketData?.prizePool ?? 0;
-    const bracketOrgCut = orgPercent > 0 ? Math.floor(bracketPrizePool * orgPercent / 100) : 0;
+    const bracketOrgCut = orgCutMode === "percent"
+        ? Math.floor(bracketPrizePool * (orgCut / 100))
+        : Math.min(orgCut, bracketPrizePool);
     const bracketDistributable = bracketPrizePool - bracketOrgCut;
 
     // Auto-split: hidden from admin, amounts shown in ₹
@@ -265,8 +268,8 @@ export function DeclareWinnersModal({
     // Prize distribution (must be before placementsParam which uses baseDist)
     // distribution uses basePrizePool for Org/Fund (matching declare-winners which excludes bonus pool)
     const distribution = useMemo(
-        () => basePrizePool > 0 ? getFinalDistribution(basePrizePool, entryFee, teamSize, ucExemptCount, orgPercent) : null,
-        [basePrizePool, entryFee, teamSize, ucExemptCount, orgPercent]
+        () => basePrizePool > 0 ? getFinalDistribution(basePrizePool, entryFee, teamSize, ucExemptCount, orgCut, orgCutMode) : null,
+        [basePrizePool, entryFee, teamSize, ucExemptCount, orgCut, orgCutMode]
     );
 
     // baseDist calculates prize placements — must use pool AFTER UC exempt deduction
@@ -274,8 +277,8 @@ export function DeclareWinnersModal({
     const ucExemptCost = ucExemptCount * entryFee;
     const effectivePool = prizePool - ucExemptCost;
     const baseDist = useMemo(
-        () => effectivePool > 0 ? getPrizeDistribution(effectivePool, entryFee, teamSize, orgPercent) : null,
-        [effectivePool, entryFee, teamSize, orgPercent]
+        () => effectivePool > 0 ? getPrizeDistribution(effectivePool, entryFee, teamSize, orgCut, orgCutMode) : null,
+        [effectivePool, entryFee, teamSize, orgCut, orgCutMode]
     );
 
     // Build placements param: "pos:amount:p1|p2,pos:amount:p1|p2"
@@ -709,7 +712,7 @@ export function DeclareWinnersModal({
                                         </div>
                                         {bracketOrgCut > 0 && (
                                             <div className="flex justify-between text-xs text-foreground/40">
-                                                <span>💼 Org ({orgPercent}%)</span>
+                                                <span>💼 Org Cut</span>
                                                 <span>- ₹{bracketOrgCut.toLocaleString()}</span>
                                             </div>
                                         )}
@@ -823,7 +826,7 @@ export function DeclareWinnersModal({
                                             <div className="pt-2 border-t border-success/20 space-y-0.5 text-xs">
 
                                                 <div className="flex justify-between text-foreground/50">
-                                                    <span>💼 Org ({orgPercent}%):</span>
+                                                    <span>💼 Org Cut:</span>
                                                     <span className="font-medium text-foreground">
                                                         ₹{(dryRunRes?.data?.finalOrg ?? taxPreviewRes?.finalOrg ?? organizerAmount).toLocaleString()}
                                                     </span>

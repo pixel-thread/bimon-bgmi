@@ -5,7 +5,7 @@
  * Tier thresholds determine the number of winners and distribution percentages.
  * 
  * Rules:
- * 1. Org takes orgPercent% of total pool (from settings)
+ * 1. Org takes a fixed amount from pool (from settings)
  * 2. Fund gets ₹0 from prize pool (fund only accumulates from solo/b2b taxes)
  * 3. UC-exempt cost is deducted from prize pool (reduces winners, NOT org)
  * 4. Winners get: totalPool - org - ucExemptCost
@@ -53,7 +53,7 @@ export interface PrizeDistributionResult {
 }
 
 export interface FinalDistributionResult extends PrizeDistributionResult {
-    /** Org amount (always orgPercent% of pool, unaffected by UC exempt) */
+    /** Org amount (fixed amount from settings, unaffected by UC exempt) */
     finalOrgAmount: number;
     /** Fund amount — always 0 from prize pool */
     finalFundAmount: number;
@@ -108,8 +108,12 @@ const TIER_CONFIGS: PrizeTierConfig[] = [
     },
 ];
 
-// Default org percentage
-const DEFAULT_ORG_PERCENT = 0;
+// Org cut mode type
+export type OrgCutMode = "percent" | "fixed";
+
+// Default org cut
+const DEFAULT_ORG_CUT = 0;
+const DEFAULT_ORG_MODE: OrgCutMode = "fixed";
 
 
 /**
@@ -141,7 +145,7 @@ function makeEven(amount: number): { evenAmount: number; remainder: number } {
 /**
  * Calculate prize distribution based on total prize pool.
  * 
- * - Org takes orgPercent% of total pool
+ * - Org takes a fixed amount from total pool
  * - Fund = ₹0 (fund only gets taxes, not from prize pool)
  * - Winners get totalPool - orgFee
  * - For Tiers 2-4, last position gets entry fee × team size as refund
@@ -149,22 +153,26 @@ function makeEven(amount: number): { evenAmount: number; remainder: number } {
  * @param totalPool - Total prize pool amount
  * @param entryFee - Entry fee per player
  * @param teamSize - Number of players per team (1=solo, 2=duo, 3=trio, 4=squad)
- * @param orgPercent - Org cut percentage (from settings, default 10%)
+ * @param orgCut - Org cut value (percentage or fixed amount depending on mode)
+ * @param orgCutMode - "percent" or "fixed" (default: "fixed")
  * @returns Complete prize distribution breakdown
  */
 export function getPrizeDistribution(
     totalPool: number,
     entryFee: number = 50,
     teamSize: number = 2,
-    orgPercent: number = DEFAULT_ORG_PERCENT,
+    orgCut: number = DEFAULT_ORG_CUT,
+    orgCutMode: OrgCutMode = DEFAULT_ORG_MODE,
 ): PrizeDistributionResult {
     // Find the applicable tier
     const tier = TIER_CONFIGS.find(
         (t) => totalPool >= t.minPool && (t.maxPool === null || totalPool <= t.maxPool)
     ) || TIER_CONFIGS[0]; // Fallback to tier 1
 
-    // Org takes its cut, fund = 0
-    const orgFee = Math.floor(totalPool * (orgPercent / 100));
+    // Compute org fee based on mode
+    const orgFee = orgCutMode === "percent"
+        ? Math.floor(totalPool * (orgCut / 100))
+        : Math.min(orgCut, totalPool);
     const fundAmount = 0;
     const prizes = new Map<number, PositionPrize>();
 
@@ -233,7 +241,7 @@ export function getPrizeDistribution(
 
     // Any remaining from rounding: goes to org if org > 0, otherwise to 1st place
     let adjustedOrgFee = orgFee;
-    if (orgPercent > 0) {
+    if (orgCut > 0) {
         adjustedOrgFee += carryOver;
     } else {
         const first = prizes.get(1);
@@ -251,7 +259,7 @@ export function getPrizeDistribution(
     // Ensure total adds up exactly
     const totalDistributed = adjustedOrgFee + fundAmount + totalWinnerPayout;
     const remainder = totalPool - totalDistributed;
-    if (orgPercent > 0) {
+    if (orgCut > 0) {
         adjustedOrgFee += remainder;
     } else if (remainder > 0) {
         const first = prizes.get(1);
@@ -286,7 +294,7 @@ export function getPrizeDistribution(
  * Calculate final distribution with UC-exempt cost.
  * 
  * Rules:
- * 1. Org gets orgPercent% of totalPool (always, unaffected by UC exempt)
+ * 1. Org gets a fixed amount from totalPool (always, unaffected by UC exempt)
  * 2. Fund = ₹0 from prize pool (fund only gets solo/b2b taxes)
  * 3. UC-exempt cost reduces winners' payouts, NOT org
  * 
@@ -294,7 +302,8 @@ export function getPrizeDistribution(
  * @param entryFee - Entry fee per player
  * @param teamSize - Number of players per team
  * @param ucExemptCount - Number of UC-exempt players
- * @param orgPercent - Org cut percentage (from settings)
+ * @param orgCut - Org cut value (percentage or fixed amount depending on mode)
+ * @param orgCutMode - "percent" or "fixed" (default: "fixed")
  * @returns Final distribution with adjusted amounts
  */
 export function getFinalDistribution(
@@ -302,24 +311,26 @@ export function getFinalDistribution(
     entryFee: number,
     teamSize: number,
     ucExemptCount: number,
-    orgPercent: number = DEFAULT_ORG_PERCENT,
+    orgCut: number = DEFAULT_ORG_CUT,
+    orgCutMode: OrgCutMode = DEFAULT_ORG_MODE,
 ): FinalDistributionResult {
     // UC exempt cost reduces the effective pool for winners
     const ucExemptCost = ucExemptCount * entryFee;
 
-    // Calculate distribution on the effective pool (totalPool - ucExemptCost)
-    // but org still takes % of the FULL totalPool
-    const orgFee = Math.floor(totalPool * (orgPercent / 100));
+    // Compute org fee based on mode
+    const orgFee = orgCutMode === "percent"
+        ? Math.floor(totalPool * (orgCut / 100))
+        : Math.min(orgCut, totalPool);
     const effectiveWinnerPool = totalPool - orgFee - ucExemptCost;
 
     // Get base distribution using the effective pool for winner calculations
-    const base = getPrizeDistribution(totalPool, entryFee, teamSize, orgPercent);
+    const base = getPrizeDistribution(totalPool, entryFee, teamSize, orgCut, orgCutMode);
 
     // If there are UC exempt players, recalculate winners from reduced pool
     if (ucExemptCount > 0 && effectiveWinnerPool < base.totalWinnerPayout) {
         // Recalculate with reduced pool: orgFee stays same, winners shrink
         const adjustedPool = totalPool - ucExemptCost;
-        const recalc = getPrizeDistribution(adjustedPool, entryFee, teamSize, orgPercent);
+        const recalc = getPrizeDistribution(adjustedPool, entryFee, teamSize, orgCut, orgCutMode);
 
         return {
             ...recalc,

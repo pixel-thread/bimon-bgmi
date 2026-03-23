@@ -44,3 +44,6 @@ next-env.d.ts
 public/sw*
 public/swe-worker*
 .agents/
+
+# Local notes (not tracked)
+NOTES_*.md

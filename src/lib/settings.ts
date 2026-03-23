@@ -5,7 +5,9 @@ const SETTINGS_KEY = "app_settings";
 
 export interface AppSettings {
     // 💰 Financial
-    orgCutPercent: number;
+    orgCutMode: "percent" | "fixed"; // Which org cut mode is active
+    orgCutPercent: number; // Percentage of prize pool the org takes
+    orgCutFixed: number;   // Fixed amount (in currency) the org takes per tournament
     enableFund: boolean;  // When false: no solo/b2b taxes, winners get full prize
     defaultEntryFee: number;
     enableTopUps: boolean;
@@ -47,7 +49,9 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
+    orgCutMode: "fixed",
     orgCutPercent: 0,
+    orgCutFixed: 0,
     enableFund: false,
     defaultEntryFee: 30,
     enableTopUps: true,

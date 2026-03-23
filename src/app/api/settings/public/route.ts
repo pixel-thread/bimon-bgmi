@@ -21,7 +21,9 @@ export async function GET() {
                 currencyEmoji: GAME.currencyEmoji,
                 passName: GAME.passName,
                 // Feature flags & values
+                orgCutMode: settings.orgCutMode,
                 orgCutPercent: settings.orgCutPercent,
+                orgCutFixed: settings.orgCutFixed,
                 enableFund: settings.enableFund,
                 enableTopUps: settings.enableTopUps,
                 enableElitePass: settings.enableElitePass,

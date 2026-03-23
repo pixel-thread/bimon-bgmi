@@ -37,6 +37,8 @@ function WhatsAppIcon({ className }: { className?: string }) {
 }
 
 interface Settings {
+    orgCutMode: "percent" | "fixed";
+    orgCutFixed: number;
     orgCutPercent: number;
     enableFund: boolean;
     defaultEntryFee: number;
@@ -176,15 +178,45 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardBody className="gap-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                            label="Org %"
-                            type="number"
-                            size="sm"
-                            value={String(settings.orgCutPercent)}
-                            onValueChange={(v) => update("orgCutPercent", Number(v))}
-                            description="Org share of prize pool"
-                            endContent={<span className="text-foreground/40">%</span>}
-                        />
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">Org Cut Mode:</span>
+                                <div className="flex gap-1">
+                                    {(["percent", "fixed"] as const).map((mode) => (
+                                        <Chip
+                                            key={mode}
+                                            variant={settings.orgCutMode === mode ? "solid" : "bordered"}
+                                            color={settings.orgCutMode === mode ? "primary" : "default"}
+                                            className="cursor-pointer"
+                                            onClick={() => update("orgCutMode", mode)}
+                                        >
+                                            {mode === "percent" ? "%" : `Fixed ${GAME.currency}`}
+                                        </Chip>
+                                    ))}
+                                </div>
+                            </div>
+                            {settings.orgCutMode === "percent" ? (
+                                <Input
+                                    label="Org Cut"
+                                    type="number"
+                                    size="sm"
+                                    value={String(settings.orgCutPercent)}
+                                    onValueChange={(v) => update("orgCutPercent", Number(v))}
+                                    description="Percentage of prize pool"
+                                    endContent={<span className="text-foreground/40">%</span>}
+                                />
+                            ) : (
+                                <Input
+                                    label="Org Cut"
+                                    type="number"
+                                    size="sm"
+                                    value={String(settings.orgCutFixed)}
+                                    onValueChange={(v) => update("orgCutFixed", Number(v))}
+                                    description="Fixed org cut per tournament"
+                                    endContent={<span className="text-foreground/40">{GAME.currency}</span>}
+                                />
+                            )}
+                        </div>
                         <Input
                             label="Default Entry Fee"
                             type="number"
