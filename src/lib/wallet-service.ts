@@ -149,7 +149,19 @@ export async function getCentralTransactions(
     options?: { game?: string; limit?: number; cursor?: string }
 ) {
     if (!isCentralWalletEnabled()) {
-        return { transactions: [], hasMore: false };
+        // Read from local Transaction table
+        const user = await getLocalPlayerByEmail(email);
+        if (!user?.player) return { transactions: [], hasMore: false };
+        const limit = options?.limit ?? 20;
+        const rows = await prisma.transaction.findMany({
+            where: { playerId: user.player.id },
+            orderBy: { createdAt: "desc" },
+            take: limit + 1,
+            ...(options?.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
+        });
+        const hasMore = rows.length > limit;
+        if (hasMore) rows.pop();
+        return { transactions: rows, hasMore };
     }
 
     const user = await walletDb.centralUser.findUnique({
