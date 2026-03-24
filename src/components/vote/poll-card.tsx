@@ -681,7 +681,7 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                 <style jsx>{`
                                     @keyframes marquee {
                                         0%, 15% { transform: translateX(0%); }
-                                        40%, 60% { transform: translateX(-30%); }
+                                        40%, 60% { transform: translateX(-50%); }
                                         85%, 100% { transform: translateX(0%); }
                                     }
                                     .animate-marquee {
