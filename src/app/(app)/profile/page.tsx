@@ -131,7 +131,7 @@ export default function ProfilePage() {
             const json = await res.json();
             return json.data;
         },
-        staleTime: 30 * 1000,
+        staleTime: 5 * 60 * 1000,
     });
 
     const [onCooldown, setOnCooldown] = useState(false);
@@ -149,6 +149,7 @@ export default function ProfilePage() {
     });
     const rpPrice = rpSettings?.elitePassPrice ?? 5;
     const rpOrigPrice = rpSettings?.elitePassOrigPrice ?? 20;
+    const rpDiscountPercent = rpOrigPrice > rpPrice ? Math.round((1 - rpPrice / rpOrigPrice) * 100) : 0;
 
 
     const handleSaveProfile = async (forceChange = false) => {
@@ -866,49 +867,48 @@ export default function ProfilePage() {
                                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                                className="relative w-full max-w-sm rounded-2xl border border-yellow-500/30 bg-gradient-to-b from-yellow-950/90 to-background/95 p-6 shadow-2xl shadow-yellow-500/10 backdrop-blur-xl"
+                                className="relative w-full max-w-sm rounded-2xl border border-yellow-500/20 bg-gradient-to-b from-yellow-950/80 to-background/95 p-6 shadow-2xl shadow-yellow-500/10 backdrop-blur-xl"
                             >
-                                <div className="text-center space-y-4">
-                                    {/* Badge */}
-                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-500 text-white text-xs font-bold animate-pulse shadow-lg shadow-red-500/30">
-                                            🔥 75% OFF
-                                        </span>
-                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500 text-white text-[10px] font-bold animate-pulse shadow-lg shadow-amber-500/30">
-                                            ⏳ Limited
-                                        </span>
+                                <div className="text-center space-y-5">
+                                    <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg shadow-yellow-500/20 mx-auto">
+                                        <Crown className="h-7 w-7 text-black" />
                                     </div>
 
-                                    <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg shadow-yellow-500/30 mx-auto">
-                                        <Crown className="h-8 w-8 text-black" />
-                                    </div>
                                     <div>
                                         <h3 className="text-xl font-bold text-yellow-400">{GAME.passName}</h3>
                                         <div className="flex items-center justify-center gap-2 mt-2">
-                                            <span className="text-foreground/40 line-through text-lg">{rpOrigPrice} <CurrencyIcon size={14} /></span>
-                                            <span className="text-2xl font-black text-yellow-400">{rpPrice} <CurrencyIcon size={18} /></span>
+                                            <span className="text-foreground/40 line-through text-base">{rpOrigPrice} <CurrencyIcon size={12} /></span>
+                                            <span className="text-2xl font-black text-yellow-400">{rpPrice} <CurrencyIcon size={16} /></span>
+                                            {rpDiscountPercent > 0 && (
+                                                <span className="px-2 py-0.5 rounded-full bg-red-500/90 text-white text-[10px] font-bold">
+                                                    {rpDiscountPercent}% OFF
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
+
                                     <div className="space-y-2 text-left text-sm">
-                                        <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 px-3 py-2">
+                                        <div className="flex items-center gap-2.5 rounded-lg bg-yellow-500/8 px-3 py-2.5">
                                             <ImagePlus className="h-4 w-4 text-yellow-400 shrink-0" />
-                                            <span className="text-foreground/80">Custom character image</span>
+                                            <span className="text-foreground/70">Custom character image</span>
                                         </div>
-                                        <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 px-3 py-2">
+                                        <div className="flex items-center gap-2.5 rounded-lg bg-yellow-500/8 px-3 py-2.5">
                                             <Flame className="h-4 w-4 text-yellow-400 shrink-0" />
-                                            <span className="text-foreground/80">Streak bonus rewards (₹30 <CurrencyIcon size={12} />)</span>
+                                            <span className="text-foreground/70">Streak bonus rewards</span>
                                         </div>
-                                        <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 px-3 py-2">
+                                        <div className="flex items-center gap-2.5 rounded-lg bg-yellow-500/8 px-3 py-2.5">
                                             <Crown className="h-4 w-4 text-yellow-400 shrink-0" />
-                                            <span className="text-foreground/80">Crown badge on profile</span>
+                                            <span className="text-foreground/70">Crown badge on profile</span>
                                         </div>
                                     </div>
+
                                     {player?.wallet && player.wallet.balance < rpPrice && (
                                         <p className="text-xs text-red-400">
                                             You need {rpPrice - player.wallet.balance} more <CurrencyIcon size={12} /> (Balance: {player.wallet.balance} <CurrencyIcon size={12} />)
                                         </p>
                                     )}
-                                    <div className="flex gap-2 pt-2">
+
+                                    <div className="flex gap-2 pt-1">
                                         <Button
                                             variant="flat"
                                             className="flex-1"
@@ -927,7 +927,6 @@ export default function ProfilePage() {
                                                         toast.success(`${GAME.passName} activated! ${GAME.passEmoji}`);
                                                         setShowRPModal(false);
                                                         await queryClient.invalidateQueries({ queryKey: ["profile"] });
-                                                        // Auto-open gallery picker after RP purchase
                                                         setTimeout(() => characterInputRef.current?.click(), 500);
                                                     } else {
                                                         toast.error(json.message || "Purchase failed");
