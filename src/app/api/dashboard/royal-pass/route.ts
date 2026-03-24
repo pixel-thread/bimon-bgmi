@@ -26,7 +26,16 @@ export async function GET(request: Request) {
         }
 
         const { searchParams } = new URL(request.url);
-        const seasonId = searchParams.get("seasonId");
+        let seasonId = searchParams.get("seasonId");
+
+        // Default to current active season if no seasonId specified
+        if (!seasonId) {
+            const activeSeason = await prisma.season.findFirst({
+                where: { status: "ACTIVE" },
+                select: { id: true },
+            });
+            if (activeSeason) seasonId = activeSeason.id;
+        }
 
         const royalPasses = await prisma.royalPass.findMany({
             where: seasonId ? { seasonId } : {},

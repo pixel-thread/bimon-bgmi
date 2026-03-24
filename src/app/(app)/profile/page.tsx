@@ -134,6 +134,21 @@ export default function ProfilePage() {
 
     const [onCooldown, setOnCooldown] = useState(false);
 
+    // Fetch RP prices from settings (dynamic)
+    const { data: rpSettings } = useQuery<{ elitePassPrice: number; elitePassOrigPrice: number }>({
+        queryKey: ["settings-rp-price"],
+        queryFn: async () => {
+            const res = await fetch("/api/settings/public");
+            if (!res.ok) throw new Error("Failed");
+            const json = await res.json();
+            return json.data;
+        },
+        staleTime: 5 * 60 * 1000,
+    });
+    const rpPrice = rpSettings?.elitePassPrice ?? 5;
+    const rpOrigPrice = rpSettings?.elitePassOrigPrice ?? 20;
+
+
     const handleSaveProfile = async (forceChange = false) => {
         if (newIGN.trim()) {
             const err = validateDisplayName(newIGN);
@@ -303,6 +318,18 @@ export default function ProfilePage() {
                             </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+                        {/* Buy RP overlay — shown when player has image but no active Royal Pass */}
+                        {!player?.hasRoyalPass && player?.characterImage?.url && !previewCharacter && GAME.features.hasRoyalPass && (
+                            <button
+                                onClick={() => setShowRPModal(true)}
+                                className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] cursor-pointer"
+                            >
+                                <Crown className="h-8 w-8 text-yellow-400 mb-2" />
+                                <p className="text-sm font-semibold text-white">Buy {GAME.passName}</p>
+                                <p className="text-xs text-white/60">to change or display to others</p>
+                            </button>
+                        )}
 
                         {/* Character upload — only for games with Royal Pass */}
                         {GAME.features.hasRoyalPass && (
@@ -844,8 +871,8 @@ export default function ProfilePage() {
                                     <div>
                                         <h3 className="text-xl font-bold text-yellow-400">{GAME.passName}</h3>
                                         <div className="flex items-center justify-center gap-2 mt-2">
-                                            <span className="text-foreground/40 line-through text-lg">20 <CurrencyIcon size={14} /></span>
-                                            <span className="text-2xl font-black text-yellow-400">5 <CurrencyIcon size={18} /></span>
+                                            <span className="text-foreground/40 line-through text-lg">{rpOrigPrice} <CurrencyIcon size={14} /></span>
+                                            <span className="text-2xl font-black text-yellow-400">{rpPrice} <CurrencyIcon size={18} /></span>
                                         </div>
                                     </div>
                                     <div className="space-y-2 text-left text-sm">
@@ -862,9 +889,9 @@ export default function ProfilePage() {
                                             <span className="text-foreground/80">Crown badge on profile</span>
                                         </div>
                                     </div>
-                                    {player?.wallet && player.wallet.balance < 5 && (
+                                    {player?.wallet && player.wallet.balance < rpPrice && (
                                         <p className="text-xs text-red-400">
-                                            You need {5 - player.wallet.balance} more <CurrencyIcon size={12} /> (Balance: {player.wallet.balance} <CurrencyIcon size={12} />)
+                                            You need {rpPrice - player.wallet.balance} more <CurrencyIcon size={12} /> (Balance: {player.wallet.balance} <CurrencyIcon size={12} />)
                                         </p>
                                     )}
                                     <div className="flex gap-2 pt-2">
@@ -877,7 +904,7 @@ export default function ProfilePage() {
                                         </Button>
                                         <Button
                                             className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-bold"
-                                            isDisabled={!player?.wallet || player.wallet.balance < 5}
+                                            isDisabled={!player?.wallet || player.wallet.balance < rpPrice}
                                             onPress={async () => {
                                                 try {
                                                     const res = await fetch("/api/royal-pass/buy", { method: "POST" });
@@ -896,7 +923,7 @@ export default function ProfilePage() {
                                                 }
                                             }}
                                         >
-                                            {GAME.passEmoji} Buy for 5 <CurrencyIcon size={14} />
+                                            {GAME.passEmoji} Buy for {rpPrice} <CurrencyIcon size={14} />
                                         </Button>
                                     </div>
                                 </div>

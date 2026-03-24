@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
                 },
                 balance: p.wallet?.balance ?? 0,
                 hasRoyalPass: p.hasRoyalPass,
-                characterImage: p.characterImage
+                characterImage: (p.hasRoyalPass && p.characterImage)
                     ? {
                         url: p.characterImage.publicUrl,
                         isAnimated: p.characterImage.isAnimated,

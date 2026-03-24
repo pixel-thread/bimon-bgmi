@@ -40,8 +40,7 @@ interface RoyalPassInfo {
     }[];
 }
 
-const RP_PRICE_DISCOUNTED = 5; // 75% off from 20 UC
-const RP_PRICE_FULL = 20; // Full price
+
 
 /**
  * /app/royal-pass — Royal Pass rewards page.
@@ -60,6 +59,20 @@ export default function RoyalPassPage() {
         },
         staleTime: 60 * 1000,
     });
+
+    // Fetch RP prices from settings (dynamic)
+    const { data: settingsData } = useQuery<{ elitePassPrice: number; elitePassOrigPrice: number }>({
+        queryKey: ["settings-rp-price"],
+        queryFn: async () => {
+            const res = await fetch("/api/settings/public");
+            if (!res.ok) throw new Error("Failed");
+            const json = await res.json();
+            return json.data;
+        },
+        staleTime: 5 * 60 * 1000,
+    });
+    const RP_PRICE_DISCOUNTED = settingsData?.elitePassPrice ?? 5;
+    const RP_PRICE_FULL = settingsData?.elitePassOrigPrice ?? 20;
 
     const lostDiscount = (data?.currentStreak ?? 0) >= (data?.nextRewardAt ?? 8);
     const rpPrice = lostDiscount ? RP_PRICE_FULL : RP_PRICE_DISCOUNTED;
@@ -92,7 +105,7 @@ export default function RoyalPassPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="rounded-lg bg-gradient-to-r from-red-500 to-orange-500 py-2 px-4 text-center text-sm font-medium text-white"
                 >
-                    🎉 <span className="line-through opacity-75">20 <CurrencyIcon size={12} /></span> → 5 <CurrencyIcon size={12} /> only! ⏳ Limited time — don’t miss out!
+                    🎉 <span className="line-through opacity-75">{RP_PRICE_FULL} <CurrencyIcon size={12} /></span> → {RP_PRICE_DISCOUNTED} <CurrencyIcon size={12} /> only! ⏳ Limited time — don’t miss out!
                 </motion.div>
             )}
 
