@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     Card,
@@ -98,6 +99,7 @@ interface ProfileData {
  */
 export default function ProfilePage() {
     const queryClient = useQueryClient();
+    const router = useRouter();
     const handleSignOut = () => signOut({ callbackUrl: "/" });
     const profileInputRef = useRef<HTMLInputElement>(null);
     const characterInputRef = useRef<HTMLInputElement>(null);
@@ -108,6 +110,7 @@ export default function ProfilePage() {
     const [pendingCharacterFile, setPendingCharacterFile] = useState<File | null>(null);
     const [showCharacterPreview, setShowCharacterPreview] = useState(false);
     const [showUCBreakdown, setShowUCBreakdown] = useState(false);
+    const [navigatingToWallet, setNavigatingToWallet] = useState(false);
 
     // Profile edit state
     const [editing, setEditing] = useState(false);
@@ -427,26 +430,28 @@ export default function ProfilePage() {
 
                 {/* Wallet badge — links to wallet page */}
                 {player && (
-                    <a href="/wallet" className="block">
-                        <motion.div
-                            initial={{ opacity: 0, y: 4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="flex items-center justify-between rounded-xl border border-divider bg-default-50 px-4 py-3 hover:bg-default-100 active:scale-[0.98] transition-all"
-                        >
-                            <div className="flex items-center gap-2.5">
-                                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10">
-                                    <CurrencyIcon size={18} />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-foreground/40 font-medium">My Wallet</p>
-                                    <p className="text-lg font-bold leading-tight">
-                                        {(player.wallet?.balance ?? 0).toLocaleString()} <span className="text-xs font-semibold text-foreground/50">{GAME.currency}</span>
-                                    </p>
-                                </div>
+                    <motion.div
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        onClick={() => {
+                            setNavigatingToWallet(true);
+                            router.push("/wallet");
+                        }}
+                        className="flex items-center justify-between rounded-xl border border-divider bg-default-50 px-4 py-3 hover:bg-default-100 active:scale-[0.98] transition-all cursor-pointer"
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10">
+                                <CurrencyIcon size={18} />
                             </div>
-                            <span className="text-foreground/30 text-sm">→</span>
-                        </motion.div>
-                    </a>
+                            <div>
+                                <p className="text-xs text-foreground/40 font-medium">My Wallet</p>
+                                <p className="text-lg font-bold leading-tight">
+                                    {(player.wallet?.balance ?? 0).toLocaleString()} <span className="text-xs font-semibold text-foreground/50">{GAME.currency}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <span className={`text-foreground/30 text-sm inline-block ${navigatingToWallet ? "animate-spin-smooth" : ""}`}>→</span>
+                    </motion.div>
                 )}
 
                 {/* ── Stats Section ── */}
