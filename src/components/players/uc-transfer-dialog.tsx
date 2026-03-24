@@ -182,7 +182,7 @@ export function UCTransferDialog({
 
                     <Textarea
                         label="Message (optional)"
-                        placeholder="Add a note..."
+                        placeholder={activeTab === "request" ? "Synei lem ia kibi duk 😭" : "Shim ai donation"}
                         value={message}
                         onValueChange={setMessage}
                         size="sm"

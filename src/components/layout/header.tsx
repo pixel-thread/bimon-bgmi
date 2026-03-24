@@ -317,7 +317,9 @@ export function Header() {
                                             <Crown className="h-5 w-5" />
                                         )}
                                         {hasUnclaimedStreak && (
-                                            <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-background animate-pulse" />
+                                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 ring-2 ring-background animate-pulse">
+                                                <Gift className="h-2.5 w-2.5 text-white" />
+                                            </span>
                                         )}
                                     </Link>
                                 </NavbarItem>

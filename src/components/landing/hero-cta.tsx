@@ -22,7 +22,10 @@ export function HeroHeading() {
             const res = await fetch("/api/profile");
             if (!res.ok) return {};
             const json = await res.json();
-            return json.data || {};
+            const d = json.data || {};
+            return {
+                displayName: d.player?.displayName || d.username,
+            };
         },
         enabled: isSignedIn,
         staleTime: 5 * 60 * 1000,
