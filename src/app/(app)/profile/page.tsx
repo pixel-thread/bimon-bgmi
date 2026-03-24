@@ -325,7 +325,7 @@ export default function ProfilePage() {
                         {!player?.hasRoyalPass && player?.characterImage?.url && !previewCharacter && GAME.features.hasRoyalPass && (
                             <button
                                 onClick={() => setShowRPModal(true)}
-                                className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] cursor-pointer"
+                                className="absolute inset-0 bottom-24 z-10 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] cursor-pointer rounded-b-2xl"
                             >
                                 <Crown className="h-8 w-8 text-yellow-400 mb-2" />
                                 <p className="text-sm font-semibold text-white">Buy {GAME.passName}</p>
