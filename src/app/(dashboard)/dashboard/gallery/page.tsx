@@ -83,15 +83,20 @@ export default function GalleryPage() {
         },
     });
 
-    // Delete image
+    // Delete image (hard delete from DB)
     const deleteMutation = useMutation({
         mutationFn: async (id: string) => {
-            const res = await fetch(`/api/gallery/${id}`, { method: "DELETE" });
+            const res = await fetch("/api/gallery/backgrounds", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id }),
+            });
             if (!res.ok) throw new Error("Failed to delete");
         },
         onSuccess: () => {
-            toast.success("Image removed");
+            toast.success("Image deleted");
             queryClient.invalidateQueries({ queryKey: ["gallery"] });
+            queryClient.invalidateQueries({ queryKey: ["global-background"] });
         },
         onError: () => toast.error("Failed to delete"),
     });
@@ -288,7 +293,7 @@ export default function GalleryPage() {
                                         className="w-full h-36 object-cover"
                                         loading="lazy"
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" />
 
                                     {/* Active badge */}
                                     {isActiveBg && (
@@ -299,8 +304,8 @@ export default function GalleryPage() {
                                         </div>
                                     )}
 
-                                    {/* Hover actions */}
-                                    <div className="absolute bottom-0 inset-x-0 p-2 flex items-end justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {/* Actions — always visible on mobile, hover on desktop */}
+                                    <div className="absolute bottom-0 inset-x-0 p-2 flex items-end justify-between sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                         <span className="text-[11px] text-white font-medium truncate">
                                             {img.name}
                                         </span>
