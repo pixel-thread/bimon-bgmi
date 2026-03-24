@@ -546,8 +546,8 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
 
     useEffect(() => {
         const el = titleRef.current;
-        if (el) setIsTitleOverflowing(el.scrollWidth > el.clientWidth + 10);
-    }, [poll.question]);
+        if (el) setIsTitleOverflowing(el.scrollWidth > el.clientWidth);
+    }, [poll.question, tournament?.name]);
 
     // Participants = IN + SOLO
     const participantCount = poll.inVotes + poll.soloVotes;
