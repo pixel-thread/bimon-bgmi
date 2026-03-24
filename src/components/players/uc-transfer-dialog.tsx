@@ -33,7 +33,7 @@ export function UCTransferDialog({
     toPlayerName,
 }: UCTransferDialogProps) {
     const [amount, setAmount] = useState("");
-    const [message, setMessage] = useState("");
+    const [message, setMessage] = useState("Synei lem ia kibi duk 😭");
     const [activeTab, setActiveTab] = useState<string>("request");
     const queryClient = useQueryClient();
     const { balance } = useAuthUser();
@@ -63,7 +63,7 @@ export function UCTransferDialog({
 
     const handleClose = () => {
         setAmount("");
-        setMessage("");
+        setMessage("Synei lem ia kibi duk 😭");
         setActiveTab("request");
         onClose();
     };
@@ -92,7 +92,10 @@ export function UCTransferDialog({
                 <ModalBody className="gap-4 px-5 pt-4">
                     <Tabs
                         selectedKey={activeTab}
-                        onSelectionChange={(key) => setActiveTab(key as string)}
+                        onSelectionChange={(key) => {
+                            setActiveTab(key as string);
+                            setMessage(key === "send" ? "Shim ai donation" : "Synei lem ia kibi duk 😭");
+                        }}
                         fullWidth
                         size="sm"
                         color={activeTab === "send" ? "success" : "primary"}
@@ -182,7 +185,7 @@ export function UCTransferDialog({
 
                     <Textarea
                         label="Message (optional)"
-                        placeholder={activeTab === "request" ? "Synei lem ia kibi duk 😭" : "Shim ai donation"}
+                        placeholder="Add a note..."
                         value={message}
                         onValueChange={setMessage}
                         size="sm"

@@ -257,7 +257,7 @@ export default function NotificationsPage() {
     const openRequestModal = (request: PendingRequest) => {
         setModalMode("uc_request");
         setSelectedRequest(request);
-        setResponseMessage("");
+        setResponseMessage("Chim nga mai khapnap rei ia kibi duk ✊🏿");
         onOpen();
     };
 
