@@ -73,6 +73,7 @@ export default function RoyalPassPage() {
     });
     const RP_PRICE_DISCOUNTED = settingsData?.elitePassPrice ?? 5;
     const RP_PRICE_FULL = settingsData?.elitePassOrigPrice ?? 20;
+    const rpDiscountPercent = RP_PRICE_FULL > RP_PRICE_DISCOUNTED ? Math.round((1 - RP_PRICE_DISCOUNTED / RP_PRICE_FULL) * 100) : 0;
 
     const lostDiscount = (data?.currentStreak ?? 0) >= (data?.nextRewardAt ?? 8);
     const rpPrice = lostDiscount ? RP_PRICE_FULL : RP_PRICE_DISCOUNTED;
@@ -105,7 +106,7 @@ export default function RoyalPassPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="rounded-lg bg-gradient-to-r from-red-500 to-orange-500 py-2 px-4 text-center text-sm font-medium text-white"
                 >
-                    🎉 <span className="line-through opacity-75">{RP_PRICE_FULL} <CurrencyIcon size={12} /></span> → {RP_PRICE_DISCOUNTED} <CurrencyIcon size={12} /> only! ⏳ Limited time — don’t miss out!
+                    <span className="line-through opacity-75">{RP_PRICE_FULL} <CurrencyIcon size={12} /></span>{" → "}{RP_PRICE_DISCOUNTED} <CurrencyIcon size={12} />{rpDiscountPercent > 0 && <span className="ml-1 px-1.5 py-0.5 rounded bg-white/20 text-[10px] font-bold">{rpDiscountPercent}% OFF</span>}
                 </motion.div>
             )}
 
