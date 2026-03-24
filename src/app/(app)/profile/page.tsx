@@ -325,7 +325,7 @@ export default function ProfilePage() {
                         {!player?.hasRoyalPass && player?.characterImage?.url && !previewCharacter && GAME.features.hasRoyalPass && (
                             <button
                                 onClick={() => setShowRPModal(true)}
-                                className="absolute inset-0 bottom-24 z-10 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] cursor-pointer rounded-b-2xl"
+                                className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] cursor-pointer"
                             >
                                 <Crown className="h-8 w-8 text-yellow-400 mb-2" />
                                 <p className="text-sm font-semibold text-white">Buy {GAME.passName}</p>
@@ -367,7 +367,7 @@ export default function ProfilePage() {
                         )}
 
                         {/* Profile info overlay */}
-                        <div className="absolute bottom-3 left-4 right-4 flex items-end gap-3">
+                        <div className="absolute bottom-3 left-4 right-4 flex items-end gap-3 z-20">
                             <div className="relative">
                                 <Avatar
                                     src={previewProfileUrl || profile.imageUrl || undefined}
@@ -450,10 +450,16 @@ export default function ProfilePage() {
                                 </p>
                             </div>
                         </div>
-                        <span
-                            className="text-foreground/30 text-sm inline-block"
-                            style={navigatingToWallet ? { animation: "spin 0.8s ease-in-out infinite" } : undefined}
-                        >→</span>
+                        <motion.div
+                            animate={navigatingToWallet ? { rotate: 360 } : { rotate: 0 }}
+                            transition={navigatingToWallet ? { duration: 0.6, repeat: Infinity, ease: "linear" } : { duration: 0 }}
+                        >
+                            {navigatingToWallet ? (
+                                <Loader2 className="h-4 w-4 text-primary/60" />
+                            ) : (
+                                <span className="text-foreground/30 text-sm">→</span>
+                            )}
+                        </motion.div>
                     </motion.div>
                 )}
 
