@@ -77,7 +77,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         idPlaceholder: "Your BGMI character ID",
         hasUID: false,
         ignLabel: "Game Name",
-        pasteOnlyIGN: true,          // BGMI requires paste to prevent fake names
+        pasteOnlyIGN: false,         // Allow typing — paste-only confused players
         locale: "kha",
         scoringSystem: "bgmi",
         booyahBonus: false,

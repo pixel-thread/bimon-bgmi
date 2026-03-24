@@ -418,14 +418,21 @@ export default function ProfilePage() {
                     </div>
                 </Card>
 
-                {/* No player */}
-                {!player && (
-                    <div className="flex flex-col items-center gap-3 rounded-xl bg-default-100 py-8 text-center">
-                        <User className="h-10 w-10 text-foreground/20" />
-                        <p className="text-sm text-foreground/50">
-                            You don&apos;t have a player profile yet.
-                        </p>
-                    </div>
+                {/* No player — only show if genuinely no player (not mid-refetch) */}
+                {!player && !isFetching && (
+                    <Card className="border border-divider">
+                        <CardBody className="flex flex-col items-center gap-2 py-6 text-center">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                                <User className="h-5 w-5 text-primary/40" />
+                            </div>
+                            <p className="text-sm font-medium text-foreground/60">
+                                No player profile linked yet
+                            </p>
+                            <p className="text-xs text-foreground/30">
+                                Contact an admin to get registered
+                            </p>
+                        </CardBody>
+                    </Card>
                 )}
 
                 {/* Wallet badge — links to wallet page */}

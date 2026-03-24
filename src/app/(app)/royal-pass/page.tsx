@@ -250,51 +250,19 @@ export default function RoyalPassPage() {
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.05 }}
-                            className="flex justify-center"
                         >
-                            <button
-                                onClick={handleBuyRP}
-                                disabled={isPurchasing}
-                                className={`rounded-full overflow-hidden shadow-lg transition-transform active:scale-[0.98] disabled:opacity-60 ${lostDiscount
-                                    ? "shadow-pink-500/20"
-                                    : "shadow-amber-500/20"
+                            <Button
+                                onPress={handleBuyRP}
+                                isLoading={isPurchasing}
+                                className={`w-full font-bold text-white ${lostDiscount
+                                    ? "bg-gradient-to-r from-purple-500 to-pink-500"
+                                    : "bg-gradient-to-r from-yellow-500 to-amber-500"
                                     }`}
+                                size="lg"
+                                startContent={!isPurchasing && <Crown className="h-4 w-4" />}
                             >
-                                {/* Top — price */}
-                                {!lostDiscount ? (
-                                    <div className="bg-zinc-900 dark:bg-zinc-800 px-5 py-1 flex items-center justify-center gap-1.5">
-                                        <span className="text-[10px] font-bold text-white/40 line-through decoration-red-500 decoration-1">
-                                            {RP_PRICE_FULL} <CurrencyIcon size={12} />
-                                        </span>
-                                        <span className="text-sm font-black text-white">
-                                            {RP_PRICE_DISCOUNTED} <CurrencyIcon size={14} />
-                                        </span>
-                                    </div>
-                                ) : (
-                                    <div className="bg-zinc-900 dark:bg-zinc-800 px-5 py-1 text-center">
-                                        <span className="text-sm font-black text-white">
-                                            {RP_PRICE_FULL} <CurrencyIcon size={12} />
-                                        </span>
-                                    </div>
-                                )}
-
-                                {/* Middle — CTA */}
-                                <div className={`px-6 py-2.5 text-center text-sm font-bold text-white ${lostDiscount
-                                    ? "bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500"
-                                    : "bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500"
-                                    }`}>
-                                    {isPurchasing ? "Claiming..." : `${GAME.passEmoji} Get ${GAME.passName}`}
-                                </div>
-
-                                {/* Bottom — special offer */}
-                                {!lostDiscount && (
-                                    <div className="bg-zinc-900 dark:bg-zinc-800 px-5 py-1 text-center">
-                                        <span className="text-[9px] font-bold text-amber-400 uppercase tracking-widest">
-                                            ⚡ Special Offer
-                                        </span>
-                                    </div>
-                                )}
-                            </button>
+                                {isPurchasing ? "Purchasing..." : `Get ${GAME.passName} — ${rpPrice}`} <CurrencyIcon size={13} />
+                            </Button>
                         </motion.div>
                     )}
 
