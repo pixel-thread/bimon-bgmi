@@ -342,27 +342,12 @@ body {
   }
 }
 
-/* Smooth ease-in spin — starts slow, accelerates */
-@keyframes spin-ease-in {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin-smooth {
-  animation: spin-ease-in 0.8s ease-in-out infinite;
-}
-
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
 
   .pubgmi-letter,
   .pubgmi-fall-down,
-  .pubgmi-roll-in,
-  .animate-spin-smooth {
+  .pubgmi-roll-in {
     animation: none !important;
   }
 }

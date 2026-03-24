@@ -132,7 +132,6 @@ export default function ProfilePage() {
             return json.data;
         },
         staleTime: 30 * 1000,
-        refetchOnMount: "always",
     });
 
     const [onCooldown, setOnCooldown] = useState(false);
@@ -434,6 +433,7 @@ export default function ProfilePage() {
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
                         onClick={() => {
+                            if (navigatingToWallet) return;
                             setNavigatingToWallet(true);
                             router.push("/wallet");
                         }}
@@ -450,7 +450,10 @@ export default function ProfilePage() {
                                 </p>
                             </div>
                         </div>
-                        <span className={`text-foreground/30 text-sm inline-block ${navigatingToWallet ? "animate-spin-smooth" : ""}`}>→</span>
+                        <span
+                            className="text-foreground/30 text-sm inline-block"
+                            style={navigatingToWallet ? { animation: "spin 0.8s ease-in-out infinite" } : undefined}
+                        >→</span>
                     </motion.div>
                 )}
 
