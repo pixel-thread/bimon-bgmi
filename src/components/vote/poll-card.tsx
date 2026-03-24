@@ -543,10 +543,15 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
     // Marquee for long titles
     const titleRef = useRef<HTMLHeadingElement>(null);
     const [isTitleOverflowing, setIsTitleOverflowing] = useState(false);
+    const [titleOverflowPx, setTitleOverflowPx] = useState(0);
 
     useEffect(() => {
         const el = titleRef.current;
-        if (el) setIsTitleOverflowing(el.scrollWidth > el.clientWidth);
+        if (el) {
+            const overflow = el.scrollWidth - el.clientWidth;
+            setIsTitleOverflowing(overflow > 0);
+            setTitleOverflowPx(overflow);
+        }
     }, [poll.question, tournament?.name]);
 
     // Participants = IN + SOLO
@@ -674,19 +679,20 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                         ref={titleRef}
                                         className={`font-semibold text-lg whitespace-nowrap ${isTitleOverflowing ? "animate-marquee" : ""} ${hasPrizePool ? "text-white drop-shadow-md" : "text-gray-900 dark:text-white"}`}
                                         title={tournament?.name || poll.question}
+                                        style={isTitleOverflowing ? { '--marquee-offset': `-${titleOverflowPx + 8}px` } as React.CSSProperties : undefined}
                                     >
                                         {tournament?.name || poll.question}
                                     </h3>
                                 </div>
                                 <style jsx>{`
                                     @keyframes marquee {
-                                        0%, 15% { transform: translateX(0%); }
-                                        40%, 60% { transform: translateX(-50%); }
-                                        85%, 100% { transform: translateX(0%); }
+                                        0%, 15% { transform: translateX(0); }
+                                        40%, 60% { transform: translateX(var(--marquee-offset, -20px)); }
+                                        85%, 100% { transform: translateX(0); }
                                     }
                                     .animate-marquee {
                                         display: inline-block;
-                                        animation: marquee 12s ease-in-out infinite;
+                                        animation: marquee 6s ease-in-out infinite;
                                     }
                                     @media (min-width: 640px) {
                                         .animate-marquee {
