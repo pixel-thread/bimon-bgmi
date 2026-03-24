@@ -48,7 +48,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import { DeclareWinnersModal } from "@/components/dashboard/declare-winners-modal";
-import Image from "next/image";
+
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { GAME } from "@/lib/game-config";
 
@@ -277,84 +277,6 @@ export default function OperationsPage() {
     });
 
 
-    // ─── Global Background ───────────────────────────────────
-
-    const { data: globalBg, isLoading: bgLoading } = useQuery<{ id: string; publicUrl: string; name: string } | null>({
-        queryKey: ["global-background"],
-        queryFn: async () => {
-            const res = await fetch("/api/gallery/global-background");
-            if (!res.ok) return null;
-            const json = await res.json();
-            return json.data ?? null;
-        },
-    });
-
-    const { data: galleryItems = [] } = useQuery<{ id: string; publicUrl: string; name: string; isCharacterImg: boolean }[]>({
-        queryKey: ["gallery"],
-        queryFn: async () => {
-            const res = await fetch("/api/gallery");
-            if (!res.ok) return [];
-            const json = await res.json();
-            return json.data ?? [];
-        },
-    });
-
-    const bgCandidates = galleryItems.filter((g) => !g.isCharacterImg);
-
-    const setBg = useMutation({
-        mutationFn: async (galleryId: string) => {
-            const res = await fetch("/api/gallery/global-background", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ galleryId }),
-            });
-            if (!res.ok) throw new Error("Failed");
-        },
-        onSuccess: () => {
-            toast.success("Background updated!");
-            queryClient.invalidateQueries({ queryKey: ["global-background"] });
-        },
-        onError: () => toast.error("Failed to set background"),
-    });
-
-    const deleteBg = useMutation({
-        mutationFn: async () => {
-            const res = await fetch("/api/gallery/global-background", { method: "DELETE" });
-            if (!res.ok) throw new Error("Failed");
-        },
-        onSuccess: () => {
-            toast.success("Background removed");
-            queryClient.invalidateQueries({ queryKey: ["global-background"] });
-        },
-        onError: () => toast.error("Failed to remove background"),
-    });
-
-    const bgFileRef = useRef<HTMLInputElement>(null);
-
-    const uploadBg = useMutation({
-        mutationFn: async (file: File) => {
-            const fd = new FormData();
-            fd.append("image", file);
-            // Upload to gallery
-            const uploadRes = await fetch("/api/gallery/upload", { method: "POST", body: fd });
-            if (!uploadRes.ok) throw new Error("Upload failed");
-            const uploadJson = await uploadRes.json();
-            const galleryId = uploadJson.data.id;
-            // Set as global background
-            const setRes = await fetch("/api/gallery/global-background", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ galleryId }),
-            });
-            if (!setRes.ok) throw new Error("Failed to set");
-        },
-        onSuccess: () => {
-            toast.success("Background uploaded & set!");
-            queryClient.invalidateQueries({ queryKey: ["global-background"] });
-            queryClient.invalidateQueries({ queryKey: ["gallery"] });
-        },
-        onError: () => toast.error("Failed to upload"),
-    });
 
     return (
         <div className="mx-auto max-w-xl space-y-5">
@@ -562,101 +484,6 @@ export default function OperationsPage() {
                     onClose={donationModal.onClose}
                 />
             )}
-            {/* Standings Background */}
-            <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-            >
-                <Card className="border border-divider">
-                    <CardBody className="p-4 space-y-3 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                                <ImageIcon className="h-4 w-4 text-foreground/40 shrink-0" />
-                                <div>
-                                    <p className="text-sm font-semibold">Standings Background</p>
-                                    <p className="text-xs text-foreground/40">Standings & slots export</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-1.5 shrink-0">
-                                {globalBg && (
-                                    <Button
-                                        size="sm"
-                                        color="danger"
-                                        variant="light"
-                                        isIconOnly
-                                        onPress={() => deleteBg.mutate()}
-                                        isLoading={deleteBg.isPending}
-                                    >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                    </Button>
-                                )}
-                                <Button
-                                    size="sm"
-                                    variant="flat"
-                                    isIconOnly
-                                    onPress={() => bgFileRef.current?.click()}
-                                    isLoading={uploadBg.isPending}
-                                >
-                                    <Upload className="h-3.5 w-3.5" />
-                                </Button>
-                            </div>
-                        </div>
-
-                        {bgLoading ? (
-                            <Skeleton className="h-20 w-full rounded-lg" />
-                        ) : bgCandidates.length === 0 ? (
-                            <p className="text-xs text-foreground/40 py-4 text-center">No gallery images available</p>
-                        ) : (
-                            <div className="grid grid-cols-4 gap-2">
-                                {bgCandidates.map((img) => {
-                                    const isSelected = globalBg?.id === img.id;
-                                    return (
-                                        <button
-                                            key={img.id}
-                                            onClick={() => setBg.mutate(img.id)}
-                                            disabled={setBg.isPending}
-                                            className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${isSelected
-                                                ? "border-primary ring-2 ring-primary/20"
-                                                : "border-divider hover:border-foreground/30"
-                                                }`}
-                                        >
-                                            <Image
-                                                src={img.publicUrl}
-                                                alt={img.name}
-                                                fill
-                                                className="object-cover"
-                                                unoptimized
-                                            />
-                                            {isSelected && (
-                                                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                                    <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                                        <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
-
-                        <input
-                            ref={bgFileRef}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                                const f = e.target.files?.[0];
-                                if (f) uploadBg.mutate(f);
-                                e.target.value = "";
-                            }}
-                        />
-                    </CardBody>
-                </Card>
-            </motion.div>
 
             {/* Create Tournament Modal */}
             <Modal isOpen={createModal.isOpen} onClose={createModal.onClose} placement="center">
