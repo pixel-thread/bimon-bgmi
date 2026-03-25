@@ -184,16 +184,9 @@ export default function AdminPlayersPage() {
                                         <p className="truncate text-sm font-medium">
                                             {p.displayName || p.username}
                                         </p>
-                                        {p.phoneNumber ? (
-                                            <p className="truncate text-xs text-foreground/40">
-                                                📞 {p.phoneNumber}
-                                                <span className="sm:hidden"> · {p.category} · {p.balance} <CurrencyIcon size={10} /></span>
-                                            </p>
-                                        ) : (
-                                            <p className="truncate text-xs text-foreground/40 sm:hidden">
-                                                {p.category} · {p.balance} <CurrencyIcon size={10} />
-                                            </p>
-                                        )}
+                                        <p className="truncate text-xs text-foreground/40 sm:hidden">
+                                            {p.category} · {p.balance} <CurrencyIcon size={10} />
+                                        </p>
                                     </div>
 
                                     {/* Tier */}

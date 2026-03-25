@@ -98,6 +98,7 @@ export async function GET(
             hasRoyalPass: player.hasRoyalPass,
             isUCExempt: player.isUCExempt,
             isTrusted: player.isTrusted,
+            phoneNumber: player.phoneNumber || null,
             bio: player.bio,
             createdAt: player.createdAt,
             balance: player.user.email ? await getCentralBalance(player.user.email) : 0,

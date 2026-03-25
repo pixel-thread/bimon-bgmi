@@ -51,6 +51,7 @@ interface PlayerDetail {
     hasRoyalPass: boolean;
     isUCExempt: boolean;
     isTrusted: boolean;
+    phoneNumber: string | null;
     bio: string | null;
     createdAt: string;
     balance: number;
@@ -200,6 +201,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                 </div>
                                 <p className="text-xs text-foreground/50">
                                     @{player?.username} · {player?.email}
+                                    {player?.phoneNumber && <> · 📞 {player.phoneNumber}</>}
                                 </p>
                             </div>
                             {player?.hasRoyalPass && (
