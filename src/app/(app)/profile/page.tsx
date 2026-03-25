@@ -32,6 +32,7 @@ import {
     ChevronDown,
     Medal,
     Star,
+    Pencil,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { CategoryBadge } from "@/components/ui/category-badge";
@@ -122,6 +123,7 @@ export default function ProfilePage() {
     const [saving, setSaving] = useState(false);
     const ignTutorial = useIGNTutorial();
     const [showRPModal, setShowRPModal] = useState(false);
+    const profileSectionRef = useRef<HTMLDivElement>(null);
 
     const { data: profile, isLoading, isFetching, error } = useQuery<ProfileData>({
         queryKey: ["profile"],
@@ -401,6 +403,22 @@ export default function ProfilePage() {
                                 <div className="flex items-center gap-2">
                                     <h1 className="text-2xl font-bold text-white drop-shadow truncate">{name}</h1>
                                     {player?.hasRoyalPass && <Crown className="h-5 w-5 text-yellow-400 shrink-0" />}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditing(true);
+                                            setNewIGN(player?.displayName || profile.username);
+                                            setNewUID(player?.uid || "");
+                                            setNewPhone(player?.phoneNumber || "");
+                                            setNewBio(player?.bio || "");
+                                            setIgnError("");
+                                            setTimeout(() => profileSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
+                                        }}
+                                        className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 hover:bg-white/30 active:scale-90 transition-all shrink-0"
+                                        title={`Edit ${GAME.ignLabel}`}
+                                    >
+                                        <Pencil className="h-2.5 w-2.5 text-white" />
+                                    </button>
                                 </div>
                                 <div className="flex items-center gap-1.5 mt-0.5">
                                     <span className="text-sm text-white/50 truncate">@{profile.username}</span>
@@ -475,16 +493,20 @@ export default function ProfilePage() {
                 {stats && (
                     <Card className="border border-divider overflow-hidden">
                         <CardBody className="p-4 space-y-4">
-                            {/* K/D Featured */}
+                            {/* Featured Stat — K/D for BR, Win Rate for bracket games */}
                             <div className="text-center">
                                 <div className="flex items-center justify-center gap-2 mb-1">
-                                    <p className="text-xs text-foreground/50 font-medium uppercase tracking-wide">K/D Ratio</p>
+                                    <p className="text-xs text-foreground/50 font-medium uppercase tracking-wide">
+                                        {GAME.features.hasBR ? "K/D Ratio" : "Win Rate"}
+                                    </p>
                                 </div>
                                 <div className="flex items-baseline justify-center gap-2">
                                     <span className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                                        {stats.kd.toFixed(2)}
+                                        {GAME.features.hasBR
+                                            ? stats.kd.toFixed(2)
+                                            : stats.matches > 0 ? `${stats.winRate}%` : "—"}
                                     </span>
-                                    {stats.matches > 0 && (
+                                    {GAME.features.hasBR && stats.matches > 0 && (
                                         <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-sm font-medium ${stats.kdTrend === "up" ? "bg-success/10 text-success" :
                                             stats.kdTrend === "down" ? "bg-danger/10 text-danger" :
                                                 "bg-default-100 text-foreground/50"
@@ -496,17 +518,19 @@ export default function ProfilePage() {
                                         </div>
                                     )}
                                 </div>
-                                {stats.lastMatchKills > 0 && (
+                                {GAME.features.hasBR && stats.lastMatchKills > 0 && (
                                     <p className="text-xs text-foreground/40 mt-1">
                                         Last match: <span className="font-semibold text-foreground/70">{stats.lastMatchKills} kills</span>
                                     </p>
                                 )}
                             </div>
 
-                            {/* Battle Stats */}
+                            {/* Battle Stats / Match Stats */}
                             <div>
-                                <p className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider mb-2">Battle Stats</p>
-                                <div className="grid grid-cols-4 gap-3 text-center">
+                                <p className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider mb-2">
+                                    {GAME.features.hasBR ? "Battle Stats" : "Match Stats"}
+                                </p>
+                                <div className={`grid ${GAME.features.hasBR ? "grid-cols-4" : "grid-cols-3"} gap-3 text-center`}>
                                     <div>
                                         <div className="text-2xl font-bold">{stats.matches}</div>
                                         <p className="text-[10px] text-foreground/40 uppercase">Matches</p>
@@ -520,14 +544,23 @@ export default function ProfilePage() {
                                             Wins <ChevronDown className={`w-3 h-3 transition-transform ${showUCBreakdown ? "rotate-180" : ""}`} />
                                         </p>
                                     </div>
-                                    <div>
-                                        <div className="text-2xl font-bold text-primary">{stats.top10}</div>
-                                        <p className="text-[10px] text-foreground/40 uppercase">Top 10</p>
-                                    </div>
-                                    <div>
-                                        <div className="text-2xl font-bold text-danger">{stats.kills}</div>
-                                        <p className="text-[10px] text-foreground/40 uppercase">Kills</p>
-                                    </div>
+                                    {GAME.features.hasBR ? (
+                                        <>
+                                            <div>
+                                                <div className="text-2xl font-bold text-primary">{stats.top10}</div>
+                                                <p className="text-[10px] text-foreground/40 uppercase">Top 10</p>
+                                            </div>
+                                            <div>
+                                                <div className="text-2xl font-bold text-danger">{stats.kills}</div>
+                                                <p className="text-[10px] text-foreground/40 uppercase">Kills</p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div>
+                                            <div className="text-2xl font-bold text-danger">{Math.max(0, stats.matches - stats.wins)}</div>
+                                            <p className="text-[10px] text-foreground/40 uppercase">Losses</p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* UC Wins Breakdown */}
@@ -585,19 +618,28 @@ export default function ProfilePage() {
                             {/* Performance */}
                             <div className="border-t border-divider pt-3">
                                 <p className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider mb-2">Performance</p>
-                                <div className="grid grid-cols-3 gap-3 text-center">
+                                <div className={`grid ${GAME.features.hasBR ? "grid-cols-3" : "grid-cols-2"} gap-3 text-center`}>
                                     <div>
                                         <div className="text-xl font-bold">{stats.winRate}<span className="text-sm text-foreground/40">%</span></div>
                                         <p className="text-[10px] text-foreground/40 uppercase">Win Rate</p>
                                     </div>
-                                    <div>
-                                        <div className="text-xl font-bold">{stats.top10Rate}<span className="text-sm text-foreground/40">%</span></div>
-                                        <p className="text-[10px] text-foreground/40 uppercase">Top 10 Rate</p>
-                                    </div>
-                                    <div>
-                                        <div className="text-xl font-bold text-warning">{stats.bestMatchKills}</div>
-                                        <p className="text-[10px] text-foreground/40 uppercase">Best Kill</p>
-                                    </div>
+                                    {GAME.features.hasBR ? (
+                                        <>
+                                            <div>
+                                                <div className="text-xl font-bold">{stats.top10Rate}<span className="text-sm text-foreground/40">%</span></div>
+                                                <p className="text-[10px] text-foreground/40 uppercase">Top 10 Rate</p>
+                                            </div>
+                                            <div>
+                                                <div className="text-xl font-bold text-warning">{stats.bestMatchKills}</div>
+                                                <p className="text-[10px] text-foreground/40 uppercase">Best Kill</p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div>
+                                            <div className="text-xl font-bold text-warning">{stats.bestMatchKills}</div>
+                                            <p className="text-[10px] text-foreground/40 uppercase">Best Score</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -615,7 +657,7 @@ export default function ProfilePage() {
                                     </div>
                                     <div>
                                         <div className="text-xl font-bold">{stats.avgKillsPerMatch}</div>
-                                        <p className="text-[10px] text-foreground/40 uppercase">Avg Kills</p>
+                                        <p className="text-[10px] text-foreground/40 uppercase">{GAME.features.hasBR ? "Avg Kills" : "Avg Goals"}</p>
                                     </div>
                                 </div>
                             </div>
@@ -647,7 +689,7 @@ export default function ProfilePage() {
 
                 {/* Profile Settings Section */}
                 {player && (
-                    <Card className="border border-divider">
+                    <Card ref={profileSectionRef} className="border border-divider">
                         <CardBody className="p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
