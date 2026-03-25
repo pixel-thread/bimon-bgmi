@@ -55,6 +55,7 @@ interface GameConfig {
     defaultTournamentType: string; // "BR" | "BRACKET_1V1" | "LEAGUE" | "GROUP_KNOCKOUT"
     tournamentTypes: string[];   // All supported types for this game
     hasBracket: boolean;         // Whether this game supports bracket tournaments
+    disputeWindowMinutes: number; // Minutes opponent has to confirm/dispute a submitted result
     hasBR: boolean;              // Whether this game supports BR tournaments.
     // Feature flags
     features: GameFeatures;
@@ -85,6 +86,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         tournamentTypes: ["BR"],
         hasBracket: false,
         hasBR: true,
+        disputeWindowMinutes: 30,
         features: {
             hasTeamSizes: true,
             hasLuckyVoters: true,
@@ -123,6 +125,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         tournamentTypes: ["BR"],
         hasBracket: false,
         hasBR: true,
+        disputeWindowMinutes: 30,
         features: {
             hasTeamSizes: true,
             hasLuckyVoters: true,
@@ -161,6 +164,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         tournamentTypes: ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"],
         hasBracket: true,
         hasBR: false,
+        disputeWindowMinutes: 30,
         features: {
             hasTeamSizes: false,       // PES is 1v1 only
             hasLuckyVoters: true,       // Lucky voter draws work for any tournament

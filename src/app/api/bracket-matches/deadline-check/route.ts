@@ -4,13 +4,14 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { advanceWinners } from "@/lib/logic/generateBracket";
 import { getSettings } from "@/lib/settings";
 import { getMatchDeadlineMs } from "@/lib/logic/koRolloverDeadline";
+import { GAME } from "@/lib/game-config";
 
 /**
  * POST /api/bracket-matches/deadline-check
  *
  * Two passes:
  *  1. PENDING matches past their play deadline  → random winner (1-0)
- *  2. SUBMITTED matches older than 30 min       → auto-confirm the claimed result
+ *  2. SUBMITTED matches past dispute window     → auto-confirm the claimed result
  *
  * Run from Operations dashboard OR automate with Vercel cron:
  *   vercel.json → { "crons": [{ "path": "/api/bracket-matches/deadline-check", "schedule": "0,15,30,45 * * * *" }] }
@@ -21,7 +22,7 @@ export async function POST() {
 
         const settings = await getSettings();
         const now = new Date();
-        const CONFIRM_DEADLINE_MS = 30 * 60 * 1000; // 30 minutes
+        const CONFIRM_DEADLINE_MS = GAME.disputeWindowMinutes * 60 * 1000;
 
         // ── 1. Auto-resolve PENDING matches past their play deadline ────────
         const pendingMatches = await prisma.bracketMatch.findMany({

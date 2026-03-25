@@ -3,8 +3,9 @@ import { getAuthEmail } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { advanceWinners } from "@/lib/logic/generateBracket";
 import { type NextRequest } from "next/server";
+import { GAME } from "@/lib/game-config";
 
-const DISPUTE_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
+const DISPUTE_WINDOW_MS = GAME.disputeWindowMinutes * 60 * 1000;
 
 /**
  * POST /api/bracket-matches/[id]/submit-result

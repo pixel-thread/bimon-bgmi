@@ -5,8 +5,9 @@ import { getSettings } from "@/lib/settings";
 import { advanceWinners } from "@/lib/logic/generateBracket";
 import { advanceGroupToKnockout } from "@/lib/logic/generateGroupKnockout";
 import { getMatchDeadlineMs } from "@/lib/logic/koRolloverDeadline";
+import { GAME } from "@/lib/game-config";
 
-const CONFIRM_DEADLINE_MS = 30 * 60 * 1000; // 30 minutes
+const CONFIRM_DEADLINE_MS = GAME.disputeWindowMinutes * 60 * 1000;
 
 /**
  * Silently auto-confirm any SUBMITTED matches in a tournament
