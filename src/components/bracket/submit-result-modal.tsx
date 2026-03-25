@@ -10,7 +10,7 @@ import { Avatar } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/compress-image";
-import { GAME } from "@/lib/game-config";
+
 
 interface SubmitResultModalProps {
     isOpen: boolean;
@@ -170,7 +170,7 @@ export function SubmitResultModal({
                     <p className="text-[11px] text-foreground/40 text-center">
                         {isDisputing
                             ? <>Enter the score <strong className="text-foreground/60">as you saw it</strong> to raise a dispute.</>
-                            : <>Opponent has <strong className="text-foreground/60">{GAME.disputeWindowMinutes} min</strong> to confirm or dispute.</>
+                            : <>Opponent will have time to <strong className="text-foreground/60">confirm or dispute</strong> before auto-confirm.</>
                         }
                     </p>
 
