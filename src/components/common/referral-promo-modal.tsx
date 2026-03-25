@@ -25,10 +25,17 @@ export function ReferralPromoModal() {
 
     useEffect(() => {
         // Small delay so it doesn't flash on initial render
-        const timer = setTimeout(() => {
-            if (!localStorage.getItem(PROMO_KEY)) {
-                setShow(true);
-            }
+        const timer = setTimeout(async () => {
+            if (localStorage.getItem(PROMO_KEY)) return;
+            // Check if referrals are enabled
+            try {
+                const res = await fetch("/api/settings/public");
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.data?.enableReferrals === false) return;
+                }
+            } catch { }
+            setShow(true);
         }, 1500);
         return () => clearTimeout(timer);
     }, []);

@@ -19,6 +19,7 @@ import { useAuthUser } from "@/hooks/use-auth-user";
 import { toast } from "sonner";
 import { GAME } from "@/lib/game-config";
 import { CurrencyIcon } from "@/components/common/CurrencyIcon";
+import { useRouter } from "next/navigation";
 
 interface ReferralData {
     referrals: {
@@ -50,10 +51,23 @@ interface ReferralData {
  */
 export default function ReferPage() {
     const { user } = useAuthUser();
+    const router = useRouter();
     const referralCode = user?.username || "...";
     const siteUrl = typeof window !== "undefined" ? window.location.origin : "";
     const referralLink = `${siteUrl}/sign-up?ref=${referralCode}`;
     const [copied, setCopied] = useState(false);
+
+    // Check if referrals are enabled
+    const { data: publicSettings, isLoading: settingsLoading } = useQuery({
+        queryKey: ["public-settings"],
+        queryFn: async () => {
+            const res = await fetch("/api/settings/public");
+            if (!res.ok) return { enableReferrals: true };
+            const json = await res.json();
+            return json.data ?? { enableReferrals: true };
+        },
+        staleTime: 5 * 60 * 1000,
+    });
 
     const { data, isLoading } = useQuery<ReferralData>({
         queryKey: ["referrals"],
@@ -64,6 +78,7 @@ export default function ReferPage() {
             return json.data;
         },
         staleTime: 60 * 1000,
+        enabled: publicSettings?.enableReferrals !== false,
     });
 
     const copyReferralLink = () => {
@@ -75,6 +90,28 @@ export default function ReferPage() {
 
     const stats = data?.stats;
     const referrals = data?.referrals ?? [];
+
+    // Referrals disabled — show friendly message
+    if (!settingsLoading && publicSettings?.enableReferrals === false) {
+        return (
+            <div className="mx-auto max-w-lg px-4 py-16 sm:px-6 text-center space-y-4">
+                <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-default-100">
+                    <Gift className="h-8 w-8 text-foreground/30" />
+                </div>
+                <h1 className="text-xl font-bold text-foreground/70">Referral Program Paused</h1>
+                <p className="text-sm text-foreground/40">
+                    The referral program is currently not active. Check back later!
+                </p>
+                <Button
+                    color="primary"
+                    variant="flat"
+                    onPress={() => router.push("/players")}
+                >
+                    ← Back to Players
+                </Button>
+            </div>
+        );
+    }
 
     return (
         <div className="mx-auto max-w-lg px-4 py-6 sm:px-6 pb-24 lg:pb-6">

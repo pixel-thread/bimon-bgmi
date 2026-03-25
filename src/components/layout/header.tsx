@@ -143,6 +143,7 @@ export function Header() {
         staleTime: 5 * 60 * 1000, // 5 min cache
     });
     const showRoyalPass = GAME.features.hasRoyalPass && (publicSettings?.enableElitePass !== false);
+    const showReferrals = publicSettings?.enableReferrals !== false;
 
 
     const handleSignOut = async () => {
@@ -261,7 +262,9 @@ export function Header() {
                                 </button>
                             </PopoverTrigger>
                             <PopoverContent className="w-44 p-1">
-                                {moreItems.map((item) => {
+                                {moreItems
+                                .filter(item => item.label !== "Refer" || showReferrals)
+                                .map((item) => {
                                     const isActive = pathname.startsWith(item.href);
                                     return (
                                         <Link
@@ -423,7 +426,9 @@ export function Header() {
                     ) : (
                         /* Regular app view — show More items + Settings */
                         <>
-                            {moreItems.map((item) => {
+                            {moreItems
+                                .filter(item => item.label !== "Refer" || showReferrals)
+                                .map((item) => {
                                 const isActive = pathname.startsWith(item.href);
                                 return (
                                     <NavbarMenuItem key={item.href}>
