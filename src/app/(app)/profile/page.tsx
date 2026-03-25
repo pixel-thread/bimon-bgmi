@@ -436,8 +436,8 @@ export default function ProfilePage() {
                     </div>
                 </Card>
 
-                {/* No player — only show if genuinely no player (not mid-refetch) */}
-                {!player && !isFetching && (
+                {/* No player — only show if genuinely no player (not mid-refetch or initial load) */}
+                {!player && !isLoading && !isFetching && (
                     <Card className="border border-divider">
                         <CardBody className="flex flex-col items-center gap-2 py-6 text-center">
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
