@@ -4,8 +4,10 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { advanceWinners } from "@/lib/logic/generateBracket";
 import { type NextRequest } from "next/server";
 import { GAME } from "@/lib/game-config";
+import { getMatchDeadlineMs } from "@/lib/logic/koRolloverDeadline";
+import { getSettings } from "@/lib/settings";
 
-const DISPUTE_WINDOW_MS = GAME.disputeWindowMinutes * 60 * 1000;
+const FALLBACK_DISPUTE_WINDOW_MS = GAME.disputeWindowMinutes * 60 * 1000;
 
 /**
  * POST /api/bracket-matches/[id]/submit-result
@@ -64,6 +66,7 @@ export async function POST(
                 winnerId: true,
                 tournamentId: true,
                 round: true,
+                createdAt: true,
             },
         });
 
@@ -187,7 +190,23 @@ export async function POST(
         }
 
         // Normal player flow: SUBMITTED status with dispute window
-        const disputeDeadline = new Date(Date.now() + DISPUTE_WINDOW_MS);
+        // Compute dynamic dispute deadline based on tournament settings
+        let disputeDeadline: Date;
+        try {
+            const settings = await getSettings();
+            const deadlineMs = await getMatchDeadlineMs(
+                match.tournamentId,
+                tournament?.type || "BRACKET_1V1",
+                match.round,
+                match.createdAt,
+                settings,
+            );
+            // Ensure deadline is at least in the future (minimum fallback)
+            const minDeadline = Date.now() + FALLBACK_DISPUTE_WINDOW_MS;
+            disputeDeadline = new Date(Math.max(deadlineMs, minDeadline));
+        } catch {
+            disputeDeadline = new Date(Date.now() + FALLBACK_DISPUTE_WINDOW_MS);
+        }
 
         await prisma.bracketMatch.update({
             where: { id: matchId },
@@ -200,6 +219,10 @@ export async function POST(
             },
         });
 
+        const remainingMs = disputeDeadline.getTime() - Date.now();
+        const remainingHours = Math.ceil(remainingMs / 3600_000);
+        const timeLabel = remainingHours >= 1 ? `${remainingHours}h` : `${Math.ceil(remainingMs / 60_000)}m`;
+
         return SuccessResponse({
             data: {
                 matchId,
@@ -208,7 +231,7 @@ export async function POST(
                 winnerId: claimedWinnerId,
                 disputeDeadline,
             },
-            message: `Result submitted! Your opponent has ${DISPUTE_WINDOW_MS / 60000} minutes to dispute.`,
+            message: `Result submitted! Your opponent has ${timeLabel} to confirm or dispute.`,
         });
     } catch (error) {
         return ErrorResponse({ message: "Failed to submit result", error });
