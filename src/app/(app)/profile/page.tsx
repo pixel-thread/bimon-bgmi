@@ -699,6 +699,7 @@ export default function ProfilePage() {
                                 {!editing && (
                                     <Button
                                         size="sm" variant="light"
+                                        startContent={<Pencil className="h-3 w-3" />}
                                         onPress={() => {
                                             setEditing(true);
                                             setNewIGN(player.displayName || profile.username);
