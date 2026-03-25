@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
     Chip, Avatar, Button,
@@ -27,6 +27,7 @@ interface ViewResultModalProps {
         status: string;
         screenshotUrl?: string | null;
         notes?: string | null;
+        disputeDeadline?: string | null;
     } | null;
     isAdmin?: boolean;
     tournamentId?: string;
@@ -344,6 +345,11 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                 </Chip>
                             </div>
 
+                            {/* Auto-confirm countdown */}
+                            {match.status === "SUBMITTED" && match.disputeDeadline && (
+                                <AutoConfirmCountdown deadline={match.disputeDeadline} />
+                            )}
+
                             {/* Screenshot */}
                             {screenshotToShow ? (
                                 <ScreenshotView url={screenshotToShow} />
@@ -402,5 +408,32 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                 </ModalFooter>
             </ModalContent>
         </Modal>
+    );
+}
+
+/* ─── Auto-confirm Countdown ─────────────────────────────────── */
+function AutoConfirmCountdown({ deadline }: { deadline: string }) {
+    const [now, setNow] = useState(Date.now());
+
+    useEffect(() => {
+        const id = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, []);
+
+    const diff = new Date(deadline).getTime() - now;
+    if (diff <= 0) return (
+        <p className="text-[10px] text-center text-success font-medium">
+            Confirming soon…
+        </p>
+    );
+
+    const m = Math.floor(diff / 60_000);
+    const s = Math.floor((diff % 60_000) / 1000);
+    const pad = (n: number) => String(n).padStart(2, "0");
+
+    return (
+        <p className="text-[10px] text-center text-foreground/40 font-medium tabular-nums" suppressHydrationWarning>
+            Auto confirms in <span className="text-warning font-bold">{m}m {pad(s)}s</span>
+        </p>
     );
 }

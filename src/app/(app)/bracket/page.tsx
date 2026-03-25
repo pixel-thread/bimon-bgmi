@@ -380,6 +380,7 @@ function TournamentContent({
         status: viewMatch.status,
         screenshotUrl: viewMatch.results?.[0]?.screenshotUrl ?? null,
         notes: viewMatch.results?.[0]?.notes ?? null,
+        disputeDeadline: viewMatch.disputeDeadline ?? null,
     } : null;
 
     const formatLabel =
