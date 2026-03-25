@@ -850,7 +850,7 @@ export default function ProfilePage() {
                                     {/* Actions */}
                                     <div className="flex gap-2 pt-1">
                                         <Button
-                                            size="sm" variant="flat"
+                                            size="lg" variant="flat"
                                             onPress={() => setEditing(false)}
                                             isDisabled={saving}
                                             className="shrink-0"
