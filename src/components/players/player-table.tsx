@@ -209,8 +209,8 @@ export function PlayerTable({
             />
 
             {/* Infinite scroll sentinel */}
-            <div ref={sentinelRef} className="flex justify-center py-4 min-h-[150px]">
-                {isFetchingNextPage && (
+            <div ref={sentinelRef} className="flex justify-center py-4 min-h-[60px]">
+                {isFetchingNextPage ? (
                     <>
                         {/* @ts-expect-error – dotlottie-wc is a web component */}
                         <dotlottie-wc
@@ -220,7 +220,11 @@ export function PlayerTable({
                             loop
                         />
                     </>
-                )}
+                ) : !hasNextPage && players.length > 0 ? (
+                    <p className="text-xs text-foreground/30 py-2">
+                        End of list • {players.length} players
+                    </p>
+                ) : null}
             </div>
         </div>
     );

@@ -43,8 +43,8 @@ export async function GET(request: NextRequest) {
             tpsAgg.map((s) => [s.playerId, { kills: s._sum.kills ?? 0, matches: s._count.matchId }])
         );
 
-        // Compute tier counts dynamically
-        const data: Record<string, number> = { All: playerIds.length };
+        // Compute tier counts dynamically (no "All" key — frontend sums them)
+        const data: Record<string, number> = {};
         for (const pid of playerIds) {
             const st = statsMap.get(pid);
             const kd = st && st.matches > 0 ? st.kills / st.matches : 0;
