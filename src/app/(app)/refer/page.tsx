@@ -50,7 +50,7 @@ interface ReferralData {
  * Shows referral code, real tracking data, and how the program works.
  */
 export default function ReferPage() {
-    const { user } = useAuthUser();
+    const { user, isAdmin } = useAuthUser();
     const router = useRouter();
     const referralCode = user?.username || "...";
     const siteUrl = typeof window !== "undefined" ? window.location.origin : "";
@@ -69,6 +69,8 @@ export default function ReferPage() {
         staleTime: 5 * 60 * 1000,
     });
 
+    const referralsEnabled = publicSettings?.enableReferrals !== false;
+
     const { data, isLoading } = useQuery<ReferralData>({
         queryKey: ["referrals"],
         queryFn: async () => {
@@ -78,7 +80,7 @@ export default function ReferPage() {
             return json.data;
         },
         staleTime: 60 * 1000,
-        enabled: publicSettings?.enableReferrals !== false,
+        enabled: referralsEnabled || isAdmin,
     });
 
     const copyReferralLink = () => {
@@ -91,26 +93,10 @@ export default function ReferPage() {
     const stats = data?.stats;
     const referrals = data?.referrals ?? [];
 
-    // Referrals disabled — show friendly message
-    if (!settingsLoading && publicSettings?.enableReferrals === false) {
-        return (
-            <div className="mx-auto max-w-lg px-4 py-16 sm:px-6 text-center space-y-4">
-                <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-default-100">
-                    <Gift className="h-8 w-8 text-foreground/30" />
-                </div>
-                <h1 className="text-xl font-bold text-foreground/70">Referral Program Paused</h1>
-                <p className="text-sm text-foreground/40">
-                    The referral program is currently not active. Check back later!
-                </p>
-                <Button
-                    color="primary"
-                    variant="flat"
-                    onPress={() => router.push("/players")}
-                >
-                    ← Back to Players
-                </Button>
-            </div>
-        );
+    // Non-admins get redirected when referrals are off
+    if (!settingsLoading && !referralsEnabled && !isAdmin) {
+        router.replace("/players");
+        return null;
     }
 
     return (

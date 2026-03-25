@@ -263,7 +263,7 @@ export function Header() {
                             </PopoverTrigger>
                             <PopoverContent className="w-44 p-1">
                                 {moreItems
-                                .filter(item => item.label !== "Refer" || showReferrals)
+                                .filter(item => item.label !== "Refer" || showReferrals || isAdmin)
                                 .map((item) => {
                                     const isActive = pathname.startsWith(item.href);
                                     return (
@@ -427,7 +427,7 @@ export function Header() {
                         /* Regular app view — show More items + Settings */
                         <>
                             {moreItems
-                                .filter(item => item.label !== "Refer" || showReferrals)
+                                .filter(item => item.label !== "Refer" || showReferrals || isAdmin)
                                 .map((item) => {
                                 const isActive = pathname.startsWith(item.href);
                                 return (
