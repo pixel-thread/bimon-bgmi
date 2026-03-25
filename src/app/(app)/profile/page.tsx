@@ -848,19 +848,22 @@ export default function ProfilePage() {
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 pt-1">
                                         <Button
                                             size="sm" variant="flat"
                                             onPress={() => setEditing(false)}
                                             isDisabled={saving}
+                                            className="shrink-0"
                                         >
                                             Cancel
                                         </Button>
                                         <Button
-                                            size="sm" color={onCooldown ? "warning" : "primary"}
+                                            size="lg" color={onCooldown ? "warning" : "primary"}
+                                            fullWidth
                                             onPress={() => handleSaveProfile(onCooldown)}
                                             isLoading={saving}
                                             isDisabled={!onCooldown && (!!ignError || !newIGN.trim() || (newIGN === (player.displayName || profile.username) && newBio === (player.bio || "")))}
+                                            className="font-bold text-base"
                                         >
                                             {onCooldown ? `Pay 1 ${GAME.currency} & Save` : "Save"}
                                         </Button>
