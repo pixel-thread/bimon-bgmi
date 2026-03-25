@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -64,17 +64,25 @@ export default function LuckyVoterPage() {
 
     const [selectedSeason, setSelectedSeason] = useState<string>("all");
 
-    // Derive unique seasons for the selector
-    const seasons = useMemo(() => {
-        if (!data) return [];
-        const seen = new Map<string, string>();
-        for (const w of data.winners) {
-            if (w.seasonId && !seen.has(w.seasonId)) {
-                seen.set(w.seasonId, w.seasonName);
-            }
+    // Fetch all seasons from /api/seasons (same as player filters)
+    interface SeasonOption { id: string; name: string; isCurrent: boolean }
+    const { data: seasons = [] } = useQuery<SeasonOption[]>({
+        queryKey: ["seasons"],
+        queryFn: async () => {
+            const res = await fetch("/api/seasons");
+            if (!res.ok) throw new Error("Failed to fetch seasons");
+            const json = await res.json();
+            return json.data;
+        },
+    });
+
+    // Default to current active season
+    useEffect(() => {
+        if (seasons.length > 0 && selectedSeason === "all") {
+            const current = seasons.find((s) => s.isCurrent);
+            if (current) setSelectedSeason(current.id);
         }
-        return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
-    }, [data]);
+    }, [seasons]);
 
     // Filtered winners + stats
     const filteredWinners = useMemo(() => {
@@ -199,7 +207,7 @@ export default function LuckyVoterPage() {
                 {[
                     <SelectItem key="all">All Seasons</SelectItem>,
                     ...seasons.map((s) => (
-                        <SelectItem key={s.id}>{s.name}</SelectItem>
+                        <SelectItem key={s.id}>{s.name}{s.isCurrent ? " ✦" : ""}</SelectItem>
                     )),
                 ]}
             </Select>

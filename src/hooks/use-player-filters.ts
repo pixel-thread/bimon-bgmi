@@ -59,17 +59,18 @@ export function usePlayerFilters(): PlayerFilters {
         staleTime: 5 * 60 * 1000,
     });
 
-    // Fetch tier counts — only after popover has been opened
+    // Fetch tier counts — only after popover has been opened, per-season
     const { data: tierCounts = {} } = useQuery<Record<string, number>>({
-        queryKey: ["tier-counts"],
+        queryKey: ["tier-counts", season],
         queryFn: async () => {
-            const res = await fetch("/api/players/tier-counts");
+            const params = season ? `?season=${season}` : "";
+            const res = await fetch(`/api/players/tier-counts${params}`);
             if (!res.ok) return {};
             const json = await res.json();
             return json.data ?? {};
         },
         staleTime: 5 * 60 * 1000,
-        enabled: filterOpened,
+        enabled: filterOpened && !!season,
     });
 
     // Auto-select the active season once loaded

@@ -47,3 +47,6 @@ public/swe-worker*
 
 # Local notes (not tracked)
 NOTES_*.md
+
+# Migration scripts (local only)
+scripts/

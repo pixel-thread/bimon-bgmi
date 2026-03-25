@@ -40,9 +40,7 @@ export async function GET(request: NextRequest) {
             ];
         }
 
-        if (tier && tier !== "All") {
-            where.category = tier;
-        }
+        // Note: tier filtering is done in JS after dynamic category computation (below)
 
         // Build orderBy
         const orderByMap: Record<string, unknown> = {
@@ -88,8 +86,7 @@ export async function GET(request: NextRequest) {
             },
             ...(prismaSort
                 ? {
-                    take: limit + 1,
-                    ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+                    // Don't limit here since we need to do JS tier filtering
                     orderBy: prismaSort as any,
                 }
                 : {}), // fetch all for JS sort
@@ -152,7 +149,7 @@ export async function GET(request: NextRequest) {
         const isBracketGame = GAME.scoringSystem === "bracket";
 
         // Flatten the data — compute category (always fresh)
-        const allData = players.map((p) => {
+        let allData = players.map((p) => {
             const st = statsMap.get(p.id) ?? { kills: 0, matches: 0 };
             const wins = winsMap.get(p.id) ?? 0;
             const bracketMatches = bracketMatchCountMap.get(p.id) ?? 0;
@@ -191,6 +188,11 @@ export async function GET(request: NextRequest) {
                     : null,
             };
         });
+
+        // Apply tier filter on dynamic category
+        if (tier && tier !== "All") {
+            allData = allData.filter((p) => p.category === tier);
+        }
 
         let data;
         let hasMore: boolean;
