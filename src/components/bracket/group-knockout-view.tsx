@@ -76,7 +76,6 @@ function GroupSection({ groupLetter, matches, isDefaultOpen, currentPlayerId, is
     const totalMatches = matches.filter(m => m.player1Id && m.player2Id).length;
     const allDone = confirmedCount === totalMatches && totalMatches > 0;
     const hasDispute = matches.some(m => m.status === "DISPUTED");
-    const hasPending = matches.some(m => m.status === "PENDING" && m.player1Id && m.player2Id);
     const hasSubmitted = matches.some(m => m.status === "SUBMITTED");
 
     return (
@@ -101,9 +100,6 @@ function GroupSection({ groupLetter, matches, isDefaultOpen, currentPlayerId, is
                             <div className="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" />
                             <span className="text-[10px] font-bold text-warning-500">To confirm</span>
                         </div>
-                    )}
-                    {hasPending && !hasSubmitted && !hasDispute && !allDone && (
-                        <div className="h-2 w-2 rounded-full bg-warning animate-pulse" title="Matches pending" />
                     )}
                 </div>
                 {open ? <ChevronUp className="h-4 w-4 text-foreground/50" /> : <ChevronDown className="h-4 w-4 text-foreground/50" />}
