@@ -168,6 +168,7 @@ export async function GET(request: NextRequest) {
                 imageUrl: p.customProfileImageUrl || p.user.imageUrl,
                 category,
                 isBanned: p.isBanned,
+                phoneNumber: p.phoneNumber || null,
                 stats: {
                     kills: st.kills,
                     matches: totalMatches,

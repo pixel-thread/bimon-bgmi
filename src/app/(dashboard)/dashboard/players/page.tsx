@@ -29,6 +29,7 @@ interface PlayerDTO {
     imageUrl: string | null;
     category: string;
     isBanned: boolean;
+    phoneNumber: string | null;
     stats: { kills: number; deaths: number; matches: number; kd: number };
     balance: number;
     hasRoyalPass: boolean;
@@ -183,9 +184,16 @@ export default function AdminPlayersPage() {
                                         <p className="truncate text-sm font-medium">
                                             {p.displayName || p.username}
                                         </p>
-                                        <p className="truncate text-xs text-foreground/40 sm:hidden">
-                                            {p.category} · {p.balance} <CurrencyIcon size={10} />
-                                        </p>
+                                        {p.phoneNumber ? (
+                                            <p className="truncate text-xs text-foreground/40">
+                                                📞 {p.phoneNumber}
+                                                <span className="sm:hidden"> · {p.category} · {p.balance} <CurrencyIcon size={10} /></span>
+                                            </p>
+                                        ) : (
+                                            <p className="truncate text-xs text-foreground/40 sm:hidden">
+                                                {p.category} · {p.balance} <CurrencyIcon size={10} />
+                                            </p>
+                                        )}
                                     </div>
 
                                     {/* Tier */}
