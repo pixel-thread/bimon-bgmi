@@ -298,21 +298,23 @@ export async function PUT(
             return ErrorResponse({ message: "Match not found", status: 404 });
         }
 
+        if (match.status === "CONFIRMED") {
+            // Already confirmed (e.g. by auto-confirm cron) — treat as success
+            return SuccessResponse({ message: "Match already confirmed!" });
+        }
+
         if (match.status !== "SUBMITTED") {
             return ErrorResponse({
-                message: "Match must be in SUBMITTED state to confirm",
+                message: `Cannot confirm — match is ${match.status.toLowerCase()}`,
                 status: 400,
             });
         }
 
         // Must be the OTHER player (the one who didn't submit) or an admin
         const playerId = user.player.id;
-        const isAdmin = user.role === "SUPER_ADMIN";
-        const isOpponent =
-            (match.player1Id === playerId && match.winnerId !== playerId) ||
-            (match.player2Id === playerId && match.winnerId !== playerId) ||
-            (match.player1Id === playerId && match.winnerId === match.player2Id) ||
-            (match.player2Id === playerId && match.winnerId === match.player1Id);
+        const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+        const isParticipant = match.player1Id === playerId || match.player2Id === playerId;
+        const isOpponent = isParticipant && match.winnerId !== playerId;
 
         if (!isAdmin && !isOpponent) {
             return ErrorResponse({

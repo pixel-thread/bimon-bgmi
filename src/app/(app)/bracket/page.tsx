@@ -453,9 +453,9 @@ function TournamentContent({
 
     return (
         <>
-            {/* Onboarding spotlights */}
+            {/* Onboarding spotlights — skip dispute onboarding if confirmation modal is showing */}
             {showOnboarding && <BracketOnboarding onDone={dismissOnboarding} />}
-            {showDisputeOnboarding && <DisputeOnboarding onDone={dismissDisputeOnboarding} />}
+            {showDisputeOnboarding && !pendingConfirmMatch && <DisputeOnboarding onDone={dismissDisputeOnboarding} />}
 
             {/* Auto-popup confirmation modal — non-dismissable */}
             {playerId && pendingConfirmMatch && (

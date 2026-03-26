@@ -35,6 +35,7 @@ export function PendingConfirmationModal({
     isConfirming,
 }: PendingConfirmationModalProps) {
     const [dismissed, setDismissed] = useState<string | null>(null);
+    const [confirmed, setConfirmed] = useState(false);
     const [lightbox, setLightbox] = useState(false);
 
     // Reset dismissed state when a new match needs confirmation
@@ -174,6 +175,7 @@ export function PendingConfirmationModal({
                             className="flex-1 font-semibold"
                             size="md"
                             startContent={<ShieldAlert className="h-4 w-4" />}
+                            isDisabled={confirmed || isConfirming}
                             onPress={() => {
                                 setDismissed(match.id);
                                 onDispute(match.id);
@@ -186,8 +188,12 @@ export function PendingConfirmationModal({
                             className="flex-1 font-semibold text-white"
                             size="md"
                             startContent={<CheckCircle2 className="h-4 w-4" />}
-                            isLoading={isConfirming}
-                            onPress={() => onConfirm(match.id)}
+                            isLoading={isConfirming || confirmed}
+                            isDisabled={confirmed}
+                            onPress={() => {
+                                setConfirmed(true);
+                                onConfirm(match.id);
+                            }}
                         >
                             Confirm
                         </Button>

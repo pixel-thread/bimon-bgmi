@@ -383,7 +383,7 @@ export function useConfirmResult(tournamentId: string) {
         mutationFn: async (matchId: string) => {
             const res = await fetch(`/api/bracket-matches/${matchId}/submit-result`, { method: "PUT" });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Failed to confirm");
+            if (!res.ok) throw new Error(data.message || data.error || "Failed to confirm");
             return data;
         },
         onSuccess: (data) => {
