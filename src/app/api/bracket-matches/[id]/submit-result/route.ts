@@ -36,6 +36,12 @@ export async function POST(
             return ErrorResponse({ message: "score1 and score2 required", status: 400 });
         }
 
+        // Screenshot required for non-admin submissions (walkovers identified by notes)
+        const isWalkover = notes?.toLowerCase().includes("walkover");
+        if (!adminOverride && !isWalkover && !screenshotUrl) {
+            return ErrorResponse({ message: "Screenshot is required", status: 400 });
+        }
+
         // Get the user + role
         const user = await prisma.user.findUnique({
             where: { email: userId },
