@@ -240,6 +240,7 @@ export function MatchCard({
     const isParticipant = isCurrentP1 || isCurrentP2;
     const canSubmit = isParticipant && match.status === "PENDING" && match.player1Id && match.player2Id;
     const canRaiseDispute = isParticipant && match.status === "SUBMITTED" && match.winnerId !== currentPlayerId;
+    const canEditSubmitted = isParticipant && match.status === "SUBMITTED" && match.winnerId === currentPlayerId;
     const hasResult = match.status === "CONFIRMED" || match.status === "SUBMITTED";
     const isDisputed = match.status === "DISPUTED";
     const [callingOpponent, setCallingOpponent] = useState(false);
@@ -408,9 +409,14 @@ export function MatchCard({
                                 ✓ Confirm
                             </button>
                         )}
-                        {hasResult && !canRaiseDispute && onViewResult && (
+                        {hasResult && !canRaiseDispute && !canEditSubmitted && onViewResult && (
                             <button onClick={() => onViewResult(match.id)} className="text-[11px] font-semibold text-foreground/50 hover:text-foreground/80 transition-colors">
                                 View Result →
+                            </button>
+                        )}
+                        {canEditSubmitted && onSubmitResult && (
+                            <button onClick={() => onSubmitResult(match.id)} className="text-[11px] font-semibold text-primary hover:text-primary-600 transition-colors">
+                                Edit Result →
                             </button>
                         )}
                     </div>

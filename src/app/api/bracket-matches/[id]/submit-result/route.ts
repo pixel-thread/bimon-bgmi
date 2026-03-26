@@ -74,12 +74,29 @@ export async function POST(
             return ErrorResponse({ message: "Match not found", status: 404 });
         }
 
-        // Admin can override any status; players can only submit PENDING matches
-        if (!adminOverride && match.status !== "PENDING") {
+        // Admin can override any status; players can submit PENDING or re-edit their own SUBMITTED result
+        if (!adminOverride && match.status !== "PENDING" && match.status !== "SUBMITTED") {
             return ErrorResponse({
                 message: `Match is already ${match.status.toLowerCase()}`,
                 status: 400,
             });
+        }
+
+        // If SUBMITTED, only the original submitter can re-edit
+        if (!adminOverride && match.status === "SUBMITTED") {
+            // The submitter is the player whose result determined the current winnerId
+            // Find who submitted the original result
+            const originalResult = await prisma.bracketResult.findFirst({
+                where: { bracketMatchId: matchId, isDispute: false },
+                orderBy: { createdAt: "desc" },
+                select: { submittedById: true },
+            });
+            if (originalResult?.submittedById !== playerId) {
+                return ErrorResponse({
+                    message: "Only the original submitter can edit the result during confirmation window",
+                    status: 403,
+                });
+            }
         }
 
         // Verify participant (skip for admin override)
