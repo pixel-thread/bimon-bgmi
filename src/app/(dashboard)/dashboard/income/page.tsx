@@ -40,6 +40,8 @@ interface IncomeData {
         totalOrgIncome: number;
         rpIncome: number;
         rpPurchaseCount: number;
+        nameChangeIncome: number;
+        nameChangeCount: number;
         totalDeductions: number;
         netProfit: number;
         deductions: Deduction[];
@@ -171,6 +173,12 @@ export default function IncomePage() {
                                         <div className="flex justify-between">
                                             <span className="text-foreground/50">RP Purchases <span className="text-foreground/30">({data.summary.rpPurchaseCount})</span></span>
                                             <span className="text-success">+₹{data.summary.rpIncome.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    {data.summary.nameChangeIncome > 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="text-foreground/50">Name Changes <span className="text-foreground/30">({data.summary.nameChangeCount})</span></span>
+                                            <span className="text-success">+₹{data.summary.nameChangeIncome.toLocaleString()}</span>
                                         </div>
                                     )}
                                     {data.summary.deductions.map((d) => (

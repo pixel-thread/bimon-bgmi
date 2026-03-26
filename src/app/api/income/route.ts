@@ -103,14 +103,17 @@ export async function GET(request: NextRequest) {
 
         const deductions: { category: string; total: number; count: number }[] = [];
 
-        // RP Rewards (streak)
-        let rpRewardTotal = 0, rpRewardCount = 0;
-        for (const tx of seasonCredits) {
-            if (tx.description.toLowerCase().includes("streak")) {
-                rpRewardTotal += tx.amount;
-                rpRewardCount++;
-            }
-        }
+        // RP Rewards (streak) — scope by when reward was EARNED, not claimed
+        const streakRewards = await prisma.pendingReward.findMany({
+            where: {
+                type: "STREAK",
+                isClaimed: true,
+                createdAt: { gte: seasonStart, lte: seasonEnd },
+            },
+            select: { amount: true },
+        });
+        const rpRewardTotal = streakRewards.reduce((sum, r) => sum + r.amount, 0);
+        const rpRewardCount = streakRewards.length;
         if (rpRewardTotal > 0) deductions.push({ category: "RP Rewards", total: rpRewardTotal, count: rpRewardCount });
 
         // Promotions
