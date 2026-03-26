@@ -30,7 +30,7 @@ import {
     ChevronDown,
     Link2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CategoryBadge } from "@/components/ui/category-badge";
 import { GAME } from "@/lib/game-config";
@@ -80,7 +80,31 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
     const [activeTab, setActiveTab] = useState<"overview" | "transactions">("overview");
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
     const toggleSection = (key: string) => setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
-    const [linkEmail, setLinkEmail] = useState("");
+    const [mergeSearch, setMergeSearch] = useState("");
+    const [mergeSelected, setMergeSelected] = useState<{ id: string; displayName: string; username: string; email: string; imageUrl: string | null } | null>(null);
+    const [mergeSuggestions, setMergeSuggestions] = useState<{ id: string; displayName: string; username: string; email: string; imageUrl: string | null }[]>([]);
+    const [mergeSearching, setMergeSearching] = useState(false);
+    const mergeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Debounced search for merge autocomplete
+    useEffect(() => {
+        if (mergeTimerRef.current) clearTimeout(mergeTimerRef.current);
+        if (!mergeSearch || mergeSearch.length < 2 || mergeSelected) {
+            setMergeSuggestions([]);
+            return;
+        }
+        setMergeSearching(true);
+        mergeTimerRef.current = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/players/search?q=${encodeURIComponent(mergeSearch)}`);
+                const json = await res.json();
+                // Filter out the current player from suggestions
+                setMergeSuggestions((json.data || []).filter((p: { id: string }) => p.id !== playerId));
+            } catch { setMergeSuggestions([]); }
+            setMergeSearching(false);
+        }, 300);
+        return () => { if (mergeTimerRef.current) clearTimeout(mergeTimerRef.current); };
+    }, [mergeSearch, mergeSelected, playerId]);
 
     // Fetch player details
     const { data: player, isLoading } = useQuery<PlayerDetail>({
@@ -174,7 +198,9 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["admin-player", playerId] });
             queryClient.invalidateQueries({ queryKey: ["admin-players"] });
-            setLinkEmail("");
+            setMergeSearch("");
+            setMergeSelected(null);
+            setMergeSuggestions([]);
         },
     });
 
@@ -455,29 +481,66 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                 {expandedSections.link && (
                                     <div className="space-y-3 px-4 pb-4">
                                         <p className="text-xs text-foreground/40">
-                                            Merge this player&apos;s history into another player&apos;s account. The old data (stats, matches, wallet, transactions) will be combined with the target player&apos;s data.
+                                            Merge this player&apos;s history into another player&apos;s account.
                                         </p>
                                         <p className="text-[10px] text-foreground/30">
                                             Currently linked to: <span className="font-medium text-foreground/60">{player?.email}</span>
                                         </p>
-                                        <Input
-                                            size="sm"
-                                            type="text"
-                                            placeholder="Player name, username, or email"
-                                            value={linkEmail}
-                                            onValueChange={setLinkEmail}
-                                            startContent={<Link2 className="h-3 w-3 text-foreground/30" />}
-                                        />
+
+                                        {/* Search with autocomplete */}
+                                        <div className="relative">
+                                            <Input
+                                                size="sm"
+                                                type="text"
+                                                placeholder="Search player name, username, or email..."
+                                                value={mergeSelected ? `${mergeSelected.displayName} (${mergeSelected.email || mergeSelected.username})` : mergeSearch}
+                                                onValueChange={(val) => {
+                                                    if (mergeSelected) {
+                                                        setMergeSelected(null);
+                                                        setMergeSearch("");
+                                                    } else {
+                                                        setMergeSearch(val);
+                                                    }
+                                                }}
+                                                onClear={() => { setMergeSelected(null); setMergeSearch(""); }}
+                                                isClearable
+                                                startContent={<Link2 className="h-3 w-3 text-foreground/30" />}
+                                                endContent={mergeSearching ? <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" /> : undefined}
+                                            />
+                                            {/* Suggestions dropdown */}
+                                            {mergeSuggestions.length > 0 && !mergeSelected && (
+                                                <div className="absolute z-50 mt-1 w-full rounded-lg border border-divider bg-content1 shadow-lg overflow-hidden">
+                                                    {mergeSuggestions.map((s) => (
+                                                        <button
+                                                            key={s.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setMergeSelected(s);
+                                                                setMergeSuggestions([]);
+                                                            }}
+                                                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-default-100 transition-colors cursor-pointer"
+                                                        >
+                                                            <Avatar src={s.imageUrl || undefined} name={s.displayName || s.username} size="sm" className="h-6 w-6 shrink-0" />
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="truncate font-medium text-xs">{s.displayName || s.username}</p>
+                                                                <p className="truncate text-[10px] text-foreground/40">@{s.username} · {s.email}</p>
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <Button
                                             size="sm"
                                             color="primary"
                                             variant="flat"
                                             className="w-full"
                                             isLoading={linkMutation.isPending}
-                                            isDisabled={!linkEmail.trim() || linkEmail.trim() === player?.email}
+                                            isDisabled={!mergeSelected}
                                             onPress={() => {
-                                                if (confirm(`Merge "${player?.displayName}" into the player on ${linkEmail}?\n\nThis will:\n• Move all stats, matches, wallet balance, and transactions\n• Combine data from both players\n• Delete this old player record\n\nThis cannot be undone.`)) {
-                                                    linkMutation.mutate({ query: linkEmail.trim() });
+                                                if (mergeSelected && confirm(`Merge "${player?.displayName}" into "${mergeSelected.displayName}" (${mergeSelected.email || mergeSelected.username})?\n\nThis will:\n• Move all stats, matches, wallet balance, and transactions\n• Combine data from both players\n• Delete this old player record\n\nThis cannot be undone.`)) {
+                                                    linkMutation.mutate({ query: mergeSelected.email || mergeSelected.username });
                                                 }
                                             }}
                                             startContent={!linkMutation.isPending ? <Link2 className="h-4 w-4" /> : undefined}
@@ -486,7 +549,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                         </Button>
                                         {linkMutation.isSuccess && (
                                             <p className="text-center text-xs text-success">
-                                                ✓ {linkMutation.data?.message || "Player linked successfully"}
+                                                ✓ {linkMutation.data?.message || "Player merged successfully"}
                                             </p>
                                         )}
                                         {linkMutation.isError && (

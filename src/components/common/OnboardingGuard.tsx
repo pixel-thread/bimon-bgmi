@@ -27,8 +27,8 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
         }
     }, [user, isLoading, isSignedIn, isSkipped, router]);
 
-    // Block render if full onboarding needed
-    if (isSignedIn && user && !user.isOnboarded && !isSkipped) {
+    // Block render while auth is loading or if onboarding needed
+    if (!isSkipped && (isLoading || (isSignedIn && user && !user.isOnboarded))) {
         return null;
     }
 

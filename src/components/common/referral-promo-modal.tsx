@@ -6,6 +6,7 @@ import { X, Users, Gift, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { GAME } from "@/lib/game-config";
+import { useAuthUser } from "@/hooks/use-auth-user";
 
 const PROMO_KEY = "referral-promo-v2-seen";
 
@@ -22,11 +23,14 @@ export function ReferralPromoModal() {
     const [navigating, setNavigating] = useState(false);
     const canSkip = countdown <= 0;
     const router = useRouter();
+    const { user } = useAuthUser();
 
     useEffect(() => {
         // Small delay so it doesn't flash on initial render
         const timer = setTimeout(async () => {
             if (localStorage.getItem(PROMO_KEY)) return;
+            // Don't show for non-onboarded users
+            if (!user?.isOnboarded) return;
             // Check if referrals are enabled
             try {
                 const res = await fetch("/api/settings/public");
@@ -38,7 +42,7 @@ export function ReferralPromoModal() {
             setShow(true);
         }, 1500);
         return () => clearTimeout(timer);
-    }, []);
+    }, [user]);
 
     // Countdown timer
     useEffect(() => {
