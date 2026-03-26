@@ -37,23 +37,14 @@ export function PendingConfirmationModal({
     isConfirmSuccess,
 }: PendingConfirmationModalProps) {
     const [dismissed, setDismissed] = useState<string | null>(null);
-    const [confirmed, setConfirmed] = useState(false);
     const [lightbox, setLightbox] = useState(false);
-
-    // Reset dismissed state when a new match needs confirmation
-    useEffect(() => {
-        if (match && dismissed !== match.id) {
-            // New match to confirm
-            setConfirmed(false);
-        }
-    }, [match, dismissed]);
 
     // Auto-dismiss after successful confirmation
     useEffect(() => {
-        if (confirmed && isConfirmSuccess && match) {
+        if (isConfirmSuccess && match) {
             setDismissed(match.id);
         }
-    }, [confirmed, isConfirmSuccess, match]);
+    }, [isConfirmSuccess, match]);
 
     if (!match) return null;
     if (dismissed === match.id) return null;
@@ -185,7 +176,7 @@ export function PendingConfirmationModal({
                             className="flex-1 font-semibold"
                             size="md"
                             startContent={<ShieldAlert className="h-4 w-4" />}
-                            isDisabled={confirmed || isConfirming}
+                            isDisabled={isConfirming}
                             onPress={() => {
                                 setDismissed(match.id);
                                 onDispute(match.id);
@@ -198,12 +189,8 @@ export function PendingConfirmationModal({
                             className="flex-1 font-semibold text-white"
                             size="md"
                             startContent={<CheckCircle2 className="h-4 w-4" />}
-                            isLoading={isConfirming || confirmed}
-                            isDisabled={confirmed}
-                            onPress={() => {
-                                setConfirmed(true);
-                                onConfirm(match.id);
-                            }}
+                            isLoading={isConfirming}
+                            onPress={() => onConfirm(match.id)}
                         >
                             Confirm
                         </Button>
