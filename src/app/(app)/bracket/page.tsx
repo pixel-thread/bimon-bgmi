@@ -466,6 +466,7 @@ function TournamentContent({
                     onConfirm={(id) => confirmResult.mutate(id)}
                     onDispute={(id) => onSelectMatch(matchContext(id, true))}
                     isConfirming={confirmResult.isPending}
+                    isConfirmSuccess={confirmResult.isSuccess}
                 />
             )}
 

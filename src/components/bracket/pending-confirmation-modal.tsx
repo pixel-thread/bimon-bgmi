@@ -24,6 +24,7 @@ interface PendingConfirmationModalProps {
     onConfirm: (matchId: string) => void;
     onDispute: (matchId: string) => void;
     isConfirming?: boolean;
+    isConfirmSuccess?: boolean;
 }
 
 export function PendingConfirmationModal({
@@ -33,6 +34,7 @@ export function PendingConfirmationModal({
     onConfirm,
     onDispute,
     isConfirming,
+    isConfirmSuccess,
 }: PendingConfirmationModalProps) {
     const [dismissed, setDismissed] = useState<string | null>(null);
     const [confirmed, setConfirmed] = useState(false);
@@ -42,8 +44,16 @@ export function PendingConfirmationModal({
     useEffect(() => {
         if (match && dismissed !== match.id) {
             // New match to confirm
+            setConfirmed(false);
         }
     }, [match, dismissed]);
+
+    // Auto-dismiss after successful confirmation
+    useEffect(() => {
+        if (confirmed && isConfirmSuccess && match) {
+            setDismissed(match.id);
+        }
+    }, [confirmed, isConfirmSuccess, match]);
 
     if (!match) return null;
     if (dismissed === match.id) return null;
