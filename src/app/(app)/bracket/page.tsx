@@ -562,6 +562,7 @@ function TournamentContent({
                             ? stageDeadlines?.koRoundLabel ?? undefined
                             : stageDeadlines?.roundLabel ?? undefined
                     }
+                    tournamentName={tournament.name}
                 />
             )}
 
