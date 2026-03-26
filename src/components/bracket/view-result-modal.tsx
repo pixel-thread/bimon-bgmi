@@ -427,13 +427,23 @@ function AutoConfirmCountdown({ deadline }: { deadline: string }) {
         </p>
     );
 
-    const m = Math.floor(diff / 60_000);
-    const s = Math.floor((diff % 60_000) / 1000);
+    const totalSeconds = Math.floor(diff / 1000);
+    const d = Math.floor(totalSeconds / 86400);
+    const h = Math.floor((totalSeconds % 86400) / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
     const pad = (n: number) => String(n).padStart(2, "0");
+
+    // Show the two most relevant units
+    const timeStr = d > 0
+        ? `${d}d ${h}h ${m}m`
+        : h > 0
+            ? `${h}h ${pad(m)}m`
+            : `${m}m ${pad(s)}s`;
 
     return (
         <p className="text-[10px] text-center text-foreground/40 font-medium tabular-nums" suppressHydrationWarning>
-            Auto confirms in <span className="text-warning font-bold">{m}m {pad(s)}s</span>
+            Auto confirms in <span className="text-warning font-bold">{timeStr}</span>
         </p>
     );
 }
