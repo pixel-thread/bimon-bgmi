@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -92,6 +92,7 @@ interface ProfileData {
         streak: { current: number; longest: number } | null;
     } | null;
 }
+
 
 /**
  * /profile — User's profile page.
@@ -195,8 +196,19 @@ export default function ProfilePage() {
         }
     };
 
-    // Show skeleton on initial load, or when refetching and data is incomplete
-    if (isLoading || (isFetching && (!profile || !profile.player))) {
+    // Auto-refetch when profile loads without a player (stale cache race condition)
+    const queryClient2 = queryClient;
+    useEffect(() => {
+        if (!isLoading && !isFetching && profile && !profile.player) {
+            const timer = setTimeout(() => {
+                queryClient2.invalidateQueries({ queryKey: ["profile"] });
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [isLoading, isFetching, profile]);
+
+    // Show skeleton on initial load, refetching, or when no player (auto-retrying)
+    if (isLoading || (isFetching && (!profile || !profile.player)) || (profile && !profile.player)) {
         return (
             <div className="mx-auto max-w-lg px-4 py-6 sm:px-6">
                 <div className="space-y-4">
@@ -436,22 +448,6 @@ export default function ProfilePage() {
                     </div>
                 </Card>
 
-                {/* No player — only show if genuinely no player (not mid-refetch or initial load) */}
-                {!player && !isLoading && !isFetching && (
-                    <Card className="border border-divider">
-                        <CardBody className="flex flex-col items-center gap-2 py-6 text-center">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                                <User className="h-5 w-5 text-primary/40" />
-                            </div>
-                            <p className="text-sm font-medium text-foreground/60">
-                                No player profile linked yet
-                            </p>
-                            <p className="text-xs text-foreground/30">
-                                Contact an admin to get registered
-                            </p>
-                        </CardBody>
-                    </Card>
-                )}
 
                 {/* Wallet badge — links to wallet page */}
                 {player && (
