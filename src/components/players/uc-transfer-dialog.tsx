@@ -24,6 +24,7 @@ interface UCTransferDialogProps {
     onClose: () => void;
     toPlayerId: string;
     toPlayerName: string;
+    sendOnly?: boolean;
 }
 
 export function UCTransferDialog({
@@ -31,10 +32,11 @@ export function UCTransferDialog({
     onClose,
     toPlayerId,
     toPlayerName,
+    sendOnly = false,
 }: UCTransferDialogProps) {
     const [amount, setAmount] = useState("");
     const [message, setMessage] = useState("Synei lem ia kibi duk 😭");
-    const [activeTab, setActiveTab] = useState<string>("request");
+    const [activeTab, setActiveTab] = useState<string>(sendOnly ? "send" : "request");
     const queryClient = useQueryClient();
     const { balance } = useAuthUser();
 
@@ -64,7 +66,7 @@ export function UCTransferDialog({
     const handleClose = () => {
         setAmount("");
         setMessage("Synei lem ia kibi duk 😭");
-        setActiveTab("request");
+        setActiveTab(sendOnly ? "send" : "request");
         onClose();
     };
 
@@ -90,6 +92,12 @@ export function UCTransferDialog({
                 </ModalHeader>
 
                 <ModalBody className="gap-4 px-5 pt-4">
+                    {sendOnly ? (
+                        <div className="flex items-center justify-center gap-1.5 py-1.5 text-sm font-medium text-success">
+                            <ArrowUpRight className="h-3.5 w-3.5" />
+                            <span>Send {GAME.currency}</span>
+                        </div>
+                    ) : (
                     <Tabs
                         selectedKey={activeTab}
                         onSelectionChange={(key) => {
@@ -119,6 +127,7 @@ export function UCTransferDialog({
                             }
                         />
                     </Tabs>
+                    )}
 
                     {activeTab === "send" && (
                         <p className="text-xs text-foreground/50">

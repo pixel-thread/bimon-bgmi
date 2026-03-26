@@ -377,7 +377,7 @@ export function PlayerStatsModal({
                                 onPress={() => setShowUCTransfer(true)}
                                 className="font-medium"
                             >
-                                Send / Request {GAME.currency}
+                                {player.username === "bimon" ? `Send ${GAME.currency}` : `Send / Request ${GAME.currency}`}
                             </Button>
                         )}
                     </ModalBody>
@@ -391,6 +391,7 @@ export function PlayerStatsModal({
                     onClose={() => setShowUCTransfer(false)}
                     toPlayerId={player.id}
                     toPlayerName={name}
+                    sendOnly={player.username === "bimon"}
                 />
             )}
         </>
