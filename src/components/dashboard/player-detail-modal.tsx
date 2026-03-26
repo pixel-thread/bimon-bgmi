@@ -161,7 +161,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
 
     // Link/merge player mutation
     const linkMutation = useMutation({
-        mutationFn: async (data: { targetEmail: string }) => {
+        mutationFn: async (data: { query: string }) => {
             const res = await fetch(`/api/players/${playerId}/link`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -505,8 +505,8 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                         </p>
                                         <Input
                                             size="sm"
-                                            type="email"
-                                            placeholder="New user's email address"
+                                            type="text"
+                                            placeholder="Player name, username, or email"
                                             value={linkEmail}
                                             onValueChange={setLinkEmail}
                                             startContent={<Link2 className="h-3 w-3 text-foreground/30" />}
@@ -520,7 +520,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                             isDisabled={!linkEmail.trim() || linkEmail.trim() === player?.email}
                                             onPress={() => {
                                                 if (confirm(`Merge "${player?.displayName}" into the player on ${linkEmail}?\n\nThis will:\n• Move all stats, matches, wallet balance, and transactions\n• Combine data from both players\n• Delete this old player record\n\nThis cannot be undone.`)) {
-                                                    linkMutation.mutate({ targetEmail: linkEmail.trim() });
+                                                    linkMutation.mutate({ query: linkEmail.trim() });
                                                 }
                                             }}
                                             startContent={!linkMutation.isPending ? <Link2 className="h-4 w-4" /> : undefined}

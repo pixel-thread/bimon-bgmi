@@ -29,11 +29,13 @@ export async function POST(
         }
 
         const { id: oldPlayerId } = await params;
-        const { targetEmail } = (await req.json()) as { targetEmail?: string };
+        const { query } = (await req.json()) as { query?: string };
 
-        if (!targetEmail?.trim()) {
-            return ErrorResponse({ message: "Target email is required", status: 400 });
+        if (!query?.trim()) {
+            return ErrorResponse({ message: "Email or player name is required", status: 400 });
         }
+
+        const searchTerm = query.trim();
 
         // 1. Get the legacy (old) player
         const oldPlayer = await prisma.player.findUnique({
@@ -48,9 +50,15 @@ export async function POST(
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
 
-        // 2. Find the target user by email
-        const targetUser = await prisma.user.findUnique({
-            where: { email: targetEmail.trim().toLowerCase() },
+        // 2. Find the target user by email, username, or player displayName
+        const targetUser = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { email: { equals: searchTerm, mode: "insensitive" } },
+                    { username: { equals: searchTerm, mode: "insensitive" } },
+                    { player: { displayName: { equals: searchTerm, mode: "insensitive" } } },
+                ],
+            },
             include: {
                 player: {
                     select: {
@@ -64,7 +72,7 @@ export async function POST(
 
         if (!targetUser) {
             return ErrorResponse({
-                message: `No user found with email: ${targetEmail}`,
+                message: `No user found matching: ${searchTerm}`,
                 status: 404,
             });
         }
