@@ -28,6 +28,7 @@ import {
     ArrowDownRight,
     Clock,
     ChevronDown,
+    Link2,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -79,6 +80,7 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
     const [activeTab, setActiveTab] = useState<"overview" | "transactions">("overview");
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
     const toggleSection = (key: string) => setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
+    const [linkEmail, setLinkEmail] = useState("");
 
     // Fetch player details
     const { data: player, isLoading } = useQuery<PlayerDetail>({
@@ -154,6 +156,25 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["admin-player", playerId] });
             queryClient.invalidateQueries({ queryKey: ["admin-players"] });
+        },
+    });
+
+    // Link/merge player mutation
+    const linkMutation = useMutation({
+        mutationFn: async (data: { targetEmail: string }) => {
+            const res = await fetch(`/api/players/${playerId}/link`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.message || json.error || "Failed to link");
+            return json;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["admin-player", playerId] });
+            queryClient.invalidateQueries({ queryKey: ["admin-players"] });
+            setLinkEmail("");
         },
     });
 
@@ -459,6 +480,67 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                     </div>
                                 )}
                             </div>
+
+                            {/* Merge Legacy Player — BGMI only (legacy Season 1 players) */}
+                            {GAME.gameName === "BGMI" && (
+                            <div className="rounded-xl border border-divider">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSection("link")}
+                                    className="flex w-full items-center justify-between p-3 text-sm font-semibold cursor-pointer hover:bg-default-50 rounded-xl transition-colors"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Link2 className="h-4 w-4 text-primary" />
+                                        Merge Legacy Player
+                                    </span>
+                                    <ChevronDown className={`h-4 w-4 text-foreground/40 transition-transform ${expandedSections.link ? "rotate-180" : ""}`} />
+                                </button>
+                                {expandedSections.link && (
+                                    <div className="space-y-3 px-4 pb-4">
+                                        <p className="text-xs text-foreground/40">
+                                            Merge this player&apos;s history into another player&apos;s account. The old data (stats, matches, wallet, transactions) will be combined with the target player&apos;s data.
+                                        </p>
+                                        <p className="text-[10px] text-foreground/30">
+                                            Currently linked to: <span className="font-medium text-foreground/60">{player?.email}</span>
+                                        </p>
+                                        <Input
+                                            size="sm"
+                                            type="email"
+                                            placeholder="New user's email address"
+                                            value={linkEmail}
+                                            onValueChange={setLinkEmail}
+                                            startContent={<Link2 className="h-3 w-3 text-foreground/30" />}
+                                        />
+                                        <Button
+                                            size="sm"
+                                            color="primary"
+                                            variant="flat"
+                                            className="w-full"
+                                            isLoading={linkMutation.isPending}
+                                            isDisabled={!linkEmail.trim() || linkEmail.trim() === player?.email}
+                                            onPress={() => {
+                                                if (confirm(`Merge "${player?.displayName}" into the player on ${linkEmail}?\n\nThis will:\n• Move all stats, matches, wallet balance, and transactions\n• Combine data from both players\n• Delete this old player record\n\nThis cannot be undone.`)) {
+                                                    linkMutation.mutate({ targetEmail: linkEmail.trim() });
+                                                }
+                                            }}
+                                            startContent={!linkMutation.isPending ? <Link2 className="h-4 w-4" /> : undefined}
+                                        >
+                                            Merge Player
+                                        </Button>
+                                        {linkMutation.isSuccess && (
+                                            <p className="text-center text-xs text-success">
+                                                ✓ {linkMutation.data?.message || "Player linked successfully"}
+                                            </p>
+                                        )}
+                                        {linkMutation.isError && (
+                                            <p className="text-center text-xs text-danger">
+                                                {(linkMutation.error as Error).message}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            )}
                         </>
                     ) : (
                         /* Transactions tab */
