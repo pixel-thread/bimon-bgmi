@@ -32,6 +32,7 @@ type SelectedMatch = {
     player2Name: string | null;
     player2Avatar: string | null;
     isDisputing?: boolean;
+    isEditing?: boolean;
 } | null;
 
 export default function MatchesPage() {
@@ -354,6 +355,7 @@ function TournamentContent({
     const matchContext = (matchId: string, isDisputing = false): SelectedMatch => {
         const m = allMatches.find((x: any) => x.id === matchId);
         if (!m) return { id: matchId, player1Id: null, player1Name: null, player1Avatar: null, player2Name: null, player2Avatar: null, isDisputing };
+        const isEditing = m.status === "SUBMITTED" && m.winnerId === playerId;
         return {
             id: matchId,
             player1Id: m.player1Id ?? null,
@@ -362,6 +364,7 @@ function TournamentContent({
             player2Name: m.player2?.displayName ?? null,
             player2Avatar: m.player2Avatar ?? null,
             isDisputing,
+            isEditing,
         };
     };
 
@@ -612,6 +615,7 @@ function TournamentContent({
                     currentPlayerId={playerId}
                     isAdmin={isAdmin}
                     isDisputing={selectedMatch.isDisputing}
+                    isEditing={selectedMatch.isEditing}
                 />
             )}
 

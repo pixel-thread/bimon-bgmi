@@ -26,13 +26,14 @@ interface SubmitResultModalProps {
     currentPlayerId?: string | null;
     isAdmin?: boolean;
     isDisputing?: boolean; // true when raising a dispute (opponent already submitted)
+    isEditing?: boolean; // true when re-editing own submitted result
 }
 
 /* ─── Submit Result Modal ───────────────────────────────────── */
 
 export function SubmitResultModal({
     isOpen, onClose, matchId, tournamentId,
-    player1Id, player1Name, player1Avatar, player2Name, player2Avatar, currentPlayerId, isAdmin = false, isDisputing = false,
+    player1Id, player1Name, player1Avatar, player2Name, player2Avatar, currentPlayerId, isAdmin = false, isDisputing = false, isEditing = false,
 }: SubmitResultModalProps) {
     const isPlayer2 = !!currentPlayerId && currentPlayerId !== player1Id;
 
@@ -163,7 +164,7 @@ export function SubmitResultModal({
             <ModalContent>
                 <ModalHeader className="flex items-center gap-2 pb-0">
                     <Trophy className="h-4 w-4 text-primary" />
-                    {isDisputing ? "Submit Your Version" : "Submit Result"}
+                    {isDisputing ? "Submit Your Version" : isEditing ? "Edit Result" : "Submit Result"}
                 </ModalHeader>
 
                 <ModalBody className="gap-3 pt-2 pb-3">
@@ -304,7 +305,7 @@ export function SubmitResultModal({
                         }}
                         startContent={!submitResult.isPending && !uploading ? <Upload className="h-3.5 w-3.5" /> : undefined}
                     >
-                        {uploading ? "Uploading..." : "Submit"}
+                        {uploading ? "Uploading..." : isEditing ? "Update" : "Submit"}
                     </Button>
                 </ModalFooter>
             </ModalContent>

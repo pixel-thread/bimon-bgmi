@@ -546,6 +546,7 @@ export function MatchRow({
     const canEdit = isAdmin && match.status !== "PENDING"; // admin can re-edit even after submission
     const canConfirm = isParticipant && match.status === "SUBMITTED" && match.winnerId !== currentPlayerId;
     const canDispute = isParticipant && match.status === "SUBMITTED" && match.winnerId !== currentPlayerId;
+    const canEditSubmitted = isParticipant && match.status === "SUBMITTED" && match.winnerId === currentPlayerId;
     const hasResult = match.status === "CONFIRMED" || match.status === "SUBMITTED";
 
     // Prefer confirmed score, fall back to claimed score from submitted result
@@ -623,10 +624,13 @@ export function MatchRow({
                     <button onClick={() => onDispute(match.id)} className="text-[10px] font-bold text-danger hover:underline ml-1">✕</button>
                 )}
                 {/* Eye icon: for result-bearing matches to everyone; for all matches to admin */}
-                {(hasResult || isAdmin) && onViewResult && match.player1Id && match.player2Id && (
+                {(hasResult || isAdmin) && !canEditSubmitted && onViewResult && match.player1Id && match.player2Id && (
                     <button onClick={() => onViewResult(match.id)} className="ml-0.5" title={isAdmin ? "View / edit result" : "View screenshot"}>
                         <Eye className={`h-3.5 w-3.5 transition-colors ${isDisputed ? "text-danger/60 hover:text-danger" : "text-foreground/30 hover:text-foreground/70"}`} />
                     </button>
+                )}
+                {canEditSubmitted && onSubmitResult && (
+                    <button onClick={() => onSubmitResult(match.id)} className="text-[10px] font-bold text-primary hover:underline ml-1">Edit</button>
                 )}
             </div>
         </div>
