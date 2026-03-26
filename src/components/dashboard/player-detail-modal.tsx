@@ -267,105 +267,14 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                         </div>
                     ) : activeTab === "overview" ? (
                         <>
-                            {/* Stats cards — collapsed by default */}
-                            <div className="rounded-xl border border-divider">
-                                <button
-                                    type="button"
-                                    onClick={() => toggleSection("stats")}
-                                    className="flex w-full items-center justify-between p-3 text-sm font-semibold cursor-pointer hover:bg-default-50 rounded-xl transition-colors"
-                                >
-                                    Stats
-                                    <ChevronDown className={`h-4 w-4 text-foreground/40 transition-transform ${expandedSections.stats ? "rotate-180" : ""}`} />
-                                </button>
-                                {expandedSections.stats && (
-                                    <div className="grid grid-cols-2 gap-2 px-3 pb-3 sm:grid-cols-4">
-                                        <div className="rounded-xl bg-default-100 p-3 text-center">
-                                            <p className="text-xs text-foreground/50">Kills</p>
-                                            <p className="mt-1 text-lg font-bold">{player?.stats.kills}</p>
-                                        </div>
-                                        <div className="rounded-xl bg-default-100 p-3 text-center">
-                                            <p className="text-xs text-foreground/50">K/D</p>
-                                            <p className="mt-1 text-lg font-bold">
-                                                {player?.stats.kd.toFixed(2)}
-                                            </p>
-                                        </div>
-                                        <div className="rounded-xl bg-default-100 p-3 text-center">
-                                            <p className="text-xs text-foreground/50">Matches</p>
-                                            <p className="mt-1 text-lg font-bold">{player?.stats.matches}</p>
-                                        </div>
-                                        <div className="rounded-xl bg-default-100 p-3 text-center">
-                                            <p className="text-xs text-foreground/50">Streak</p>
-                                            <p className="mt-1 text-lg font-bold">
-                                                {player?.streak.current}/8
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Balance */}
-                            <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 p-4">
-                                <div className="flex items-center gap-2">
-                                    <Wallet className="h-5 w-5 text-primary" />
-                                    <span className="text-sm font-medium">Balance</span>
-                                </div>
-                                <span className={`text-xl font-bold ${(player?.balance ?? 0) < 0 ? "text-danger" : "text-primary"
-                                    }`}>
-                                    {player?.balance?.toLocaleString()} {GAME.currency}
-                                </span>
-                            </div>
-
-                            {/* Player Flags — collapsed by default */}
-                            <div className="rounded-xl border border-divider">
-                                <button
-                                    type="button"
-                                    onClick={() => toggleSection("flags")}
-                                    className="flex w-full items-center justify-between p-3 text-sm font-semibold cursor-pointer hover:bg-default-50 rounded-xl transition-colors"
-                                >
-                                    Player Flags
-                                    <ChevronDown className={`h-4 w-4 text-foreground/40 transition-transform ${expandedSections.flags ? "rotate-180" : ""}`} />
-                                </button>
-                                {expandedSections.flags && (
-                                    <div className="space-y-3 px-4 pb-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <ShieldAlert className="h-4 w-4 text-primary" />
-                                                <div>
-                                                    <p className="text-sm font-medium">Trusted Player</p>
-                                                    <p className="text-xs text-foreground/50">Extended credit line (-200 {GAME.currency})</p>
-                                                </div>
-                                            </div>
-                                            <Switch
-                                                size="sm"
-                                                isSelected={player?.isTrusted ?? false}
-                                                isDisabled={toggleMutation.isPending}
-                                                onValueChange={(val) => toggleMutation.mutate({ isTrusted: val })}
-                                                aria-label="Toggle trusted"
-                                            />
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <BadgeDollarSign className="h-4 w-4 text-warning" />
-                                                <div>
-                                                    <p className="text-sm font-medium">UC Exempt</p>
-                                                    <p className="text-xs text-foreground/50">Skip {GAME.currency} deductions for entry fees</p>
-                                                </div>
-                                            </div>
-                                            <Switch
-                                                size="sm"
-                                                isSelected={player?.isUCExempt ?? false}
-                                                isDisabled={toggleMutation.isPending}
-                                                onValueChange={(val) => toggleMutation.mutate({ isUCExempt: val })}
-                                                aria-label={`Toggle ${GAME.currency} exempt`}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* UC Credit/Debit form */}
+                            {/* UC Credit/Debit form — with balance */}
                             <div className="space-y-3 rounded-xl border border-divider p-4">
-                                <h3 className="text-sm font-semibold">Add / Remove {GAME.currency}</h3>
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-semibold">Add / Remove {GAME.currency}</h3>
+                                    <span className={`text-sm font-bold ${(player?.balance ?? 0) < 0 ? "text-danger" : "text-primary"}`}>
+                                        {player?.balance?.toLocaleString()} {GAME.currency}
+                                    </span>
+                                </div>
                                 <div className="flex gap-2">
                                     <Select
                                         size="sm"
@@ -424,6 +333,54 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                     <p className="text-center text-xs text-danger">
                                         Failed to update balance
                                     </p>
+                                )}
+                            </div>
+
+                            {/* Player Flags — collapsed by default */}
+                            <div className="rounded-xl border border-divider">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSection("flags")}
+                                    className="flex w-full items-center justify-between p-3 text-sm font-semibold cursor-pointer hover:bg-default-50 rounded-xl transition-colors"
+                                >
+                                    Player Flags
+                                    <ChevronDown className={`h-4 w-4 text-foreground/40 transition-transform ${expandedSections.flags ? "rotate-180" : ""}`} />
+                                </button>
+                                {expandedSections.flags && (
+                                    <div className="space-y-3 px-4 pb-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <ShieldAlert className="h-4 w-4 text-primary" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Trusted Player</p>
+                                                    <p className="text-xs text-foreground/50">Extended credit line (-200 {GAME.currency})</p>
+                                                </div>
+                                            </div>
+                                            <Switch
+                                                size="sm"
+                                                isSelected={player?.isTrusted ?? false}
+                                                isDisabled={toggleMutation.isPending}
+                                                onValueChange={(val) => toggleMutation.mutate({ isTrusted: val })}
+                                                aria-label="Toggle trusted"
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <BadgeDollarSign className="h-4 w-4 text-warning" />
+                                                <div>
+                                                    <p className="text-sm font-medium">UC Exempt</p>
+                                                    <p className="text-xs text-foreground/50">Skip {GAME.currency} deductions for entry fees</p>
+                                                </div>
+                                            </div>
+                                            <Switch
+                                                size="sm"
+                                                isSelected={player?.isUCExempt ?? false}
+                                                isDisabled={toggleMutation.isPending}
+                                                onValueChange={(val) => toggleMutation.mutate({ isUCExempt: val })}
+                                                aria-label={`Toggle ${GAME.currency} exempt`}
+                                            />
+                                        </div>
+                                    </div>
                                 )}
                             </div>
 
