@@ -7,6 +7,7 @@ import { roundLabel, type RoundData } from "@/components/bracket/bracket-shared"
 import { GroupKnockoutView } from "@/components/bracket/group-knockout-view";
 import { SubmitResultModal } from "@/components/bracket/submit-result-modal";
 import { ViewResultModal } from "@/components/bracket/view-result-modal";
+import { PendingConfirmationModal } from "@/components/bracket/pending-confirmation-modal";
 import { useConfirmResult, useDisputeResult } from "@/components/bracket/submit-result-modal";
 import { BracketOnboarding, DisputeOnboarding, useBracketOnboarding, useDisputeOnboarding } from "@/components/bracket/bracket-onboarding";
 import { useAuthUser } from "@/hooks/use-auth-user";
@@ -256,6 +257,16 @@ function TournamentContent({
     const { showOnboarding, dismissOnboarding } = useBracketOnboarding(playerId);
     const { showDisputeOnboarding, dismissDisputeOnboarding } = useDisputeOnboarding(playerId, hasSubmittedMatch);
 
+    // Find the first SUBMITTED match where this player needs to confirm (opponent submitted)
+    const pendingConfirmMatch = playerId
+        ? allMatches.find(
+              (m: any) =>
+                  m.status === "SUBMITTED" &&
+                  (m.player1Id === playerId || m.player2Id === playerId) &&
+                  m.winnerId !== playerId
+          ) ?? null
+        : null;
+
     // Snap a ms timestamp to the next occurrence of cutoffTime (HH:MM IST)
     const snapToCutoff = (ms: number, cutoff: string): number => {
         if (!cutoff) return ms;
@@ -445,6 +456,18 @@ function TournamentContent({
             {/* Onboarding spotlights */}
             {showOnboarding && <BracketOnboarding onDone={dismissOnboarding} />}
             {showDisputeOnboarding && <DisputeOnboarding onDone={dismissDisputeOnboarding} />}
+
+            {/* Auto-popup confirmation modal — non-dismissable */}
+            {playerId && pendingConfirmMatch && (
+                <PendingConfirmationModal
+                    match={pendingConfirmMatch}
+                    rounds={bracketData.rounds}
+                    currentPlayerId={playerId}
+                    onConfirm={(id) => confirmResult.mutate(id)}
+                    onDispute={(id) => onSelectMatch(matchContext(id, true))}
+                    isConfirming={confirmResult.isPending}
+                />
+            )}
 
             {/* Tournament Info */}
             <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4 space-y-3">
