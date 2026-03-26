@@ -5,10 +5,11 @@ import {
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
     Chip, Avatar, Button,
 } from "@heroui/react";
-import { Camera, Pencil, Save, Minus, Plus, X, Maximize2, Trophy, RotateCcw, MessageSquare } from "lucide-react";
+import { Camera, Pencil, Save, Minus, Plus, X, Maximize2, Trophy, RotateCcw, MessageSquare, CheckCircle2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/compress-image";
+import { useConfirmResult } from "./submit-result-modal";
 
 interface ViewResultModalProps {
     isOpen: boolean;
@@ -151,6 +152,7 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const queryClient = useQueryClient();
+    const confirmResult = useConfirmResult(tournamentId || "");
 
     useEffect(() => {
         if (editing && match) { setScore1(match.score1 ?? 0); setScore2(match.score2 ?? 0); }
@@ -386,7 +388,20 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                         </>
                     ) : (
                         <>
-                            <Button variant="flat" size="sm" onPress={handleClose}>Close</Button>
+                            {isAdmin && match?.status === "SUBMITTED" ? (
+                                <Button
+                                    color="success"
+                                    size="sm"
+                                    className="text-white"
+                                    startContent={<CheckCircle2 className="h-3.5 w-3.5" />}
+                                    isLoading={confirmResult.isPending}
+                                    onPress={() => { if (match?.id) { confirmResult.mutate(match.id); handleClose(); } }}
+                                >
+                                    Confirm
+                                </Button>
+                            ) : (
+                                <Button variant="flat" size="sm" onPress={handleClose}>Close</Button>
+                            )}
                             {isAdmin && hasResult && (
                                 <Button color="danger" variant="flat" size="sm"
                                     startContent={<RotateCcw className="h-3.5 w-3.5" />}

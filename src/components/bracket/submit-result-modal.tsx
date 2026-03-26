@@ -5,7 +5,7 @@ import {
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
     Button,
 } from "@heroui/react";
-import { Upload, Trophy, Camera, X, Plus, Minus, MessageSquare, UserX } from "lucide-react";
+import { Upload, Trophy, Camera, X, Plus, Minus, MessageSquare, UserX, ArrowLeftRight } from "lucide-react";
 import { Avatar } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -48,6 +48,18 @@ export function SubmitResultModal({
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const [notes, setNotes] = useState("");
+    const [swapped, setSwapped] = useState(false);
+
+    // Display names/avatars based on swap state
+    const leftName = swapped ? oppName : myName;
+    const leftAvatar = swapped ? oppAvatar : myAvatar;
+    const leftScore = swapped ? oppScore : myScore;
+    const setLeftScore = swapped ? setOppScore : setMyScore;
+    const rightName = swapped ? myName : oppName;
+    const rightAvatar = swapped ? myAvatar : oppAvatar;
+    const rightScore = swapped ? myScore : oppScore;
+    const setRightScore = swapped ? setMyScore : setOppScore;
+    const leftIsPrimary = !swapped;
     const [showNotes, setShowNotes] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const queryClient = useQueryClient();
@@ -177,49 +189,86 @@ export function SubmitResultModal({
 
                     {/* VS Score cards */}
                     <div className="flex items-stretch gap-2">
-                        {/* My side — prominent */}
-                        <div className="flex-1 flex flex-col items-center gap-2 rounded-2xl bg-primary/8 border border-primary/20 py-3 px-2">
-                            <Avatar src={myAvatar || undefined} name={myName[0]?.toUpperCase() ?? "?"} size="sm"
-                                classNames={{ base: "bg-primary/20", name: "text-primary font-bold" }} />
-                            <span className="text-[10px] font-semibold text-primary/80 uppercase tracking-wider truncate max-w-full px-1 text-center leading-none">
-                                {myName}
+                        {/* Left side */}
+                        <div className={`flex-1 flex flex-col items-center gap-2 rounded-2xl py-3 px-2 ${
+                            leftIsPrimary
+                                ? "bg-primary/8 border border-primary/20"
+                                : "bg-default-100/60 border border-divider"
+                        }`}>
+                            <Avatar src={leftAvatar || undefined} name={leftName[0]?.toUpperCase() ?? "?"} size="sm"
+                                classNames={leftIsPrimary
+                                    ? { base: "bg-primary/20", name: "text-primary font-bold" }
+                                    : { base: "bg-default-200", name: "text-foreground/40 font-bold" }
+                                } />
+                            <span className={`text-[10px] font-semibold uppercase tracking-wider truncate max-w-full px-1 text-center leading-none ${
+                                leftIsPrimary ? "text-primary/80" : "text-foreground/40"
+                            }`}>
+                                {leftName}
                             </span>
-                            <span className="text-5xl font-black tabular-nums text-primary leading-none select-none">{myScore}</span>
+                            <span className={`text-5xl font-black tabular-nums leading-none select-none ${
+                                leftIsPrimary ? "text-primary" : "text-foreground/40"
+                            }`}>{leftScore}</span>
                             <div className="flex gap-2">
-                                <button type="button" onClick={() => setMyScore(Math.max(0, myScore - 1))}
-                                    className="h-8 w-8 rounded-full bg-primary/15 hover:bg-primary/25 active:scale-95 flex items-center justify-center transition-all">
-                                    <Minus className="h-3.5 w-3.5 text-primary" />
+                                <button type="button" onClick={() => setLeftScore(Math.max(0, leftScore - 1))}
+                                    className={`h-8 w-8 rounded-full active:scale-95 flex items-center justify-center transition-all ${
+                                        leftIsPrimary ? "bg-primary/15 hover:bg-primary/25" : "bg-default-200 hover:bg-default-300"
+                                    }`}>
+                                    <Minus className={`h-3.5 w-3.5 ${leftIsPrimary ? "text-primary" : "text-foreground/50"}`} />
                                 </button>
-                                <button type="button" onClick={() => setMyScore(myScore + 1)}
-                                    className="h-8 w-8 rounded-full bg-primary/20 hover:bg-primary/30 active:scale-95 flex items-center justify-center transition-all">
-                                    <Plus className="h-3.5 w-3.5 text-primary" />
+                                <button type="button" onClick={() => setLeftScore(leftScore + 1)}
+                                    className={`h-8 w-8 rounded-full active:scale-95 flex items-center justify-center transition-all ${
+                                        leftIsPrimary ? "bg-primary/20 hover:bg-primary/30" : "bg-default-200 hover:bg-default-300"
+                                    }`}>
+                                    <Plus className={`h-3.5 w-3.5 ${leftIsPrimary ? "text-primary" : "text-foreground/50"}`} />
                                 </button>
                             </div>
                         </div>
 
-                        {/* VS divider */}
+                        {/* VS divider with swap button */}
                         <div className="flex flex-col items-center justify-center gap-1 shrink-0">
                             <div className="flex-1 w-px bg-divider" />
-                            <span className="text-[10px] font-bold text-foreground/20 tracking-widest px-1">VS</span>
+                            <button
+                                type="button"
+                                onClick={() => setSwapped(!swapped)}
+                                title="Swap player positions"
+                                className="p-1.5 rounded-full bg-default-100 hover:bg-default-200 active:scale-90 transition-all"
+                            >
+                                <ArrowLeftRight className="h-3 w-3 text-foreground/40" />
+                            </button>
                             <div className="flex-1 w-px bg-divider" />
                         </div>
 
-                        {/* Opponent side — muted */}
-                        <div className="flex-1 flex flex-col items-center gap-2 rounded-2xl bg-default-100/60 border border-divider py-3 px-2">
-                            <Avatar src={oppAvatar || undefined} name={oppName[0]?.toUpperCase() ?? "?"} size="sm"
-                                classNames={{ base: "bg-default-200", name: "text-foreground/40 font-bold" }} />
-                            <span className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider truncate max-w-full px-1 text-center leading-none">
-                                {oppName}
+                        {/* Right side */}
+                        <div className={`flex-1 flex flex-col items-center gap-2 rounded-2xl py-3 px-2 ${
+                            !leftIsPrimary
+                                ? "bg-primary/8 border border-primary/20"
+                                : "bg-default-100/60 border border-divider"
+                        }`}>
+                            <Avatar src={rightAvatar || undefined} name={rightName[0]?.toUpperCase() ?? "?"} size="sm"
+                                classNames={!leftIsPrimary
+                                    ? { base: "bg-primary/20", name: "text-primary font-bold" }
+                                    : { base: "bg-default-200", name: "text-foreground/40 font-bold" }
+                                } />
+                            <span className={`text-[10px] font-semibold uppercase tracking-wider truncate max-w-full px-1 text-center leading-none ${
+                                !leftIsPrimary ? "text-primary/80" : "text-foreground/40"
+                            }`}>
+                                {rightName}
                             </span>
-                            <span className="text-5xl font-black tabular-nums text-foreground/40 leading-none select-none">{oppScore}</span>
+                            <span className={`text-5xl font-black tabular-nums leading-none select-none ${
+                                !leftIsPrimary ? "text-primary" : "text-foreground/40"
+                            }`}>{rightScore}</span>
                             <div className="flex gap-2">
-                                <button type="button" onClick={() => setOppScore(Math.max(0, oppScore - 1))}
-                                    className="h-8 w-8 rounded-full bg-default-200 hover:bg-default-300 active:scale-95 flex items-center justify-center transition-all">
-                                    <Minus className="h-3.5 w-3.5 text-foreground/50" />
+                                <button type="button" onClick={() => setRightScore(Math.max(0, rightScore - 1))}
+                                    className={`h-8 w-8 rounded-full active:scale-95 flex items-center justify-center transition-all ${
+                                        !leftIsPrimary ? "bg-primary/15 hover:bg-primary/25" : "bg-default-200 hover:bg-default-300"
+                                    }`}>
+                                    <Minus className={`h-3.5 w-3.5 ${!leftIsPrimary ? "text-primary" : "text-foreground/50"}`} />
                                 </button>
-                                <button type="button" onClick={() => setOppScore(oppScore + 1)}
-                                    className="h-8 w-8 rounded-full bg-default-200 hover:bg-default-300 active:scale-95 flex items-center justify-center transition-all">
-                                    <Plus className="h-3.5 w-3.5 text-foreground/50" />
+                                <button type="button" onClick={() => setRightScore(rightScore + 1)}
+                                    className={`h-8 w-8 rounded-full active:scale-95 flex items-center justify-center transition-all ${
+                                        !leftIsPrimary ? "bg-primary/20 hover:bg-primary/30" : "bg-default-200 hover:bg-default-300"
+                                    }`}>
+                                    <Plus className={`h-3.5 w-3.5 ${!leftIsPrimary ? "text-primary" : "text-foreground/50"}`} />
                                 </button>
                             </div>
                         </div>
