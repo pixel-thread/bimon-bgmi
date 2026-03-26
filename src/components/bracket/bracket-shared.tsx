@@ -301,10 +301,13 @@ export function MatchCard({
             ? match.player2?.phoneNumber
             : match.player1?.phoneNumber;
         if (!opponentPhone) return;
-        // Format: remove leading + if present, ensure country code
         const cleanPhone = opponentPhone.replace(/[^\d]/g, "");
+        const myName = isCurrentP1
+            ? match.player1?.displayName || "player"
+            : match.player2?.displayName || "player";
+        const groupLabel = rolloverRoundLabel || "tournament";
         const msg = encodeURIComponent(
-            `Ia noh pyndep noh ka match jong ka ${tournamentName || "tournament"}`
+            `Nga u ${myName} la ${groupLabel} ia noh pyndep noh ka match jong ka ${tournamentName || "tournament"}`
         );
         window.open(`https://wa.me/${cleanPhone}?text=${msg}`, "_blank");
     }
