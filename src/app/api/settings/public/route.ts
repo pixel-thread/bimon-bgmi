@@ -42,6 +42,7 @@ export async function GET() {
                 whatsAppGroups: settings.whatsAppGroups,
                 welcomeMessage: settings.welcomeMessage,
                 customRules: settings.customRules,
+                upiQrImageUrl: settings.upiQrImageUrl,
             },
             cache: CACHE.NONE, // Settings must be fresh — admin may change at any time
         });

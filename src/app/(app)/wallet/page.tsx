@@ -31,6 +31,9 @@ import {
     Plus,
     IndianRupee,
     Sparkles,
+    QrCode,
+    Camera,
+    MessageCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -192,6 +195,7 @@ export default function WalletPage() {
     const loadMoreRef = useRef<HTMLDivElement>(null);
     const queryClient = useQueryClient();
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const { isOpen: isQrOpen, onOpen: onQrOpen, onClose: onQrClose } = useDisclosure();
     const [desiredUC, setDesiredUC] = useState<number>(50);
 
     const rupeeAmount = calculateRupees(desiredUC);
@@ -221,6 +225,19 @@ export default function WalletPage() {
             );
             return current?.id ?? null;
         },
+        staleTime: 5 * 60 * 1000,
+    });
+
+    // ── Public settings (UPI QR for non-Razorpay games) ─────
+    const { data: publicSettings } = useQuery<{ upiQrImageUrl?: string; whatsAppGroups?: string[] }>({
+        queryKey: ["public-settings-wallet"],
+        queryFn: async () => {
+            const res = await fetch("/api/settings/public");
+            if (!res.ok) return {};
+            const json = await res.json();
+            return json.data ?? {};
+        },
+        enabled: !GAME.features.hasTopUps,
         staleTime: 5 * 60 * 1000,
     });
 
@@ -424,6 +441,19 @@ export default function WalletPage() {
                                             <Plus className="h-4 w-4" />
                                         }
                                         onPress={onOpen}
+                                    >
+                                        Add {GAME.currency}
+                                    </Button>
+                                    )}
+                                    {!GAME.features.hasTopUps && publicSettings?.upiQrImageUrl && (
+                                    <Button
+                                        size="sm"
+                                        color="success"
+                                        className="font-semibold"
+                                        startContent={
+                                            <QrCode className="h-4 w-4" />
+                                        }
+                                        onPress={onQrOpen}
                                     >
                                         Add {GAME.currency}
                                     </Button>
@@ -717,6 +747,94 @@ export default function WalletPage() {
                         >
                             Pay ₹{formatRupees(rupeeAmount)}
                         </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            {/* ── UPI QR Manual Top-Up Modal ──────────────────── */}
+            <Modal
+                isOpen={isQrOpen}
+                onClose={onQrClose}
+                placement="center"
+                size="sm"
+            >
+                <ModalContent>
+                    <ModalHeader className="flex flex-col items-center gap-1 pb-0">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-green-400 to-emerald-500">
+                            <QrCode className="h-5 w-5 text-white" />
+                        </div>
+                        <span className="text-base font-semibold">
+                            Add {GAME.currency}
+                        </span>
+                        <span className="text-[11px] text-foreground/40">
+                            Scan QR code to pay via UPI
+                        </span>
+                    </ModalHeader>
+
+                    <ModalBody className="gap-4">
+                        {/* QR Code */}
+                        {publicSettings?.upiQrImageUrl && (
+                            <div className="mx-auto w-52 h-52 rounded-xl overflow-hidden border border-divider bg-white p-2">
+                                <img
+                                    src={publicSettings.upiQrImageUrl}
+                                    alt="UPI QR Code"
+                                    className="w-full h-full object-contain"
+                                />
+                            </div>
+                        )}
+
+                        {/* Steps */}
+                        <div className="space-y-2">
+                            <div className="flex items-start gap-3 rounded-lg bg-default-50 px-3 py-2.5">
+                                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success/20 text-[10px] font-bold text-success">1</div>
+                                <div>
+                                    <p className="text-xs font-medium">Scan & Pay</p>
+                                    <p className="text-[10px] text-foreground/40">Open any UPI app and scan the QR code above</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3 rounded-lg bg-default-50 px-3 py-2.5">
+                                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">2</div>
+                                <div>
+                                    <p className="text-xs font-medium flex items-center gap-1"><Camera className="h-3 w-3" /> Take Screenshot</p>
+                                    <p className="text-[10px] text-foreground/40">Screenshot the payment confirmation</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3 rounded-lg bg-default-50 px-3 py-2.5">
+                                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-warning/20 text-[10px] font-bold text-warning">3</div>
+                                <div>
+                                    <p className="text-xs font-medium flex items-center gap-1"><MessageCircle className="h-3 w-3" /> Send to Admin</p>
+                                    <p className="text-[10px] text-foreground/40">Share the screenshot with admin on WhatsApp</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p className="text-[10px] text-center text-foreground/30">
+                            Your {GAME.currency} will be added once the admin verifies payment.
+                        </p>
+                    </ModalBody>
+
+                    <ModalFooter className="gap-2">
+                        <Button
+                            variant="flat"
+                            onPress={onQrClose}
+                            className="flex-1"
+                        >
+                            Close
+                        </Button>
+                        {publicSettings?.whatsAppGroups?.[0] && (
+                            <Button
+                                color="success"
+                                className="flex-1 font-semibold text-white"
+                                startContent={
+                                    <MessageCircle className="h-4 w-4" />
+                                }
+                                onPress={() => {
+                                    window.open(publicSettings.whatsAppGroups![0], "_blank");
+                                }}
+                            >
+                                WhatsApp
+                            </Button>
+                        )}
                     </ModalFooter>
                 </ModalContent>
             </Modal>

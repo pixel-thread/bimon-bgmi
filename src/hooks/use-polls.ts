@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { GAME } from "@/lib/game-config";
 
 export interface PollDTO {
     id: string;
@@ -163,7 +164,7 @@ export function useVote() {
                 duration: 5000,
                 ...(isBalanceError && {
                     action: {
-                        label: "Top Up",
+                        label: `Add ${GAME.currency}`,
                         onClick: () => window.location.assign("/wallet"),
                     },
                 }),

@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
                 // Trusted accounts: allow down to -200
                 if (balance < -200) {
                     return ErrorResponse({
-                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — your balance is ${balance} ${GAME.currency}. Top up your wallet to continue.`,
+                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — your balance is ${balance} ${GAME.currency}. You need more ${GAME.currency} to continue.`,
                         status: 403,
                     });
                 }
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
                 // Player role: can go into debt up to 1 entry fee (2 tournaments from 0)
                 if (balance < -entryFee) {
                     return ErrorResponse({
-                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — your balance is ${balance} ${GAME.currency}. Top up your wallet to continue.`,
+                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — your balance is ${balance} ${GAME.currency}. You need more ${GAME.currency} to continue.`,
                         status: 403,
                     });
                 }
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
                 // Regular users: must have enough for entry fee
                 if (balance < entryFee) {
                     return ErrorResponse({
-                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — you need ${entryFee} ${GAME.currency} but have ${balance}. Top up your wallet to continue.`,
+                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — you need ${entryFee} ${GAME.currency} but have ${balance}. You need more ${GAME.currency} to continue.`,
                         status: 403,
                     });
                 }

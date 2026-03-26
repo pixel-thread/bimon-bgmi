@@ -46,6 +46,9 @@ export interface AppSettings {
     // 🛡️ Merit System
     meritBanThreshold: number;
     meritSoloRestrictThreshold: number;
+
+    // 💳 Manual Top-Up (UPI QR)
+    upiQrImageUrl: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -83,6 +86,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
     meritBanThreshold: 0,
     meritSoloRestrictThreshold: 0,
+
+    upiQrImageUrl: "",
 };
 
 /**
