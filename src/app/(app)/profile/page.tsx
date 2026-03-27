@@ -661,27 +661,6 @@ export default function ProfilePage() {
                     </Card>
                 )}
 
-                {/* Streak */}
-                {player?.streak && (player.streak.current > 0 || player.streak.longest > 0) && (
-                    <Card className="border border-divider">
-                        <CardBody className="p-4">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Flame className="h-4 w-4 text-warning" />
-                                <p className="text-xs font-semibold uppercase tracking-wider text-foreground/50">Streak</p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 text-center">
-                                <div>
-                                    <div className="text-3xl font-bold text-warning">{player.streak.current}</div>
-                                    <p className="text-xs text-foreground/40">Current</p>
-                                </div>
-                                <div>
-                                    <div className="text-3xl font-bold text-foreground/70">{player.streak.longest}</div>
-                                    <p className="text-xs text-foreground/40">Longest</p>
-                                </div>
-                            </div>
-                        </CardBody>
-                    </Card>
-                )}
 
                 {/* Profile Settings Section */}
                 {player && (

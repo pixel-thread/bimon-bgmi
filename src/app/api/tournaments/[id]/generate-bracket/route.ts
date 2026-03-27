@@ -156,6 +156,9 @@ export async function POST(
         const seededSlots = antiCollisionSeed(voterSlots);
         const seededPlayerIds = seededSlots.map(s => s.playerId);
 
+        // Check if multi-entry expansion happened (preserve anti-collision seeding)
+        const hasMultiEntries = voterSlots.length > tournament.poll!.votes.length;
+
         // Dispatch to the right generator
         let result: any;
         let message: string;
@@ -166,7 +169,7 @@ export async function POST(
                 const includedIds = seededPlayerIds.slice(0, bracketSize);
                 const excludedCount = seededPlayerIds.length - bracketSize;
 
-                result = await generateBracket(id, includedIds);
+                result = await generateBracket(id, includedIds, { skipShuffle: hasMultiEntries });
                 result.excludedCount = excludedCount;
                 result.bracketSize = bracketSize;
 

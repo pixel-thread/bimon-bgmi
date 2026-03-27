@@ -23,7 +23,11 @@ function shuffle<T>(arr: T[]): T[] {
     return a;
 }
 
-export async function generateBracket(tournamentId: string, playerIds: string[]) {
+export async function generateBracket(
+    tournamentId: string,
+    playerIds: string[],
+    options?: { skipShuffle?: boolean }
+) {
     if (playerIds.length < 2) {
         throw new Error("Need at least 2 players for a bracket");
     }
@@ -35,8 +39,9 @@ export async function generateBracket(tournamentId: string, playerIds: string[])
     });
     const include3rdPlace = (tournament?.maxPlacements ?? 3) >= 3;
 
-    const shuffled = shuffle(playerIds);
-    const bracketSize = shuffled.length; // Already a power of 2 from FCFS
+    // Skip shuffle when caller passes pre-seeded order (anti-collision seeding)
+    const ordered = options?.skipShuffle ? playerIds : shuffle(playerIds);
+    const bracketSize = ordered.length; // Already a power of 2 from FCFS
     const totalRounds = Math.log2(bracketSize);
     const has3rdPlaceMatch = include3rdPlace && totalRounds >= 2; // ≥4 players AND setting enabled
 
@@ -48,19 +53,28 @@ export async function generateBracket(tournamentId: string, playerIds: string[])
         player1Id: string | null;
         player2Id: string | null;
         winnerId: string | null;
+        score1: number | null;
+        score2: number | null;
         status: "PENDING" | "BYE";
     }[] = [];
 
     // Round 1: pair up players (always exact pairs since power of 2)
     for (let i = 0; i < bracketSize; i += 2) {
+        const p1 = ordered[i];
+        const p2 = ordered[i + 1];
+        const isSelfMatch = p1 === p2;
+
         allMatches.push({
             tournamentId,
             round: 1,
             position: i / 2,
-            player1Id: shuffled[i],
-            player2Id: shuffled[i + 1],
-            winnerId: null,
-            status: "PENDING",
+            player1Id: p1,
+            player2Id: p2,
+            // Self-match: auto-walkover — lower entry (player1) wins
+            winnerId: isSelfMatch ? p1 : null,
+            score1: null,
+            score2: null,
+            status: isSelfMatch ? "BYE" : "PENDING",
         });
     }
 
@@ -75,6 +89,8 @@ export async function generateBracket(tournamentId: string, playerIds: string[])
                 player1Id: null,
                 player2Id: null,
                 winnerId: null,
+                score1: null,
+                score2: null,
                 status: "PENDING",
             });
         }
@@ -90,6 +106,8 @@ export async function generateBracket(tournamentId: string, playerIds: string[])
             player1Id: null,
             player2Id: null,
             winnerId: null,
+            score1: null,
+            score2: null,
             status: "PENDING",
         });
     }
@@ -100,7 +118,7 @@ export async function generateBracket(tournamentId: string, playerIds: string[])
     });
 
     return {
-        totalPlayers: shuffled.length,
+        totalPlayers: ordered.length,
         bracketSize,
         totalRounds,
         numByes: 0,

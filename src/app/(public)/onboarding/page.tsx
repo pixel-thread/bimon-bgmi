@@ -326,13 +326,17 @@ export default function OnboardingPage() {
                                             setDisplayName(e.target.value);
                                             setDisplayNameError("");
                                         }}
-                                        placeholder={`Enter your ${GAME.ignLabel.toLowerCase()}`}
+                                        placeholder={GAME.ignLabel}
                                         size="lg"
-                                        variant="bordered"
+                                        variant="flat"
                                         maxLength={20}
                                         isDisabled={isSubmitting}
                                         isInvalid={!!displayNameError}
                                         errorMessage={displayNameError}
+                                        classNames={{
+                                            inputWrapper: "bg-default-100 border border-divider data-[focus=true]:border-primary",
+                                            input: "placeholder:text-foreground/30",
+                                        }}
                                         startContent={
                                             <span className="text-foreground/30 text-sm">🎮</span>
                                         }
