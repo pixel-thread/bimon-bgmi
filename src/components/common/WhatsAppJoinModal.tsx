@@ -155,16 +155,11 @@ export function WhatsAppJoinModal({
                             {loadedGroups.map((group) => {
                                 const isJoined = joinedGroups.has(group.id);
                                 return (
-                                    <button
+                                    <div
                                         key={group.id}
-                                        onClick={() =>
-                                            !isJoined &&
-                                            handleJoin(group.id, group.link)
-                                        }
-                                        disabled={isJoined}
                                         className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${isJoined
                                             ? "bg-success/10 border border-success/30"
-                                            : "bg-default-100 hover:bg-success/10 active:scale-[0.98]"
+                                            : "bg-default-100"
                                             }`}
                                     >
                                         <div
@@ -179,20 +174,28 @@ export function WhatsAppJoinModal({
                                                 <WhatsAppIcon className="w-5 h-5 text-white" />
                                             )}
                                         </div>
-                                        <div className="text-left flex-1">
-                                            <p className="font-semibold text-sm">
+                                        <div className="text-left flex-1 min-w-0">
+                                            <p className="font-semibold text-sm truncate">
                                                 {group.name}
                                             </p>
                                             <p className="text-xs text-foreground/40">
                                                 {isJoined
                                                     ? "Joined ✓"
-                                                    : "Tap to join"}
+                                                    : "Tap Join to open"}
                                             </p>
                                         </div>
                                         {!isJoined && (
-                                            <ChevronRight className="w-4 h-4 text-success" />
+                                            <Button
+                                                size="sm"
+                                                color="success"
+                                                variant="solid"
+                                                className="shrink-0 font-bold text-white"
+                                                onPress={() => handleJoin(group.id, group.link)}
+                                            >
+                                                Join
+                                            </Button>
                                         )}
-                                    </button>
+                                    </div>
                                 );
                             })}
                         </div>
