@@ -27,6 +27,7 @@ const FAMOUS_PLAYERS = [
  */
 type SelectedMatch = {
     id: string;
+    round: number;
     player1Id: string | null;
     player1Name: string | null;
     player1Avatar: string | null;
@@ -373,10 +374,11 @@ function TournamentContent({
     // Helper — build submit context from a match id
     const matchContext = (matchId: string, isDisputing = false): SelectedMatch => {
         const m = allMatches.find((x: any) => x.id === matchId);
-        if (!m) return { id: matchId, player1Id: null, player1Name: null, player1Avatar: null, player2Name: null, player2Avatar: null, isDisputing };
+        if (!m) return { id: matchId, round: 1, player1Id: null, player1Name: null, player1Avatar: null, player2Name: null, player2Avatar: null, isDisputing };
         const isEditing = m.status === "SUBMITTED" && m.winnerId === playerId;
         return {
             id: matchId,
+            round: m.round ?? 1,
             player1Id: m.player1Id ?? null,
             player1Name: m.player1?.displayName ?? null,
             player1Avatar: m.player1Avatar ?? null,
@@ -650,6 +652,7 @@ function TournamentContent({
                     isAdmin={isAdmin}
                     isDisputing={selectedMatch.isDisputing}
                     isEditing={selectedMatch.isEditing}
+                    drawsAllowed={selectedMatch.round < 0}
                 />
             )}
 

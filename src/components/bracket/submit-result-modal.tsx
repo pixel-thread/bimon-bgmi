@@ -27,13 +27,14 @@ interface SubmitResultModalProps {
     isAdmin?: boolean;
     isDisputing?: boolean; // true when raising a dispute (opponent already submitted)
     isEditing?: boolean; // true when re-editing own submitted result
+    drawsAllowed?: boolean; // true for group stage / league matches
 }
 
 /* ─── Submit Result Modal ───────────────────────────────────── */
 
 export function SubmitResultModal({
     isOpen, onClose, matchId, tournamentId,
-    player1Id, player1Name, player1Avatar, player2Name, player2Avatar, currentPlayerId, isAdmin = false, isDisputing = false, isEditing = false,
+    player1Id, player1Name, player1Avatar, player2Name, player2Avatar, currentPlayerId, isAdmin = false, isDisputing = false, isEditing = false, drawsAllowed = false,
 }: SubmitResultModalProps) {
     const isPlayer2 = !!currentPlayerId && currentPlayerId !== player1Id;
 
@@ -94,7 +95,7 @@ export function SubmitResultModal({
     const submitResult = useMutation({
         mutationFn: async () => {
             if (!matchId) throw new Error("No match selected");
-            if (isDraw) throw new Error("Draws not allowed — there must be a winner");
+            if (isDraw && !drawsAllowed) throw new Error("Draws not allowed — there must be a winner");
 
             setUploading(true);
 
@@ -339,7 +340,7 @@ export function SubmitResultModal({
                         isLoading={submitResult.isPending || uploading}
                         isDisabled={submitWalkover.isPending}
                         onPress={() => {
-                            if (isDraw) { toast.error("Draws not allowed — there must be a winner"); return; }
+                            if (isDraw && !drawsAllowed) { toast.error("Draws not allowed — there must be a winner"); return; }
                             if (!isAdmin && !screenshot) { toast.error("Please upload a screenshot of the result"); return; }
                             submitResult.mutate();
                         }}
