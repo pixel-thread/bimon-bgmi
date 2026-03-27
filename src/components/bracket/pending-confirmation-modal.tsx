@@ -49,7 +49,7 @@ export function PendingConfirmationModal({
     if (!match) return null;
     if (dismissed === match.id) return null;
 
-    const screenshotUrl = match.results?.[0]?.screenshotUrl ?? null;
+    const screenshotUrl = match.results?.find((r: any) => r.screenshotUrl)?.screenshotUrl ?? null;
     const notes = match.results?.[0]?.notes ?? null;
 
     const isP1 = currentPlayerId === match.player1Id;

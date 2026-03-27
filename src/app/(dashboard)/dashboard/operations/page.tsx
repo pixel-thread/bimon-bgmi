@@ -1067,7 +1067,7 @@ function AdminResolveModal({
     };
 
     // Grab screenshot URL from bracket results if available
-    const existingScreenshot = (match as any).screenshotUrl || (match as any).results?.[0]?.screenshotUrl;
+    const existingScreenshot = (match as any).screenshotUrl || (match as any).results?.find((r: any) => r.screenshotUrl)?.screenshotUrl;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} placement="center" size="md">
