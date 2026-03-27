@@ -40,5 +40,5 @@ export async function uploadToCloudinary(
     // Cloudinary URL format: https://res.cloudinary.com/{cloud}/image/upload/v{version}/{public_id}.{ext}
     // Insert transformations after /upload/
     const url: string = data.secure_url;
-    return url.replace("/upload/", "/upload/f_auto,q_auto,w_800/");
+    return url.replace("/upload/", "/upload/f_auto,q_auto,w_500/");
 }

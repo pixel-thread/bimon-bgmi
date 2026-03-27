@@ -6,7 +6,7 @@ import { BracketView, MyBracketMatch } from "@/components/bracket/bracket-view";
 import { roundLabel, type RoundData } from "@/components/bracket/bracket-shared";
 import { GroupKnockoutView } from "@/components/bracket/group-knockout-view";
 import { SubmitResultModal } from "@/components/bracket/submit-result-modal";
-import { ViewResultModal } from "@/components/bracket/view-result-modal";
+import { ViewResultModal, prefetchScreenshot } from "@/components/bracket/view-result-modal";
 import { PendingConfirmationModal } from "@/components/bracket/pending-confirmation-modal";
 import { useConfirmResult, useDisputeResult } from "@/components/bracket/submit-result-modal";
 import { BracketOnboarding, DisputeOnboarding, useBracketOnboarding, useDisputeOnboarding } from "@/components/bracket/bracket-onboarding";
@@ -246,6 +246,14 @@ function TournamentContent({
     const disputeResult = useDisputeResult(tournamentId);
 
     const allMatches = bracketData?.rounds?.flatMap((r: any) => r.matches) ?? [];
+
+    // Prefetch all match screenshots so they're cached when modals open
+    useEffect(() => {
+        allMatches.forEach((m: any) => {
+            const url = m.results?.find((r: any) => r.screenshotUrl)?.screenshotUrl;
+            if (url) prefetchScreenshot(url);
+        });
+    }, [allMatches]);
 
     // Does the player have a SUBMITTED match where they need to confirm/dispute?
     const hasSubmittedMatch = allMatches.some(

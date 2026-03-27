@@ -55,13 +55,47 @@ function ScoreStepper({ label, value, onChange }: { label: string; value: number
     );
 }
 
-/* ─── Screenshot with preload + lightbox ─────────────────────── */
+/* ─── Helpers ────────────────────────────────────────────────── */
+
+/** Generate a tiny blurred placeholder URL from a Cloudinary URL (~500 bytes) */
+function getBlurPlaceholder(url: string): string | null {
+    if (!url.includes("res.cloudinary.com")) return null;
+    // Replace existing transforms with tiny blur placeholder
+    return url.replace(
+        /\/upload\/[^/]+\//,
+        "/upload/w_30,q_10,e_blur:800,f_auto/"
+    );
+}
+
+/**
+ * Prefetch a screenshot URL into the browser cache.
+ * Call this on visible match cards so the image is ready when the modal opens.
+ */
+export function prefetchScreenshot(url: string | null | undefined) {
+    if (!url) return;
+    // Check if already prefetched  
+    if (typeof window !== "undefined" && !(window as any).__prefetched) {
+        (window as any).__prefetched = new Set<string>();
+    }
+    if (typeof window !== "undefined" && (window as any).__prefetched?.has(url)) return;
+    
+    const link = document.createElement("link");
+    link.rel = "prefetch";
+    link.as = "image";
+    link.href = url;
+    document.head.appendChild(link);
+    
+    if (typeof window !== "undefined") (window as any).__prefetched?.add(url);
+}
+
+/* ─── Screenshot with blur-up + lightbox ─────────────────────── */
 function ScreenshotView({ url }: { url: string }) {
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(false);
     const [lightbox, setLightbox] = useState(false);
+    const blurUrl = getBlurPlaceholder(url);
 
-    // Preload image immediately when URL changes
+    // Preload full image immediately when URL changes
     useEffect(() => {
         setLoaded(false);
         setError(false);
@@ -76,12 +110,23 @@ function ScreenshotView({ url }: { url: string }) {
         <>
             {/* Thumbnail */}
             <div
-                className="relative rounded-2xl overflow-hidden border border-divider cursor-zoom-in group bg-default-100"
+                className="relative rounded-2xl overflow-hidden border border-divider cursor-zoom-in group"
                 style={{ background: "rgba(0,0,0,0.3)" }}
                 onClick={() => loaded && setLightbox(true)}
             >
-                {/* Animated loader while image loads */}
-                {!loaded && !error && (
+                {/* Blur-up placeholder (Cloudinary only) — loads instantly */}
+                {blurUrl && !loaded && !error && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                        src={blurUrl}
+                        alt=""
+                        className="w-full max-h-64 object-contain"
+                        style={{ filter: "blur(12px)", transform: "scale(1.05)" }}
+                    />
+                )}
+
+                {/* Skeleton fallback for non-Cloudinary URLs */}
+                {!blurUrl && !loaded && !error && (
                     <div className="w-full h-44 flex flex-col items-center justify-center gap-3 bg-default-100 rounded-2xl">
                         <Camera className="h-5 w-5 text-foreground/20 animate-pulse" />
                         <div className="w-32 h-1.5 rounded-full bg-foreground/10 overflow-hidden">
@@ -106,7 +151,7 @@ function ScreenshotView({ url }: { url: string }) {
                             transform: loaded ? "scale(1)" : "scale(1.02)",
                             transition: "filter 0.3s ease, transform 0.3s ease, opacity 0.2s ease",
                         }}
-                        className={`w-full max-h-64 object-contain ${loaded ? "opacity-100" : "opacity-0 absolute inset-0"}`}
+                        className={`w-full max-h-64 object-contain ${loaded ? "opacity-100" : blurUrl ? "opacity-0 absolute inset-0" : "opacity-0 absolute inset-0"}`}
                     />
                 )}
 
