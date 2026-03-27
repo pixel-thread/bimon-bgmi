@@ -394,6 +394,7 @@ function TournamentContent({
         status: viewMatch.status,
         screenshotUrl: viewMatch.results?.find((r: any) => r.screenshotUrl)?.screenshotUrl ?? null,
         notes: viewMatch.results?.find((r: any) => r.notes && !r.notes.startsWith("Confirmed by") && !r.notes.startsWith("Auto-confirmed") && !r.notes.startsWith("Auto-forfeit"))?.notes ?? null,
+        confirmedBy: viewMatch.results?.find((r: any) => r.notes?.startsWith("Confirmed by"))?.notes ?? null,
         disputeDeadline: viewMatch.disputeDeadline ?? null,
     } : null;
 
