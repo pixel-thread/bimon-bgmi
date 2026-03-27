@@ -85,7 +85,9 @@ export function useVote() {
             });
             if (!res.ok) {
                 const json = await res.json().catch(() => ({}));
-                throw new Error(json.message || "Failed to cast vote");
+                const msg = json.message || "Failed to cast vote";
+                const note = json.note ? ` (${json.note})` : "";
+                throw new Error(`${msg}${note}`);
             }
             return res.json();
         },

@@ -44,6 +44,8 @@ interface ErrorResponseOptions {
 
 /**
  * Standard error response for API routes.
+ * Includes a short `note` with the error class for easier debugging
+ * without leaking stack traces or sensitive info.
  */
 export function ErrorResponse({
     message = "Internal Server Error",
@@ -55,10 +57,28 @@ export function ErrorResponse({
         console.error(`[API Error] ${message}:`, error);
     }
 
+    // Build a short, safe error hint for the client
+    let note: string | undefined;
+    if (error) {
+        const errName = (error as any)?.constructor?.name || "";
+        const errCode = (error as any)?.code;
+        if (errName.includes("Prisma") || errCode?.startsWith?.("P")) {
+            note = `prisma${errCode ? `:${errCode}` : ""}`;
+        } else if (error instanceof TypeError) {
+            note = "type_error";
+        } else if (error instanceof SyntaxError) {
+            note = "bad_request";
+        } else if (error instanceof Error) {
+            // Include first 80 chars of message (safe, no stack)
+            note = error.message.slice(0, 80);
+        }
+    }
+
     return NextResponse.json(
         {
             success: false,
             message,
+            ...(note && { note }),
             data: null,
         },
         { status }
