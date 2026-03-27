@@ -29,6 +29,7 @@ interface GameFeatures {
     hasBR: boolean;              // Battle Royale tournaments
     hasLeague: boolean;          // Round-robin league format
     hasGroupKnockout: boolean;   // Group stage → knockout (World Cup style)
+    hasMultiEntry: boolean;      // Allow multiple bracket entries per player (PES only)
     usesCentralWallet?: never;  // REMOVED — all games use local wallet now
 }
 
@@ -98,6 +99,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasBR: true,
             hasLeague: false,
             hasGroupKnockout: false,
+            hasMultiEntry: false,
         },
     },
     freefire: {
@@ -136,6 +138,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasBR: true,
             hasLeague: false,
             hasGroupKnockout: false,
+            hasMultiEntry: false,
         },
     },
     pes: {
@@ -174,6 +177,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasBR: false,
             hasLeague: true,            // Round-robin league
             hasGroupKnockout: true,     // Group → Knockout (World Cup)
+            hasMultiEntry: true,        // PES players can enter multiple times
         },
     },
 };

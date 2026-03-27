@@ -70,7 +70,7 @@ export async function getReservedBalance(playerId: string): Promise<number> {
         },
     });
 
-    return activeVotes.reduce((sum, v) => sum + (v.poll.tournament?.fee ?? 0), 0);
+    return activeVotes.reduce((sum, v) => sum + (v.poll.tournament?.fee ?? 0) * v.voteCount, 0);
 }
 
 /**

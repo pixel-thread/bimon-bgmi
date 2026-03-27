@@ -740,10 +740,11 @@ model PollOption {
 }
 
 model PlayerPollVote {
-  id       String @id @default(uuid())
-  playerId String
-  pollId   String
-  vote     Vote
+  id        String @id @default(uuid())
+  playerId  String
+  pollId    String
+  vote      Vote
+  voteCount Int    @default(1) // Multi-entry: PES players can vote IN multiple times
 
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
   poll   Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)

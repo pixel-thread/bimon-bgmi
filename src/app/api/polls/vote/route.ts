@@ -8,8 +8,8 @@ import { getAvailableBalance } from "@/lib/wallet-service";
 
 /**
  * POST /api/polls/vote
- * Cast or update a vote on a poll (IN/OUT/SOLO).
- * Optimized: runs player + poll lookups in parallel.
+ * Cast or update a vote on a poll (IN/OUT/SOLO/ADD_ENTRY/REMOVE_ENTRY).
+ * ADD_ENTRY and REMOVE_ENTRY: multi-entry for PES (games with hasMultiEntry).
  */
 export async function POST(request: NextRequest) {
     try {
@@ -21,12 +21,13 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const { pollId, vote } = body as {
             pollId: string;
-            vote: "IN" | "OUT" | "SOLO";
+            vote: "IN" | "OUT" | "SOLO" | "ADD_ENTRY" | "REMOVE_ENTRY";
         };
 
-        if (!pollId || !["IN", "OUT", "SOLO"].includes(vote)) {
+        const validVotes = ["IN", "OUT", "SOLO", "ADD_ENTRY", "REMOVE_ENTRY"];
+        if (!pollId || !validVotes.includes(vote)) {
             return ErrorResponse({
-                message: "Invalid request: pollId and vote (IN/OUT/SOLO) required",
+                message: "Invalid request: pollId and vote required",
                 status: 400,
             });
         }
@@ -115,6 +116,65 @@ export async function POST(request: NextRequest) {
 
         const playerId = user.player.id;
 
+        // ─── Multi-Entry: ADD_ENTRY / REMOVE_ENTRY (PES only) ───
+        if (vote === "ADD_ENTRY" || vote === "REMOVE_ENTRY") {
+            if (!GAME.features.hasMultiEntry) {
+                return ErrorResponse({ message: "Multi-entry is not available for this game", status: 400 });
+            }
+
+            const existing = await prisma.playerPollVote.findUnique({
+                where: { playerId_pollId: { playerId, pollId } },
+            });
+
+            if (vote === "ADD_ENTRY") {
+                if (!existing || !["IN", "SOLO"].includes(existing.vote)) {
+                    return ErrorResponse({ message: "You must vote IN first before adding entries", status: 400 });
+                }
+
+                const newCount = existing.voteCount + 1;
+                const entryFee = poll.tournament?.fee ?? 0;
+                const { available, reserved } = await getAvailableBalance(userId);
+                const additionalCost = entryFee; // 1 more entry
+                const reservedNote = reserved > 0 ? ` (${reserved} ${GAME.currency} reserved)` : "";
+
+                if (available < additionalCost) {
+                    return ErrorResponse({
+                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} for another entry — need ${entryFee} ${GAME.currency} but have ${available} available${reservedNote}`,
+                        status: 403,
+                    });
+                }
+
+                await prisma.playerPollVote.update({
+                    where: { id: existing.id },
+                    data: { voteCount: newCount },
+                });
+
+                return SuccessResponse({
+                    data: { voteCount: newCount },
+                    message: `Entry #${newCount} added! You now have ${newCount} entries.`,
+                });
+            }
+
+            if (vote === "REMOVE_ENTRY") {
+                if (!existing || existing.voteCount <= 1) {
+                    return ErrorResponse({ message: "No extra entries to remove. Use OUT to cancel.", status: 400 });
+                }
+
+                const newCount = existing.voteCount - 1;
+                await prisma.playerPollVote.update({
+                    where: { id: existing.id },
+                    data: { voteCount: newCount },
+                });
+
+                return SuccessResponse({
+                    data: { voteCount: newCount },
+                    message: `Entry removed. You now have ${newCount} entries.`,
+                });
+            }
+        }
+
+        // ─── Standard voting: IN / OUT / SOLO ───
+
         // Check if this is a first-time vote or a change
         const existingVote = await prisma.playerPollVote.findUnique({
             where: { playerId_pollId: { playerId, pollId } },
@@ -122,7 +182,7 @@ export async function POST(request: NextRequest) {
         });
         const isFirstVote = !existingVote;
 
-        // Upsert the vote
+        // Upsert the vote (reset voteCount to 1 on new vote/change)
         const result = await prisma.playerPollVote.upsert({
             where: {
                 playerId_pollId: {
@@ -134,9 +194,11 @@ export async function POST(request: NextRequest) {
                 playerId,
                 pollId,
                 vote,
+                voteCount: 1,
             },
             update: {
                 vote,
+                voteCount: 1, // reset on vote change
                 createdAt: new Date(),
             },
         });
