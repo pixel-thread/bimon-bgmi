@@ -15,8 +15,13 @@ export async function GET() {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email: userId },
+        const user = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { email: userId },
+                    { secondaryEmail: userId },
+                ],
+            },
             include: {
                 player: {
                     include: {
@@ -143,6 +148,7 @@ export async function GET() {
             clerkId: user.clerkId,
             username: user.username,
             email: user.email,
+            secondaryEmail: user.secondaryEmail || null,
             imageUrl: player?.customProfileImageUrl || user.imageUrl,
             role: user.role,
             player: player

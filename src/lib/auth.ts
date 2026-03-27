@@ -20,8 +20,14 @@ export const getCurrentUser = cache(async () => {
     const email = session.user.email;
     const db = await getRequestPrisma();
 
-    let user = await db.user.findUnique({
-        where: { email },
+    // Check primary email first, then secondary email
+    let user = await db.user.findFirst({
+        where: {
+            OR: [
+                { email },
+                { secondaryEmail: email },
+            ],
+        },
         include: {
             player: {
                 include: {
@@ -61,6 +67,7 @@ export const getCurrentUser = cache(async () => {
         clerkId: user.clerkId,
         username: user.username,
         email: user.email,
+        secondaryEmail: user.secondaryEmail,
         imageUrl: user.imageUrl,
         role: user.role,
         isOnboarded: user.isOnboarded,

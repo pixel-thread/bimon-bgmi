@@ -33,6 +33,10 @@ import {
     Medal,
     Star,
     Pencil,
+    Mail,
+    Plus,
+    ArrowRightLeft,
+    X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { CategoryBadge } from "@/components/ui/category-badge";
@@ -48,6 +52,7 @@ interface ProfileData {
     id: string;
     username: string;
     email: string;
+    secondaryEmail: string | null;
     imageUrl: string | null;
     role: string;
     player: {
@@ -125,6 +130,12 @@ export default function ProfilePage() {
     const ignTutorial = useIGNTutorial();
     const [showRPModal, setShowRPModal] = useState(false);
     const profileSectionRef = useRef<HTMLDivElement>(null);
+
+    // Secondary email state
+    const [showEmailInput, setShowEmailInput] = useState(false);
+    const [newSecondaryEmail, setNewSecondaryEmail] = useState("");
+    const [emailSaving, setEmailSaving] = useState(false);
+    const [emailError, setEmailError] = useState("");
 
     const { data: profile, isLoading, isFetching, error } = useQuery<ProfileData>({
         queryKey: ["profile"],
@@ -1026,6 +1037,155 @@ export default function ProfilePage() {
                         }}
                     />
                 )}
+
+                {/* Email Management */}
+                <Card className="border border-divider">
+                    <CardBody className="p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Mail className="h-4 w-4 text-foreground/50" />
+                            <p className="text-xs font-semibold uppercase tracking-wider text-foreground/50">Login Emails</p>
+                        </div>
+
+                        <div className="space-y-3">
+                            {/* Primary email */}
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[10px] text-foreground/40 uppercase">Primary</p>
+                                    <p className="text-sm font-medium truncate">{profile.email}</p>
+                                </div>
+                                <Chip size="sm" variant="flat" color="primary" className="text-[10px] shrink-0">Main</Chip>
+                            </div>
+
+                            {/* Secondary email */}
+                            {profile.secondaryEmail ? (
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[10px] text-foreground/40 uppercase">Secondary</p>
+                                        <p className="text-sm truncate">{profile.secondaryEmail}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        <Button
+                                            size="sm" variant="flat" color="primary"
+                                            isIconOnly
+                                            title="Swap — make secondary the primary"
+                                            isDisabled={emailSaving}
+                                            onPress={async () => {
+                                                setEmailSaving(true);
+                                                try {
+                                                    const res = await fetch("/api/profile/secondary-email", {
+                                                        method: "POST",
+                                                        headers: { "Content-Type": "application/json" },
+                                                        body: JSON.stringify({ action: "SWAP" }),
+                                                    });
+                                                    const json = await res.json();
+                                                    if (res.ok) {
+                                                        toast.success(json.message);
+                                                        queryClient.invalidateQueries({ queryKey: ["profile"] });
+                                                    } else {
+                                                        toast.error(json.message || "Failed");
+                                                    }
+                                                } catch { toast.error("Network error"); }
+                                                finally { setEmailSaving(false); }
+                                            }}
+                                        >
+                                            <ArrowRightLeft className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <Button
+                                            size="sm" variant="flat" color="danger"
+                                            isIconOnly
+                                            title="Remove secondary email"
+                                            isDisabled={emailSaving}
+                                            onPress={async () => {
+                                                setEmailSaving(true);
+                                                try {
+                                                    const res = await fetch("/api/profile/secondary-email", {
+                                                        method: "POST",
+                                                        headers: { "Content-Type": "application/json" },
+                                                        body: JSON.stringify({ action: "REMOVE" }),
+                                                    });
+                                                    const json = await res.json();
+                                                    if (res.ok) {
+                                                        toast.success("Secondary email removed");
+                                                        queryClient.invalidateQueries({ queryKey: ["profile"] });
+                                                    } else {
+                                                        toast.error(json.message || "Failed");
+                                                    }
+                                                } catch { toast.error("Network error"); }
+                                                finally { setEmailSaving(false); }
+                                            }}
+                                        >
+                                            <X className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : showEmailInput ? (
+                                <div className="space-y-2">
+                                    <Input
+                                        value={newSecondaryEmail}
+                                        onChange={(e) => { setNewSecondaryEmail(e.target.value); setEmailError(""); }}
+                                        placeholder="second.email@gmail.com"
+                                        size="sm"
+                                        variant="flat"
+                                        type="email"
+                                        isDisabled={emailSaving}
+                                        isInvalid={!!emailError}
+                                        errorMessage={emailError}
+                                        classNames={{
+                                            inputWrapper: "bg-default-100 border border-divider",
+                                        }}
+                                        startContent={<Mail className="h-3.5 w-3.5 text-foreground/30" />}
+                                    />
+                                    <div className="flex gap-2">
+                                        <Button
+                                            size="sm" variant="flat"
+                                            onPress={() => { setShowEmailInput(false); setNewSecondaryEmail(""); setEmailError(""); }}
+                                            isDisabled={emailSaving}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            size="sm" color="primary"
+                                            className="flex-1"
+                                            isLoading={emailSaving}
+                                            isDisabled={!newSecondaryEmail.includes("@")}
+                                            onPress={async () => {
+                                                setEmailSaving(true);
+                                                setEmailError("");
+                                                try {
+                                                    const res = await fetch("/api/profile/secondary-email", {
+                                                        method: "POST",
+                                                        headers: { "Content-Type": "application/json" },
+                                                        body: JSON.stringify({ action: "ADD", email: newSecondaryEmail.trim() }),
+                                                    });
+                                                    const json = await res.json();
+                                                    if (res.ok) {
+                                                        toast.success(json.message);
+                                                        setShowEmailInput(false);
+                                                        setNewSecondaryEmail("");
+                                                        queryClient.invalidateQueries({ queryKey: ["profile"] });
+                                                    } else {
+                                                        setEmailError(json.message || "Failed to add email");
+                                                    }
+                                                } catch { setEmailError("Network error"); }
+                                                finally { setEmailSaving(false); }
+                                            }}
+                                        >
+                                            Add Email
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setShowEmailInput(true)}
+                                    className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg border border-dashed border-foreground/15 hover:border-primary/40 hover:bg-primary/5 transition-all text-sm text-foreground/40"
+                                >
+                                    <Plus className="h-3.5 w-3.5" />
+                                    Add secondary email
+                                </button>
+                            )}
+                        </div>
+                    </CardBody>
+                </Card>
 
                 {/* Sign Out */}
                 <div className="mt-6 pb-20 lg:pb-4">

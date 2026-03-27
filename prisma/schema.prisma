@@ -122,6 +122,7 @@ model User {
   id       String  @id @default(uuid())
   clerkId  String  @unique
   email    String? @unique
+  secondaryEmail String? @unique
   username String  @unique
   imageUrl String?
   role     Role    @default(USER)
