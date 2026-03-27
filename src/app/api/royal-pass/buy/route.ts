@@ -3,7 +3,7 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { GAME } from "@/lib/game-config";
-import { getCentralBalance, debitCentralWallet } from "@/lib/wallet-service";
+import { getAvailableBalance, debitCentralWallet } from "@/lib/wallet-service";
 
 /**
  * POST /api/royal-pass/buy
@@ -54,10 +54,11 @@ export async function POST() {
         const lostDiscount = currentStreak >= STREAK_THRESHOLD;
         const rpPrice = lostDiscount ? RP_PRICE_FULL : RP_PRICE_DISCOUNTED;
 
-        const centralBalance = await getCentralBalance(email);
-        if (centralBalance < rpPrice) {
+        const { available, reserved } = await getAvailableBalance(email);
+        if (available < rpPrice) {
+            const reservedNote = reserved > 0 ? ` (${reserved} ${GAME.currency} reserved)` : "";
             return ErrorResponse({
-                message: `Not enough ${GAME.currency}. You need ${rpPrice} ${GAME.currency}.`,
+                message: `Not enough ${GAME.currency}. You need ${rpPrice} ${GAME.currency} but have ${available} available${reservedNote}.`,
                 status: 400,
             });
         }

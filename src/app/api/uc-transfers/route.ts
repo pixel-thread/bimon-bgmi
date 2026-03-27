@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
-import { getCentralBalance, transferCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { getAvailableBalance, transferCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * POST /api/uc-transfers
@@ -60,10 +60,11 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: "Could not resolve emails" }, { status: 400 });
             }
 
-            const balance = await getCentralBalance(senderEmail);
-            if (balance < amount) {
+            const { available, reserved } = await getAvailableBalance(senderEmail);
+            if (available < amount) {
+                const reservedNote = reserved > 0 ? ` (${reserved} ${GAME.currency} reserved for tournaments)` : "";
                 return NextResponse.json(
-                    { error: `Insufficient balance. You have ${balance} ${GAME.currency}.` },
+                    { error: `Insufficient balance. You have ${available} ${GAME.currency} available${reservedNote}.` },
                     { status: 400 }
                 );
             }

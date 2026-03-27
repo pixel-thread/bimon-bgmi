@@ -1,25 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { walletDb } from "./wallet-db";
 import { prisma } from "./database";
 
 /**
- * Central Wallet Service
+ * Wallet Service
  * 
- * All wallet operations go through here. Games with `usesCentralWallet: true`
- * (BGMI, PES) use the shared Neon database. Games with `usesCentralWallet: false`
- * (Free Fire) fall back to local game DB operations transparently.
- * 
- * This means API routes don't need to know which mode they're in —
- * the service handles the routing internally.
+ * All wallet operations go through here.
+ * Each game instance has its own local wallet in the game DB.
  */
-
-const GAME_MODE = process.env.NEXT_PUBLIC_GAME_MODE || "bgmi";
-
-/** Check if the current game uses the central wallet */
-function isCentralWalletEnabled(): boolean {
-    // All games use local wallet now — each instance is independently managed
-    return false;
-}
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -48,266 +35,150 @@ async function getLocalPlayerByEmail(email: string) {
 // ─── Read Operations ────────────────────────────────────────
 
 /**
- * Get or create a central wallet for a user by their email.
- */
-export async function getOrCreateCentralWallet(email: string, name?: string | null, imageUrl?: string | null) {
-    if (!isCentralWalletEnabled()) {
-        // Return a dummy structure for isolated games
-        const user = await getLocalPlayerByEmail(email);
-        return {
-            user: { id: user?.id ?? "", email },
-            wallet: { id: "", balance: user?.player?.wallet?.balance ?? 0 },
-        };
-    }
-
-    let user = await walletDb.centralUser.findUnique({
-        where: { email },
-        include: { wallet: true },
-    });
-
-    if (!user) {
-        // Seed initial balance from local game DB (one-time migration)
-        const localUser = await getLocalPlayerByEmail(email);
-        const localBalance = localUser?.player?.wallet?.balance ?? 0;
-
-        user = await walletDb.centralUser.create({
-            data: {
-                email,
-                name: name || null,
-                imageUrl: imageUrl || null,
-                wallet: { create: { balance: localBalance } },
-            },
-            include: { wallet: true },
-        });
-    }
-
-    if (!user.wallet) {
-        const localUser = await getLocalPlayerByEmail(email);
-        const localBalance = localUser?.player?.wallet?.balance ?? 0;
-        const wallet = await walletDb.centralWallet.create({
-            data: { userId: user.id, balance: localBalance },
-        });
-        return { user, wallet };
-    }
-
-    return { user, wallet: user.wallet };
-}
-
-/**
  * Get wallet balance for a user by email.
- * Returns central balance for unified games, local balance for isolated games.
- * Fast read-only — does NOT auto-create wallets.
  */
 export async function getCentralBalance(email: string): Promise<number> {
-    if (!isCentralWalletEnabled()) {
-        const user = await getLocalPlayerByEmail(email);
-        return user?.player?.wallet?.balance ?? 0;
-    }
-
-    const user = await walletDb.centralUser.findUnique({
-        where: { email },
-        select: { wallet: { select: { balance: true } } },
-    });
-    return user?.wallet?.balance ?? 0;
+    const user = await getLocalPlayerByEmail(email);
+    return user?.player?.wallet?.balance ?? 0;
 }
 
 /**
- * Batch-fetch central wallet balances for multiple emails.
+ * Get the total UC reserved by active tournament votes (not yet bracket-generated).
+ * Reserved = sum of (entryFee × voteCount) for all active polls where player voted IN/SOLO.
+ */
+export async function getReservedBalance(playerId: string): Promise<number> {
+    const activeVotes = await prisma.playerPollVote.findMany({
+        where: {
+            playerId,
+            vote: { in: ["IN", "SOLO"] },
+            poll: {
+                isActive: true,
+                tournament: {
+                    status: "ACTIVE",
+                    bracketMatches: { none: {} }, // bracket not generated yet
+                },
+            },
+        },
+        include: {
+            poll: {
+                include: {
+                    tournament: {
+                        select: { fee: true },
+                    },
+                },
+            },
+        },
+    });
+
+    return activeVotes.reduce((sum, v) => sum + (v.poll.tournament?.fee ?? 0), 0);
+}
+
+/**
+ * Get available balance = total balance − reserved balance.
+ * This is what the player can actually spend (transfer, buy, etc.).
+ */
+export async function getAvailableBalance(email: string): Promise<{ balance: number; reserved: number; available: number }> {
+    const user = await getLocalPlayerByEmail(email);
+    const balance = user?.player?.wallet?.balance ?? 0;
+    const reserved = user?.player ? await getReservedBalance(user.player.id) : 0;
+    return { balance, reserved, available: balance - reserved };
+}
+
+/**
+ * Batch-fetch wallet balances for multiple emails.
  * Much faster than calling getCentralBalance per player.
  */
 export async function getCentralBalancesBatch(emails: string[]): Promise<Map<string, number>> {
     const map = new Map<string, number>();
     if (emails.length === 0) return map;
 
-    if (!isCentralWalletEnabled()) {
-        // For isolated games, batch-read from local DB
-        const users = await prisma.user.findMany({
-            where: { email: { in: emails } },
-            include: { player: { include: { wallet: true } } },
-        });
-        for (const u of users) {
-            if (u.email) map.set(u.email, u.player?.wallet?.balance ?? 0);
-        }
-        return map;
-    }
-
-    const centralUsers = await walletDb.centralUser.findMany({
+    const users = await prisma.user.findMany({
         where: { email: { in: emails } },
-        select: { email: true, wallet: { select: { balance: true } } },
+        include: { player: { include: { wallet: true } } },
     });
-    for (const u of centralUsers) {
-        map.set(u.email, u.wallet?.balance ?? 0);
+    for (const u of users) {
+        if (u.email) map.set(u.email, u.player?.wallet?.balance ?? 0);
     }
     return map;
 }
 
 /**
- * Get recent transactions for a user, optionally filtered by game.
+ * Get recent transactions for a user.
  */
 export async function getCentralTransactions(
     email: string,
     options?: { game?: string; limit?: number; cursor?: string }
 ) {
-    if (!isCentralWalletEnabled()) {
-        // Read from local Transaction table
-        const user = await getLocalPlayerByEmail(email);
-        if (!user?.player) return { transactions: [], hasMore: false };
-        const limit = options?.limit ?? 20;
-        const rows = await prisma.transaction.findMany({
-            where: { playerId: user.player.id },
-            orderBy: { createdAt: "desc" },
-            take: limit + 1,
-            ...(options?.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
-        });
-        const hasMore = rows.length > limit;
-        if (hasMore) rows.pop();
-        return { transactions: rows, hasMore };
-    }
-
-    const user = await walletDb.centralUser.findUnique({
-        where: { email },
-        include: { wallet: true },
-    });
-
-    if (!user?.wallet) return { transactions: [], hasMore: false };
-
+    const user = await getLocalPlayerByEmail(email);
+    if (!user?.player) return { transactions: [], hasMore: false };
     const limit = options?.limit ?? 20;
-
-    const transactions = await walletDb.centralTransaction.findMany({
-        where: {
-            walletId: user.wallet.id,
-            ...(options?.game ? { game: options.game } : {}),
-        },
+    const rows = await prisma.transaction.findMany({
+        where: { playerId: user.player.id },
         orderBy: { createdAt: "desc" },
         take: limit + 1,
         ...(options?.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
     });
-
-    const hasMore = transactions.length > limit;
-    if (hasMore) transactions.pop();
-
-    return { transactions, hasMore };
+    const hasMore = rows.length > limit;
+    if (hasMore) rows.pop();
+    return { transactions: rows, hasMore };
 }
 
 // ─── Write Operations ───────────────────────────────────────
 
 /**
- * Credit B-Coins to a user's wallet.
- * Central wallet for unified games, local DB for isolated games.
+ * Credit currency to a user's wallet.
  */
 export async function creditCentralWallet(
     email: string,
     amount: number,
     description: string,
-    reason: string = "OTHER",
-    metadata?: Record<string, unknown>,
-    name?: string | null,
-    imageUrl?: string | null,
+    _reason: string = "OTHER",
+    _metadata?: Record<string, unknown>,
+    _name?: string | null,
+    _imageUrl?: string | null,
 ): Promise<{ balance: number; transaction: any }> {
-    if (!isCentralWalletEnabled()) {
-        // Isolated game — credit local DB only
-        const user = await getLocalPlayerByEmail(email);
-        if (!user?.player) throw new Error("Player not found");
-        const currentBalance = user.player.wallet?.balance ?? 0;
-        const newBalance = currentBalance + amount;
-        await prisma.wallet.upsert({
-            where: { playerId: user.player.id },
-            create: { playerId: user.player.id, balance: newBalance },
-            update: { balance: newBalance },
-        });
-        // Local audit trail (Free Fire has no central transactions)
-        const tx = await prisma.transaction.create({
-            data: { playerId: user.player.id, amount, type: "CREDIT", description },
-        });
-        return { balance: newBalance, transaction: tx };
-    }
-
-    const { wallet } = await getOrCreateCentralWallet(email, name, imageUrl);
-    const balanceBefore = wallet.balance;
-    const balanceAfter = balanceBefore + amount;
-
-    const [updatedWallet, transaction] = await walletDb.$transaction([
-        walletDb.centralWallet.update({
-            where: { id: wallet.id },
-            data: { balance: balanceAfter },
-        }),
-        walletDb.centralTransaction.create({
-            data: {
-                amount: Math.abs(amount),
-                type: "CREDIT",
-                reason: reason as any,
-                description,
-                game: GAME_MODE,
-                balanceBefore,
-                balanceAfter,
-                walletId: wallet.id,
-                metadata: metadata ?? undefined,
-            },
-        }),
-    ]);
-
-    return { balance: updatedWallet.balance, transaction };
+    const user = await getLocalPlayerByEmail(email);
+    if (!user?.player) throw new Error("Player not found");
+    const currentBalance = user.player.wallet?.balance ?? 0;
+    const newBalance = currentBalance + amount;
+    await prisma.wallet.upsert({
+        where: { playerId: user.player.id },
+        create: { playerId: user.player.id, balance: newBalance },
+        update: { balance: newBalance },
+    });
+    const tx = await prisma.transaction.create({
+        data: { playerId: user.player.id, amount, type: "CREDIT", description },
+    });
+    return { balance: newBalance, transaction: tx };
 }
 
 /**
- * Debit B-Coins from a user's wallet.
- * Central wallet for unified games, local DB for isolated games.
+ * Debit currency from a user's wallet.
  */
 export async function debitCentralWallet(
     email: string,
     amount: number,
     description: string,
-    reason: string = "OTHER",
-    metadata?: Record<string, unknown>,
+    _reason: string = "OTHER",
+    _metadata?: Record<string, unknown>,
 ): Promise<{ balance: number; transaction: any }> {
-    if (!isCentralWalletEnabled()) {
-        // Isolated game — debit local DB only
-        const user = await getLocalPlayerByEmail(email);
-        if (!user?.player) throw new Error("Player not found");
-        const currentBalance = user.player.wallet?.balance ?? 0;
-        const newBalance = currentBalance - amount;
-        await prisma.wallet.upsert({
-            where: { playerId: user.player.id },
-            create: { playerId: user.player.id, balance: newBalance },
-            update: { balance: newBalance },
-        });
-        // Local audit trail (Free Fire has no central transactions)
-        const tx = await prisma.transaction.create({
-            data: { playerId: user.player.id, amount, type: "DEBIT", description },
-        });
-        return { balance: newBalance, transaction: tx };
-    }
-
-    const { wallet } = await getOrCreateCentralWallet(email);
-    const balanceBefore = wallet.balance;
-    const balanceAfter = balanceBefore - amount;
-
-    const [updatedWallet, transaction] = await walletDb.$transaction([
-        walletDb.centralWallet.update({
-            where: { id: wallet.id },
-            data: { balance: balanceAfter },
-        }),
-        walletDb.centralTransaction.create({
-            data: {
-                amount: Math.abs(amount),
-                type: "DEBIT",
-                reason: reason as any,
-                description,
-                game: GAME_MODE,
-                balanceBefore,
-                balanceAfter,
-                walletId: wallet.id,
-                metadata: metadata ?? undefined,
-            },
-        }),
-    ]);
-
-    return { balance: updatedWallet.balance, transaction };
+    const user = await getLocalPlayerByEmail(email);
+    if (!user?.player) throw new Error("Player not found");
+    const currentBalance = user.player.wallet?.balance ?? 0;
+    const newBalance = currentBalance - amount;
+    await prisma.wallet.upsert({
+        where: { playerId: user.player.id },
+        create: { playerId: user.player.id, balance: newBalance },
+        update: { balance: newBalance },
+    });
+    const tx = await prisma.transaction.create({
+        data: { playerId: user.player.id, amount, type: "DEBIT", description },
+    });
+    return { balance: newBalance, transaction: tx };
 }
 
 /**
- * Transfer B-Coins between two users.
- * Central wallet for unified games, local DB for isolated games.
+ * Transfer currency between two users.
  */
 export async function transferCentralWallet(
     fromEmail: string,
@@ -315,74 +186,29 @@ export async function transferCentralWallet(
     amount: number,
     description?: string,
 ): Promise<void> {
-    if (!isCentralWalletEnabled()) {
-        // Isolated game — transfer locally
-        const [fromUser, toUser] = await Promise.all([
-            getLocalPlayerByEmail(fromEmail),
-            getLocalPlayerByEmail(toEmail),
-        ]);
-        if (!fromUser?.player || !toUser?.player) throw new Error("Player not found");
-        const fromBalance = fromUser.player.wallet?.balance ?? 0;
-        const toBalance = toUser.player.wallet?.balance ?? 0;
-        await prisma.$transaction([
-            prisma.wallet.upsert({
-                where: { playerId: fromUser.player.id },
-                create: { playerId: fromUser.player.id, balance: fromBalance - amount },
-                update: { balance: fromBalance - amount },
-            }),
-            prisma.wallet.upsert({
-                where: { playerId: toUser.player.id },
-                create: { playerId: toUser.player.id, balance: toBalance + amount },
-                update: { balance: toBalance + amount },
-            }),
-            prisma.transaction.create({
-                data: { playerId: fromUser.player.id, amount, type: "DEBIT", description: description || "Transfer to player" },
-            }),
-            prisma.transaction.create({
-                data: { playerId: toUser.player.id, amount, type: "CREDIT", description: description || "Transfer from player" },
-            }),
-        ]);
-        return;
-    }
-
-    const { wallet: fromWallet } = await getOrCreateCentralWallet(fromEmail);
-    const { wallet: toWallet } = await getOrCreateCentralWallet(toEmail);
-
-    const fromBefore = fromWallet.balance;
-    const toBefore = toWallet.balance;
-
-    await walletDb.$transaction([
-        walletDb.centralWallet.update({
-            where: { id: fromWallet.id },
-            data: { balance: fromBefore - amount },
+    const [fromUser, toUser] = await Promise.all([
+        getLocalPlayerByEmail(fromEmail),
+        getLocalPlayerByEmail(toEmail),
+    ]);
+    if (!fromUser?.player || !toUser?.player) throw new Error("Player not found");
+    const fromBalance = fromUser.player.wallet?.balance ?? 0;
+    const toBalance = toUser.player.wallet?.balance ?? 0;
+    await prisma.$transaction([
+        prisma.wallet.upsert({
+            where: { playerId: fromUser.player.id },
+            create: { playerId: fromUser.player.id, balance: fromBalance - amount },
+            update: { balance: fromBalance - amount },
         }),
-        walletDb.centralTransaction.create({
-            data: {
-                amount,
-                type: "DEBIT",
-                reason: "TRANSFER_SENT",
-                description: description || `Transfer to player`,
-                game: GAME_MODE,
-                balanceBefore: fromBefore,
-                balanceAfter: fromBefore - amount,
-                walletId: fromWallet.id,
-            },
+        prisma.wallet.upsert({
+            where: { playerId: toUser.player.id },
+            create: { playerId: toUser.player.id, balance: toBalance + amount },
+            update: { balance: toBalance + amount },
         }),
-        walletDb.centralWallet.update({
-            where: { id: toWallet.id },
-            data: { balance: toBefore + amount },
+        prisma.transaction.create({
+            data: { playerId: fromUser.player.id, amount, type: "DEBIT", description: description || "Transfer to player" },
         }),
-        walletDb.centralTransaction.create({
-            data: {
-                amount,
-                type: "CREDIT",
-                reason: "TRANSFER_RECEIVED",
-                description: description || `Transfer from player`,
-                game: GAME_MODE,
-                balanceBefore: toBefore,
-                balanceAfter: toBefore + amount,
-                walletId: toWallet.id,
-            },
+        prisma.transaction.create({
+            data: { playerId: toUser.player.id, amount, type: "CREDIT", description: description || "Transfer from player" },
         }),
     ]);
 }

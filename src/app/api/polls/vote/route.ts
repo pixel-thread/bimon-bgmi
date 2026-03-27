@@ -4,7 +4,7 @@ import { getAuthEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 import { getSettings } from "@/lib/settings";
 import { GAME } from "@/lib/game-config";
-import { getCentralBalance } from "@/lib/wallet-service";
+import { getAvailableBalance } from "@/lib/wallet-service";
 
 /**
  * POST /api/polls/vote
@@ -79,36 +79,34 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Balance gate for IN/SOLO votes
+        // Balance gate for IN/SOLO votes — uses AVAILABLE balance (total − reserved)
         // Trusted:  can go negative down to -200 (extended credit for loyal players)
         // PLAYER:   can vote at 0 balance (one free chance) but blocked once negative
         // USER:     must have balance >= entry fee (need coins first)
         if (vote !== "OUT") {
-            const balance = await getCentralBalance(userId);
+            const { available, reserved } = await getAvailableBalance(userId);
             const entryFee = poll.tournament?.fee ?? 0;
             const isPlayer = user.role === "PLAYER" || user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+            const reservedNote = reserved > 0 ? ` (${reserved} ${GAME.currency} reserved for tournaments)` : "";
 
             if (user.player.isTrusted) {
-                // Trusted accounts: allow down to -200
-                if (balance < -200) {
+                if (available < -200) {
                     return ErrorResponse({
-                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — your balance is ${balance} ${GAME.currency}. You need more ${GAME.currency} to continue.`,
+                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — available: ${available} ${GAME.currency}${reservedNote}`,
                         status: 403,
                     });
                 }
             } else if (isPlayer) {
-                // Player role: can go into debt up to 1 entry fee (2 tournaments from 0)
-                if (balance < -entryFee) {
+                if (available < -entryFee) {
                     return ErrorResponse({
-                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — your balance is ${balance} ${GAME.currency}. You need more ${GAME.currency} to continue.`,
+                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — available: ${available} ${GAME.currency}${reservedNote}`,
                         status: 403,
                     });
                 }
             } else {
-                // Regular users: must have enough for entry fee
-                if (balance < entryFee) {
+                if (available < entryFee) {
                     return ErrorResponse({
-                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — you need ${entryFee} ${GAME.currency} but have ${balance}. You need more ${GAME.currency} to continue.`,
+                        message: `${GAME.currencyEmoji} Not enough ${GAME.currency} to vote IN — you need ${entryFee} ${GAME.currency} but have ${available} available${reservedNote}`,
                         status: 403,
                     });
                 }

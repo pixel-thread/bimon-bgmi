@@ -29,7 +29,7 @@ interface GameFeatures {
     hasBR: boolean;              // Battle Royale tournaments
     hasLeague: boolean;          // Round-robin league format
     hasGroupKnockout: boolean;   // Group stage → knockout (World Cup style)
-    usesCentralWallet: boolean;  // Shared B-Coin wallet across games (false = fully isolated)
+    usesCentralWallet?: never;  // REMOVED — all games use local wallet now
 }
 
 interface GameConfig {
@@ -98,7 +98,6 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasBR: true,
             hasLeague: false,
             hasGroupKnockout: false,
-            usesCentralWallet: false,  // All games use local wallet now
         },
     },
     freefire: {
@@ -137,7 +136,6 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasBR: true,
             hasLeague: false,
             hasGroupKnockout: false,
-            usesCentralWallet: false,  // Free Fire is managed separately — fully isolated wallet
         },
     },
     pes: {
@@ -176,7 +174,6 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasBR: false,
             hasLeague: true,            // Round-robin league
             hasGroupKnockout: true,     // Group → Knockout (World Cup)
-            usesCentralWallet: false,  // All games use local wallet now
         },
     },
 };
