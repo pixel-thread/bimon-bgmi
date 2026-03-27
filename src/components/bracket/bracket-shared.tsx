@@ -388,7 +388,7 @@ export function MatchCard({
                         {/* For SUBMITTED with countdown: single merged chip */}
                         {match.status === "SUBMITTED" && match.disputeRemainingMs != null ? (
                             <Chip size="sm" variant="flat" color={match.disputeRemainingMs <= 0 ? "success" : "warning"} startContent={<StatusIcon className="h-3 w-3" />} className="text-[10px]" suppressHydrationWarning>
-                                {match.disputeRemainingMs <= 0 ? "Auto-confirming…" : `Awaiting · ${Math.ceil(match.disputeRemainingMs / 60_000)}m left`}
+                                {match.disputeRemainingMs <= 0 ? "Auto-confirming…" : `Awaiting · ${(() => { const mins = Math.ceil(match.disputeRemainingMs / 60_000); const d = Math.floor(mins / 1440); const h = Math.floor((mins % 1440) / 60); const m = mins % 60; return [d && `${d}d`, h && `${h}h`, `${m}m`].filter(Boolean).join(" "); })() } left`}
                             </Chip>
                         ) : (
                             <Chip size="sm" variant="flat" color={config.color} startContent={<StatusIcon className="h-3 w-3" />} className="text-[10px]">
