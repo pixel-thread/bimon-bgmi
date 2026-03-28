@@ -82,14 +82,15 @@ export async function GET(request: Request) {
 
         const data = polls.map((poll) => {
             const totalVotes = poll.votes.length;
-            const inVotes = poll.votes.filter((v) => v.vote === "IN").length;
-            const outVotes = poll.votes.filter((v) => v.vote === "OUT").length;
-            const soloVotes = poll.votes.filter((v) => v.vote === "SOLO").length;
+            // Sum voteCount for multi-entry — each extra entry counts as an additional participant
+            const inVotes = poll.votes.filter((v: any) => v.vote === "IN").reduce((sum: number, v: any) => sum + (v.voteCount ?? 1), 0);
+            const outVotes = poll.votes.filter((v: any) => v.vote === "OUT").length;
+            const soloVotes = poll.votes.filter((v: any) => v.vote === "SOLO").reduce((sum: number, v: any) => sum + (v.voteCount ?? 1), 0);
             const userVote = playerId
-                ? poll.votes.find((v) => v.playerId === playerId)?.vote ?? null
+                ? poll.votes.find((v: any) => v.playerId === playerId)?.vote ?? null
                 : null;
             const userVoteCount = playerId
-                ? (poll.votes.find((v) => v.playerId === playerId) as any)?.voteCount ?? 1
+                ? (poll.votes.find((v: any) => v.playerId === playerId) as any)?.voteCount ?? 1
                 : 1;
 
             const tDonations = poll.tournament?.id ? donationTotals.get(poll.tournament.id) : null;
@@ -114,9 +115,10 @@ export async function GET(request: Request) {
                 userVoteCount,
                 hasVoted: !!userVote,
                 donations: tDonations ?? { total: 0, donations: [] },
-                playersVotes: poll.votes.map((v) => ({
+                playersVotes: poll.votes.map((v: any) => ({
                     playerId: v.playerId,
                     vote: v.vote,
+                    voteCount: v.voteCount ?? 1,
                     createdAt: v.createdAt,
                     displayName: v.player.displayName ?? v.player.user?.username ?? "Unknown",
                     imageUrl: v.player.customProfileImageUrl ?? v.player.user?.imageUrl ?? "",

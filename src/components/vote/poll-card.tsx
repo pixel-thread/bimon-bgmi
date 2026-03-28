@@ -472,6 +472,11 @@ function VotersDialog({
                                                     <div className="flex-1 min-w-0">
                                                         <p className="text-sm font-medium truncate flex items-center gap-1.5">
                                                             {v.displayName}
+                                                            {(v.voteCount ?? 1) > 1 && (
+                                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">
+                                                                    ×{v.voteCount}
+                                                                </span>
+                                                            )}
                                                             {isWaitlisted && (
                                                                 <span className="text-warning text-[10px] flex items-center gap-0.5">
                                                                     🕐 Waitlist

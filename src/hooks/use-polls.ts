@@ -31,6 +31,7 @@ export interface PollDTO {
     playersVotes: {
         playerId: string;
         vote: string;
+        voteCount: number;
         createdAt: string;
         displayName: string;
         imageUrl: string;
@@ -129,6 +130,7 @@ export function useVote() {
                             playersVotes.push({
                                 playerId: currentPlayerId,
                                 vote,
+                                voteCount: 1,
                                 createdAt: new Date().toISOString(),
                                 displayName:
                                     session?.user?.name ||
