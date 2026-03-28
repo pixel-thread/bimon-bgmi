@@ -282,6 +282,7 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
 
     // Walkover — admin picks which player wins 3-0
     const [showWalkover, setShowWalkover] = useState(false);
+    const [walkoverTargetId, setWalkoverTargetId] = useState<string | null>(null);
     const adminWalkover = useMutation({
         mutationFn: async ({ winnerId: wId }: { winnerId: string }) => {
             if (!match) throw new Error("No match");
@@ -290,7 +291,7 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
             const res = await fetch(`/api/bracket-matches/${match.id}/admin-set-score`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ score1: s1, score2: s2 }),
+                body: JSON.stringify({ score1: s1, score2: s2, notes: "Walkover" }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || data.message || "Failed");
@@ -464,20 +465,20 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                 <Button
                                     color="success" variant="flat" size="sm"
                                     className="font-semibold"
-                                    isLoading={adminWalkover.isPending}
-                                    isDisabled={!match?.player1Id}
-                                    onPress={() => match?.player1Id && adminWalkover.mutate({ winnerId: match.player1Id })}
-                                    startContent={<Avatar src={match?.player1Avatar || undefined} name={match?.player1?.[0] || "?"} size="sm" className="h-5 w-5" />}
+                                    isLoading={adminWalkover.isPending && walkoverTargetId === match?.player1Id}
+                                    isDisabled={!match?.player1Id || (adminWalkover.isPending && walkoverTargetId !== match?.player1Id)}
+                                    onPress={() => { if (match?.player1Id) { setWalkoverTargetId(match.player1Id); adminWalkover.mutate({ winnerId: match.player1Id }); } }}
+                                    startContent={!(adminWalkover.isPending && walkoverTargetId === match?.player1Id) ? <Avatar src={match?.player1Avatar || undefined} name={match?.player1?.[0] || "?"} size="sm" className="h-5 w-5" /> : undefined}
                                 >
                                     {match?.player1 || "P1"}
                                 </Button>
                                 <Button
                                     color="success" variant="flat" size="sm"
                                     className="font-semibold"
-                                    isLoading={adminWalkover.isPending}
-                                    isDisabled={!match?.player2Id}
-                                    onPress={() => match?.player2Id && adminWalkover.mutate({ winnerId: match.player2Id })}
-                                    startContent={<Avatar src={match?.player2Avatar || undefined} name={match?.player2?.[0] || "?"} size="sm" className="h-5 w-5" />}
+                                    isLoading={adminWalkover.isPending && walkoverTargetId === match?.player2Id}
+                                    isDisabled={!match?.player2Id || (adminWalkover.isPending && walkoverTargetId !== match?.player2Id)}
+                                    onPress={() => { if (match?.player2Id) { setWalkoverTargetId(match.player2Id); adminWalkover.mutate({ winnerId: match.player2Id }); } }}
+                                    startContent={!(adminWalkover.isPending && walkoverTargetId === match?.player2Id) ? <Avatar src={match?.player2Avatar || undefined} name={match?.player2?.[0] || "?"} size="sm" className="h-5 w-5" /> : undefined}
                                 >
                                     {match?.player2 || "P2"}
                                 </Button>

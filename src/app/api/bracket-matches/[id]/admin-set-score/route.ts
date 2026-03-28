@@ -7,7 +7,7 @@ import { type NextRequest } from "next/server";
 /**
  * PATCH /api/bracket-matches/[id]/admin-set-score
  * Admin-only: set or override a match score regardless of current status.
- * Body: { score1: number, score2: number, screenshotUrl?: string }
+ * Body: { score1: number, score2: number, screenshotUrl?: string, notes?: string }
  */
 export async function PATCH(
     req: NextRequest,
@@ -19,10 +19,11 @@ export async function PATCH(
 
         const { id: matchId } = await params;
         const body = await req.json();
-        const { score1, score2, screenshotUrl } = body as {
+        const { score1, score2, screenshotUrl, notes } = body as {
             score1: number;
             score2: number;
             screenshotUrl?: string | null;
+            notes?: string;
         };
 
         if (score1 === undefined || score2 === undefined)
@@ -95,6 +96,7 @@ export async function PATCH(
                         claimedScore1: score1,
                         claimedScore2: score2,
                         ...(screenshotUrl !== undefined ? { screenshotUrl } : {}),
+                        ...(notes ? { notes } : {}),
                     },
                 });
             } else {
@@ -105,6 +107,7 @@ export async function PATCH(
                         claimedScore1: score1,
                         claimedScore2: score2,
                         screenshotUrl: screenshotUrl ?? null,
+                        notes: notes ?? null,
                         isDispute: false,
                     },
                 });
