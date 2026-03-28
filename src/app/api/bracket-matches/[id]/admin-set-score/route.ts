@@ -19,15 +19,19 @@ export async function PATCH(
 
         const { id: matchId } = await params;
         const body = await req.json();
-        const { score1, score2, screenshotUrl, notes } = body as {
+        /**
+         * PATCH /api/bracket-matches/[id]/admin-set-score
+         * Body: { score1, score2, screenshotUrl?, notes?, reset?: boolean }
+         *   - reset: true  → clear match back to PENDING (ignores scores)
+         *   - Otherwise     → save the scores as the result
+         */
+        const { score1, score2, screenshotUrl, notes, reset } = body as {
             score1: number;
             score2: number;
             screenshotUrl?: string | null;
             notes?: string;
+            reset?: boolean;
         };
-
-        if (score1 === undefined || score2 === undefined)
-            return ErrorResponse({ message: "score1 and score2 are required", status: 400 });
 
         // Verify admin
         const user = await prisma.user.findUnique({
@@ -37,6 +41,19 @@ export async function PATCH(
         const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
         if (!isAdmin) return ErrorResponse({ message: "Admin access required", status: 403 });
 
+        // Explicit reset — clear match back to PENDING
+        if (reset) {
+            await prisma.bracketMatch.update({
+                where: { id: matchId },
+                data: { score1: null, score2: null, winnerId: null, status: "PENDING" },
+            });
+            await prisma.bracketResult.deleteMany({ where: { bracketMatchId: matchId } });
+            return SuccessResponse({ message: "Match reset to Pending. Players can now re-submit." });
+        }
+
+        if (score1 === undefined || score2 === undefined)
+            return ErrorResponse({ message: "score1 and score2 are required", status: 400 });
+
         // Get match
         const match = await prisma.bracketMatch.findUnique({
             where: { id: matchId },
@@ -44,7 +61,7 @@ export async function PATCH(
         });
         if (!match) return ErrorResponse({ message: "Match not found", status: 404 });
 
-        // Draws not allowed in knockout
+        // Check if draws are allowed
         const tournament = await prisma.tournament.findUnique({
             where: { id: match.tournamentId },
             select: { type: true },
@@ -53,24 +70,16 @@ export async function PATCH(
         const isGroupStage = tournament?.type === "GROUP_KNOCKOUT" && match.round < 0;
         const drawsAllowed = isLeague || isGroupStage;
 
-        // Determine outcome
-        // Equal scores = admin intentionally resetting the match to PENDING
-        // so players can re-submit / re-upload. Works for all match types.
         const isDraw = score1 === score2;
+
+        if (isDraw && !drawsAllowed) {
+            return ErrorResponse({ message: "Draws are not allowed in knockout matches. Use the Reset button to reset.", status: 400 });
+        }
+
+        // Determine winner (null for draws)
         let winnerId: string | null = null;
         if (!isDraw) {
             winnerId = score1 > score2 ? match.player1Id : match.player2Id;
-        }
-
-        if (isDraw) {
-            // RESET: clear result and send back to PENDING for players to re-submit
-            await prisma.bracketMatch.update({
-                where: { id: matchId },
-                data: { score1: null, score2: null, winnerId: null, status: "PENDING" },
-            });
-            // Delete all existing BracketResults so players start fresh
-            await prisma.bracketResult.deleteMany({ where: { bracketMatchId: matchId } });
-            return SuccessResponse({ message: "Match reset to Pending. Players can now re-submit." });
         }
 
         // Update match scores + status

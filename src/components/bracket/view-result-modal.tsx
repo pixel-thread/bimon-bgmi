@@ -266,7 +266,7 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
             const res = await fetch(`/api/bracket-matches/${match?.id}/admin-set-score`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ score1: 0, score2: 0, screenshotUrl: null }),
+                body: JSON.stringify({ reset: true }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || data.message || "Failed to reset");
@@ -362,11 +362,7 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
                             </div>
 
-                            {score1 === score2 && (
-                                <p className="text-xs text-warning text-center font-medium bg-warning/10 rounded-xl py-2 px-3">
-                                    ⚠️ Equal scores — saving will reset to Pending so players can re-submit
-                                </p>
-                            )}
+
                         </>
                     ) : (
                         /* ── View mode ── */
@@ -448,13 +444,20 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                     {editing ? (
                         <>
                             <Button variant="flat" size="sm" onPress={() => { setEditing(false); clearFile(); }}
-                                isDisabled={adminSave.isPending || uploading}>Cancel</Button>
-                            <Button color={score1 === score2 ? "warning" : "primary"} size="sm"
+                                isDisabled={adminSave.isPending || adminReset.isPending || uploading}>Cancel</Button>
+                            <Button color="danger" variant="flat" size="sm"
+                                startContent={!adminReset.isPending ? <RotateCcw className="h-3.5 w-3.5" /> : undefined}
+                                isLoading={adminReset.isPending}
+                                isDisabled={adminSave.isPending || adminReset.isPending || uploading}
+                                onPress={() => adminReset.mutate()}>
+                                Reset
+                            </Button>
+                            <Button color="primary" size="sm"
                                 isLoading={adminSave.isPending || uploading}
-                                isDisabled={adminSave.isPending || uploading}
+                                isDisabled={adminSave.isPending || adminReset.isPending || uploading}
                                 onPress={() => adminSave.mutate()}
                                 startContent={!adminSave.isPending && !uploading ? <Save className="h-3.5 w-3.5" /> : undefined}>
-                                {uploading ? "Uploading…" : score1 === score2 ? "Reset Match" : "Save Result"}
+                                {uploading ? "Uploading…" : "Save Result"}
                             </Button>
                         </>
                     ) : showWalkover ? (
