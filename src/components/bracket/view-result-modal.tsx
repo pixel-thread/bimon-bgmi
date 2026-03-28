@@ -5,7 +5,7 @@ import {
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
     Chip, Avatar, Button,
 } from "@heroui/react";
-import { Camera, Pencil, Save, Minus, Plus, X, Maximize2, Trophy, RotateCcw, MessageSquare, CheckCircle2 } from "lucide-react";
+import { Camera, Pencil, Save, Minus, Plus, X, Maximize2, Trophy, RotateCcw, MessageSquare, CheckCircle2, UserX } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { uploadToCloudinary } from "@/lib/upload-to-cloudinary";
@@ -280,6 +280,31 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
         onError: (err: Error) => toast.error(err.message),
     });
 
+    // Walkover — admin picks which player wins 3-0
+    const [showWalkover, setShowWalkover] = useState(false);
+    const adminWalkover = useMutation({
+        mutationFn: async ({ winnerId: wId }: { winnerId: string }) => {
+            if (!match) throw new Error("No match");
+            const s1 = wId === match.player1Id ? 3 : 0;
+            const s2 = wId === match.player2Id ? 3 : 0;
+            const res = await fetch(`/api/bracket-matches/${match.id}/admin-set-score`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ score1: s1, score2: s2 }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || data.message || "Failed");
+            return data;
+        },
+        onSuccess: async (data) => {
+            toast.success(data.message || "Walkover recorded!");
+            if (tournamentId) await queryClient.refetchQueries({ queryKey: ["bracket", tournamentId], type: "active" });
+            setShowWalkover(false);
+            handleClose();
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+
     if (!match) return null;
 
     const p1Won = match.winnerId === match.player1Id;
@@ -431,6 +456,34 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                 {uploading ? "Uploading…" : score1 === score2 ? "Reset Match" : "Save Result"}
                             </Button>
                         </>
+                    ) : showWalkover ? (
+                        /* ── Walkover picker: choose which player wins ── */
+                        <div className="w-full space-y-2">
+                            <p className="text-[11px] text-center text-foreground/40">Who wins the walkover? <span className="text-foreground/60 font-medium">(3-0)</span></p>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                    color="success" variant="flat" size="sm"
+                                    className="font-semibold"
+                                    isLoading={adminWalkover.isPending}
+                                    isDisabled={!match?.player1Id}
+                                    onPress={() => match?.player1Id && adminWalkover.mutate({ winnerId: match.player1Id })}
+                                    startContent={<Avatar src={match?.player1Avatar || undefined} name={match?.player1?.[0] || "?"} size="sm" className="h-5 w-5" />}
+                                >
+                                    {match?.player1 || "P1"}
+                                </Button>
+                                <Button
+                                    color="success" variant="flat" size="sm"
+                                    className="font-semibold"
+                                    isLoading={adminWalkover.isPending}
+                                    isDisabled={!match?.player2Id}
+                                    onPress={() => match?.player2Id && adminWalkover.mutate({ winnerId: match.player2Id })}
+                                    startContent={<Avatar src={match?.player2Avatar || undefined} name={match?.player2?.[0] || "?"} size="sm" className="h-5 w-5" />}
+                                >
+                                    {match?.player2 || "P2"}
+                                </Button>
+                            </div>
+                            <Button variant="flat" size="sm" fullWidth onPress={() => setShowWalkover(false)}>Cancel</Button>
+                        </div>
                     ) : (
                         <>
                             {isAdmin && match?.status === "SUBMITTED" ? (
@@ -454,6 +507,13 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                     isDisabled={adminReset.isPending}
                                     onPress={() => adminReset.mutate()}>
                                     Reset
+                                </Button>
+                            )}
+                            {isAdmin && !hasResult && match?.player1Id && match?.player2Id && (
+                                <Button color="warning" variant="flat" size="sm"
+                                    startContent={<UserX className="h-3.5 w-3.5" />}
+                                    onPress={() => setShowWalkover(true)}>
+                                    Walkover
                                 </Button>
                             )}
                             {isAdmin && (
