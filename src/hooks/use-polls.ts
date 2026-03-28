@@ -142,6 +142,7 @@ export function useVote() {
                         return {
                             ...poll,
                             userVote: vote,
+                            userVoteCount: 1,
                             hasVoted: true,
                             inVotes,
                             outVotes,
