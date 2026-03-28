@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { GAME, GAME_MODE } from "@/lib/game-config";
 
-const ICON_DIRS: Record<string, string> = { freefire: "freefire", pes: "pes" };
+const ICON_DIRS: Record<string, string> = { freefire: "freefire", pes: "pes", mlbb: "mlbb" };
 const PWA_ICON = `/icons/${ICON_DIRS[GAME_MODE] ?? "bgmi"}/icon-192x192.png`;
 
 interface BeforeInstallPromptEvent extends Event {

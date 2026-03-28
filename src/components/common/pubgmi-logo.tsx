@@ -353,6 +353,85 @@ function PesLogo({ className }: PubgmiLogoProps) {
     );
 }
 
+// ─── MLBB Logo — Mobai Legen ↔ ML:BB alternating cascade ───
+const MLBB_WORDS = [
+    ["M", "o", "b", "a", "i", " ", "L", "e", "g", "e", "n"],
+    ["M", "L", ":", "B", "B"],
+];
+
+function MlbbLogo({ className }: PubgmiLogoProps) {
+    const [wordIndex, setWordIndex] = useState(0);
+    const [phase, setPhase] = useState<"SHOW" | "SWAP">("SHOW");
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const currentLetters = MLBB_WORDS[wordIndex];
+    const nextLetters = MLBB_WORDS[(wordIndex + 1) % MLBB_WORDS.length];
+
+    useEffect(() => {
+        const advance = (nextPhase: "SHOW" | "SWAP", delay: number) => {
+            timeoutRef.current = setTimeout(() => setPhase(nextPhase), delay);
+        };
+
+        switch (phase) {
+            case "SHOW":
+                advance("SWAP", 2500);
+                break;
+            case "SWAP":
+                const swapDuration = Math.max(
+                    currentLetters.length * 100 + 500,
+                    nextLetters.length * 80 + 500,
+                ) + 300;
+                timeoutRef.current = setTimeout(() => {
+                    setWordIndex((i) => (i + 1) % MLBB_WORDS.length);
+                    setPhase("SHOW");
+                }, swapDuration);
+                break;
+        }
+
+        return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, [phase, wordIndex, currentLetters.length, nextLetters.length]);
+
+    return (
+        <span
+            className={`pubgmi-logo inline-flex items-baseline select-none ${className || ""}`}
+            aria-label={currentLetters.join("")}
+        >
+            {phase === "SHOW" && (
+                currentLetters.map((l, i) => (
+                    <span key={`show-${wordIndex}-${i}`} className="pubgmi-letter">{l}</span>
+                ))
+            )}
+
+            {phase === "SWAP" && (
+                <span className="pubgmi-swap-container">
+                    <span className="pubgmi-swap-out">
+                        {currentLetters.map((l, i) => (
+                            <span
+                                key={`fall-${wordIndex}-${i}`}
+                                className="pubgmi-letter pubgmi-fall-down"
+                                style={{ "--fall-delay": `${i * 100}ms` } as React.CSSProperties}
+                            >
+                                {l}
+                            </span>
+                        ))}
+                    </span>
+                    {nextLetters.map((l, i) => (
+                        <span
+                            key={`roll-${wordIndex}-${i}`}
+                            className="pubgmi-letter pubgmi-roll-in"
+                            style={{ "--roll-delay": `${300 + i * 80}ms` } as React.CSSProperties}
+                        >
+                            {l}
+                        </span>
+                    ))}
+                </span>
+            )}
+        </span>
+    );
+}
+
 // ─── Exported Component — picks based on GAME_MODE ───
 export function PubgmiLogo(props: PubgmiLogoProps) {
     if (GAME_MODE === "freefire") {
@@ -360,6 +439,9 @@ export function PubgmiLogo(props: PubgmiLogoProps) {
     }
     if (GAME_MODE === "pes") {
         return <PesLogo {...props} />;
+    }
+    if (GAME_MODE === "mlbb") {
+        return <MlbbLogo {...props} />;
     }
     return <BgmiLogo {...props} />;
 }

@@ -35,6 +35,16 @@ const SISTER_GAMES = [
         border: "border-violet-500/20",
         sharedWallet: false,
     },
+    {
+        mode: "mlbb",
+        name: "Mobai Legen",
+        icon: "/icons/mlbb/icon-192x192.png",
+        tagline: "1v1 Mobile Legends tournaments",
+        url: "https://bimon-ml.vercel.app",
+        gradient: "from-blue-500/20 to-cyan-500/20",
+        border: "border-blue-500/20",
+        sharedWallet: false,
+    },
 ];
 
 /**

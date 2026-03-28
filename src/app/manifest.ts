@@ -1,7 +1,7 @@
 import { GAME, GAME_MODE } from "@/lib/game-config";
 import type { MetadataRoute } from "next";
 
-const ICON_DIRS: Record<string, string> = { freefire: "freefire", pes: "pes" };
+const ICON_DIRS: Record<string, string> = { freefire: "freefire", pes: "pes", mlbb: "mlbb" };
 const ICON_DIR = `/icons/${ICON_DIRS[GAME_MODE] ?? "bgmi"}`;
 
 export default function manifest(): MetadataRoute.Manifest {
