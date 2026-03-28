@@ -14,30 +14,37 @@ export async function GET() {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
 
-        const user = await prisma.user.findFirst({
-            where: {
-                OR: [
-                    { email: userId },
-                    { secondaryEmail: userId },
-                ],
-            },
-            include: {
-                player: {
-                    include: {
-                        wallet: { select: { balance: true } },
-                        streak: { select: { current: true, longest: true } },
-                        characterImage: {
-                            select: {
-                                publicUrl: true,
-                                thumbnailUrl: true,
-                                isAnimated: true,
-                                isVideo: true,
+        // Run user + season queries in parallel (they're independent)
+        const [user, activeSeason] = await Promise.all([
+            prisma.user.findFirst({
+                where: {
+                    OR: [
+                        { email: userId },
+                        { secondaryEmail: userId },
+                    ],
+                },
+                include: {
+                    player: {
+                        include: {
+                            wallet: { select: { balance: true } },
+                            streak: { select: { current: true, longest: true } },
+                            characterImage: {
+                                select: {
+                                    publicUrl: true,
+                                    thumbnailUrl: true,
+                                    isAnimated: true,
+                                    isVideo: true,
+                                },
                             },
                         },
                     },
                 },
-            },
-        });
+            }),
+            prisma.season.findFirst({
+                where: { status: "ACTIVE" },
+                select: { id: true },
+            }),
+        ]);
 
         if (!user) {
             return ErrorResponse({ message: "User not found", status: 404 });
@@ -49,17 +56,11 @@ export async function GET() {
         let detailedStats = null;
 
         if (player) {
-            // Get active season (needed for all stats queries)
-            const activeSeason = await prisma.season.findFirst({
-                where: { status: "ACTIVE" },
-                select: { id: true },
-            });
-
             const seasonId = activeSeason?.id;
             const tpsSeasonFilter = seasonId ? { seasonId } : {};
             const tsSeasonFilter = seasonId ? { seasonId } : {};
 
-            // Second batch: all stats queries in parallel (depend on seasonId)
+            // All stats queries in parallel
             const [
                 statsAgg,
                 seasonsPlayed,
