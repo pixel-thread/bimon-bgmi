@@ -196,7 +196,7 @@ export function useEntryMutation() {
             const res = await fetch("/api/polls/vote", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ pollId, action }),
+                body: JSON.stringify({ pollId, vote: action }),
             });
             if (!res.ok) {
                 const json = await res.json().catch(() => ({}));
