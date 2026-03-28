@@ -796,14 +796,9 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                     {/* ─── Multi-Entry Controls (PES) ─── */}
                     {canAddEntry && (
                         <div className={`mt-3 flex items-center justify-between rounded-xl border px-4 py-3 ${theme ? `${theme.optionSelected.border} ${theme.optionSelected.bg}` : 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20'}`}>
-                            <div>
-                                <p className={`text-sm font-semibold ${theme ? theme.optionSelected.text : 'text-blue-700 dark:text-blue-300'}`}>
-                                    Your entries
-                                </p>
-                                <p className="text-xs text-foreground/50">
-                                    {entryFee} {GAME.currency} per entry
-                                </p>
-                            </div>
+                            <p className={`text-sm font-semibold ${theme ? theme.optionSelected.text : 'text-blue-700 dark:text-blue-300'}`}>
+                                Rung {userVoteCount + 1} tylli?
+                            </p>
                             <div className="flex items-center gap-2">
                                 <button
                                     type="button"
