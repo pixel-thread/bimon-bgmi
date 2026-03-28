@@ -233,7 +233,7 @@ export function PlayerSlot({
 /* ─── Match Card (full vertical card, for "My Match") ─────────── */
 
 export function MatchCard({
-    match, currentPlayerId, onSubmitResult, onConfirmResult, onDispute, onViewResult, deadlineHours, rolloverDeadlineMs, rolloverRoundLabel, cutoffTime, tournamentName,
+    match, currentPlayerId, onSubmitResult, onConfirmResult, onDispute, onViewResult, deadlineHours, rolloverDeadlineMs, rolloverRoundLabel, matchRoundLabel, cutoffTime, tournamentName,
 }: {
     match: BracketMatchData;
     currentPlayerId?: string;
@@ -243,7 +243,8 @@ export function MatchCard({
     onViewResult?: (id: string) => void;
     deadlineHours?: number;   // fallback per-match deadline
     rolloverDeadlineMs?: number;  // rollover-based deadline timestamp
-    rolloverRoundLabel?: string;  // e.g. "Quarter-Final"
+    rolloverRoundLabel?: string;  // e.g. "Quarter-Final" — for deadline display
+    matchRoundLabel?: string;     // e.g. "Group A" — match-specific, for WhatsApp msg
     cutoffTime?: string;  // e.g. "05:30" IST — snap deadlines to this time
     tournamentName?: string;
 }) {
@@ -305,7 +306,7 @@ export function MatchCard({
         const myName = isCurrentP1
             ? match.player1?.displayName || "player"
             : match.player2?.displayName || "player";
-        const groupLabel = rolloverRoundLabel || "tournament";
+        const groupLabel = matchRoundLabel || rolloverRoundLabel || "tournament";
         const msg = encodeURIComponent(
             `Nga u ${myName} la ${groupLabel} ia noh pyndep noh ka match jong ka ${tournamentName || "tournament"}`
         );
@@ -769,6 +770,7 @@ export function MyBracketMatch({
                 }
                 rolloverDeadlineMs={rolloverDeadlineMs}
                 rolloverRoundLabel={roundLabelProp}
+                matchRoundLabel={roundLabel(myMatch._roundNum, rounds)}
                 cutoffTime={deadlines?.cutoffTime}
                 tournamentName={tournamentName}
             />
