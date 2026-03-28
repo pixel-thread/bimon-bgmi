@@ -1,7 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+import { useEffect } from "react";
 
 interface AuthUser {
     id: string;
@@ -30,6 +31,7 @@ interface AuthUser {
  */
 export function useAuthUser() {
     const { data: session, status } = useSession();
+    const queryClient = useQueryClient();
     const isLoaded = status !== "loading";
     const isSignedIn = status === "authenticated";
 
@@ -50,6 +52,21 @@ export function useAuthUser() {
         staleTime: 5 * 60 * 1000, // 5 min
         retry: false,
     });
+
+    // Prefetch profile data in the background so /profile feels instant
+    useEffect(() => {
+        if (!user?.player) return;
+        queryClient.prefetchQuery({
+            queryKey: ["profile"],
+            queryFn: async () => {
+                const res = await fetch("/api/profile");
+                if (!res.ok) throw new Error("Failed to fetch profile");
+                const json = await res.json();
+                return json.data;
+            },
+            staleTime: 5 * 60 * 1000, // match profile page staleTime
+        });
+    }, [user?.player?.id, queryClient]);
 
     const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
     const isSuperAdmin = user?.role === "SUPER_ADMIN";
