@@ -37,7 +37,7 @@ const DOMAIN_GAME_MAP: Record<string, string> = {
     "bimon-bgmi": "bgmi",
     "bimon-boo-yah": "freefire",
     "bimon-pes": "pes",
-    // Add future games here
+    "bimon-ml": "mlbb",
 };
 
 function detectGameMode(hostname: string): string {

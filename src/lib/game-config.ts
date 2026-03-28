@@ -15,7 +15,7 @@
  *        then use GAME.currency, GAME.passName, GAME.features.hasTeamSizes, etc.
  */
 
-export type GameMode = "bgmi" | "freefire" | "pes";
+export type GameMode = "bgmi" | "freefire" | "pes" | "mlbb";
 
 /** Feature flags — control which UI sections & features are enabled per game */
 interface GameFeatures {
@@ -178,6 +178,45 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasLeague: true,            // Round-robin league
             hasGroupKnockout: true,     // Group → Knockout (World Cup)
             hasMultiEntry: true,        // PES players can enter multiple times
+        },
+    },
+    mlbb: {
+        mode: "mlbb",
+        name: "Mobai Legen",
+        fullName: "Mobile Legends Tournament Platform",
+        gameName: "Mobile Legends",
+        currency: "Diamond",
+        currencyLabel: "Diamond",
+        currencyEmoji: "💎",
+        currencyIconPath: "/images/diamond.svg",
+        currencyPlural: "Diamonds",
+        passName: "Season Pass",
+        passEmoji: "🎮",
+        idLabel: "MLBB ID",
+        idPlaceholder: "Your Mobile Legends User ID",
+        hasUID: true,
+        ignLabel: "Game Name",
+        pasteOnlyIGN: false,
+        locale: "kha",
+        scoringSystem: "bracket",
+        booyahBonus: false,
+        defaultTournamentType: "BRACKET_1V1",
+        tournamentTypes: ["BRACKET_1V1", "GROUP_KNOCKOUT"],
+        hasBracket: true,
+        hasBR: false,
+        disputeWindowMinutes: 30,
+        features: {
+            hasTeamSizes: false,
+            hasLuckyVoters: true,
+            hasRoyalPass: false,
+            hasMerit: false,
+            hasReferrals: true,
+            hasTopUps: false,
+            hasBracket: true,
+            hasBR: false,
+            hasLeague: false,
+            hasGroupKnockout: true,
+            hasMultiEntry: true,
         },
     },
 };
