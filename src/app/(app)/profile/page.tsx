@@ -218,8 +218,10 @@ export default function ProfilePage() {
         }
     }, [isLoading, isFetching, profile]);
 
-    // Show skeleton on initial load, refetching, or when no player (auto-retrying)
-    if (isLoading || (isFetching && (!profile || !profile.player)) || (profile && !profile.player)) {
+    // Show skeleton ONLY on initial load (no cached data at all) or when profile exists but player is missing (auto-retrying)
+    // When we have cached profile+player, skip skeleton entirely — stale data renders instantly.
+    const showSkeleton = isLoading || (!profile?.player && (isFetching || (profile && !profile.player)));
+    if (showSkeleton) {
         return (
             <div className="mx-auto max-w-lg px-4 py-6 sm:px-6">
                 <div className="space-y-4">
@@ -322,6 +324,20 @@ export default function ProfilePage() {
 
     return (
         <div className="mx-auto max-w-lg px-4 py-6 sm:px-6">
+            {/* Subtle refresh indicator — shows when background refetching stale data */}
+            <AnimatePresence>
+                {isFetching && profile?.player && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="fixed top-14 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full bg-default-100/90 backdrop-blur-md border border-divider shadow-sm"
+                    >
+                        <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                        <span className="text-[11px] font-medium text-foreground/50">Refreshing…</span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             <div className="space-y-4">
                 {/* Hero card */}
                 <Card className="overflow-hidden border border-divider">
