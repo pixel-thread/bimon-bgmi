@@ -53,19 +53,26 @@ export function useAuthUser() {
         retry: false,
     });
 
-    // Prefetch profile data in the background so /profile feels instant
+    // Prefetch profile data in the background so /profile feels instant.
+    // Delayed so the current page's own requests get priority first.
     useEffect(() => {
         if (!user?.player) return;
-        queryClient.prefetchQuery({
-            queryKey: ["profile"],
-            queryFn: async () => {
-                const res = await fetch("/api/profile");
-                if (!res.ok) throw new Error("Failed to fetch profile");
-                const json = await res.json();
-                return json.data;
-            },
-            staleTime: 5 * 60 * 1000, // match profile page staleTime
+        const schedule = typeof requestIdleCallback === "function" ? requestIdleCallback : (cb: () => void) => setTimeout(cb, 3000);
+        const id = schedule(() => {
+            queryClient.prefetchQuery({
+                queryKey: ["profile"],
+                queryFn: async () => {
+                    const res = await fetch("/api/profile");
+                    if (!res.ok) throw new Error("Failed to fetch profile");
+                    const json = await res.json();
+                    return json.data;
+                },
+                staleTime: 5 * 60 * 1000,
+            });
         });
+        return () => {
+            if (typeof cancelIdleCallback === "function" && typeof id === "number") cancelIdleCallback(id);
+        };
     }, [user?.player?.id, queryClient]);
 
     const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
