@@ -43,6 +43,7 @@ export async function GET(request: Request) {
                         id: true,
                         playerId: true,
                         vote: true,
+                        voteCount: true,
                         createdAt: true,
                         player: {
                             select: {
@@ -87,6 +88,9 @@ export async function GET(request: Request) {
             const userVote = playerId
                 ? poll.votes.find((v) => v.playerId === playerId)?.vote ?? null
                 : null;
+            const userVoteCount = playerId
+                ? (poll.votes.find((v) => v.playerId === playerId) as any)?.voteCount ?? 1
+                : 1;
 
             const tDonations = poll.tournament?.id ? donationTotals.get(poll.tournament.id) : null;
 
@@ -107,6 +111,7 @@ export async function GET(request: Request) {
                 inPercentage:
                     totalVotes > 0 ? Math.round((inVotes / totalVotes) * 100) : 0,
                 userVote,
+                userVoteCount,
                 hasVoted: !!userVote,
                 donations: tDonations ?? { total: 0, donations: [] },
                 playersVotes: poll.votes.map((v) => ({

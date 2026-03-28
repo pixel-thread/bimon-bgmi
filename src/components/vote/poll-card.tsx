@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { Chip, Avatar, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
-import { Users, ChevronRight, ArrowLeft } from "lucide-react";
+import { Users, ChevronRight, ArrowLeft, Plus, Minus } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import type { PollDTO } from "@/hooks/use-polls";
@@ -22,6 +22,9 @@ interface PollCardProps {
     votingVote?: "IN" | "OUT" | "SOLO";
     currentPlayerId?: string;
     onRefetch?: () => void;
+    /** Multi-entry: add/remove extra entries (PES) */
+    onEntryChange?: (pollId: string, action: "ADD_ENTRY" | "REMOVE_ENTRY") => void;
+    entryPending?: boolean;
 }
 
 /* ─── Animated Counter ──────────────────────────────────────── */
@@ -520,7 +523,7 @@ function VotersDialog({
 
 /* ─── Main Poll Card ────────────────────────────────────────── */
 
-export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayerId, onRefetch }: PollCardProps) {
+export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayerId, onRefetch, onEntryChange, entryPending }: PollCardProps) {
     const isThisPollVoting = votingPollId === poll.id;
     const { tournament } = poll;
     const [showVoters, setShowVoters] = useState(false);
@@ -560,6 +563,8 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
     const donationTotal = poll.donations?.total ?? 0;
     const prizePool = (entryFee * participantCount) + donationTotal;
     const hasPrizePool = prizePool > 0;
+    const hasEntryFee = entryFee > 0;
+    const showThemedHeader = hasPrizePool || hasEntryFee;
 
     // Dynamic team type — based on IN votes only (SOLO players play alone)
     const effectiveTeamType = useMemo(() => {
@@ -571,13 +576,19 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
         return squadLeftover <= trioLeftover ? "SQUAD" : "TRIO";
     }, [poll.teamType, poll.inVotes]);
 
-    // Theme
+    // Theme — show themed header if there's a prize pool OR an entry fee (even 0 votes)
     const isLuckyVoter = !!currentPlayerId && poll.luckyVoterId === currentPlayerId;
     const theme = isLuckyVoter
         ? getLuckyWinnerTheme()
-        : hasPrizePool
-            ? getPollTheme(participantCount)
+        : showThemedHeader
+            ? (getPollTheme(participantCount) ?? getPollTheme(1))
             : null;
+
+    // Multi-entry support (PES only)
+    const hasMultiEntry = GAME.features.hasMultiEntry;
+    const userVoteCount = poll.userVoteCount ?? 1;
+    const canAddEntry = poll.hasVoted && poll.userVote === "IN" && hasMultiEntry && poll.isActive;
+    const canRemoveEntry = canAddEntry && userVoteCount > 1;
 
     // Get option names from DB, fall back to defaults
     const getOptionName = (vote: string) => {
@@ -665,11 +676,11 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                     }`}
             >
                 {/* ─── Header with Prize Pool ─── */}
-                <div className={hasPrizePool ? "relative overflow-hidden" : ""}>
+                <div className={showThemedHeader ? "relative overflow-hidden" : ""}>
                     {theme && <WaveBackground theme={theme} />}
 
                     <div
-                        className={`relative p-6 ${hasPrizePool ? "pb-8" : "border-b border-gray-100 dark:border-gray-700"}`}
+                        className={`relative p-6 ${showThemedHeader ? "pb-8" : "border-b border-gray-100 dark:border-gray-700"}`}
                     >
                         {/* Title + Day badge */}
                         <div className="flex items-start justify-between gap-3">
@@ -677,7 +688,7 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                 <div className="overflow-hidden">
                                     <h3
                                         ref={titleRef}
-                                        className={`font-semibold text-lg whitespace-nowrap ${isTitleOverflowing ? "animate-marquee" : ""} ${hasPrizePool ? "text-white drop-shadow-md" : "text-gray-900 dark:text-white"}`}
+                                        className={`font-semibold text-lg whitespace-nowrap ${isTitleOverflowing ? "animate-marquee" : ""} ${showThemedHeader ? "text-white drop-shadow-md" : "text-gray-900 dark:text-white"}`}
                                         title={tournament?.name || poll.question}
                                         style={isTitleOverflowing ? { '--marquee-offset': `-${titleOverflowPx + 8}px` } as React.CSSProperties : undefined}
                                     >
@@ -781,34 +792,80 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                             }}
                         />
                     ))}
+
+                    {/* ─── Multi-Entry Controls (PES) ─── */}
+                    {canAddEntry && (
+                        <div className={`mt-3 flex items-center justify-between rounded-xl border px-4 py-3 ${theme ? `${theme.optionSelected.border} ${theme.optionSelected.bg}` : 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20'}`}>
+                            <div>
+                                <p className={`text-sm font-semibold ${theme ? theme.optionSelected.text : 'text-blue-700 dark:text-blue-300'}`}>
+                                    Your entries
+                                </p>
+                                <p className="text-xs text-foreground/50">
+                                    {entryFee} {GAME.currency} per entry
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    disabled={!canRemoveEntry || entryPending}
+                                    onClick={() => onEntryChange?.(poll.id, "REMOVE_ENTRY")}
+                                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border
+                                        ${canRemoveEntry && !entryPending
+                                            ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-600 hover:bg-red-200 cursor-pointer'
+                                            : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                        }`}
+                                >
+                                    <Minus className="w-3.5 h-3.5" />
+                                </button>
+                                <span className={`text-lg font-bold min-w-[2rem] text-center tabular-nums ${theme ? theme.optionSelected.text : 'text-blue-700 dark:text-blue-300'}`}>
+                                    {entryPending ? (
+                                        <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                    ) : userVoteCount}
+                                </span>
+                                <button
+                                    type="button"
+                                    disabled={entryPending}
+                                    onClick={() => onEntryChange?.(poll.id, "ADD_ENTRY")}
+                                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border
+                                        ${!entryPending
+                                            ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-600 hover:bg-emerald-200 cursor-pointer'
+                                            : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                        }`}
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                 </div>
 
                 {/* ─── Footer ─── */}
-                {poll.totalVotes > 0 && (
-                    <div
-                        className={`px-6 pb-5 transition-all duration-700 ease-in-out ${theme ? theme.footer : ""}`}
-                    >
-                        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
-                            <span className="flex items-center space-x-1">
-                                <Users className="w-4 h-4" />
-                                <span>
-                                    {poll.totalVotes} vote{poll.totalVotes !== 1 ? "s" : ""}
+                <div
+                    className={`px-6 pb-5 transition-all duration-700 ease-in-out ${theme ? theme.footer : ""}`}
+                >
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
+                        <span className="flex items-center space-x-1">
+                            <Users className="w-4 h-4" />
+                            <span>
+                                {poll.totalVotes} vote{poll.totalVotes !== 1 ? "s" : ""}
+                            </span>
+                        </span>
+                        <span className="text-xs">
+                            {isLuckyVoter && entryFee > 0 ? (
+                                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                                    🎉 FREE ENTRY:{" "}
+                                    <span className="line-through opacity-60">{entryFee}</span> 0
+                                    {GAME.currency}
                                 </span>
-                            </span>
-                            <span className="text-xs">
-                                {isLuckyVoter && entryFee > 0 ? (
-                                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                                        🎉 FREE ENTRY:{" "}
-                                        <span className="line-through opacity-60">{entryFee}</span> 0
-                                        {GAME.currency}
-                                    </span>
-                                ) : entryFee > 0 ? (
-                                    <span className="inline-flex items-center gap-1">Entry: {entryFee} <CurrencyIcon size={12} /></span>
-                                ) : (
-                                    "Free Entry"
-                                )}
-                            </span>
-                        </div>
+                            ) : entryFee > 0 ? (
+                                <span className="inline-flex items-center gap-1">Entry: {entryFee} <CurrencyIcon size={12} /></span>
+                            ) : (
+                                "Free Entry"
+                            )}
+                        </span>
+                    </div>
+                    {poll.totalVotes > 0 && (
                         <button
                             type="button"
                             onClick={() => setShowVoters(true)}
@@ -819,8 +876,8 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                 View all votes
                             </span>
                         </button>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 {/* ─── Voters Dialog ─── */}
                 <VotersDialog

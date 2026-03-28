@@ -1,6 +1,6 @@
 "use client";
 
-import { usePolls, useVote } from "@/hooks/use-polls";
+import { usePolls, useVote, useEntryMutation } from "@/hooks/use-polls";
 import { PollCard } from "@/components/vote/poll-card";
 import { MeritRatingSection } from "@/components/vote/merit-rating-gate";
 import { VotePageJobListings } from "@/components/vote/vote-page-jobs";
@@ -14,6 +14,7 @@ import { Vote, AlertCircle } from "lucide-react";
 export default function VotePage() {
     const { data, isLoading, error, refetch } = usePolls();
     const voteMutation = useVote();
+    const entryMutation = useEntryMutation();
 
     const polls = data?.polls;
     const currentPlayerId = data?.currentPlayerId ?? undefined;
@@ -88,6 +89,8 @@ export default function VotePage() {
                                 votingVote={pendingVote}
                                 currentPlayerId={currentPlayerId}
                                 onRefetch={() => refetch()}
+                                onEntryChange={(pollId, action) => entryMutation.mutate({ pollId, action })}
+                                entryPending={entryMutation.isPending && entryMutation.variables?.pollId === poll.id}
                             />
                         ))
                     )}

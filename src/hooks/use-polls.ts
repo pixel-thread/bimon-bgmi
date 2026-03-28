@@ -26,6 +26,7 @@ export interface PollDTO {
     soloVotes: number;
     inPercentage: number;
     userVote: "IN" | "OUT" | "SOLO" | null;
+    userVoteCount: number;
     hasVoted: boolean;
     playersVotes: {
         playerId: string;
@@ -171,6 +172,67 @@ export function useVote() {
                     },
                 }),
             });
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["polls"] });
+        },
+    });
+}
+
+/**
+ * Add/remove an extra entry on an existing vote (PES multi-entry).
+ */
+export function useEntryMutation() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({
+            pollId,
+            action,
+        }: {
+            pollId: string;
+            action: "ADD_ENTRY" | "REMOVE_ENTRY";
+        }) => {
+            const res = await fetch("/api/polls/vote", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pollId, action }),
+            });
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                const msg = json.message || "Failed";
+                const note = json.note ? ` (${json.note})` : "";
+                throw new Error(`${msg}${note}`);
+            }
+            return res.json();
+        },
+        onMutate: async ({ pollId, action }) => {
+            await queryClient.cancelQueries({ queryKey: ["polls"] });
+            const previous = queryClient.getQueryData<{ polls: PollDTO[]; currentPlayerId: string | null }>(["polls"]);
+
+            queryClient.setQueryData<{ polls: PollDTO[]; currentPlayerId: string | null }>(["polls"], (old) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    polls: old.polls.map((poll) => {
+                        if (poll.id !== pollId) return poll;
+                        const delta = action === "ADD_ENTRY" ? 1 : -1;
+                        return {
+                            ...poll,
+                            userVoteCount: Math.max(1, poll.userVoteCount + delta),
+                        };
+                    }),
+                };
+            });
+
+            return { previous };
+        },
+        onError: (err, _vars, context) => {
+            if (context?.previous) {
+                queryClient.setQueryData(["polls"], context.previous);
+            }
+            const message = err instanceof Error ? err.message : "Failed";
+            toast.error(message);
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ["polls"] });
