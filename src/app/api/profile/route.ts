@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
-import { getCentralBalance } from "@/lib/wallet-service";
 
 /**
  * GET /api/profile
@@ -48,37 +47,55 @@ export async function GET() {
 
         // Compute detailed stats
         let detailedStats = null;
+
         if (player) {
-            // Default to active season
+            // Get active season (needed for all stats queries)
             const activeSeason = await prisma.season.findFirst({
                 where: { status: "ACTIVE" },
                 select: { id: true },
             });
-            const seasonId = activeSeason?.id;
 
-            // Build season filter for queries
+            const seasonId = activeSeason?.id;
             const tpsSeasonFilter = seasonId ? { seasonId } : {};
             const tsSeasonFilter = seasonId ? { seasonId } : {};
 
-            // Compute stats from TeamPlayerStats (source of truth)
-            const statsAgg = await prisma.teamPlayerStats.aggregate({
-                where: { playerId: player.id, ...tpsSeasonFilter },
-                _count: { matchId: true },
-                _sum: { kills: true },
-            });
+            // Second batch: all stats queries in parallel (depend on seasonId)
+            const [
+                statsAgg,
+                seasonsPlayed,
+                teamPlacements,
+                bestKillRecord,
+                lastTwoMatches,
+            ] = await Promise.all([
+                prisma.teamPlayerStats.aggregate({
+                    where: { playerId: player.id, ...tpsSeasonFilter },
+                    _count: { matchId: true },
+                    _sum: { kills: true },
+                }),
+                prisma.playerStats.count({ where: { playerId: player.id } }),
+                prisma.teamStats.findMany({
+                    where: {
+                        players: { some: { id: player.id } },
+                        ...tsSeasonFilter,
+                    },
+                    select: { position: true, tournamentId: true },
+                }),
+                prisma.teamPlayerStats.findFirst({
+                    where: { playerId: player.id, ...tpsSeasonFilter },
+                    orderBy: { kills: "desc" },
+                    select: { kills: true },
+                }),
+                prisma.teamPlayerStats.findMany({
+                    where: { playerId: player.id, ...tpsSeasonFilter },
+                    orderBy: { createdAt: "desc" },
+                    take: 2,
+                    select: { kills: true },
+                }),
+            ]);
+
             const totalKills = statsAgg._sum.kills ?? 0;
             const totalMatches = statsAgg._count.matchId;
             const kd = totalMatches > 0 ? totalKills / totalMatches : 0;
-            const seasonsPlayed = await prisma.playerStats.count({ where: { playerId: player.id } });
-
-            // Get team placements for wins/top10 and UC placements
-            const teamPlacements = await prisma.teamStats.findMany({
-                where: {
-                    players: { some: { id: player.id } },
-                    ...tsSeasonFilter,
-                },
-                select: { position: true, tournamentId: true },
-            });
 
             const wins = teamPlacements.filter((t) => t.position === 1).length;
             const top10 = teamPlacements.filter((t) => t.position >= 1 && t.position <= 10).length;
@@ -86,7 +103,6 @@ export async function GET() {
             const winRate = totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
             const top10Rate = totalMatches > 0 ? Math.round((top10 / totalMatches) * 100) : 0;
 
-            // UC placements (1st through 5th)
             const ucPlacements = {
                 first: teamPlacements.filter((t) => t.position === 1).length,
                 second: teamPlacements.filter((t) => t.position === 2).length,
@@ -95,24 +111,9 @@ export async function GET() {
                 fifth: teamPlacements.filter((t) => t.position === 5).length,
             };
 
-            // Best match kills from TeamPlayerStats
-            const bestKillRecord = await prisma.teamPlayerStats.findFirst({
-                where: { playerId: player.id, ...tpsSeasonFilter },
-                orderBy: { kills: "desc" },
-                select: { kills: true },
-            });
             const bestMatchKills = bestKillRecord?.kills ?? 0;
-
-            // Last match kills for K/D trend
-            const lastTwoMatches = await prisma.teamPlayerStats.findMany({
-                where: { playerId: player.id, ...tpsSeasonFilter },
-                orderBy: { createdAt: "desc" },
-                take: 2,
-                select: { kills: true },
-            });
             const lastMatchKills = lastTwoMatches[0]?.kills ?? 0;
 
-            // K/D trend: compare current kd with what it would be without last match
             let kdTrend: "up" | "down" | "same" = "same";
             let kdChange = 0;
             if (totalMatches > 1 && lastTwoMatches.length >= 2) {
@@ -121,7 +122,6 @@ export async function GET() {
                 kdTrend = kdChange > 0 ? "up" : kdChange < 0 ? "down" : "same";
             }
 
-            // Avg kills per match
             const avgKillsPerMatch = totalMatches > 0 ? Number((totalKills / totalMatches).toFixed(1)) : 0;
 
             detailedStats = {
@@ -170,7 +170,7 @@ export async function GET() {
                         }
                         : null,
                     stats: detailedStats,
-                    wallet: { balance: await getCentralBalance(userId) },
+                    wallet: { balance: player.wallet?.balance ?? 0 },
                     streak: player.streak
                         ? {
                             current: player.streak.current,
