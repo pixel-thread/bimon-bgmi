@@ -403,7 +403,7 @@ function TournamentContent({
         player2Id: viewMatch.player2Id,
         status: viewMatch.status,
         screenshotUrl: viewMatch.results?.find((r: any) => r.screenshotUrl)?.screenshotUrl ?? null,
-        notes: viewMatch.results?.find((r: any) => r.notes && !r.notes.startsWith("Confirmed by") && !r.notes.startsWith("Auto-confirmed") && !r.notes.startsWith("Auto-forfeit"))?.notes ?? null,
+        notes: viewMatch.results?.find((r: any) => r.notes && !r.notes.startsWith("Confirmed by"))?.notes ?? null,
         confirmedBy: viewMatch.results?.find((r: any) => r.notes?.startsWith("Confirmed by"))?.notes ?? null,
         disputeDeadline: viewMatch.disputeDeadline ?? null,
     } : null;

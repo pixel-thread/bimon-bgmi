@@ -315,6 +315,11 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
 
     const statusColor = match.status === "CONFIRMED" ? "success" : match.status === "SUBMITTED" ? "warning" : match.status === "DISPUTED" ? "danger" : "default";
     const statusLabel = match.status === "CONFIRMED" ? "✅ Confirmed" : match.status === "SUBMITTED" ? "⏰ Awaiting confirmation" : match.status === "DISPUTED" ? "⚠️ Disputed" : match.status;
+    // Pulsing colon color based on status
+    const colonColor = match.status === "CONFIRMED" ? "text-success" :
+        match.status === "SUBMITTED" ? "text-warning" :
+        match.status === "DISPUTED" ? "text-danger" :
+        match.status === "BYE" ? "text-primary" : "text-foreground/15";
 
     return (
         <Modal isOpen={isOpen} onClose={handleClose} placement="center" size="sm">
@@ -383,7 +388,7 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                         <span className={`text-5xl font-black tabular-nums leading-none ${p1Won ? "text-success" : hasResult ? "text-foreground/50" : "text-foreground/20"}`}>
                                             {hasResult ? match.score1 : "—"}
                                         </span>
-                                        <span className="text-foreground/15 font-bold text-2xl">:</span>
+                                        <span className={`font-bold text-2xl ${colonColor} ${match.status !== "CONFIRMED" && match.status !== "PENDING" ? "animate-pulse" : ""}`}>:</span>
                                         <span className={`text-5xl font-black tabular-nums leading-none ${p2Won ? "text-success" : hasResult ? "text-foreground/50" : "text-foreground/20"}`}>
                                             {hasResult ? match.score2 : "—"}
                                         </span>
@@ -399,12 +404,6 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                 </div>
                             </div>
 
-                            {/* Status badge — below the card, centered */}
-                            <div className="flex justify-center -mt-1">
-                                <Chip size="sm" variant="flat" color={statusColor} className="text-[10px]">
-                                    {statusLabel}
-                                </Chip>
-                            </div>
 
                             {/* Auto-confirm countdown */}
                             {match.status === "SUBMITTED" && match.disputeDeadline && (
@@ -421,13 +420,26 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                 </div>
                             )}
 
-                            {/* Player note */}
-                            {match.notes && (
-                                <div className="flex items-start gap-2 rounded-xl bg-default-50 border border-divider px-3 py-2">
-                                    <MessageSquare className="h-3.5 w-3.5 text-foreground/30 mt-0.5 shrink-0" />
-                                    <p className="text-xs text-foreground/60 leading-relaxed">{match.notes}</p>
-                                </div>
-                            )}
+                            {/* Match note (player or system) */}
+                            {match.notes && (() => {
+                                const isSystem = match.notes!.startsWith("Auto-") || match.notes!.startsWith("Walkover");
+                                return (
+                                    <div className={`flex items-start gap-2 rounded-xl px-3 py-2 border ${
+                                        isSystem
+                                            ? "bg-warning/5 border-warning/20"
+                                            : "bg-default-50 border-divider"
+                                    }`}>
+                                        {isSystem ? (
+                                            <UserX className="h-3.5 w-3.5 text-warning mt-0.5 shrink-0" />
+                                        ) : (
+                                            <MessageSquare className="h-3.5 w-3.5 text-foreground/30 mt-0.5 shrink-0" />
+                                        )}
+                                        <p className={`text-xs leading-relaxed ${isSystem ? "text-warning" : "text-foreground/60"}`}>
+                                            {match.notes}
+                                        </p>
+                                    </div>
+                                );
+                            })()}
 
                             {/* Confirmed by note */}
                             {match.confirmedBy && (
