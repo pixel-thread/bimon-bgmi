@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/database";
+import { invalidateDeadlineCache } from "@/lib/logic/koRolloverDeadline";
 
 /**
  * Generate a Group + Knockout (World Cup style) tournament.
@@ -303,6 +304,25 @@ export async function advanceGroupToKnockout(tournamentId: string) {
             matchIdx++;
         }
     }
+
+    // CRITICAL: Rebase ALL remaining KO matches (round 2+) to now.
+    // These empty slots were created at tournament creation time, so their
+    // createdAt is days/weeks old. The rollover deadline formula uses t0
+    // (earliest KO match createdAt) — if we don't reset these, the deadlines
+    // are already expired and silentAutoConfirm will auto-forfeit every
+    // match up the bracket chain in a single request.
+    await prisma.bracketMatch.updateMany({
+        where: {
+            tournamentId,
+            round: { gt: 1 },    // Round 2+ (semis, final, 3rd place)
+            player1Id: null,     // Only empty slots (not yet filled)
+        },
+        data: { createdAt: new Date() },
+    });
+
+    // Invalidate the in-memory deadline cache so the rollover formula
+    // recalculates t0 from the freshly rebased timestamps.
+    invalidateDeadlineCache(tournamentId);
 
     return {
         groupStandings: groupStandings.map((gs, i) => ({

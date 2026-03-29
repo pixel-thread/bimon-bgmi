@@ -46,6 +46,11 @@ export function snapToCutoff(ms: number, cutoff: string): number {
 let _cache: Map<string, { t0: number; sortedRounds: number[]; ts: number }> = new Map();
 const CACHE_TTL = 60_000;
 
+/** Force-invalidate cached deadlines after rebasing KO timestamps (e.g. group→KO transition) */
+export function invalidateDeadlineCache(tournamentId: string) {
+    _cache.delete(tournamentId);
+}
+
 export async function getKoRolloverDeadlineMs(
     tournamentId: string,
     matchRound: number,
