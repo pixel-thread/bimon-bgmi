@@ -25,6 +25,7 @@ import {
     Wallet as WalletIcon,
     ArrowUpRight,
     ArrowDownLeft,
+    ArrowRightLeft,
     Clock,
     AlertCircle,
     Loader2,
@@ -188,6 +189,7 @@ const loadRazorpayScript = (): Promise<boolean> =>
 // ─── Cross-Game Promo ───────────────────────────────────────
 // Moved to @/components/common/cross-game-promo
 import { CrossGamePromo } from "@/components/common/cross-game-promo";
+import { CrossGameTransferModal } from "@/components/wallet/cross-game-transfer-modal";
 
 // ─── Component ──────────────────────────────────────────────
 
@@ -196,6 +198,7 @@ export default function WalletPage() {
     const queryClient = useQueryClient();
     const { isOpen, onOpen, onClose } = useDisclosure();
     const { isOpen: isQrOpen, onOpen: onQrOpen, onClose: onQrClose } = useDisclosure();
+    const { isOpen: isCrossGameOpen, onOpen: onCrossGameOpen, onClose: onCrossGameClose } = useDisclosure();
     const [desiredUC, setDesiredUC] = useState<number>(50);
 
     const rupeeAmount = calculateRupees(desiredUC);
@@ -474,8 +477,35 @@ export default function WalletPage() {
                     </motion.div>
                 )}
 
+                {/* ── Transfer to Game ────────────────────────── */}
+                <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                >
+                    <button
+                        onClick={onCrossGameOpen}
+                        className="w-full flex items-center gap-3 p-3.5 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 to-secondary/10 transition-all hover:scale-[1.01] active:scale-[0.99]"
+                    >
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20">
+                            <ArrowRightLeft className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="text-left">
+                            <p className="text-sm font-semibold">Transfer to Another Game</p>
+                            <p className="text-[11px] text-foreground/50">Move {GAME.currency} between your game wallets</p>
+                        </div>
+                    </button>
+                </motion.div>
+
                 {/* ── Cross-Game Promo ───────────────────────── */}
                 <CrossGamePromo />
+
+                {/* ── Cross-Game Transfer Modal ──────────────── */}
+                <CrossGameTransferModal
+                    isOpen={isCrossGameOpen}
+                    onClose={onCrossGameClose}
+                    currentBalance={wallet?.balance ?? 0}
+                />
 
                 {/* ── Transaction History ─────────────────────── */}
                 <Card className="border border-divider">

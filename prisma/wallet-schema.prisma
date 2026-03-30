@@ -186,3 +186,26 @@ model CentralCommunityPollVote {
   @@unique([pollId, email])
   @@index([optionId])
 }
+
+// ─── Cross-Game Transfers (Settlement Ledger) ────────────────
+
+/// Logs every cross-game currency transfer for manager settlement.
+/// "fromGame manager owes toGame manager this amount in real ₹."
+model CrossGameTransfer {
+  id           String    @id @default(uuid())
+  fromGame     String                          // "bgmi", "pes", "mlbb", etc.
+  toGame       String                          // Target game
+  playerEmail  String                          // Who initiated the transfer
+  amount       Int                             // Amount transferred (1:1 across games)
+  description  String?                         // e.g. "Self-transfer BGMI → PES"
+  isSettled    Boolean   @default(false)        // Has this been settled between managers?
+  settledAt    DateTime?
+  settledBy    String?                          // Email of admin who marked it settled
+
+  createdAt    DateTime  @default(now())
+
+  @@index([fromGame, toGame])
+  @@index([isSettled])
+  @@index([playerEmail])
+  @@index([createdAt(sort: Desc)])
+}
