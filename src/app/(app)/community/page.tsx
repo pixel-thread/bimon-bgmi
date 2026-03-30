@@ -542,7 +542,7 @@ export default function CommunityPage() {
             </motion.div>
 
             {/* Cross-game promo — only games that share the central wallet */}
-            <CrossGamePromo />
+            <CrossGamePromo showAll />
 
             {/* Active polls */}
             {polls.length > 0 && (

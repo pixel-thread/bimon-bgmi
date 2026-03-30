@@ -8,49 +8,57 @@ const SISTER_GAMES = [
     {
         mode: "bgmi",
         name: "PUBGMI",
+        fullName: "PUBG Mobile India",
         icon: "/icons/bgmi/icon-192x192.png",
         tagline: "Battle Royale tournaments",
         url: "https://bimon-bgmi.vercel.app",
         gradient: "from-amber-500/20 to-orange-500/20",
         border: "border-amber-500/20",
+        textColor: "text-amber-400",
         sharedWallet: false,
     },
     {
         mode: "pes",
         name: "KICKOFF",
+        fullName: "eFootball / PES",
         icon: "/icons/pes/icon-192x192.png",
         tagline: "1v1 football tournaments",
         url: "https://bimon-pes.vercel.app",
         gradient: "from-emerald-500/20 to-teal-500/20",
         border: "border-emerald-500/20",
+        textColor: "text-emerald-400",
         sharedWallet: false,
     },
     {
         mode: "freefire",
         name: "BOOYAH",
+        fullName: "Free Fire",
         icon: "/icons/freefire/icon-192x192.png",
         tagline: "Battle Royale with Booyah",
         url: "https://bimon-boo-yah.vercel.app",
         gradient: "from-violet-500/20 to-purple-500/20",
         border: "border-violet-500/20",
+        textColor: "text-violet-400",
         sharedWallet: false,
     },
     {
         mode: "mlbb",
-        name: "Mobai Legen",
+        name: "Mobile Legends",
+        fullName: "Mobile Legends: Bang Bang",
         icon: "/icons/mlbb/icon-192x192.png",
         tagline: "1v1 Mobile Legends tournaments",
         url: "https://bimon-ml.vercel.app",
         gradient: "from-blue-500/20 to-cyan-500/20",
         border: "border-blue-500/20",
+        textColor: "text-blue-400",
         sharedWallet: false,
     },
 ];
 
 /**
  * Cross-game promo banner.
- * - Default: shows only other games that share the central wallet (wallet page).
- * - showAll: shows all three games regardless of current domain (community page).
+ * - Default (wallet mode): shows only other games that share the central wallet.
+ * - showAll (community mode): shows all games with "Do you play X?" messaging.
  */
 export function CrossGamePromo({ showAll = false }: { showAll?: boolean }) {
     const games = showAll
@@ -69,7 +77,7 @@ export function CrossGamePromo({ showAll = false }: { showAll?: boolean }) {
                     <div className="flex items-center gap-2">
                         <span className="text-sm">🎮</span>
                         <p className="text-xs font-semibold text-foreground/70">
-                            Your {GAME.currencyPlural} work on these games too!
+                            We also run tournaments on these games!
                         </p>
                     </div>
 
@@ -84,18 +92,24 @@ export function CrossGamePromo({ showAll = false }: { showAll?: boolean }) {
                             >
                                 <img src={g.icon} alt={g.name} className="h-8 w-8 rounded-lg object-contain shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-bold">{g.name}</p>
+                                    <p className="text-xs font-bold">
+                                        {showAll ? (
+                                            <>Do you play <span className={g.textColor}>{g.fullName}</span>?</>
+                                        ) : (
+                                            g.name
+                                        )}
+                                    </p>
                                     <p className="text-[10px] text-foreground/50">{g.tagline}</p>
                                 </div>
                                 <span className="text-[10px] font-semibold text-primary shrink-0">
-                                    Play →
+                                    Join →
                                 </span>
                             </a>
                         ))}
                     </div>
 
                     <p className="text-[10px] text-foreground/30 text-center">
-                        Same account • Same {GAME.currencyPlural} • Different games
+                        Same account • Join any tournament • Win prizes
                     </p>
                 </CardBody>
             </Card>
