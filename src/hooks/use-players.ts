@@ -26,6 +26,7 @@ export interface PlayerDTO {
     };
     balance: number;
     hasRoyalPass: boolean;
+    isAdmin: boolean;
 }
 
 export interface PlayersMeta {

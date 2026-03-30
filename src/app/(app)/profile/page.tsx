@@ -440,7 +440,7 @@ export default function ProfilePage() {
                             </div>
                             <div className="pb-0.5 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <h1 className="text-xl font-bold text-white drop-shadow break-all">{name}</h1>
+                                    <h1 className="text-xl font-bold text-white drop-shadow break-all leading-normal">{name}</h1>
                                     {player?.hasRoyalPass && <Crown className="h-5 w-5 text-yellow-400 shrink-0" />}
                                     <button
                                         onClick={(e) => {

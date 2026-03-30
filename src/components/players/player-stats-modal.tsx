@@ -377,7 +377,7 @@ export function PlayerStatsModal({
                                 onPress={() => setShowUCTransfer(true)}
                                 className="font-medium"
                             >
-                                {user?.role === "SUPER_ADMIN" ? `Send / Request ${GAME.currency}` : `Send ${GAME.currency}`}
+                                {player.isAdmin ? `Send ${GAME.currency}` : `Send / Request ${GAME.currency}`}
                             </Button>
                         )}
                     </ModalBody>
@@ -391,7 +391,7 @@ export function PlayerStatsModal({
                     onClose={() => setShowUCTransfer(false)}
                     toPlayerId={player.id}
                     toPlayerName={name}
-                    sendOnly={user?.role !== "SUPER_ADMIN"}
+                    sendOnly={player.isAdmin}
                 />
             )}
         </>

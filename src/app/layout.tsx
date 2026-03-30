@@ -15,6 +15,7 @@ const rajdhani = Rajdhani({
   variable: "--font-rajdhani",
 });
 
+
 const ICON_DIRS: Record<string, string> = { freefire: "freefire", pes: "pes", mlbb: "mlbb" };
 const ICON_DIR = `/icons/${ICON_DIRS[GAME_MODE] ?? "bgmi"}`;
 

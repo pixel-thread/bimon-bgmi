@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
                         username: true,
                         imageUrl: true,
                         email: true,
+                        role: true,
                     },
                 },
                 wallet: {
@@ -179,6 +180,7 @@ export async function GET(request: NextRequest) {
                 },
                 balance: p.wallet?.balance ?? 0,
                 hasRoyalPass: p.hasRoyalPass,
+                isAdmin: p.user.role === "SUPER_ADMIN" || p.user.role === "ADMIN",
                 characterImage: (p.hasRoyalPass && p.characterImage)
                     ? {
                         url: p.characterImage.publicUrl,
