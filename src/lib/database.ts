@@ -24,6 +24,7 @@ function getDatabaseUrl(gameMode?: string): string {
         bgmi: process.env.DATABASE_URL_BGMI,
         freefire: process.env.DATABASE_URL_FREEFIRE,
         pes: process.env.DATABASE_URL_PES,
+        mlbb: process.env.DATABASE_URL_MLBB,
     };
 
     // Try game-specific URL first, fall back to generic DATABASE_URL
@@ -99,7 +100,7 @@ export async function getRequestPrisma(): Promise<PrismaClient> {
 
 /** Map of valid game modes for validation */
 function getDatabaseUrlMap(): Record<string, boolean> {
-    return { bgmi: true, freefire: true, pes: true };
+    return { bgmi: true, freefire: true, pes: true, mlbb: true };
 }
 
 /**
