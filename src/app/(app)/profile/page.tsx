@@ -37,6 +37,8 @@ import {
     Plus,
     ArrowRightLeft,
     X,
+    VolumeX,
+    Volume2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { CategoryBadge } from "@/components/ui/category-badge";
@@ -118,6 +120,8 @@ export default function ProfilePage() {
     const [showCharacterPreview, setShowCharacterPreview] = useState(false);
     const [showUCBreakdown, setShowUCBreakdown] = useState(false);
     const [navigatingToWallet, setNavigatingToWallet] = useState(false);
+    const [heroMuted, setHeroMuted] = useState(true);
+    const heroVideoRef = useRef<HTMLVideoElement>(null);
 
     // Profile edit state
     const [editing, setEditing] = useState(false);
@@ -344,11 +348,29 @@ export default function ProfilePage() {
                     <div className="relative aspect-[3/4] w-full group">
                         {(previewCharacter?.url || player?.characterImage?.url) ? (
                             (previewCharacter?.isVideo || (!previewCharacter && player?.characterImage?.isVideo)) ? (
-                                <video
-                                    src={previewCharacter?.url || player?.characterImage?.url}
-                                    autoPlay muted playsInline
-                                    className="h-full w-full object-cover"
-                                />
+                                <>
+                                    <video
+                                        ref={heroVideoRef}
+                                        src={previewCharacter?.url || player?.characterImage?.url}
+                                        autoPlay muted playsInline loop
+                                        className="h-full w-full object-cover"
+                                        onLoadedData={() => {
+                                            if (heroVideoRef.current) heroVideoRef.current.muted = heroMuted;
+                                        }}
+                                    />
+                                    {/* Sound toggle */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const next = !heroMuted;
+                                            setHeroMuted(next);
+                                            if (heroVideoRef.current) heroVideoRef.current.muted = next;
+                                        }}
+                                        className="absolute left-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70 transition-colors"
+                                    >
+                                        {heroMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                                    </button>
+                                </>
                             ) : (
                                 <img
                                     src={previewCharacter?.url || player?.characterImage?.url}

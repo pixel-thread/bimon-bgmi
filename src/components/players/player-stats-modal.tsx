@@ -51,6 +51,8 @@ export function PlayerStatsModal({
     const router = useRouter();
     const [showUCTransfer, setShowUCTransfer] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [videoMuted, setVideoMuted] = useState(true);
+    const charVideoRef = useRef<HTMLVideoElement>(null);
 
     // 🐍 Easter egg audio players
     const EASTER_EGG_AUDIO: Record<string, string> = {
@@ -102,6 +104,7 @@ export function PlayerStatsModal({
     // Reset image loaded state when player changes
     useEffect(() => {
         setImageLoaded(false);
+        setVideoMuted(true);
     }, [player?.id]);
 
     if (!player) return null;
@@ -218,21 +221,39 @@ export function PlayerStatsModal({
                                     </div>
                                 )}
                                 {characterImage.isVideo ? (
-                                    <video
-                                        src={characterImage.url}
-                                        autoPlay
-                                        muted
-                                        playsInline
-                                        loop
-                                        preload="auto"
-                                        controls={false}
-                                        controlsList="nodownload nofullscreen noremoteplayback"
-                                        disableRemotePlayback
-                                        disablePictureInPicture
-                                        className="h-full w-full object-cover [&::-webkit-media-controls]:!hidden [&::-webkit-media-controls-enclosure]:!hidden"
-                                        onLoadedData={() => setImageLoaded(true)}
-                                        onCanPlay={() => setImageLoaded(true)}
-                                    />
+                                    <>
+                                        <video
+                                            ref={charVideoRef}
+                                            src={characterImage.url}
+                                            autoPlay
+                                            muted
+                                            playsInline
+                                            loop
+                                            preload="auto"
+                                            controls={false}
+                                            controlsList="nodownload nofullscreen noremoteplayback"
+                                            disableRemotePlayback
+                                            disablePictureInPicture
+                                            className="h-full w-full object-cover [&::-webkit-media-controls]:!hidden [&::-webkit-media-controls-enclosure]:!hidden"
+                                            onLoadedData={() => {
+                                                setImageLoaded(true);
+                                                if (charVideoRef.current) charVideoRef.current.muted = videoMuted;
+                                            }}
+                                            onCanPlay={() => setImageLoaded(true)}
+                                        />
+                                        {/* Sound toggle */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const next = !videoMuted;
+                                                setVideoMuted(next);
+                                                if (charVideoRef.current) charVideoRef.current.muted = next;
+                                            }}
+                                            className="absolute left-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70 transition-colors"
+                                        >
+                                            {videoMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                                        </button>
+                                    </>
                                 ) : (
                                     <img
                                         src={characterImage.url}
