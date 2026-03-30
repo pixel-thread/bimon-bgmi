@@ -3,7 +3,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { type NextRequest } from "next/server";
 import { GAME } from "@/lib/game-config";
-import { creditWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * DELETE /api/matches/[id]
@@ -49,10 +48,11 @@ export async function DELETE(
             }
 
             // Find entry fee debit transactions to refund
+            // Use exact match: "Entry fee for <name>" to avoid matching other tournaments
             const entryFeeTransactions = await prisma.transaction.findMany({
                 where: {
                     type: "DEBIT",
-                    description: { contains: tournament.name },
+                    description: { startsWith: `Entry fee for ${tournament.name}` },
                 },
                 select: { id: true, playerId: true, amount: true, description: true },
             });
@@ -79,7 +79,7 @@ export async function DELETE(
                     // 6. Delete all Teams
                     await tx.team.deleteMany({ where: { tournamentId } });
 
-                    // 7. Reverse entry fees (no trace)
+                    // 7. Reverse entry fees — silent restore (no transaction history)
                     if (entryFeeTransactions.length > 0) {
                         const refundsByPlayer = new Map<string, number>();
                         for (const txn of entryFeeTransactions) {
@@ -89,14 +89,21 @@ export async function DELETE(
                             );
                         }
 
+                        // Directly restore wallet balances — no credit transaction created
                         for (const [playerId, amount] of refundsByPlayer) {
-                            const email = await getEmailByPlayerId(playerId, tx);
-                            if (email) {
-                                await creditWallet(email, amount, `Entry fee refund — tournament reset`, "TOURNAMENT_ENTRY");
+                            const player = await tx.player.findUnique({
+                                where: { id: playerId },
+                                include: { wallet: true },
+                            });
+                            if (player?.wallet) {
+                                await tx.wallet.update({
+                                    where: { playerId },
+                                    data: { balance: player.wallet.balance + amount },
+                                });
                             }
                         }
 
-                        // Delete original debit transactions — clean slate
+                        // Delete original debit transactions — clean slate, no trace
                         await tx.transaction.deleteMany({
                             where: { id: { in: entryFeeTransactions.map((t) => t.id) } },
                         });

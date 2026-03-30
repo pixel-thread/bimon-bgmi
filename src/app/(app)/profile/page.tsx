@@ -383,8 +383,14 @@ export default function ProfilePage() {
                                     type="file" accept="image/*,video/*" className="hidden"
                                     onChange={(e) => {
                                         const file = e.target.files?.[0]; if (!file) return;
-                                        const url = URL.createObjectURL(file);
                                         const isVid = file.type.startsWith("video/");
+                                        // 8MB cap for videos to keep Cloudinary free-tier storage lean
+                                        if (isVid && file.size > 8 * 1024 * 1024) {
+                                            toast.error("Video must be under 8MB. Try a shorter clip!");
+                                            e.target.value = "";
+                                            return;
+                                        }
+                                        const url = URL.createObjectURL(file);
                                         setPreviewCharacter({ url, isVideo: isVid });
                                         setPendingCharacterFile(file);
                                         setShowCharacterPreview(true);
@@ -1143,20 +1149,69 @@ export default function ProfilePage() {
                         onConfirm={async (file: File, cropParams?: { x: number; y: number; w: number; h: number }) => {
                             setUploadingCharacter(true);
                             try {
-                                const fd = new FormData();
-                                fd.append("image", file);
-                                if (cropParams) {
-                                    fd.append("cropParams", JSON.stringify(cropParams));
-                                }
-                                const res = await fetch("/api/profile/upload-character-image", { method: "POST", body: fd });
-                                if (res.ok) {
-                                    toast.success("Character image updated!");
-                                    queryClient.invalidateQueries({ queryKey: ["profile"] });
-                                    queryClient.invalidateQueries({ queryKey: ["players"] });
-                                } else if (res.status === 403) {
-                                    toast.error(`${GAME.passName} required`);
+                                const isVideo = file.type.startsWith("video/");
+
+                                if (isVideo) {
+                                    // Upload video directly to Cloudinary from client
+                                    // (bypasses Vercel's 4.5MB body size limit)
+                                    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+                                    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+                                    if (!cloudName || !uploadPreset) {
+                                        toast.error("Upload not configured");
+                                        return;
+                                    }
+
+                                    const cloudFd = new FormData();
+                                    cloudFd.append("file", file);
+                                    cloudFd.append("upload_preset", uploadPreset);
+                                    cloudFd.append("folder", "character_images");
+                                    cloudFd.append("resource_type", "video");
+
+                                    const cloudRes = await fetch(
+                                        `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
+                                        { method: "POST", body: cloudFd }
+                                    );
+                                    const cloudData = await cloudRes.json();
+
+                                    if (!cloudRes.ok || cloudData.error) {
+                                        toast.error(cloudData.error?.message || "Video upload failed");
+                                        return;
+                                    }
+
+                                    // Save the Cloudinary result to our DB via a lightweight API call
+                                    const saveRes = await fetch("/api/profile/upload-character-image", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({
+                                            cloudinaryUrl: cloudData.secure_url,
+                                            publicId: cloudData.public_id,
+                                            isVideo: true,
+                                        }),
+                                    });
+
+                                    if (saveRes.ok) {
+                                        toast.success("Character video updated!");
+                                        queryClient.invalidateQueries({ queryKey: ["profile"] });
+                                        queryClient.invalidateQueries({ queryKey: ["players"] });
+                                    } else if (saveRes.status === 403) {
+                                        toast.error(`${GAME.passName} required`);
+                                    } else {
+                                        toast.error("Failed to save video");
+                                    }
                                 } else {
-                                    toast.error("Upload failed");
+                                    // Image: upload through the server (already small after client-side crop)
+                                    const fd = new FormData();
+                                    fd.append("image", file);
+                                    const res = await fetch("/api/profile/upload-character-image", { method: "POST", body: fd });
+                                    if (res.ok) {
+                                        toast.success("Character image updated!");
+                                        queryClient.invalidateQueries({ queryKey: ["profile"] });
+                                        queryClient.invalidateQueries({ queryKey: ["players"] });
+                                    } else if (res.status === 403) {
+                                        toast.error(`${GAME.passName} required`);
+                                    } else {
+                                        toast.error("Upload failed");
+                                    }
                                 }
                             } catch {
                                 toast.error("Network error");

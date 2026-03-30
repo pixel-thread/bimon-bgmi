@@ -12,7 +12,16 @@ cloudinary.config({
 
 /**
  * POST /api/profile/upload-character-image
- * Uploads a character image to Cloudinary and creates/updates a Gallery record linked to the Player.
+ *
+ * Supports two upload flows:
+ *
+ * 1) **Image upload (FormData)** — image file sent via FormData.
+ *    Server converts to base64, uploads to Cloudinary, saves DB record.
+ *
+ * 2) **Video save (JSON)** — video already uploaded client-side to Cloudinary.
+ *    Body: { cloudinaryUrl, publicId, isVideo: true }
+ *    Server only creates/updates the Gallery DB record.
+ *    (Videos bypass server to avoid Vercel's 4.5MB body size limit.)
  */
 export async function POST(req: Request) {
     const email = await getAuthEmail();
@@ -21,13 +30,6 @@ export async function POST(req: Request) {
     }
 
     try {
-        const formData = await req.formData();
-        const file = formData.get("image") as File | null;
-
-        if (!file) {
-            return NextResponse.json({ error: "No image provided" }, { status: 400 });
-        }
-
         // Get player
         const user = await prisma.user.findUnique({
             where: { email },
@@ -54,6 +56,74 @@ export async function POST(req: Request) {
             );
         }
 
+        const contentType = req.headers.get("content-type") || "";
+
+        // ── Flow 2: Video already uploaded from client (JSON body) ──
+        if (contentType.includes("application/json")) {
+            const body = await req.json();
+            const { cloudinaryUrl, publicId, isVideo } = body as {
+                cloudinaryUrl: string;
+                publicId: string;
+                isVideo: boolean;
+            };
+
+            if (!cloudinaryUrl || !publicId) {
+                return NextResponse.json({ error: "Missing cloudinaryUrl or publicId" }, { status: 400 });
+            }
+
+            const thumbnailUrl = isVideo
+                ? cloudinaryUrl.replace(/\.[^.]+$/, ".jpg")
+                : null;
+
+            // Delete old gallery record if exists
+            await cleanupOldCharacterImage(user.player.characterImageId);
+
+            // Create or update Gallery record
+            const gallery = await prisma.gallery.upsert({
+                where: { playerId: user.player.id },
+                create: {
+                    imageId: publicId,
+                    name: `${user.player.id}_character`,
+                    path: publicId,
+                    fullPath: publicId,
+                    publicUrl: cloudinaryUrl,
+                    isCharacterImg: true,
+                    isAnimated: false,
+                    isVideo: !!isVideo,
+                    thumbnailUrl,
+                    playerId: user.player.id,
+                },
+                update: {
+                    imageId: publicId,
+                    path: publicId,
+                    fullPath: publicId,
+                    publicUrl: cloudinaryUrl,
+                    isVideo: !!isVideo,
+                    thumbnailUrl,
+                },
+            });
+
+            // Link to player
+            await prisma.player.update({
+                where: { id: user.player.id },
+                data: { characterImageId: gallery.id },
+            });
+
+            return NextResponse.json({
+                success: true,
+                imageUrl: cloudinaryUrl,
+                galleryId: gallery.id,
+            });
+        }
+
+        // ── Flow 1: Image uploaded via FormData ──
+        const formData = await req.formData();
+        const file = formData.get("image") as File | null;
+
+        if (!file) {
+            return NextResponse.json({ error: "No image provided" }, { status: 400 });
+        }
+
         // Convert file to base64 data URI
         const bytes = await file.arrayBuffer();
         const base64 = Buffer.from(bytes).toString("base64");
@@ -61,37 +131,10 @@ export async function POST(req: Request) {
         const dataUri = `data:${mimeType};base64,${base64}`;
         const isVideo = file.type.startsWith("video/");
 
-        // Parse optional crop params (for video crop)
-        const cropParamsStr = formData.get("cropParams") as string | null;
-        const cropParams = cropParamsStr ? JSON.parse(cropParamsStr) as { x: number; y: number; w: number; h: number } : null;
-
         // 50MB limit
         if (bytes.byteLength > 50 * 1024 * 1024) {
             return NextResponse.json({ error: "File too large (max 50MB)" }, { status: 400 });
         }
-
-        // Upload to Cloudinary with incoming transformations
-        // For videos: crop to selected region, then compress to 720p, auto quality
-        // For images: already cropped client-side, just limit size
-        const videoTransformations = [];
-        if (cropParams) {
-            // First crop to the user-selected region
-            videoTransformations.push({
-                crop: "crop",
-                x: cropParams.x,
-                y: cropParams.y,
-                width: cropParams.w,
-                height: cropParams.h,
-            });
-        }
-        // Then compress
-        videoTransformations.push({
-            width: 720,
-            crop: "limit",
-            quality: "auto",
-            duration: "8",
-            video_codec: "auto",
-        });
 
         const uploadResult = await cloudinary.uploader.upload(dataUri, {
             folder: "character_images",
@@ -99,10 +142,7 @@ export async function POST(req: Request) {
             overwrite: true,
             resource_type: isVideo ? "video" : "image",
             ...(isVideo
-                ? {
-                    transformation: videoTransformations,
-                    format: "mp4",
-                }
+                ? { format: "mp4" }
                 : {
                     transformation: [
                         { width: 800, height: 1200, crop: "limit", quality: "auto" },
@@ -114,30 +154,11 @@ export async function POST(req: Request) {
         const publicUrl = uploadResult.secure_url;
 
         // Delete old gallery record if exists
-        if (user.player.characterImageId) {
-            const oldGallery = await prisma.gallery.findUnique({
-                where: { id: user.player.characterImageId },
-            });
-            if (oldGallery) {
-                try {
-                    await cloudinary.uploader.destroy(
-                        oldGallery.imageId,
-                        {
-                            invalidate: true,
-                            resource_type: oldGallery.isVideo ? "video" : "image",
-                        }
-                    );
-                } catch {
-                    // Ignore cleanup errors
-                }
-            }
-        }
+        await cleanupOldCharacterImage(user.player.characterImageId);
 
         // Create or update Gallery record
         const gallery = await prisma.gallery.upsert({
-            where: {
-                playerId: user.player.id,
-            },
+            where: { playerId: user.player.id },
             create: {
                 imageId: uploadResult.public_id,
                 name: `${user.player.id}_character`,
@@ -178,5 +199,29 @@ export async function POST(req: Request) {
     } catch (error) {
         console.error("Character image upload error:", error);
         return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    }
+}
+
+/**
+ * Cleanup old Cloudinary asset + gallery record
+ */
+async function cleanupOldCharacterImage(characterImageId: string | null) {
+    if (!characterImageId) return;
+
+    const oldGallery = await prisma.gallery.findUnique({
+        where: { id: characterImageId },
+    });
+    if (oldGallery) {
+        try {
+            await cloudinary.uploader.destroy(
+                oldGallery.imageId,
+                {
+                    invalidate: true,
+                    resource_type: oldGallery.isVideo ? "video" : "image",
+                }
+            );
+        } catch {
+            // Ignore cleanup errors
+        }
     }
 }
