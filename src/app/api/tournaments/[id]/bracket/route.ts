@@ -4,7 +4,7 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getSettings } from "@/lib/settings";
 import { advanceWinners } from "@/lib/logic/generateBracket";
 import { advanceGroupToKnockout } from "@/lib/logic/generateGroupKnockout";
-import { getMatchDeadlineMs } from "@/lib/logic/koRolloverDeadline";
+import { getMatchDeadlineMs, isTodayPaused } from "@/lib/logic/koRolloverDeadline";
 import { GAME } from "@/lib/game-config";
 
 const CONFIRM_DEADLINE_MS = GAME.disputeWindowMinutes * 60 * 1000;
@@ -18,6 +18,9 @@ async function silentAutoConfirm(tournamentId: string, tournamentType: string) {
     try {
         const now = new Date();
         const settings = await getSettings();
+
+        // Skip all deadline enforcement on paused days (e.g. Sunday)
+        if (isTodayPaused(settings.deadlinePausedDays)) return;
 
         // 1. SUBMITTED matches → auto-confirm only when match deadline has ≤ 30 min left
         //    This gives opponents the full deadline window to verify and dispute.
@@ -264,6 +267,7 @@ export async function GET(
                     groupHours: settings.matchDeadlineGroupHours,
                     koHours: settings.matchDeadlineKOHours,
                     cutoffTime: settings.deadlineCutoffTime || "",
+                    pausedDays: settings.deadlinePausedDays || [],
                 },
             },
         });

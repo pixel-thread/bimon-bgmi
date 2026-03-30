@@ -37,6 +37,7 @@ export interface AppSettings {
     matchDeadlineGroupHours: number;  // Hours to complete a group stage match
     matchDeadlineKOHours: number;     // Hours to complete a KO stage match
     deadlineCutoffTime: string;       // Time (HH:MM IST) all deadlines snap to, e.g. "05:30"
+    deadlinePausedDays: number[];     // JS day numbers (0=Sun,1=Mon...) when deadline timers pause
 
     // 📢 Community
     whatsAppGroups: string[];
@@ -79,6 +80,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     matchDeadlineGroupHours: 48,
     matchDeadlineKOHours: 72,
     deadlineCutoffTime: "05:30",
+    deadlinePausedDays: [],
 
     whatsAppGroups: [],
     welcomeMessage: "",

@@ -11,8 +11,9 @@ import { PendingConfirmationModal } from "@/components/bracket/pending-confirmat
 import { useConfirmResult, useDisputeResult } from "@/components/bracket/submit-result-modal";
 import { BracketOnboarding, DisputeOnboarding, useBracketOnboarding, useDisputeOnboarding } from "@/components/bracket/bracket-onboarding";
 import { useAuthUser } from "@/hooks/use-auth-user";
-import { Trophy, Swords, Clock } from "lucide-react";
+import { Trophy, Swords, Clock, Info } from "lucide-react";
 import { Chip, Tabs, Tab, Skeleton } from "@heroui/react";
+import { snapToCutoff, addPausedDays, getISTDayOfWeek } from "@/lib/logic/koRolloverDeadline";
 
 // Fallback famous footballers (if gallery is empty)
 const FAMOUS_PLAYERS = [
@@ -276,18 +277,6 @@ function TournamentContent({
           ) ?? null
         : null;
 
-    // Snap a ms timestamp to the next occurrence of cutoffTime (HH:MM IST)
-    const snapToCutoff = (ms: number, cutoff: string): number => {
-        if (!cutoff) return ms;
-        const [hIST, mIST] = cutoff.split(":").map(Number);
-        const totalUTCMinutes = ((hIST * 60 + mIST - 330) % 1440 + 1440) % 1440;
-        const utcH = Math.floor(totalUTCMinutes / 60);
-        const utcM = totalUTCMinutes % 60;
-        const candidate = new Date(ms);
-        candidate.setUTCHours(utcH, utcM, 0, 0);
-        if (candidate.getTime() <= ms) candidate.setUTCDate(candidate.getUTCDate() + 1);
-        return candidate.getTime();
-    };
 
     // Compute stage deadlines with rollover + cutoff snapping:
     // Each KO round deadline = snapToCutoff(T0 + roundPosition × koHours)
@@ -298,6 +287,7 @@ function TournamentContent({
         const matches = bracketData.rounds.flatMap((r: any) => r.matches);
         const rounds: RoundData[] = bracketData.rounds;
         const cutoff = bracketData.deadlines.cutoffTime || "";
+        const paused: number[] = bracketData.deadlines.pausedDays || [];
 
         if (tournamentType === "GROUP_KNOCKOUT") {
             const groupMatches = matches.filter((m: any) => m.round < 0 && m.status !== "CONFIRMED");
@@ -309,7 +299,11 @@ function TournamentContent({
             let groupDeadlineMs = groupMatches.length > 0
                 ? Math.max(...groupMatches.map((m: any) => new Date(m.createdAt).getTime())) + bracketData.deadlines.groupHours * 3600000
                 : null;
-            if (groupDeadlineMs && cutoff) groupDeadlineMs = snapToCutoff(groupDeadlineMs, cutoff);
+            if (groupDeadlineMs && paused.length > 0) {
+                const latestCreated = Math.max(...groupMatches.map((m: any) => new Date(m.createdAt).getTime()));
+                groupDeadlineMs = addPausedDays(latestCreated, groupDeadlineMs, paused);
+            }
+            if (groupDeadlineMs && cutoff) groupDeadlineMs = snapToCutoff(groupDeadlineMs, cutoff, paused);
 
             // KO rollover: find T0 (earliest KO match creation), get sorted unique KO rounds
             const koRoundNums = [...new Set<number>(allKoMatches.map((m: any) => m.round))].sort((a: number, b: number) => a - b);
@@ -328,7 +322,8 @@ function TournamentContent({
             if (t0 !== null && activeKoRound !== null) {
                 const roundPos = koRoundNums.indexOf(activeKoRound) + 1;
                 const raw = t0 + roundPos * bracketData.deadlines.koHours * 3600000;
-                koDeadlineMs = cutoff ? snapToCutoff(raw, cutoff) : raw;
+                const extended = addPausedDays(t0, raw, paused);
+                koDeadlineMs = cutoff ? snapToCutoff(extended, cutoff, paused) : extended;
                 activeRoundLabel = roundLabel(activeKoRound, rounds);
             }
 
@@ -359,7 +354,8 @@ function TournamentContent({
             if (t0 !== null && activeRound !== null) {
                 const roundPos = roundNums.indexOf(activeRound) + 1;
                 const raw = t0 + roundPos * bracketData.deadlines.koHours * 3600000;
-                deadlineMs = cutoff ? snapToCutoff(raw, cutoff) : raw;
+                const extended = addPausedDays(t0, raw, paused);
+                deadlineMs = cutoff ? snapToCutoff(extended, cutoff, paused) : extended;
                 activeRoundLbl = roundLabel(activeRound, rounds);
             }
 
@@ -548,6 +544,18 @@ function TournamentContent({
                                 <span className="text-[11px] font-medium text-foreground/30">Not started</span>
                             )
                         )}
+                    </div>
+                )}
+
+                {/* Paused day banner */}
+                {bracketData?.deadlines?.pausedDays?.length > 0 &&
+                 bracketData.deadlines.pausedDays.includes(getISTDayOfWeek(Date.now())) &&
+                 !bracketData.winner && (
+                    <div className="flex items-center gap-2 rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2">
+                        <Info className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                        <span className="text-[11px] text-blue-300">
+                            Deadline paused today — you can still play as usual, timer resumes tomorrow
+                        </span>
                     </div>
                 )}
             </div>

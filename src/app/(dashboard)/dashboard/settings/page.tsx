@@ -68,6 +68,7 @@ interface Settings {
     matchDeadlineGroupHours: number;
     matchDeadlineKOHours: number;
     deadlineCutoffTime: string;
+    deadlinePausedDays: number[];
 }
 
 export default function SettingsPage() {
@@ -633,6 +634,44 @@ export default function SettingsPage() {
                         <p className="text-[11px] text-foreground/30">
                             ⏰ Deadlines snap forward to the cutoff time (IST). Example: 24h deadline started at 5PM → ends next day 5:30 AM. Leave empty to disable snapping.
                         </p>
+                        <Divider />
+                        <div>
+                            <p className="text-sm font-medium mb-2">Paused Days</p>
+                            <p className="text-xs text-foreground/40 mb-3">
+                                Deadline timers pause on selected days. Players can still play as usual — only the countdown timer stops.
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { day: 1, label: "Mon" },
+                                    { day: 2, label: "Tue" },
+                                    { day: 3, label: "Wed" },
+                                    { day: 4, label: "Thu" },
+                                    { day: 5, label: "Fri" },
+                                    { day: 6, label: "Sat" },
+                                    { day: 0, label: "Sun" },
+                                ].map(({ day, label }) => {
+                                    const active = (settings.deadlinePausedDays ?? []).includes(day);
+                                    return (
+                                        <Chip
+                                            key={day}
+                                            variant={active ? "solid" : "bordered"}
+                                            color={active ? "primary" : "default"}
+                                            className="cursor-pointer"
+                                            onClick={() => {
+                                                const current = settings.deadlinePausedDays ?? [];
+                                                if (active) {
+                                                    update("deadlinePausedDays", current.filter((d: number) => d !== day));
+                                                } else {
+                                                    update("deadlinePausedDays", [...current, day]);
+                                                }
+                                            }}
+                                        >
+                                            {label}
+                                        </Chip>
+                                    );
+                                })}
+                            </div>
+                        </div>
                     </CardBody>
                 </Card>
             )}
