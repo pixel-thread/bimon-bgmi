@@ -5,7 +5,7 @@ import { generateBracket } from "@/lib/logic/generateBracket";
 import { generateLeague } from "@/lib/logic/generateLeague";
 import { generateGroupKnockout } from "@/lib/logic/generateGroupKnockout";
 import { type NextRequest } from "next/server";
-import { debitCentralWallet } from "@/lib/wallet-service";
+import { debitWallet } from "@/lib/wallet-service";
 
 /**
  * Largest power of 2 ≤ n.
@@ -234,7 +234,7 @@ export async function POST(
                             const totalFee = entryFee * entries;
                             if (email) {
                                 try {
-                                    await debitCentralWallet(
+                                    await debitWallet(
                                         email,
                                         totalFee,
                                         entries > 1

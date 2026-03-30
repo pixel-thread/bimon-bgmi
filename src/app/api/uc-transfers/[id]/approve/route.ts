@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
-import { getAvailableBalance, transferCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { getAvailableBalance, transferWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * PATCH /api/uc-transfers/[id]/approve
@@ -79,7 +79,7 @@ export async function PATCH(
         const txRequesterName = transfer.fromPlayer.displayName || transfer.fromPlayer.user.username;
 
         // Transfer via central wallet
-        await transferCentralWallet(
+        await transferWallet(
             approverEmail,
             requesterEmail,
             transfer.amount,

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { walletDb } from "@/lib/wallet-db";
+import { communityDb } from "@/lib/community-db";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail, getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/database";
@@ -38,7 +38,7 @@ export async function GET() {
         const info = await getPlayerInfo();
         if (!info) return ErrorResponse({ message: "Unauthorized", status: 401 });
 
-        const polls = await walletDb.centralCommunityPoll.findMany({
+        const polls = await communityDb.centralCommunityPoll.findMany({
             where: { isActive: true },
             orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
             take: 20,
@@ -55,7 +55,7 @@ export async function GET() {
         });
 
         // Get current player's votes
-        const myVotes = await walletDb.centralCommunityPollVote.findMany({
+        const myVotes = await communityDb.centralCommunityPollVote.findMany({
             where: { email: info.email, pollId: { in: polls.map((p: any) => p.id) } },
             select: { pollId: true, optionId: true },
         });
@@ -64,7 +64,7 @@ export async function GET() {
         // Get pending suggestions for polls created by this player
         const myPollIds = polls.filter((p: any) => p.email === info.email).map((p: any) => p.id);
         const pendingSuggestions = myPollIds.length > 0
-            ? await walletDb.centralCommunityPollOption.findMany({
+            ? await communityDb.centralCommunityPollOption.findMany({
                 where: { pollId: { in: myPollIds }, isApproved: false },
             })
             : [];
@@ -122,7 +122,7 @@ export async function POST(req: Request) {
             return ErrorResponse({ message: "Maximum 10 options", status: 400 });
         }
 
-        const poll = await walletDb.centralCommunityPoll.create({
+        const poll = await communityDb.centralCommunityPoll.create({
             data: {
                 question: question.trim().slice(0, 200),
                 email: info.email,
@@ -163,12 +163,12 @@ export async function PATCH(req: Request) {
         if (action === "vote") {
             const { pollId, optionId } = body;
 
-            const option = await walletDb.centralCommunityPollOption.findFirst({
+            const option = await communityDb.centralCommunityPollOption.findFirst({
                 where: { id: optionId, pollId, isApproved: true },
             });
             if (!option) return ErrorResponse({ message: "Invalid option", status: 400 });
 
-            await walletDb.centralCommunityPollVote.upsert({
+            await communityDb.centralCommunityPollVote.upsert({
                 where: { pollId_email: { pollId, email: info.email } },
                 create: { pollId, optionId, email: info.email },
                 update: { optionId },
@@ -185,7 +185,7 @@ export async function PATCH(req: Request) {
                 return ErrorResponse({ message: "Option text required", status: 400 });
             }
 
-            const poll = await walletDb.centralCommunityPoll.findUnique({
+            const poll = await communityDb.centralCommunityPoll.findUnique({
                 where: { id: pollId },
                 select: { email: true, isActive: true },
             });
@@ -195,7 +195,7 @@ export async function PATCH(req: Request) {
 
             const isCreator = poll.email === info.email;
 
-            await walletDb.centralCommunityPollOption.create({
+            await communityDb.centralCommunityPollOption.create({
                 data: {
                     pollId,
                     text: text.trim().slice(0, 100),
@@ -214,7 +214,7 @@ export async function PATCH(req: Request) {
         if (action === "approve" || action === "reject") {
             const { optionId } = body;
 
-            const option = await walletDb.centralCommunityPollOption.findUnique({
+            const option = await communityDb.centralCommunityPollOption.findUnique({
                 where: { id: optionId },
                 include: { poll: { select: { email: true } } },
             });
@@ -225,13 +225,13 @@ export async function PATCH(req: Request) {
             }
 
             if (action === "approve") {
-                await walletDb.centralCommunityPollOption.update({
+                await communityDb.centralCommunityPollOption.update({
                     where: { id: optionId },
                     data: { isApproved: true },
                 });
                 return SuccessResponse({ message: "Option approved!" });
             } else {
-                await walletDb.centralCommunityPollOption.delete({
+                await communityDb.centralCommunityPollOption.delete({
                     where: { id: optionId },
                 });
                 return SuccessResponse({ message: "Suggestion rejected" });
@@ -241,7 +241,7 @@ export async function PATCH(req: Request) {
         // ── Close poll ──
         if (action === "close") {
             const { pollId } = body;
-            const poll = await walletDb.centralCommunityPoll.findUnique({
+            const poll = await communityDb.centralCommunityPoll.findUnique({
                 where: { id: pollId },
                 select: { email: true },
             });
@@ -250,7 +250,7 @@ export async function PATCH(req: Request) {
                 return ErrorResponse({ message: "Only the creator can close", status: 403 });
             }
 
-            await walletDb.centralCommunityPoll.update({
+            await communityDb.centralCommunityPoll.update({
                 where: { id: pollId },
                 data: { isActive: false },
             });
@@ -263,7 +263,7 @@ export async function PATCH(req: Request) {
             if (!question?.trim()) {
                 return ErrorResponse({ message: "Question required", status: 400 });
             }
-            const poll = await walletDb.centralCommunityPoll.findUnique({
+            const poll = await communityDb.centralCommunityPoll.findUnique({
                 where: { id: pollId },
                 select: { email: true },
             });
@@ -271,7 +271,7 @@ export async function PATCH(req: Request) {
             if (poll.email !== info.email) {
                 return ErrorResponse({ message: "Only the creator can edit", status: 403 });
             }
-            await walletDb.centralCommunityPoll.update({
+            await communityDb.centralCommunityPoll.update({
                 where: { id: pollId },
                 data: { question: question.trim().slice(0, 200) },
             });
@@ -281,7 +281,7 @@ export async function PATCH(req: Request) {
         // ── Delete poll ──
         if (action === "delete") {
             const { pollId } = body;
-            const poll = await walletDb.centralCommunityPoll.findUnique({
+            const poll = await communityDb.centralCommunityPoll.findUnique({
                 where: { id: pollId },
                 select: { email: true },
             });
@@ -290,7 +290,7 @@ export async function PATCH(req: Request) {
             if (poll.email !== info.email && user?.role !== "SUPER_ADMIN") {
                 return ErrorResponse({ message: "Not authorized", status: 403 });
             }
-            await walletDb.centralCommunityPoll.delete({ where: { id: pollId } });
+            await communityDb.centralCommunityPoll.delete({ where: { id: pollId } });
             return SuccessResponse({ message: "Poll deleted" });
         }
 
@@ -301,12 +301,12 @@ export async function PATCH(req: Request) {
                 return ErrorResponse({ message: "Only super admin can pin", status: 403 });
             }
             const { pollId } = body;
-            const poll = await walletDb.centralCommunityPoll.findUnique({
+            const poll = await communityDb.centralCommunityPoll.findUnique({
                 where: { id: pollId },
                 select: { isPinned: true },
             });
             if (!poll) return ErrorResponse({ message: "Poll not found", status: 404 });
-            await walletDb.centralCommunityPoll.update({
+            await communityDb.centralCommunityPoll.update({
                 where: { id: pollId },
                 data: { isPinned: !poll.isPinned },
             });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { walletDb } from "@/lib/wallet-db";
+import { communityDb } from "@/lib/community-db";
 import { getCurrentUser } from "@/lib/auth";
 
 const CATEGORIES = ["feedback", "suggestion", "bug", "appreciation", "other"];
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
                 ? { isRead: false }
                 : {};
 
-        const messages = await walletDb.centralCommunityMessage.findMany({
+        const messages = await communityDb.centralCommunityMessage.findMany({
             where,
             include: {
                 votes: email ? {
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
         }));
 
         const unreadCount = isAdmin
-            ? await walletDb.centralCommunityMessage.count({ where: { isRead: false } })
+            ? await communityDb.centralCommunityMessage.count({ where: { isRead: false } })
             : 0;
 
         return NextResponse.json({ success: true, data: { messages: data, unreadCount } });
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
         // Rate limit: max 5 messages per day per email
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const todayCount = await walletDb.centralCommunityMessage.count({
+        const todayCount = await communityDb.centralCommunityMessage.count({
             where: { email, createdAt: { gte: today } },
         });
         if (todayCount >= 5) {
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
         const displayName = user.player.displayName || user.username || "Unknown";
         const imageUrl = user.imageUrl || "";
 
-        await walletDb.centralCommunityMessage.create({
+        await communityDb.centralCommunityMessage.create({
             data: {
                 message: message.trim(),
                 category,
@@ -150,16 +150,16 @@ export async function PATCH(req: NextRequest) {
                 return NextResponse.json({ error: "Invalid vote" }, { status: 400 });
             }
 
-            const existing = await walletDb.centralCommunityVote.findUnique({
+            const existing = await communityDb.centralCommunityVote.findUnique({
                 where: { messageId_email: { messageId, email } },
             });
 
             if (existing) {
                 if (existing.vote === vote) {
                     // Same vote → toggle off
-                    await walletDb.$transaction([
-                        walletDb.centralCommunityVote.delete({ where: { id: existing.id } }),
-                        walletDb.centralCommunityMessage.update({
+                    await communityDb.$transaction([
+                        communityDb.centralCommunityVote.delete({ where: { id: existing.id } }),
+                        communityDb.centralCommunityMessage.update({
                             where: { id: messageId },
                             data: vote === 1 ? { upvotes: { decrement: 1 } } : { downvotes: { decrement: 1 } },
                         }),
@@ -167,9 +167,9 @@ export async function PATCH(req: NextRequest) {
                     return NextResponse.json({ success: true, action: "removed" });
                 } else {
                     // Switch vote
-                    await walletDb.$transaction([
-                        walletDb.centralCommunityVote.update({ where: { id: existing.id }, data: { vote } }),
-                        walletDb.centralCommunityMessage.update({
+                    await communityDb.$transaction([
+                        communityDb.centralCommunityVote.update({ where: { id: existing.id }, data: { vote } }),
+                        communityDb.centralCommunityMessage.update({
                             where: { id: messageId },
                             data: vote === 1
                                 ? { upvotes: { increment: 1 }, downvotes: { decrement: 1 } }
@@ -180,9 +180,9 @@ export async function PATCH(req: NextRequest) {
                 }
             } else {
                 // New vote
-                await walletDb.$transaction([
-                    walletDb.centralCommunityVote.create({ data: { messageId, email, vote } }),
-                    walletDb.centralCommunityMessage.update({
+                await communityDb.$transaction([
+                    communityDb.centralCommunityVote.create({ data: { messageId, email, vote } }),
+                    communityDb.centralCommunityMessage.update({
                         where: { id: messageId },
                         data: vote === 1 ? { upvotes: { increment: 1 } } : { downvotes: { increment: 1 } },
                     }),
@@ -198,12 +198,12 @@ export async function PATCH(req: NextRequest) {
             if (!messageId || !newMessage?.trim()) {
                 return NextResponse.json({ error: "Message required" }, { status: 400 });
             }
-            const msg = await walletDb.centralCommunityMessage.findUnique({ where: { id: messageId } });
+            const msg = await communityDb.centralCommunityMessage.findUnique({ where: { id: messageId } });
             if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 });
             if (msg.email !== email) {
                 return NextResponse.json({ error: "Not your message" }, { status: 403 });
             }
-            await walletDb.centralCommunityMessage.update({
+            await communityDb.centralCommunityMessage.update({
                 where: { id: messageId },
                 data: { message: newMessage.trim().slice(0, 500) },
             });
@@ -214,12 +214,12 @@ export async function PATCH(req: NextRequest) {
         if (body.action === "delete") {
             if (!email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
             const { messageId } = body;
-            const msg = await walletDb.centralCommunityMessage.findUnique({ where: { id: messageId } });
+            const msg = await communityDb.centralCommunityMessage.findUnique({ where: { id: messageId } });
             if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 });
             if (msg.email !== email && !isAdmin) {
                 return NextResponse.json({ error: "Not your message" }, { status: 403 });
             }
-            await walletDb.centralCommunityMessage.delete({ where: { id: messageId } });
+            await communityDb.centralCommunityMessage.delete({ where: { id: messageId } });
             return NextResponse.json({ success: true, message: "Message deleted" });
         }
 
@@ -229,9 +229,9 @@ export async function PATCH(req: NextRequest) {
                 return NextResponse.json({ error: "Only super admin can pin" }, { status: 403 });
             }
             const { messageId } = body;
-            const msg = await walletDb.centralCommunityMessage.findUnique({ where: { id: messageId } });
+            const msg = await communityDb.centralCommunityMessage.findUnique({ where: { id: messageId } });
             if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 });
-            await walletDb.centralCommunityMessage.update({
+            await communityDb.centralCommunityMessage.update({
                 where: { id: messageId },
                 data: { isPinned: !msg.isPinned },
             });
@@ -247,7 +247,7 @@ export async function PATCH(req: NextRequest) {
         if (isRead !== undefined) updateData.isRead = isRead;
         if (adminReply !== undefined) updateData.adminReply = adminReply;
 
-        await walletDb.centralCommunityMessage.update({ where: { id }, data: updateData });
+        await communityDb.centralCommunityMessage.update({ where: { id }, data: updateData });
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Community PATCH error:", error);
@@ -268,7 +268,7 @@ export async function DELETE(req: NextRequest) {
         const { id } = body;
         if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
-        await walletDb.centralCommunityMessage.delete({ where: { id } });
+        await communityDb.centralCommunityMessage.delete({ where: { id } });
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Community DELETE error:", error);

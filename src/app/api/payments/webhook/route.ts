@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import crypto from "crypto";
 import { GAME } from "@/lib/game-config";
-import { creditCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { creditWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 // Razorpay platform fee (2.4%)
 const PLATFORM_FEE_PERCENT = 2.4;
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
         const description = `Added ${ucAmount} ${GAME.currency} via Razorpay`;
         let centralResult: any = null;
         if (playerEmail) {
-            centralResult = await creditCentralWallet(playerEmail, ucAmount, description, "TOP_UP");
+            centralResult = await creditWallet(playerEmail, ucAmount, description, "TOP_UP");
         }
 
         // Update payment status

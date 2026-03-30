@@ -3,7 +3,7 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { GAME } from "@/lib/game-config";
-import { getAvailableBalance, debitCentralWallet } from "@/lib/wallet-service";
+import { getAvailableBalance, debitWallet } from "@/lib/wallet-service";
 
 /**
  * POST /api/royal-pass/buy
@@ -70,7 +70,7 @@ export async function POST() {
 
         // Debit central wallet
         const description = lostDiscount ? `${GAME.passName} Purchase (full price)` : `${GAME.passName} Purchase (75% off)`;
-        const walletResult = await debitCentralWallet(email, rpPrice, description, "ROYAL_PASS_PURCHASE");
+        const walletResult = await debitWallet(email, rpPrice, description, "ROYAL_PASS_PURCHASE");
 
         await prisma.$transaction(async (tx) => {
 

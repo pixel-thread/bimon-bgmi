@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
-import { getAvailableBalance, transferCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { getAvailableBalance, transferWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * POST /api/uc-transfers
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
             const toName = toPlayer.displayName || toPlayer.user.username;
 
             // Transfer via central wallet
-            await transferCentralWallet(
+            await transferWallet(
                 senderEmail,
                 recipientEmail,
                 amount,

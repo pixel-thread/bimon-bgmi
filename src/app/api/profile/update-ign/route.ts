@@ -4,7 +4,7 @@ import { getAuthEmail } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { getSettings } from "@/lib/settings";
 import { GAME } from "@/lib/game-config";
-import { debitCentralWallet } from "@/lib/wallet-service";
+import { debitWallet } from "@/lib/wallet-service";
 
 const NAME_CHANGE_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
 
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
         // Charge name change fee via central wallet if applicable
         const player = user.player!;
         if (nameChangeFee > 0) {
-            await debitCentralWallet(userId, nameChangeFee, "Name Change Fee", "OTHER");
+            await debitWallet(userId, nameChangeFee, "Name Change Fee", "OTHER");
             await prisma.player.update({
                 where: { id: player.id },
                 data: updateData,

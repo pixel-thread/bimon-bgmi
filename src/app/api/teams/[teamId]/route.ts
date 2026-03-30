@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { NextRequest, NextResponse } from "next/server";
 import { GAME } from "@/lib/game-config";
-import { creditCentralWallet, debitCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { creditWallet, debitWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * PATCH /api/teams/[teamId]
@@ -66,7 +66,7 @@ export async function PATCH(
                     for (const playerId of addPlayerIds) {
                         const email = await getEmailByPlayerId(playerId);
                         if (email) {
-                            await debitCentralWallet(email, entryFee, `Entry fee: Added to team in ${tournamentName}`, "TOURNAMENT_ENTRY");
+                            await debitWallet(email, entryFee, `Entry fee: Added to team in ${tournamentName}`, "TOURNAMENT_ENTRY");
                         }
                     }
                 }
@@ -88,7 +88,7 @@ export async function PATCH(
                     for (const playerId of removePlayerIds) {
                         const email = await getEmailByPlayerId(playerId);
                         if (email) {
-                            await creditCentralWallet(email, entryFee, `Refund: Removed from team in ${tournamentName}`, "TOURNAMENT_ENTRY");
+                            await creditWallet(email, entryFee, `Refund: Removed from team in ${tournamentName}`, "TOURNAMENT_ENTRY");
                         }
                     }
                 }
@@ -186,7 +186,7 @@ export async function DELETE(
                 for (const playerId of playerIds) {
                     const email = await getEmailByPlayerId(playerId);
                     if (email) {
-                        await creditCentralWallet(email, entryFee, `Refund: Team deleted from ${team.tournament?.name ?? "tournament"}`, "TOURNAMENT_ENTRY");
+                        await creditWallet(email, entryFee, `Refund: Team deleted from ${team.tournament?.name ?? "tournament"}`, "TOURNAMENT_ENTRY");
                     }
                 }
 

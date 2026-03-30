@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { requireAdmin } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
-import { getCentralBalance, debitCentralWallet, creditCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { getBalance, debitWallet, creditWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * GET /api/tournaments/[id]/donations
@@ -84,7 +84,7 @@ export async function POST(
                 return NextResponse.json({ error: "Player email not found" }, { status: 400 });
             }
 
-            const centralBalance = await getCentralBalance(email);
+            const centralBalance = await getBalance(email);
             if (centralBalance < amount) {
                 return NextResponse.json(
                     { error: `Insufficient balance. Player has ${centralBalance} ${GAME.currency}.` },
@@ -95,7 +95,7 @@ export async function POST(
             playerName = player.displayName || player.user.username;
 
             // Debit central wallet (handles routing for Free Fire automatically)
-            await debitCentralWallet(email, amount, `Prize pool donation — ${tournament.name}`, "OTHER");
+            await debitWallet(email, amount, `Prize pool donation — ${tournament.name}`, "OTHER");
 
             // Record the donation
             await prisma.prizePoolDonation.create({
@@ -158,7 +158,7 @@ export async function DELETE(
         if (donation.playerId && !donation.isAnonymous) {
             const email = await getEmailByPlayerId(donation.playerId);
             if (email) {
-                await creditCentralWallet(email, donation.amount, `Prize pool donation refund`, "OTHER");
+                await creditWallet(email, donation.amount, `Prize pool donation refund`, "OTHER");
             }
         }
 

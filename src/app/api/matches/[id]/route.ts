@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { type NextRequest } from "next/server";
 import { GAME } from "@/lib/game-config";
-import { creditCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { creditWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * DELETE /api/matches/[id]
@@ -92,7 +92,7 @@ export async function DELETE(
                         for (const [playerId, amount] of refundsByPlayer) {
                             const email = await getEmailByPlayerId(playerId, tx);
                             if (email) {
-                                await creditCentralWallet(email, amount, `Entry fee refund — tournament reset`, "TOURNAMENT_ENTRY");
+                                await creditWallet(email, amount, `Entry fee refund — tournament reset`, "TOURNAMENT_ENTRY");
                             }
                         }
 

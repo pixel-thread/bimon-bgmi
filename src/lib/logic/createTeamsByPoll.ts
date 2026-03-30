@@ -11,7 +11,7 @@ import { computeWeightedScore, PlayerWithWins, SeasonScoringConfig } from "./sco
 import { PlayerWithWeightT } from "@/types/models";
 import { getPreviousTournamentTeammates } from "./previousTeammates";
 import { isBirthdayWithinWindow } from "./birthdayCheck";
-import { debitCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { debitWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -451,7 +451,7 @@ export async function createTeamsByPoll({
             const email = (player as any).user?.email || await getEmailByPlayerId(player.id);
             if (email) {
                 try {
-                    await debitCentralWallet(email, entryFee, `Entry fee for ${tournamentName}`, "TOURNAMENT_ENTRY");
+                    await debitWallet(email, entryFee, `Entry fee for ${tournamentName}`, "TOURNAMENT_ENTRY");
                 } catch (err) {
                     console.error(`[createTeamsByPoll] Failed to debit central wallet for ${player.id}:`, err);
                 }

@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
-import { debitCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { debitWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * POST /api/tournaments/[id]/undo-winner
@@ -80,7 +80,7 @@ export async function POST(
             for (const reward of claimedRewards) {
                 const email = await getEmailByPlayerId(reward.playerId, tx);
                 if (email) {
-                    await debitCentralWallet(email, reward.amount, `Adjustment - ${tournament.name}`, "ADMIN_ADJUSTMENT");
+                    await debitWallet(email, reward.amount, `Adjustment - ${tournament.name}`, "ADMIN_ADJUSTMENT");
                 }
             }
 

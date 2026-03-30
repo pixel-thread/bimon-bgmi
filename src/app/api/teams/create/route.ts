@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { type NextRequest } from "next/server";
 import { GAME } from "@/lib/game-config";
-import { debitCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { debitWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * POST /api/teams/create
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
                 const email = await getEmailByPlayerId(playerId);
                 if (email) {
                     try {
-                        await debitCentralWallet(email, entryFee, `Entry fee for ${tournament.name}`, "TOURNAMENT_ENTRY");
+                        await debitWallet(email, entryFee, `Entry fee for ${tournament.name}`, "TOURNAMENT_ENTRY");
                     } catch (err) {
                         console.error(`[teams/create] Failed to debit ${playerId}:`, err);
                     }

@@ -240,6 +240,7 @@ export default function NotificationsPage() {
             queryClient.invalidateQueries({ queryKey: ["notification-count"] });
             queryClient.invalidateQueries({ queryKey: ["wallet"] });
             queryClient.invalidateQueries({ queryKey: ["profile"] });
+            queryClient.invalidateQueries({ queryKey: ["transactions"] });
             queryClient.invalidateQueries({ queryKey: ["royal-pass"] });
             onClose();
             setSelectedReward(null);

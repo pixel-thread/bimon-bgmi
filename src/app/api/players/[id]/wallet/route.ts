@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { creditCentralWallet, debitCentralWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { creditWallet, debitWallet, getEmailByPlayerId } from "@/lib/wallet-service";
 
 /**
  * POST /api/players/[id]/wallet
@@ -48,8 +48,8 @@ export async function POST(
 
         // Wallet service handles central vs local routing
         const result = type === "CREDIT"
-            ? await creditCentralWallet(email, amount, description, "ADMIN_ADJUSTMENT")
-            : await debitCentralWallet(email, amount, description, "ADMIN_ADJUSTMENT");
+            ? await creditWallet(email, amount, description, "ADMIN_ADJUSTMENT")
+            : await debitWallet(email, amount, description, "ADMIN_ADJUSTMENT");
 
         return NextResponse.json({
             balance: result.balance,

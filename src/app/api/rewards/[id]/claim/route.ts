@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
-import { creditCentralWallet } from "@/lib/wallet-service";
+import { creditWallet } from "@/lib/wallet-service";
 
 /**
  * POST /api/rewards/[id]/claim
@@ -63,7 +63,7 @@ export async function POST(
         const reason = reasonMap[reward.type] || "OTHER";
 
         // Credit wallet (service handles central vs local routing)
-        await creditCentralWallet(userId, reward.amount, description, reason);
+        await creditWallet(userId, reward.amount, description, reason);
 
         // Mark as claimed
         await prisma.pendingReward.update({

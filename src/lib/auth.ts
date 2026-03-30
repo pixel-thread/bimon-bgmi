@@ -2,7 +2,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { auth as nextAuth } from "@/lib/auth-config";
 import { getRequestPrisma } from "@/lib/database";
-import { getCentralBalance } from "@/lib/wallet-service";
+import { getBalance } from "@/lib/wallet-service";
 
 /**
  * Get the current authenticated user from the database.
@@ -80,7 +80,7 @@ export const getCurrentUser = cache(async () => {
                 phoneNumber: user.player.phoneNumber ?? null,
                 wallet: {
                     id: user.player.wallet?.id ?? "",
-                    balance: await getCentralBalance(email).catch(() => user.player?.wallet?.balance ?? 0),
+                    balance: await getBalance(email).catch(() => user.player?.wallet?.balance ?? 0),
                 },
             }
             : null,

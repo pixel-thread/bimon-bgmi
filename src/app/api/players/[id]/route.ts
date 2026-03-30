@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCategoryFromKDValue, getCategoryFromWinRate } from "@/lib/logic/categoryUtils";
 import { requireAdmin } from "@/lib/auth";
-import { getCentralBalance } from "@/lib/wallet-service";
+import { getBalance } from "@/lib/wallet-service";
 import { GAME } from "@/lib/game-config";
 
 const VALID_CATEGORIES = ["BOT", "ULTRA_NOOB", "NOOB", "PRO", "ULTRA_PRO", "LEGEND"] as const;
@@ -101,7 +101,7 @@ export async function GET(
             phoneNumber: player.phoneNumber || null,
             bio: player.bio,
             createdAt: player.createdAt,
-            balance: player.user.email ? await getCentralBalance(player.user.email) : 0,
+            balance: player.user.email ? await getBalance(player.user.email) : 0,
             stats: {
                 kills: totalKills,
                 matches: totalMatches,

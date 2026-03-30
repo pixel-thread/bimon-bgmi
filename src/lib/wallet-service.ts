@@ -37,7 +37,7 @@ async function getLocalPlayerByEmail(email: string) {
 /**
  * Get wallet balance for a user by email.
  */
-export async function getCentralBalance(email: string): Promise<number> {
+export async function getBalance(email: string): Promise<number> {
     const user = await getLocalPlayerByEmail(email);
     return user?.player?.wallet?.balance ?? 0;
 }
@@ -86,9 +86,9 @@ export async function getAvailableBalance(email: string): Promise<{ balance: num
 
 /**
  * Batch-fetch wallet balances for multiple emails.
- * Much faster than calling getCentralBalance per player.
+ * Much faster than calling getBalance per player.
  */
-export async function getCentralBalancesBatch(emails: string[]): Promise<Map<string, number>> {
+export async function getBalancesBatch(emails: string[]): Promise<Map<string, number>> {
     const map = new Map<string, number>();
     if (emails.length === 0) return map;
 
@@ -105,7 +105,7 @@ export async function getCentralBalancesBatch(emails: string[]): Promise<Map<str
 /**
  * Get recent transactions for a user.
  */
-export async function getCentralTransactions(
+export async function getTransactions(
     email: string,
     options?: { game?: string; limit?: number; cursor?: string }
 ) {
@@ -128,7 +128,7 @@ export async function getCentralTransactions(
 /**
  * Credit currency to a user's wallet.
  */
-export async function creditCentralWallet(
+export async function creditWallet(
     email: string,
     amount: number,
     description: string,
@@ -141,21 +141,23 @@ export async function creditCentralWallet(
     if (!user?.player) throw new Error("Player not found");
     const currentBalance = user.player.wallet?.balance ?? 0;
     const newBalance = currentBalance + amount;
-    await prisma.wallet.upsert({
-        where: { playerId: user.player.id },
-        create: { playerId: user.player.id, balance: newBalance },
-        update: { balance: newBalance },
-    });
-    const tx = await prisma.transaction.create({
-        data: { playerId: user.player.id, amount, type: "CREDIT", description },
-    });
+    const [, tx] = await prisma.$transaction([
+        prisma.wallet.upsert({
+            where: { playerId: user.player.id },
+            create: { playerId: user.player.id, balance: newBalance },
+            update: { balance: newBalance },
+        }),
+        prisma.transaction.create({
+            data: { playerId: user.player.id, amount, type: "CREDIT", description },
+        }),
+    ]);
     return { balance: newBalance, transaction: tx };
 }
 
 /**
  * Debit currency from a user's wallet.
  */
-export async function debitCentralWallet(
+export async function debitWallet(
     email: string,
     amount: number,
     description: string,
@@ -166,21 +168,23 @@ export async function debitCentralWallet(
     if (!user?.player) throw new Error("Player not found");
     const currentBalance = user.player.wallet?.balance ?? 0;
     const newBalance = currentBalance - amount;
-    await prisma.wallet.upsert({
-        where: { playerId: user.player.id },
-        create: { playerId: user.player.id, balance: newBalance },
-        update: { balance: newBalance },
-    });
-    const tx = await prisma.transaction.create({
-        data: { playerId: user.player.id, amount, type: "DEBIT", description },
-    });
+    const [, tx] = await prisma.$transaction([
+        prisma.wallet.upsert({
+            where: { playerId: user.player.id },
+            create: { playerId: user.player.id, balance: newBalance },
+            update: { balance: newBalance },
+        }),
+        prisma.transaction.create({
+            data: { playerId: user.player.id, amount, type: "DEBIT", description },
+        }),
+    ]);
     return { balance: newBalance, transaction: tx };
 }
 
 /**
  * Transfer currency between two users.
  */
-export async function transferCentralWallet(
+export async function transferWallet(
     fromEmail: string,
     toEmail: string,
     amount: number,
