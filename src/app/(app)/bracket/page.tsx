@@ -13,7 +13,7 @@ import { BracketOnboarding, DisputeOnboarding, useBracketOnboarding, useDisputeO
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { Trophy, Swords, Clock, Info } from "lucide-react";
 import { Chip, Tabs, Tab, Skeleton } from "@heroui/react";
-import { snapToCutoff, addPausedDays, getISTDayOfWeek } from "@/lib/logic/koRolloverDeadline";
+import { snapToCutoff, addPausedDays, getISTDayOfWeek } from "@/lib/logic/deadline-utils";
 
 // Fallback famous footballers (if gallery is empty)
 const FAMOUS_PLAYERS = [
