@@ -45,10 +45,12 @@ function StarRating({
     value,
     onChange,
     disabled,
+    showHint,
 }: {
     value: number;
     onChange: (v: number) => void;
     disabled?: boolean;
+    showHint?: boolean;
 }) {
     const [hover, setHover] = useState(0);
     const [showNoice, setShowNoice] = useState(false);
@@ -77,11 +79,22 @@ function StarRating({
                         onMouseEnter={() => setHover(star)}
                         onMouseLeave={() => setHover(0)}
                         onClick={() => handleClick(star)}
-                        className={`transition-all duration-150 ${disabled
+                        className={`relative transition-all duration-150 ${disabled
                             ? "cursor-not-allowed opacity-40"
                             : "cursor-pointer hover:scale-110 active:scale-95"
                             }`}
                     >
+                        {/* Tap hint on 5th star */}
+                        {star === 5 && showHint && (
+                            <motion.span
+                                initial={{ opacity: 0, y: -2 }}
+                                animate={{ opacity: 1, y: [-2, 3, -2] }}
+                                transition={{ y: { repeat: Infinity, duration: 0.8, ease: "easeInOut" }, opacity: { duration: 0.3 } }}
+                                className="absolute -top-5 left-1/2 -translate-x-1/2 pointer-events-none z-10 text-base drop-shadow"
+                            >
+                                👆
+                            </motion.span>
+                        )}
                         <Star
                             className={`h-5 w-5 transition-colors ${star <= active
                                 ? "fill-warning text-warning"
@@ -299,18 +312,14 @@ export function MeritRatingSection() {
                                 <p className="text-[13px] font-medium truncate flex-1 min-w-0">
                                     {player.displayName}
                                 </p>
-                                <div className="relative">
-                                    {i === 0 && (
-                                        <AnimatePresence>
-                                            <TapHint visible={showHint && !ratings[player.id]} />
-                                        </AnimatePresence>
-                                    )}
+                                <div>
                                     <StarRating
                                         value={ratings[player.id] ?? 0}
                                         onChange={(v) =>
                                             handleRatingChange(player.id, v)
                                         }
                                         disabled={submitAll.isPending}
+                                        showHint={i === 0 && showHint && !ratings[player.id]}
                                     />
                                 </div>
                             </motion.div>
