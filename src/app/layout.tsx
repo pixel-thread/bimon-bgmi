@@ -53,22 +53,22 @@ export const metadata: Metadata = {
       `Manage ${GAME.gameName} tournaments, teams, ${GAME.currency} economy, and player stats.`,
     images: [
       {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
+        url: `${ICON_DIR}/icon-512x512.png`,
+        width: 512,
+        height: 512,
         alt: `${GAME.name} — Tournament Manager`,
       },
     ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: {
       default: `${GAME.name} — Tournament Manager`,
       template: `%s | ${GAME.name}`,
     },
     description:
       `Manage ${GAME.gameName} tournaments, teams, ${GAME.currency} economy, and player stats.`,
-    images: ["/og-image.png"],
+    images: [`${ICON_DIR}/icon-512x512.png`],
   },
 };
 
