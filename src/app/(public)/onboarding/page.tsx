@@ -328,13 +328,12 @@ export default function OnboardingPage() {
                                         }}
                                         placeholder={GAME.ignLabel}
                                         size="lg"
-                                        variant="flat"
+                                        variant="bordered"
                                         maxLength={20}
                                         isDisabled={isSubmitting}
                                         isInvalid={!!displayNameError}
                                         errorMessage={displayNameError}
                                         classNames={{
-                                            inputWrapper: "bg-default-100 border border-divider data-[focus=true]:border-primary",
                                             input: "placeholder:text-foreground/30",
                                         }}
                                         startContent={
