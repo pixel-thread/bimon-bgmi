@@ -89,8 +89,6 @@ export function CrossGamePromo({ showAll = false }: { showAll?: boolean }) {
                             <a
                                 key={g.mode}
                                 href={userEmail ? `${g.url}/sign-in?login_hint=${encodeURIComponent(userEmail)}` : g.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
                                 className={`flex items-center gap-3 rounded-xl border ${g.border} bg-gradient-to-r ${g.gradient} px-3.5 py-2.5 transition-all hover:scale-[1.02] active:scale-[0.98]`}
                             >
                                 <img src={g.icon} alt={g.name} className="h-8 w-8 rounded-lg object-contain shrink-0" />
