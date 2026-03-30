@@ -115,13 +115,14 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, winner: propWinner
                 const y2 = py(rN.top + rN.height / 2);
                 const midX = (x1 + x2) / 2;
 
-                const statuses = [m1.status, m2?.status].filter(Boolean);
-                const color =
-                    statuses.some(s => s === "DISPUTED") ? "#ef4444" :
-                    statuses.some(s => s === "SUBMITTED") ? "#f59e0b" :
-                    statuses.every(s => s === "CONFIRMED" || s === "BYE") ? "#22c55e" :
-                    "#94a3b8";
-                const op = color === "#94a3b8" ? 0.4 : 0.6;
+                // Per-match arm colors
+                const armColor = (m: typeof m1) => {
+                    if (m.status === "DISPUTED") return { color: "#ef4444", op: 0.6 };
+                    if (m.status === "CONFIRMED" || m.status === "BYE") return { color: "#22c55e", op: 0.6 };
+                    if (m.status === "SUBMITTED") return { color: "#f59e0b", op: 0.6 };
+                    return { color: "#94a3b8", op: 0.4 };
+                };
+
 
                 if (m2) {
                     const e2 = cardRefs.current[m2.id];
@@ -129,20 +130,27 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, winner: propWinner
                         const r2 = e2.getBoundingClientRect();
                         const y1b = py(r2.top + r2.height / 2);
 
-                        // Top match → vertical bar → next match (smooth curves)
+                        const top = armColor(m1);
+                        const bot = armColor(m2);
+
+                        // Top match → horizontal → curve down into vertical
                         const r = Math.min(CURVE_R, Math.abs(y2 - y1) / 2);
-                        // Top arm: match → horizontal → curve down into vertical
-                        path(`M${x1},${y1} L${midX - r},${y1} Q${midX},${y1} ${midX},${y1 + r}`, color, op);
-                        // Vertical bar
-                        path(`M${midX},${y1 + r} L${midX},${y1b - r}`, color, op);
-                        // Bottom arm: match → horizontal → curve up into vertical
-                        path(`M${x1},${y1b} L${midX - r},${y1b} Q${midX},${y1b} ${midX},${y1b - r}`, color, op);
-                        // Center → next match
-                        path(`M${midX},${y2} L${x2},${y2}`, color, op);
+                        path(`M${x1},${y1} L${midX - r},${y1} Q${midX},${y1} ${midX},${y1 + r}`, top.color, top.op);
+                        // Vertical bar — split at midpoint (y2), top half = top color, bottom half = bot color
+                        path(`M${midX},${y1 + r} L${midX},${y2}`, top.color, top.op);
+                        path(`M${midX},${y2} L${midX},${y1b - r}`, bot.color, bot.op);
+                        // Bottom match → horizontal → curve up into vertical
+                        path(`M${x1},${y1b} L${midX - r},${y1b} Q${midX},${y1b} ${midX},${y1b - r}`, bot.color, bot.op);
+                        // Center → next match — use the "better" status of the two
+                        const fwdColor = (top.color === "#22c55e" || bot.color === "#22c55e")
+                            ? (top.color === "#22c55e" && bot.color === "#22c55e" ? top : { color: "#f59e0b", op: 0.6 })
+                            : (top.color === "#f59e0b" || bot.color === "#f59e0b") ? { color: "#f59e0b", op: 0.6 }
+                            : { color: "#94a3b8", op: 0.4 };
+                        path(`M${midX},${y2} L${x2},${y2}`, fwdColor.color, fwdColor.op);
                     }
                 } else {
-                    // Single match → next match (straight line)
-                    path(`M${x1},${y1} L${x2},${y2}`, color, op);
+                    const solo = armColor(m1);
+                    path(`M${x1},${y1} L${x2},${y2}`, solo.color, solo.op);
                 }
             }
         }
