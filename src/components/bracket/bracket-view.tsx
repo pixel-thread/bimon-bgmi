@@ -141,9 +141,9 @@ export function KOBracket({ rounds, currentPlayerId, isAdmin, winner: propWinner
                         path(`M${midX},${y2} L${midX},${y1b - r}`, bot.color, bot.op);
                         // Bottom match → horizontal → curve up into vertical
                         path(`M${x1},${y1b} L${midX - r},${y1b} Q${midX},${y1b} ${midX},${y1b - r}`, bot.color, bot.op);
-                        // Center → next match — use the "better" status of the two
+                        // Center → next match — green if any player advanced (confirmed/bye)
                         const fwdColor = (top.color === "#22c55e" || bot.color === "#22c55e")
-                            ? (top.color === "#22c55e" && bot.color === "#22c55e" ? top : { color: "#f59e0b", op: 0.6 })
+                            ? { color: "#22c55e", op: 0.6 }
                             : (top.color === "#f59e0b" || bot.color === "#f59e0b") ? { color: "#f59e0b", op: 0.6 }
                             : { color: "#94a3b8", op: 0.4 };
                         path(`M${midX},${y2} L${x2},${y2}`, fwdColor.color, fwdColor.op);
