@@ -1154,12 +1154,12 @@ export default function ProfilePage() {
                                 if (isVideo) {
                                     // Upload video directly to Cloudinary from client
                                     // (bypasses Vercel's 4.5MB body size limit)
-                                    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-                                    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-                                    if (!cloudName || !uploadPreset) {
+                                    const cfgRes = await fetch("/api/cloudinary-config");
+                                    if (!cfgRes.ok) {
                                         toast.error("Upload not configured");
                                         return;
                                     }
+                                    const { cloudName, uploadPreset } = await cfgRes.json();
 
                                     const cloudFd = new FormData();
                                     cloudFd.append("file", file);
