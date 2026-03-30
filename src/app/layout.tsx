@@ -21,11 +21,11 @@ const ICON_DIR = `/icons/${ICON_DIRS[GAME_MODE] ?? "bgmi"}`;
 export const metadata: Metadata = {
   applicationName: GAME.name,
   title: {
-    default: `${GAME.name} — Tournament Manager`,
+    default: `${GAME.name} — Bimon Tournament`,
     template: `%s | ${GAME.name}`,
   },
   description:
-    `Manage ${GAME.gameName} tournaments, teams, ${GAME.currency} economy, and player stats — all in one place.`,
+    `Join ${GAME.gameName} tournaments, win ${GAME.currencyPlural}, and compete with the best players.`,
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -46,28 +46,28 @@ export const metadata: Metadata = {
     type: "website",
     siteName: GAME.name,
     title: {
-      default: `${GAME.name} — Tournament Manager`,
+      default: `${GAME.name} — Bimon Tournament`,
       template: `%s | ${GAME.name}`,
     },
     description:
-      `Manage ${GAME.gameName} tournaments, teams, ${GAME.currency} economy, and player stats.`,
+      `Join ${GAME.gameName} tournaments, win ${GAME.currencyPlural}, and compete with the best players.`,
     images: [
       {
         url: `${ICON_DIR}/og-image.png`,
         width: 1200,
         height: 630,
-        alt: `${GAME.name} — Tournament Manager`,
+        alt: `${GAME.name} — Bimon Tournament`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: {
-      default: `${GAME.name} — Tournament Manager`,
+      default: `${GAME.name} — Bimon Tournament`,
       template: `%s | ${GAME.name}`,
     },
     description:
-      `Manage ${GAME.gameName} tournaments, teams, ${GAME.currency} economy, and player stats.`,
+      `Join ${GAME.gameName} tournaments, win ${GAME.currencyPlural}, and compete with the best players.`,
     images: [`${ICON_DIR}/og-image.png`],
   },
 };
