@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Modal,
@@ -119,6 +119,25 @@ function StarRating({
     );
 }
 
+/* ─── Tap Hint (one-time hand pointer) ──────────────────────── */
+
+const HINT_KEY = "merit-rating-hint-shown";
+
+function TapHint({ visible }: { visible: boolean }) {
+    if (!visible) return null;
+    return (
+        <motion.div
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: [10, -4, 10] }}
+            exit={{ opacity: 0 }}
+            transition={{ x: { repeat: Infinity, duration: 1.2, ease: "easeInOut" }, opacity: { duration: 0.3 } }}
+            className="absolute -left-7 top-1/2 -translate-y-1/2 pointer-events-none z-10"
+        >
+            <span className="text-lg drop-shadow">👆</span>
+        </motion.div>
+    );
+}
+
 /* ─── Main Component ────────────────────────────────────────── */
 
 /**
@@ -133,6 +152,15 @@ export function MeritRatingSection() {
     const [ratings, setRatings] = useState<Record<string, number>>({});
     // Hide modal immediately after successful submission
     const [submitted, setSubmitted] = useState(false);
+    const [showHint, setShowHint] = useState(false);
+
+    // Show hint continuously until user clicks a star (one-time per device)
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (!localStorage.getItem(HINT_KEY)) {
+            setShowHint(true);
+        }
+    }, []);
 
     const { data } = useQuery<PendingMeritData>({
         queryKey: ["pending-merit"],
@@ -184,8 +212,13 @@ export function MeritRatingSection() {
     const handleRatingChange = useCallback(
         (playerId: string, value: number) => {
             setRatings((prev) => ({ ...prev, [playerId]: value }));
+            // Dismiss hint on first interaction
+            if (showHint) {
+                setShowHint(false);
+                localStorage.setItem(HINT_KEY, "1");
+            }
         },
-        []
+        [showHint]
     );
 
     // Reset submitted flag once the API confirms no pending ratings remain
@@ -266,13 +299,20 @@ export function MeritRatingSection() {
                                 <p className="text-[13px] font-medium truncate flex-1 min-w-0">
                                     {player.displayName}
                                 </p>
-                                <StarRating
-                                    value={ratings[player.id] ?? 0}
-                                    onChange={(v) =>
-                                        handleRatingChange(player.id, v)
-                                    }
-                                    disabled={submitAll.isPending}
-                                />
+                                <div className="relative">
+                                    {i === 0 && (
+                                        <AnimatePresence>
+                                            <TapHint visible={showHint && !ratings[player.id]} />
+                                        </AnimatePresence>
+                                    )}
+                                    <StarRating
+                                        value={ratings[player.id] ?? 0}
+                                        onChange={(v) =>
+                                            handleRatingChange(player.id, v)
+                                        }
+                                        disabled={submitAll.isPending}
+                                    />
+                                </div>
                             </motion.div>
                         ))}
                     </div>
