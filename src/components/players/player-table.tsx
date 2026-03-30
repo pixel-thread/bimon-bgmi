@@ -8,7 +8,8 @@ import type { PlayerDTO, PlayersMeta } from "@/hooks/use-players";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { GAME } from "@/lib/game-config";
 import { CurrencyIcon } from "@/components/common/CurrencyIcon";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
+import { ImagePreview } from "@/components/common/image-preview";
 
 function getDisplayName(
     displayName: string | null,
@@ -40,6 +41,7 @@ export function PlayerTable({
 }: PlayerTableProps) {
     const { isAdmin } = useAuthUser();
     const sentinelRef = useRef<HTMLDivElement>(null);
+    const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
 
     // Auto-fetch next page when sentinel enters viewport
     useEffect(() => {
@@ -104,12 +106,20 @@ export function PlayerTable({
 
                             {/* Avatar + Name */}
                             <div className="flex flex-1 items-center gap-3 overflow-hidden">
-                                <div className="relative shrink-0">
+                                <div
+                                    className="relative shrink-0"
+                                    onClick={(e) => {
+                                        if (player.imageUrl) {
+                                            e.stopPropagation();
+                                            setPreviewImage({ src: player.imageUrl, name: getDisplayName(player.displayName, player.username) });
+                                        }
+                                    }}
+                                >
                                     <Avatar
                                         src={player.imageUrl || undefined}
                                         name={getDisplayName(player.displayName, player.username)}
                                         size="sm"
-                                        className="h-9 w-9"
+                                        className={`h-9 w-9 ${player.imageUrl ? "cursor-zoom-in" : ""}`}
                                     />
                                 </div>
                                 <div className="min-w-0">
@@ -226,6 +236,14 @@ export function PlayerTable({
                     </p>
                 ) : null}
             </div>
+
+            {/* Fullscreen image preview */}
+            <ImagePreview
+                src={previewImage?.src ?? null}
+                alt={previewImage?.name}
+                isOpen={!!previewImage}
+                onClose={() => setPreviewImage(null)}
+            />
         </div>
     );
 }

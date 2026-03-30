@@ -127,11 +127,11 @@ function TapHint({ visible }: { visible: boolean }) {
     if (!visible) return null;
     return (
         <motion.div
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: [10, -4, 10] }}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: [-4, 4, -4] }}
             exit={{ opacity: 0 }}
-            transition={{ x: { repeat: Infinity, duration: 1.2, ease: "easeInOut" }, opacity: { duration: 0.3 } }}
-            className="absolute -left-7 top-1/2 -translate-y-1/2 pointer-events-none z-10"
+            transition={{ y: { repeat: Infinity, duration: 0.8, ease: "easeInOut" }, opacity: { duration: 0.3 } }}
+            className="absolute -top-6 right-0 pointer-events-none z-10"
         >
             <span className="text-lg drop-shadow">👆</span>
         </motion.div>
