@@ -196,12 +196,13 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
     const [screenshot, setScreenshot] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [editNotes, setEditNotes] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
     const queryClient = useQueryClient();
     const confirmResult = useConfirmResult(tournamentId || "");
 
     useEffect(() => {
-        if (editing && match) { setScore1(match.score1 ?? 0); setScore2(match.score2 ?? 0); }
+        if (editing && match) { setScore1(match.score1 ?? 0); setScore2(match.score2 ?? 0); setEditNotes(match.notes ?? ""); }
     }, [editing, match]);
 
     useEffect(() => {
@@ -246,7 +247,7 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
             const res = await fetch(`/api/bracket-matches/${match?.id}/admin-set-score`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ score1, score2, screenshotUrl: finalScreenshotUrl }),
+                body: JSON.stringify({ score1, score2, screenshotUrl: finalScreenshotUrl, notes: editNotes.trim() || undefined }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || data.message || "Failed to save");
@@ -365,6 +366,19 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                     {(screenshotToShow && !removeScreenshot) ? "Replace screenshot" : "Upload screenshot"}
                                 </button>
                                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+                            </div>
+
+                            {/* Notes */}
+                            <div className="space-y-1">
+                                <p className="text-[11px] font-medium text-foreground/40">Notes (optional)</p>
+                                <textarea
+                                    value={editNotes}
+                                    onChange={(e) => setEditNotes(e.target.value)}
+                                    placeholder="Add a note about this result..."
+                                    rows={2}
+                                    maxLength={200}
+                                    className="w-full rounded-xl border border-divider bg-default-100 px-3 py-2 text-xs text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                                />
                             </div>
 
 
