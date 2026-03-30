@@ -88,11 +88,12 @@ function StarRating({
                         {star === 5 && showHint && (
                             <motion.span
                                 initial={{ opacity: 0, y: -2 }}
-                                animate={{ opacity: 1, y: [-2, 3, -2] }}
+                                animate={{ opacity: 1, y: [-4, 2, -4] }}
                                 transition={{ y: { repeat: Infinity, duration: 0.8, ease: "easeInOut" }, opacity: { duration: 0.3 } }}
-                                className="absolute -top-5 left-1/2 -translate-x-1/2 pointer-events-none z-10 text-base drop-shadow"
+                                className="absolute -top-6 left-1/2 -translate-x-1/2 pointer-events-none z-10 text-xl drop-shadow-lg"
+                                style={{ filter: "brightness(0) invert(1)", lineHeight: 1 }}
                             >
-                                👆
+                                👇
                             </motion.span>
                         )}
                         <Star
