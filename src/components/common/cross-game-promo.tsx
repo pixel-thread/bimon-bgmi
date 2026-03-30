@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { Card, CardBody } from "@heroui/react";
 import { GAME } from "@/lib/game-config";
+import { useSession } from "next-auth/react";
 
 const SISTER_GAMES = [
     {
@@ -61,6 +62,8 @@ const SISTER_GAMES = [
  * - showAll (community mode): shows all games with "Do you play X?" messaging.
  */
 export function CrossGamePromo({ showAll = false }: { showAll?: boolean }) {
+    const { data: session } = useSession();
+    const userEmail = session?.user?.email;
     const games = showAll
         ? SISTER_GAMES.filter((g) => g.mode !== GAME.mode)
         : SISTER_GAMES.filter((g) => g.mode !== GAME.mode && g.sharedWallet);
@@ -85,7 +88,7 @@ export function CrossGamePromo({ showAll = false }: { showAll?: boolean }) {
                         {games.map((g) => (
                             <a
                                 key={g.mode}
-                                href={g.url}
+                                href={userEmail ? `${g.url}/sign-in?login_hint=${encodeURIComponent(userEmail)}` : g.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className={`flex items-center gap-3 rounded-xl border ${g.border} bg-gradient-to-r ${g.gradient} px-3.5 py-2.5 transition-all hover:scale-[1.02] active:scale-[0.98]`}

@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { GAME } from "@/lib/game-config";
 import { Swords, Loader2 } from "lucide-react";
@@ -18,14 +18,32 @@ export default function SignInPage() {
     useEffect(() => {
         if (isSignedIn) {
             router.replace("/");
+            return;
         }
-    }, [isSignedIn, router]);
+        // Auto-trigger sign-in when login_hint is present (from cross-game promo)
+        if (isLoaded && !isSignedIn) {
+            const params = new URLSearchParams(window.location.search);
+            const loginHint = params.get("login_hint");
+            if (loginHint) {
+                setLoading(true);
+                signIn("google", { callbackUrl: "/" }, { login_hint: loginHint }).catch(() => {
+                    setLoading(false);
+                });
+            }
+        }
+    }, [isSignedIn, isLoaded, router]);
 
     const handleGoogleSignIn = async () => {
         if (!isLoaded) return;
         setLoading(true);
         try {
-            await signIn("google", { callbackUrl: "/" });
+            // If login_hint is in URL (from cross-game promo), pass it to Google
+            // so it auto-selects the correct account
+            const params = new URLSearchParams(window.location.search);
+            const loginHint = params.get("login_hint");
+            await signIn("google", {
+                callbackUrl: "/",
+            }, loginHint ? { login_hint: loginHint } : undefined);
         } catch {
             setError("Failed to start Google sign in. Please try again.");
             setLoading(false);
