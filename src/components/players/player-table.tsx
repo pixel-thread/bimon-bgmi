@@ -27,6 +27,7 @@ interface PlayerTableProps {
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
     sortBy?: string;
+    totalCount?: number;
 }
 
 export function PlayerTable({
@@ -38,6 +39,7 @@ export function PlayerTable({
     hasNextPage,
     isFetchingNextPage,
     sortBy = "kd",
+    totalCount,
 }: PlayerTableProps) {
     const { isAdmin } = useAuthUser();
     const sentinelRef = useRef<HTMLDivElement>(null);
@@ -232,7 +234,7 @@ export function PlayerTable({
                     </>
                 ) : !hasNextPage && players.length > 0 ? (
                     <p className="text-xs text-foreground/30 py-2">
-                        End of list • {players.length} players
+                        End of list • {totalCount ?? (players.length + (startIndex ?? 0))} players
                     </p>
                 ) : null}
             </div>

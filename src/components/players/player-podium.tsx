@@ -5,6 +5,7 @@ import { Crown } from "lucide-react";
 import { Avatar } from "@heroui/react";
 import type { PlayerDTO } from "@/hooks/use-players";
 import { GAME } from "@/lib/game-config";
+import { ImagePreview } from "@/components/common/image-preview";
 
 const positionConfig = {
     1: {
@@ -103,6 +104,7 @@ export const PodiumCard = memo(function PodiumCard({
     const metric = getSortMetric(player, sortBy);
     const videoRef = useRef<HTMLVideoElement>(null);
     const [mediaLoaded, setMediaLoaded] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
     const name = getDisplayName(player.displayName, player.username);
 
     const handleMouseEnter = useCallback(() => {
@@ -228,16 +230,32 @@ export const PodiumCard = memo(function PodiumCard({
                 className="flex flex-col items-center gap-1 cursor-pointer"
                 onClick={() => onPlayerClick(player.id)}
             >
-                <Avatar
-                    src={player.imageUrl || undefined}
-                    name={name}
-                    size="sm"
-                    className="h-7 w-7 ring-2 ring-background"
-                />
+                <div
+                    onClick={(e) => {
+                        if (player.imageUrl) {
+                            e.stopPropagation();
+                            setPreviewOpen(true);
+                        }
+                    }}
+                >
+                    <Avatar
+                        src={player.imageUrl || undefined}
+                        name={name}
+                        size="sm"
+                        className={`h-7 w-7 ring-2 ring-background ${player.imageUrl ? "cursor-zoom-in" : ""}`}
+                    />
+                </div>
                 <p className="max-w-[100px] truncate text-[11px] font-semibold text-foreground sm:text-xs">
                     {name}
                 </p>
             </div>
+
+            <ImagePreview
+                src={player.imageUrl ?? null}
+                alt={name}
+                isOpen={previewOpen}
+                onClose={() => setPreviewOpen(false)}
+            />
         </div>
     );
 });

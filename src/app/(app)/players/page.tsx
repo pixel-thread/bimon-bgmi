@@ -81,6 +81,7 @@ export default function PlayersPage() {
                             hasNextPage={query.hasNextPage}
                             isFetchingNextPage={query.isFetchingNextPage}
                             sortBy={sortBy}
+                            totalCount={players.length}
                         />
                     </>
                 )}
