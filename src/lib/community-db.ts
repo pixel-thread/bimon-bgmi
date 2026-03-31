@@ -24,7 +24,7 @@ function createCommunityClient() {
     }
 
     try {
-        const CommunityPrisma = require(".prisma/wallet-client");
+        const CommunityPrisma = require(".prisma/central-client");
         const adapter = new PrismaPg({ connectionString: process.env.CENTRAL_DATABASE_URL });
 
         return new CommunityPrisma.PrismaClient({
