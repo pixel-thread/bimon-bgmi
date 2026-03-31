@@ -14,15 +14,27 @@ import {
     ArrowRightLeft,
     AlertCircle,
     Check,
+    X,
     TrendingUp,
     TrendingDown,
     Scale,
+    Clock,
+    Send,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import { GAME } from "@/lib/game-config";
 
 // ─── Types ──────────────────────────────────────────────────
+
+interface PendingRequest {
+    id: string;
+    requestedByGame: string;
+    netAmount: number;
+    transferCount: number;
+    requestedAt: string;
+    needsMyConfirmation: boolean;
+}
 
 interface GamePair {
     otherGame: string;
@@ -31,6 +43,7 @@ interface GamePair {
     incoming: number;
     net: number;
     transferCount: number;
+    pendingRequest: PendingRequest | null;
 }
 
 interface GameSummary {
@@ -42,6 +55,7 @@ interface GameSummary {
 interface SettlementData {
     summary: GameSummary[];
     totalTransfers: number;
+    currentGame: string;
 }
 
 // ─── Game icons ─────────────────────────────────────────────
@@ -51,13 +65,6 @@ const GAME_ICONS: Record<string, string> = {
     pes: "/icons/pes/icon-192x192.png",
     freefire: "/icons/freefire/icon-192x192.png",
     mlbb: "/icons/mlbb/icon-192x192.png",
-};
-
-const GAME_COLORS: Record<string, string> = {
-    bgmi: "text-amber-400",
-    pes: "text-emerald-400",
-    freefire: "text-violet-400",
-    mlbb: "text-rose-400",
 };
 
 // ─── Component ──────────────────────────────────────────────
@@ -76,28 +83,63 @@ export default function SettlementPage() {
         staleTime: 30_000,
     });
 
-    const settle = useMutation({
-        mutationFn: async ({ fromGame, toGame }: { fromGame: string; toGame: string }) => {
+    const requestSettle = useMutation({
+        mutationFn: async (otherGame: string) => {
             const res = await fetch("/api/cross-game/settlement", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ fromGame, toGame }),
+                body: JSON.stringify({ action: "request", otherGame }),
             });
-            if (!res.ok) throw new Error("Failed to settle");
-            return res.json();
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error);
+            return json;
         },
         onSuccess: (data) => {
             toast.success(data.message);
             queryClient.invalidateQueries({ queryKey: ["cross-game-settlement"] });
         },
-        onError: (err: Error) => {
-            toast.error(err.message);
-        },
+        onError: (err: Error) => toast.error(err.message),
     });
 
-    // Find the summary for the current game
-    const currentGameSummary = data?.summary.find((s) => s.game === GAME.mode);
-    const otherGameSummaries = data?.summary.filter((s) => s.game !== GAME.mode) ?? [];
+    const confirmSettle = useMutation({
+        mutationFn: async (requestId: string) => {
+            const res = await fetch("/api/cross-game/settlement", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "confirm", requestId }),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error);
+            return json;
+        },
+        onSuccess: (data) => {
+            toast.success(data.message);
+            queryClient.invalidateQueries({ queryKey: ["cross-game-settlement"] });
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+
+    const rejectSettle = useMutation({
+        mutationFn: async (requestId: string) => {
+            const res = await fetch("/api/cross-game/settlement", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "reject", requestId }),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error);
+            return json;
+        },
+        onSuccess: (data) => {
+            toast.success(data.message);
+            queryClient.invalidateQueries({ queryKey: ["cross-game-settlement"] });
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+
+    const currentGameSummary = data?.summary.find((s) => s.game === data.currentGame);
+    const otherGameSummaries = data?.summary.filter((s) => s.game !== data.currentGame) ?? [];
+    const isPending = requestSettle.isPending || confirmSettle.isPending || rejectSettle.isPending;
 
     return (
         <div className="space-y-5 p-4">
@@ -128,10 +170,7 @@ export default function SettlementPage() {
             ) : data ? (
                 <>
                     {/* Overview card */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                    >
+                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                         <Card className="border border-divider bg-gradient-to-br from-primary/5 to-secondary/5">
                             <CardBody className="p-4">
                                 <div className="flex items-center justify-between">
@@ -139,9 +178,7 @@ export default function SettlementPage() {
                                         <p className="text-[10px] font-medium uppercase tracking-wider text-foreground/40">
                                             Unsettled Transfers
                                         </p>
-                                        <p className="text-2xl font-bold mt-1">
-                                            {data.totalTransfers}
-                                        </p>
+                                        <p className="text-2xl font-bold mt-1">{data.totalTransfers}</p>
                                     </div>
                                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
                                         <ArrowRightLeft className="h-6 w-6 text-primary" />
@@ -162,7 +199,7 @@ export default function SettlementPage() {
                                 <CardHeader className="pb-2">
                                     <div className="flex items-center gap-2">
                                         <img
-                                            src={GAME_ICONS[GAME.mode] ?? ""}
+                                            src={GAME_ICONS[data.currentGame] ?? ""}
                                             alt={GAME.gameName}
                                             className="h-6 w-6 rounded-lg"
                                         />
@@ -215,7 +252,7 @@ export default function SettlementPage() {
                                             <div className={`rounded-lg px-3 py-2 text-xs font-medium ${pair.net >= 0
                                                 ? "bg-success/10 text-success"
                                                 : "bg-warning/10 text-warning"
-                                                }`}>
+                                            }`}>
                                                 {pair.net > 0
                                                     ? `${pair.otherGameName} owes you ${pair.net} ${GAME.currency}`
                                                     : pair.net < 0
@@ -223,19 +260,69 @@ export default function SettlementPage() {
                                                         : "Balanced — no settlement needed"}
                                             </div>
 
-                                            {/* Settle button */}
+                                            {/* Settlement actions */}
                                             {pair.transferCount > 0 && (
-                                                <Button
-                                                    size="sm"
-                                                    color="primary"
-                                                    variant="flat"
-                                                    className="w-full mt-3 font-semibold"
-                                                    isLoading={settle.isPending}
-                                                    startContent={!settle.isPending && <Check className="h-3.5 w-3.5" />}
-                                                    onPress={() => settle.mutate({ fromGame: GAME.mode, toGame: pair.otherGame })}
-                                                >
-                                                    Mark as Settled
-                                                </Button>
+                                                <div className="mt-3">
+                                                    {/* No pending request — show "Request Settlement" */}
+                                                    {!pair.pendingRequest && (
+                                                        <Button
+                                                            size="sm"
+                                                            color="primary"
+                                                            variant="flat"
+                                                            className="w-full font-semibold"
+                                                            isLoading={isPending}
+                                                            startContent={!isPending && <Send className="h-3.5 w-3.5" />}
+                                                            onPress={() => requestSettle.mutate(pair.otherGame)}
+                                                        >
+                                                            Request Settlement
+                                                        </Button>
+                                                    )}
+
+                                                    {/* We requested, waiting for their confirmation */}
+                                                    {pair.pendingRequest && !pair.pendingRequest.needsMyConfirmation && (
+                                                        <div className="flex items-center gap-2 rounded-lg bg-warning/10 px-3 py-2">
+                                                            <Clock className="h-3.5 w-3.5 text-warning shrink-0" />
+                                                            <p className="text-[11px] font-medium text-warning">
+                                                                Waiting for {pair.otherGameName} to confirm
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    {/* They requested, we need to confirm */}
+                                                    {pair.pendingRequest?.needsMyConfirmation && (
+                                                        <div className="space-y-2">
+                                                            <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2">
+                                                                <AlertCircle className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                                <p className="text-[11px] font-medium text-primary">
+                                                                    {pair.otherGameName} requested settlement
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <Button
+                                                                    size="sm"
+                                                                    color="danger"
+                                                                    variant="flat"
+                                                                    className="flex-1 font-semibold"
+                                                                    isDisabled={isPending}
+                                                                    startContent={<X className="h-3.5 w-3.5" />}
+                                                                    onPress={() => rejectSettle.mutate(pair.pendingRequest!.id)}
+                                                                >
+                                                                    Reject
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    color="success"
+                                                                    className="flex-1 font-semibold"
+                                                                    isLoading={confirmSettle.isPending}
+                                                                    startContent={!confirmSettle.isPending && <Check className="h-3.5 w-3.5" />}
+                                                                    onPress={() => confirmSettle.mutate(pair.pendingRequest!.id)}
+                                                                >
+                                                                    Confirm Settled
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     ))}
@@ -244,7 +331,7 @@ export default function SettlementPage() {
                         </motion.div>
                     )}
 
-                    {/* Other games (read-only view for super admins) */}
+                    {/* Other games (read-only) */}
                     {otherGameSummaries.map((gameSummary, idx) => (
                         <motion.div
                             key={gameSummary.game}

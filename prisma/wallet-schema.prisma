@@ -209,3 +209,22 @@ model CrossGameTransfer {
   @@index([playerEmail])
   @@index([createdAt(sort: Desc)])
 }
+
+// ─── Settlement Requests (Two-Sided Confirmation) ─────────────
+
+/// When a manager wants to settle, they create a request.
+/// The other game's manager must confirm before transfers are marked settled.
+model SettlementRequest {
+  id              String    @id @default(uuid())
+  requestedByGame String                        // Game that initiated ("bgmi")
+  otherGame       String                        // Game that must confirm ("pes")
+  netAmount       Int                           // Net amount at time of request
+  transferCount   Int                           // Number of transfers being settled
+  status          String    @default("PENDING") // PENDING | CONFIRMED | REJECTED
+  requestedAt     DateTime  @default(now())
+  confirmedAt     DateTime?
+  rejectedAt      DateTime?
+
+  @@index([requestedByGame, otherGame])
+  @@index([status])
+}
