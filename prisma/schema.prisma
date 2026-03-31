@@ -920,6 +920,7 @@ model RoyalPass {
 
   createdAt DateTime @default(now())
 
+  @@unique([playerId, seasonId])
   @@index([playerId])
   @@index([seasonId])
   @@index([createdAt])

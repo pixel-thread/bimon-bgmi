@@ -84,13 +84,19 @@ export async function GET(request: Request) {
         const paidPurchases = currentSeasonPasses.filter((rp) => rp.pricePaid > 0).length;
 
         // UC Rewarded — count from actual Transaction records (CREDIT with "streak" in desc)
+        // Filter to current season only (by season start date)
         const allRpPlayerIds = [...new Set(royalPasses.map((rp) => rp.playerId))];
+        const seasonStartDate = currentSeason
+            ? (await prisma.season.findUnique({ where: { id: currentSeason.id }, select: { startDate: true } }))?.startDate
+            : undefined;
+
         const streakTransactions = allRpPlayerIds.length > 0
             ? await prisma.transaction.findMany({
                 where: {
                     playerId: { in: allRpPlayerIds },
                     type: "CREDIT",
                     description: { contains: "Streak", mode: "insensitive" },
+                    ...(seasonStartDate ? { createdAt: { gte: seasonStartDate } } : {}),
                 },
                 select: { playerId: true, amount: true },
             })
@@ -205,6 +211,16 @@ export async function POST(request: Request) {
             where: { status: "ACTIVE" },
             select: { id: true },
         });
+
+        // Check for existing RP in this season
+        if (currentSeason) {
+            const existing = await prisma.royalPass.findUnique({
+                where: { playerId_seasonId: { playerId, seasonId: currentSeason.id } },
+            });
+            if (existing) {
+                return ErrorResponse({ message: `Player already has ${GAME.passName} this season`, status: 400 });
+            }
+        }
 
         const [royalPass] = await prisma.$transaction([
             prisma.royalPass.create({
