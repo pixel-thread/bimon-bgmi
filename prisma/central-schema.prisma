@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════
-//  BIMON — Central Wallet Database
+//  BIMON — Central Database (Neon)
 //  Shared across all game deployments (BGMI, PES, Free Fire, etc.)
-//  Hosted on Neon (neon-charcoal-cave)
+//  Wallet, Community, Polls, Cross-Game Transfers, Settlement
 // ════════════════════════════════════════════════════════════════
 
 generator client {

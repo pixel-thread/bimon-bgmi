@@ -2,7 +2,7 @@ import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
 export default defineConfig({
-    schema: "prisma/wallet-schema.prisma",
+    schema: "prisma/central-schema.prisma",
     migrations: {
         path: "prisma/wallet-migrations",
     },
