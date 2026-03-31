@@ -18,14 +18,14 @@ const globalForCommunity = globalThis as unknown as {
 };
 
 function createCommunityClient() {
-    if (!process.env.WALLET_DATABASE_URL) {
-        console.warn("[community-db] WALLET_DATABASE_URL not set — community features unavailable.");
+    if (!process.env.CENTRAL_DATABASE_URL) {
+        console.warn("[community-db] CENTRAL_DATABASE_URL not set — community features unavailable.");
         return null;
     }
 
     try {
         const CommunityPrisma = require(".prisma/wallet-client");
-        const adapter = new PrismaPg({ connectionString: process.env.WALLET_DATABASE_URL });
+        const adapter = new PrismaPg({ connectionString: process.env.CENTRAL_DATABASE_URL });
 
         return new CommunityPrisma.PrismaClient({
             adapter,
