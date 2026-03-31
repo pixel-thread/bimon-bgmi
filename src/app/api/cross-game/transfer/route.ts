@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getPrisma } from "@/lib/database";
 import { getAvailableBalance } from "@/lib/wallet-service";
-import { GAME, GAME_CONFIGS, GAME_MODE, type GameMode } from "@/lib/game-config";
+import { getGameConfig, GAME_CONFIGS, type GameMode } from "@/lib/game-config";
 import { communityDb } from "@/lib/community-db";
 
 /**
@@ -11,12 +11,9 @@ import { communityDb } from "@/lib/community-db";
  * 
  * Body: { amount: number, targetGame: string }
  * 
- * Flow:
- *  1. Validate same email exists on target game
- *  2. Check available balance on source game
- *  3. Debit source game wallet
- *  4. Credit target game wallet (refund source on failure)
- *  5. Log settlement entry in community DB
+ * IMPORTANT: Uses getGameConfig(req) to detect the SOURCE game from the
+ * request's x-game-mode header (set by proxy). Module-level GAME_MODE
+ * would always resolve to "bgmi" on the server.
  */
 export async function POST(req: NextRequest) {
     try {
@@ -24,6 +21,9 @@ export async function POST(req: NextRequest) {
         if (!user?.email || !user?.player) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
+
+        // Detect source game from request headers (NOT module-level GAME_MODE)
+        const { GAME, GAME_MODE: sourceGameMode } = getGameConfig(req);
 
         const body = await req.json();
         const { amount, targetGame } = body as { amount: number; targetGame: GameMode };
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid target game" }, { status: 400 });
         }
 
-        if (targetGame === GAME_MODE) {
+        if (targetGame === sourceGameMode) {
             return NextResponse.json({ error: "Cannot transfer to the same game" }, { status: 400 });
         }
 
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
         }
 
         // ── Phase 1: Debit source game wallet ───────────────────
-        const sourceDb = getPrisma(GAME_MODE);
+        const sourceDb = getPrisma(sourceGameMode);
         const sourcePlayer = await sourceDb.player.findFirst({
             where: { userId: user.id },
             include: { wallet: true },
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
         try {
             await communityDb.crossGameTransfer.create({
                 data: {
-                    fromGame: GAME_MODE,
+                    fromGame: sourceGameMode,
                     toGame: targetGame,
                     playerEmail: user.email,
                     amount,
@@ -152,7 +152,6 @@ export async function POST(req: NextRequest) {
                 },
             });
         } catch (settlementError) {
-            // Settlement log failed but the transfer succeeded — don't fail the user
             console.error("[cross-game] Settlement log failed (transfer still succeeded):", settlementError);
         }
 
@@ -161,7 +160,7 @@ export async function POST(req: NextRequest) {
             message: `Transferred ${amount} ${GAME.currency} to your ${GAME_CONFIGS[targetGame].gameName} account`,
             data: {
                 amount,
-                fromGame: GAME_MODE,
+                fromGame: sourceGameMode,
                 toGame: targetGame,
                 newSourceBalance: newSourceBalance,
             },
