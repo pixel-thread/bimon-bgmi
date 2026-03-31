@@ -43,34 +43,57 @@ export async function getBalance(email: string): Promise<number> {
 }
 
 /**
- * Get the total UC reserved by active tournament votes (not yet bracket-generated).
- * Reserved = sum of (entryFee × voteCount) for all active polls where player voted IN/SOLO.
+ * Get the total UC reserved by active tournament votes AND squad invites.
+ * Reserved = poll vote reservations + squad invite reservations.
+ *
+ * Poll votes: sum of (entryFee × voteCount) for active polls where player voted IN/SOLO.
+ * Squad invites: sum of entryFee for ACCEPTED invites on FORMING/FULL squads with active polls.
  */
 export async function getReservedBalance(playerId: string): Promise<number> {
-    const activeVotes = await prisma.playerPollVote.findMany({
-        where: {
-            playerId,
-            vote: { in: ["IN", "SOLO"] },
-            poll: {
-                isActive: true,
-                tournament: {
-                    status: "ACTIVE",
-                    bracketMatches: { none: {} }, // bracket not generated yet
-                },
-            },
-        },
-        include: {
-            poll: {
-                include: {
+    const [activeVotes, squadInvites] = await Promise.all([
+        prisma.playerPollVote.findMany({
+            where: {
+                playerId,
+                vote: { in: ["IN", "SOLO"] },
+                poll: {
+                    isActive: true,
                     tournament: {
-                        select: { fee: true },
+                        status: "ACTIVE",
+                        bracketMatches: { none: {} }, // bracket not generated yet
                     },
                 },
             },
-        },
-    });
+            include: {
+                poll: {
+                    include: {
+                        tournament: {
+                            select: { fee: true },
+                        },
+                    },
+                },
+            },
+        }),
+        prisma.squadInvite.findMany({
+            where: {
+                playerId,
+                status: "ACCEPTED",
+                squad: {
+                    status: { in: ["FORMING", "FULL"] },
+                    poll: {
+                        isActive: true,
+                        tournament: { status: "ACTIVE" },
+                    },
+                },
+            },
+            include: {
+                squad: { select: { entryFee: true } },
+            },
+        }),
+    ]);
 
-    return activeVotes.reduce((sum, v) => sum + (v.poll.tournament?.fee ?? 0) * v.voteCount, 0);
+    const pollReserved = activeVotes.reduce((sum, v) => sum + (v.poll.tournament?.fee ?? 0) * v.voteCount, 0);
+    const squadReserved = squadInvites.reduce((sum, inv) => sum + inv.squad.entryFee, 0);
+    return pollReserved + squadReserved;
 }
 
 /**

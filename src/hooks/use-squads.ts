@@ -1,0 +1,216 @@
+"use client";
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { GAME } from "@/lib/game-config";
+import { useState, useEffect } from "react";
+
+/* ─── Types ─────────────────────────────────────────────────── */
+
+export interface SquadMember {
+    inviteId: string;
+    playerId: string;
+    displayName: string;
+    imageUrl: string;
+    status: "PENDING" | "ACCEPTED" | "DECLINED";
+}
+
+export interface SquadDTO {
+    id: string;
+    name: string;
+    status: "FORMING" | "FULL" | "CANCELLED" | "REGISTERED";
+    entryFee: number;
+    createdAt: string;
+    captain: {
+        id: string;
+        displayName: string;
+        imageUrl: string;
+    };
+    isCaptain: boolean;
+    myInvite: { id: string; status: string } | null;
+    members: SquadMember[];
+    acceptedCount: number;
+    totalSlots: number;
+    isFull: boolean;
+}
+
+export interface SearchPlayerResult {
+    id: string;
+    displayName: string;
+    imageUrl: string;
+    balance: number;
+    hasEnoughBalance: boolean;
+}
+
+/* ─── Queries ───────────────────────────────────────────────── */
+
+/**
+ * Fetch all squads for a specific poll.
+ */
+export function useSquads(pollId: string | undefined) {
+    return useQuery<SquadDTO[]>({
+        queryKey: ["squads", pollId],
+        queryFn: async () => {
+            if (!pollId) return [];
+            const res = await fetch(`/api/squads?pollId=${pollId}&_t=${Date.now()}`);
+            if (!res.ok) throw new Error("Failed to fetch squads");
+            const json = await res.json();
+            return json.data;
+        },
+        enabled: !!pollId && GAME.features.hasSquads,
+        staleTime: 15_000,
+    });
+}
+
+/**
+ * Search players for squad invite — with debounce.
+ */
+export function useSearchPlayers(query: string, pollId: string | undefined) {
+    const [debouncedQuery, setDebouncedQuery] = useState(query);
+
+    useEffect(() => {
+        const id = setTimeout(() => setDebouncedQuery(query), 300);
+        return () => clearTimeout(id);
+    }, [query]);
+
+    return useQuery<SearchPlayerResult[]>({
+        queryKey: ["squad-search-players", debouncedQuery, pollId],
+        queryFn: async () => {
+            const res = await fetch(
+                `/api/squads/search-players?q=${encodeURIComponent(debouncedQuery)}&pollId=${pollId}`
+            );
+            if (!res.ok) throw new Error("Search failed");
+            const json = await res.json();
+            return json.data;
+        },
+        enabled: debouncedQuery.length >= 2 && !!pollId,
+        staleTime: 10_000,
+    });
+}
+
+/* ─── Mutations ─────────────────────────────────────────────── */
+
+/**
+ * Create a new squad.
+ */
+export function useCreateSquad() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ pollId, name }: { pollId: string; name: string }) => {
+            const res = await fetch("/api/squads", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pollId, name }),
+            });
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error(json.message || "Failed to create squad");
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Squad created!");
+            queryClient.invalidateQueries({ queryKey: ["squads"] });
+        },
+        onError: (err) => {
+            const msg = err instanceof Error ? err.message : "Failed to create squad";
+            const isBalance = msg.toLowerCase().includes("not enough");
+            toast.error(msg, {
+                duration: 5000,
+                ...(isBalance && {
+                    action: {
+                        label: `Add ${GAME.currency}`,
+                        onClick: () => window.location.assign("/wallet"),
+                    },
+                }),
+            });
+        },
+    });
+}
+
+/**
+ * Invite a player to a squad.
+ */
+export function useInvitePlayer() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ squadId, playerId }: { squadId: string; playerId: string }) => {
+            const res = await fetch("/api/squads/invite", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ squadId, playerId }),
+            });
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error(json.message || "Failed to send invite");
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Invite sent!");
+            queryClient.invalidateQueries({ queryKey: ["squads"] });
+        },
+        onError: (err) => {
+            toast.error(err instanceof Error ? err.message : "Failed to send invite");
+        },
+    });
+}
+
+/**
+ * Accept or decline a squad invite.
+ */
+export function useRespondToInvite() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ inviteId, action }: { inviteId: string; action: "ACCEPT" | "DECLINE" }) => {
+            const res = await fetch("/api/squads/respond", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ inviteId, action }),
+            });
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error(json.message || "Failed to respond");
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Done!");
+            queryClient.invalidateQueries({ queryKey: ["squads"] });
+            queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        },
+        onError: (err) => {
+            toast.error(err instanceof Error ? err.message : "Failed to respond to invite");
+        },
+    });
+}
+
+/**
+ * Cancel a squad (captain only).
+ */
+export function useCancelSquad() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (squadId: string) => {
+            const res = await fetch(`/api/squads/${squadId}/cancel`, {
+                method: "POST",
+            });
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error(json.message || "Failed to cancel squad");
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Squad cancelled");
+            queryClient.invalidateQueries({ queryKey: ["squads"] });
+        },
+        onError: (err) => {
+            toast.error(err instanceof Error ? err.message : "Failed to cancel squad");
+        },
+    });
+}

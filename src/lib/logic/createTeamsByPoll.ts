@@ -12,6 +12,7 @@ import { PlayerWithWeightT } from "@/types/models";
 import { getPreviousTournamentTeammates } from "./previousTeammates";
 import { isBirthdayWithinWindow } from "./birthdayCheck";
 import { debitWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { GAME } from "@/lib/game-config";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -34,6 +35,8 @@ export type CreateTeamsByPollsResult = {
     playersAssigned: number;
     matchId: string;
     entryFeeCharged: number;
+    squadsRegistered: number;
+    squadsCancelled: number;
 };
 
 // Helper to process promises in batches (PgBouncer safe)
@@ -130,13 +133,90 @@ export async function createTeamsByPoll({
         throw new Error("No eligible players found for this poll.");
     }
 
+    // ─── Squad processing ─────────────────────────────────────────
+    // FULL squads → premade teams, FORMING squads → cancelled
+    let squadTeams: TeamStats[] = [];
+    let squadPlayerIds = new Set<string>();
+    let squadsRegistered = 0;
+    let squadsCancelled = 0;
+    let squadPlayersToCharge: { id: string; email?: string }[] = [];
+
+    if (GAME.features.hasSquads) {
+        const squads = await prisma.squad.findMany({
+            where: {
+                pollId,
+                status: { in: ["FORMING", "FULL"] },
+            },
+            include: {
+                invites: {
+                    where: { status: "ACCEPTED" },
+                    include: {
+                        player: {
+                            include: {
+                                stats: true,
+                                user: true,
+                                wallet: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        for (const squad of squads) {
+            if (squad.status === "FULL") {
+                // Convert FULL squad to a premade team
+                const members = squad.invites.map((inv) => inv.player);
+                const totalKills = members.reduce((sum, p) => {
+                    const stats = p.stats?.find((s: any) => s.seasonId === seasonId);
+                    return sum + (stats?.kills ?? 0);
+                }, 0);
+
+                squadTeams.push({
+                    players: members as unknown as PlayerWithWeightT[],
+                    totalKills,
+                    totalDeaths: 0,
+                    totalWins: 0,
+                    weightedScore: 0, // premade teams don't need balancing
+                });
+
+                for (const m of members) {
+                    squadPlayerIds.add(m.id);
+                    if (!m.isUCExempt) {
+                        squadPlayersToCharge.push({
+                            id: m.id,
+                            email: m.user?.email ?? undefined,
+                        });
+                    }
+                }
+
+                // Mark squad as REGISTERED
+                await prisma.squad.update({
+                    where: { id: squad.id },
+                    data: { status: "REGISTERED" },
+                });
+                squadsRegistered++;
+            } else {
+                // Cancel FORMING squads — fees were only reserved, nothing to refund
+                await prisma.squad.update({
+                    where: { id: squad.id },
+                    data: { status: "CANCELLED" },
+                });
+                squadsCancelled++;
+            }
+        }
+    }
+
+    // Exclude squad members from the regular team generation pool
+    const nonSquadPlayers = players.filter((p) => !squadPlayerIds.has(p.id));
+
     // SOLO voters
     const playersWhoVotedSolo = players.filter((p) =>
         p.pollVotes.some((vote) => vote.pollId === pollId && vote.vote === "SOLO"),
     );
 
     // Compute weighted scores — map v2 stats format
-    const playersWithScore = players.map((p) => {
+    const playersWithScore = nonSquadPlayers.map((p) => {
         const playerStats = p.stats.map((s) => ({
             seasonId: s.seasonId,
             kills: s.kills,
@@ -300,6 +380,8 @@ export async function createTeamsByPoll({
     }
 
     // Validate
+    // Add squad premade teams to the list
+    teams = [...squadTeams, ...teams];
     const allTeamPlayerIds = new Set(teams.flatMap((t) => t.players.map((p) => p.id)));
     if (luckyVoterId && !allTeamPlayerIds.has(luckyVoterId)) {
         luckyVoterId = null;
@@ -459,8 +541,24 @@ export async function createTeamsByPoll({
         });
     }
 
+    // Debit squad members (same entry fee, post-transaction)
+    if (entryFee > 0 && squadPlayersToCharge.length > 0) {
+        await processBatches(squadPlayersToCharge, BATCH_SIZE, async (member) => {
+            const email = member.email || await getEmailByPlayerId(member.id);
+            if (email) {
+                try {
+                    await debitWallet(email, entryFee, `Squad entry fee for ${tournamentName}`, "TOURNAMENT_ENTRY");
+                } catch (err) {
+                    console.error(`[createTeamsByPoll] Failed to debit squad member ${member.id}:`, err);
+                }
+            }
+        });
+    }
+
     return {
         ...result,
         entryFeeCharged: entryFee,
+        squadsRegistered,
+        squadsCancelled,
     };
 }

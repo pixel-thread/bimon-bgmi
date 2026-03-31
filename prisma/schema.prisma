@@ -115,6 +115,19 @@ enum JobType {
   CREATE_TEAMS_BY_POLL
 }
 
+enum SquadStatus {
+  FORMING     // Still inviting players
+  FULL        // All slots accepted — ready for tournament
+  CANCELLED   // Leader cancelled or auto-cancelled on poll close
+  REGISTERED  // Converted to a Team after admin generates teams
+}
+
+enum SquadInviteStatus {
+  PENDING     // Invite sent, waiting for response
+  ACCEPTED    // Player accepted (fee reserved)
+  DECLINED    // Player declined
+}
+
 // ─── Core Identity ───────────────────────────────────────────
 
 /// Account-level user identity linked to Clerk.
@@ -214,6 +227,8 @@ model Player {
   bracketMatchesAsP2    BracketMatch[]     @relation("BracketPlayer2")
   bracketMatchWins      BracketMatch[]     @relation("BracketWinner")
   bracketResults        BracketResult[]
+  squadsAsCaptain       Squad[]            @relation("SquadCaptain")
+  squadInvites          SquadInvite[]
 
   @@index([userId])
   @@index([category])
@@ -727,6 +742,7 @@ model Poll {
   options    PollOption[]
   votes      PlayerPollVote[]
   players    Player[]
+  squads     Squad[]
 }
 
 model PollOption {
@@ -1136,4 +1152,46 @@ model BracketResult {
   submittedBy  Player       @relation(fields: [submittedById], references: [id])
 
   @@index([bracketMatchId])
+}
+
+// ─── Squads (Premade Teams) ─────────────────────────────────
+
+/// Premade squad — created by a leader for a specific tournament poll.
+/// Entry fees are RESERVED (not deducted) until admin generates teams.
+model Squad {
+  id        String      @id @default(uuid())
+  name      String      @db.VarChar(30)
+  pollId    String
+  captainId String
+  status    SquadStatus @default(FORMING)
+  entryFee  Int         // Per-player fee (snapshot from tournament at creation)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  poll    Poll          @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  captain Player        @relation("SquadCaptain", fields: [captainId], references: [id], onDelete: Cascade)
+  invites SquadInvite[]
+
+  @@unique([pollId, captainId]) // One squad per leader per poll
+  @@index([pollId])
+  @@index([captainId])
+  @@index([status])
+}
+
+/// Invite to join a squad. Captain's own slot is auto-created as ACCEPTED.
+model SquadInvite {
+  id       String            @id @default(uuid())
+  squadId  String
+  playerId String
+  status   SquadInviteStatus @default(PENDING)
+
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+
+  squad  Squad  @relation(fields: [squadId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([squadId, playerId])
+  @@index([playerId, status])
 }

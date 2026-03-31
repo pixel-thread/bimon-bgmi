@@ -30,6 +30,7 @@ interface GameFeatures {
     hasLeague: boolean;          // Round-robin league format
     hasGroupKnockout: boolean;   // Group stage → knockout (World Cup style)
     hasMultiEntry: boolean;      // Allow multiple bracket entries per player (PES only)
+    hasSquads: boolean;          // Player-created premade squads
     usesCentralWallet?: never;  // REMOVED — all games use local wallet now
 }
 
@@ -58,6 +59,7 @@ interface GameConfig {
     hasBracket: boolean;         // Whether this game supports bracket tournaments
     disputeWindowMinutes: number; // Minutes opponent has to confirm/dispute a submitted result
     hasBR: boolean;              // Whether this game supports BR tournaments.
+    squadSize: number;           // Number of players per squad (5 for MLBB, 4 for BGMI/FF)
     // Feature flags
     features: GameFeatures;
 }
@@ -88,6 +90,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         hasBracket: false,
         hasBR: true,
         disputeWindowMinutes: 30,
+        squadSize: 4,
         features: {
             hasTeamSizes: true,
             hasLuckyVoters: true,
@@ -100,6 +103,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasLeague: false,
             hasGroupKnockout: false,
             hasMultiEntry: false,
+            hasSquads: false,
         },
     },
     freefire: {
@@ -127,6 +131,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         hasBracket: false,
         hasBR: true,
         disputeWindowMinutes: 30,
+        squadSize: 4,
         features: {
             hasTeamSizes: true,
             hasLuckyVoters: true,
@@ -139,6 +144,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasLeague: false,
             hasGroupKnockout: false,
             hasMultiEntry: false,
+            hasSquads: false,
         },
     },
     pes: {
@@ -166,6 +172,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         hasBracket: true,
         hasBR: false,
         disputeWindowMinutes: 30,
+        squadSize: 1,
         features: {
             hasTeamSizes: false,       // PES is 1v1 only
             hasLuckyVoters: true,       // Lucky voter draws work for any tournament
@@ -178,6 +185,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasLeague: true,            // Round-robin league
             hasGroupKnockout: true,     // Group → Knockout (World Cup)
             hasMultiEntry: true,        // PES players can enter multiple times
+            hasSquads: false,
         },
     },
     mlbb: {
@@ -205,6 +213,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         hasBracket: true,
         hasBR: false,
         disputeWindowMinutes: 30,
+        squadSize: 5,              // MLBB is 5v5
         features: {
             hasTeamSizes: false,
             hasLuckyVoters: true,
@@ -217,6 +226,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasLeague: false,
             hasGroupKnockout: true,
             hasMultiEntry: true,
+            hasSquads: true,           // Squad feature enabled for MLBB
         },
     },
 };

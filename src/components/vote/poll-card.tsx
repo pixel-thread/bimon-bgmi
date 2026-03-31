@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { Chip, Avatar, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
-import { Users, ChevronRight, ArrowLeft, Plus, Minus } from "lucide-react";
+import { Users, ChevronRight, ArrowLeft, Plus, Minus, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import type { PollDTO } from "@/hooks/use-polls";
@@ -10,6 +10,7 @@ import { getPollTheme, getLuckyWinnerTheme, type PollTheme } from "./pollTheme";
 import { getPrizeDistribution, getTeamSize, type OrgCutMode } from "@/lib/logic/prizeDistribution";
 import { GAME } from "@/lib/game-config";
 import { CurrencyIcon } from "@/components/common/CurrencyIcon";
+import { SquadCenter } from "./squad-center";
 
 /* ─── Types ─────────────────────────────────────────────────── */
 
@@ -533,6 +534,7 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
     const { tournament } = poll;
     const [showVoters, setShowVoters] = useState(false);
     const [selectedVoteGroup, setSelectedVoteGroup] = useState<"IN" | "OUT" | "SOLO" | null>(null);
+    const [showSquads, setShowSquads] = useState(false);
 
     // Fetch real settings so ? tooltip shows accurate org%
     const { data: publicSettings } = useQuery({
@@ -877,6 +879,20 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                             </span>
                         </button>
                     )}
+
+                    {/* Squad button — only for games with hasSquads */}
+                    {GAME.features.hasSquads && poll.isActive && (
+                        <button
+                            type="button"
+                            onClick={() => setShowSquads(true)}
+                            className="w-full text-center font-medium py-2.5 px-4 rounded-xl transition-all border shadow-sm cursor-pointer text-primary bg-primary/5 border-primary/20 hover:bg-primary/10 hover:shadow-md mt-2"
+                        >
+                            <span className="flex items-center justify-center gap-2">
+                                <Shield className="w-4 h-4" />
+                                🛡 View Teams
+                            </span>
+                        </button>
+                    )}
                 </div>
 
                 {/* ─── Voters Dialog ─── */}
@@ -889,6 +905,18 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                     onSelectGroup={setSelectedVoteGroup}
                     teamType={effectiveTeamType}
                 />
+
+                {/* Squad Center Modal */}
+                {GAME.features.hasSquads && (
+                    <SquadCenter
+                        isOpen={showSquads}
+                        onClose={() => setShowSquads(false)}
+                        pollId={poll.id}
+                        tournamentName={tournament?.name || poll.question}
+                        entryFee={entryFee}
+                        currentPlayerId={currentPlayerId ?? ""}
+                    />
+                )}
             </div>
         </motion.div>
     );

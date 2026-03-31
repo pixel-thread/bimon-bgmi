@@ -80,6 +80,26 @@ export async function POST(request: NextRequest) {
             });
         }
 
+        // Block squad members from voting IN/SOLO individually
+        if (GAME.features.hasSquads && (vote === "IN" || vote === "SOLO")) {
+            const inSquad = await prisma.squadInvite.findFirst({
+                where: {
+                    playerId: user.player.id,
+                    status: { in: ["PENDING", "ACCEPTED"] },
+                    squad: {
+                        pollId,
+                        status: { in: ["FORMING", "FULL"] },
+                    },
+                },
+            });
+            if (inSquad) {
+                return ErrorResponse({
+                    message: "🛡 You're already in a squad for this tournament. Leave your squad first to vote individually.",
+                    status: 400,
+                });
+            }
+        }
+
         // Balance gate for IN/SOLO votes — uses AVAILABLE balance (total − reserved)
         // Trusted:  can go negative down to -200 (extended credit for loyal players)
         // PLAYER:   can vote at 0 balance (one free chance) but blocked once negative
