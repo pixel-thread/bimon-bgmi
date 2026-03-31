@@ -23,10 +23,12 @@ export async function GET() {
         const transfers = await communityDb.crossGameTransfer.findMany({
             where: { isSettled: false },
             select: {
+                id: true,
                 fromGame: true,
                 toGame: true,
                 amount: true,
                 playerEmail: true,
+                description: true,
                 createdAt: true,
             },
             orderBy: { createdAt: "desc" },
@@ -74,6 +76,22 @@ export async function GET() {
                             (r.requestedByGame === otherGame && r.otherGame === game)
                     );
 
+                    // Get individual transfers for this pair
+                    const pairTransfers = transfers
+                        .filter((t: { fromGame: string; toGame: string }) =>
+                            (t.fromGame === game && t.toGame === otherGame) ||
+                            (t.fromGame === otherGame && t.toGame === game)
+                        )
+                        .map((t: { id: string; playerEmail: string; amount: number; fromGame: string; toGame: string; description: string | null; createdAt: Date }) => ({
+                            id: t.id,
+                            playerEmail: t.playerEmail,
+                            amount: t.amount,
+                            fromGame: t.fromGame,
+                            toGame: t.toGame,
+                            description: t.description,
+                            createdAt: t.createdAt,
+                        }));
+
                     return {
                         otherGame,
                         otherGameName: gameNames[otherGame] ?? otherGame,
@@ -81,6 +99,7 @@ export async function GET() {
                         incoming,
                         net,
                         transferCount: (pairTotals[key]?.count ?? 0) + (pairTotals[reverseKey]?.count ?? 0),
+                        transfers: pairTransfers,
                         pendingRequest: pendingRequest
                             ? {
                                 id: pendingRequest.id,

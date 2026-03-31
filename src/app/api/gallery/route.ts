@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/database";
-import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
+import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
 
 /**
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
             },
         });
 
-        return SuccessResponse({ data: items, cache: CACHE.MEDIUM });
+        return SuccessResponse({ data: items });
     } catch (error) {
         return ErrorResponse({ message: "Failed to fetch gallery", error });
     }

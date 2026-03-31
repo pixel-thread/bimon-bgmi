@@ -20,12 +20,24 @@ import {
     Scale,
     Clock,
     Send,
+    ChevronDown,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { GAME } from "@/lib/game-config";
 
 // ─── Types ──────────────────────────────────────────────────
+
+interface TransferDetail {
+    id: string;
+    playerEmail: string;
+    amount: number;
+    fromGame: string;
+    toGame: string;
+    description: string | null;
+    createdAt: string;
+}
 
 interface PendingRequest {
     id: string;
@@ -43,6 +55,7 @@ interface GamePair {
     incoming: number;
     net: number;
     transferCount: number;
+    transfers: TransferDetail[];
     pendingRequest: PendingRequest | null;
 }
 
@@ -71,6 +84,16 @@ const GAME_ICONS: Record<string, string> = {
 
 export default function SettlementPage() {
     const queryClient = useQueryClient();
+    const [expandedPairs, setExpandedPairs] = useState<Set<string>>(new Set());
+
+    const togglePair = (key: string) => {
+        setExpandedPairs((prev) => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+    };
 
     const { data, isLoading, error } = useQuery<SettlementData>({
         queryKey: ["cross-game-settlement"],
@@ -259,6 +282,70 @@ export default function SettlementPage() {
                                                         ? `You owe ${pair.otherGameName} ${Math.abs(pair.net)} ${GAME.currency}`
                                                         : "Balanced — no settlement needed"}
                                             </div>
+
+                                            {/* Expandable transfer list */}
+                                            {pair.transfers.length > 0 && (
+                                                <div className="mt-3">
+                                                    <button
+                                                        onClick={() => togglePair(`${data.currentGame}-${pair.otherGame}`)}
+                                                        className="flex w-full items-center justify-between rounded-lg bg-default-50 px-3 py-2 text-[11px] font-medium text-foreground/60 hover:bg-default-100 transition-colors"
+                                                    >
+                                                        <span>View {pair.transfers.length} transfer{pair.transfers.length !== 1 ? "s" : ""}</span>
+                                                        <ChevronDown
+                                                            className={`h-3.5 w-3.5 transition-transform ${expandedPairs.has(`${data.currentGame}-${pair.otherGame}`) ? "rotate-180" : ""}`}
+                                                        />
+                                                    </button>
+                                                    <AnimatePresence>
+                                                        {expandedPairs.has(`${data.currentGame}-${pair.otherGame}`) && (
+                                                            <motion.div
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: "auto", opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                transition={{ duration: 0.2 }}
+                                                                className="overflow-hidden"
+                                                            >
+                                                                <div className="mt-2 space-y-1.5">
+                                                                    {pair.transfers.map((t) => {
+                                                                        const isOutgoing = t.fromGame === data.currentGame;
+                                                                        return (
+                                                                            <div
+                                                                                key={t.id}
+                                                                                className="flex items-center justify-between rounded-lg bg-default-50 px-3 py-2"
+                                                                            >
+                                                                                <div className="flex items-center gap-2 min-w-0">
+                                                                                    <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${isOutgoing ? "bg-danger" : "bg-success"}`} />
+                                                                                    <div className="min-w-0">
+                                                                                        <p className="text-[11px] font-medium truncate">
+                                                                                            {t.playerEmail}
+                                                                                        </p>
+                                                                                        <p className="text-[10px] text-foreground/40">
+                                                                                            {new Date(t.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                                                                                            {t.description && ` · ${t.description}`}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                                                    <Chip
+                                                                                        size="sm"
+                                                                                        variant="flat"
+                                                                                        color={isOutgoing ? "danger" : "success"}
+                                                                                        className="text-[10px]"
+                                                                                    >
+                                                                                        {isOutgoing ? "OUT" : "IN"}
+                                                                                    </Chip>
+                                                                                    <span className={`text-xs font-bold ${isOutgoing ? "text-danger" : "text-success"}`}>
+                                                                                        {isOutgoing ? "-" : "+"}{t.amount}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                                            )}
 
                                             {/* Settlement actions */}
                                             {pair.transferCount > 0 && (
