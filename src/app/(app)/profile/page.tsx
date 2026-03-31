@@ -133,6 +133,7 @@ export default function ProfilePage() {
     const [saving, setSaving] = useState(false);
     const ignTutorial = useIGNTutorial();
     const [showRPModal, setShowRPModal] = useState(false);
+    const [isBuyingRP, setIsBuyingRP] = useState(false);
     const profileSectionRef = useRef<HTMLDivElement>(null);
 
     // Secondary email state
@@ -1132,8 +1133,11 @@ export default function ProfilePage() {
                                         </Button>
                                         <Button
                                             className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-bold"
-                                            isDisabled={!player?.wallet || player.wallet.balance < rpPrice}
+                                            isDisabled={!player?.wallet || player.wallet.balance < rpPrice || isBuyingRP}
+                                            isLoading={isBuyingRP}
                                             onPress={async () => {
+                                                if (isBuyingRP) return;
+                                                setIsBuyingRP(true);
                                                 try {
                                                     const res = await fetch("/api/royal-pass/buy", { method: "POST" });
                                                     const json = await res.json();
@@ -1147,6 +1151,8 @@ export default function ProfilePage() {
                                                     }
                                                 } catch {
                                                     toast.error("Network error");
+                                                } finally {
+                                                    setIsBuyingRP(false);
                                                 }
                                             }}
                                         >

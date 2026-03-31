@@ -69,7 +69,8 @@ export async function POST() {
         });
 
         // Debit central wallet
-        const description = lostDiscount ? `${GAME.passName} Purchase (full price)` : `${GAME.passName} Purchase (75% off)`;
+        const discountPct = Math.round((1 - RP_PRICE_DISCOUNTED / RP_PRICE_FULL) * 100);
+        const description = lostDiscount ? `${GAME.passName} Purchase (full price)` : `${GAME.passName} Purchase (${discountPct}% off)`;
         await debitWallet(email, rpPrice, description, "ROYAL_PASS_PURCHASE");
 
         try {
