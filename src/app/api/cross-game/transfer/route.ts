@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { getCurrentUser } from "@/lib/auth";
 import { getPrisma } from "@/lib/database";
 import { getAvailableBalance } from "@/lib/wallet-service";
-import { getGameConfig, GAME_CONFIGS, type GameMode } from "@/lib/game-config";
+import { GAME_CONFIGS, type GameMode } from "@/lib/game-config";
 import { communityDb } from "@/lib/community-db";
 
 /**
@@ -11,9 +12,8 @@ import { communityDb } from "@/lib/community-db";
  * 
  * Body: { amount: number, targetGame: string }
  * 
- * IMPORTANT: Uses getGameConfig(req) to detect the SOURCE game from the
- * request's x-game-mode header (set by proxy). Module-level GAME_MODE
- * would always resolve to "bgmi" on the server.
+ * IMPORTANT: Uses next/headers to read x-game-mode set by proxy middleware.
+ * req.headers does NOT contain middleware-modified headers in Next.js.
  */
 export async function POST(req: NextRequest) {
     try {
@@ -22,8 +22,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
-        // Detect source game from request headers (NOT module-level GAME_MODE)
-        const { GAME, GAME_MODE: sourceGameMode } = getGameConfig(req);
+        // Detect source game from middleware headers (NOT req.headers or module-level GAME_MODE)
+        const headerStore = await headers();
+        const sourceGameMode = (headerStore.get("x-game-mode") as GameMode) || (process.env.NEXT_PUBLIC_GAME_MODE as GameMode) || "bgmi";
+        const GAME = GAME_CONFIGS[sourceGameMode] || GAME_CONFIGS.bgmi;
 
         const body = await req.json();
         const { amount, targetGame } = body as { amount: number; targetGame: GameMode };
