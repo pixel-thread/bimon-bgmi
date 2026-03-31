@@ -70,51 +70,61 @@ export async function POST() {
 
         // Debit central wallet
         const description = lostDiscount ? `${GAME.passName} Purchase (full price)` : `${GAME.passName} Purchase (75% off)`;
-        const walletResult = await debitWallet(email, rpPrice, description, "ROYAL_PASS_PURCHASE");
+        await debitWallet(email, rpPrice, description, "ROYAL_PASS_PURCHASE");
 
-        await prisma.$transaction(async (tx) => {
+        try {
+            await prisma.$transaction(async (tx) => {
 
-            // Create RoyalPass record
-            await tx.royalPass.create({
-                data: {
-                    playerId: user.player!.id,
-                    seasonId: currentSeason?.id,
-                    amount: rpPrice,
-                    displayValue: 20, // Original price
-                    pricePaid: rpPrice,
-                },
-            });
-
-            // Enable Royal Pass
-            await tx.player.update({
-                where: { id: user.player!.id },
-                data: { hasRoyalPass: true },
-            });
-
-            // If paying full price (streak >= 8), grant streak reward + reset streak
-            if (lostDiscount) {
-                // Create streak reward
-                await tx.pendingReward.create({
+                // Create RoyalPass record (unique constraint prevents duplicates)
+                await tx.royalPass.create({
                     data: {
                         playerId: user.player!.id,
-                        type: "STREAK",
-                        amount: STREAK_REWARD_UC,
-                        message: `🔥 ${STREAK_THRESHOLD} tournament streak reward!`,
+                        seasonId: currentSeason?.id,
+                        amount: rpPrice,
+                        displayValue: 20, // Original price
+                        pricePaid: rpPrice,
                     },
                 });
 
-                // Reset streak to 0, preserve longest
-                const newLongest = Math.max(currentStreak, user.player!.streak?.longest ?? 0);
-                await tx.playerStreak.update({
-                    where: { playerId: user.player!.id },
-                    data: {
-                        current: 0,
-                        longest: newLongest,
-                        lastRewardAt: new Date(),
-                    },
+                // Enable Royal Pass
+                await tx.player.update({
+                    where: { id: user.player!.id },
+                    data: { hasRoyalPass: true },
                 });
+
+                // If paying full price (streak >= 8), grant streak reward + reset streak
+                if (lostDiscount) {
+                    // Create streak reward
+                    await tx.pendingReward.create({
+                        data: {
+                            playerId: user.player!.id,
+                            type: "STREAK",
+                            amount: STREAK_REWARD_UC,
+                            message: `🔥 ${STREAK_THRESHOLD} tournament streak reward!`,
+                        },
+                    });
+
+                    // Reset streak to 0, preserve longest
+                    const newLongest = Math.max(currentStreak, user.player!.streak?.longest ?? 0);
+                    await tx.playerStreak.update({
+                        where: { playerId: user.player!.id },
+                        data: {
+                            current: 0,
+                            longest: newLongest,
+                            lastRewardAt: new Date(),
+                        },
+                    });
+                }
+            });
+        } catch (txError: any) {
+            // Race condition: another request already created the RP — refund the debit
+            if (txError?.code === "P2002") {
+                const { creditWallet } = await import("@/lib/wallet-service");
+                await creditWallet(email, rpPrice, `${GAME.passName} refund (duplicate prevented)`, "SYSTEM");
+                return ErrorResponse({ message: `You already have ${GAME.passName}!`, status: 400 });
             }
-        });
+            throw txError;
+        }
 
         return SuccessResponse({
             message: lostDiscount
