@@ -91,7 +91,7 @@ export function CrossGamePromo({ showAll = false }: { showAll?: boolean }) {
                                 href={userEmail ? `${g.url}/sign-in?login_hint=${encodeURIComponent(userEmail)}` : g.url}
                                 className={`flex items-center gap-3 rounded-xl border ${g.border} bg-gradient-to-r ${g.gradient} px-3.5 py-2.5 transition-all hover:scale-[1.02] active:scale-[0.98]`}
                             >
-                                <img src={g.icon} alt={g.name} className="h-8 w-8 rounded-lg object-contain shrink-0" />
+                                <img src={g.icon} alt={g.name} className="h-11 w-11 rounded-xl object-contain shrink-0" />
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs font-bold">
                                         {showAll ? (
