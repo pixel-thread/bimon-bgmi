@@ -29,11 +29,19 @@ import {
     Clock,
     ChevronDown,
     Link2,
+    Swords,
+    Target,
+    Flame,
+    TrendingUp,
+    TrendingDown,
+    Phone,
+    Mail,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CategoryBadge } from "@/components/ui/category-badge";
 import { GAME } from "@/lib/game-config";
+import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 
 interface PlayerDetailModalProps {
     playerId: string | null;
@@ -218,6 +226,18 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
         });
     };
 
+    // Group transactions by date
+    const groupedTransactions = txData?.data?.reduce<Record<string, Transaction[]>>((acc, tx) => {
+        const dateKey = new Date(tx.createdAt).toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+        });
+        if (!acc[dateKey]) acc[dateKey] = [];
+        acc[dateKey].push(tx);
+        return acc;
+    }, {});
+
     return (
         <Modal
             isOpen={isOpen}
@@ -226,409 +246,539 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
             scrollBehavior="inside"
             classNames={{
                 base: "max-h-[90vh]",
+                body: "px-0",
             }}
         >
             <ModalContent>
-                <ModalHeader className="flex-col gap-1 pb-0">
+                <ModalHeader className="flex-col gap-0 p-0 overflow-hidden">
                     {isLoading ? (
-                        <Skeleton className="h-6 w-48 rounded-lg" />
+                        <div className="p-5 space-y-3">
+                            <Skeleton className="h-12 w-48 rounded-lg" />
+                            <Skeleton className="h-4 w-64 rounded-lg" />
+                        </div>
                     ) : (
-                        <div className="flex items-center gap-3">
-                            <Avatar
-                                src={player?.imageUrl || undefined}
-                                name={player?.displayName || player?.username}
-                                size="md"
-                            />
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-lg font-bold">
-                                        {player?.displayName || player?.username}
-                                    </h2>
-                                    {player?.category && <CategoryBadge category={player.category} size="sm" />}
+                        <div className="relative">
+                            {/* Gradient background */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-secondary/10 to-transparent" />
+                            
+                            <div className="relative px-5 pt-5 pb-4">
+                                {/* Player info row */}
+                                <div className="flex items-start gap-3.5">
+                                    <div className="relative">
+                                        <Avatar
+                                            src={player?.imageUrl || undefined}
+                                            name={player?.displayName || player?.username}
+                                            size="lg"
+                                            className="ring-2 ring-background shadow-lg"
+                                        />
+                                        {player?.hasRoyalPass && (
+                                            <div className="absolute -top-1 -right-1 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full p-0.5 shadow-md">
+                                                <Crown className="h-3 w-3 text-black" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <h2 className="text-lg font-bold truncate">
+                                                {player?.displayName || player?.username}
+                                            </h2>
+                                            {player?.category && <CategoryBadge category={player.category} size="sm" />}
+                                            {player?.isBanned && (
+                                                <Chip size="sm" color="danger" variant="flat" className="h-5">
+                                                    Banned
+                                                </Chip>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-foreground/50 mt-0.5">
+                                            @{player?.username}
+                                        </p>
+                                        {/* Contact row */}
+                                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                                            {player?.email && (
+                                                <span className="flex items-center gap-1 text-[11px] text-foreground/40">
+                                                    <Mail className="h-3 w-3" />
+                                                    <span className="truncate max-w-[180px]">{player.email}</span>
+                                                </span>
+                                            )}
+                                            {player?.phoneNumber && (
+                                                <span className="flex items-center gap-1 text-[11px] text-foreground/40">
+                                                    <Phone className="h-3 w-3" />
+                                                    {player.phoneNumber}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                                <p className="text-xs text-foreground/50">
-                                    @{player?.username} · {player?.email}
-                                    {player?.phoneNumber && <> · 📞 {player.phoneNumber}</>}
-                                </p>
+
+                                {/* Stats row */}
+                                <div className="grid grid-cols-4 gap-2 mt-4">
+                                    <div className="rounded-lg bg-background/60 backdrop-blur-sm border border-divider/50 px-3 py-2 text-center">
+                                        <p className="text-base font-bold">{player?.stats.matches ?? 0}</p>
+                                        <p className="text-[9px] text-foreground/40 uppercase tracking-wide">Matches</p>
+                                    </div>
+                                    <div className="rounded-lg bg-background/60 backdrop-blur-sm border border-divider/50 px-3 py-2 text-center">
+                                        <p className="text-base font-bold">{player?.stats.kills ?? 0}</p>
+                                        <p className="text-[9px] text-foreground/40 uppercase tracking-wide">Kills</p>
+                                    </div>
+                                    <div className="rounded-lg bg-background/60 backdrop-blur-sm border border-divider/50 px-3 py-2 text-center">
+                                        <p className="text-base font-bold">{player?.stats.kd?.toFixed(1) ?? "0.0"}</p>
+                                        <p className="text-[9px] text-foreground/40 uppercase tracking-wide">K/D</p>
+                                    </div>
+                                    <div className="rounded-lg bg-background/60 backdrop-blur-sm border border-divider/50 px-3 py-2 text-center">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <CurrencyIcon size={14} />
+                                            <p className={`text-base font-bold ${(player?.balance ?? 0) < 0 ? "text-danger" : ""}`}>
+                                                {player?.balance?.toLocaleString() ?? 0}
+                                            </p>
+                                        </div>
+                                        <p className="text-[9px] text-foreground/40 uppercase tracking-wide">Balance</p>
+                                    </div>
+                                </div>
+
+                                {/* Streak badges */}
+                                {(player?.streak?.current ?? 0) > 0 && (
+                                    <div className="flex items-center gap-2 mt-3">
+                                        <Chip size="sm" variant="flat" color="warning" startContent={<Flame className="h-3 w-3" />} className="h-5">
+                                            {player?.streak.current} streak
+                                        </Chip>
+                                        {(player?.streak?.longest ?? 0) > 1 && (
+                                            <Chip size="sm" variant="flat" className="h-5 text-foreground/50">
+                                                Best: {player?.streak.longest}
+                                            </Chip>
+                                        )}
+                                    </div>
+                                )}
                             </div>
-                            {player?.hasRoyalPass && (
-                                <Crown className="h-5 w-5 text-yellow-500" />
-                            )}
-                            {player?.isBanned && (
-                                <Chip size="sm" color="danger" variant="flat">
-                                    Banned
-                                </Chip>
-                            )}
                         </div>
                     )}
                 </ModalHeader>
 
-                <ModalBody className="gap-4 pb-6">
+                <ModalBody className="gap-0 pb-6">
                     {/* Tab switcher */}
-                    <div className="flex gap-1 rounded-lg bg-default-100 p-1">
+                    <div className="flex gap-0 border-b border-divider mx-4 mb-4">
                         <button
                             onClick={() => setActiveTab("overview")}
-                            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === "overview"
-                                ? "bg-background shadow-sm"
-                                : "text-foreground/50 hover:text-foreground"
+                            className={`flex-1 px-3 py-2.5 text-sm font-medium transition-colors relative ${activeTab === "overview"
+                                ? "text-primary"
+                                : "text-foreground/40 hover:text-foreground/70"
                                 }`}
                         >
                             Overview & Actions
+                            {activeTab === "overview" && (
+                                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full" />
+                            )}
                         </button>
                         <button
                             onClick={() => setActiveTab("transactions")}
-                            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === "transactions"
-                                ? "bg-background shadow-sm"
-                                : "text-foreground/50 hover:text-foreground"
+                            className={`flex-1 px-3 py-2.5 text-sm font-medium transition-colors relative ${activeTab === "transactions"
+                                ? "text-primary"
+                                : "text-foreground/40 hover:text-foreground/70"
                                 }`}
                         >
                             Transactions
+                            {txData?.data && txData.data.length > 0 && (
+                                <span className="ml-1 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-foreground/10 text-[10px] font-semibold">
+                                    {txData.data.length}
+                                </span>
+                            )}
+                            {activeTab === "transactions" && (
+                                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full" />
+                            )}
                         </button>
                     </div>
 
-                    {isLoading ? (
-                        <div className="space-y-3">
-                            <Skeleton className="h-20 w-full rounded-xl" />
-                            <Skeleton className="h-32 w-full rounded-xl" />
-                        </div>
-                    ) : activeTab === "overview" ? (
-                        <>
-                            {/* UC Credit/Debit form — with balance */}
-                            <div className="space-y-3 rounded-xl border border-divider p-4">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-semibold">Add / Remove {GAME.currency}</h3>
-                                    <span className={`text-sm font-bold ${(player?.balance ?? 0) < 0 ? "text-danger" : "text-primary"}`}>
-                                        {player?.balance?.toLocaleString()} {GAME.currency}
-                                    </span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <Select
-                                        size="sm"
-                                        selectedKeys={[ucType]}
-                                        onSelectionChange={(keys) => {
-                                            const val = Array.from(keys)[0] as string;
-                                            if (val) setUcType(val as "CREDIT" | "DEBIT");
-                                        }}
-                                        className="w-32"
-                                        aria-label="Transaction type"
-                                    >
-                                        <SelectItem key="CREDIT">Credit</SelectItem>
-                                        <SelectItem key="DEBIT">Debit</SelectItem>
-                                    </Select>
-                                    <Input
-                                        size="sm"
-                                        type="number"
-                                        placeholder="Amount"
-                                        value={ucAmount}
-                                        onValueChange={setUcAmount}
-                                        startContent={
-                                            ucType === "CREDIT" ? (
-                                                <Plus className="h-3 w-3 text-success" />
-                                            ) : (
-                                                <Minus className="h-3 w-3 text-danger" />
-                                            )
-                                        }
-                                        className="flex-1"
-                                    />
-                                </div>
-                                <Textarea
-                                    size="sm"
-                                    placeholder="Reason (e.g. Tournament prize, penalty...)"
-                                    value={ucDescription}
-                                    onValueChange={setUcDescription}
-                                    minRows={1}
-                                    maxRows={2}
-                                />
-                                <Button
-                                    size="sm"
-                                    color={ucType === "CREDIT" ? "success" : "danger"}
-                                    variant="flat"
-                                    onPress={handleUcSubmit}
-                                    isLoading={walletMutation.isPending}
-                                    isDisabled={!ucAmount || !ucDescription.trim()}
-                                    className="w-full"
-                                >
-                                    {ucType === "CREDIT" ? "Credit" : "Debit"} {ucAmount || "0"} {GAME.currency}
-                                </Button>
-                                {walletMutation.isSuccess && (
-                                    <p className="text-center text-xs text-success">
-                                        ✓ Balance updated successfully
-                                    </p>
-                                )}
-                                {walletMutation.isError && (
-                                    <p className="text-center text-xs text-danger">
-                                        Failed to update balance
-                                    </p>
-                                )}
+                    <div className="px-4">
+                        {isLoading ? (
+                            <div className="space-y-3">
+                                <Skeleton className="h-20 w-full rounded-xl" />
+                                <Skeleton className="h-32 w-full rounded-xl" />
                             </div>
-
-                            {/* Player Flags — collapsed by default */}
-                            <div className="rounded-xl border border-divider">
-                                <button
-                                    type="button"
-                                    onClick={() => toggleSection("flags")}
-                                    className="flex w-full items-center justify-between p-3 text-sm font-semibold cursor-pointer hover:bg-default-50 rounded-xl transition-colors"
-                                >
-                                    Player Flags
-                                    <ChevronDown className={`h-4 w-4 text-foreground/40 transition-transform ${expandedSections.flags ? "rotate-180" : ""}`} />
-                                </button>
-                                {expandedSections.flags && (
-                                    <div className="space-y-3 px-4 pb-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <ShieldAlert className="h-4 w-4 text-primary" />
-                                                <div>
-                                                    <p className="text-sm font-medium">Trusted Player</p>
-                                                    <p className="text-xs text-foreground/50">Extended credit line (-200 {GAME.currency})</p>
-                                                </div>
+                        ) : activeTab === "overview" ? (
+                            <div className="space-y-3">
+                                {/* UC Credit/Debit form */}
+                                <div className="space-y-3 rounded-xl border border-divider p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10">
+                                                <Wallet className="h-3.5 w-3.5 text-primary" />
                                             </div>
-                                            <Switch
-                                                size="sm"
-                                                isSelected={player?.isTrusted ?? false}
-                                                isDisabled={toggleMutation.isPending}
-                                                onValueChange={(val) => toggleMutation.mutate({ isTrusted: val })}
-                                                aria-label="Toggle trusted"
-                                            />
+                                            <h3 className="text-sm font-semibold">Wallet</h3>
                                         </div>
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <BadgeDollarSign className="h-4 w-4 text-warning" />
-                                                <div>
-                                                    <p className="text-sm font-medium">UC Exempt</p>
-                                                    <p className="text-xs text-foreground/50">Skip {GAME.currency} deductions for entry fees</p>
-                                                </div>
-                                            </div>
-                                            <Switch
-                                                size="sm"
-                                                isSelected={player?.isUCExempt ?? false}
-                                                isDisabled={toggleMutation.isPending}
-                                                onValueChange={(val) => toggleMutation.mutate({ isUCExempt: val })}
-                                                aria-label={`Toggle ${GAME.currency} exempt`}
-                                            />
+                                        <div className="flex items-center gap-1.5">
+                                            <CurrencyIcon size={14} />
+                                            <span className={`text-sm font-bold ${(player?.balance ?? 0) < 0 ? "text-danger" : "text-primary"}`}>
+                                                {player?.balance?.toLocaleString()} {GAME.currency}
+                                            </span>
                                         </div>
                                     </div>
-                                )}
-                            </div>
-
-                            {/* Ban/Unban — collapsed by default */}
-                            <div className="rounded-xl border border-divider">
-                                <button
-                                    type="button"
-                                    onClick={() => toggleSection("ban")}
-                                    className="flex w-full items-center justify-between p-3 text-sm font-semibold cursor-pointer hover:bg-default-50 rounded-xl transition-colors"
-                                >
-                                    {player?.isBanned ? "Player is Banned" : "Ban Player"}
-                                    <ChevronDown className={`h-4 w-4 text-foreground/40 transition-transform ${expandedSections.ban ? "rotate-180" : ""}`} />
-                                </button>
-                                {expandedSections.ban && (
-                                    <div className="space-y-3 px-4 pb-4">
-                                        {player?.ban && (
-                                            <p className="text-xs text-foreground/50">
-                                                Reason: {player.ban.reason || "No reason provided"}
-                                                {player.ban.bannedAt && (
-                                                    <> · {new Date(player.ban.bannedAt).toLocaleDateString()}</>
-                                                )}
-                                            </p>
-                                        )}
-                                        {!player?.isBanned && (
-                                            <Input
-                                                size="sm"
-                                                placeholder="Ban reason (optional)"
-                                                value={banReason}
-                                                onValueChange={setBanReason}
-                                            />
-                                        )}
-                                        <Button
+                                    <div className="flex gap-2">
+                                        <Select
                                             size="sm"
-                                            color={player?.isBanned ? "success" : "danger"}
-                                            variant="flat"
-                                            onPress={handleBanToggle}
-                                            isLoading={banMutation.isPending}
+                                            selectedKeys={[ucType]}
+                                            onSelectionChange={(keys) => {
+                                                const val = Array.from(keys)[0] as string;
+                                                if (val) setUcType(val as "CREDIT" | "DEBIT");
+                                            }}
+                                            className="w-32"
+                                            aria-label="Transaction type"
+                                        >
+                                            <SelectItem key="CREDIT">Credit</SelectItem>
+                                            <SelectItem key="DEBIT">Debit</SelectItem>
+                                        </Select>
+                                        <Input
+                                            size="sm"
+                                            type="number"
+                                            placeholder="Amount"
+                                            value={ucAmount}
+                                            onValueChange={setUcAmount}
                                             startContent={
-                                                player?.isBanned ? (
-                                                    <ShieldCheck className="h-4 w-4" />
+                                                ucType === "CREDIT" ? (
+                                                    <Plus className="h-3 w-3 text-success" />
                                                 ) : (
-                                                    <ShieldBan className="h-4 w-4" />
+                                                    <Minus className="h-3 w-3 text-danger" />
                                                 )
                                             }
-                                            className="w-full"
-                                        >
-                                            {player?.isBanned ? "Unban Player" : "Ban Player"}
-                                        </Button>
-                                        {banMutation.isSuccess && (
-                                            <p className="text-center text-xs text-success">
-                                                ✓ Status updated
-                                            </p>
-                                        )}
+                                            className="flex-1"
+                                        />
                                     </div>
-                                )}
-                            </div>
-
-                            {/* Merge Legacy Player — BGMI only (legacy Season 1 players) */}
-                            {GAME.gameName === "BGMI" && (
-                            <div className="rounded-xl border border-divider">
-                                <button
-                                    type="button"
-                                    onClick={() => toggleSection("link")}
-                                    className="flex w-full items-center justify-between p-3 text-sm font-semibold cursor-pointer hover:bg-default-50 rounded-xl transition-colors"
-                                >
-                                    <span className="flex items-center gap-2">
-                                        <Link2 className="h-4 w-4 text-primary" />
-                                        Merge Legacy Player
-                                    </span>
-                                    <ChevronDown className={`h-4 w-4 text-foreground/40 transition-transform ${expandedSections.link ? "rotate-180" : ""}`} />
-                                </button>
-                                {expandedSections.link && (
-                                    <div className="space-y-3 px-4 pb-4">
-                                        <p className="text-xs text-foreground/40">
-                                            Merge this player&apos;s history into another player&apos;s account.
-                                        </p>
-                                        <p className="text-[10px] text-foreground/30">
-                                            Currently linked to: <span className="font-medium text-foreground/60">{player?.email}</span>
-                                        </p>
-
-                                        {/* Search with autocomplete */}
-                                        <div className="relative">
-                                            <Input
-                                                size="sm"
-                                                type="text"
-                                                placeholder="Search player name, username, or email..."
-                                                value={mergeSelected ? `${mergeSelected.displayName} (${mergeSelected.email || mergeSelected.username})` : mergeSearch}
-                                                onValueChange={(val) => {
-                                                    if (mergeSelected) {
-                                                        setMergeSelected(null);
-                                                        setMergeSearch("");
-                                                    } else {
-                                                        setMergeSearch(val);
-                                                    }
-                                                }}
-                                                onClear={() => { setMergeSelected(null); setMergeSearch(""); }}
-                                                isClearable
-                                                startContent={<Link2 className="h-3 w-3 text-foreground/30" />}
-                                                endContent={mergeSearching ? <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" /> : undefined}
-                                            />
-                                            {/* Suggestions dropdown */}
-                                            {mergeSuggestions.length > 0 && !mergeSelected && (
-                                                <div className="absolute z-50 mt-1 w-full rounded-lg border border-divider bg-content1 shadow-lg overflow-hidden">
-                                                    {mergeSuggestions.map((s) => (
-                                                        <button
-                                                            key={s.id}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setMergeSelected(s);
-                                                                setMergeSuggestions([]);
-                                                            }}
-                                                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-default-100 transition-colors cursor-pointer"
-                                                        >
-                                                            <Avatar src={s.imageUrl || undefined} name={s.displayName || s.username} size="sm" className="h-6 w-6 shrink-0" />
-                                                            <div className="min-w-0 flex-1">
-                                                                <p className="truncate font-medium text-xs">{s.displayName || s.username}</p>
-                                                                <p className="truncate text-[10px] text-foreground/40">@{s.username} · {s.email}</p>
-                                                            </div>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <Button
-                                            size="sm"
-                                            color="primary"
-                                            variant="flat"
-                                            className="w-full"
-                                            isLoading={linkMutation.isPending}
-                                            isDisabled={!mergeSelected}
-                                            onPress={() => {
-                                                if (mergeSelected && confirm(`Merge "${player?.displayName}" into "${mergeSelected.displayName}" (${mergeSelected.email || mergeSelected.username})?\n\nThis will:\n• Move all stats, matches, wallet balance, and transactions\n• Combine data from both players\n• Delete this old player record\n\nThis cannot be undone.`)) {
-                                                    linkMutation.mutate({ query: mergeSelected.email || mergeSelected.username });
-                                                }
-                                            }}
-                                            startContent={!linkMutation.isPending ? <Link2 className="h-4 w-4" /> : undefined}
-                                        >
-                                            Merge Player
-                                        </Button>
-                                        {linkMutation.isSuccess && (
-                                            <p className="text-center text-xs text-success">
-                                                ✓ {linkMutation.data?.message || "Player merged successfully"}
-                                            </p>
-                                        )}
-                                        {linkMutation.isError && (
-                                            <p className="text-center text-xs text-danger">
-                                                {(linkMutation.error as Error).message}
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                            )}
-                        </>
-                    ) : (
-                        /* Transactions tab */
-                        <div className="space-y-1">
-                            {txLoading ? (
-                                <div className="space-y-2">
-                                    {[1, 2, 3, 4, 5].map((i) => (
-                                        <Skeleton key={i} className="h-12 w-full rounded-lg" />
-                                    ))}
-                                </div>
-                            ) : !txData?.data.length ? (
-                                <div className="flex flex-col items-center gap-2 py-8 text-center">
-                                    <Clock className="h-8 w-8 text-foreground/20" />
-                                    <p className="text-sm text-foreground/50">No transactions yet</p>
-                                </div>
-                            ) : (
-                                txData.data.map((tx, i) => {
-                                    // Compute balance after this tx by working backwards
-                                    // from current balance through all prior transactions
-                                    const laterTxs = txData.data.slice(0, i);
-                                    let balAfter = player?.balance ?? 0;
-                                    for (const lt of laterTxs) {
-                                        balAfter -= lt.type === "CREDIT" ? lt.amount : -lt.amount;
-                                    }
-                                    const balBefore = tx.type === "CREDIT"
-                                        ? balAfter - tx.amount
-                                        : balAfter + tx.amount;
-
-                                    return (
-                                    <div
-                                        key={tx.id}
-                                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-default-100"
+                                    <Textarea
+                                        size="sm"
+                                        placeholder="Reason (e.g. Tournament prize, penalty...)"
+                                        value={ucDescription}
+                                        onValueChange={setUcDescription}
+                                        minRows={1}
+                                        maxRows={2}
+                                    />
+                                    <Button
+                                        size="sm"
+                                        color={ucType === "CREDIT" ? "success" : "danger"}
+                                        variant="flat"
+                                        onPress={handleUcSubmit}
+                                        isLoading={walletMutation.isPending}
+                                        isDisabled={!ucAmount || !ucDescription.trim()}
+                                        className="w-full"
                                     >
-                                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${tx.type === "CREDIT"
-                                            ? "bg-success/10 text-success"
-                                            : "bg-danger/10 text-danger"
-                                            }`}>
-                                            {tx.type === "CREDIT" ? (
-                                                <ArrowDownRight className="h-4 w-4" />
-                                            ) : (
-                                                <ArrowUpRight className="h-4 w-4" />
-                                            )}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-sm">{tx.description}</p>
-                                            <div className="flex items-center gap-1.5 text-xs text-foreground/40">
-                                                <span>
-                                                    {new Date(tx.createdAt).toLocaleDateString("en-IN", {
-                                                        day: "numeric",
-                                                        month: "short",
-                                                    })}
-                                                </span>
-                                                <span>·</span>
-                                                <span>
-                                                    {balBefore.toLocaleString()} → {balAfter.toLocaleString()} {GAME.currency}
-                                                </span>
+                                        {ucType === "CREDIT" ? "Credit" : "Debit"} {ucAmount || "0"} {GAME.currency}
+                                    </Button>
+                                    {walletMutation.isSuccess && (
+                                        <p className="text-center text-xs text-success">
+                                            ✓ Balance updated successfully
+                                        </p>
+                                    )}
+                                    {walletMutation.isError && (
+                                        <p className="text-center text-xs text-danger">
+                                            Failed to update balance
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Player Flags — collapsed by default */}
+                                <div className="rounded-xl border border-divider">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleSection("flags")}
+                                        className="flex w-full items-center justify-between p-3 text-sm font-semibold cursor-pointer hover:bg-default-50 rounded-xl transition-colors"
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <ShieldAlert className="h-4 w-4 text-primary" />
+                                            Player Flags
+                                        </span>
+                                        <ChevronDown className={`h-4 w-4 text-foreground/40 transition-transform ${expandedSections.flags ? "rotate-180" : ""}`} />
+                                    </button>
+                                    {expandedSections.flags && (
+                                        <div className="space-y-3 px-4 pb-4">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <ShieldAlert className="h-4 w-4 text-primary" />
+                                                    <div>
+                                                        <p className="text-sm font-medium">Trusted Player</p>
+                                                        <p className="text-xs text-foreground/50">Extended credit line (-200 {GAME.currency})</p>
+                                                    </div>
+                                                </div>
+                                                <Switch
+                                                    size="sm"
+                                                    isSelected={player?.isTrusted ?? false}
+                                                    isDisabled={toggleMutation.isPending}
+                                                    onValueChange={(val) => toggleMutation.mutate({ isTrusted: val })}
+                                                    aria-label="Toggle trusted"
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <BadgeDollarSign className="h-4 w-4 text-warning" />
+                                                    <div>
+                                                        <p className="text-sm font-medium">UC Exempt</p>
+                                                        <p className="text-xs text-foreground/50">Skip {GAME.currency} deductions for entry fees</p>
+                                                    </div>
+                                                </div>
+                                                <Switch
+                                                    size="sm"
+                                                    isSelected={player?.isUCExempt ?? false}
+                                                    isDisabled={toggleMutation.isPending}
+                                                    onValueChange={(val) => toggleMutation.mutate({ isUCExempt: val })}
+                                                    aria-label={`Toggle ${GAME.currency} exempt`}
+                                                />
                                             </div>
                                         </div>
-                                        <span className={`text-sm font-semibold ${tx.type === "CREDIT" ? "text-success" : "text-danger"
-                                            }`}>
-                                            {tx.type === "CREDIT" ? "+" : "-"}{tx.amount} {GAME.currency}
+                                    )}
+                                </div>
+
+                                {/* Ban/Unban — collapsed by default */}
+                                <div className="rounded-xl border border-divider">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleSection("ban")}
+                                        className="flex w-full items-center justify-between p-3 text-sm font-semibold cursor-pointer hover:bg-default-50 rounded-xl transition-colors"
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            {player?.isBanned ? <ShieldBan className="h-4 w-4 text-danger" /> : <ShieldBan className="h-4 w-4 text-foreground/40" />}
+                                            {player?.isBanned ? "Player is Banned" : "Ban Player"}
                                         </span>
+                                        <ChevronDown className={`h-4 w-4 text-foreground/40 transition-transform ${expandedSections.ban ? "rotate-180" : ""}`} />
+                                    </button>
+                                    {expandedSections.ban && (
+                                        <div className="space-y-3 px-4 pb-4">
+                                            {player?.ban && (
+                                                <p className="text-xs text-foreground/50">
+                                                    Reason: {player.ban.reason || "No reason provided"}
+                                                    {player.ban.bannedAt && (
+                                                        <> · {new Date(player.ban.bannedAt).toLocaleDateString()}</>
+                                                    )}
+                                                </p>
+                                            )}
+                                            {!player?.isBanned && (
+                                                <Input
+                                                    size="sm"
+                                                    placeholder="Ban reason (optional)"
+                                                    value={banReason}
+                                                    onValueChange={setBanReason}
+                                                />
+                                            )}
+                                            <Button
+                                                size="sm"
+                                                color={player?.isBanned ? "success" : "danger"}
+                                                variant="flat"
+                                                onPress={handleBanToggle}
+                                                isLoading={banMutation.isPending}
+                                                startContent={
+                                                    player?.isBanned ? (
+                                                        <ShieldCheck className="h-4 w-4" />
+                                                    ) : (
+                                                        <ShieldBan className="h-4 w-4" />
+                                                    )
+                                                }
+                                                className="w-full"
+                                            >
+                                                {player?.isBanned ? "Unban Player" : "Ban Player"}
+                                            </Button>
+                                            {banMutation.isSuccess && (
+                                                <p className="text-center text-xs text-success">
+                                                    ✓ Status updated
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Merge Legacy Player — BGMI only (legacy Season 1 players) */}
+                                {GAME.gameName === "BGMI" && (
+                                <div className="rounded-xl border border-divider">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleSection("link")}
+                                        className="flex w-full items-center justify-between p-3 text-sm font-semibold cursor-pointer hover:bg-default-50 rounded-xl transition-colors"
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <Link2 className="h-4 w-4 text-primary" />
+                                            Merge Legacy Player
+                                        </span>
+                                        <ChevronDown className={`h-4 w-4 text-foreground/40 transition-transform ${expandedSections.link ? "rotate-180" : ""}`} />
+                                    </button>
+                                    {expandedSections.link && (
+                                        <div className="space-y-3 px-4 pb-4">
+                                            <p className="text-xs text-foreground/40">
+                                                Merge this player&apos;s history into another player&apos;s account.
+                                            </p>
+                                            <p className="text-[10px] text-foreground/30">
+                                                Currently linked to: <span className="font-medium text-foreground/60">{player?.email}</span>
+                                            </p>
+
+                                            {/* Search with autocomplete */}
+                                            <div className="relative">
+                                                <Input
+                                                    size="sm"
+                                                    type="text"
+                                                    placeholder="Search player name, username, or email..."
+                                                    value={mergeSelected ? `${mergeSelected.displayName} (${mergeSelected.email || mergeSelected.username})` : mergeSearch}
+                                                    onValueChange={(val) => {
+                                                        if (mergeSelected) {
+                                                            setMergeSelected(null);
+                                                            setMergeSearch("");
+                                                        } else {
+                                                            setMergeSearch(val);
+                                                        }
+                                                    }}
+                                                    onClear={() => { setMergeSelected(null); setMergeSearch(""); }}
+                                                    isClearable
+                                                    startContent={<Link2 className="h-3 w-3 text-foreground/30" />}
+                                                    endContent={mergeSearching ? <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" /> : undefined}
+                                                />
+                                                {/* Suggestions dropdown */}
+                                                {mergeSuggestions.length > 0 && !mergeSelected && (
+                                                    <div className="absolute z-50 mt-1 w-full rounded-lg border border-divider bg-content1 shadow-lg overflow-hidden">
+                                                        {mergeSuggestions.map((s) => (
+                                                            <button
+                                                                key={s.id}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setMergeSelected(s);
+                                                                    setMergeSuggestions([]);
+                                                                }}
+                                                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-default-100 transition-colors cursor-pointer"
+                                                            >
+                                                                <Avatar src={s.imageUrl || undefined} name={s.displayName || s.username} size="sm" className="h-6 w-6 shrink-0" />
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className="truncate font-medium text-xs">{s.displayName || s.username}</p>
+                                                                    <p className="truncate text-[10px] text-foreground/40">@{s.username} · {s.email}</p>
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <Button
+                                                size="sm"
+                                                color="primary"
+                                                variant="flat"
+                                                className="w-full"
+                                                isLoading={linkMutation.isPending}
+                                                isDisabled={!mergeSelected}
+                                                onPress={() => {
+                                                    if (mergeSelected && confirm(`Merge "${player?.displayName}" into "${mergeSelected.displayName}" (${mergeSelected.email || mergeSelected.username})?\n\nThis will:\n• Move all stats, matches, wallet balance, and transactions\n• Combine data from both players\n• Delete this old player record\n\nThis cannot be undone.`)) {
+                                                        linkMutation.mutate({ query: mergeSelected.email || mergeSelected.username });
+                                                    }
+                                                }}
+                                                startContent={!linkMutation.isPending ? <Link2 className="h-4 w-4" /> : undefined}
+                                            >
+                                                Merge Player
+                                            </Button>
+                                            {linkMutation.isSuccess && (
+                                                <p className="text-center text-xs text-success">
+                                                    ✓ {linkMutation.data?.message || "Player merged successfully"}
+                                                </p>
+                                            )}
+                                            {linkMutation.isError && (
+                                                <p className="text-center text-xs text-danger">
+                                                    {(linkMutation.error as Error).message}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                )}
+                            </div>
+                        ) : (
+                            /* Transactions tab */
+                            <div className="space-y-1">
+                                {txLoading ? (
+                                    <div className="space-y-2">
+                                        {[1, 2, 3, 4, 5].map((i) => (
+                                            <Skeleton key={i} className="h-14 w-full rounded-xl" />
+                                        ))}
                                     </div>
-                                    );
-                                })
-                            )}
-                        </div>
-                    )}
+                                ) : !txData?.data.length ? (
+                                    <div className="flex flex-col items-center gap-3 py-12 text-center">
+                                        <div className="flex items-center justify-center h-14 w-14 rounded-full bg-default-100">
+                                            <Wallet className="h-6 w-6 text-foreground/20" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-foreground/50">No transactions yet</p>
+                                            <p className="text-xs text-foreground/30 mt-0.5">Wallet activity will appear here</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {groupedTransactions && Object.entries(groupedTransactions).map(([dateLabel, txs]) => {
+                                            return (
+                                                <div key={dateLabel}>
+                                                    {/* Date header */}
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="text-[10px] font-semibold text-foreground/30 uppercase tracking-wider">{dateLabel}</span>
+                                                        <div className="flex-1 h-px bg-divider" />
+                                                    </div>
+
+                                                    {/* Transactions for this date */}
+                                                    <div className="space-y-0.5">
+                                                        {txs.map((tx) => {
+                                                            // Compute balance after this tx by working backwards
+                                                            const allTxs = txData!.data;
+                                                            const txIndex = allTxs.indexOf(tx);
+                                                            const laterTxs = allTxs.slice(0, txIndex);
+                                                            let balAfter = player?.balance ?? 0;
+                                                            for (const lt of laterTxs) {
+                                                                balAfter -= lt.type === "CREDIT" ? lt.amount : -lt.amount;
+                                                            }
+                                                            const balBefore = tx.type === "CREDIT"
+                                                                ? balAfter - tx.amount
+                                                                : balAfter + tx.amount;
+                                                            const isCredit = tx.type === "CREDIT";
+
+                                                            return (
+                                                                <div
+                                                                    key={tx.id}
+                                                                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-default-50 group"
+                                                                >
+                                                                    {/* Icon */}
+                                                                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${isCredit
+                                                                        ? "bg-success/10 text-success"
+                                                                        : "bg-danger/10 text-danger"
+                                                                        }`}>
+                                                                        {isCredit ? (
+                                                                            <TrendingUp className="h-4 w-4" />
+                                                                        ) : (
+                                                                            <TrendingDown className="h-4 w-4" />
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Description & balance flow */}
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <p className="text-sm font-medium truncate">{tx.description}</p>
+                                                                        <div className="flex items-center gap-1 text-[11px] text-foreground/35 mt-0.5">
+                                                                            <span className="font-mono">{balBefore.toLocaleString()}</span>
+                                                                            <span>→</span>
+                                                                            <span className={`font-mono font-medium ${isCredit ? "text-success/60" : "text-danger/60"}`}>
+                                                                                {balAfter.toLocaleString()}
+                                                                            </span>
+                                                                            <span className="ml-0.5">{GAME.currency}</span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Amount */}
+                                                                    <div className="text-right shrink-0">
+                                                                        <span className={`text-sm font-bold ${isCredit ? "text-success" : "text-danger"}`}>
+                                                                            {isCredit ? "+" : "−"}{tx.amount.toLocaleString()}
+                                                                        </span>
+                                                                        <p className="text-[10px] text-foreground/25 mt-0.5">
+                                                                            {new Date(tx.createdAt).toLocaleTimeString("en-IN", {
+                                                                                hour: "2-digit",
+                                                                                minute: "2-digit",
+                                                                                hour12: true,
+                                                                            })}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </ModalBody>
             </ModalContent>
         </Modal>
