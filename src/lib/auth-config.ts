@@ -21,13 +21,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         signIn: "/sign-in",
     },
     callbacks: {
-        async jwt({ token, account, profile }) {
+        async jwt({ token, account, profile, trigger, session }) {
             // On initial sign-in, store Google profile data
             if (account && profile) {
                 token.googleId = profile.sub;
                 token.email = profile.email;
                 token.name = profile.name;
                 token.picture = profile.picture;
+            }
+            // On session update (e.g. email swap), sync the token
+            if (trigger === "update" && session?.email) {
+                token.email = session.email;
             }
             return token;
         },

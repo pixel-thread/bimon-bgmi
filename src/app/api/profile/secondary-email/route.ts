@@ -98,14 +98,22 @@ export async function POST(request: NextRequest) {
                     return ErrorResponse({ message: "No secondary email to remove", status: 400 });
                 }
 
+                // If the session email IS the secondary being removed, the
+                // session will become orphaned.  Allow it but tell the client
+                // to sign out so the user re-authenticates with the new primary.
+                const sessionIsSecondary =
+                    user.secondaryEmail.toLowerCase() === sessionEmail.toLowerCase();
+
                 await prisma.user.update({
                     where: { id: user.id },
                     data: { secondaryEmail: null },
                 });
 
                 return SuccessResponse({
-                    data: { secondaryEmail: null },
-                    message: "Secondary email removed.",
+                    data: { secondaryEmail: null, requireSignOut: sessionIsSecondary },
+                    message: sessionIsSecondary
+                        ? "Email removed. Signing you out — sign back in with your new primary email."
+                        : "Secondary email removed.",
                 });
             }
 

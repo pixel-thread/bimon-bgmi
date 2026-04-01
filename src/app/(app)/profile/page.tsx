@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { CategoryBadge } from "@/components/ui/category-badge";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { GameNameInput, validateDisplayName } from "@/components/common/GameNameInput";
 import { useIGNTutorial } from "@/components/common/IGNTutorialModal";
 import { toast } from "sonner";
@@ -109,6 +109,7 @@ interface ProfileData {
 export default function ProfilePage() {
     const queryClient = useQueryClient();
     const router = useRouter();
+    const { update: updateSession } = useSession();
     const handleSignOut = () => signOut({ callbackUrl: "/" });
     const profileInputRef = useRef<HTMLInputElement>(null);
     const characterInputRef = useRef<HTMLInputElement>(null);
@@ -141,6 +142,7 @@ export default function ProfilePage() {
     const [newSecondaryEmail, setNewSecondaryEmail] = useState("");
     const [emailSaving, setEmailSaving] = useState(false);
     const [emailError, setEmailError] = useState("");
+    const [showSignOutModal, setShowSignOutModal] = useState(false);
 
     const { data: profile, isLoading, isFetching, error } = useQuery<ProfileData>({
         queryKey: ["profile"],
@@ -961,6 +963,10 @@ export default function ProfilePage() {
                                                                 });
                                                                 const json = await res.json();
                                                                 if (res.ok) {
+                                                                    // Sync session email so future lookups use the new primary
+                                                                    if (json.data?.email) {
+                                                                        await updateSession({ email: json.data.email });
+                                                                    }
                                                                     toast.success(json.message);
                                                                     queryClient.invalidateQueries({ queryKey: ["profile"] });
                                                                 } else {
@@ -987,6 +993,10 @@ export default function ProfilePage() {
                                                                 });
                                                                 const json = await res.json();
                                                                 if (res.ok) {
+                                                                    if (json.data?.requireSignOut) {
+                                                                        setShowSignOutModal(true);
+                                                                        return;
+                                                                    }
                                                                     toast.success("Secondary email removed");
                                                                     queryClient.invalidateQueries({ queryKey: ["profile"] });
                                                                 } else {
@@ -1277,6 +1287,46 @@ export default function ProfilePage() {
                 )}
 
 
+
+                {/* Sign-out modal after removing session email */}
+                <AnimatePresence>
+                    {showSignOutModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                className="relative w-full max-w-sm rounded-2xl border border-divider bg-content1 p-6 shadow-2xl"
+                            >
+                                <div className="text-center space-y-4">
+                                    <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-success/10 mx-auto">
+                                        <Mail className="h-6 w-6 text-success" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold">Email Removed</h3>
+                                        <p className="text-sm text-foreground/50 mt-1">
+                                            Sign back in with your new primary email to continue.
+                                        </p>
+                                    </div>
+                                    <Button
+                                        color="primary" fullWidth
+                                        startContent={<LogOut className="h-4 w-4" />}
+                                        onPress={() => handleSignOut()}
+                                        className="font-bold"
+                                    >
+                                        Sign Out & Re-login
+                                    </Button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
 
                 {/* Sign Out */}
                 <div className="mt-6 pb-20 lg:pb-4">
