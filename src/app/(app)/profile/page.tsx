@@ -929,8 +929,16 @@ export default function ProfilePage() {
                                         </div>
                                     )}
 
-                                    {/* Secondary Email — collapsed by default */}
-                                    <div className="border-t border-divider pt-2 mt-2">
+                                    {/* Emails */}
+                                    <div className="border-t border-divider pt-2 mt-2 space-y-2">
+                                        {/* Primary Email — always shown */}
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] text-foreground/40 uppercase">Main Gmail</p>
+                                            <p className="text-sm truncate">{profile.email}</p>
+                                            <p className="text-[10px] text-foreground/30 mt-0.5">Used to link & transfer wallet across games</p>
+                                        </div>
+
+                                        {/* Secondary Email */}
                                         {profile.secondaryEmail ? (
                                             <div className="flex items-center justify-between gap-2">
                                                 <div className="min-w-0 flex-1">
