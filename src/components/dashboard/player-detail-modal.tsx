@@ -29,11 +29,7 @@ import {
     Clock,
     ChevronDown,
     Link2,
-    Swords,
-    Target,
     Flame,
-    TrendingUp,
-    TrendingDown,
     Phone,
     Mail,
 } from "lucide-react";
@@ -278,20 +274,20 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
+                                        <div className="flex items-center gap-1.5">
                                             <h2 className="text-lg font-bold truncate">
                                                 {player?.displayName || player?.username}
                                             </h2>
-                                            {player?.category && <CategoryBadge category={player.category} size="sm" />}
                                             {player?.isBanned && (
                                                 <Chip size="sm" color="danger" variant="flat" className="h-5">
                                                     Banned
                                                 </Chip>
                                             )}
                                         </div>
-                                        <p className="text-xs text-foreground/50 mt-0.5">
-                                            @{player?.username}
-                                        </p>
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                            <span className="text-xs text-foreground/50">@{player?.username}</span>
+                                            {player?.category && <CategoryBadge category={player.category} size="sm" />}
+                                        </div>
                                         {/* Contact row */}
                                         <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                                             {player?.email && (
@@ -698,79 +694,50 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="space-y-4">
+                                    <div className="space-y-1">
                                         {groupedTransactions && Object.entries(groupedTransactions).map(([dateLabel, txs]) => {
                                             return (
                                                 <div key={dateLabel}>
                                                     {/* Date header */}
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <span className="text-[10px] font-semibold text-foreground/30 uppercase tracking-wider">{dateLabel}</span>
-                                                        <div className="flex-1 h-px bg-divider" />
-                                                    </div>
+                                                    <p className="text-[10px] font-semibold text-foreground/25 uppercase tracking-wider px-2 pt-2 pb-1">{dateLabel}</p>
 
                                                     {/* Transactions for this date */}
-                                                    <div className="space-y-0.5">
-                                                        {txs.map((tx) => {
-                                                            // Compute balance after this tx by working backwards
-                                                            const allTxs = txData!.data;
-                                                            const txIndex = allTxs.indexOf(tx);
-                                                            const laterTxs = allTxs.slice(0, txIndex);
-                                                            let balAfter = player?.balance ?? 0;
-                                                            for (const lt of laterTxs) {
-                                                                balAfter -= lt.type === "CREDIT" ? lt.amount : -lt.amount;
-                                                            }
-                                                            const balBefore = tx.type === "CREDIT"
-                                                                ? balAfter - tx.amount
-                                                                : balAfter + tx.amount;
-                                                            const isCredit = tx.type === "CREDIT";
+                                                    {txs.map((tx) => {
+                                                        const allTxs = txData!.data;
+                                                        const txIndex = allTxs.indexOf(tx);
+                                                        const laterTxs = allTxs.slice(0, txIndex);
+                                                        let balAfter = player?.balance ?? 0;
+                                                        for (const lt of laterTxs) {
+                                                            balAfter -= lt.type === "CREDIT" ? lt.amount : -lt.amount;
+                                                        }
+                                                        const balBefore = tx.type === "CREDIT"
+                                                            ? balAfter - tx.amount
+                                                            : balAfter + tx.amount;
+                                                        const isCredit = tx.type === "CREDIT";
 
-                                                            return (
-                                                                <div
-                                                                    key={tx.id}
-                                                                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-default-50 group"
-                                                                >
-                                                                    {/* Icon */}
-                                                                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${isCredit
-                                                                        ? "bg-success/10 text-success"
-                                                                        : "bg-danger/10 text-danger"
-                                                                        }`}>
-                                                                        {isCredit ? (
-                                                                            <TrendingUp className="h-4 w-4" />
-                                                                        ) : (
-                                                                            <TrendingDown className="h-4 w-4" />
-                                                                        )}
-                                                                    </div>
+                                                        return (
+                                                            <div
+                                                                key={tx.id}
+                                                                className="flex items-start gap-2.5 px-2 py-2 rounded-lg hover:bg-default-50 transition-colors"
+                                                            >
+                                                                {/* Colored dot */}
+                                                                <div className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${isCredit ? "bg-success" : "bg-danger"}`} />
 
-                                                                    {/* Description & balance flow */}
-                                                                    <div className="min-w-0 flex-1">
-                                                                        <p className="text-sm font-medium truncate">{tx.description}</p>
-                                                                        <div className="flex items-center gap-1 text-[11px] text-foreground/35 mt-0.5">
-                                                                            <span className="font-mono">{balBefore.toLocaleString()}</span>
-                                                                            <span>→</span>
-                                                                            <span className={`font-mono font-medium ${isCredit ? "text-success/60" : "text-danger/60"}`}>
-                                                                                {balAfter.toLocaleString()}
-                                                                            </span>
-                                                                            <span className="ml-0.5">{GAME.currency}</span>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* Amount */}
-                                                                    <div className="text-right shrink-0">
-                                                                        <span className={`text-sm font-bold ${isCredit ? "text-success" : "text-danger"}`}>
-                                                                            {isCredit ? "+" : "−"}{tx.amount.toLocaleString()}
-                                                                        </span>
-                                                                        <p className="text-[10px] text-foreground/25 mt-0.5">
-                                                                            {new Date(tx.createdAt).toLocaleTimeString("en-IN", {
-                                                                                hour: "2-digit",
-                                                                                minute: "2-digit",
-                                                                                hour12: true,
-                                                                            })}
-                                                                        </p>
-                                                                    </div>
+                                                                {/* Description & meta */}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-[13px] leading-snug">{tx.description}</p>
+                                                                    <p className="text-[11px] text-foreground/30 mt-0.5">
+                                                                        {balBefore.toLocaleString()} → {balAfter.toLocaleString()} {GAME.currency}
+                                                                    </p>
                                                                 </div>
-                                                            );
-                                                        })}
-                                                    </div>
+
+                                                                {/* Amount */}
+                                                                <span className={`text-[13px] font-bold shrink-0 ${isCredit ? "text-success" : "text-danger"}`}>
+                                                                    {isCredit ? "+" : "−"}{tx.amount.toLocaleString()}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             );
                                         })}
