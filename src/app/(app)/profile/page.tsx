@@ -409,16 +409,35 @@ export default function ProfilePage() {
                                     onChange={(e) => {
                                         const file = e.target.files?.[0]; if (!file) return;
                                         const isVid = file.type.startsWith("video/");
-                                        // 8MB cap for videos to keep Cloudinary free-tier storage lean
-                                        if (isVid && file.size > 8 * 1024 * 1024) {
-                                            toast.error("Video must be under 8MB. Try a shorter clip!");
+                                        // 3MB cap — keeps Cloudinary free tier (~25GB) sustainable at 10k+ players
+                                        if (isVid && file.size > 3 * 1024 * 1024) {
+                                            toast.error("Video must be under 3MB. Try a shorter or lower-res clip!");
                                             e.target.value = "";
                                             return;
                                         }
-                                        const url = URL.createObjectURL(file);
-                                        setPreviewCharacter({ url, isVideo: isVid });
-                                        setPendingCharacterFile(file);
-                                        setShowCharacterPreview(true);
+                                        if (isVid) {
+                                            // Check duration — max 10 seconds
+                                            const tempVideo = document.createElement("video");
+                                            tempVideo.preload = "metadata";
+                                            tempVideo.onloadedmetadata = () => {
+                                                URL.revokeObjectURL(tempVideo.src);
+                                                if (tempVideo.duration > 10) {
+                                                    toast.error("Video must be 10 seconds or less.");
+                                                    e.target.value = "";
+                                                    return;
+                                                }
+                                                const url = URL.createObjectURL(file);
+                                                setPreviewCharacter({ url, isVideo: true });
+                                                setPendingCharacterFile(file);
+                                                setShowCharacterPreview(true);
+                                            };
+                                            tempVideo.src = URL.createObjectURL(file);
+                                        } else {
+                                            const url = URL.createObjectURL(file);
+                                            setPreviewCharacter({ url, isVideo: false });
+                                            setPendingCharacterFile(file);
+                                            setShowCharacterPreview(true);
+                                        }
                                         e.target.value = "";
                                     }}
                                 />
