@@ -296,44 +296,31 @@ export async function createTeamsByPoll({
             }
         }
 
-        // Handle leftovers: form smaller balanced teams so everyone plays
-        // Min team size = groupSize-1 (squads→trio, trios→duo)
-        // Pick leftover players from across the skill spectrum
-        let leftoverPlayers: typeof playersForTeams = [];
-        const minTeamSize = Math.max(groupSize - 1, 1);
-
+        // Exclude leftovers: remove last voters (FCFS) to make a perfect team count.
+        // This prevents friends from voting late on purpose to get matched in smaller teams.
         if (groupSize > 1 && playersForTeams.length % groupSize !== 0) {
-            let needed = playersForTeams.length % groupSize;
-            // If remainder is too small, steal full teams to make it divisible by minTeamSize
-            // e.g. squads rem 2: need 6 (2 trios); rem 1: need 9 (3 trios)
-            while (needed > 0 && needed % minTeamSize !== 0) {
-                needed += groupSize;
-            }
-            // Cap: don't take more than available
-            needed = Math.min(needed, playersForTeams.length);
+            const remainder = playersForTeams.length % groupSize;
 
-            // Pick evenly across skill tiers (like the main balancer: strongest + weakest paired)
-            // This keeps legends in both leftover AND full-size teams for proper balancing
-            const sorted = [...playersForTeams].sort((a, b) => b.weightedScore - a.weightedScore);
-            const step = sorted.length / needed;
-            const pickedIds = new Set<string>();
-            for (let i = 0; i < needed; i++) {
-                const idx = Math.min(Math.floor(i * step), sorted.length - 1);
-                // Find nearest unpicked player
-                let pickIdx = idx;
-                while (pickedIds.has(sorted[pickIdx].id) && pickIdx < sorted.length - 1) pickIdx++;
-                if (!pickedIds.has(sorted[pickIdx].id)) {
-                    pickedIds.add(sorted[pickIdx].id);
-                    leftoverPlayers.push(sorted[pickIdx]);
-                }
-            }
-            playersForTeams = playersForTeams.filter((p) => !pickedIds.has(p.id));
+            // Sort by vote time ascending (earliest first = safe)
+            playersForTeams.sort((a, b) => {
+                const aVote = a.pollVotes.find((v: any) => v.pollId === pollId);
+                const bVote = b.pollVotes.find((v: any) => v.pollId === pollId);
+                const aTime = aVote?.createdAt ? new Date(aVote.createdAt).getTime() : Infinity;
+                const bTime = bVote?.createdAt ? new Date(bVote.createdAt).getTime() : Infinity;
+                return aTime - bTime;
+            });
+
+            // Remove the last N players (latest voters)
+            const excluded = playersForTeams.splice(playersForTeams.length - remainder, remainder);
+            console.log(
+                `[createTeamsByPoll] Excluded ${excluded.length} player(s) (last to vote): ${excluded.map(p => p.displayName ?? p.id).join(", ")}`
+            );
         }
 
         playersForTeams = shuffle(playersForTeams);
 
         const teamCount = Math.floor(playersForTeams.length / groupSize);
-        if (teamCount === 0 && soloPlayers.length === 0 && leftoverPlayers.length === 0) {
+        if (teamCount === 0 && soloPlayers.length === 0) {
             throw new Error("Not enough players to form teams.");
         }
 
@@ -342,42 +329,12 @@ export async function createTeamsByPoll({
                 seasonId,
                 tournamentId,
                 playersForTeams.map((p) => p.id),
-                1,
+                2, // Avoid teammates from last 2 tournaments
             );
             const asWeighted = playersForTeams as unknown as PlayerWithWeightT[];
             if (groupSize === 2) teams = createBalancedDuos(asWeighted, seasonId, previousTeammates);
             else if (groupSize === 3) teams = createBalancedTrios(asWeighted, seasonId, previousTeammates);
             else if (groupSize === 4) teams = createBalancedQuads(asWeighted, seasonId, previousTeammates);
-        }
-
-        // Split leftover players into teams of minTeamSize
-        if (leftoverPlayers.length > 0) {
-            // Sort by score for balanced splitting
-            leftoverPlayers.sort((a, b) => b.weightedScore - a.weightedScore);
-            const leftoverTeamCount = Math.ceil(leftoverPlayers.length / minTeamSize);
-
-            for (let t = 0; t < leftoverTeamCount; t++) {
-                const teamMembers: typeof playersForTeams = [];
-                // Snake-draft: distribute skill evenly across leftover teams
-                for (let i = 0; i < leftoverPlayers.length; i++) {
-                    const assignedTeam = i % leftoverTeamCount;
-                    if (assignedTeam === t) teamMembers.push(leftoverPlayers[i]);
-                }
-                if (teamMembers.length > 0) {
-                    const totalKills = teamMembers.reduce((sum, p) => {
-                        const stats = p.stats?.find((s: any) => s.seasonId === seasonId);
-                        return sum + (stats?.kills ?? 0);
-                    }, 0);
-                    const weightedScore = teamMembers.reduce((sum: number, p: any) => sum + (p.weightedScore ?? 0), 0);
-                    teams.push({
-                        players: teamMembers as unknown as PlayerWithWeightT[],
-                        totalKills,
-                        totalDeaths: 0,
-                        totalWins: 0,
-                        weightedScore,
-                    });
-                }
-            }
         }
 
         // Solo teams
