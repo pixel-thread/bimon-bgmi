@@ -6,7 +6,7 @@ import { type NextRequest } from "next/server";
 /**
  * GET /api/players/teammate-history
  * Returns how many times the current player has been on the same team
- * as each other player. Only counts completed tournaments (those with results).
+ * as each other player. Only counts completed tournaments (isWinnerDeclared).
  * Counts once per tournament.
  *
  * Query: ?seasonId=xxx (optional — filter by season)
@@ -31,23 +31,15 @@ export async function GET(req: NextRequest) {
             select: { id: true, name: true },
         });
 
-        // Get completed tournament IDs (only those with results/winners)
-        const completedTournaments = await prisma.tournamentWinner.findMany({
-            where: seasonId ? { tournament: { seasonId } } : {},
-            select: { tournamentId: true },
-        });
-        const completedTournamentIds = new Set(completedTournaments.map(t => t.tournamentId));
-
-        if (completedTournamentIds.size === 0) {
-            return SuccessResponse({ data: { teammates: [], seasons, totalTournaments: 0 }, cache: CACHE.SHORT });
-        }
-
-        // Get all matches the current player played in (only completed tournaments)
+        // Get all records where this player was on a team in a COMPLETED tournament
+        // Uses isWinnerDeclared (same pattern as pending-merit)
         const myMatches = await prisma.matchPlayerPlayed.findMany({
             where: {
                 playerId,
-                tournamentId: { in: Array.from(completedTournamentIds) },
-                ...(seasonId ? { seasonId } : {}),
+                tournament: {
+                    isWinnerDeclared: true,
+                    ...(seasonId ? { seasonId } : { seasonId: { not: null } }),
+                },
             },
             select: { teamId: true, tournamentId: true, seasonId: true },
         });
@@ -56,17 +48,17 @@ export async function GET(req: NextRequest) {
             return SuccessResponse({ data: { teammates: [], seasons, totalTournaments: 0 }, cache: CACHE.SHORT });
         }
 
-        // Get all players on the same teams
-        const teamIds = myMatches.map((m) => m.teamId);
+        // Deduplicate: unique teams per tournament
+        const uniqueTeamIds = [...new Set(myMatches.map(m => m.teamId))];
+
+        // Get all players on the same teams (excluding self)
         const allTeammates = await prisma.matchPlayerPlayed.findMany({
             where: {
-                teamId: { in: teamIds },
+                teamId: { in: uniqueTeamIds },
                 playerId: { not: playerId },
-                ...(seasonId ? { seasonId } : {}),
             },
             select: {
                 playerId: true,
-                teamId: true,
                 tournamentId: true,
                 seasonId: true,
                 player: {
@@ -79,7 +71,7 @@ export async function GET(req: NextRequest) {
             },
         });
 
-        // Count per teammate: how many unique completed tournaments they were on the same team
+        // Count per teammate: unique tournaments they shared a team
         const countMap = new Map<string, {
             playerId: string;
             displayName: string;
@@ -90,9 +82,6 @@ export async function GET(req: NextRequest) {
         }>();
 
         for (const t of allTeammates) {
-            // Skip if tournament wasn't completed
-            if (!completedTournamentIds.has(t.tournamentId)) continue;
-
             const key = t.playerId;
             if (!countMap.has(key)) {
                 countMap.set(key, {
@@ -106,16 +95,14 @@ export async function GET(req: NextRequest) {
             }
             const entry = countMap.get(key)!;
 
-            // Only count each unique tournament once
             if (!entry.seenTournaments.has(t.tournamentId)) {
                 entry.seenTournaments.add(t.tournamentId);
                 entry.total++;
-                const sid = t.seasonId || "none";
+                const sid = t.seasonId || "unknown";
                 entry.bySeason.set(sid, (entry.bySeason.get(sid) ?? 0) + 1);
             }
         }
 
-        // Convert to array sorted by total desc
         const teammates = Array.from(countMap.values())
             .sort((a, b) => b.total - a.total)
             .map((t) => ({
@@ -126,12 +113,10 @@ export async function GET(req: NextRequest) {
                 bySeason: Object.fromEntries(t.bySeason),
             }));
 
+        const totalTournaments = new Set(myMatches.map(m => m.tournamentId)).size;
+
         return SuccessResponse({
-            data: {
-                teammates,
-                seasons,
-                totalTournaments: new Set(myMatches.map(m => m.tournamentId)).size,
-            },
+            data: { teammates, seasons, totalTournaments },
             cache: CACHE.SHORT,
         });
     } catch (error) {
