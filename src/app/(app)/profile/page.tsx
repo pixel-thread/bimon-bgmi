@@ -39,6 +39,7 @@ import {
     X,
     VolumeX,
     Volume2,
+    Users,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { CategoryBadge } from "@/components/ui/category-badge";
@@ -738,6 +739,25 @@ export default function ProfilePage() {
                     </Card>
                 )}
 
+                {/* Teammate History Link */}
+                {player && (
+                    <button
+                        type="button"
+                        onClick={() => router.push("/teammates")}
+                        className="w-full flex items-center justify-between p-4 rounded-xl border border-divider bg-default-50 hover:bg-default-100 transition-colors cursor-pointer"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Users className="w-4 h-4 text-primary" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-sm font-semibold">Teammate History</p>
+                                <p className="text-[11px] text-foreground/40">See who you&apos;ve played with</p>
+                            </div>
+                        </div>
+                        <span className="text-foreground/30 text-sm">→</span>
+                    </button>
+                )}
 
                 {/* Profile Settings Section */}
                 {player && (

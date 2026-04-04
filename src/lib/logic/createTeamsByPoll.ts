@@ -215,6 +215,23 @@ export async function createTeamsByPoll({
         p.pollVotes.some((vote) => vote.pollId === pollId && vote.vote === "SOLO"),
     );
 
+    // Count recent wins per player (from TournamentWinner in current season)
+    const recentWinners = await prisma.tournamentWinner.findMany({
+        where: {
+            tournament: { seasonId },
+            team: { players: { some: { id: { in: nonSquadPlayers.map(p => p.id) } } } },
+        },
+        select: {
+            team: { select: { players: { select: { id: true } } } },
+        },
+    });
+    const winCountMap = new Map<string, number>();
+    for (const w of recentWinners) {
+        for (const p of w.team.players) {
+            winCountMap.set(p.id, (winCountMap.get(p.id) ?? 0) + 1);
+        }
+    }
+
     // Compute weighted scores — map v2 stats format
     const playersWithScore = nonSquadPlayers.map((p) => {
         const playerStats = p.stats.map((s) => ({
@@ -226,7 +243,7 @@ export async function createTeamsByPoll({
         const playerWithWins: PlayerWithWins = {
             ...p,
             playerStats: playerStats as any,
-            recentWins: 0,
+            recentWins: winCountMap.get(p.id) ?? 0,
         } as any;
 
         return {
