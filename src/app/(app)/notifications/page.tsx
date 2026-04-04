@@ -258,7 +258,7 @@ export default function NotificationsPage() {
     const openRequestModal = (request: PendingRequest) => {
         setModalMode("uc_request");
         setSelectedRequest(request);
-        setResponseMessage("Chim nga mai khapnap rei ia kibi duk ✊🏿");
+        setResponseMessage(GAME.locale === "kha" ? "Chim nga mai khapnap rei ia kibi duk ✊🏿" : "");
         onOpen();
     };
 

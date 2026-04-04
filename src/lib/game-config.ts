@@ -82,7 +82,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         hasUID: false,
         ignLabel: "Game Name",
         pasteOnlyIGN: false,         // Allow typing — paste-only confused players
-        locale: "kha",
+        locale: "en",
         scoringSystem: "bgmi",
         booyahBonus: false,
         defaultTournamentType: "BR",
@@ -123,7 +123,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         hasUID: true,
         ignLabel: "Game Name",
         pasteOnlyIGN: false,         // FF players can type their name
-        locale: "kha",
+        locale: "en",
         scoringSystem: "ffws",
         booyahBonus: true,
         defaultTournamentType: "BR",
