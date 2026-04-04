@@ -10,6 +10,7 @@ import {
     Loader2,
     MessageCircle,
     Swords,
+    HelpCircle,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useAuthUser } from "@/hooks/use-auth-user";
@@ -33,6 +34,7 @@ const tabs: Tab[] = [
     ...(GAME.features.hasBracket
         ? [{ label: "Matches", href: "/bracket", icon: Swords }]
         : [{ label: "Community", href: "/community", icon: MessageCircle }]),
+    ...(GAME.mode === "mlbb" ? [{ label: "Help", href: "/help", icon: HelpCircle }] : []),
     { label: "Profile", href: "/profile" },
 ];
 
