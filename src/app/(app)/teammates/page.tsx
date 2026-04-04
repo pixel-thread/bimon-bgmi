@@ -27,7 +27,7 @@ interface Season {
 interface TeammateHistoryData {
     teammates: Teammate[];
     seasons: Season[];
-    totalMatches: number;
+    totalTournaments: number;
 }
 
 /* ─── Page ──────────────────────────────────────────────────── */
@@ -48,7 +48,7 @@ export default function TeammateHistoryPage() {
 
     const teammates = data?.teammates ?? [];
     const seasons = data?.seasons ?? [];
-    const totalMatches = data?.totalMatches ?? 0;
+    const totalTournaments = data?.totalTournaments ?? 0;
     const maxCount = teammates[0]?.total ?? 1;
 
     // Stats summary
@@ -94,8 +94,8 @@ export default function TeammateHistoryPage() {
                         className="grid grid-cols-3 gap-3"
                     >
                         <div className="rounded-xl bg-primary/5 border border-primary/10 p-3 text-center">
-                            <p className="text-2xl font-black text-primary">{totalMatches}</p>
-                            <p className="text-[10px] text-foreground/50 uppercase tracking-wider">Matches</p>
+                            <p className="text-2xl font-black text-primary">{totalTournaments}</p>
+                            <p className="text-[10px] text-foreground/50 uppercase tracking-wider">Tournaments</p>
                         </div>
                         <div className="rounded-xl bg-secondary/5 border border-secondary/10 p-3 text-center">
                             <p className="text-2xl font-black text-secondary">{stats.uniqueTeammates}</p>

@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
         // Get all matches the current player played in
         const myMatches = await prisma.matchPlayerPlayed.findMany({
             where: { playerId, ...(seasonId ? { seasonId } : {}) },
-            select: { teamId: true, matchId: true, seasonId: true },
+            select: { teamId: true, matchId: true, tournamentId: true, seasonId: true },
         });
 
         if (myMatches.length === 0) {
@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
             select: {
                 playerId: true,
                 teamId: true,
+                tournamentId: true,
                 seasonId: true,
                 player: {
                     select: {
@@ -56,19 +57,14 @@ export async function GET(req: NextRequest) {
             },
         });
 
-        // Build teammate-match map: how many times each teammate on same team
-        const myTeamMatchMap = new Map<string, string>(); // teamId -> matchId
-        for (const m of myMatches) {
-            myTeamMatchMap.set(m.teamId, m.matchId);
-        }
-
-        // Count per teammate per season
+        // Count per teammate: how many unique tournaments they were on the same team
         const countMap = new Map<string, {
             playerId: string;
             displayName: string;
             imageUrl: string | null;
             total: number;
             bySeason: Map<string, number>;
+            seenTournaments: Set<string>;
         }>();
 
         for (const t of allTeammates) {
@@ -80,12 +76,18 @@ export async function GET(req: NextRequest) {
                     imageUrl: t.player.user?.imageUrl ?? null,
                     total: 0,
                     bySeason: new Map(),
+                    seenTournaments: new Set(),
                 });
             }
             const entry = countMap.get(key)!;
-            entry.total++;
-            const sid = t.seasonId || "none";
-            entry.bySeason.set(sid, (entry.bySeason.get(sid) ?? 0) + 1);
+
+            // Only count each unique tournament once
+            if (!entry.seenTournaments.has(t.tournamentId)) {
+                entry.seenTournaments.add(t.tournamentId);
+                entry.total++;
+                const sid = t.seasonId || "none";
+                entry.bySeason.set(sid, (entry.bySeason.get(sid) ?? 0) + 1);
+            }
         }
 
         // Convert to array sorted by total desc
@@ -109,7 +111,7 @@ export async function GET(req: NextRequest) {
             data: {
                 teammates,
                 seasons,
-                totalMatches: myMatches.length,
+                totalTournaments: new Set(myMatches.map(m => m.tournamentId)).size,
             },
             cache: CACHE.SHORT,
         });
