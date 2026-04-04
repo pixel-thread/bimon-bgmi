@@ -5,7 +5,7 @@ import {
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
     Chip, Avatar, Button,
 } from "@heroui/react";
-import { Camera, Pencil, Save, Minus, Plus, X, Maximize2, Trophy, RotateCcw, MessageSquare, CheckCircle2, UserX } from "lucide-react";
+import { Camera, Pencil, Save, Minus, Plus, X, Maximize2, Trophy, RotateCcw, MessageSquare, CheckCircle2, UserX, Star } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { uploadToCloudinary } from "@/lib/upload-to-cloudinary";
@@ -30,6 +30,7 @@ interface ViewResultModalProps {
         notes?: string | null;
         confirmedBy?: string | null;
         disputeDeadline?: string | null;
+        mvpPlayerName?: string | null;
     } | null;
     isAdmin?: boolean;
     tournamentId?: string;
@@ -417,6 +418,15 @@ export function ViewResultModal({ isOpen, onClose, match, isAdmin = false, tourn
                                     </div>
                                 </div>
                             </div>
+
+                            {/* MVP badge */}
+                            {match.mvpPlayerName && match.status === "CONFIRMED" && (
+                                <div className="flex items-center justify-center gap-1.5 rounded-xl bg-yellow-500/10 border border-yellow-500/20 px-3 py-1.5">
+                                    <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
+                                    <span className="text-xs font-semibold text-yellow-500">MVP</span>
+                                    <span className="text-xs text-yellow-500/70">{match.mvpPlayerName}</span>
+                                </div>
+                            )}
 
 
                             {/* Auto-confirm countdown */}

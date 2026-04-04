@@ -1,12 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Input, Button, Skeleton } from "@heroui/react";
-import { HelpCircle, MapPin, MessageCircle, Pencil, Check, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@heroui/react";
+import { HelpCircle, MapPin, MessageCircle } from "lucide-react";
 import { motion } from "motion/react";
-import { useAuthUser } from "@/hooks/use-auth-user";
-import { toast } from "sonner";
 
 interface HelpContact {
     state: string;
@@ -14,24 +11,26 @@ interface HelpContact {
     whatsapp: string;
 }
 
-const STATE_ICONS: Record<string, string> = {
+const STATE_EMOJIS: Record<string, string> = {
     Meghalaya: "🏔️",
     Nagaland: "🦅",
     Manipur: "🌸",
 };
 
-const STATE_COLORS: Record<string, string> = {
+const STATE_GRADIENTS: Record<string, string> = {
     Meghalaya: "from-emerald-500/10 to-teal-500/10 border-emerald-500/20",
     Nagaland: "from-amber-500/10 to-orange-500/10 border-amber-500/20",
     Manipur: "from-rose-500/10 to-pink-500/10 border-rose-500/20",
 };
 
-export default function HelpPage() {
-    const { isAdmin } = useAuthUser();
-    const queryClient = useQueryClient();
-    const [editing, setEditing] = useState(false);
-    const [draft, setDraft] = useState<HelpContact[]>([]);
+const FALLBACK_COLORS = [
+    "from-blue-500/10 to-indigo-500/10 border-blue-500/20",
+    "from-purple-500/10 to-violet-500/10 border-purple-500/20",
+    "from-cyan-500/10 to-sky-500/10 border-cyan-500/20",
+    "from-lime-500/10 to-green-500/10 border-lime-500/20",
+];
 
+export default function HelpPage() {
     const { data, isLoading } = useQuery<{ contacts: HelpContact[] }>({
         queryKey: ["help-contacts"],
         queryFn: async () => {
@@ -42,39 +41,16 @@ export default function HelpPage() {
         },
     });
 
-    const save = useMutation({
-        mutationFn: async (contacts: HelpContact[]) => {
-            const res = await fetch("/api/help/contacts", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contacts }),
-            });
-            if (!res.ok) throw new Error("Failed to save");
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["help-contacts"] });
-            setEditing(false);
-            toast.success("Contacts updated!");
-        },
-        onError: () => toast.error("Failed to save"),
-    });
-
     const contacts = data?.contacts ?? [];
-
-    const startEdit = () => {
-        setDraft(JSON.parse(JSON.stringify(contacts)));
-        setEditing(true);
-    };
-
-    const updateDraft = (idx: number, field: keyof HelpContact, value: string) => {
-        setDraft(prev => prev.map((c, i) => i === idx ? { ...c, [field]: value } : c));
-    };
 
     const openWhatsApp = (number: string) => {
         const clean = number.replace(/\D/g, "");
         if (!clean) return;
         window.open(`https://wa.me/${clean}`, "_blank");
     };
+
+    const getGradient = (state: string, idx: number) =>
+        STATE_GRADIENTS[state] ?? FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-background to-default-50">
@@ -91,43 +67,11 @@ export default function HelpPage() {
                                 Contact a representative from your state
                             </p>
                         </div>
-                        {isAdmin && !editing && (
-                            <Button
-                                size="sm"
-                                variant="light"
-                                startContent={<Pencil className="w-3 h-3" />}
-                                onPress={startEdit}
-                            >
-                                Edit
-                            </Button>
-                        )}
-                        {editing && (
-                            <div className="flex gap-1">
-                                <Button
-                                    size="sm"
-                                    variant="light"
-                                    isIconOnly
-                                    onPress={() => setEditing(false)}
-                                >
-                                    <X className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    color="primary"
-                                    isIconOnly
-                                    isLoading={save.isPending}
-                                    onPress={() => save.mutate(draft)}
-                                >
-                                    <Check className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
 
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-3">
-                {/* Loading */}
                 {isLoading && (
                     <div className="space-y-3">
                         {[1, 2, 3].map(i => (
@@ -136,66 +80,46 @@ export default function HelpPage() {
                     </div>
                 )}
 
-                {/* State Cards */}
-                {!isLoading && (editing ? draft : contacts).map((contact, i) => (
+                {!isLoading && contacts.length === 0 && (
+                    <div className="text-center py-12">
+                        <HelpCircle className="w-12 h-12 text-foreground/20 mx-auto mb-3" />
+                        <p className="text-foreground/50">No help contacts available yet</p>
+                    </div>
+                )}
+
+                {!isLoading && contacts.map((contact, i) => (
                     <motion.div
                         key={contact.state}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.08 }}
-                        className={`rounded-2xl border bg-gradient-to-br p-4 ${STATE_COLORS[contact.state] ?? "from-default-100 to-default-50 border-divider"}`}
+                        className={`rounded-2xl border bg-gradient-to-br p-4 ${getGradient(contact.state, i)}`}
                     >
                         <div className="flex items-start gap-3">
-                            {/* State icon */}
                             <div className="text-2xl mt-0.5">
-                                {STATE_ICONS[contact.state] ?? "📍"}
+                                {STATE_EMOJIS[contact.state] ?? "📍"}
                             </div>
-
                             <div className="flex-1 min-w-0">
-                                {/* State name */}
                                 <div className="flex items-center gap-2 mb-2">
                                     <MapPin className="w-3.5 h-3.5 text-foreground/40" />
                                     <h2 className="text-sm font-bold uppercase tracking-wide">
                                         {contact.state}
                                     </h2>
                                 </div>
-
-                                {editing ? (
-                                    <div className="space-y-2">
-                                        <Input
-                                            size="sm"
-                                            label="Representative Name"
-                                            value={draft[i]?.name ?? ""}
-                                            onValueChange={(v) => updateDraft(i, "name", v)}
-                                            variant="bordered"
-                                        />
-                                        <Input
-                                            size="sm"
-                                            label="WhatsApp Number"
-                                            placeholder="e.g. 919876543210"
-                                            value={draft[i]?.whatsapp ?? ""}
-                                            onValueChange={(v) => updateDraft(i, "whatsapp", v)}
-                                            variant="bordered"
-                                            startContent={<span className="text-foreground/40 text-xs">+</span>}
-                                        />
-                                    </div>
-                                ) : contact.whatsapp ? (
+                                {contact.whatsapp ? (
                                     <>
                                         {contact.name && (
                                             <p className="text-sm font-medium text-foreground/80 mb-2">
                                                 {contact.name}
                                             </p>
                                         )}
-                                        <Button
-                                            size="sm"
-                                            color="success"
-                                            variant="flat"
-                                            className="font-semibold"
-                                            startContent={<MessageCircle className="w-3.5 h-3.5" />}
-                                            onPress={() => openWhatsApp(contact.whatsapp)}
+                                        <button
+                                            onClick={() => openWhatsApp(contact.whatsapp)}
+                                            className="inline-flex items-center gap-1.5 rounded-lg bg-success/15 text-success px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-success/25 active:bg-success/30"
                                         >
+                                            <MessageCircle className="w-3.5 h-3.5" />
                                             Chat on WhatsApp
-                                        </Button>
+                                        </button>
                                     </>
                                 ) : (
                                     <p className="text-xs text-foreground/40 italic">
@@ -207,15 +131,14 @@ export default function HelpPage() {
                     </motion.div>
                 ))}
 
-                {/* Info Footer */}
-                {!isLoading && !editing && (
+                {!isLoading && contacts.filter(c => c.whatsapp).length > 0 && (
                     <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.3 }}
                         className="text-center text-[11px] text-foreground/30 pt-4"
                     >
-                        Tap on a state to contact your local representative via WhatsApp
+                        Tap to contact your local representative via WhatsApp
                     </motion.p>
                 )}
             </div>

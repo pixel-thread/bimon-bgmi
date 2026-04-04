@@ -227,6 +227,8 @@ model Player {
   bracketMatchesAsP2    BracketMatch[]     @relation("BracketPlayer2")
   bracketMatchWins      BracketMatch[]     @relation("BracketWinner")
   bracketResults        BracketResult[]
+  bracketMVPs           BracketMatch[]     @relation("BracketMVP")
+  bracketResultMVPs     BracketResult[]    @relation("BracketResultMVP")
   squadsAsCaptain       Squad[]            @relation("SquadCaptain")
   squadInvites          SquadInvite[]
 
@@ -1116,6 +1118,7 @@ model BracketMatch {
   player1Id       String?
   player2Id       String?
   winnerId        String?
+  mvpPlayerId     String?
   score1          Int?
   score2          Int?
   status          BracketMatchStatus  @default(PENDING)
@@ -1128,6 +1131,7 @@ model BracketMatch {
   player1    Player?       @relation("BracketPlayer1", fields: [player1Id], references: [id])
   player2    Player?       @relation("BracketPlayer2", fields: [player2Id], references: [id])
   winner     Player?       @relation("BracketWinner", fields: [winnerId], references: [id])
+  mvpPlayer  Player?       @relation("BracketMVP", fields: [mvpPlayerId], references: [id])
   results    BracketResult[]
 
   @@index([tournamentId])
@@ -1145,11 +1149,13 @@ model BracketResult {
   screenshotUrl   String?
   notes           String?   @db.VarChar(200)
   isDispute       Boolean @default(false)
+  mvpPlayerId     String?
 
   createdAt DateTime @default(now())
 
   bracketMatch BracketMatch @relation(fields: [bracketMatchId], references: [id], onDelete: Cascade)
   submittedBy  Player       @relation(fields: [submittedById], references: [id])
+  mvpPlayer    Player?      @relation("BracketResultMVP", fields: [mvpPlayerId], references: [id])
 
   @@index([bracketMatchId])
 }

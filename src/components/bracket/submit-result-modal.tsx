@@ -5,11 +5,12 @@ import {
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
     Button,
 } from "@heroui/react";
-import { Upload, Trophy, Camera, X, Plus, Minus, MessageSquare, UserX, ArrowLeftRight } from "lucide-react";
+import { Upload, Trophy, Camera, X, Plus, Minus, MessageSquare, UserX, ArrowLeftRight, Star } from "lucide-react";
 import { Avatar } from "@heroui/react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { uploadToCloudinary } from "@/lib/upload-to-cloudinary";
+import { GAME } from "@/lib/game-config";
 
 
 interface SubmitResultModalProps {
@@ -50,6 +51,8 @@ export function SubmitResultModal({
     const [uploading, setUploading] = useState(false);
     const [notes, setNotes] = useState("");
     const [swapped, setSwapped] = useState(false);
+    const [mvpPlayerId, setMvpPlayerId] = useState<string | null>(null);
+    const isMlbb = GAME.mode === "mlbb";
 
     // Display names/avatars based on swap state
     const leftName = swapped ? oppName : myName;
@@ -89,6 +92,7 @@ export function SubmitResultModal({
         setOppScore(0);
         setNotes("");
         setShowNotes(false);
+        setMvpPlayerId(null);
         onClose();
     };
 
@@ -115,7 +119,7 @@ export function SubmitResultModal({
             const res = await fetch(`/api/bracket-matches/${matchId}/submit-result`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ score1: finalScore1, score2: finalScore2, screenshotUrl, notes: notes.trim() || undefined }),
+                body: JSON.stringify({ score1: finalScore1, score2: finalScore2, screenshotUrl, notes: notes.trim() || undefined, mvpPlayerId: mvpPlayerId || undefined }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Failed to submit");
@@ -315,6 +319,15 @@ export function SubmitResultModal({
                             + Add note <span className="text-foreground/20">· optional</span>
                         </button>
                     )}
+
+                    {/* MVP Selector — MLBB only */}
+                    {isMlbb && matchId && (
+                        <MvpSelector
+                            matchId={matchId}
+                            selectedId={mvpPlayerId}
+                            onSelect={setMvpPlayerId}
+                        />
+                    )}
                 </ModalBody>
 
                 <ModalFooter className="pt-0 gap-2 flex-wrap">
@@ -456,4 +469,76 @@ export function useDisputeResult(tournamentId: string) {
         },
         onError: (err: Error) => toast.error(err.message),
     });
+}
+
+/* ─── MVP Selector (MLBB) ──────────────────────────────────── */
+
+function MvpSelector({
+    matchId,
+    selectedId,
+    onSelect,
+}: {
+    matchId: string;
+    selectedId: string | null;
+    onSelect: (id: string | null) => void;
+}) {
+    const { data } = useQuery({
+        queryKey: ["team-members", matchId],
+        queryFn: async () => {
+            const res = await fetch(`/api/bracket-matches/${matchId}/team-members`);
+            if (!res.ok) return null;
+            const json = await res.json();
+            return json.data;
+        },
+        staleTime: 5 * 60_000,
+    });
+
+    // Combine all members from both teams
+    const allMembers: { id: string; name: string; avatar: string | null }[] = [
+        ...(data?.team1?.members ?? []),
+        ...(data?.team2?.members ?? []),
+    ];
+
+    if (allMembers.length === 0) return null;
+
+    return (
+        <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5">
+                <Star className="h-3 w-3 text-yellow-500" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/40">
+                    Select MVP <span className="text-foreground/20">· optional</span>
+                </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+                {allMembers.map((m) => {
+                    const isSelected = selectedId === m.id;
+                    return (
+                        <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => onSelect(isSelected ? null : m.id)}
+                            className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-medium transition-all active:scale-95 border ${
+                                isSelected
+                                    ? "bg-yellow-500/15 border-yellow-500/30 text-yellow-500"
+                                    : "bg-default-100/60 border-transparent text-foreground/60 hover:bg-default-200"
+                            }`}
+                        >
+                            <Avatar
+                                src={m.avatar || undefined}
+                                name={m.name?.[0]?.toUpperCase() ?? "?"}
+                                size="sm"
+                                className="!h-5 !w-5"
+                                classNames={isSelected
+                                    ? { base: "bg-yellow-500/20", name: "text-yellow-500 text-[8px] font-bold" }
+                                    : { base: "bg-default-200", name: "text-foreground/40 text-[8px] font-bold" }
+                                }
+                            />
+                            <span className="truncate max-w-[80px]">{m.name}</span>
+                            {isSelected && <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
 }

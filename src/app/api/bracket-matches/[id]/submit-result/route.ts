@@ -24,12 +24,13 @@ export async function POST(
 
         const { id: matchId } = await params;
         const body = await req.json();
-        const { score1, score2, screenshotUrl, adminOverride, notes } = body as {
+        const { score1, score2, screenshotUrl, adminOverride, notes, mvpPlayerId } = body as {
             score1: number;
             score2: number;
             screenshotUrl?: string;
             adminOverride?: boolean;
             notes?: string;
+            mvpPlayerId?: string;
         };
 
         if (score1 === undefined || score2 === undefined) {
@@ -150,6 +151,7 @@ export async function POST(
                 screenshotUrl: screenshotUrl || null,
                 notes: notes?.trim().slice(0, 200) || null,
                 isDispute: false,
+                mvpPlayerId: mvpPlayerId || null,
             },
         });
 
@@ -162,6 +164,7 @@ export async function POST(
                     score2,
                     winnerId: claimedWinnerId,
                     status: "CONFIRMED",
+                    mvpPlayerId: mvpPlayerId || null,
                 },
             });
 
@@ -193,6 +196,7 @@ export async function POST(
                     score2,
                     winnerId: claimedWinnerId,
                     status: "CONFIRMED",
+                    mvpPlayerId: mvpPlayerId || null,
                 },
             });
 
@@ -329,10 +333,20 @@ export async function PUT(
             });
         }
 
+        // Copy MVP from original submission
+        const originalResult = await prisma.bracketResult.findFirst({
+            where: { bracketMatchId: matchId, isDispute: false },
+            orderBy: { createdAt: "desc" },
+            select: { mvpPlayerId: true },
+        });
+
         // Confirm the match
         await prisma.bracketMatch.update({
             where: { id: matchId },
-            data: { status: "CONFIRMED" },
+            data: {
+                status: "CONFIRMED",
+                mvpPlayerId: originalResult?.mvpPlayerId || null,
+            },
         });
 
         // Record who confirmed — fetch confirmer name for the note

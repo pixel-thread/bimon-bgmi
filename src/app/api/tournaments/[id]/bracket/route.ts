@@ -153,6 +153,9 @@ export async function GET(
                 winner: {
                     select: { id: true, displayName: true },
                 },
+                mvpPlayer: {
+                    select: { id: true, displayName: true },
+                },
                 results: {
                     select: {
                         id: true,
@@ -235,6 +238,8 @@ export async function GET(
                         m.player2?.user?.imageUrl ??
                         null,
                     results: m.results,
+                    mvpPlayerId: m.mvpPlayerId,
+                    mvpPlayerName: m.mvpPlayer?.displayName ?? null,
                 })),
             }));
 

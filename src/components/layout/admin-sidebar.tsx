@@ -21,6 +21,7 @@ import {
     Star,
     ImageIcon,
     Scale,
+    HelpCircle,
 } from "lucide-react";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { useState, useEffect, useCallback } from "react";
@@ -60,6 +61,7 @@ const sidebarItems: SidebarSection[] = [
             { label: "Merit", href: "/dashboard/merit", icon: Star, superAdminOnly: true, feature: "hasMerit" },
             { label: "Rules", href: "/dashboard/rules", icon: BookOpen },
             { label: "Gallery", href: "/dashboard/gallery", icon: ImageIcon },
+            ...(GAME.mode === "mlbb" ? [{ label: "Help Contacts", href: "/dashboard/help", icon: HelpCircle }] : []),
         ],
     },
     {

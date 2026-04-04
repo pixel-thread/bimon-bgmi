@@ -34,6 +34,7 @@ import {
     Briefcase,
     Loader2,
     MessageCircle,
+    HelpCircle,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useAuthUser } from "@/hooks/use-auth-user";
@@ -458,6 +459,31 @@ export function Header() {
                                     </NavbarMenuItem>
                                 );
                             })}
+
+                            {/* Help — MLBB only */}
+                            {GAME.mode === "mlbb" && (
+                                <NavbarMenuItem>
+                                    <Link
+                                        href="/help"
+                                        onClick={() => {
+                                            if (!pathname.startsWith("/help")) setNavigatingTo("/help");
+                                            else setIsMenuOpen(false);
+                                        }}
+                                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-colors ${pathname.startsWith("/help")
+                                            ? "bg-primary/10 font-semibold text-primary"
+                                            : "text-foreground/70 hover:bg-default-100"
+                                            }`}
+                                    >
+                                        {navigatingTo === "/help" && !pathname.startsWith("/help") ? (
+                                            <Loader2 className="h-5 w-5 animate-spin" />
+                                        ) : (
+                                            <HelpCircle className="h-5 w-5" />
+                                        )}
+                                        Help
+                                    </Link>
+                                </NavbarMenuItem>
+                            )}
+
 
                         </>
                     )}

@@ -14,6 +14,7 @@ import { useAuthUser } from "@/hooks/use-auth-user";
 import { Trophy, Swords, Clock, Info } from "lucide-react";
 import { Chip, Tabs, Tab, Skeleton } from "@heroui/react";
 import { snapToCutoff, addPausedDays, getISTDayOfWeek } from "@/lib/logic/deadline-utils";
+import { GAME } from "@/lib/game-config";
 
 // Fallback famous footballers (if gallery is empty)
 const FAMOUS_PLAYERS = [
@@ -402,6 +403,7 @@ function TournamentContent({
         notes: viewMatch.results?.find((r: any) => r.notes && !r.notes.startsWith("Confirmed by"))?.notes ?? null,
         confirmedBy: viewMatch.results?.find((r: any) => r.notes?.startsWith("Confirmed by"))?.notes ?? null,
         disputeDeadline: viewMatch.disputeDeadline ?? null,
+        mvpPlayerName: viewMatch.mvpPlayerName ?? null,
     } : null;
 
     const formatLabel =
@@ -701,32 +703,60 @@ function RoundTicker({ deadlineMs }: { deadlineMs: number }) {
     );
 }
 
-/* ─── Bouncing Football Loader ────────────────────────────── */
+/* ─── Game-Aware Bracket Loader ──────────────────────────── */
 function FootballLoader() {
+    const isMlbb = GAME.mode === "mlbb";
     return (
         <div className="flex flex-col items-center justify-center" style={{ height: "calc(100vh - 200px)" }}>
-            {/* Ball */}
-            <span
-                className="text-3xl block"
-                style={{ animation: "ballBounce 0.6s ease-in-out infinite alternate" }}
-            >
-                ⚽
-            </span>
-            {/* Shadow — sibling of ball so it stays fixed in place */}
-            <div
-                className="mt-1 w-7 h-1.5 rounded-full bg-foreground/10 blur-[2px]"
-                style={{ animation: "ballShadow 0.6s ease-in-out infinite alternate" }}
-            />
-            <style>{`
-                @keyframes ballBounce {
-                    from { transform: translateY(0); }
-                    to { transform: translateY(-24px); }
-                }
-                @keyframes ballShadow {
-                    from { opacity: 0.8; transform: scaleX(1); }
-                    to { opacity: 0.2; transform: scaleX(0.5); }
-                }
-            `}</style>
+            {isMlbb ? (
+                <>
+                    {/* MLBB: crossed swords with glow pulse */}
+                    <span
+                        className="text-3xl block"
+                        style={{ animation: "swordPulse 1.5s ease-in-out infinite" }}
+                    >
+                        ⚔️
+                    </span>
+                    <div
+                        className="mt-2 w-8 h-2 rounded-full bg-primary/15 blur-[3px]"
+                        style={{ animation: "swordGlow 1.5s ease-in-out infinite" }}
+                    />
+                    <style>{`
+                        @keyframes swordPulse {
+                            0%, 100% { transform: scale(1); opacity: 0.7; }
+                            50% { transform: scale(1.15); opacity: 1; }
+                        }
+                        @keyframes swordGlow {
+                            0%, 100% { opacity: 0.3; transform: scaleX(0.8); }
+                            50% { opacity: 0.7; transform: scaleX(1.2); }
+                        }
+                    `}</style>
+                </>
+            ) : (
+                <>
+                    {/* PES/default: bouncing football */}
+                    <span
+                        className="text-3xl block"
+                        style={{ animation: "ballBounce 0.6s ease-in-out infinite alternate" }}
+                    >
+                        ⚽
+                    </span>
+                    <div
+                        className="mt-1 w-7 h-1.5 rounded-full bg-foreground/10 blur-[2px]"
+                        style={{ animation: "ballShadow 0.6s ease-in-out infinite alternate" }}
+                    />
+                    <style>{`
+                        @keyframes ballBounce {
+                            from { transform: translateY(0); }
+                            to { transform: translateY(-24px); }
+                        }
+                        @keyframes ballShadow {
+                            from { opacity: 0.8; transform: scaleX(1); }
+                            to { opacity: 0.2; transform: scaleX(0.5); }
+                        }
+                    `}</style>
+                </>
+            )}
         </div>
     );
 }
