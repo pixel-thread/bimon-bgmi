@@ -414,44 +414,60 @@ function VotersDialog({
                                 Voters for &quot;{getLabel(selectedGroup)}&quot;
                             </p>
                             {(() => {
-                                // For knockout: calculate power-of-2 cutoff
                                 const isKnockout = poll.tournament?.type === "BRACKET_1V1";
                                 const inSoloVoters = selectedGroup === "IN" || selectedGroup === "SOLO";
-                                let bracketSize = 0;
+
+                                // ── Calculate cutoff for different modes ──
+                                let cutoffSize = 0;
+                                let cutoffLabel = "";
+
                                 if (isKnockout && inSoloVoters) {
+                                    // Bracket: power-of-2 cutoff
                                     const totalIn = (votersByVote["IN"]?.length ?? 0) + (votersByVote["SOLO"]?.length ?? 0);
                                     let p = 2;
                                     while (p * 2 <= totalIn) p *= 2;
-                                    bracketSize = totalIn >= 2 ? p : 0;
+                                    cutoffSize = totalIn >= 2 ? p : 0;
+                                    cutoffLabel = `⚔️ Bracket: ${cutoffSize} players`;
+                                } else if (inSoloVoters && selectedGroup === "IN") {
+                                    // BR team modes: perfect multiple cutoff
+                                    const inCount = votersByVote["IN"]?.length ?? 0;
+                                    const tType = teamType;
+                                    const teamSz = tType === "SQUAD" ? 4 : tType === "TRIO" ? 3 : tType === "DUO" ? 2 : 0;
+                                    if (teamSz >= 2 && inCount > teamSz) {
+                                        cutoffSize = Math.floor(inCount / teamSz) * teamSz;
+                                        if (cutoffSize < inCount) {
+                                            cutoffLabel = `👥 ${tType}: ${Math.floor(inCount / teamSz)} teams × ${teamSz}`;
+                                        }
+                                    }
                                 }
 
-                                // Sort by createdAt ascending (FCFS) for IN voters in knockout
+                                // Sort by createdAt descending (newest first)
                                 const sorted = [...selectedVoters].sort((a, b) =>
-                                    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                                    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
                                 );
 
-                                // Track global FCFS position across IN + SOLO
-                                const allInSolo = isKnockout && inSoloVoters
+                                // Build global FCFS list for cross-group position tracking
+                                const allInSolo = (isKnockout && inSoloVoters)
                                     ? [...(votersByVote["IN"] ?? []), ...(votersByVote["SOLO"] ?? [])]
                                         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-                                    : [];
+                                    : sorted; // For BR modes, just use the current group
+
+                                const hasWaitlist = cutoffSize > 0 && allInSolo.length > cutoffSize;
 
                                 return (
                                     <div className="space-y-1">
-                                        {isKnockout && inSoloVoters && bracketSize > 0 && (
+                                        {hasWaitlist && (
                                             <div className="text-xs text-foreground/40 mb-2 flex items-center gap-1.5">
-                                                <span>⚔️ Bracket: {bracketSize} players</span>
-                                                {allInSolo.length > bracketSize && (
-                                                    <span className="text-warning">• {allInSolo.length - bracketSize} on waitlist</span>
-                                                )}
+                                                <span>{cutoffLabel}</span>
+                                                <span className="text-warning">• {allInSolo.length - cutoffSize} on waitlist</span>
                                             </div>
                                         )}
                                         {sorted.map((v, i) => {
-                                            // Check if this voter is waitlisted
-                                            const globalIdx = isKnockout && inSoloVoters
+                                            // Check if this voter is waitlisted (beyond cutoff in FCFS order)
+                                            const globalIdx = cutoffSize > 0
                                                 ? allInSolo.findIndex(x => x.playerId === v.playerId)
                                                 : -1;
-                                            const isWaitlisted = isKnockout && inSoloVoters && bracketSize > 0 && globalIdx >= bracketSize;
+                                            const isWaitlisted = cutoffSize > 0 && globalIdx >= cutoffSize;
 
                                             return (
                                                 <div
