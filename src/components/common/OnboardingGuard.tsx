@@ -21,14 +21,18 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
     const isSkipped = SKIP_PATHS.some((p) => pathname.startsWith(p));
 
     useEffect(() => {
-        if (isLoading || !isSignedIn || !user || isSkipped) return;
-        if (!user.isOnboarded) {
+        if (isLoading || isSkipped) return;
+        if (!isSignedIn) {
+            router.push("/sign-in");
+            return;
+        }
+        if (user && !user.isOnboarded) {
             router.push("/onboarding");
         }
     }, [user, isLoading, isSignedIn, isSkipped, router]);
 
-    // Block render while auth is loading or if onboarding needed
-    if (!isSkipped && (isLoading || (isSignedIn && user && !user.isOnboarded))) {
+    // Block render while auth is loading, not signed in, or if onboarding needed
+    if (!isSkipped && (isLoading || !isSignedIn || (isSignedIn && user && !user.isOnboarded))) {
         return null;
     }
 
