@@ -70,15 +70,16 @@ export async function POST(req: NextRequest) {
             amountInRupees * (1 - PLATFORM_FEE_PERCENT / 100)
         );
 
-        // Credit central wallet
+        // Credit local game wallet — must succeed before marking payment as paid
         const playerEmail = await getEmailByPlayerId(payment.playerId);
-        const description = `Added ${ucAmount} ${GAME.currency} via Razorpay`;
-        let centralResult: any = null;
-        if (playerEmail) {
-            centralResult = await creditWallet(playerEmail, ucAmount, description, "TOP_UP");
+        if (!playerEmail) {
+            return ErrorResponse({ message: "Player email not found — cannot credit wallet", status: 500 });
         }
 
-        // Update payment status
+        const description = `Added ${ucAmount} ${GAME.currency} via Razorpay`;
+        await creditWallet(playerEmail, ucAmount, description, "TOP_UP");
+
+        // Only mark paid AFTER wallet credit succeeds
         await prisma.payment.update({
             where: { razorpayOrderId: razorpay_order_id },
             data: {
