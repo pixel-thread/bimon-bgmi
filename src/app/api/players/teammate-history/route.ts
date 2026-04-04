@@ -6,7 +6,8 @@ import { type NextRequest } from "next/server";
 /**
  * GET /api/players/teammate-history
  * Returns how many times the current player has been on the same team
- * as each other player, grouped by season. Sorted by frequency desc.
+ * as each other player. Only counts completed tournaments (those with results).
+ * Counts once per tournament.
  *
  * Query: ?seasonId=xxx (optional — filter by season)
  */
@@ -24,17 +25,38 @@ export async function GET(req: NextRequest) {
         const playerId = user.player.id;
         const seasonId = req.nextUrl.searchParams.get("seasonId") ?? undefined;
 
-        // Get all matches the current player played in
+        // Always fetch seasons so the selector stays visible
+        const seasons = await prisma.season.findMany({
+            orderBy: { startDate: "desc" },
+            select: { id: true, name: true },
+        });
+
+        // Get completed tournament IDs (only those with results/winners)
+        const completedTournaments = await prisma.tournamentWinner.findMany({
+            where: seasonId ? { tournament: { seasonId } } : {},
+            select: { tournamentId: true },
+        });
+        const completedTournamentIds = new Set(completedTournaments.map(t => t.tournamentId));
+
+        if (completedTournamentIds.size === 0) {
+            return SuccessResponse({ data: { teammates: [], seasons, totalTournaments: 0 }, cache: CACHE.SHORT });
+        }
+
+        // Get all matches the current player played in (only completed tournaments)
         const myMatches = await prisma.matchPlayerPlayed.findMany({
-            where: { playerId, ...(seasonId ? { seasonId } : {}) },
-            select: { teamId: true, matchId: true, tournamentId: true, seasonId: true },
+            where: {
+                playerId,
+                tournamentId: { in: Array.from(completedTournamentIds) },
+                ...(seasonId ? { seasonId } : {}),
+            },
+            select: { teamId: true, tournamentId: true, seasonId: true },
         });
 
         if (myMatches.length === 0) {
-            return SuccessResponse({ data: { teammates: [], seasons: [] }, cache: CACHE.SHORT });
+            return SuccessResponse({ data: { teammates: [], seasons, totalTournaments: 0 }, cache: CACHE.SHORT });
         }
 
-        // Get all players on the same teams in those matches
+        // Get all players on the same teams
         const teamIds = myMatches.map((m) => m.teamId);
         const allTeammates = await prisma.matchPlayerPlayed.findMany({
             where: {
@@ -57,7 +79,7 @@ export async function GET(req: NextRequest) {
             },
         });
 
-        // Count per teammate: how many unique tournaments they were on the same team
+        // Count per teammate: how many unique completed tournaments they were on the same team
         const countMap = new Map<string, {
             playerId: string;
             displayName: string;
@@ -68,6 +90,9 @@ export async function GET(req: NextRequest) {
         }>();
 
         for (const t of allTeammates) {
+            // Skip if tournament wasn't completed
+            if (!completedTournamentIds.has(t.tournamentId)) continue;
+
             const key = t.playerId;
             if (!countMap.has(key)) {
                 countMap.set(key, {
@@ -100,12 +125,6 @@ export async function GET(req: NextRequest) {
                 total: t.total,
                 bySeason: Object.fromEntries(t.bySeason),
             }));
-
-        // Get available seasons for the filter
-        const seasons = await prisma.season.findMany({
-            orderBy: { startDate: "desc" },
-            select: { id: true, name: true },
-        });
 
         return SuccessResponse({
             data: {

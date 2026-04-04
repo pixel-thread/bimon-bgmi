@@ -3,11 +3,9 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, Chip, Select, SelectItem, Skeleton } from "@heroui/react";
-import { Users, ArrowLeft, TrendingUp, Medal } from "lucide-react";
+import { Users, ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import Link from "next/link";
-import { GAME } from "@/lib/game-config";
-import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 
 /* ─── Types ─────────────────────────────────────────────────── */
 

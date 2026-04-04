@@ -214,7 +214,6 @@ export async function createTeamsByPoll({
     const playersWhoVotedSolo = players.filter((p) =>
         p.pollVotes.some((vote) => vote.pollId === pollId && vote.vote === "SOLO"),
     );
-
     // Count recent wins per player (from TournamentWinner in current season)
     const recentWinners = await prisma.tournamentWinner.findMany({
         where: {
