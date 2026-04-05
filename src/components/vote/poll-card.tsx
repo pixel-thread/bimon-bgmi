@@ -445,7 +445,7 @@ function VotersDialog({
                                     }
                                 }
 
-                                // Sort by createdAt descending (newest first)
+                                // Sort by createdAt descending (newest on top, earliest at bottom)
                                 const sorted = [...selectedVoters].sort((a, b) =>
                                     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
                                 );
@@ -467,6 +467,9 @@ function VotersDialog({
                                             </div>
                                         )}
                                         {sorted.map((v, i) => {
+                                            // Counter: #1 = first voter (reverse the display index)
+                                            const voteNumber = sorted.length - i;
+
                                             // Check if this voter is waitlisted (beyond cutoff in FCFS order)
                                             const globalIdx = cutoffSize > 0
                                                 ? allInSolo.findIndex(x => x.playerId === v.playerId)
@@ -482,7 +485,7 @@ function VotersDialog({
                                                         }`}
                                                 >
                                                     <span className="text-[10px] font-mono text-foreground/30 w-4 text-right">
-                                                        {i + 1}
+                                                        {voteNumber}
                                                     </span>
                                                     <Avatar
                                                         src={v.imageUrl}
