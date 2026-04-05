@@ -74,12 +74,17 @@ export function usePlayerFilters(): PlayerFilters {
     });
 
     // Auto-select the active season once loaded
+    // If no seasons exist (e.g. MLBB), set "all" so the players query can fire
+    const { isSuccess: seasonsLoaded } = useQuery<SeasonDTO[]>({ queryKey: ["seasons"] });
     useEffect(() => {
-        if (seasons.length > 0 && !season) {
+        if (!seasonsLoaded || season) return;
+        if (seasons.length > 0) {
             const current = seasons.find((s) => s.isCurrent);
             if (current) setSeason(current.id);
+        } else {
+            setSeason("all");
         }
-    }, [seasons, season]);
+    }, [seasons, season, seasonsLoaded]);
 
     const currentSeasonId = seasons.find((s) => s.isCurrent)?.id ?? "";
 

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
         const season = request.nextUrl.searchParams.get("season") ?? "";
 
         // Resolve season id
-        let seasonId = season;
+        let seasonId = season === "all" ? "" : season;
         if (!seasonId) {
             const active = await prisma.season.findFirst({
                 where: { status: "ACTIVE" },

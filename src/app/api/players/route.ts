@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
         const playerIds = players.map((p) => p.id);
 
         // Default to active season if none specified
-        let seasonId = season;
+        let seasonId = season === "all" ? "" : season;
         if (!seasonId) {
             const activeSeason = await prisma.season.findFirst({
                 where: { status: "ACTIVE" },

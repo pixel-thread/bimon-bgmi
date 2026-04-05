@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/database";
-import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
+import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
         });
 
         if (myMatches.length === 0) {
-            return SuccessResponse({ data: { teammates: [], seasons, totalTournaments: 0 }, cache: CACHE.SHORT });
+            return SuccessResponse({ data: { teammates: [], seasons, totalTournaments: 0 }, cache: "private, max-age=60" });
         }
 
         // Deduplicate: unique teams per tournament
@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
 
         return SuccessResponse({
             data: { teammates, seasons, totalTournaments },
-            cache: CACHE.SHORT,
+            cache: "private, max-age=60",
         });
     } catch (error) {
         return ErrorResponse({ message: "Failed to load teammate history", error });
