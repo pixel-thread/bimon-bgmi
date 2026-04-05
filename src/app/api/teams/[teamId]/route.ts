@@ -38,7 +38,8 @@ export async function PATCH(
             where: { id: teamId },
             include: {
                 players: { select: { id: true } },
-                tournament: { select: { fee: true, name: true } },
+                tournament: { select: { id: true, fee: true, name: true, seasonId: true } },
+                matches: { select: { id: true } },
             },
         });
 
@@ -48,6 +49,10 @@ export async function PATCH(
 
         const entryFee = team.tournament?.fee ?? 0;
         const tournamentName = team.tournament?.name ?? "tournament";
+
+        const tournamentId = team.tournamentId;
+        const seasonId = team.tournament?.seasonId ?? null;
+        const matchIds = team.matches.map(m => m.id);
 
         await prisma.$transaction(async (tx) => {
             // Add players
@@ -60,6 +65,49 @@ export async function PATCH(
                         },
                     },
                 });
+
+                // Create MatchPlayerPlayed + TeamPlayerStats for each match
+                if (tournamentId && matchIds.length > 0) {
+                    // Get existing TeamStats for this team (one per match)
+                    const teamStatsList = await tx.teamStats.findMany({
+                        where: { teamId },
+                        select: { id: true, matchId: true },
+                    });
+                    const teamStatsByMatch = new Map(teamStatsList.map(ts => [ts.matchId, ts.id]));
+
+                    for (const playerId of addPlayerIds) {
+                        for (const matchId of matchIds) {
+                            // MatchPlayerPlayed (one per player per match — use first match only for dedup)
+                            if (matchId === matchIds[0]) {
+                                await tx.matchPlayerPlayed.create({
+                                    data: {
+                                        matchId,
+                                        playerId,
+                                        tournamentId,
+                                        teamId,
+                                        ...(seasonId ? { seasonId } : {}),
+                                    },
+                                }).catch(() => {}); // Ignore if already exists
+                            }
+
+                            // TeamPlayerStats
+                            const teamStatsId = teamStatsByMatch.get(matchId);
+                            if (teamStatsId) {
+                                await tx.teamPlayerStats.create({
+                                    data: {
+                                        playerId,
+                                        teamId,
+                                        matchId,
+                                        teamStatsId,
+                                        kills: 0,
+                                        present: true,
+                                        ...(seasonId ? { seasonId } : {}),
+                                    },
+                                }).catch(() => {}); // Ignore if already exists
+                            }
+                        }
+                    }
+                }
 
                 // Deduct UC from added players via local wallet
                 if (deductUC && entryFee > 0) {
@@ -81,6 +129,14 @@ export async function PATCH(
                             disconnect: removePlayerIds.map(id => ({ id })),
                         },
                     },
+                });
+
+                // Clean up MatchPlayerPlayed + TeamPlayerStats for removed players
+                await tx.matchPlayerPlayed.deleteMany({
+                    where: { teamId, playerId: { in: removePlayerIds } },
+                });
+                await tx.teamPlayerStats.deleteMany({
+                    where: { teamId, playerId: { in: removePlayerIds } },
                 });
 
                 // Refund UC to removed players via local wallet
