@@ -295,8 +295,9 @@ export async function createTeamsByPoll({
             }
         }
 
-        // Exclude leftovers: remove last voters (FCFS) to make a perfect team count.
-        // This prevents friends from voting late on purpose to get matched in smaller teams.
+        // Handle leftovers when player count isn't perfectly divisible by team size.
+        // BR games (BGMI/FF): late voters play solo (they still participate).
+        // Non-BR games (PES/MLBB): exclude late voters to prevent friends gaming the system.
         if (groupSize > 1 && playersForTeams.length % groupSize !== 0) {
             const remainder = playersForTeams.length % groupSize;
 
@@ -310,10 +311,20 @@ export async function createTeamsByPoll({
             });
 
             // Remove the last N players (latest voters)
-            const excluded = playersForTeams.splice(playersForTeams.length - remainder, remainder);
-            console.log(
-                `[createTeamsByPoll] Excluded ${excluded.length} player(s) (last to vote): ${excluded.map(p => p.displayName ?? p.id).join(", ")}`
-            );
+            const lateVoters = playersForTeams.splice(playersForTeams.length - remainder, remainder);
+
+            if (GAME.features.hasBR) {
+                // BR games (BGMI/FF): late voters play as solo teams instead of being excluded
+                soloPlayers.push(...lateVoters);
+                console.log(
+                    `[createTeamsByPoll] Late voter(s) moved to solo: ${lateVoters.map(p => p.displayName ?? p.id).join(", ")}`
+                );
+            } else {
+                // PES/MLBB: exclude late voters entirely
+                console.log(
+                    `[createTeamsByPoll] Excluded ${lateVoters.length} player(s) (last to vote): ${lateVoters.map(p => p.displayName ?? p.id).join(", ")}`
+                );
+            }
         }
 
         playersForTeams = shuffle(playersForTeams);
