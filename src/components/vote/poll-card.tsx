@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { Chip, Avatar, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
-import { Users, ChevronRight, ArrowLeft, Plus, Minus, Shield } from "lucide-react";
+import { Users, ChevronRight, ArrowLeft, Plus, Minus, Shield, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import type { PollDTO } from "@/hooks/use-polls";
@@ -460,12 +460,6 @@ function VotersDialog({
 
                                 return (
                                     <div className="space-y-1">
-                                        {hasWaitlist && (
-                                            <div className="text-xs text-foreground/40 mb-2 flex items-center gap-1.5">
-                                                <span>{cutoffLabel}</span>
-                                                <span className="text-warning">• {allInSolo.length - cutoffSize} on waitlist</span>
-                                            </div>
-                                        )}
                                         {sorted.map((v, i) => {
                                             // Counter: #1 = first voter (reverse the display index)
                                             const voteNumber = sorted.length - i;
@@ -479,10 +473,7 @@ function VotersDialog({
                                             return (
                                                 <div
                                                     key={v.playerId}
-                                                    className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors ${isWaitlisted
-                                                        ? "bg-warning/5 hover:bg-warning/10 border border-warning/20"
-                                                        : "bg-default-50 hover:bg-default-100"
-                                                        }`}
+                                                    className="flex items-center gap-3 p-2.5 rounded-lg transition-colors bg-default-50 hover:bg-default-100"
                                                 >
                                                     <span className="text-[10px] font-mono text-foreground/30 w-4 text-right">
                                                         {voteNumber}
@@ -502,9 +493,7 @@ function VotersDialog({
                                                                 </span>
                                                             )}
                                                             {isWaitlisted && (
-                                                                <span className="text-warning text-[10px] flex items-center gap-0.5">
-                                                                    🕐 Waitlist
-                                                                </span>
+                                                                <Clock className="w-3 h-3 text-warning flex-shrink-0" />
                                                             )}
                                                         </p>
                                                         {v.createdAt && (
