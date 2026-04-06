@@ -328,37 +328,39 @@ export default function ReferralAdminPage() {
                                                     const config = statusConfig[ref.status];
                                                     const StatusIcon = config.icon;
                                                     return (
-                                                        <div key={ref.id} className="flex items-center gap-3 px-4 py-3 pl-14">
-                                                            <div className="min-w-0 flex-1">
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <TrendingUp className="h-3 w-3 text-foreground/30 shrink-0" />
-                                                                    <p className="text-sm truncate">{ref.referred.name}</p>
-                                                                    <span className="text-[11px] text-foreground/40 shrink-0">@{ref.referred.username}</span>
+                                                        <div key={ref.id} className="px-4 py-3 pl-8 sm:pl-14">
+                                                            <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-col sm:flex-row">
+                                                                <div className="min-w-0 flex-1 w-full">
+                                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                                        <TrendingUp className="h-3 w-3 text-foreground/30 shrink-0" />
+                                                                        <p className="text-sm truncate max-w-[140px] sm:max-w-none">{ref.referred.name}</p>
+                                                                        <span className="text-[11px] text-foreground/40">@{ref.referred.username}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2 mt-1">
+                                                                        <Progress
+                                                                            value={ref.progress}
+                                                                            size="sm"
+                                                                            color={ref.status === "PAID" ? "success" : ref.status === "QUALIFIED" ? "primary" : "warning"}
+                                                                            className="max-w-[120px] sm:max-w-[100px]"
+                                                                        />
+                                                                        <span className="text-[10px] text-foreground/40 shrink-0">
+                                                                            {ref.tournamentsCompleted}/{ref.tournamentsRequired}
+                                                                        </span>
+                                                                    </div>
                                                                 </div>
-                                                                <div className="flex items-center gap-2 mt-1">
-                                                                    <Progress
-                                                                        value={ref.progress}
+                                                                <div className="flex items-center gap-2 shrink-0">
+                                                                    <Chip
                                                                         size="sm"
-                                                                        color={ref.status === "PAID" ? "success" : ref.status === "QUALIFIED" ? "primary" : "warning"}
-                                                                        className="max-w-[80px]"
-                                                                    />
-                                                                    <span className="text-[10px] text-foreground/40 shrink-0">
-                                                                        {ref.tournamentsCompleted}/{ref.tournamentsRequired}
-                                                                    </span>
+                                                                        variant="flat"
+                                                                        color={config.color}
+                                                                        startContent={<StatusIcon className="h-3 w-3" />}
+                                                                    >
+                                                                        {config.label}
+                                                                    </Chip>
+                                                                    {ref.status === "PAID" && (
+                                                                        <span className="text-xs font-semibold text-green-500">{ref.reward} {GAME.currency}</span>
+                                                                    )}
                                                                 </div>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 shrink-0">
-                                                                <Chip
-                                                                    size="sm"
-                                                                    variant="flat"
-                                                                    color={config.color}
-                                                                    startContent={<StatusIcon className="h-3 w-3" />}
-                                                                >
-                                                                    {config.label}
-                                                                </Chip>
-                                                                {ref.status === "PAID" && (
-                                                                    <span className="text-xs font-semibold text-green-500">{ref.reward} {GAME.currency}</span>
-                                                                )}
                                                             </div>
                                                         </div>
                                                     );
