@@ -120,16 +120,6 @@ export async function previewTeamsByPoll({
         };
     });
 
-    // Separate solo teams from group teams
-    const soloTeams = teamPreviews.filter((t) => t.players.length === 1);
-    const groupTeams = teamPreviews.filter((t) => t.players.length > 1);
-
-    // Re-number group teams
-    groupTeams.forEach((t, i) => {
-        t.teamNumber = i + 1;
-        t.teamName = `Team ${i + 1}`;
-    });
-
     // Find players with insufficient balance
     const playersWithInsufficientBalance = entryFee > 0
         ? teamPreviews
@@ -138,13 +128,18 @@ export async function previewTeamsByPoll({
             .map((p) => ({ id: p.id, username: p.displayName || p.username, balance: p.balance }))
         : [];
 
-    return {
-        teams: groupTeams,
-        playersWithInsufficientBalance,
-        soloPlayers: soloTeams.map((t) => ({
+    // Extract solo player names for info display
+    const soloPlayerNames = teamPreviews
+        .filter((t) => t.players.length === 1)
+        .map((t) => ({
             id: t.players[0].id,
             username: t.players[0].displayName || t.players[0].username,
-        })),
+        }));
+
+    return {
+        teams: teamPreviews,
+        playersWithInsufficientBalance,
+        soloPlayers: soloPlayerNames,
         entryFee,
         tournamentName: tournamentName,
         totalPlayersEligible: allPlayerIds.length,
