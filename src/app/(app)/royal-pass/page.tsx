@@ -61,7 +61,7 @@ export default function RoyalPassPage() {
     });
 
     // Fetch RP prices from settings (dynamic)
-    const { data: settingsData } = useQuery<{ elitePassPrice: number; elitePassOrigPrice: number }>({
+    const { data: settingsData } = useQuery<{ elitePassPrice: number; elitePassOrigPrice: number; streakRewardAmount: number }>({
         queryKey: ["settings-rp-price"],
         queryFn: async () => {
             const res = await fetch("/api/settings/public");
@@ -74,6 +74,7 @@ export default function RoyalPassPage() {
     const RP_PRICE_DISCOUNTED = settingsData?.elitePassPrice ?? 5;
     const RP_PRICE_FULL = settingsData?.elitePassOrigPrice ?? 20;
     const rpDiscountPercent = RP_PRICE_FULL > RP_PRICE_DISCOUNTED ? Math.round((1 - RP_PRICE_DISCOUNTED / RP_PRICE_FULL) * 100) : 0;
+    const streakReward = settingsData?.streakRewardAmount ?? 30;
 
     const lostDiscount = (data?.currentStreak ?? 0) >= (data?.nextRewardAt ?? 8);
     const rpPrice = lostDiscount ? RP_PRICE_FULL : RP_PRICE_DISCOUNTED;
@@ -162,7 +163,7 @@ export default function RoyalPassPage() {
                                     </Chip>
                                 </div>
 
-                                {/* Segmented progress bar with 30 UC goal */}
+                                {/* Segmented progress bar with streak reward goal */}
                                 {(() => {
                                     const streakComplete = data.currentStreak >= data.nextRewardAt;
                                     const wasting = streakComplete && !data.hasRoyalPass;
@@ -212,7 +213,7 @@ export default function RoyalPassPage() {
                                                         animation: "textPop 3.5s ease-in-out infinite",
                                                     } : undefined}
                                                 >
-                                                    {wasting ? `Free ${data.nextRewardAt * 3 + 6} ${GAME.currencyPlural}` : `${data.nextRewardAt * 3 + 6} ${GAME.currencyPlural}`}
+                                                    {wasting ? `Free ${streakReward} ${GAME.currencyPlural}` : `${streakReward} ${GAME.currencyPlural}`}
                                                 </span>
                                             </div>
                                         </>
@@ -221,8 +222,8 @@ export default function RoyalPassPage() {
 
                                 <p className="text-center text-xs text-foreground/50">
                                     {data.hasRoyalPass
-                                        ? `Leh kai ban ban ${data.nextRewardAt} tournament ioh ei ${data.nextRewardAt * 3 + 6} ${GAME.currencyPlural} instant!`
-                                        : `Get ${GAME.passName} to earn ${data.nextRewardAt * 3 + 6} ${GAME.currencyPlural} when you hit ${data.nextRewardAt} streak!`}
+                                        ? `Leh kai ban ban ${data.nextRewardAt} tournament ioh ei ${streakReward} ${GAME.currencyPlural} instant!`
+                                        : `Get ${GAME.passName} to earn ${streakReward} ${GAME.currencyPlural} when you hit ${data.nextRewardAt} streak!`}
                                 </p>
                             </CardBody>
                         </Card>
@@ -328,7 +329,7 @@ export default function RoyalPassPage() {
                             <li>Rung ha ka tournament</li>
                             <li>Your streak increases by 1</li>
                             <li>Pep shi tournament? Ka streak la resets sha 0</li>
-                            <li>Khlem pep {data?.nextRewardAt ?? 8} tournament → Ioh {(data?.nextRewardAt ?? 8) * 3 + 6} <CurrencyIcon size={12} /> bonus!</li>
+                            <li>Khlem pep {data?.nextRewardAt ?? 8} tournament → Ioh {streakReward} <CurrencyIcon size={12} /> bonus!</li>
                             <li className="text-amber-600 dark:text-amber-400">
                                 🎨 Upload custom character image/video for your podium card!
                             </li>

@@ -9,7 +9,7 @@ import { getAvailableBalance, debitWallet } from "@/lib/wallet-service";
  * POST /api/royal-pass/buy
  * Self-purchase Royal Pass for the current season.
  * Price: 5 UC (75% off) if streak < 8, or 20 UC (full) if streak >= 8.
- * If paying full price (streak >= 8), also grants 30 UC streak reward and resets streak to 0.
+ * If paying full price (streak >= threshold), also grants streak reward UC and resets streak to 0.
  */
 export async function POST() {
     try {
