@@ -291,7 +291,9 @@ export async function previewTeamsByPoll({
         const teamPlayers: TeamPreviewPlayer[] = t.players.map((p: any) => {
             const stats = (p.stats || p.playerStats || []).find((s: any) => s.seasonId === seasonId);
             const kills = stats?.kills ?? 0;
-            const kd = stats?.kd ?? 0;
+            const matches = stats?.matches ?? 0;
+            // Compute KD dynamically (same as /api/players) — stored kd field may be stale
+            const kd = matches > 0 ? kills / matches : 0;
 
             return {
                 id: p.id,
