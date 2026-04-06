@@ -76,6 +76,14 @@ export async function createTeamsByPoll({
         throw new Error("Invalid group size");
     }
 
+    // Race-condition guard: prevent duplicate team generation
+    if (!dryRun) {
+        const existingTeams = await prisma.team.count({ where: { tournamentId } });
+        if (existingTeams > 0) {
+            throw new Error("Teams already exist for this tournament. Refresh the page to see them.");
+        }
+    }
+
     const tournament = await prisma.tournament.findUnique({
         where: { id: tournamentId },
         select: { name: true },
