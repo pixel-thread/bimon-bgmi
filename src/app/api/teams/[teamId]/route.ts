@@ -108,16 +108,6 @@ export async function PATCH(
                         }
                     }
                 }
-
-                // Deduct UC from added players via local wallet
-                if (deductUC && entryFee > 0) {
-                    for (const playerId of addPlayerIds) {
-                        const email = await getEmailByPlayerId(playerId);
-                        if (email) {
-                            await debitWallet(email, entryFee, `Entry fee: Added to team in ${tournamentName}`, "TOURNAMENT_ENTRY");
-                        }
-                    }
-                }
             }
 
             // Remove players
@@ -138,18 +128,28 @@ export async function PATCH(
                 await tx.teamPlayerStats.deleteMany({
                     where: { teamId, playerId: { in: removePlayerIds } },
                 });
-
-                // Refund UC to removed players via local wallet
-                if (refund && entryFee > 0) {
-                    for (const playerId of removePlayerIds) {
-                        const email = await getEmailByPlayerId(playerId);
-                        if (email) {
-                            await creditWallet(email, entryFee, `Refund: Removed from team in ${tournamentName}`, "TOURNAMENT_ENTRY");
-                        }
-                    }
-                }
             }
         });
+
+        // Wallet operations — done AFTER transaction to avoid timeout
+        // (these are cross-DB / external service calls that are too slow for the 5s tx window)
+        if (addPlayerIds.length > 0 && deductUC && entryFee > 0) {
+            for (const playerId of addPlayerIds) {
+                const email = await getEmailByPlayerId(playerId);
+                if (email) {
+                    await debitWallet(email, entryFee, `Entry fee: Added to team in ${tournamentName}`, "TOURNAMENT_ENTRY");
+                }
+            }
+        }
+
+        if (removePlayerIds.length > 0 && refund && entryFee > 0) {
+            for (const playerId of removePlayerIds) {
+                const email = await getEmailByPlayerId(playerId);
+                if (email) {
+                    await creditWallet(email, entryFee, `Refund: Removed from team in ${tournamentName}`, "TOURNAMENT_ENTRY");
+                }
+            }
+        }
 
         // Fetch updated team
         const updated = await prisma.team.findUnique({
@@ -236,26 +236,13 @@ export async function DELETE(
 
         // Run all delete operations in a transaction
         await prisma.$transaction(async (tx) => {
-            // 1. Refund UC to players if requested
-            if (refund && entryFee > 0 && playerIds.length > 0) {
-                // Refund via local wallet (creates Transaction + updates balance)
-                for (const playerId of playerIds) {
-                    const email = await getEmailByPlayerId(playerId);
-                    if (email) {
-                        await creditWallet(email, entryFee, `Refund: Team deleted from ${team.tournament?.name ?? "tournament"}`, "TOURNAMENT_ENTRY");
-                    }
-                }
-
-                refundedPlayers.push(...playerIds);
-            }
-
-            // 2. Delete related records
+            // 1. Delete related records
             await tx.teamPlayerStats.deleteMany({ where: { teamId } });
             await tx.teamStats.deleteMany({ where: { teamId } });
             await tx.matchPlayerPlayed.deleteMany({ where: { teamId } });
             await tx.tournamentWinner.deleteMany({ where: { teamId } });
 
-            // 3. Disconnect team from matches and players, then delete
+            // 2. Disconnect team from matches and players, then delete
             await tx.team.update({
                 where: { id: teamId },
                 data: {
@@ -266,6 +253,17 @@ export async function DELETE(
 
             await tx.team.delete({ where: { id: teamId } });
         });
+
+        // Wallet refunds — done AFTER transaction to avoid timeout
+        if (refund && entryFee > 0 && playerIds.length > 0) {
+            for (const playerId of playerIds) {
+                const email = await getEmailByPlayerId(playerId);
+                if (email) {
+                    await creditWallet(email, entryFee, `Refund: Team deleted from ${team.tournament?.name ?? "tournament"}`, "TOURNAMENT_ENTRY");
+                }
+            }
+            refundedPlayers.push(...playerIds);
+        }
 
         const refundMsg =
             refund && entryFee > 0 && refundedPlayers.length > 0
