@@ -450,11 +450,13 @@ function VotersDialog({
                                     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
                                 );
 
-                                // Build global FCFS list for cross-group position tracking
+                                // Build FCFS list sorted ascending (earliest first) for cutoff check
                                 const allInSolo = (isKnockout && inSoloVoters)
                                     ? [...(votersByVote["IN"] ?? []), ...(votersByVote["SOLO"] ?? [])]
                                         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-                                    : sorted; // For BR modes, just use the current group
+                                    : [...selectedVoters].sort((a, b) =>
+                                        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                                    );
 
                                 const hasWaitlist = cutoffSize > 0 && allInSolo.length > cutoffSize;
 
