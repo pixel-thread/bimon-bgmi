@@ -10,7 +10,7 @@ import {
 import { computeWeightedScore, PlayerWithWins, SeasonScoringConfig } from "./scoreUtil";
 import { PlayerWithStatsT, PlayerWithWeightT } from "@/types/models";
 import { getPreviousTournamentTeammates } from "./previousTeammates";
-import { getCategoryFromKD, type PlayerTier } from "./categoryUtils";
+import { getCategoryFromKDValue, type PlayerTier } from "./categoryUtils";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -291,7 +291,7 @@ export async function previewTeamsByPoll({
         const teamPlayers: TeamPreviewPlayer[] = t.players.map((p: any) => {
             const stats = (p.stats || p.playerStats || []).find((s: any) => s.seasonId === seasonId);
             const kills = stats?.kills ?? 0;
-            const kd = stats?.kd ?? (stats?.deaths > 0 ? kills / stats.deaths : kills > 0 ? kills : 0);
+            const kd = stats?.kd ?? 0;
 
             return {
                 id: p.id,
@@ -300,7 +300,7 @@ export async function previewTeamsByPoll({
                 balance: playerBalanceMap.get(p.id) ?? 0,
                 kills,
                 kd: Math.round(kd * 100) / 100,
-                category: getCategoryFromKD(kills, stats?.deaths ?? (kd > 0 ? Math.round(kills / kd) : 0)),
+                category: getCategoryFromKDValue(kd),
                 weightedScore: (p as any).weightedScore ?? 0,
             };
         });
