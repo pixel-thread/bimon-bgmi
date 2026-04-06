@@ -7,7 +7,7 @@ import { getSettings } from "@/lib/settings";
  * POST /api/tournaments/[id]/update-streaks
  * Increments streak.current for every player who participated in this tournament.
  * Updates streak.longest if current exceeds it.
- * When a Royal Pass player hits the streak milestone (8), creates a STREAK
+ * When a Royal Pass player hits the streak milestone, creates a STREAK
  * PendingReward and resets their streak to 0.
  * Skips players whose streak.lastTournamentId already matches (idempotent).
  */

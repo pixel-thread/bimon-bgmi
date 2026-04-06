@@ -35,7 +35,7 @@ export function HeroHeading() {
 
     if (!isLoaded) {
         return (
-            <h1 className="mt-8 text-5xl font-extrabold tracking-tight text-center sm:text-6xl">
+            <h1 className="mt-8 text-3xl font-extrabold tracking-tight text-center sm:text-5xl md:text-6xl">
                 Welcome to{" "}
                 <PubgmiLogo variant="hero" />
             </h1>
@@ -43,11 +43,11 @@ export function HeroHeading() {
     }
 
     return (
-        <h1 className="mt-8 text-5xl font-extrabold tracking-tight text-center sm:text-6xl">
+        <h1 className="mt-8 text-3xl font-extrabold tracking-tight text-center sm:text-5xl md:text-6xl">
             {isSignedIn ? (
                 <>
                     Welcome back{" "}
-                    <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+                    <span className="block text-2xl sm:text-3xl md:text-4xl whitespace-nowrap bg-gradient-to-r from-blue-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
                         {displayName}
                     </span>
                 </>

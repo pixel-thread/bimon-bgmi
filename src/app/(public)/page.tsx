@@ -13,7 +13,7 @@ export default function HomePage() {
             <LastRouteRedirector />
             <PwaInstallPrompt />
             {/* Hero */}
-            <section className="relative overflow-hidden px-4 pb-20 pt-20 sm:px-6 sm:pt-28">
+            <section className="relative overflow-hidden px-4 pb-20 pt-28 sm:px-6 sm:pt-36">
                 {/* Animated background blobs */}
                 <div className="absolute left-1/4 top-20 -z-10 h-72 w-72 rounded-full bg-blue-600/20 blur-[100px]" />
                 <div className="absolute right-1/4 top-40 -z-10 h-60 w-60 rounded-full bg-violet-600/20 blur-[100px]" />
