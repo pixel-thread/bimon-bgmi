@@ -232,15 +232,21 @@ export async function createTeamsByPoll({
     }
 
     // Compute weighted scores — map v2 stats format
+    // Compute KD dynamically (kills/matches) — stored kd field may be stale
     const playersWithScore = nonSquadPlayers.map((p) => {
-        const playerStats = p.stats.map((s) => ({
-            seasonId: s.seasonId,
-            kills: s.kills,
-            deaths: s.kd > 0 ? Math.round(s.kills / s.kd) : 0,
-        }));
+        const playerStats = p.stats.map((s) => {
+            const dynamicKd = s.matches > 0 ? s.kills / s.matches : 0;
+            return {
+                seasonId: s.seasonId,
+                kills: s.kills,
+                kd: dynamicKd,
+                deaths: dynamicKd > 0 ? Math.round(s.kills / dynamicKd) : 0,
+            };
+        });
 
         const playerWithWins: PlayerWithWins = {
             ...p,
+            stats: playerStats as any,       // Override stale DB stats
             playerStats: playerStats as any,
             recentWins: winCountMap.get(p.id) ?? 0,
         } as any;

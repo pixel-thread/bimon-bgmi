@@ -148,14 +148,20 @@ export async function previewTeamsByPoll({
     // The teamBalancer/scoreUtil use `playerStats` property name
     const playersWithScore = players.map((p) => {
         // Map v2 stats → playerStats shape expected by scoreUtil
-        const playerStats = p.stats.map((s) => ({
-            seasonId: s.seasonId,
-            kills: s.kills,
-            deaths: s.kd > 0 ? Math.round(s.kills / s.kd) : 0,
-        }));
+        // Compute KD dynamically (kills/matches) — stored kd field may be stale
+        const playerStats = p.stats.map((s) => {
+            const dynamicKd = s.matches > 0 ? s.kills / s.matches : 0;
+            return {
+                seasonId: s.seasonId,
+                kills: s.kills,
+                kd: dynamicKd,
+                deaths: dynamicKd > 0 ? Math.round(s.kills / dynamicKd) : 0,
+            };
+        });
 
         const playerWithWins: PlayerWithWins = {
             ...p,
+            stats: playerStats as any,       // Override stale DB stats
             playerStats: playerStats as any,
             recentWins: 0,
         } as any;
