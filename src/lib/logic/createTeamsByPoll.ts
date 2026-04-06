@@ -28,6 +28,12 @@ type Props = {
     pollId: string;
     entryFee?: number;
     previewTeams?: PreviewTeamInput[];
+    dryRun?: boolean;
+};
+
+type DryRunData = {
+    teams: TeamStats[];
+    tournamentName: string;
 };
 
 export type CreateTeamsByPollsResult = {
@@ -37,6 +43,7 @@ export type CreateTeamsByPollsResult = {
     entryFeeCharged: number;
     squadsRegistered: number;
     squadsCancelled: number;
+    dryRunData?: DryRunData;
 };
 
 // Helper to process promises in batches (PgBouncer safe)
@@ -63,6 +70,7 @@ export async function createTeamsByPoll({
     seasonId,
     entryFee = 0,
     previewTeams,
+    dryRun = false,
 }: Props): Promise<CreateTeamsByPollsResult> {
     if (![1, 2, 3, 4].includes(groupSize)) {
         throw new Error("Invalid group size");
@@ -190,18 +198,22 @@ export async function createTeamsByPoll({
                     }
                 }
 
-                // Mark squad as REGISTERED
-                await prisma.squad.update({
-                    where: { id: squad.id },
-                    data: { status: "REGISTERED" },
-                });
+                // Mark squad as REGISTERED (skip in dry run)
+                if (!dryRun) {
+                    await prisma.squad.update({
+                        where: { id: squad.id },
+                        data: { status: "REGISTERED" },
+                    });
+                }
                 squadsRegistered++;
             } else {
                 // Cancel FORMING squads — fees were only reserved, nothing to refund
-                await prisma.squad.update({
-                    where: { id: squad.id },
-                    data: { status: "CANCELLED" },
-                });
+                if (!dryRun) {
+                    await prisma.squad.update({
+                        where: { id: squad.id },
+                        data: { status: "CANCELLED" },
+                    });
+                }
                 squadsCancelled++;
             }
         }
@@ -375,6 +387,19 @@ export async function createTeamsByPoll({
     const allTeamPlayerIds = new Set(teams.flatMap((t) => t.players.map((p) => p.id)));
     if (luckyVoterId && !allTeamPlayerIds.has(luckyVoterId)) {
         luckyVoterId = null;
+    }
+
+    // ── Dry run: return team data without DB writes ──────────
+    if (dryRun) {
+        return {
+            teamsCreated: teams.length,
+            playersAssigned: allTeamPlayerIds.size,
+            matchId: "",
+            entryFeeCharged: entryFee,
+            squadsRegistered,
+            squadsCancelled,
+            dryRunData: { teams, tournamentName },
+        };
     }
 
     // Track players to charge (populated inside transaction, used after)
