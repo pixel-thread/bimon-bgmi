@@ -14,6 +14,7 @@ import {
 import { Search, SlidersHorizontal, MapPin } from "lucide-react";
 import { type PlayerFilters } from "@/hooks/use-player-filters";
 import { useQuery } from "@tanstack/react-query";
+import { useAuthUser } from "@/hooks/use-auth-user";
 import { GAME } from "@/lib/game-config";
 
 const TIERS = [
@@ -63,9 +64,10 @@ export function PlayerFiltersBar({
     onFilterOpen,
 }: PlayerFilters) {
     const totalPlayers = Object.values(tierCounts).reduce((a, b) => a + b, 0);
+    const { isSignedIn, isLoading: authLoading } = useAuthUser();
 
     // Get current player's location from their profile
-    const { data: profile } = useQuery<ProfileLocation>({
+    const { data: profile, isLoading: profileLoading } = useQuery<ProfileLocation>({
         queryKey: ["profile"],
         queryFn: async () => {
             const res = await fetch("/api/profile");
@@ -73,12 +75,14 @@ export function PlayerFiltersBar({
             return (await res.json()).data;
         },
         staleTime: 5 * 60 * 1000,
+        enabled: !!isSignedIn,
     });
 
     const myState = profile?.player?.state;
     const myDistrict = profile?.player?.district;
     const myTown = profile?.player?.town;
     const hasLocation = !!myState && !!myDistrict && !!myTown;
+    const locationLoading = authLoading || (!!isSignedIn && profileLoading);
 
     // Determine current tab based on which filters are active
     const activeTab = locationTown
@@ -285,7 +289,13 @@ export function PlayerFiltersBar({
             </div>
 
             {/* Location tabs — fixed based on player's own location */}
-            {hasLocation && (
+            {locationLoading ? (
+                <div className="flex gap-2">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-8 rounded-lg bg-default-100 animate-pulse" style={{ width: i === 1 ? 48 : 64 }} />
+                    ))}
+                </div>
+            ) : hasLocation && (
                 <Tabs
                     size="sm"
                     variant="underlined"

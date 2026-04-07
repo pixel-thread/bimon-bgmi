@@ -232,9 +232,9 @@ export default function ProfilePage() {
         }
     }, [isLoading, isFetching, profile]);
 
-    // Show skeleton ONLY on initial load (no cached data at all) or when profile exists but player is missing (auto-retrying)
-    // When we have cached profile+player, skip skeleton entirely — stale data renders instantly.
-    const showSkeleton = isLoading || (!profile?.player && (isFetching || (profile && !profile.player)));
+    // Show skeleton ONLY on true initial load (no cached data at all).
+    // If profile is cached from LocationGuard/PlayerFiltersBar, render instantly.
+    const showSkeleton = isLoading;
     if (showSkeleton) {
         return (
             <div className="mx-auto max-w-lg px-4 py-6 sm:px-6">
