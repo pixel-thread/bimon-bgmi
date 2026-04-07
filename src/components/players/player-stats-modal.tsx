@@ -218,6 +218,8 @@ export function PlayerStatsModal({
                                 {!imageLoaded && (
                                     <div className="absolute inset-0 z-10 flex items-center justify-center bg-default-100">
                                         <Spinner size="sm" />
+                                        {/* Smooth bottom fade to match the loaded gradient */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
                                     </div>
                                 )}
                                 {characterImage.isVideo ? (
@@ -270,7 +272,7 @@ export function PlayerStatsModal({
                                 </span>
                             </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+                        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background via-background/60 to-transparent" />
 
                         {/* Player info overlay */}
                         <div className="absolute bottom-4 left-4 flex items-end gap-3">
