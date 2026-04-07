@@ -18,11 +18,14 @@ interface AuthGateContextValue {
     requireAuth: (action?: () => void) => boolean;
     /** Whether user is signed in */
     isSignedIn: boolean;
+    /** Whether auth status is still loading */
+    isLoading: boolean;
 }
 
 const AuthGateContext = createContext<AuthGateContextValue>({
     requireAuth: () => false,
     isSignedIn: false,
+    isLoading: true,
 });
 
 export function useAuthGate() {
@@ -66,7 +69,7 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <AuthGateContext.Provider value={{ requireAuth, isSignedIn: !!isSignedIn }}>
+        <AuthGateContext.Provider value={{ requireAuth, isSignedIn: !!isSignedIn, isLoading: !!isLoading }}>
             {children}
 
             {/* Welcome modal — first visit for guests */}
