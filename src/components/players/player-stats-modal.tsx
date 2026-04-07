@@ -400,7 +400,7 @@ export function PlayerStatsModal({
                                 onPress={() => setShowUCTransfer(true)}
                                 className="font-medium"
                             >
-                                {player.isAdmin ? `Send ${GAME.currency}` : `Send / Request ${GAME.currency}`}
+                                {player.isAdmin ? `Send ${GAME.hasDualCurrency ? GAME.entryCurrency : GAME.currency}` : `Send / Request ${GAME.hasDualCurrency ? GAME.entryCurrency : GAME.currency}`}
                             </Button>
                         )}
                     </ModalBody>

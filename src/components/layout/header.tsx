@@ -514,30 +514,6 @@ export function Header() {
                                 </NavbarMenuItem>
                             )}
 
-                            {/* Jobs — admin only */}
-                            {isAdmin && (
-                                <NavbarMenuItem>
-                                    <Link
-                                        href="/jobs"
-                                        onClick={() => {
-                                            if (!pathname.startsWith("/jobs")) setNavigatingTo("/jobs");
-                                            else setIsMenuOpen(false);
-                                        }}
-                                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-colors ${pathname.startsWith("/jobs")
-                                            ? "bg-primary/10 font-semibold text-primary"
-                                            : "text-foreground/70 hover:bg-default-100"
-                                            }`}
-                                    >
-                                        {navigatingTo === "/jobs" && !pathname.startsWith("/jobs") ? (
-                                            <Loader2 className="h-5 w-5 animate-spin" />
-                                        ) : (
-                                            <Briefcase className="h-5 w-5" />
-                                        )}
-                                        Jobs
-                                    </Link>
-                                </NavbarMenuItem>
-                            )}
-
 
                         </>
                     )}

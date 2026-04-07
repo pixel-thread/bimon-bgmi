@@ -19,6 +19,9 @@ import { useAuthUser } from "@/hooks/use-auth-user";
 import { GAME } from "@/lib/game-config";
 import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 
+// Transfers always use the entry currency (BP for MLBB, UC for BGMI, etc.)
+const TRANSFER_CURRENCY = GAME.hasDualCurrency ? (GAME.entryCurrency ?? "BP") : GAME.currency;
+
 interface UCTransferDialogProps {
     isOpen: boolean;
     onClose: () => void;
@@ -95,7 +98,7 @@ export function UCTransferDialog({
                     {sendOnly ? (
                         <div className="flex items-center justify-center gap-1.5 py-1.5 text-sm font-medium text-success">
                             <ArrowUpRight className="h-3.5 w-3.5" />
-                            <span>Send {GAME.currency}</span>
+                            <span>Send {TRANSFER_CURRENCY}</span>
                         </div>
                     ) : (
                     <Tabs
@@ -113,7 +116,7 @@ export function UCTransferDialog({
                             title={
                                 <div className="flex items-center gap-1.5">
                                     <ArrowDownLeft className="h-3.5 w-3.5" />
-                                    <span>Request {GAME.currency}</span>
+                                    <span>Request {TRANSFER_CURRENCY}</span>
                                 </div>
                             }
                         />
@@ -122,7 +125,7 @@ export function UCTransferDialog({
                             title={
                                 <div className="flex items-center gap-1.5">
                                     <ArrowUpRight className="h-3.5 w-3.5" />
-                                    <span>Send {GAME.currency}</span>
+                                    <span>Send {TRANSFER_CURRENCY}</span>
                                 </div>
                             }
                         />
@@ -221,7 +224,7 @@ export function UCTransferDialog({
                             ))
                         }
                     >
-                        {activeTab === "send" ? `Send ${GAME.currency}` : `Request ${GAME.currency}`}
+                        {activeTab === "send" ? `Send ${TRANSFER_CURRENCY}` : `Request ${TRANSFER_CURRENCY}`}
                     </Button>
                 </ModalFooter>
             </ModalContent>
