@@ -293,8 +293,9 @@ export function PlayerFiltersBar({
                     selectedKey={activeTab}
                     onSelectionChange={handleTabChange}
                     classNames={{
-                        tabList: "gap-0 w-full",
-                        tab: "px-3 h-8",
+                        base: "w-full overflow-x-auto scrollbar-hide",
+                        tabList: "gap-0 w-max min-w-full",
+                        tab: "px-3 h-8 whitespace-nowrap",
                         cursor: "bg-primary",
                     }}
                 >
