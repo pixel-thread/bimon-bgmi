@@ -439,18 +439,6 @@ export async function POST(
                             details: p.details,
                         },
                     });
-
-                    // Create notification so the player sees a badge + feed entry
-                    await tx.notification.create({
-                        data: {
-                            userId: p.userId,
-                            playerId: p.playerId,
-                            title: `🏆 You won ${getOrdinal(teamData.position)} place!`,
-                            message: `You earned ${p.finalAmount} ${GAME.currency} in ${tournament.name}. Tap to claim your reward!`,
-                            type: "tournament",
-                            link: "/notifications",
-                        },
-                    });
                 }
 
                 winners.push(winner);
@@ -795,23 +783,6 @@ async function declareBracketWinners({
                         wasSolo: false,
                         diamondAmount: p.diamondAmount ?? 0,
                     },
-                },
-            });
-
-            // Build notification message based on currency type
-            const rewardParts: string[] = [];
-            if (p.finalAmount > 0) rewardParts.push(`${p.finalAmount} ${GAME.currency}`);
-            if ((p.diamondAmount ?? 0) > 0) rewardParts.push(`${p.diamondAmount} ${GAME.rewardCurrency ?? GAME.currency}`);
-            const rewardMsg = rewardParts.length > 0 ? rewardParts.join(" + ") : "0";
-
-            await tx.notification.create({
-                data: {
-                    userId: p.userId,
-                    playerId: p.playerId,
-                    title: `🏆 You won ${getOrdinal(p.position)} place!`,
-                    message: `You earned ${rewardMsg} in ${tournament.name}. Tap to claim!`,
-                    type: "tournament",
-                    link: "/notifications",
                 },
             });
         }

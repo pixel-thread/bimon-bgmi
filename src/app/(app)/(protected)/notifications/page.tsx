@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { GAME } from "@/lib/game-config";
 import { CurrencyIcon } from "@/components/common/CurrencyIcon";
@@ -207,6 +207,20 @@ export default function NotificationsPage() {
         },
         staleTime: 30 * 1000,
     });
+
+    // Auto-mark all notifications as read when page loads
+    const hasAutoRead = useRef(false);
+    useEffect(() => {
+        if (!data || hasAutoRead.current) return;
+        if (data.unreadCount > 0) {
+            hasAutoRead.current = true;
+            fetch("/api/notifications/read-all", { method: "POST" })
+                .then(() => {
+                    queryClient.invalidateQueries({ queryKey: ["notification-count"] });
+                })
+                .catch(() => {});
+        }
+    }, [data, queryClient]);
 
     const markAllRead = useMutation({
         mutationFn: async () => {
@@ -550,18 +564,7 @@ export default function NotificationsPage() {
                             Recent Activity
                         </span>
                         <div className="h-px flex-1 bg-divider" />
-                        {unreadCount > 0 && (
-                            <Button
-                                size="sm"
-                                variant="light"
-                                className="h-6 min-w-0 px-2 text-[10px] text-foreground/40"
-                                startContent={<CheckCheck className="h-3 w-3" />}
-                                isLoading={markAllRead.isPending}
-                                onPress={() => markAllRead.mutate()}
-                            >
-                                Read all
-                            </Button>
-                        )}
+
                     </div>
                 )}
 
@@ -799,48 +802,11 @@ export default function NotificationsPage() {
                                         </p>
                                     )}
 
-                                    {/* Details */}
-                                    {details && (
-                                        <div className="space-y-1.5 rounded-lg bg-default-50 p-3 text-left">
-                                            {!!details.tournamentName && (
-                                                <div className="flex items-center justify-between text-xs">
-                                                    <span className="text-foreground/50">Tournament</span>
-                                                    <span className="font-medium">{String(details.tournamentName)}</span>
-                                                </div>
-                                            )}
-                                            {details.baseShare != null && (
-                                                <div className="flex items-center justify-between text-xs">
-                                                    <span className="text-foreground/50">Base Share</span>
-                                                    <span className="font-medium">{Number(details.baseShare)} <CurrencyIcon size={11} /></span>
-                                                </div>
-                                            )}
-                                            {Number(details.participationAdj) !== 0 && details.participationAdj != null && (
-                                                <div className="flex items-center justify-between text-xs">
-                                                    <span className="text-foreground/50">Participation Adjustment</span>
-                                                    <span className={`font-medium ${Number(details.participationAdj) > 0 ? "text-success" : "text-danger"}`}>
-                                                        {Number(details.participationAdj) > 0 ? "+" : ""}{Number(details.participationAdj)} <CurrencyIcon size={11} />
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {Number(details.repeatTax) > 0 && (
-                                                <div className="flex items-center justify-between text-xs">
-                                                    <span className="text-foreground/50">Repeat Winner Tax</span>
-                                                    <span className="font-medium text-danger">-{Number(details.repeatTax)} <CurrencyIcon size={11} /></span>
-                                                </div>
-                                            )}
-                                            {Number(details.soloTax) > 0 && (
-                                                <div className="flex items-center justify-between text-xs">
-                                                    <span className="text-foreground/50">Solo Tax</span>
-                                                    <span className="font-medium text-danger">-{Number(details.soloTax)} <CurrencyIcon size={11} /></span>
-                                                </div>
-                                            )}
-                                            {details.matchesPlayed != null && (
-                                                <div className="flex items-center justify-between text-xs">
-                                                    <span className="text-foreground/50">Matches Played</span>
-                                                    <span className="font-medium">{Number(details.matchesPlayed)}/{Number(details.totalMatches)}</span>
-                                                </div>
-                                            )}
-                                        </div>
+                                    {/* Details — only show tournament name */}
+                                    {!!details?.tournamentName && (
+                                        <p className="text-xs text-foreground/50">
+                                            {String(details.tournamentName)}
+                                        </p>
                                     )}
 
                                     <p className="text-[10px] text-foreground/30">

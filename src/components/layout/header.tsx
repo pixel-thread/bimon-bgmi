@@ -130,7 +130,9 @@ export function Header() {
     const unreadCount = notifData?.unreadCount ?? 0;
     const unclaimedRewardCount = notifData?.unclaimedRewardCount ?? 0;
     const hasUnclaimedStreak = notifData?.hasUnclaimedStreak ?? false;
-    const totalActionCount = unreadCount + unclaimedRewardCount;
+    // Red dot only shows for actionable items (unclaimed rewards, pending requests)
+    // Regular notifications auto-mark as read when page is visited
+    const totalActionCount = unclaimedRewardCount;
 
     // Fetch runtime settings (enableElitePass toggle from dashboard)
     const { data: publicSettings } = useQuery({

@@ -399,17 +399,6 @@ async function autoDeclareWinner(
                     } as any,
                 },
             });
-
-            await tx.notification.create({
-                data: {
-                    userId: player.userId,
-                    playerId,
-                    title: `${emoji} ${title}!`,
-                    message: `You earned ${amount} ${GAME.currency} in ${tName}! Tap to claim.`,
-                    type: "tournament",
-                    link: "/notifications",
-                },
-            });
         }
 
         // 1st place
@@ -442,17 +431,6 @@ async function autoDeclareWinner(
                             type: "refund",
                             originalEntryFee: entryFee,
                         } as any,
-                    },
-                });
-
-                await tx.notification.create({
-                    data: {
-                        userId: player.userId,
-                        playerId: fourthPlaceId,
-                        title: "💰 Entry Fee Refunded!",
-                        message: `You got ${refundAmount} ${GAME.currency} back from ${tName}. Better luck next time!`,
-                        type: "tournament",
-                        link: "/notifications",
                     },
                 });
             }
