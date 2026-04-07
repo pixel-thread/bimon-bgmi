@@ -6,6 +6,7 @@ import { MeritRatingSection } from "@/components/vote/merit-rating-gate";
 import { VotePageJobListings } from "@/components/vote/vote-page-jobs";
 import { Skeleton, Card, CardBody, Divider } from "@heroui/react";
 import { Vote, AlertCircle } from "lucide-react";
+import { useAuthGate } from "@/components/common/auth-gate-provider";
 
 /**
  * /vote — Tournament voting page.
@@ -15,6 +16,7 @@ export default function VotePage() {
     const { data, isLoading, error, refetch } = usePolls();
     const voteMutation = useVote();
     const entryMutation = useEntryMutation();
+    const { requireAuth } = useAuthGate();
 
     const polls = data?.polls;
     const currentPlayerId = data?.currentPlayerId ?? undefined;
@@ -22,7 +24,7 @@ export default function VotePage() {
     const pendingVote = voteMutation.isPending ? voteMutation.variables?.vote : undefined;
 
     function handleVote(pollId: string, vote: "IN" | "OUT" | "SOLO") {
-        voteMutation.mutate({ pollId, vote });
+        requireAuth(() => voteMutation.mutate({ pollId, vote }));
     }
 
     return (

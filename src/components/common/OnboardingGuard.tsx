@@ -11,7 +11,8 @@ const requiresPhone = !GAME.features.hasBR; // PES only
 
 /**
  * Redirects signed-in but non-onboarded users to /onboarding.
- * For PES: shows a phone-required modal for existing players missing a phone.
+ * Non-authenticated users can browse freely — auth is only
+ * enforced when they try to perform an action (via AuthGateProvider).
  */
 export function OnboardingGuard({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -22,17 +23,14 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (isLoading || isSkipped) return;
-        if (!isSignedIn) {
-            router.push("/sign-in");
-            return;
-        }
-        if (user && !user.isOnboarded) {
+        // Only redirect if signed in but not onboarded
+        if (isSignedIn && user && !user.isOnboarded) {
             router.push("/onboarding");
         }
     }, [user, isLoading, isSignedIn, isSkipped, router]);
 
-    // Block render while auth is loading, not signed in, or if onboarding needed
-    if (!isSkipped && (isLoading || !isSignedIn || (isSignedIn && user && !user.isOnboarded))) {
+    // Block render only for signed-in users who need onboarding
+    if (!isSkipped && isSignedIn && user && !user.isOnboarded) {
         return null;
     }
 
