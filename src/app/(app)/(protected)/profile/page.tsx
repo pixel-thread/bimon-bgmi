@@ -1298,11 +1298,22 @@ export default function ProfilePage() {
                                     }
 
                                     // Save the Cloudinary result to our DB via a lightweight API call
+                                    // Apply crop params as Cloudinary URL transformation if user adjusted zoom/position
+                                    let finalUrl = cloudData.secure_url;
+                                    if (cropParams) {
+                                        // Crop to user selection, then pad to 3:4 with black bars
+                                        // so landscape videos zoomed out don't get re-cropped by object-cover
+                                        finalUrl = cloudData.secure_url.replace(
+                                            "/upload/",
+                                            `/upload/c_crop,x_${cropParams.x},y_${cropParams.y},w_${cropParams.w},h_${cropParams.h}/c_pad,ar_3:4,b_black/`
+                                        );
+                                    }
+
                                     const saveRes = await fetch("/api/profile/upload-character-image", {
                                         method: "POST",
                                         headers: { "Content-Type": "application/json" },
                                         body: JSON.stringify({
-                                            cloudinaryUrl: cloudData.secure_url,
+                                            cloudinaryUrl: finalUrl,
                                             publicId: cloudData.public_id,
                                             isVideo: true,
                                         }),
