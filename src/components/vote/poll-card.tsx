@@ -11,6 +11,7 @@ import { getPrizeDistribution, getTeamSize, type OrgCutMode } from "@/lib/logic/
 import { GAME } from "@/lib/game-config";
 import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 import { SquadCenter } from "./squad-center";
+import { CreateSquadModal } from "./create-squad-modal";
 
 /* ─── Types ─────────────────────────────────────────────────── */
 
@@ -549,6 +550,7 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
     const [showVoters, setShowVoters] = useState(false);
     const [selectedVoteGroup, setSelectedVoteGroup] = useState<"IN" | "OUT" | "SOLO" | null>(null);
     const [showSquads, setShowSquads] = useState(false);
+    const [showCreateSquad, setShowCreateSquad] = useState(false);
 
     // Fetch real settings so ? tooltip shows accurate org%
     const { data: publicSettings } = useQuery({
@@ -902,18 +904,32 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                         </button>
                     )}
 
-                    {/* Squad button — only for games with hasSquads */}
+                    {/* Squad buttons — only for games with hasSquads */}
                     {GAME.features.hasSquads && (
-                        <button
-                            type="button"
-                            onClick={() => setShowSquads(true)}
-                            className="w-full text-center font-semibold py-3 px-4 rounded-xl transition-all border shadow-sm cursor-pointer text-primary bg-primary/5 border-primary/20 hover:bg-primary/10 hover:shadow-md"
-                        >
-                            <span className="flex items-center justify-center gap-2">
-                                <Shield className="w-4 h-4" />
-                                🛡 View Teams
-                            </span>
-                        </button>
+                        <div className="space-y-2">
+                            <button
+                                type="button"
+                                onClick={() => setShowSquads(true)}
+                                className="w-full text-center font-semibold py-3 px-4 rounded-xl transition-all border shadow-sm cursor-pointer text-primary bg-primary/5 border-primary/20 hover:bg-primary/10 hover:shadow-md"
+                            >
+                                <span className="flex items-center justify-center gap-2">
+                                    <Shield className="w-4 h-4" />
+                                    🛡 View Teams
+                                </span>
+                            </button>
+                            {poll.isActive && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCreateSquad(true)}
+                                    className="w-full text-center font-semibold py-3 px-4 rounded-xl transition-all border shadow-sm cursor-pointer text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 hover:shadow-md"
+                                >
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Shield className="w-4 h-4" />
+                                        ➕ Create Team
+                                    </span>
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
 
@@ -930,14 +946,23 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
 
                 {/* Squad Center Modal */}
                 {GAME.features.hasSquads && (
-                    <SquadCenter
-                        isOpen={showSquads}
-                        onClose={() => setShowSquads(false)}
-                        pollId={poll.id}
-                        tournamentName={tournament?.name || poll.question}
-                        entryFee={entryFee}
-                        currentPlayerId={currentPlayerId ?? ""}
-                    />
+                    <>
+                        <SquadCenter
+                            isOpen={showSquads}
+                            onClose={() => setShowSquads(false)}
+                            pollId={poll.id}
+                            tournamentName={tournament?.name || poll.question}
+                            entryFee={entryFee}
+                            currentPlayerId={currentPlayerId ?? ""}
+                        />
+                        <CreateSquadModal
+                            isOpen={showCreateSquad}
+                            onClose={() => setShowCreateSquad(false)}
+                            pollId={poll.id}
+                            tournamentName={tournament?.name || poll.question}
+                            entryFee={entryFee}
+                        />
+                    </>
                 )}
             </div>
         </motion.div>
