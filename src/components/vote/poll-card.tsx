@@ -437,6 +437,16 @@ function VotersDialog({
                                     while (p * 2 <= totalIn) p *= 2;
                                     cutoffSize = totalIn >= 2 ? p : 0;
                                     cutoffLabel = `⚔️ Bracket: ${cutoffSize} players`;
+                                } else if (inSoloVoters && GAME.features.hasSquads && selectedGroup === "IN") {
+                                    // Squad-based games (MLBB 5v5): multiples of squad size
+                                    const inCount = votersByVote["IN"]?.length ?? 0;
+                                    const sqSize = GAME.squadSize ?? 5;
+                                    if (inCount > sqSize) {
+                                        cutoffSize = Math.floor(inCount / sqSize) * sqSize;
+                                        if (cutoffSize < inCount) {
+                                            cutoffLabel = `🛡 ${Math.floor(inCount / sqSize)} teams × ${sqSize} players`;
+                                        }
+                                    }
                                 } else if (inSoloVoters && selectedGroup === "IN") {
                                     // BR team modes: perfect multiple cutoff
                                     const inCount = votersByVote["IN"]?.length ?? 0;
@@ -799,8 +809,8 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                     </div>
                 </div>
 
-                {/* ─── Options (hidden for squad-based games — players use Squad Center) ─── */}
-                {!GAME.features.hasSquads && (
+                {/* ─── Options ─── */}
+                {(
                     <div
                         className={`p-6 space-y-3 transition-all duration-700 ease-in-out ${theme ? theme.options : ""}`}
                     >
@@ -865,6 +875,13 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                     </div>
                 )}
 
+                {/* Note for squad-based games (MLBB) */}
+                {GAME.features.hasSquads && (
+                    <p className="px-6 -mt-1 pb-2 text-xs text-foreground/50 text-center">
+                        🛡 Players who vote in will be matched with random teammates into teams of {GAME.squadSize ?? 5}
+                    </p>
+                )}
+
                 {/* ─── Footer ─── */}
                 <div
                     className={`px-6 pb-5 transition-all duration-700 ease-in-out ${theme ? theme.footer : ""}`}
@@ -896,8 +913,8 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                         </span>
                     </div>
 
-                    {/* View all votes — hidden for squad-based games */}
-                    {!GAME.features.hasSquads && poll.totalVotes > 0 && (
+                    {/* View all votes */}
+                    {poll.totalVotes > 0 && (
                         <button
                             type="button"
                             onClick={() => setShowVoters(true)}

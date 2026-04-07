@@ -165,13 +165,13 @@ export async function POST(request: Request) {
         type VoteType = "IN" | "OUT" | "SOLO";
         const defaultOptions: { name: string; vote: VoteType }[] = GAME.features.hasTeamSizes
             ? [
-                { name: "Nga Leh 😎", vote: "IN" },
-                { name: "Leh rei", vote: "OUT" },
-                { name: "Nga Leh solo 🫩", vote: "SOLO" },
+                { name: GAME.locale === "kha" ? "Nga Leh 😎" : "I'm In 😎", vote: "IN" },
+                { name: GAME.locale === "kha" ? "Leh rei" : "I'm Out", vote: "OUT" },
+                { name: GAME.locale === "kha" ? "Nga Leh solo 🫩" : "Solo 🫩", vote: "SOLO" },
             ]
             : [
-                { name: "Nga Leh 😎", vote: "IN" },
-                { name: "Leh rei", vote: "OUT" },
+                { name: GAME.locale === "kha" ? "Nga Leh 😎" : "I'm In 😎", vote: "IN" },
+                { name: GAME.locale === "kha" ? "Leh rei" : "I'm Out", vote: "OUT" },
             ];
 
         const pollOptions: { name: string; vote: VoteType }[] = Array.isArray(customOptions) && customOptions.length > 0
