@@ -416,9 +416,9 @@ export default function ProfilePage() {
                                     onChange={(e) => {
                                         const file = e.target.files?.[0]; if (!file) return;
                                         const isVid = file.type.startsWith("video/");
-                                        // 3MB cap — keeps Cloudinary free tier (~25GB) sustainable at 10k+ players
-                                        if (isVid && file.size > 3 * 1024 * 1024) {
-                                            toast.error("Video must be under 3MB. Try a shorter or lower-res clip!");
+                                        // 10MB cap — players upload rarely (once/month), Cloudinary free tier can handle this
+                                        if (isVid && file.size > 10 * 1024 * 1024) {
+                                            toast.error("Video must be under 10MB. Try a shorter or lower-res clip!");
                                             e.target.value = "";
                                             return;
                                         }
