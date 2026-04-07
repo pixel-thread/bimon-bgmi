@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
+import { GAME } from "@/lib/game-config";
 
 /**
  * GET /api/notifications
@@ -24,7 +25,7 @@ export async function GET() {
 
         const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-        const [notifications, unreadCount, pendingRequests, unclaimedRewards] = await Promise.all([
+        const [notifications, unreadCount, pendingRequests, unclaimedRewards, pendingSquadRequests] = await Promise.all([
             prisma.notification.findMany({
                 where: {
                     userId: user.id,
@@ -72,10 +73,45 @@ export async function GET() {
                     take: 20,
                 })
                 : [],
+            // Fetch pending squad join requests where this player is captain
+            (user.player && GAME.features.hasSquads)
+                ? prisma.squadInvite.findMany({
+                    where: {
+                        initiatedBy: "PLAYER",
+                        status: "PENDING",
+                        squad: {
+                            captainId: user.player.id,
+                            status: { in: ["FORMING", "FULL"] },
+                        },
+                    },
+                    include: {
+                        player: {
+                            select: {
+                                id: true,
+                                displayName: true,
+                                customProfileImageUrl: true,
+                                user: { select: { username: true, imageUrl: true } },
+                            },
+                        },
+                        squad: {
+                            select: {
+                                id: true,
+                                name: true,
+                                poll: {
+                                    select: {
+                                        tournament: { select: { name: true } },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    orderBy: { createdAt: "desc" },
+                })
+                : [],
         ]);
 
         return SuccessResponse({
-            data: { notifications, unreadCount, pendingRequests, unclaimedRewards },
+            data: { notifications, unreadCount, pendingRequests, unclaimedRewards, pendingSquadRequests },
         });
     } catch (error) {
         console.error("Error fetching notifications:", error);

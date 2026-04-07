@@ -13,6 +13,7 @@ export interface SquadMember {
     displayName: string;
     imageUrl: string;
     status: "PENDING" | "ACCEPTED" | "DECLINED";
+    initiatedBy: "CAPTAIN" | "PLAYER";
 }
 
 export interface SquadDTO {
@@ -211,6 +212,95 @@ export function useCancelSquad() {
         },
         onError: (err) => {
             toast.error(err instanceof Error ? err.message : "Failed to cancel squad");
+        },
+    });
+}
+
+/**
+ * Request to join an open squad (player-initiated).
+ */
+export function useRequestJoin() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (squadId: string) => {
+            const res = await fetch("/api/squads/request-join", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ squadId }),
+            });
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error(json.message || "Failed to send request");
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Request sent!");
+            queryClient.invalidateQueries({ queryKey: ["squads"] });
+        },
+        onError: (err) => {
+            const msg = err instanceof Error ? err.message : "Failed to send request";
+            toast.error(msg);
+        },
+    });
+}
+
+/**
+ * Captain accepts or declines a player's join request.
+ */
+export function useRespondToRequest() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ inviteId, action }: { inviteId: string; action: "ACCEPT" | "DECLINE" }) => {
+            const res = await fetch("/api/squads/respond-request", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ inviteId, action }),
+            });
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error(json.message || "Failed to respond");
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Done!");
+            queryClient.invalidateQueries({ queryKey: ["squads"] });
+            queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        },
+        onError: (err) => {
+            toast.error(err instanceof Error ? err.message : "Failed to respond");
+        },
+    });
+}
+
+/**
+ * Captain removes a member from a squad.
+ */
+export function useRemoveMember() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (inviteId: string) => {
+            const res = await fetch("/api/squads/remove-member", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ inviteId }),
+            });
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error(json.message || "Failed to remove member");
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Member removed");
+            queryClient.invalidateQueries({ queryKey: ["squads"] });
+        },
+        onError: (err) => {
+            toast.error(err instanceof Error ? err.message : "Failed to remove member");
         },
     });
 }

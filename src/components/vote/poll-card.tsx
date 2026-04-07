@@ -793,69 +793,71 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                     </div>
                 </div>
 
-                {/* ─── Options ─── */}
-                <div
-                    className={`p-6 space-y-3 transition-all duration-700 ease-in-out ${theme ? theme.options : ""}`}
-                >
-                    {options.map((opt) => (
-                        <PollOptionRow
-                            key={opt.vote}
-                            label={opt.label}
-                            isSelected={poll.userVote === opt.vote}
-                            isLoading={isThisPollVoting && votingVote === opt.vote}
-                            disabled={!poll.isActive || (isThisPollVoting && votingVote !== opt.vote)}
-                            voteCount={opt.count}
-                            percentage={Math.round((opt.count / maxCount) * 100)}
-                            voters={votersByVote[opt.vote] ?? []}
-                            theme={theme}
-                            currentPlayerId={currentPlayerId}
-                            onClick={() => {
-                                if (poll.userVote !== opt.vote) onVote(poll.id, opt.vote);
-                            }}
-                        />
-                    ))}
+                {/* ─── Options (hidden for squad-based games — players use Squad Center) ─── */}
+                {!GAME.features.hasSquads && (
+                    <div
+                        className={`p-6 space-y-3 transition-all duration-700 ease-in-out ${theme ? theme.options : ""}`}
+                    >
+                        {options.map((opt) => (
+                            <PollOptionRow
+                                key={opt.vote}
+                                label={opt.label}
+                                isSelected={poll.userVote === opt.vote}
+                                isLoading={isThisPollVoting && votingVote === opt.vote}
+                                disabled={!poll.isActive || (isThisPollVoting && votingVote !== opt.vote)}
+                                voteCount={opt.count}
+                                percentage={Math.round((opt.count / maxCount) * 100)}
+                                voters={votersByVote[opt.vote] ?? []}
+                                theme={theme}
+                                currentPlayerId={currentPlayerId}
+                                onClick={() => {
+                                    if (poll.userVote !== opt.vote) onVote(poll.id, opt.vote);
+                                }}
+                            />
+                        ))}
 
-                    {/* ─── Multi-Entry Controls (PES) ─── */}
-                    {canAddEntry && (
-                        <div className={`mt-3 flex items-center justify-between rounded-xl border px-4 py-3 ${theme ? `${theme.optionSelected.border} ${theme.optionSelected.bg}` : 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20'}`}>
-                            <p className={`text-sm font-semibold ${theme ? theme.optionSelected.text : 'text-blue-700 dark:text-blue-300'}`}>
-                                Rung {userVoteCount + 1} tylli?
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    disabled={!canRemoveEntry || entryPending}
-                                    onClick={() => onEntryChange?.(poll.id, "REMOVE_ENTRY")}
-                                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border
-                                        ${canRemoveEntry && !entryPending
-                                            ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-600 hover:bg-red-200 cursor-pointer'
-                                            : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                                        }`}
-                                >
-                                    <Minus className="w-3.5 h-3.5" />
-                                </button>
-                                <span className={`text-lg font-bold min-w-[2rem] text-center tabular-nums ${theme ? theme.optionSelected.text : 'text-blue-700 dark:text-blue-300'}`}>
-                                    {entryPending ? (
-                                        <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                    ) : userVoteCount}
-                                </span>
-                                <button
-                                    type="button"
-                                    disabled={entryPending}
-                                    onClick={() => onEntryChange?.(poll.id, "ADD_ENTRY")}
-                                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border
-                                        ${!entryPending
-                                            ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-600 hover:bg-emerald-200 cursor-pointer'
-                                            : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                                        }`}
-                                >
-                                    <Plus className="w-3.5 h-3.5" />
-                                </button>
+                        {/* ─── Multi-Entry Controls (PES) ─── */}
+                        {canAddEntry && (
+                            <div className={`mt-3 flex items-center justify-between rounded-xl border px-4 py-3 ${theme ? `${theme.optionSelected.border} ${theme.optionSelected.bg}` : 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20'}`}>
+                                <p className={`text-sm font-semibold ${theme ? theme.optionSelected.text : 'text-blue-700 dark:text-blue-300'}`}>
+                                    Rung {userVoteCount + 1} tylli?
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        disabled={!canRemoveEntry || entryPending}
+                                        onClick={() => onEntryChange?.(poll.id, "REMOVE_ENTRY")}
+                                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border
+                                            ${canRemoveEntry && !entryPending
+                                                ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-600 hover:bg-red-200 cursor-pointer'
+                                                : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                            }`}
+                                    >
+                                        <Minus className="w-3.5 h-3.5" />
+                                    </button>
+                                    <span className={`text-lg font-bold min-w-[2rem] text-center tabular-nums ${theme ? theme.optionSelected.text : 'text-blue-700 dark:text-blue-300'}`}>
+                                        {entryPending ? (
+                                            <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                        ) : userVoteCount}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        disabled={entryPending}
+                                        onClick={() => onEntryChange?.(poll.id, "ADD_ENTRY")}
+                                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border
+                                            ${!entryPending
+                                                ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-600 hover:bg-emerald-200 cursor-pointer'
+                                                : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                            }`}
+                                    >
+                                        <Plus className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                </div>
+                    </div>
+                )}
 
                 {/* ─── Footer ─── */}
                 <div
@@ -896,15 +898,15 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                     )}
 
                     {/* Squad button — only for games with hasSquads */}
-                    {GAME.features.hasSquads && poll.isActive && (
+                    {GAME.features.hasSquads && (
                         <button
                             type="button"
                             onClick={() => setShowSquads(true)}
-                            className="w-full text-center font-medium py-2.5 px-4 rounded-xl transition-all border shadow-sm cursor-pointer text-primary bg-primary/5 border-primary/20 hover:bg-primary/10 hover:shadow-md mt-2"
+                            className="w-full text-center font-semibold py-3 px-4 rounded-xl transition-all border shadow-sm cursor-pointer text-primary bg-primary/5 border-primary/20 hover:bg-primary/10 hover:shadow-md mt-2"
                         >
                             <span className="flex items-center justify-center gap-2">
                                 <Shield className="w-4 h-4" />
-                                🛡 View Teams
+                                {poll.isActive ? "🛡 Create / View Teams" : "🛡 View Teams"}
                             </span>
                         </button>
                     )}

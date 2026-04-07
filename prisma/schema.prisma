@@ -1191,11 +1191,13 @@ model Squad {
 }
 
 /// Invite to join a squad. Captain's own slot is auto-created as ACCEPTED.
+/// initiatedBy: "CAPTAIN" = captain invited the player, "PLAYER" = player requested to join.
 model SquadInvite {
-  id       String            @id @default(uuid())
-  squadId  String
-  playerId String
-  status   SquadInviteStatus @default(PENDING)
+  id          String            @id @default(uuid())
+  squadId     String
+  playerId    String
+  status      SquadInviteStatus @default(PENDING)
+  initiatedBy String            @default("CAPTAIN") // "CAPTAIN" | "PLAYER"
 
   createdAt   DateTime  @default(now())
   respondedAt DateTime?

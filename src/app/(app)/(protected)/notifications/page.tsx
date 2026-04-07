@@ -33,6 +33,7 @@ import {
     Flame,
     UserPlus,
     Heart,
+    Shield,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
@@ -74,11 +75,30 @@ interface UnclaimedReward {
     createdAt: string;
 }
 
+interface PendingSquadRequest {
+    id: string;
+    createdAt: string;
+    player: {
+        id: string;
+        displayName: string | null;
+        customProfileImageUrl: string | null;
+        user: { username: string; imageUrl: string | null };
+    };
+    squad: {
+        id: string;
+        name: string;
+        poll: {
+            tournament: { name: string } | null;
+        };
+    };
+}
+
 interface NotificationsData {
     notifications: Notification[];
     unreadCount: number;
     pendingRequests: PendingRequest[];
     unclaimedRewards: UnclaimedReward[];
+    pendingSquadRequests: PendingSquadRequest[];
 }
 
 const typeIcons: Record<string, typeof Bell> = {
@@ -90,6 +110,14 @@ const typeIcons: Record<string, typeof Bell> = {
     uc_received: ArrowDownLeft,
     tournament: Trophy,
     team: Users,
+    squad_request: Shield,
+    squad_invite: Shield,
+    squad_accept: Shield,
+    squad_decline: Shield,
+    squad_request_accepted: Shield,
+    squad_request_declined: Shield,
+    squad_cancelled: Shield,
+    squad_removed: Shield,
     system: Info,
 };
 
@@ -102,6 +130,14 @@ const typeColors: Record<string, string> = {
     uc_received: "text-success bg-success/10",
     tournament: "text-primary bg-primary/10",
     team: "text-secondary bg-secondary/10",
+    squad_request: "text-blue-500 bg-blue-500/10",
+    squad_invite: "text-primary bg-primary/10",
+    squad_accept: "text-success bg-success/10",
+    squad_decline: "text-danger bg-danger/10",
+    squad_request_accepted: "text-success bg-success/10",
+    squad_request_declined: "text-danger bg-danger/10",
+    squad_cancelled: "text-danger bg-danger/10",
+    squad_removed: "text-danger bg-danger/10",
     system: "text-foreground/60 bg-foreground/5",
 };
 
@@ -149,7 +185,7 @@ export default function NotificationsPage() {
     const { isOpen, onOpen, onClose } = useDisclosure();
 
     // Modal modes
-    const [modalMode, setModalMode] = useState<"uc_request" | "reward_detail">("uc_request");
+    const [modalMode, setModalMode] = useState<"uc_request" | "reward_detail" | "squad_request">("uc_request");
 
     // UC request modal state
     const [selectedRequest, setSelectedRequest] = useState<PendingRequest | null>(null);
@@ -157,6 +193,9 @@ export default function NotificationsPage() {
 
     // Reward detail modal state
     const [selectedReward, setSelectedReward] = useState<UnclaimedReward | null>(null);
+
+    // Squad request state
+    const [squadRequestNotification, setSquadRequestNotification] = useState<Notification | null>(null);
 
     const { data, isLoading, error } = useQuery<NotificationsData>({
         queryKey: ["notifications"],
@@ -250,10 +289,38 @@ export default function NotificationsPage() {
         },
     });
 
+    // Squad request respond mutation
+    const respondSquadRequest = useMutation({
+        mutationFn: async ({ inviteId, action }: { inviteId: string; action: "ACCEPT" | "DECLINE" }) => {
+            const res = await fetch("/api/squads/respond-request", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ inviteId, action }),
+            });
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error(json.message || "Failed to respond");
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Done!");
+            queryClient.invalidateQueries({ queryKey: ["notifications"] });
+            queryClient.invalidateQueries({ queryKey: ["notification-count"] });
+            queryClient.invalidateQueries({ queryKey: ["squads"] });
+            onClose();
+            setSquadRequestNotification(null);
+        },
+        onError: (err: Error) => {
+            toast.error(err.message);
+        },
+    });
+
     const notifications = data?.notifications ?? [];
     const unreadCount = data?.unreadCount ?? 0;
     const pendingRequests = data?.pendingRequests ?? [];
     const unclaimedRewards = data?.unclaimedRewards ?? [];
+    const pendingSquadRequests = data?.pendingSquadRequests ?? [];
 
     const openRequestModal = (request: PendingRequest) => {
         setModalMode("uc_request");
@@ -268,6 +335,12 @@ export default function NotificationsPage() {
         onOpen();
     };
 
+    const openSquadRequestModal = (notification: Notification) => {
+        setModalMode("squad_request");
+        setSquadRequestNotification(notification);
+        onOpen();
+    };
+
     // Find matching pending request for a uc_request notification
     const findPendingRequest = (notification: Notification): PendingRequest | null => {
         if (notification.type !== "uc_request") return null;
@@ -276,7 +349,12 @@ export default function NotificationsPage() {
         ) ?? null;
     };
 
-    const hasActionItems = unclaimedRewards.length > 0 || pendingRequests.length > 0;
+    // Check if a squad_request notification is actionable (unread = likely still pending)
+    const isSquadRequestActionable = (notification: Notification): boolean => {
+        return notification.type === "squad_request" && !notification.isRead;
+    };
+
+    const hasActionItems = unclaimedRewards.length > 0 || pendingRequests.length > 0 || pendingSquadRequests.length > 0;
 
     return (
         <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
@@ -375,6 +453,78 @@ export default function NotificationsPage() {
                     </motion.div>
                 )}
 
+                {/* Pending Squad Join Requests */}
+                {!isLoading && pendingSquadRequests.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
+                        <Card className="border border-divider overflow-hidden">
+                            <div className="flex items-center gap-1.5 px-3 pt-3 pb-1">
+                                <Shield className="h-3.5 w-3.5 text-foreground/40" />
+                                <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
+                                    Squad Join Requests
+                                </p>
+                                <span className="ml-auto rounded-full bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-bold text-blue-500">
+                                    {pendingSquadRequests.length}
+                                </span>
+                            </div>
+                            <CardBody className="gap-0 p-0">
+                                {pendingSquadRequests.map((req, i) => {
+                                    const playerName = req.player.displayName ?? req.player.user.username;
+                                    const playerImg = req.player.customProfileImageUrl ?? req.player.user.imageUrl ?? "";
+                                    const squadName = req.squad.name;
+                                    const tournamentName = req.squad.poll.tournament?.name ?? "tournament";
+                                    return (
+                                        <div
+                                            key={req.id}
+                                            className={`flex items-center gap-3 px-3 py-2.5 ${i > 0 ? "border-t border-divider/50" : ""}`}
+                                        >
+                                            <img
+                                                src={playerImg}
+                                                alt={playerName}
+                                                className="h-8 w-8 rounded-full object-cover shrink-0"
+                                            />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-[13px] font-medium truncate">
+                                                    {playerName}
+                                                </p>
+                                                <p className="text-[11px] text-foreground/40 truncate">
+                                                    → {squadName} · {tournamentName}
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-1.5 shrink-0">
+                                                <Button
+                                                    size="sm"
+                                                    color="primary"
+                                                    variant="flat"
+                                                    isIconOnly
+                                                    isLoading={respondSquadRequest.isPending}
+                                                    onPress={() => respondSquadRequest.mutate({ inviteId: req.id, action: "ACCEPT" })}
+                                                    className="min-w-7 w-7 h-7"
+                                                >
+                                                    <Check className="w-3.5 h-3.5" />
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    color="danger"
+                                                    variant="flat"
+                                                    isIconOnly
+                                                    isLoading={respondSquadRequest.isPending}
+                                                    onPress={() => respondSquadRequest.mutate({ inviteId: req.id, action: "DECLINE" })}
+                                                    className="min-w-7 w-7 h-7"
+                                                >
+                                                    <X className="w-3.5 h-3.5" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </CardBody>
+                        </Card>
+                    </motion.div>
+                )}
+
                 {/* Pending UC requests shown inline (if not already matched to a notification) */}
                 {!isLoading && pendingRequests.length > 0 && (
                     <motion.div
@@ -445,7 +595,7 @@ export default function NotificationsPage() {
                             transition={{ delay: (hasActionItems ? 0.1 : 0) + i * 0.03 }}
                         >
                             <Card
-                                isPressable={!!notification.link || !!pendingRequest || !notification.isRead}
+                                isPressable={!!notification.link || !!pendingRequest || isSquadRequestActionable(notification) || !notification.isRead}
                                 onPress={() => {
                                     // Mark as read immediately (optimistic)
                                     if (!notification.isRead) {
@@ -464,6 +614,8 @@ export default function NotificationsPage() {
                                     }
                                     if (pendingRequest) {
                                         openRequestModal(pendingRequest);
+                                    } else if (isSquadRequestActionable(notification)) {
+                                        openSquadRequestModal(notification);
                                     } else if (notification.link) {
                                         router.push(notification.link);
                                     }
@@ -504,6 +656,11 @@ export default function NotificationsPage() {
                                             {pendingRequest && (
                                                 <p className="text-[11px] font-medium text-primary">
                                                     Tap to respond
+                                                </p>
+                                            )}
+                                            {isSquadRequestActionable(notification) && (
+                                                <p className="text-[11px] font-medium text-blue-500">
+                                                    Tap to accept/decline
                                                 </p>
                                             )}
                                         </div>

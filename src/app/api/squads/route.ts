@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
                     displayName: inv.player.displayName ?? inv.player.user.username,
                     imageUrl: inv.player.customProfileImageUrl ?? inv.player.user.imageUrl ?? "",
                     status: inv.status,
+                    initiatedBy: inv.initiatedBy ?? "CAPTAIN",
                 })),
                 acceptedCount,
                 totalSlots: GAME.squadSize,

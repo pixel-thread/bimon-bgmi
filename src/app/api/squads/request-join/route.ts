@@ -1,0 +1,162 @@
+import { prisma } from "@/lib/database";
+import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
+import { getCurrentUser, getAuthEmail } from "@/lib/auth";
+import { GAME } from "@/lib/game-config";
+import { getAvailableBalance } from "@/lib/wallet-service";
+import { type NextRequest } from "next/server";
+
+/**
+ * POST /api/squads/request-join
+ * Player requests to join an open squad. Captain must accept/decline.
+ * Body: { squadId }
+ */
+export async function POST(request: NextRequest) {
+    try {
+        if (!GAME.features.hasSquads) {
+            return ErrorResponse({ message: "Squads are not available for this game", status: 400 });
+        }
+
+        const email = await getAuthEmail();
+        if (!email) {
+            return ErrorResponse({ message: "Unauthorized", status: 401 });
+        }
+
+        const user = await getCurrentUser();
+        if (!user?.player) {
+            return ErrorResponse({ message: "Player profile required", status: 403 });
+        }
+
+        const body = await request.json();
+        const { squadId } = body as { squadId: string };
+
+        if (!squadId) {
+            return ErrorResponse({ message: "squadId is required", status: 400 });
+        }
+
+        const playerId = user.player.id;
+
+        // Fetch squad
+        const squad = await prisma.squad.findUnique({
+            where: { id: squadId },
+            include: {
+                captain: {
+                    select: {
+                        id: true,
+                        displayName: true,
+                        user: { select: { id: true, username: true } },
+                    },
+                },
+                poll: {
+                    select: {
+                        id: true,
+                        isActive: true,
+                        tournament: { select: { name: true, fee: true } },
+                    },
+                },
+                invites: { select: { playerId: true, status: true } },
+            },
+        });
+
+        if (!squad) {
+            return ErrorResponse({ message: "Squad not found", status: 404 });
+        }
+
+        // Cannot join your own squad via request
+        if (squad.captainId === playerId) {
+            return ErrorResponse({ message: "You are the captain of this squad", status: 400 });
+        }
+
+        // Poll must be active
+        if (!squad.poll.isActive) {
+            return ErrorResponse({ message: "This poll is no longer active", status: 400 });
+        }
+
+        // Squad must be FORMING
+        if (squad.status !== "FORMING") {
+            return ErrorResponse({
+                message: squad.status === "FULL" ? "This squad is already full" : "This squad is no longer active",
+                status: 400,
+            });
+        }
+
+        // Squad not full
+        const acceptedCount = squad.invites.filter((i) => i.status === "ACCEPTED").length;
+        if (acceptedCount >= GAME.squadSize) {
+            return ErrorResponse({ message: "Squad is already full", status: 400 });
+        }
+
+        // Not already invited or requested
+        const existingInvite = squad.invites.find((i) => i.playerId === playerId);
+        if (existingInvite && existingInvite.status !== "DECLINED") {
+            return ErrorResponse({ message: "You already have a pending invite or are already in this squad", status: 400 });
+        }
+
+        // Not in another squad for this poll
+        const inOtherSquad = await prisma.squadInvite.findFirst({
+            where: {
+                playerId,
+                status: { in: ["PENDING", "ACCEPTED"] },
+                squad: {
+                    pollId: squad.poll.id,
+                    status: { in: ["FORMING", "FULL"] },
+                    id: { not: squadId },
+                },
+            },
+        });
+
+        if (inOtherSquad) {
+            return ErrorResponse({ message: "You're already in another squad for this tournament", status: 400 });
+        }
+
+        // Must have enough balance
+        if (squad.entryFee > 0) {
+            const { available } = await getAvailableBalance(email);
+            if (available < squad.entryFee) {
+                return ErrorResponse({
+                    message: `${GAME.currencyEmoji} Not enough ${GAME.currency} — you need ${squad.entryFee} ${GAME.currency} to join`,
+                    status: 403,
+                });
+            }
+        }
+
+        const playerName = user.player.displayName;
+        const tournamentName = squad.poll.tournament?.name ?? "tournament";
+
+        // Create join request + notify captain
+        await prisma.$transaction(async (tx) => {
+            if (existingInvite) {
+                // Re-request after a decline
+                await tx.squadInvite.updateMany({
+                    where: { squadId, playerId },
+                    data: { status: "PENDING", initiatedBy: "PLAYER", respondedAt: null },
+                });
+            } else {
+                await tx.squadInvite.create({
+                    data: {
+                        squadId,
+                        playerId,
+                        initiatedBy: "PLAYER",
+                    },
+                });
+            }
+
+            // Notify captain
+            await tx.notification.create({
+                data: {
+                    title: "🛡 Join Request",
+                    message: `${playerName} wants to join "${squad.name}" for ${tournamentName}`,
+                    type: "squad_request",
+                    userId: squad.captain.user.id,
+                    playerId: squad.captain.id,
+                    link: "/vote",
+                },
+            });
+        });
+
+        return SuccessResponse({
+            message: `Request sent to ${squad.captain.displayName ?? squad.captain.user.username}! They'll review your request.`,
+        });
+    } catch (error) {
+        return ErrorResponse({ message: "Failed to send join request", error });
+    }
+}
