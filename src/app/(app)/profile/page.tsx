@@ -1001,6 +1001,7 @@ export default function ProfilePage() {
                                     <LocationModal
                                         isOpen={showLocationModal}
                                         onComplete={() => setShowLocationModal(false)}
+                                        blocking={false}
                                     />
 
                                     {/* Emails */}

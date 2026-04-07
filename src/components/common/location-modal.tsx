@@ -11,7 +11,7 @@ import {
     Input,
     Listbox,
     ListboxItem,
-    ListboxSection,
+    Skeleton,
 } from "@heroui/react";
 import { MapPin, Search, Plus } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -31,9 +31,12 @@ interface LocationItem {
 export function LocationModal({
     isOpen,
     onComplete,
+    blocking = true,
 }: {
     isOpen: boolean;
     onComplete: () => void;
+    /** When true (default), modal cannot be dismissed. Set false for profile edit. */
+    blocking?: boolean;
 }) {
     const queryClient = useQueryClient();
     const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -46,7 +49,7 @@ export function LocationModal({
     const [saving, setSaving] = useState(false);
 
     // Fetch states from DB
-    const { data: states = [] } = useQuery<LocationItem[]>({
+    const { data: states = [], isLoading: statesLoading } = useQuery<LocationItem[]>({
         queryKey: ["locations", "states"],
         queryFn: async () => {
             const res = await fetch("/api/locations?level=states");
@@ -58,7 +61,7 @@ export function LocationModal({
     });
 
     // Fetch districts for selected state
-    const { data: districts = [] } = useQuery<LocationItem[]>({
+    const { data: districts = [], isLoading: districtsLoading } = useQuery<LocationItem[]>({
         queryKey: ["locations", "districts", stateId],
         queryFn: async () => {
             const res = await fetch(`/api/locations?level=districts&stateId=${stateId}`);
@@ -70,7 +73,7 @@ export function LocationModal({
     });
 
     // Fetch towns for selected district
-    const { data: towns = [] } = useQuery<LocationItem[]>({
+    const { data: towns = [], isLoading: townsLoading } = useQuery<LocationItem[]>({
         queryKey: ["locations", "towns", districtId],
         queryFn: async () => {
             const res = await fetch(`/api/locations?level=towns&districtId=${districtId}`);
@@ -80,6 +83,12 @@ export function LocationModal({
         enabled: isOpen && step >= 3 && !!districtId,
         staleTime: 60_000,
     });
+
+    // Loading state for current step
+    const isLoadingOptions =
+        (step === 1 && statesLoading) ||
+        (step === 2 && districtsLoading) ||
+        (step === 3 && townsLoading);
 
     // Filter options by search query
     const currentOptions =
@@ -191,8 +200,9 @@ export function LocationModal({
     return (
         <Modal
             isOpen={isOpen}
-            isDismissable={false}
-            hideCloseButton
+            isDismissable={!blocking}
+            hideCloseButton={blocking}
+            onClose={!blocking ? onComplete : undefined}
             size="sm"
             placement="center"
         >
@@ -288,8 +298,17 @@ export function LocationModal({
                             </button>
                         )}
 
+                        {/* Loading skeleton */}
+                        {isLoadingOptions && (
+                            <div className="space-y-2">
+                                {[...Array(5)].map((_, i) => (
+                                    <Skeleton key={i} className="h-9 w-full rounded-lg" />
+                                ))}
+                            </div>
+                        )}
+
                         {/* Existing options */}
-                        {filtered.length > 0 && (
+                        {!isLoadingOptions && filtered.length > 0 && (
                             <Listbox
                                 aria-label={`${stepLabels[step - 1]} options`}
                                 className="max-h-48 overflow-y-auto rounded-lg border border-divider"
