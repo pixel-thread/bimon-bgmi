@@ -8,17 +8,13 @@ import {
     Popover,
     PopoverTrigger,
     PopoverContent,
-    Chip,
+    Tabs,
+    Tab,
 } from "@heroui/react";
-import { Search, SlidersHorizontal, MapPin, ChevronRight } from "lucide-react";
+import { Search, SlidersHorizontal, MapPin } from "lucide-react";
 import { type PlayerFilters } from "@/hooks/use-player-filters";
 import { useQuery } from "@tanstack/react-query";
 import { GAME } from "@/lib/game-config";
-
-interface LocationItem {
-    id: string;
-    name: string;
-}
 
 const TIERS = [
     { key: "All", label: "All Tiers" },
@@ -30,9 +26,18 @@ const TIERS = [
     { key: "BOT", label: "Bot" },
 ] as const;
 
+interface ProfileLocation {
+    player: {
+        state: string | null;
+        district: string | null;
+        town: string | null;
+    } | null;
+}
+
 /**
  * Reusable search + filter popover bar for player pages.
- * Contains: search input, filter popover, and location drill-down chips.
+ * Contains: search input, filter popover, and location tabs.
+ * Location tabs show: All | [Player's State] | [Player's District] | [Player's Town]
  */
 export function PlayerFiltersBar({
     search,
@@ -59,54 +64,51 @@ export function PlayerFiltersBar({
 }: PlayerFilters) {
     const totalPlayers = Object.values(tierCounts).reduce((a, b) => a + b, 0);
 
-    // Fetch location options from DB for drill-down chips
-    const { data: states = [] } = useQuery<LocationItem[]>({
-        queryKey: ["locations", "states"],
+    // Get current player's location from their profile
+    const { data: profile } = useQuery<ProfileLocation>({
+        queryKey: ["profile"],
         queryFn: async () => {
-            const res = await fetch("/api/locations?level=states");
-            if (!res.ok) return [];
-            return (await res.json()).data ?? [];
+            const res = await fetch("/api/profile");
+            if (!res.ok) return null;
+            return (await res.json()).data;
         },
-        staleTime: 60_000,
+        staleTime: 5 * 60 * 1000,
     });
 
-    // Find selected state's ID for fetching districts
-    const selectedStateId = states.find((s) => s.name === locationState)?.id;
+    const myState = profile?.player?.state;
+    const myDistrict = profile?.player?.district;
+    const myTown = profile?.player?.town;
+    const hasLocation = !!myState && !!myDistrict && !!myTown;
 
-    const { data: districts = [] } = useQuery<LocationItem[]>({
-        queryKey: ["locations", "districts", selectedStateId],
-        queryFn: async () => {
-            const res = await fetch(`/api/locations?level=districts&stateId=${selectedStateId}`);
-            if (!res.ok) return [];
-            return (await res.json()).data ?? [];
-        },
-        staleTime: 60_000,
-        enabled: !!selectedStateId,
-    });
+    // Determine current tab based on which filters are active
+    const activeTab = locationTown
+        ? "town"
+        : locationDistrict
+          ? "district"
+          : locationState
+            ? "state"
+            : "all";
 
-    const selectedDistrictId = districts.find((d) => d.name === locationDistrict)?.id;
-
-    const { data: towns = [] } = useQuery<LocationItem[]>({
-        queryKey: ["locations", "towns", selectedDistrictId],
-        queryFn: async () => {
-            const res = await fetch(`/api/locations?level=towns&districtId=${selectedDistrictId}`);
-            if (!res.ok) return [];
-            return (await res.json()).data ?? [];
-        },
-        staleTime: 60_000,
-        enabled: !!selectedDistrictId,
-    });
-
-    // Current drill-down level and next options
-    const locationLevel = locationTown ? 3 : locationDistrict ? 2 : locationState ? 1 : 0;
-    const nextOptions: LocationItem[] =
-        locationLevel === 0
-            ? states
-            : locationLevel === 1
-              ? districts
-              : locationLevel === 2
-                ? towns
-                : [];
+    function handleTabChange(key: string | number) {
+        const tab = key as string;
+        if (tab === "all") {
+            setLocationState("");
+            setLocationDistrict("");
+            setLocationTown("");
+        } else if (tab === "state" && myState) {
+            setLocationState(myState);
+            setLocationDistrict("");
+            setLocationTown("");
+        } else if (tab === "district" && myState && myDistrict) {
+            setLocationState(myState);
+            setLocationDistrict(myDistrict);
+            setLocationTown("");
+        } else if (tab === "town" && myState && myDistrict && myTown) {
+            setLocationState(myState);
+            setLocationDistrict(myDistrict);
+            setLocationTown(myTown);
+        }
+    }
 
     return (
         <div className="space-y-2">
@@ -282,99 +284,42 @@ export function PlayerFiltersBar({
                 </Popover>
             </div>
 
-            {/* Location filter chips — drill-down: State → District → Town */}
-            {(states.length > 0 || locationState) && (
-                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
-                    <MapPin className="h-3.5 w-3.5 text-foreground/40 shrink-0" />
-
-                    {/* Active selection breadcrumbs */}
-                    {locationState && (
-                        <Chip
-                            size="sm"
-                            variant="flat"
-                            color="primary"
-                            onClose={() => {
-                                setLocationState("");
-                                setLocationDistrict("");
-                                setLocationTown("");
-                            }}
-                            className="shrink-0"
-                        >
-                            {locationState}
-                        </Chip>
-                    )}
-                    {locationState && locationDistrict && (
-                        <>
-                            <ChevronRight className="h-3 w-3 text-foreground/30 shrink-0" />
-                            <Chip
-                                size="sm"
-                                variant="flat"
-                                color="primary"
-                                onClose={() => {
-                                    setLocationDistrict("");
-                                    setLocationTown("");
-                                }}
-                                className="shrink-0"
-                            >
-                                {locationDistrict}
-                            </Chip>
-                        </>
-                    )}
-                    {locationState && locationDistrict && locationTown && (
-                        <>
-                            <ChevronRight className="h-3 w-3 text-foreground/30 shrink-0" />
-                            <Chip
-                                size="sm"
-                                variant="flat"
-                                color="primary"
-                                onClose={() => setLocationTown("")}
-                                className="shrink-0"
-                            >
-                                {locationTown}
-                            </Chip>
-                        </>
-                    )}
-
-                    {/* Next-level options */}
-                    {nextOptions.length > 0 && (
-                        <>
-                            {locationLevel > 0 && (
-                                <ChevronRight className="h-3 w-3 text-foreground/30 shrink-0" />
-                            )}
-                            {nextOptions.map((opt) => (
-                                <Chip
-                                    key={opt.id}
-                                    size="sm"
-                                    variant="bordered"
-                                    className="shrink-0 cursor-pointer hover:bg-primary/10 transition-colors"
-                                    onClick={() => {
-                                        if (locationLevel === 0) setLocationState(opt.name);
-                                        else if (locationLevel === 1) setLocationDistrict(opt.name);
-                                        else if (locationLevel === 2) setLocationTown(opt.name);
-                                    }}
-                                >
-                                    {opt.name}
-                                </Chip>
-                            ))}
-                        </>
-                    )}
-
-                    {/* Reset to all */}
-                    {locationState && (
-                        <Chip
-                            size="sm"
-                            variant="bordered"
-                            className="shrink-0 cursor-pointer hover:bg-default-100 transition-colors"
-                            onClick={() => {
-                                setLocationState("");
-                                setLocationDistrict("");
-                                setLocationTown("");
-                            }}
-                        >
-                            ✕ All
-                        </Chip>
-                    )}
-                </div>
+            {/* Location tabs — fixed based on player's own location */}
+            {hasLocation && (
+                <Tabs
+                    size="sm"
+                    variant="underlined"
+                    color="primary"
+                    selectedKey={activeTab}
+                    onSelectionChange={handleTabChange}
+                    classNames={{
+                        tabList: "gap-0 w-full",
+                        tab: "px-3 h-8",
+                        cursor: "bg-primary",
+                    }}
+                >
+                    <Tab
+                        key="all"
+                        title={
+                            <div className="flex items-center gap-1.5">
+                                <MapPin className="h-3 w-3" />
+                                <span>All</span>
+                            </div>
+                        }
+                    />
+                    <Tab
+                        key="state"
+                        title={<span className="truncate max-w-[80px]">{myState}</span>}
+                    />
+                    <Tab
+                        key="district"
+                        title={<span className="truncate max-w-[80px]">{myDistrict}</span>}
+                    />
+                    <Tab
+                        key="town"
+                        title={<span className="truncate max-w-[80px]">{myTown}</span>}
+                    />
+                </Tabs>
             )}
         </div>
     );
