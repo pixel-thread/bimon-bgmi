@@ -341,11 +341,15 @@ function VotersDialog({
 
 
     const selectedVoters = selectedGroup ? (votersByVote[selectedGroup] ?? []) : [];
-    const getLabel = (v: string) => v === "IN"
-        ? (GAME.locale === "kha" ? "Nga Leh 😎" : "I'm In 😎")
-        : v === "OUT"
-            ? (GAME.locale === "kha" ? "Leh rei" : "I'm Out")
-            : (GAME.locale === "kha" ? "Nga Leh solo 🫩" : "Solo 🫩");
+    const getLabel = (v: string) => {
+        const opt = poll.options?.find((o) => o.vote === v);
+        if (opt?.name) return opt.name;
+        return v === "IN"
+            ? (GAME.locale === "kha" ? "Nga Leh 😎" : "I'm In 😎")
+            : v === "OUT"
+                ? (GAME.locale === "kha" ? "Leh rei" : "I'm Out")
+                : (GAME.locale === "kha" ? "Nga Leh solo 🫩" : "Solo 🫩");
+    };
     const getColor = (v: string) => v === "IN" ? "bg-emerald-500" : v === "OUT" ? "bg-red-500" : "bg-amber-500";
 
     return (
