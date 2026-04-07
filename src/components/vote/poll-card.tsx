@@ -867,7 +867,10 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                         <span className="flex items-center space-x-1">
                             <Users className="w-4 h-4" />
                             <span>
-                                {poll.totalVotes} vote{poll.totalVotes !== 1 ? "s" : ""}
+                                {GAME.features.hasSquads
+                                    ? `${poll.totalVotes} player${poll.totalVotes !== 1 ? "s" : ""}`
+                                    : `${poll.totalVotes} vote${poll.totalVotes !== 1 ? "s" : ""}`
+                                }
                             </span>
                         </span>
                         <span className="text-xs">
@@ -884,7 +887,9 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                             )}
                         </span>
                     </div>
-                    {poll.totalVotes > 0 && (
+
+                    {/* View all votes — hidden for squad-based games */}
+                    {!GAME.features.hasSquads && poll.totalVotes > 0 && (
                         <button
                             type="button"
                             onClick={() => setShowVoters(true)}
@@ -902,11 +907,11 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                         <button
                             type="button"
                             onClick={() => setShowSquads(true)}
-                            className="w-full text-center font-semibold py-3 px-4 rounded-xl transition-all border shadow-sm cursor-pointer text-primary bg-primary/5 border-primary/20 hover:bg-primary/10 hover:shadow-md mt-2"
+                            className="w-full text-center font-semibold py-3 px-4 rounded-xl transition-all border shadow-sm cursor-pointer text-primary bg-primary/5 border-primary/20 hover:bg-primary/10 hover:shadow-md"
                         >
                             <span className="flex items-center justify-center gap-2">
                                 <Shield className="w-4 h-4" />
-                                {poll.isActive ? "🛡 Create / View Teams" : "🛡 View Teams"}
+                                🛡 View Teams
                             </span>
                         </button>
                     )}
