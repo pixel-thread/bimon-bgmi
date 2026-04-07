@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { prisma } from "./database";
+import { GAME } from "./game-config";
 
 /**
  * Wallet Service
@@ -100,11 +101,12 @@ export async function getReservedBalance(playerId: string): Promise<number> {
  * Get available balance = total balance − reserved balance.
  * This is what the player can actually spend (transfer, buy, etc.).
  */
-export async function getAvailableBalance(email: string): Promise<{ balance: number; reserved: number; available: number }> {
+export async function getAvailableBalance(email: string): Promise<{ balance: number; reserved: number; available: number; diamondBalance: number }> {
     const user = await getLocalPlayerByEmail(email);
     const balance = user?.player?.wallet?.balance ?? 0;
+    const diamondBalance = user?.player?.wallet?.diamondBalance ?? 0;
     const reserved = user?.player ? await getReservedBalance(user.player.id) : 0;
-    return { balance, reserved, available: balance - reserved };
+    return { balance, reserved, available: balance - reserved, diamondBalance };
 }
 
 /**
@@ -238,4 +240,46 @@ export async function transferWallet(
             data: { playerId: toUser.player.id, amount, type: "CREDIT", description: description || "Transfer from player" },
         }),
     ]);
+}
+
+// ─── Diamond Currency (MLBB reward-only) ────────────────────
+
+/**
+ * Get Diamond balance for a user by email.
+ */
+export async function getDiamondBalance(email: string): Promise<number> {
+    const user = await getLocalPlayerByEmail(email);
+    return user?.player?.wallet?.diamondBalance ?? 0;
+}
+
+/**
+ * Credit Diamond to a user's wallet (reward-only, admin use).
+ */
+export async function creditDiamond(
+    email: string,
+    amount: number,
+    description: string,
+): Promise<{ diamondBalance: number; transaction: any }> {
+    const user = await getLocalPlayerByEmail(email);
+    if (!user?.player) throw new Error("Player not found");
+    const currentBalance = user.player.wallet?.diamondBalance ?? 0;
+    const newBalance = currentBalance + amount;
+    const [, tx] = await prisma.$transaction([
+        prisma.wallet.upsert({
+            where: { playerId: user.player.id },
+            create: { playerId: user.player.id, balance: 0, diamondBalance: newBalance },
+            update: { diamondBalance: newBalance },
+        }),
+        prisma.transaction.create({
+            data: { playerId: user.player.id, amount, type: "CREDIT", currency: "DIAMOND", description },
+        }),
+    ]);
+    return { diamondBalance: newBalance, transaction: tx };
+}
+
+/**
+ * Helper: get the display label for the primary (entry fee) currency.
+ */
+export function getEntryCurrencyLabel(): string {
+    return GAME.hasDualCurrency ? (GAME.entryCurrency ?? GAME.currency) : GAME.currency;
 }

@@ -880,10 +880,12 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                 <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
                                     🎉 FREE ENTRY:{" "}
                                     <span className="line-through opacity-60">{entryFee}</span> 0
-                                    {GAME.currency}
+                                    {GAME.hasDualCurrency ? ` ${GAME.entryCurrency}` : GAME.currency}
                                 </span>
                             ) : entryFee > 0 ? (
-                                <span className="inline-flex items-center gap-1">Entry: {entryFee} <CurrencyIcon size={12} /></span>
+                                <span className="inline-flex items-center gap-1">
+                                    Entry: {entryFee} {GAME.hasDualCurrency ? GAME.entryCurrency : <CurrencyIcon size={12} />}
+                                </span>
                             ) : (
                                 "Free Entry"
                             )}

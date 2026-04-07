@@ -92,7 +92,7 @@ export function CreateSquadModal({
                                 <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
                                     <CurrencyIcon size={16} />
                                     <div className="text-sm">
-                                        <span className="font-medium">{entryFee} {GAME.currency}</span>
+                                        <span className="font-medium">{entryFee} {GAME.hasDualCurrency ? GAME.entryCurrency : GAME.currency}</span>
                                         <span className="text-foreground/60"> per player • {GAME.squadSize} players</span>
                                     </div>
                                 </div>
@@ -109,7 +109,7 @@ export function CreateSquadModal({
                                 />
 
                                 <div className="text-xs text-foreground/50 space-y-1">
-                                    <p>• Your {entryFee} {GAME.currency} entry fee will be <strong>reserved</strong> (not charged yet)</p>
+                                    <p>• Your {entryFee} {GAME.hasDualCurrency ? GAME.entryCurrency : GAME.currency} entry fee will be <strong>reserved</strong> (not charged yet)</p>
                                     <p>• Players will request to join your squad</p>
                                     <p>• You can accept or decline requests from View Teams</p>
                                     <p>• Fees are only charged when admin generates teams</p>

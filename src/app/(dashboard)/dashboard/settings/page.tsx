@@ -26,6 +26,7 @@ import {
     Upload,
     Image as ImageIcon,
     Trash2,
+    Youtube,
 } from "lucide-react";
 import { toast } from "sonner";
 import { GAME } from "@/lib/game-config";
@@ -69,6 +70,7 @@ interface Settings {
     matchDeadlineKOHours: number;
     deadlineCutoffTime: string;
     deadlinePausedDays: number[];
+    youtubeChannelUrl: string;
 }
 
 export default function SettingsPage() {
@@ -758,6 +760,20 @@ export default function SettingsPage() {
                         onValueChange={(v) => update("welcomeMessage", v)}
                         placeholder={`Welcome to ${GAME.name}!`}
                         minRows={2}
+                    />
+                    <Divider />
+                    <div className="flex items-center gap-2 mb-1">
+                        <Youtube className="h-4 w-4 text-red-500" />
+                        <span className="text-sm font-medium">YouTube Channel</span>
+                    </div>
+                    <Input
+                        label="YouTube Channel URL"
+                        size="sm"
+                        value={settings.youtubeChannelUrl ?? ""}
+                        onValueChange={(v) => update("youtubeChannelUrl", v)}
+                        placeholder="https://youtube.com/@yourchannel"
+                        description="Shown in the navigation menu for all players"
+                        startContent={<Youtube className="w-4 h-4 text-red-500" />}
                     />
                 </CardBody>
             </Card>

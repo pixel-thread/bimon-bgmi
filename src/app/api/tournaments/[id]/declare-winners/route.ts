@@ -57,7 +57,7 @@ export async function POST(
         const { id } = await params;
         const body = await req.json();
         const { placements, dryRun } = body as {
-            placements?: { position: number; amount: number; teamId?: string; players?: { playerId: string; amount: number }[] }[];
+            placements?: { position: number; amount: number; diamondAmount?: number; teamId?: string; players?: { playerId: string; amount: number }[] }[];
             dryRun?: boolean;
         };
 
@@ -571,7 +571,7 @@ async function declareBracketWinners({
     dryRun,
 }: {
     tournament: { id: string; name: string; fee: number | null; seasonId: string | null; type: string };
-    placements?: { position: number; amount: number; teamId?: string; players?: { playerId: string; amount: number }[] }[];
+    placements?: { position: number; amount: number; diamondAmount?: number; teamId?: string; players?: { playerId: string; amount: number }[] }[];
     dryRun?: boolean;
     req: Request;
 }): Promise<Response> {
@@ -670,7 +670,7 @@ async function declareBracketWinners({
     // If admin passes custom placements (with amounts), use those.
     // Otherwise default: 1st gets ~60%, 2nd gets ~25%, 3rd+ share rest.
     const defaultAmounts = buildBracketPrizeAmounts(remainingPool, Math.min(2, bracketPlacements.length));
-    const placementsToUse: { position: number; amount: number; playerId: string; userId: string; displayName: string | null }[] = [];
+    const placementsToUse: { position: number; amount: number; diamondAmount: number; playerId: string; userId: string; displayName: string | null }[] = [];
 
     if (customPlacements && customPlacements.length > 0) {
         // Admin-specified placements — player is picked from bracketPlacements or custom players array
@@ -682,19 +682,19 @@ async function declareBracketWinners({
                         where: { id: pp.playerId },
                         select: { id: true, userId: true, displayName: true },
                     });
-                    if (p) placementsToUse.push({ position: cp.position, amount: pp.amount, playerId: p.id, userId: p.userId, displayName: p.displayName });
+                    if (p) placementsToUse.push({ position: cp.position, amount: pp.amount, diamondAmount: cp.diamondAmount ?? 0, playerId: p.id, userId: p.userId, displayName: p.displayName });
                 }
             } else {
                 // Derive player from bracket structure
                 const bp = bracketPlacements.find(b => b.position === cp.position);
-                if (bp) placementsToUse.push({ position: cp.position, amount: cp.amount, playerId: bp.player.id, userId: bp.player.userId, displayName: bp.player.displayName });
+                if (bp) placementsToUse.push({ position: cp.position, amount: cp.amount, diamondAmount: cp.diamondAmount ?? 0, playerId: bp.player.id, userId: bp.player.userId, displayName: bp.player.displayName });
             }
         }
     } else {
         // Auto from bracket results
         for (const bp of bracketPlacements.filter(b => b.position <= 2)) {
             const amount = defaultAmounts.get(bp.position) ?? 0;
-            placementsToUse.push({ position: bp.position, amount, playerId: bp.player.id, userId: bp.player.userId, displayName: bp.player.displayName });
+            placementsToUse.push({ position: bp.position, amount, diamondAmount: 0, playerId: bp.player.id, userId: bp.player.userId, displayName: bp.player.displayName });
         }
     }
 
@@ -777,6 +777,7 @@ async function declareBracketWinners({
                     playerId: p.playerId,
                     type: "WINNER",
                     amount: p.finalAmount,
+                    diamondAmount: p.diamondAmount ?? 0,
                     position: p.position,
                     message: `${getOrdinal(p.position)} Place - ${tournament.name}`,
                     details: {
@@ -792,16 +793,23 @@ async function declareBracketWinners({
                         soloTax: 0,
                         wasRepeatWinner: p.taxAmount > 0,
                         wasSolo: false,
+                        diamondAmount: p.diamondAmount ?? 0,
                     },
                 },
             });
+
+            // Build notification message based on currency type
+            const rewardParts: string[] = [];
+            if (p.finalAmount > 0) rewardParts.push(`${p.finalAmount} ${GAME.currency}`);
+            if ((p.diamondAmount ?? 0) > 0) rewardParts.push(`${p.diamondAmount} ${GAME.rewardCurrency ?? GAME.currency}`);
+            const rewardMsg = rewardParts.length > 0 ? rewardParts.join(" + ") : "0";
 
             await tx.notification.create({
                 data: {
                     userId: p.userId,
                     playerId: p.playerId,
                     title: `🏆 You won ${getOrdinal(p.position)} place!`,
-                    message: `You earned ${p.finalAmount} ${GAME.currency} in ${tournament.name}. Tap to claim!`,
+                    message: `You earned ${rewardMsg} in ${tournament.name}. Tap to claim!`,
                     type: "tournament",
                     link: "/notifications",
                 },

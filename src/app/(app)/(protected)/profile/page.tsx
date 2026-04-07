@@ -551,9 +551,21 @@ export default function ProfilePage() {
                             </div>
                             <div>
                                 <p className="text-xs text-foreground/40 font-medium">My Wallet</p>
-                                <p className="text-lg font-bold leading-tight">
-                                    {(player.wallet?.balance ?? 0).toLocaleString()} <span className="text-xs font-semibold text-foreground/50">{GAME.currency}</span>
-                                </p>
+                                {GAME.hasDualCurrency ? (
+                                    <div className="flex items-center gap-3">
+                                        <p className="text-base font-bold leading-tight">
+                                            {(player.wallet?.balance ?? 0).toLocaleString()} <span className="text-[10px] font-semibold text-foreground/50">{GAME.entryCurrency}</span>
+                                        </p>
+                                        <span className="text-foreground/20">|</span>
+                                        <p className="text-base font-bold leading-tight">
+                                            {((player.wallet as Record<string, number>)?.diamondBalance ?? 0).toLocaleString()} <span className="text-[10px] font-semibold text-foreground/50">{GAME.rewardCurrencyEmoji}</span>
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <p className="text-lg font-bold leading-tight">
+                                        {(player.wallet?.balance ?? 0).toLocaleString()} <span className="text-xs font-semibold text-foreground/50">{GAME.currency}</span>
+                                    </p>
+                                )}
                             </div>
                         </div>
                         <motion.div

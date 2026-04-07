@@ -247,20 +247,22 @@ model Player {
 
 /// UC balance — one per player.
 model Wallet {
-  id       String @id @default(uuid())
-  balance  Int    @default(0)
-  playerId String @unique
-  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  id             String @id @default(uuid())
+  balance        Int    @default(0)    // Primary currency (UC/BP/Coins)
+  diamondBalance Int    @default(0)    // Diamond reward balance (MLBB only)
+  playerId       String @unique
+  player         Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-/// Ledger of all UC credits and debits.
+/// Ledger of all credits and debits.
 model Transaction {
   id          String          @id @default(uuid())
   amount      Int
   type        TransactionType
+  currency    String          @default("PRIMARY") // "PRIMARY" (UC/BP) or "DIAMOND"
   description String
   playerId    String
   player      Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
@@ -295,16 +297,17 @@ model UCTransfer {
 
 /// Pending rewards (winner, solo support, referral, streak).
 model PendingReward {
-  id        String     @id @default(uuid())
-  playerId  String
-  player    Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  type      RewardType
-  amount    Int
-  message   String?
-  details   Json?
-  position  Int?
-  isClaimed Boolean    @default(false)
-  claimedAt DateTime?
+  id            String     @id @default(uuid())
+  playerId      String
+  player        Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  type          RewardType
+  amount        Int
+  diamondAmount Int        @default(0)  // Diamond reward amount (MLBB dual currency)
+  message       String?
+  details       Json?
+  position      Int?
+  isClaimed     Boolean    @default(false)
+  claimedAt     DateTime?
 
   createdAt DateTime @default(now())
 

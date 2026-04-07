@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
-import { creditWallet } from "@/lib/wallet-service";
+import { creditWallet, creditDiamond } from "@/lib/wallet-service";
 
 /**
  * POST /api/rewards/[id]/claim
  * Claims a pending reward — credits wallet and marks as claimed.
  * The wallet service handles central vs local routing.
+ * For dual-currency games (MLBB), also credits Diamond balance.
  */
 export async function POST(
     _req: Request,
@@ -62,8 +63,19 @@ export async function POST(
         };
         const reason = reasonMap[reward.type] || "OTHER";
 
-        // Credit wallet (service handles central vs local routing)
-        await creditWallet(userId, reward.amount, description, reason);
+        // Credit primary balance (BP for MLBB, UC for BGMI, etc.)
+        if (reward.amount > 0) {
+            await creditWallet(userId, reward.amount, description, reason);
+        }
+
+        // Credit Diamond balance if applicable (MLBB dual currency)
+        if (reward.diamondAmount > 0) {
+            await creditDiamond(
+                user.player.id,
+                reward.diamondAmount,
+                `${label} (Diamond): ${reward.message || "Reward claimed"}`
+            );
+        }
 
         // Mark as claimed
         await prisma.pendingReward.update({
@@ -73,7 +85,7 @@ export async function POST(
 
         return SuccessResponse({
             message: "Reward claimed!",
-            data: { rewardId: id, amount: reward.amount },
+            data: { rewardId: id, amount: reward.amount, diamondAmount: reward.diamondAmount },
         });
     } catch (error) {
         console.error("Error claiming reward:", error);

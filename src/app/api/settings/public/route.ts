@@ -43,6 +43,7 @@ export async function GET() {
                 welcomeMessage: settings.welcomeMessage,
                 customRules: settings.customRules,
                 upiQrImageUrl: settings.upiQrImageUrl,
+                youtubeChannelUrl: settings.youtubeChannelUrl,
             },
             cache: CACHE.NONE, // Settings must be fresh — admin may change at any time
         });

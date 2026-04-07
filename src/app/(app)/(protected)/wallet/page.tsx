@@ -97,6 +97,7 @@ interface TransactionsResponse {
 
 interface WalletData {
     balance: number;
+    diamondBalance: number;
 }
 
 // ─── Payment Methods Badge ──────────────────────────────────
@@ -211,7 +212,10 @@ export default function WalletPage() {
             const res = await fetch("/api/profile");
             if (!res.ok) throw new Error("Failed to fetch");
             const json = await res.json();
-            return { balance: json.data?.player?.wallet?.balance ?? 0 };
+            return {
+                balance: json.data?.player?.wallet?.balance ?? 0,
+                diamondBalance: json.data?.player?.wallet?.diamondBalance ?? 0,
+            };
         },
         staleTime: 30 * 1000,
     });
@@ -431,9 +435,17 @@ export default function WalletPage() {
                                                 wallet?.balance ?? 0
                                             ).toLocaleString()}{" "}
                                             <span className="text-lg font-semibold text-foreground/40 inline-flex items-center gap-1">
-                                                <CurrencyIcon size={18} />
+                                                {GAME.hasDualCurrency ? GAME.entryCurrency : <CurrencyIcon size={18} />}
                                             </span>
                                         </p>
+                                        {GAME.hasDualCurrency && (
+                                            <p className="text-lg font-semibold text-foreground/60 mt-1">
+                                                {(wallet?.diamondBalance ?? 0).toLocaleString()}{" "}
+                                                <span className="text-sm font-semibold text-foreground/40">
+                                                    {GAME.rewardCurrencyEmoji} {GAME.rewardCurrency}
+                                                </span>
+                                            </p>
+                                        )}
                                     </div>
                                     {GAME.features.hasTopUps && (
                                     <Button

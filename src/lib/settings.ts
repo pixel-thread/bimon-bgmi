@@ -50,6 +50,9 @@ export interface AppSettings {
 
     // 💳 Manual Top-Up (UPI QR)
     upiQrImageUrl: string;
+
+    // 📺 Social Links
+    youtubeChannelUrl: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -90,6 +93,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
     meritSoloRestrictThreshold: 0,
 
     upiQrImageUrl: "",
+
+    youtubeChannelUrl: "",
 };
 
 /**

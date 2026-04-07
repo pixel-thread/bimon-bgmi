@@ -102,6 +102,7 @@ export function DeclareWinnersModal({
     const [placementCount, setPlacementCount] = useState(2);
     const [poolOpen, setPoolOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<string>("simple");
+    const [diamondAmounts, setDiamondAmounts] = useState<Record<number, number>>({});
 
     // Fetch org/fund percentages from settings (always fresh when modal opens)
     const { data: publicSettings } = useQuery({
@@ -247,8 +248,9 @@ export function DeclareWinnersModal({
     useEffect(() => {
         if (isOpen) {
             if (isBracket) {
-                // Auto-include 3rd place if tournament has maxPlacements >= 3
+                // Default to 2 placements, auto-include 3rd if configured
                 setPlacementCount(maxPlacementsProp && maxPlacementsProp >= 3 ? 3 : 2);
+                setDiamondAmounts({});
             } else if (basePrizePool > 0) {
                 const tier = getTierInfo(basePrizePool);
                 setPlacementCount(Math.min(tier.winnerCount, rankings.length || tier.winnerCount));
@@ -464,9 +466,11 @@ export function DeclareWinnersModal({
             let placements;
             if (isBracket) {
                 // Bracket: send auto-computed amounts based on prize split
+                // For dual-currency games (MLBB), include custom Diamond amounts
                 placements = bracketPlacements.slice(0, placementCount).map((bp, idx) => ({
                     position: bp.position,
                     amount: bracketAmounts[idx] ?? 0,
+                    ...(GAME.hasDualCurrency ? { diamondAmount: diamondAmounts[idx] ?? 0 } : {}),
                 }));
             } else {
                 // BGMI: build placements with exact per-player amounts from preview
@@ -750,6 +754,29 @@ export function DeclareWinnersModal({
                                                     </Chip>
                                                 )}
                                             </div>
+                                            {/* Diamond amount input for MLBB */}
+                                            {GAME.hasDualCurrency && !isWinnerDeclared && (
+                                                <div className="mt-2 pt-2 border-t border-dashed border-divider">
+                                                    <label className="text-[10px] font-medium text-foreground/40 uppercase tracking-wider">
+                                                        {GAME.rewardCurrencyEmoji} {GAME.rewardCurrency} Reward
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        inputMode="numeric"
+                                                        min={0}
+                                                        value={diamondAmounts[idx] ?? ""}
+                                                        onChange={(e) => {
+                                                            const val = parseInt(e.target.value, 10);
+                                                            setDiamondAmounts(prev => ({
+                                                                ...prev,
+                                                                [idx]: isNaN(val) ? 0 : val,
+                                                            }));
+                                                        }}
+                                                        placeholder={`${GAME.rewardCurrency} amount for ${getOrdinal(bp.position)} place`}
+                                                        className="w-full mt-1 rounded-lg border border-divider bg-default-100 px-3 py-2 text-sm font-medium text-foreground outline-none transition-colors placeholder:text-foreground/30 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                     ))
                                 )}
@@ -762,7 +789,7 @@ export function DeclareWinnersModal({
                                                 Add {getOrdinal(placementCount + 1)} Place
                                             </Button>
                                         )}
-                                        {placementCount > 2 && (
+                                        {placementCount > 1 && (
                                             <Button size="sm" variant="flat" color="danger" startContent={<Trash2 className="h-3.5 w-3.5" />}
                                                 onPress={() => setPlacementCount(c => c - 1)} className="gap-1 text-xs h-8">
                                                 Remove {getOrdinal(placementCount)} Place

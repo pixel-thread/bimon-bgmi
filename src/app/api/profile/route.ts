@@ -26,7 +26,7 @@ export async function GET() {
                 include: {
                     player: {
                         include: {
-                            wallet: { select: { balance: true } },
+                            wallet: { select: { balance: true, diamondBalance: true } },
                             streak: { select: { current: true, longest: true } },
                             characterImage: {
                                 select: {
@@ -174,7 +174,10 @@ export async function GET() {
                         }
                         : null,
                     stats: detailedStats,
-                    wallet: { balance: player.wallet?.balance ?? 0 },
+                    wallet: {
+                        balance: player.wallet?.balance ?? 0,
+                        diamondBalance: player.wallet?.diamondBalance ?? 0,
+                    },
                     streak: player.streak
                         ? {
                             current: player.streak.current,

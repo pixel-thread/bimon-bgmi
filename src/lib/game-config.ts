@@ -60,6 +60,15 @@ interface GameConfig {
     disputeWindowMinutes: number; // Minutes opponent has to confirm/dispute a submitted result
     hasBR: boolean;              // Whether this game supports BR tournaments.
     squadSize: number;           // Number of players per squad (5 for MLBB, 4 for BGMI/FF)
+    // Dual currency (MLBB: BP for entry + Diamond for rewards)
+    hasDualCurrency: boolean;
+    entryCurrency?: string;           // e.g. "BP" — currency used for entry fees & transfers
+    entryCurrencyLabel?: string;      // "Battle Point"
+    entryCurrencyEmoji?: string;      // "⚔️"
+    entryCurrencyPlural?: string;     // "BP"
+    rewardCurrency?: string;          // e.g. "Diamond" — reward-only currency
+    rewardCurrencyEmoji?: string;     // "💎"
+    rewardCurrencyPlural?: string;    // "Diamonds"
     // Feature flags
     features: GameFeatures;
 }
@@ -91,6 +100,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         hasBR: true,
         disputeWindowMinutes: 30,
         squadSize: 4,
+        hasDualCurrency: false,
         features: {
             hasTeamSizes: true,
             hasLuckyVoters: true,
@@ -132,6 +142,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         hasBR: true,
         disputeWindowMinutes: 30,
         squadSize: 4,
+        hasDualCurrency: false,
         features: {
             hasTeamSizes: true,
             hasLuckyVoters: true,
@@ -173,6 +184,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         hasBR: false,
         disputeWindowMinutes: 30,
         squadSize: 1,
+        hasDualCurrency: false,
         features: {
             hasTeamSizes: false,       // PES is 1v1 only
             hasLuckyVoters: true,       // Lucky voter draws work for any tournament
@@ -214,6 +226,14 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         hasBR: false,
         disputeWindowMinutes: 30,
         squadSize: 5,              // MLBB is 5v5
+        hasDualCurrency: true,
+        entryCurrency: "BP",
+        entryCurrencyLabel: "Battle Point",
+        entryCurrencyEmoji: "⚔️",
+        entryCurrencyPlural: "BP",
+        rewardCurrency: "Diamond",
+        rewardCurrencyEmoji: "💎",
+        rewardCurrencyPlural: "Diamonds",
         features: {
             hasTeamSizes: false,
             hasLuckyVoters: true,
