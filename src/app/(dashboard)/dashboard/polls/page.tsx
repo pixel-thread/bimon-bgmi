@@ -58,16 +58,10 @@ const TEAM_SIZE_MAP: Record<string, 1 | 2 | 3 | 4> = {
 };
 
 /**
- * For DYNAMIC: pick TRIO or SQUAD.
- *   - < 40 players → always TRIO
- *   - ≥ 40 players → whichever has fewer leftovers (SQUAD on tie)
+ * For DYNAMIC: < 40 players → TRIO, ≥ 40 → SQUAD.
  */
 function getDynamicGroupSize(playerCount: number): 3 | 4 {
-    if (playerCount < 40) return 3;
-
-    const trioLeftover = playerCount % 3;
-    const squadLeftover = playerCount % 4;
-    return squadLeftover <= trioLeftover ? 4 : 3;
+    return playerCount < 40 ? 3 : 4;
 }
 
 function resolveGroupSize(teamType: string, inVotes: number): 1 | 2 | 3 | 4 {

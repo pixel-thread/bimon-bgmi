@@ -590,11 +590,8 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
     // Dynamic team type — based on IN votes only (SOLO players play alone)
     const effectiveTeamType = useMemo(() => {
         if (poll.teamType !== "DYNAMIC") return poll.teamType;
-        // Pick TRIO or SQUAD based on fewest leftover IN players
-        const inCount = poll.inVotes;
-        const trioLeftover = inCount % 3;
-        const squadLeftover = inCount % 4;
-        return squadLeftover <= trioLeftover ? "SQUAD" : "TRIO";
+        // < 40 = TRIO, ≥ 40 = SQUAD
+        return poll.inVotes < 40 ? "TRIO" : "SQUAD";
     }, [poll.teamType, poll.inVotes]);
 
     // Theme — show themed header if there's a prize pool OR an entry fee (even 0 votes)
