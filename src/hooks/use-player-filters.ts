@@ -27,6 +27,12 @@ export interface PlayerFilters {
     seasons: SeasonDTO[];
     currentSeasonId: string;
     tierCounts: Record<string, number>;
+    locationState: string;
+    setLocationState: (v: string) => void;
+    locationDistrict: string;
+    setLocationDistrict: (v: string) => void;
+    locationTown: string;
+    setLocationTown: (v: string) => void;
     hasActiveFilters: boolean;
     resetFilters: () => void;
     /** Call when popover opens to trigger lazy data fetching */
@@ -43,6 +49,9 @@ export function usePlayerFilters(): PlayerFilters {
     const [sortBy, setSortBy] = useState(DEFAULT_SORT);
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
     const [season, setSeason] = useState("");
+    const [locationState, setLocationState] = useState("");
+    const [locationDistrict, setLocationDistrict] = useState("");
+    const [locationTown, setLocationTown] = useState("");
     const [filterOpened, setFilterOpened] = useState(false);
 
     const onFilterOpen = useCallback(() => setFilterOpened(true), []);
@@ -92,13 +101,17 @@ export function usePlayerFilters(): PlayerFilters {
         tier !== "All" ||
         sortBy !== DEFAULT_SORT ||
         sortOrder !== "desc" ||
-        (currentSeasonId && season !== currentSeasonId);
+        (currentSeasonId && season !== currentSeasonId) ||
+        !!locationState;
 
     function resetFilters() {
         setSeason(currentSeasonId);
         setTier("All");
         setSortBy(DEFAULT_SORT);
         setSortOrder("desc");
+        setLocationState("");
+        setLocationDistrict("");
+        setLocationTown("");
     }
 
     return {
@@ -115,6 +128,12 @@ export function usePlayerFilters(): PlayerFilters {
         seasons,
         currentSeasonId,
         tierCounts,
+        locationState,
+        setLocationState,
+        locationDistrict,
+        setLocationDistrict,
+        locationTown,
+        setLocationTown,
         hasActiveFilters: !!hasActiveFilters,
         resetFilters,
         onFilterOpen,

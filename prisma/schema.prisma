@@ -178,6 +178,11 @@ model Player {
   customProfileImageUrl   String?
   phoneNumber             String?
 
+  // Location
+  state    String?
+  district String?
+  town     String?
+
   // Game attributes
   category          PlayerCategory @default(NOOB)
   isBanned          Boolean        @default(false)
@@ -1200,4 +1205,38 @@ model SquadInvite {
 
   @@unique([squadId, playerId])
   @@index([playerId, status])
+}
+
+// ════════════════════════════════════════════════════════════════
+//  Location hierarchy: State → District → Town
+// ════════════════════════════════════════════════════════════════
+
+model LocationState {
+  id        String             @id @default(uuid())
+  name      String             @unique
+  districts LocationDistrict[]
+  createdAt DateTime           @default(now())
+}
+
+model LocationDistrict {
+  id      String         @id @default(uuid())
+  name    String
+  stateId String
+  state   LocationState  @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  towns   LocationTown[]
+  createdAt DateTime     @default(now())
+
+  @@unique([name, stateId])
+  @@index([stateId])
+}
+
+model LocationTown {
+  id         String           @id @default(uuid())
+  name       String
+  districtId String
+  district   LocationDistrict @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  createdAt  DateTime         @default(now())
+
+  @@unique([name, districtId])
+  @@index([districtId])
 }

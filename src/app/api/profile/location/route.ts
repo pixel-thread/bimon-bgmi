@@ -1,0 +1,86 @@
+import { prisma } from "@/lib/database";
+import { getAuthEmail } from "@/lib/auth";
+import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
+import { NextRequest } from "next/server";
+
+/**
+ * PATCH /api/profile/location
+ * Update the player's location (state, district, town).
+ * Auto-creates new LocationState/District/Town entries if they don't exist.
+ * All 3 fields required.
+ */
+export async function PATCH(req: NextRequest) {
+    try {
+        const email = await getAuthEmail();
+        if (!email) {
+            return ErrorResponse({ message: "Unauthorized", status: 401 });
+        }
+
+        const body = await req.json();
+        const { state, district, town } = body as {
+            state?: string;
+            district?: string;
+            town?: string;
+        };
+
+        const trimmedState = state?.trim();
+        const trimmedDistrict = district?.trim();
+        const trimmedTown = town?.trim();
+
+        if (!trimmedState || !trimmedDistrict || !trimmedTown) {
+            return ErrorResponse({
+                message: "State, district, and town are all required",
+                status: 400,
+            });
+        }
+
+        // Find the player
+        const user = await prisma.user.findFirst({
+            where: {
+                OR: [{ email }, { secondaryEmail: email }],
+            },
+            select: { player: { select: { id: true } } },
+        });
+
+        if (!user?.player) {
+            return ErrorResponse({ message: "Player not found", status: 404 });
+        }
+
+        // Upsert state → district → town in Location tables
+        const locationState = await prisma.locationState.upsert({
+            where: { name: trimmedState },
+            update: {},
+            create: { name: trimmedState },
+        });
+
+        const locationDistrict = await prisma.locationDistrict.upsert({
+            where: {
+                name_stateId: { name: trimmedDistrict, stateId: locationState.id },
+            },
+            update: {},
+            create: { name: trimmedDistrict, stateId: locationState.id },
+        });
+
+        await prisma.locationTown.upsert({
+            where: {
+                name_districtId: { name: trimmedTown, districtId: locationDistrict.id },
+            },
+            update: {},
+            create: { name: trimmedTown, districtId: locationDistrict.id },
+        });
+
+        // Update player's location strings
+        await prisma.player.update({
+            where: { id: user.player.id },
+            data: {
+                state: trimmedState,
+                district: trimmedDistrict,
+                town: trimmedTown,
+            },
+        });
+
+        return SuccessResponse({ message: "Location updated" });
+    } catch (error) {
+        return ErrorResponse({ message: "Failed to update location", error });
+    }
+}

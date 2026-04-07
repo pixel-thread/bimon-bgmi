@@ -49,6 +49,9 @@ interface UsePlayersOptions {
     sortBy?: string;
     sortOrder?: "asc" | "desc";
     season?: string;
+    state?: string;
+    district?: string;
+    town?: string;
     limit?: number;
 }
 
@@ -62,10 +65,13 @@ export function usePlayers({
     sortBy = "matches",
     sortOrder = "desc",
     season = "",
+    state = "",
+    district = "",
+    town = "",
     limit = 10,
 }: UsePlayersOptions = {}) {
     return useInfiniteQuery<PlayersResponse>({
-        queryKey: ["players", { search, tier, sortBy, sortOrder, season }],
+        queryKey: ["players", { search, tier, sortBy, sortOrder, season, state, district, town }],
         queryFn: async ({ pageParam }) => {
             const params = new URLSearchParams({
                 search,
@@ -73,6 +79,9 @@ export function usePlayers({
                 sortBy,
                 sortOrder,
                 ...(season ? { season } : {}),
+                ...(state ? { state } : {}),
+                ...(district ? { district } : {}),
+                ...(town ? { town } : {}),
                 limit: String(limit),
                 ...(pageParam ? { cursor: pageParam as string } : {}),
             });

@@ -4,6 +4,7 @@ import { OnboardingGuard } from "@/components/common/OnboardingGuard";
 
 import { ReferralPromoModal } from "@/components/common/referral-promo-modal";
 import { PwaInstallPrompt } from "@/components/common/pwa-install-prompt";
+import { LocationGuard } from "@/components/common/location-guard";
 
 /**
  * Route group: (app)
@@ -26,6 +27,7 @@ export default function AppLayout({
 
                 <ReferralPromoModal />
                 <PwaInstallPrompt />
+                <LocationGuard />
             </div>
         </OnboardingGuard>
     );

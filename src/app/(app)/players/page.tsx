@@ -20,16 +20,16 @@ export default function PlayersPage() {
     const searchParams = useSearchParams();
     const playerId = searchParams.get("player") ?? "";
     const filters = usePlayerFilters();
-    const { search, tier, sortBy, sortOrder, season } = filters;
+    const { search, tier, sortBy, sortOrder, season, locationState, locationDistrict, locationTown } = filters;
 
     // Fetch players
-    const query = usePlayers({ search, tier, sortBy, sortOrder, season });
+    const query = usePlayers({ search, tier, sortBy, sortOrder, season, state: locationState, district: locationDistrict, town: locationTown });
     const { players, meta } = flattenPlayers(query.data);
 
     const isLoading = query.isLoading;
 
-    // Show podium when no search/tier filter is active and sorted desc
-    const showPodium = !search && tier === "All" && sortOrder === "desc";
+    // Show podium when no search/tier/location filter is active and sorted desc
+    const showPodium = !search && tier === "All" && sortOrder === "desc" && !locationState;
 
     // Players for the table (skip first 3 if podium is shown)
     const tablePlayers = showPodium ? players.slice(3) : players;

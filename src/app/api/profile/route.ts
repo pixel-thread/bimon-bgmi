@@ -162,6 +162,9 @@ export async function GET() {
                     category: player.category,
                     hasRoyalPass: player.hasRoyalPass,
                     isBanned: player.isBanned,
+                    state: player.state || null,
+                    district: player.district || null,
+                    town: player.town || null,
                     characterImage: player.characterImage
                         ? {
                             url: player.characterImage.publicUrl,

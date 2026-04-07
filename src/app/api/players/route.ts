@@ -21,6 +21,9 @@ export async function GET(request: NextRequest) {
             | "asc"
             | "desc";
         const season = searchParams.get("season") ?? "";
+        const locationState = searchParams.get("state") ?? "";
+        const locationDistrict = searchParams.get("district") ?? "";
+        const locationTown = searchParams.get("town") ?? "";
         const cursor = searchParams.get("cursor");
         const limit = Math.min(
             Number(searchParams.get("limit") ?? "20"),
@@ -41,6 +44,11 @@ export async function GET(request: NextRequest) {
         }
 
         // Note: tier filtering is done in JS after dynamic category computation (below)
+
+        // Location filters
+        if (locationState) where.state = locationState;
+        if (locationDistrict) where.district = locationDistrict;
+        if (locationTown) where.town = locationTown;
 
         // Build orderBy
         const orderByMap: Record<string, unknown> = {

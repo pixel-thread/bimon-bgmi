@@ -40,6 +40,7 @@ import {
     VolumeX,
     Volume2,
     Users,
+    MapPin,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { CategoryBadge } from "@/components/ui/category-badge";
@@ -49,6 +50,7 @@ import { useIGNTutorial } from "@/components/common/IGNTutorialModal";
 import { toast } from "sonner";
 import { CharacterPreviewModal } from "@/components/profile/character-preview-modal";
 import { GAME } from "@/lib/game-config";
+import { LocationModal } from "@/components/common/location-modal";
 import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 
 interface ProfileData {
@@ -67,6 +69,9 @@ interface ProfileData {
         category: string;
         hasRoyalPass: boolean;
         isBanned: boolean;
+        state: string | null;
+        district: string | null;
+        town: string | null;
         characterImage: {
             url: string;
             thumbnailUrl: string | null;
@@ -144,6 +149,7 @@ export default function ProfilePage() {
     const [emailSaving, setEmailSaving] = useState(false);
     const [emailError, setEmailError] = useState("");
     const [showSignOutModal, setShowSignOutModal] = useState(false);
+    const [showLocationModal, setShowLocationModal] = useState(false);
 
     const { data: profile, isLoading, isFetching, error } = useQuery<ProfileData>({
         queryKey: ["profile"],
@@ -969,6 +975,33 @@ export default function ProfilePage() {
                                             <span className="text-sm italic text-foreground/60">{player.bio}</span>
                                         </div>
                                     )}
+
+                                    {/* Location */}
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <MapPin className="h-3.5 w-3.5 text-foreground/40 shrink-0" />
+                                            {player.state ? (
+                                                <span className="text-sm text-foreground/60 truncate">
+                                                    {player.town}, {player.district}, {player.state}
+                                                </span>
+                                            ) : (
+                                                <span className="text-sm text-foreground/30 italic">Not set</span>
+                                            )}
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            variant="light"
+                                            className="text-xs shrink-0"
+                                            onPress={() => setShowLocationModal(true)}
+                                        >
+                                            {player.state ? "Change" : "Set"}
+                                        </Button>
+                                    </div>
+
+                                    <LocationModal
+                                        isOpen={showLocationModal}
+                                        onComplete={() => setShowLocationModal(false)}
+                                    />
 
                                     {/* Emails */}
                                     <div className="border-t border-divider pt-2 mt-2 space-y-2">
