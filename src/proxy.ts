@@ -1,18 +1,12 @@
 import { auth } from "@/lib/auth-config";
 import { NextResponse } from "next/server";
 
-// Routes that require authentication (redirect to sign-in if not logged in)
+// Routes that require authentication (hard redirect to sign-in)
+// Only truly server-gated routes go here. User-facing pages use
+// the client-side (protected) layout for a nicer blurred skeleton + modal UX.
 const protectedRoutes = [
     "/dashboard",
-    "/profile",
-    "/settings",
-    "/wallet",
-    "/notifications",
     "/onboarding",
-    "/royal-pass",
-    "/promoter",
-    "/refer",
-    "/teammates",
 ];
 
 // Routes that are always public (bypass auth check)
