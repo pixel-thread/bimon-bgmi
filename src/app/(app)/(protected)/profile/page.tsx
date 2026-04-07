@@ -363,7 +363,7 @@ export default function ProfilePage() {
                                         ref={heroVideoRef}
                                         src={previewCharacter?.url || player?.characterImage?.url}
                                         autoPlay muted playsInline loop
-                                        className="h-full w-full object-cover"
+                                        className="h-full w-full object-contain bg-default-100"
                                         onLoadedData={() => {
                                             if (heroVideoRef.current) heroVideoRef.current.muted = heroMuted;
                                         }}
@@ -1301,11 +1301,10 @@ export default function ProfilePage() {
                                     // Apply crop params as Cloudinary URL transformation if user adjusted zoom/position
                                     let finalUrl = cloudData.secure_url;
                                     if (cropParams) {
-                                        // Crop to user selection, then pad to 3:4 with black bars
-                                        // so landscape videos zoomed out don't get re-cropped by object-cover
+                                        // Crop to user selection so the stored video matches their preview
                                         finalUrl = cloudData.secure_url.replace(
                                             "/upload/",
-                                            `/upload/c_crop,x_${cropParams.x},y_${cropParams.y},w_${cropParams.w},h_${cropParams.h}/c_pad,ar_3:4,b_black/`
+                                            `/upload/c_crop,x_${cropParams.x},y_${cropParams.y},w_${cropParams.w},h_${cropParams.h}/`
                                         );
                                     }
 

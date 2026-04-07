@@ -236,7 +236,7 @@ export function PlayerStatsModal({
                                             controlsList="nodownload nofullscreen noremoteplayback"
                                             disableRemotePlayback
                                             disablePictureInPicture
-                                            className="h-full w-full object-cover [&::-webkit-media-controls]:!hidden [&::-webkit-media-controls-enclosure]:!hidden"
+                                            className="h-full w-full object-contain bg-default-100 [&::-webkit-media-controls]:!hidden [&::-webkit-media-controls-enclosure]:!hidden"
                                             onLoadedData={() => {
                                                 setImageLoaded(true);
                                                 if (charVideoRef.current) charVideoRef.current.muted = videoMuted;
