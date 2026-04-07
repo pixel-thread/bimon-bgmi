@@ -96,7 +96,7 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
                             startContent={<Eye className="h-4 w-4" />}
                             onPress={() => setShowWelcome(false)}
                         >
-                            Explore
+                            Skip
                         </Button>
                         <Button
                             color="primary"
@@ -134,7 +134,7 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
                             startContent={<Eye className="h-4 w-4" />}
                             onPress={() => setShowActionModal(false)}
                         >
-                            Keep Browsing
+                            Skip
                         </Button>
                         <Button
                             color="primary"
