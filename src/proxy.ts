@@ -1,21 +1,18 @@
 import { auth } from "@/lib/auth-config";
 import { NextResponse } from "next/server";
 
-// Routes that require authentication
+// Routes that require authentication (redirect to sign-in if not logged in)
 const protectedRoutes = [
     "/dashboard",
     "/profile",
     "/settings",
-    "/vote",
     "/wallet",
-    "/players",
     "/notifications",
     "/onboarding",
-    "/jobs",
-    "/winners",
     "/royal-pass",
     "/promoter",
     "/refer",
+    "/teammates",
 ];
 
 // Routes that are always public (bypass auth check)
@@ -27,6 +24,13 @@ const publicRoutes = [
     "/faq",
     "/rules",
     "/recent-matches",
+    "/vote",       // guests can browse polls
+    "/players",    // guests can browse player list
+    "/bracket",    // guests can view brackets
+    "/community",  // guests can browse community
+    "/winners",    // guests can see winners
+    "/jobs",       // guests can see job listings
+    "/help",       // guests can view help
     "/api/auth", // NextAuth handler
     "/api/cron",
     "/api/payments/webhook",
