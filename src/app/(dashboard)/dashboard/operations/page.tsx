@@ -18,7 +18,7 @@ import {
     Textarea,
     useDisclosure,
     Divider,
-    Switch,
+
 } from "@heroui/react";
 import {
     Trophy,
@@ -555,18 +555,28 @@ export default function OperationsPage() {
                                 </div>
                             </div>
                         )}
-                        {/* 3rd place toggle — only for bracket types */}
+                        {/* Podium placements — only for bracket types */}
                         {["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"].includes(tType) && (
-                            <div className="flex items-center justify-between rounded-lg border border-divider px-3 py-2">
-                                <div>
-                                    <p className="text-sm font-medium">🥉 3rd Place</p>
-                                    <p className="text-[10px] text-foreground/40">Award a 3rd place prize</p>
+                            <div className="space-y-1.5">
+                                <p className="text-xs text-foreground/50 font-medium">Podium</p>
+                                <div className="flex gap-2">
+                                    {[
+                                        { val: 1, label: "🏆 Winner" },
+                                        { val: 2, label: "🥈 Top 2" },
+                                        { val: 3, label: "🥉 Top 3" },
+                                    ].map((opt) => (
+                                        <Button
+                                            key={opt.val}
+                                            size="sm"
+                                            variant={tMaxPlacements === opt.val ? "solid" : "flat"}
+                                            color={tMaxPlacements === opt.val ? "primary" : "default"}
+                                            onPress={() => setTMaxPlacements(opt.val)}
+                                            className="flex-1"
+                                        >
+                                            {opt.label}
+                                        </Button>
+                                    ))}
                                 </div>
-                                <Switch
-                                    size="sm"
-                                    isSelected={tMaxPlacements >= 3}
-                                    onValueChange={(v) => setTMaxPlacements(v ? 3 : 2)}
-                                />
                             </div>
                         )}
                         {showDesc ? (
@@ -663,18 +673,28 @@ export default function OperationsPage() {
                                 type="number"
                                 size="sm"
                             />
-                            {/* 3rd place toggle — only for bracket types */}
+                            {/* Podium placements — only for bracket types */}
                             {["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT"].includes(selected.type) && (
-                                <div className="flex items-center justify-between rounded-lg border border-divider px-3 py-2.5">
-                                    <div>
-                                        <p className="text-sm font-medium">🥉 3rd Place</p>
-                                        <p className="text-[10px] text-foreground/40">Award a 3rd place prize</p>
+                                <div className="space-y-1.5">
+                                    <p className="text-xs text-foreground/50 font-medium">Podium</p>
+                                    <div className="flex gap-2">
+                                        {[
+                                            { val: 1, label: "🏆 Winner", desc: "1st only" },
+                                            { val: 2, label: "🥈 Top 2", desc: "1st & 2nd" },
+                                            { val: 3, label: "🥉 Top 3", desc: "1st, 2nd & 3rd" },
+                                        ].map((opt) => (
+                                            <Button
+                                                key={opt.val}
+                                                size="sm"
+                                                variant={editMaxPlacements === opt.val ? "solid" : "flat"}
+                                                color={editMaxPlacements === opt.val ? "primary" : "default"}
+                                                onPress={() => setEditMaxPlacements(opt.val)}
+                                                className="flex-1"
+                                            >
+                                                {opt.label}
+                                            </Button>
+                                        ))}
                                     </div>
-                                    <Switch
-                                        size="sm"
-                                        isSelected={editMaxPlacements >= 3}
-                                        onValueChange={(v) => setEditMaxPlacements(v ? 3 : 2)}
-                                    />
                                 </div>
                             )}
                         </ModalBody>
