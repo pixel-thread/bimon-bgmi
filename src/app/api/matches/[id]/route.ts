@@ -138,6 +138,22 @@ export async function DELETE(
         // ── Any other match → normal single-match delete ─────────
         await prisma.match.delete({ where: { id } });
 
+        // Renumber remaining matches to close gaps (e.g. if match 2 of 4 is deleted → 1,3,4 becomes 1,2,3)
+        const remaining = await prisma.match.findMany({
+            where: { tournamentId: match.tournamentId },
+            orderBy: { matchNumber: "asc" },
+            select: { id: true, matchNumber: true },
+        });
+        for (let i = 0; i < remaining.length; i++) {
+            const expected = i + 1;
+            if (remaining[i].matchNumber !== expected) {
+                await prisma.match.update({
+                    where: { id: remaining[i].id },
+                    data: { matchNumber: expected },
+                });
+            }
+        }
+
         return SuccessResponse({ message: `Match #${match.matchNumber} deleted` });
     } catch (error) {
         return ErrorResponse({ message: "Failed to delete match", error });

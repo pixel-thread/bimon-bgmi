@@ -82,6 +82,22 @@ export async function createTeamsByPoll({
         if (existingTeams > 0) {
             throw new Error("Teams already exist for this tournament. Refresh the page to see them.");
         }
+
+        // Clean up orphaned empty matches (no teams attached) from previous manual creates
+        // This prevents "Match 1 is empty" when generating from polls
+        const orphanMatches = await prisma.match.findMany({
+            where: { tournamentId, teams: { none: {} } },
+            select: { id: true },
+        });
+        if (orphanMatches.length > 0) {
+            const orphanIds = orphanMatches.map((m) => m.id);
+            // Delete any dependent records first
+            await prisma.teamPlayerStats.deleteMany({ where: { matchId: { in: orphanIds } } });
+            await prisma.teamStats.deleteMany({ where: { matchId: { in: orphanIds } } });
+            await prisma.matchPlayerPlayed.deleteMany({ where: { matchId: { in: orphanIds } } });
+            await prisma.match.deleteMany({ where: { id: { in: orphanIds } } });
+            console.log(`[createTeamsByPoll] Cleaned up ${orphanMatches.length} orphan match(es)`);
+        }
     }
 
     const tournament = await prisma.tournament.findUnique({
