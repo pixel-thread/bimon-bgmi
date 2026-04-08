@@ -20,17 +20,17 @@ export function DonateModal({ isOpen, onClose, tournamentId, tournamentName }: D
     const [isAnonymous, setIsAnonymous] = useState(false);
     const queryClient = useQueryClient();
 
-    // Fetch wallet balance
+    // Fetch wallet balance (same source as wallet page)
     const { data: walletData } = useQuery({
-        queryKey: ["wallet-balance"],
+        queryKey: ["wallet"],
         queryFn: async () => {
-            const res = await fetch("/api/transactions?limit=0");
+            const res = await fetch("/api/profile");
             if (!res.ok) return { available: 0 };
             const json = await res.json();
-            return { available: json.data?.available ?? json.data?.balance ?? 0 };
+            return { available: json.data?.player?.wallet?.balance ?? 0 };
         },
         enabled: isOpen,
-        staleTime: 10_000,
+        staleTime: 30_000,
     });
 
     const mutation = useMutation({
@@ -49,7 +49,9 @@ export function DonateModal({ isOpen, onClose, tournamentId, tournamentName }: D
         onSuccess: (data) => {
             toast.success(data.message || "Donation successful! 🎉");
             queryClient.invalidateQueries({ queryKey: ["polls"] });
-            queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
+            queryClient.invalidateQueries({ queryKey: ["wallet"] });
+            queryClient.invalidateQueries({ queryKey: ["profile"] });
+            queryClient.invalidateQueries({ queryKey: ["auth-user"] });
             handleClose();
         },
         onError: (err) => {
