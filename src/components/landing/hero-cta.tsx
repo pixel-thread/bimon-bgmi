@@ -16,22 +16,19 @@ export function HeroHeading() {
     const isSignedIn = status === "authenticated";
     const isLoaded = status !== "loading";
 
-    const { data: profile } = useQuery<{ displayName?: string }>({
+    const { data: profileData } = useQuery<{ player?: { displayName?: string } | null; username?: string }>({
         queryKey: ["profile"],
         queryFn: async () => {
             const res = await fetch("/api/profile");
             if (!res.ok) return {};
             const json = await res.json();
-            const d = json.data || {};
-            return {
-                displayName: d.player?.displayName || d.username,
-            };
+            return json.data || {};
         },
         enabled: isSignedIn,
         staleTime: 5 * 60 * 1000,
     });
 
-    const displayName = profile?.displayName || session?.user?.name || "";
+    const displayName = profileData?.player?.displayName || profileData?.username || session?.user?.name || "";
 
     if (!isLoaded) {
         return (

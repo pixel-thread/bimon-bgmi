@@ -49,21 +49,21 @@ export function MobileNav() {
     const user = session?.user;
     const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
 
-    const { data: profile } = useQuery<{ imageUrl?: string; displayName?: string }>({
+    const { data: profileData } = useQuery<{ imageUrl?: string; player?: { displayName?: string; customProfileImageUrl?: string | null } | null; username?: string }>({
         queryKey: ["profile"],
         queryFn: async () => {
             const res = await fetch("/api/profile");
             if (!res.ok) return {};
             const json = await res.json();
-            const d = json.data || {};
-            return {
-                imageUrl: d.imageUrl,
-                displayName: d.player?.displayName || d.username,
-            };
+            return json.data || {};
         },
         enabled: !!user,
         staleTime: 5 * 60 * 1000,
     });
+    const profile = {
+        imageUrl: profileData?.player?.customProfileImageUrl || profileData?.imageUrl,
+        displayName: profileData?.player?.displayName || profileData?.username,
+    };
 
     // Clear loading when pathname changes (navigation complete)
     useEffect(() => {
