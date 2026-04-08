@@ -791,14 +791,17 @@ export default function ProfilePage() {
                     </button>
                 )}
 
-                {/* Profile Settings Section */}
+                {/* Profile Settings Section — Unified Card */}
                 {player && (
                     <Card ref={profileSectionRef} className="border border-divider">
-                        <CardBody className="p-4">
+                        <CardBody className="p-4 space-y-0">
+                            {/* Header */}
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
                                     <User className="h-4 w-4 text-foreground/50" />
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-foreground/50">Profile</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-foreground/50">
+                                        {editing ? "Edit Profile" : "Profile"}
+                                    </p>
                                 </div>
                                 {!editing && (
                                     <Button
@@ -819,6 +822,7 @@ export default function ProfilePage() {
                             </div>
 
                             {editing ? (
+                                /* ── EDIT MODE ── */
                                 <div className="space-y-4">
                                     {/* Username (read-only) */}
                                     <div>
@@ -951,7 +955,7 @@ export default function ProfilePage() {
                                         <p className="text-[10px] text-foreground/30 mt-0.5 text-right">{newBio.length}/100</p>
                                     </div>
 
-                                    {/* Actions */}
+                                    {/* Save / Cancel */}
                                     <div className="flex gap-2 pt-1">
                                         <Button
                                             size="lg" variant="flat"
@@ -974,54 +978,60 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-foreground/40">Username:</span>
+                                /* ── READ MODE ── */
+                                <div className="space-y-3">
+                                    {/* Info rows */}
+                                    <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 items-baseline">
+                                        <span className="text-xs text-foreground/40">Username</span>
                                         <span className="text-sm">@{profile.username}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-foreground/40">{GAME.ignLabel}:</span>
-                                        <span className="text-sm font-bold">{player.displayName || profile.username}</span>
-                                    </div>
-                                    {GAME.hasUID && player.uid && (
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs text-foreground/40">{GAME.idLabel}:</span>
-                                            <span className="text-sm font-mono">{player.uid}</span>
-                                        </div>
-                                    )}
-                                    {!GAME.features.hasBR && player.phoneNumber && (
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs text-foreground/40">Phone:</span>
-                                            <span className="text-sm font-mono">{player.phoneNumber}</span>
-                                        </div>
-                                    )}
-                                    {player.bio && (
-                                        <div className="flex items-start gap-2">
-                                            <span className="text-xs text-foreground/40">Bio:</span>
-                                            <span className="text-sm italic text-foreground/60">{player.bio}</span>
-                                        </div>
-                                    )}
 
-                                    {/* Location */}
-                                    <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <MapPin className="h-3.5 w-3.5 text-foreground/40 shrink-0" />
-                                            {player.state ? (
-                                                <span className="text-sm text-foreground/60 truncate">
-                                                    {player.town}, {player.district}, {player.state}
-                                                </span>
-                                            ) : (
-                                                <span className="text-sm text-foreground/30 italic">Not set</span>
-                                            )}
+                                        <span className="text-xs text-foreground/40">{GAME.ignLabel}</span>
+                                        <span className="text-sm font-bold">{player.displayName || profile.username}</span>
+
+                                        {GAME.hasUID && player.uid && (
+                                            <>
+                                                <span className="text-xs text-foreground/40">{GAME.idLabel}</span>
+                                                <span className="text-sm font-mono">{player.uid}</span>
+                                            </>
+                                        )}
+
+                                        {!GAME.features.hasBR && player.phoneNumber && (
+                                            <>
+                                                <span className="text-xs text-foreground/40">Phone</span>
+                                                <span className="text-sm font-mono">{player.phoneNumber}</span>
+                                            </>
+                                        )}
+
+                                        {player.bio && (
+                                            <>
+                                                <span className="text-xs text-foreground/40">Bio</span>
+                                                <span className="text-sm italic text-foreground/60">{player.bio}</span>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* ── Location ── */}
+                                    <div className="border-t border-divider pt-3">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <MapPin className="h-3.5 w-3.5 text-foreground/40 shrink-0" />
+                                                {player.state ? (
+                                                    <span className="text-sm text-foreground/60 truncate">
+                                                        {player.town}, {player.district}, {player.state}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-sm text-foreground/30 italic">Location not set</span>
+                                                )}
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                variant="light"
+                                                className="text-xs shrink-0"
+                                                onPress={() => setShowLocationModal(true)}
+                                            >
+                                                {player.state ? "Change" : "Set"}
+                                            </Button>
                                         </div>
-                                        <Button
-                                            size="sm"
-                                            variant="light"
-                                            className="text-xs shrink-0"
-                                            onPress={() => setShowLocationModal(true)}
-                                        >
-                                            {player.state ? "Change" : "Set"}
-                                        </Button>
                                     </div>
 
                                     <LocationModal
@@ -1030,9 +1040,9 @@ export default function ProfilePage() {
                                         blocking={false}
                                     />
 
-                                    {/* Emails */}
-                                    <div className="border-t border-divider pt-2 mt-2 space-y-2">
-                                        {/* Primary Email — always shown */}
+                                    {/* ── Emails ── */}
+                                    <div className="border-t border-divider pt-3 space-y-2">
+                                        {/* Primary Email */}
                                         <div className="min-w-0">
                                             <p className="text-[10px] text-foreground/40 uppercase">Main Gmail</p>
                                             <p className="text-sm truncate">{profile.email}</p>
@@ -1062,7 +1072,6 @@ export default function ProfilePage() {
                                                                 });
                                                                 const json = await res.json();
                                                                 if (res.ok) {
-                                                                    // Sync session email so future lookups use the new primary
                                                                     if (json.data?.email) {
                                                                         await updateSession({ email: json.data.email });
                                                                     }
@@ -1172,7 +1181,7 @@ export default function ProfilePage() {
                                                 className="flex items-center gap-1.5 text-xs text-foreground/40 hover:text-primary transition-colors"
                                             >
                                                 <Plus className="h-3 w-3" />
-                                                Secondary Email
+                                                Add Secondary Email
                                             </button>
                                         )}
                                     </div>
