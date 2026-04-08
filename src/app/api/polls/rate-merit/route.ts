@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 
 // Config keys for auto-action thresholds
@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Get current player
-        const user = await prisma.user.findUnique({
-            where: { email: userId },
+        const user = await prisma.user.findFirst({
+            where: userWhereEmail(userId),
             select: { player: { select: { id: true } } },
         });
 

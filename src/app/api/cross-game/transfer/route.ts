@@ -55,8 +55,8 @@ export async function POST(req: NextRequest) {
 
         // ── Check target account exists ─────────────────────────
         const targetDb = getPrisma(targetGame);
-        const targetUser = await targetDb.user.findUnique({
-            where: { email: user.email },
+        const targetUser = await targetDb.user.findFirst({
+            where: { OR: [{ email: user.email }, { secondaryEmail: user.email }] },
             include: { player: { include: { wallet: true } } },
         });
 

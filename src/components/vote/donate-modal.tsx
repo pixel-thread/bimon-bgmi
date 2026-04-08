@@ -1,0 +1,190 @@
+"use client";
+
+import { useState } from "react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Switch } from "@heroui/react";
+import { Heart, Eye, EyeOff } from "lucide-react";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { GAME } from "@/lib/game-config";
+import { CurrencyIcon } from "@/components/common/CurrencyIcon";
+
+interface DonateModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    tournamentId: string;
+    tournamentName: string;
+}
+
+export function DonateModal({ isOpen, onClose, tournamentId, tournamentName }: DonateModalProps) {
+    const [amount, setAmount] = useState("");
+    const [isAnonymous, setIsAnonymous] = useState(false);
+    const queryClient = useQueryClient();
+
+    // Fetch wallet balance
+    const { data: walletData } = useQuery({
+        queryKey: ["wallet-balance"],
+        queryFn: async () => {
+            const res = await fetch("/api/transactions?limit=0");
+            if (!res.ok) return { available: 0 };
+            const json = await res.json();
+            return { available: json.data?.available ?? json.data?.balance ?? 0 };
+        },
+        enabled: isOpen,
+        staleTime: 10_000,
+    });
+
+    const mutation = useMutation({
+        mutationFn: async () => {
+            const res = await fetch(`/api/tournaments/${tournamentId}/donations/self`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ amount: parseInt(amount), isAnonymous }),
+            });
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error(json.error || "Failed to donate");
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Donation successful! 🎉");
+            queryClient.invalidateQueries({ queryKey: ["polls"] });
+            queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
+            handleClose();
+        },
+        onError: (err) => {
+            const message = err instanceof Error ? err.message : "Failed to donate";
+            const isBalance = message.toLowerCase().includes("insufficient");
+            toast.error(message, {
+                duration: 5000,
+                ...(isBalance && {
+                    action: {
+                        label: `Add ${GAME.currency}`,
+                        onClick: () => window.location.assign("/wallet"),
+                    },
+                }),
+            });
+        },
+    });
+
+    const handleClose = () => {
+        setAmount("");
+        setIsAnonymous(false);
+        onClose();
+    };
+
+    const parsedAmount = parseInt(amount) || 0;
+    const isValid = parsedAmount > 0 && parsedAmount <= (walletData?.available ?? 0);
+    const quickAmounts = [5, 10, 20, 50];
+
+    return (
+        <Modal isOpen={isOpen} onClose={handleClose} placement="center" size="sm">
+            <ModalContent>
+                <ModalHeader className="flex items-center gap-2 text-base pb-2">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
+                        <Heart className="w-3.5 h-3.5 text-white fill-white" />
+                    </div>
+                    Donate to Prize Pool
+                </ModalHeader>
+
+                <ModalBody className="px-5 py-3 space-y-4">
+                    {/* Tournament name */}
+                    <p className="text-sm text-foreground/60">
+                        {tournamentName}
+                    </p>
+
+                    {/* Amount input */}
+                    <div>
+                        <label className="text-xs font-medium text-foreground/50 uppercase tracking-wide mb-1.5 block">
+                            Amount
+                        </label>
+                        <div className="relative">
+                            <input
+                                type="number"
+                                inputMode="numeric"
+                                min={1}
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                                placeholder="0"
+                                disabled={mutation.isPending}
+                                className="w-full text-2xl font-bold text-center py-3 px-4 rounded-xl border-2 border-default-200 focus:border-primary focus:outline-none bg-default-50 transition-colors tabular-nums"
+                            />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground/40">
+                                <CurrencyIcon size={18} />
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Quick amount buttons */}
+                    <div className="flex gap-2">
+                        {quickAmounts.map((qa) => (
+                            <button
+                                key={qa}
+                                type="button"
+                                onClick={() => setAmount(String(qa))}
+                                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all border cursor-pointer ${
+                                    parsedAmount === qa
+                                        ? "bg-primary text-white border-primary shadow-sm"
+                                        : "bg-default-100 text-foreground/70 border-default-200 hover:bg-default-200"
+                                }`}
+                            >
+                                {qa}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Balance */}
+                    <div className="flex items-center justify-between text-sm bg-default-50 px-3 py-2.5 rounded-lg">
+                        <span className="text-foreground/50">Your balance</span>
+                        <span className="font-semibold inline-flex items-center gap-1">
+                            {walletData?.available ?? "..."} <CurrencyIcon size={13} />
+                        </span>
+                    </div>
+
+                    {/* Anonymous toggle */}
+                    <div className="flex items-center justify-between px-1">
+                        <div className="flex items-center gap-2 text-sm">
+                            {isAnonymous ? (
+                                <EyeOff className="w-4 h-4 text-foreground/40" />
+                            ) : (
+                                <Eye className="w-4 h-4 text-foreground/40" />
+                            )}
+                            <span className="text-foreground/70">Donate anonymously</span>
+                        </div>
+                        <Switch
+                            size="sm"
+                            isSelected={isAnonymous}
+                            onValueChange={setIsAnonymous}
+                        />
+                    </div>
+                    {isAnonymous && (
+                        <p className="text-xs text-foreground/40 -mt-2 ml-7">
+                            Your name won&apos;t be shown to other players
+                        </p>
+                    )}
+                </ModalBody>
+
+                <ModalFooter className="px-5 pb-5">
+                    <Button
+                        variant="flat"
+                        onPress={handleClose}
+                        className="flex-1"
+                        isDisabled={mutation.isPending}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        color="primary"
+                        className="flex-1 font-semibold"
+                        isDisabled={!isValid || mutation.isPending}
+                        isLoading={mutation.isPending}
+                        onPress={() => mutation.mutate()}
+                        startContent={!mutation.isPending && <Heart className="w-4 h-4" />}
+                    >
+                        Donate {parsedAmount > 0 ? parsedAmount : ""}
+                    </Button>
+                </ModalFooter>
+            </ModalContent>
+        </Modal>
+    );
+}

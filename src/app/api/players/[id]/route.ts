@@ -25,6 +25,7 @@ export async function GET(
                     select: {
                         username: true,
                         email: true,
+                        secondaryEmail: true,
                         imageUrl: true,
                     },
                 },
@@ -92,6 +93,7 @@ export async function GET(
             displayName: player.displayName,
             username: player.user.username,
             email: player.user.email,
+            secondaryEmail: player.user.secondaryEmail,
             imageUrl: player.customProfileImageUrl || player.user.imageUrl,
             category,
             isBanned: player.isBanned,

@@ -27,8 +27,8 @@ export async function getEmailByPlayerId(playerId: string, tx?: any): Promise<st
  * Find a player's local wallet by email.
  */
 async function getLocalPlayerByEmail(email: string) {
-    return prisma.user.findUnique({
-        where: { email },
+    return prisma.user.findFirst({
+        where: { OR: [{ email }, { secondaryEmail: email }] },
         include: { player: { include: { wallet: true } } },
     });
 }
@@ -118,11 +118,13 @@ export async function getBalancesBatch(emails: string[]): Promise<Map<string, nu
     if (emails.length === 0) return map;
 
     const users = await prisma.user.findMany({
-        where: { email: { in: emails } },
+        where: { OR: [{ email: { in: emails } }, { secondaryEmail: { in: emails } }] },
         include: { player: { include: { wallet: true } } },
     });
     for (const u of users) {
-        if (u.email) map.set(u.email, u.player?.wallet?.balance ?? 0);
+        // Map both primary and secondary email to the balance
+        if (u.email && emails.includes(u.email)) map.set(u.email, u.player?.wallet?.balance ?? 0);
+        if (u.secondaryEmail && emails.includes(u.secondaryEmail)) map.set(u.secondaryEmail, u.player?.wallet?.balance ?? 0);
     }
     return map;
 }

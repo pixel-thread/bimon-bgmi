@@ -1,13 +1,13 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
 
 async function checkAdmin() {
     const userId = await getAuthEmail();
     if (!userId) return null;
-    const user = await prisma.user.findUnique({
-        where: { email: userId },
+    const user = await prisma.user.findFirst({
+        where: userWhereEmail(userId),
         select: { role: true },
     });
     if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) return null;

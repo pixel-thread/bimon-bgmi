@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 
 const SETTING_KEY = "help_contacts";
@@ -47,8 +47,8 @@ export async function PUT(req: NextRequest) {
         const email = await getAuthEmail();
         if (!email) return ErrorResponse({ message: "Unauthorized", status: 401 });
 
-        const user = await prisma.user.findUnique({
-            where: { email },
+        const user = await prisma.user.findFirst({
+            where: userWhereEmail(email),
             select: { role: true },
         });
         if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) {

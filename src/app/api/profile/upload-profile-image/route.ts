@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 
 /**
@@ -45,8 +45,8 @@ export async function POST(req: Request) {
         const imageUrl = imgbbData.data.url;
 
         // Update player's customProfileImageUrl
-        const user = await prisma.user.findUnique({
-            where: { email },
+        const user = await prisma.user.findFirst({
+            where: userWhereEmail(email),
             select: { player: { select: { id: true } } },
         });
 

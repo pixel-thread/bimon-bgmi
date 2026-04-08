@@ -131,25 +131,9 @@ export function LocationModal({
 
     function addNewEntry() {
         const val = searchQuery.trim();
-        if (!val) return;
-        if (step === 1) {
-            setState(val);
-            setStateId(""); // new — will be created on save
-            setDistrict("");
-            setDistrictId("");
-            setTown("");
-            setSearchQuery("");
-            setStep(2);
-        } else if (step === 2) {
-            setDistrict(val);
-            setDistrictId("");
-            setTown("");
-            setSearchQuery("");
-            setStep(3);
-        } else {
-            setTown(val);
-            setSearchQuery("");
-        }
+        if (!val || step !== 3) return;
+        setTown(val);
+        setSearchQuery("");
     }
 
     async function handleSave() {
@@ -276,7 +260,7 @@ export function LocationModal({
                     {/* Search + list */}
                     <div className="space-y-2">
                         <Input
-                            placeholder={`${step === 3 && town ? town : `Search or add ${stepLabels[step - 1].toLowerCase()}...`}`}
+                            placeholder={`${step === 3 && town ? town : step === 3 ? `Search or add ${stepLabels[step - 1].toLowerCase()}...` : `Search ${stepLabels[step - 1].toLowerCase()}...`}`}
                             value={searchQuery}
                             onValueChange={setSearchQuery}
                             startContent={<Search className="h-4 w-4 text-default-400" />}

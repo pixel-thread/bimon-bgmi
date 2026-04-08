@@ -33,12 +33,15 @@ import {
     Phone,
     Mail,
     Hash,
+    Link,
+    Unlink,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CategoryBadge } from "@/components/ui/category-badge";
 import { GAME } from "@/lib/game-config";
 import { CurrencyIcon } from "@/components/common/CurrencyIcon";
+import { toast } from "sonner";
 
 interface PlayerDetailModalProps {
     playerId: string | null;
@@ -51,6 +54,7 @@ interface PlayerDetail {
     displayName: string | null;
     username: string;
     email: string | null;
+    secondaryEmail: string | null;
     imageUrl: string | null;
     category: string;
     isBanned: boolean;
@@ -91,6 +95,8 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
     const [mergeSuggestions, setMergeSuggestions] = useState<{ id: string; displayName: string; username: string; email: string; imageUrl: string | null }[]>([]);
     const [mergeSearching, setMergeSearching] = useState(false);
     const mergeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [secondaryEmailInput, setSecondaryEmailInput] = useState("");
+    const [editingSecondary, setEditingSecondary] = useState(false);
 
     // Debounced search for merge autocomplete
     useEffect(() => {
@@ -210,6 +216,29 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
         },
     });
 
+    const secondaryEmailMutation = useMutation({
+        mutationFn: async (email: string | null) => {
+            const res = await fetch(`/api/players/${playerId}/secondary-email`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.message || json.error || "Failed");
+            return json;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ["admin-player", playerId] });
+            queryClient.invalidateQueries({ queryKey: ["admin-players"] });
+            setEditingSecondary(false);
+            setSecondaryEmailInput("");
+            toast.success(data.message);
+        },
+        onError: (err: Error) => {
+            toast.error(err.message);
+        },
+    });
+
     const handleUcSubmit = () => {
         const amt = parseInt(ucAmount);
         if (!amt || amt <= 0 || !ucDescription.trim()) return;
@@ -309,6 +338,80 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                                     <Phone className="h-3 w-3" />
                                                     {player.phoneNumber}
                                                 </span>
+                                            )}
+                                        </div>
+
+                                        {/* Secondary email */}
+                                        <div className="flex items-center gap-1.5 mt-1">
+                                            {editingSecondary ? (
+                                                <div className="flex items-center gap-1.5 w-full">
+                                                    <Input
+                                                        size="sm"
+                                                        placeholder="Secondary email..."
+                                                        value={secondaryEmailInput}
+                                                        onValueChange={setSecondaryEmailInput}
+                                                        startContent={<Link className="h-3 w-3 text-default-400" />}
+                                                        className="flex-1"
+                                                        classNames={{ inputWrapper: "h-7 min-h-7", input: "text-[11px]" }}
+                                                        autoFocus
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === "Enter" && secondaryEmailInput.trim()) {
+                                                                secondaryEmailMutation.mutate(secondaryEmailInput.trim());
+                                                            } else if (e.key === "Escape") {
+                                                                setEditingSecondary(false);
+                                                            }
+                                                        }}
+                                                    />
+                                                    <Button
+                                                        size="sm"
+                                                        color="primary"
+                                                        variant="flat"
+                                                        isLoading={secondaryEmailMutation.isPending}
+                                                        className="h-7 min-w-0 px-2 text-[11px]"
+                                                        onPress={() => secondaryEmailInput.trim() && secondaryEmailMutation.mutate(secondaryEmailInput.trim())}
+                                                    >
+                                                        Link
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="flat"
+                                                        className="h-7 min-w-0 px-2 text-[11px]"
+                                                        onPress={() => setEditingSecondary(false)}
+                                                    >
+                                                        ✕
+                                                    </Button>
+                                                </div>
+                                            ) : player?.secondaryEmail ? (
+                                                <span className="flex items-center gap-1 text-[11px] text-foreground/40">
+                                                    <Link className="h-3 w-3 text-success" />
+                                                    <span className="truncate max-w-[160px]">{player.secondaryEmail}</span>
+                                                    <button
+                                                        onClick={() => { setSecondaryEmailInput(player.secondaryEmail || ""); setEditingSecondary(true); }}
+                                                        className="text-primary hover:text-primary/80 ml-0.5"
+                                                        title="Edit secondary email"
+                                                    >
+                                                        ✎
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (confirm(`Remove secondary email "${player.secondaryEmail}"?`)) {
+                                                                secondaryEmailMutation.mutate(null);
+                                                            }
+                                                        }}
+                                                        className="text-danger hover:text-danger/80 ml-0.5"
+                                                        title="Unlink secondary email"
+                                                    >
+                                                        <Unlink className="h-3 w-3" />
+                                                    </button>
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    onClick={() => { setSecondaryEmailInput(""); setEditingSecondary(true); }}
+                                                    className="flex items-center gap-1 text-[11px] text-foreground/30 hover:text-primary transition-colors"
+                                                >
+                                                    <Link className="h-3 w-3" />
+                                                    Link secondary email
+                                                </button>
                                             )}
                                         </div>
                                     </div>

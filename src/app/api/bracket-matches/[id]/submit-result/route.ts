@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/database";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { advanceWinners } from "@/lib/logic/generateBracket";
 import { type NextRequest } from "next/server";
@@ -44,8 +44,8 @@ export async function POST(
         }
 
         // Get the user + role
-        const user = await prisma.user.findUnique({
-            where: { email: userId },
+        const user = await prisma.user.findFirst({
+            where: userWhereEmail(userId),
             select: {
                 player: { select: { id: true } },
                 role: true,
@@ -280,8 +280,8 @@ export async function PUT(
 
         const { id: matchId } = await params;
 
-        const user = await prisma.user.findUnique({
-            where: { email: userId },
+        const user = await prisma.user.findFirst({
+            where: userWhereEmail(userId),
             select: {
                 player: { select: { id: true } },
                 role: true,

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 import Razorpay from "razorpay";
 import { z } from "zod";
@@ -38,8 +38,8 @@ export async function POST(req: NextRequest) {
         }
 
         // Find the player
-        const user = await prisma.user.findUnique({
-            where: { email: userId },
+        const user = await prisma.user.findFirst({
+            where: userWhereEmail(userId),
             select: { id: true, player: { select: { id: true } } },
         });
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { GAME } from "@/lib/game-config";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 import { v2 as cloudinary } from "cloudinary";
 
@@ -31,8 +31,8 @@ export async function POST(req: Request) {
 
     try {
         // Get player
-        const user = await prisma.user.findUnique({
-            where: { email },
+        const user = await prisma.user.findFirst({
+            where: userWhereEmail(email),
             select: {
                 player: {
                     select: {

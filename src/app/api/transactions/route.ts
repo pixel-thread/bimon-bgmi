@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 
 /**
@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
         const cursor = searchParams.get("cursor");
         const seasonId = searchParams.get("seasonId");
 
-        const user = await prisma.user.findUnique({
-            where: { email: userId },
+        const user = await prisma.user.findFirst({
+            where: userWhereEmail(userId),
             select: { player: { select: { id: true } } },
         });
 

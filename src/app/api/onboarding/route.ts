@@ -1,6 +1,6 @@
 import { getRequestPrisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
-import { getAuthEmail, getAuthName, getAuthImage } from "@/lib/auth";
+import { getAuthEmail, getAuthName, getAuthImage, userWhereEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 import { getSettings } from "@/lib/settings";
 import { GAME } from "@/lib/game-config";
@@ -29,8 +29,8 @@ export async function POST(request: NextRequest) {
 
         // Find user
         const db = await getRequestPrisma();
-        let user = await db.user.findUnique({
-            where: { email: userId },
+        let user = await db.user.findFirst({
+            where: userWhereEmail(userId),
             include: { player: true },
         });
 

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { NextRequest } from "next/server";
 
 /**
@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email: userId },
+        const user = await prisma.user.findFirst({
+            where: userWhereEmail(userId),
             select: { role: true },
         });
 

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
 
 /**
@@ -14,8 +14,8 @@ export async function GET() {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email: userId },
+        const user = await prisma.user.findFirst({
+            where: userWhereEmail(userId),
             select: { id: true, player: { select: { id: true } } },
         });
 

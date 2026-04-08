@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 import { getSettings } from "@/lib/settings";
 import { GAME } from "@/lib/game-config";
@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
 
         // Run player + poll lookups in parallel (saves ~100ms)
         const [user, poll] = await Promise.all([
-            prisma.user.findUnique({
-                where: { email: userId },
+            prisma.user.findFirst({
+                where: userWhereEmail(userId),
                 select: {
                     role: true,
                     player: {

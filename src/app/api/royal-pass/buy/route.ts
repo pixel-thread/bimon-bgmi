@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { GAME } from "@/lib/game-config";
 import { getAvailableBalance, debitWallet } from "@/lib/wallet-service";
@@ -27,8 +27,8 @@ export async function POST() {
         const STREAK_THRESHOLD = settings.streakMilestone;
         const STREAK_REWARD_UC = settings.streakRewardAmount;
 
-        const user = await prisma.user.findUnique({
-            where: { email },
+        const user = await prisma.user.findFirst({
+            where: userWhereEmail(email),
             select: {
                 player: {
                     select: {

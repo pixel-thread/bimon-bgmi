@@ -21,7 +21,7 @@ import {
     ChevronDown,
     ChevronRight,
     Trash2,
-    Plus,
+
     Users,
     Search,
     AlertTriangle,
@@ -62,14 +62,7 @@ export default function LocationsPage() {
     } | null>(null);
     const [deleting, setDeleting] = useState(false);
 
-    // Add new state/district
-    const [addModal, setAddModal] = useState<{
-        level: "state" | "district";
-        parentId?: string;
-        parentName?: string;
-    } | null>(null);
-    const [newName, setNewName] = useState("");
-    const [adding, setAdding] = useState(false);
+
 
 
     // View players at a location
@@ -165,35 +158,7 @@ export default function LocationsPage() {
         }
     }
 
-    async function handleAdd() {
-        if (!addModal || !newName.trim()) return;
-        setAdding(true);
-        try {
-            const res = await fetch("/api/admin/locations", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    level: addModal.level,
-                    name: newName.trim(),
-                    parentId: addModal.parentId,
-                }),
-            });
-            const json = await res.json();
-            if (res.ok) {
-                toast.success(json.message);
-                queryClient.invalidateQueries({ queryKey: ["admin-locations"] });
-                queryClient.invalidateQueries({ queryKey: ["locations"] });
-                setAddModal(null);
-                setNewName("");
-            } else {
-                toast.error(json.message || "Failed");
-            }
-        } catch {
-            toast.error("Network error");
-        } finally {
-            setAdding(false);
-        }
-    }
+
 
     return (
         <div className="space-y-6">
@@ -222,27 +187,15 @@ export default function LocationsPage() {
                 ))}
             </div>
 
-            {/* Search + Add State */}
-            <div className="flex gap-2">
-                <Input
-                    placeholder="Search locations..."
-                    value={search}
-                    onValueChange={setSearch}
-                    startContent={<Search className="h-4 w-4 text-default-400" />}
-                    size="sm"
-                    className="flex-1"
-                    classNames={{ inputWrapper: "bg-default-100" }}
-                />
-                <Button
-                    size="sm"
-                    color="primary"
-                    startContent={<Plus className="h-3.5 w-3.5" />}
-                    onPress={() => setAddModal({ level: "state" })}
-                >
-                    Add State
-                </Button>
-
-            </div>
+            {/* Search */}
+            <Input
+                placeholder="Search states, districts, towns..."
+                value={search}
+                onValueChange={setSearch}
+                startContent={<Search className="h-4 w-4 text-default-400" />}
+                size="sm"
+                classNames={{ inputWrapper: "bg-default-100" }}
+            />
 
             {/* Loading skeleton */}
             {isLoading && (
@@ -418,20 +371,7 @@ export default function LocationsPage() {
                                                     </div>
                                                 ))}
 
-                                                {/* Add district button */}
-                                                <button
-                                                    onClick={() =>
-                                                        setAddModal({
-                                                            level: "district",
-                                                            parentId: state.id,
-                                                            parentName: state.name,
-                                                        })
-                                                    }
-                                                    className="w-full flex items-center gap-2 px-4 pl-10 py-2 text-xs text-foreground/30 hover:text-primary transition-colors"
-                                                >
-                                                    <Plus className="h-3 w-3" />
-                                                    Add district to {state.name}
-                                                </button>
+
                                             </div>
                                         </motion.div>
                                     )}
@@ -482,34 +422,7 @@ export default function LocationsPage() {
                 </ModalContent>
             </Modal>
 
-            {/* Add state/district modal */}
-            <Modal isOpen={!!addModal} onClose={() => { setAddModal(null); setNewName(""); }} size="sm">
-                <ModalContent>
-                    <ModalHeader>
-                        Add {addModal?.level === "state" ? "State" : `District to ${addModal?.parentName}`}
-                    </ModalHeader>
-                    <ModalBody>
-                        <Input
-                            autoFocus
-                            placeholder={addModal?.level === "state" ? "e.g. Meghalaya" : "e.g. East Khasi Hills"}
-                            value={newName}
-                            onValueChange={setNewName}
-                            size="sm"
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" && newName.trim()) handleAdd();
-                            }}
-                        />
-                    </ModalBody>
-                    <ModalFooter>
-                        <Button variant="flat" size="sm" onPress={() => { setAddModal(null); setNewName(""); }} isDisabled={adding}>
-                            Cancel
-                        </Button>
-                        <Button color="primary" size="sm" onPress={handleAdd} isLoading={adding} isDisabled={!newName.trim()}>
-                            Add
-                        </Button>
-                    </ModalFooter>
-                </ModalContent>
-            </Modal>
+
 
             {/* View players modal */}
             <Modal isOpen={!!playersTarget} onClose={() => setPlayersTarget(null)} size="sm" scrollBehavior="inside">

@@ -97,6 +97,15 @@ export const getAuthEmail = cache(async (): Promise<string | null> => {
 });
 
 /**
+ * Helper: build a Prisma where clause that matches a user by either
+ * their primary or secondary email. Use this instead of `{ email }` 
+ * to support users who sign in with their linked secondary email.
+ */
+export function userWhereEmail(email: string) {
+    return { OR: [{ email }, { secondaryEmail: email }] };
+}
+
+/**
  * Helper: get the current session's user image.
  */
 export const getAuthImage = cache(async (): Promise<string | null> => {

@@ -12,8 +12,8 @@ const GAME = process.env.NEXT_PUBLIC_GAME_MODE || "bgmi";
 async function getPlayerInfo() {
     const email = await getAuthEmail();
     if (!email) return null;
-    const user = await prisma.user.findUnique({
-        where: { email },
+    const user = await prisma.user.findFirst({
+        where: { OR: [{ email }, { secondaryEmail: email }] },
         select: {
             email: true,
             username: true,

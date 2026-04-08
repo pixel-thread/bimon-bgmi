@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/database";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 
 /**
@@ -21,8 +21,8 @@ export async function POST() {
         const userId = await getAuthEmail();
         if (!userId) return ErrorResponse({ message: "Unauthorized", status: 401 });
 
-        const user = await prisma.user.findUnique({
-            where: { email: userId },
+        const user = await prisma.user.findFirst({
+            where: userWhereEmail(userId),
             select: { role: true },
         });
         if (user?.role !== "ADMIN" && user?.role !== "SUPER_ADMIN") {

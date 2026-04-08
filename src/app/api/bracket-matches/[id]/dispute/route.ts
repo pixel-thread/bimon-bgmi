@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/database";
-import { getAuthEmail } from "@/lib/auth";
+import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { type NextRequest } from "next/server";
 
@@ -20,8 +20,8 @@ export async function POST(
         const body = await req.json();
         const { screenshotUrl } = body as { screenshotUrl?: string };
 
-        const user = await prisma.user.findUnique({
-            where: { email: userId },
+        const user = await prisma.user.findFirst({
+            where: userWhereEmail(userId),
             select: { player: { select: { id: true } } },
         });
         if (!user?.player) {
