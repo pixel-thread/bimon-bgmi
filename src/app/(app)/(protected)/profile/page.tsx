@@ -151,15 +151,29 @@ export default function ProfilePage() {
     const [showSignOutModal, setShowSignOutModal] = useState(false);
     const [showLocationModal, setShowLocationModal] = useState(false);
 
+    const PROFILE_CACHE_KEY = "profile_cache";
+
+    const getCachedProfile = (): ProfileData | undefined => {
+        try {
+            const raw = localStorage.getItem(PROFILE_CACHE_KEY);
+            if (raw) return JSON.parse(raw);
+        } catch {}
+        return undefined;
+    };
+
     const { data: profile, isLoading, isFetching, error } = useQuery<ProfileData>({
         queryKey: ["profile"],
         queryFn: async () => {
             const res = await fetch("/api/profile");
             if (!res.ok) throw new Error("Failed to fetch profile");
             const json = await res.json();
-            return json.data;
+            const data = json.data;
+            // Persist to localStorage for instant load next time
+            try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(data)); } catch {}
+            return data;
         },
         staleTime: 5 * 60 * 1000,
+        initialData: getCachedProfile,
     });
 
     const [onCooldown, setOnCooldown] = useState(false);
