@@ -22,6 +22,7 @@ import {
     ImageIcon,
     Scale,
     HelpCircle,
+    MapPin,
 } from "lucide-react";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { useState, useEffect, useCallback } from "react";
@@ -78,6 +79,7 @@ const sidebarItems: SidebarSection[] = [
     {
         section: "Admin",
         items: [
+            { label: "Locations", href: "/dashboard/locations", icon: MapPin, superAdminOnly: true },
             { label: "Settlement", href: "/dashboard/settlement", icon: Scale, superAdminOnly: true },
             { label: "Admins", href: "/dashboard/admins", icon: Shield, superAdminOnly: true },
             { label: "Settings", href: "/dashboard/settings", icon: Settings, superAdminOnly: true },

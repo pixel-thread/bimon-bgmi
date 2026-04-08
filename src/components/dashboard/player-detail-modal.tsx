@@ -32,6 +32,7 @@ import {
     Flame,
     Phone,
     Mail,
+    Hash,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -56,6 +57,7 @@ interface PlayerDetail {
     hasRoyalPass: boolean;
     isUCExempt: boolean;
     isTrusted: boolean;
+    uid: string | null;
     phoneNumber: string | null;
     bio: string | null;
     createdAt: string;
@@ -294,6 +296,12 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                                 <span className="flex items-center gap-1 text-[11px] text-foreground/40">
                                                     <Mail className="h-3 w-3" />
                                                     <span className="truncate max-w-[180px]">{player.email}</span>
+                                                </span>
+                                            )}
+                                            {player?.uid && (
+                                                <span className="flex items-center gap-1 text-[11px] text-foreground/40">
+                                                    <Hash className="h-3 w-3" />
+                                                    <span className="font-mono">{player.uid}</span>
                                                 </span>
                                             )}
                                             {player?.phoneNumber && (

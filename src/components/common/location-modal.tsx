@@ -100,7 +100,9 @@ export function LocationModal({
         : currentOptions;
 
     // Check if search query is a new entry (not in existing list)
+    // Only allow adding new entries for towns — states and districts are admin-managed
     const isNewEntry =
+        step === 3 &&
         searchQuery.trim() &&
         !currentOptions.some(
             (o) => o.name.toLowerCase() === searchQuery.trim().toLowerCase()
@@ -195,7 +197,7 @@ export function LocationModal({
         }
     }, [isOpen]);
 
-    const stepLabels = ["State", "District", "Town"];
+    const stepLabels = ["State", "District", "Town/Village"];
 
     return (
         <Modal

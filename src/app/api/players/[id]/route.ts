@@ -98,6 +98,7 @@ export async function GET(
             hasRoyalPass: player.hasRoyalPass,
             isUCExempt: player.isUCExempt,
             isTrusted: player.isTrusted,
+            uid: player.uid || null,
             phoneNumber: player.phoneNumber || null,
             bio: player.bio,
             createdAt: player.createdAt,
