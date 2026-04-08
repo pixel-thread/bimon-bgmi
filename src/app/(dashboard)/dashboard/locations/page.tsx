@@ -70,7 +70,7 @@ export default function LocationsPage() {
     } | null>(null);
     const [newName, setNewName] = useState("");
     const [adding, setAdding] = useState(false);
-    const [seeding, setSeeding] = useState(false);
+
 
     // View players at a location
     const [playersTarget, setPlayersTarget] = useState<{
@@ -99,24 +99,7 @@ export default function LocationsPage() {
         }
     }
 
-    async function handleSeedIndia() {
-        setSeeding(true);
-        try {
-            const res = await fetch("/api/admin/locations/seed", { method: "POST" });
-            const json = await res.json();
-            if (res.ok) {
-                toast.success(json.message);
-                queryClient.invalidateQueries({ queryKey: ["admin-locations"] });
-                queryClient.invalidateQueries({ queryKey: ["locations"] });
-            } else {
-                toast.error(json.message || "Failed");
-            }
-        } catch {
-            toast.error("Network error");
-        } finally {
-            setSeeding(false);
-        }
-    }
+
 
     const { data: locations = [], isLoading } = useQuery<LocationState[]>({
         queryKey: ["admin-locations"],
@@ -258,16 +241,7 @@ export default function LocationsPage() {
                 >
                     Add State
                 </Button>
-                <Button
-                    size="sm"
-                    variant="flat"
-                    color="secondary"
-                    startContent={seeding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MapPin className="h-3.5 w-3.5" />}
-                    onPress={handleSeedIndia}
-                    isDisabled={seeding}
-                >
-                    {seeding ? "Seeding..." : "Seed India"}
-                </Button>
+
             </div>
 
             {/* Loading skeleton */}
@@ -287,16 +261,7 @@ export default function LocationsPage() {
                             <p className="text-sm text-foreground/40">
                                 {search ? "No locations match your search" : "No locations yet"}
                             </p>
-                            {!search && (
-                                <Button
-                                    color="primary"
-                                    startContent={seeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
-                                    onPress={handleSeedIndia}
-                                    isDisabled={seeding}
-                                >
-                                    {seeding ? "Seeding India..." : "Seed All India Locations"}
-                                </Button>
-                            )}
+
                         </div>
                     )}
 
