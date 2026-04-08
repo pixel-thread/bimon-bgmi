@@ -665,32 +665,43 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="max-w-2xl mx-auto"
         >
-            {/* Compact Donation Badge */}
-            {donationTotal > 0 && theme && (() => {
-                const sortedDonations = [...poll.donations.donations].sort((a, b) => b.amount - a.amount);
-                const topDonor = sortedDonations[0];
-                const extraCount = sortedDonations.length - 1;
-                return (
-                    <div className="flex justify-center mb-[-8px] relative z-10">
+            {/* Compact Donation Badge + Donate Button */}
+            {theme && (
+                <div className="flex items-center justify-center gap-2 mb-[-8px] relative z-10">
+                    {donationTotal > 0 && (() => {
+                        const sortedDonations = [...poll.donations.donations].sort((a, b) => b.amount - a.amount);
+                        const topDonor = sortedDonations[0];
+                        const extraCount = sortedDonations.length - 1;
+                        return (
+                            <button
+                                type="button"
+                                onClick={() => setShowDonors(true)}
+                                className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r ${theme.header} text-white text-sm font-semibold shadow-lg hover:shadow-xl transition-shadow cursor-pointer`}
+                            >
+                                <span>
+                                    {topDonor.isAnonymous ? "Anonymous" : (topDonor.playerName || "Community")} donated {topDonor.amount}
+                                </span>
+                                <CurrencyIcon size={13} />
+                                {extraCount > 0 && (
+                                    <span className="bg-white/25 px-1.5 py-0.5 rounded-md text-xs font-bold ml-0.5">
+                                        +{extraCount}
+                                    </span>
+                                )}
+                            </button>
+                        );
+                    })()}
+                    {poll.isActive && (
                         <button
                             type="button"
-                            onClick={() => setShowDonors(true)}
-                            className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r ${theme.header} text-white text-sm font-semibold shadow-lg hover:shadow-xl transition-shadow cursor-pointer`}
+                            onClick={() => setShowDonate(true)}
+                            className={`w-7 h-7 rounded-full bg-gradient-to-r ${theme.header} flex items-center justify-center shadow-lg hover:shadow-xl transition-all cursor-pointer border border-white/20`}
+                            title="Donate to prize pool"
                         >
-                            <Heart className="w-3.5 h-3.5 fill-white" />
-                            <span>
-                                {topDonor.isAnonymous ? "Anonymous" : (topDonor.playerName || "Community")} donated {topDonor.amount}
-                            </span>
-                            <CurrencyIcon size={13} />
-                            {extraCount > 0 && (
-                                <span className="bg-white/25 px-1.5 py-0.5 rounded-md text-xs font-bold ml-0.5">
-                                    +{extraCount}
-                                </span>
-                            )}
+                            <Plus className="w-3.5 h-3.5 text-white" />
                         </button>
-                    </div>
-                );
-            })()}
+                    )}
+                </div>
+            )}
             <div
                 className={`relative rounded-xl overflow-hidden transition-all duration-700 ease-in-out ${theme
                     ? theme.card
@@ -767,28 +778,16 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                                         </p>
                                     </div>
                                 </div>
-                                {/* Prize breakdown ? button + Donate button */}
-                                <div className="flex items-center justify-center gap-2 mt-1">
-                                    {GAME.features.hasBR && <PrizeBreakdownTooltip
-                                        prizePool={prizePool}
-                                        entryFee={entryFee}
-                                        teamSize={effectiveTeamType === "SOLO" ? 1 : effectiveTeamType === "DUO" ? 2 : effectiveTeamType === "TRIO" ? 3 : 4}
-                                        theme={theme}
-                                        orgPercent={orgCut}
-                                        orgCutMode={orgCutMode}
-                                        onDoubleTap={onRefetch}
-                                    />}
-                                    {poll.isActive && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowDonate(true)}
-                                            className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 border border-white/30 flex items-center justify-center transition-all cursor-pointer backdrop-blur-sm"
-                                            title="Donate to prize pool"
-                                        >
-                                            <Plus className="w-3.5 h-3.5 text-white" />
-                                        </button>
-                                    )}
-                                </div>
+                                {/* Prize breakdown ? button — only for BR games (BGMI tier system) */}
+                                {GAME.features.hasBR && <PrizeBreakdownTooltip
+                                    prizePool={prizePool}
+                                    entryFee={entryFee}
+                                    teamSize={effectiveTeamType === "SOLO" ? 1 : effectiveTeamType === "DUO" ? 2 : effectiveTeamType === "TRIO" ? 3 : 4}
+                                    theme={theme}
+                                    orgPercent={orgCut}
+                                    orgCutMode={orgCutMode}
+                                    onDoubleTap={onRefetch}
+                                />}
                                 {/* Team type badge — only for BR games with team sizes */}
                                 {GAME.features.hasTeamSizes && effectiveTeamType && (
                                     <div className="absolute bottom-2 left-3">
