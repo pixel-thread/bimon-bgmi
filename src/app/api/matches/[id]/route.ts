@@ -30,8 +30,13 @@ export async function DELETE(
 
         if (!match) return ErrorResponse({ message: "Match not found", status: 404 });
 
-        // ── Match #1 → Full tournament reset ──────────────────────
-        if (match.matchNumber === 1) {
+        // ── Match #1 → Full tournament reset (only if it has teams) ──
+        const teamCountForMatch = await prisma.team.count({
+            where: { tournamentId: match.tournamentId, matches: { some: { id: match.id } } },
+        });
+        const isMatchWithTeams = teamCountForMatch > 0;
+
+        if (match.matchNumber === 1 && isMatchWithTeams) {
             const tournamentId = match.tournamentId;
 
             const tournament = await prisma.tournament.findUnique({
