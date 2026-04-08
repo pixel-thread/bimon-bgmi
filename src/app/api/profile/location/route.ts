@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/database";
+import { communityDb } from "@/lib/community-db";
 import { getAuthEmail } from "@/lib/auth";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { NextRequest } from "next/server";
@@ -6,8 +7,8 @@ import { NextRequest } from "next/server";
 /**
  * PATCH /api/profile/location
  * Update the player's location (state, district, town).
- * Auto-creates new LocationState/District/Town entries if they don't exist.
- * All 3 fields required.
+ * Auto-creates new CentralLocationState/District/Town entries in central DB.
+ * Updates the player's string fields in the game-specific DB.
  */
 export async function PATCH(req: NextRequest) {
     try {
@@ -34,7 +35,7 @@ export async function PATCH(req: NextRequest) {
             });
         }
 
-        // Find the player
+        // Find the player in game DB
         const user = await prisma.user.findFirst({
             where: {
                 OR: [{ email }, { secondaryEmail: email }],
@@ -46,14 +47,14 @@ export async function PATCH(req: NextRequest) {
             return ErrorResponse({ message: "Player not found", status: 404 });
         }
 
-        // Upsert state → district → town in Location tables
-        const locationState = await prisma.locationState.upsert({
+        // Upsert state → district → town in CENTRAL location tables
+        const locationState = await communityDb.centralLocationState.upsert({
             where: { name: trimmedState },
             update: {},
             create: { name: trimmedState },
         });
 
-        const locationDistrict = await prisma.locationDistrict.upsert({
+        const locationDistrict = await communityDb.centralLocationDistrict.upsert({
             where: {
                 name_stateId: { name: trimmedDistrict, stateId: locationState.id },
             },
@@ -61,7 +62,7 @@ export async function PATCH(req: NextRequest) {
             create: { name: trimmedDistrict, stateId: locationState.id },
         });
 
-        await prisma.locationTown.upsert({
+        await communityDb.centralLocationTown.upsert({
             where: {
                 name_districtId: { name: trimmedTown, districtId: locationDistrict.id },
             },
@@ -69,7 +70,7 @@ export async function PATCH(req: NextRequest) {
             create: { name: trimmedTown, districtId: locationDistrict.id },
         });
 
-        // Update player's location strings
+        // Update player's location strings in game-specific DB
         await prisma.player.update({
             where: { id: user.player.id },
             data: {

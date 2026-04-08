@@ -228,3 +228,38 @@ model SettlementRequest {
   @@index([requestedByGame, otherGame])
   @@index([status])
 }
+
+// ─── Shared Location Data ────────────────────────────────────
+
+/// Indian state or Union Territory — shared across all game deployments.
+model CentralLocationState {
+  id        String                  @id @default(uuid())
+  name      String                  @unique
+  districts CentralLocationDistrict[]
+  createdAt DateTime                @default(now())
+}
+
+/// District within a state — shared across all game deployments.
+model CentralLocationDistrict {
+  id        String                @id @default(uuid())
+  name      String
+  stateId   String
+  state     CentralLocationState  @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  towns     CentralLocationTown[]
+  createdAt DateTime              @default(now())
+
+  @@unique([name, stateId])
+  @@index([stateId])
+}
+
+/// Town/village within a district — shared across all game deployments.
+model CentralLocationTown {
+  id         String                  @id @default(uuid())
+  name       String
+  districtId String
+  district   CentralLocationDistrict @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  createdAt  DateTime                @default(now())
+
+  @@unique([name, districtId])
+  @@index([districtId])
+}

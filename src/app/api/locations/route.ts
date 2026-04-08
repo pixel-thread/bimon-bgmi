@@ -1,11 +1,11 @@
-import { prisma } from "@/lib/database";
+import { communityDb } from "@/lib/community-db";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { NextRequest } from "next/server";
 
 /**
  * GET /api/locations?level=states|districts|towns&stateId=...&districtId=...
- * Returns location options from DB tables for the given level.
- * Used in the location modal and players page filter chips.
+ * Returns location options from the CENTRAL DB tables.
+ * Shared across all game deployments.
  */
 export async function GET(req: NextRequest) {
     try {
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
         const districtId = searchParams.get("districtId");
 
         if (level === "states") {
-            const states = await prisma.locationState.findMany({
+            const states = await communityDb.centralLocationState.findMany({
                 orderBy: { name: "asc" },
                 select: { id: true, name: true },
             });
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
         }
 
         if (level === "districts" && stateId) {
-            const districts = await prisma.locationDistrict.findMany({
+            const districts = await communityDb.centralLocationDistrict.findMany({
                 where: { stateId },
                 orderBy: { name: "asc" },
                 select: { id: true, name: true },
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
         }
 
         if (level === "towns" && districtId) {
-            const towns = await prisma.locationTown.findMany({
+            const towns = await communityDb.centralLocationTown.findMany({
                 where: { districtId },
                 orderBy: { name: "asc" },
                 select: { id: true, name: true },
