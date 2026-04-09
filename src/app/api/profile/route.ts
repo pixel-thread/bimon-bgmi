@@ -73,7 +73,7 @@ export async function GET() {
                     _count: { matchId: true },
                     _sum: { kills: true },
                 }),
-                prisma.playerStats.count({ where: { playerId: player.id } }),
+                prisma.playerStats.count({ where: { playerId: player.id, matches: { gt: 0 } } }),
                 prisma.teamStats.findMany({
                     where: {
                         players: { some: { id: player.id } },
