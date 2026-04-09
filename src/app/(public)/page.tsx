@@ -6,6 +6,8 @@ import { GAME } from "@/lib/game-config";
 
 /**
  * Public landing page — / route.
+ * Note: "/" redirects to "/players" via next.config.ts.
+ * This page is still accessible at "/landing" if needed.
  */
 export default function HomePage() {
     return (
