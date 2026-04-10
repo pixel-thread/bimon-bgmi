@@ -437,13 +437,13 @@ export default function ProfilePage() {
                                             return;
                                         }
                                         if (isVid) {
-                                            // Check duration — max 10 seconds
+                                            // Check duration — max 15 seconds
                                             const tempVideo = document.createElement("video");
                                             tempVideo.preload = "metadata";
                                             tempVideo.onloadedmetadata = () => {
                                                 URL.revokeObjectURL(tempVideo.src);
-                                                if (tempVideo.duration > 10) {
-                                                    toast.error("Video must be 10 seconds or less.");
+                                                if (tempVideo.duration > 15) {
+                                                    toast.error("Video must be 15 seconds or less.");
                                                     e.target.value = "";
                                                     return;
                                                 }
