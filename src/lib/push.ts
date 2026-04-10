@@ -13,7 +13,7 @@ import { prisma } from "@/lib/database";
  */
 
 // Configure VAPID keys once
-const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
+const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_TOKEN!;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY!;
 
 if (VAPID_PUBLIC && VAPID_PRIVATE) {

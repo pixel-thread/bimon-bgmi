@@ -43,7 +43,7 @@ export function PushPrompt() {
             typeof window === "undefined" ||
             !("serviceWorker" in navigator) ||
             !("PushManager" in window) ||
-            !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+            !process.env.NEXT_PUBLIC_VAPID_TOKEN
         ) return;
 
         if (localStorage.getItem(SUBSCRIBED_KEY) === "true") return;
@@ -66,7 +66,7 @@ export function PushPrompt() {
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(
-                    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
+                    process.env.NEXT_PUBLIC_VAPID_TOKEN!
                 ),
             });
 
