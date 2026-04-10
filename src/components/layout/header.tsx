@@ -130,9 +130,24 @@ export function Header() {
     const unreadCount = notifData?.unreadCount ?? 0;
     const unclaimedRewardCount = notifData?.unclaimedRewardCount ?? 0;
     const hasUnclaimedStreak = notifData?.hasUnclaimedStreak ?? false;
-    // Red dot only shows for actionable items (unclaimed rewards, pending requests)
+
+    // Fetch unreviewed duplicate alerts count (admins only)
+    const { data: dupData } = useQuery({
+        queryKey: ["duplicate-count"],
+        queryFn: async () => {
+            const res = await fetch("/api/dashboard/duplicates/count");
+            if (!res.ok) return { count: 0 };
+            const json = await res.json();
+            return json.data as { count: number };
+        },
+        enabled: isSignedIn && isAdmin,
+        staleTime: 5 * 60 * 1000, // 5 min
+    });
+    const duplicateCount = dupData?.count ?? 0;
+
+    // Red dot only shows for actionable items (unclaimed rewards, pending requests, duplicate alerts)
     // Regular notifications auto-mark as read when page is visited
-    const totalActionCount = unclaimedRewardCount;
+    const totalActionCount = unclaimedRewardCount + (isAdmin ? duplicateCount : 0);
 
     // Fetch runtime settings (enableElitePass toggle from dashboard)
     const { data: publicSettings } = useQuery({

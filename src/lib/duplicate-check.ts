@@ -1,0 +1,180 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { PrismaClient } from "@prisma/client";
+
+/**
+ * Extract the "base" username by stripping the trailing random digits.
+ * Our usernames are: `lowercased_google_name + 4_random_digits`
+ * e.g. "milkysyiemunbroken4103" → "milkysyiemunbroken"
+ */
+function getUsernameBase(username: string): string {
+    // Strip trailing digits (the 4-digit random suffix)
+    return username.replace(/\d+$/, "");
+}
+
+/**
+ * Check a single player against all other players for duplicate signals.
+ * Creates DuplicateAlert records for any matches found.
+ *
+ * Signals:
+ *   1. Same phone number
+ *   2. Same email ↔ secondary email overlap
+ *   3. Same username base (Google name match)
+ */
+export async function checkPlayerForDuplicates(
+    playerId: string,
+    db: PrismaClient,
+): Promise<number> {
+    // Fetch the player + user info
+    const player = await db.player.findUnique({
+        where: { id: playerId },
+        include: {
+            user: {
+                select: { id: true, email: true, secondaryEmail: true, username: true },
+            },
+        },
+    });
+
+    if (!player || !player.user) return 0;
+
+    const { phoneNumber, displayName } = player;
+    const { email, secondaryEmail, username } = player.user;
+    const usernameBase = getUsernameBase(username);
+    let alertsCreated = 0;
+
+    // ── 1. Phone number match ─────────────────────────────────
+    if (phoneNumber) {
+        const phoneMatches = await db.player.findMany({
+            where: {
+                phoneNumber,
+                id: { not: playerId },
+            },
+            select: { id: true, displayName: true },
+        });
+
+        for (const match of phoneMatches) {
+            try {
+                await db.duplicateAlert.create({
+                    data: {
+                        player1Id: playerId,
+                        player2Id: match.id,
+                        matchType: "PHONE",
+                        matchValue: phoneNumber,
+                    },
+                });
+                alertsCreated++;
+            } catch {
+                // unique constraint violation = already flagged, skip
+            }
+        }
+    }
+
+    // ── 2. Email ↔ Secondary email overlap ────────────────────
+    // Check if this user's email matches another user's secondaryEmail
+    if (email) {
+        const emailMatches = await db.user.findMany({
+            where: {
+                secondaryEmail: email,
+                id: { not: player.user.id },
+            },
+            include: { player: { select: { id: true } } },
+        });
+
+        for (const match of emailMatches) {
+            if (!match.player) continue;
+            try {
+                await db.duplicateAlert.create({
+                    data: {
+                        player1Id: playerId,
+                        player2Id: match.player.id,
+                        matchType: "EMAIL",
+                        matchValue: email,
+                    },
+                });
+                alertsCreated++;
+            } catch {
+                // already flagged
+            }
+        }
+    }
+
+    // Check if this user's secondaryEmail matches another user's primary email
+    if (secondaryEmail) {
+        const secMatches = await db.user.findMany({
+            where: {
+                email: secondaryEmail,
+                id: { not: player.user.id },
+            },
+            include: { player: { select: { id: true } } },
+        });
+
+        for (const match of secMatches) {
+            if (!match.player) continue;
+            try {
+                await db.duplicateAlert.create({
+                    data: {
+                        player1Id: playerId,
+                        player2Id: match.player.id,
+                        matchType: "EMAIL",
+                        matchValue: secondaryEmail,
+                    },
+                });
+                alertsCreated++;
+            } catch {
+                // already flagged
+            }
+        }
+    }
+
+    // ── 3. Username base match ────────────────────────────────
+    if (usernameBase && usernameBase.length >= 3) {
+        // Find users whose username starts with the same base
+        const allUsers = await db.user.findMany({
+            where: {
+                id: { not: player.user.id },
+            },
+            select: { id: true, username: true, player: { select: { id: true } } },
+        });
+
+        const baseMatches = allUsers.filter((u) => {
+            const otherBase = getUsernameBase(u.username);
+            return otherBase === usernameBase && otherBase.length >= 3;
+        });
+
+        for (const match of baseMatches) {
+            if (!match.player) continue;
+            try {
+                await db.duplicateAlert.create({
+                    data: {
+                        player1Id: playerId,
+                        player2Id: match.player.id,
+                        matchType: "USERNAME",
+                        matchValue: `${username} ↔ ${match.username}`,
+                    },
+                });
+                alertsCreated++;
+            } catch {
+                // already flagged
+            }
+        }
+    }
+
+    return alertsCreated;
+}
+
+/**
+ * Full scan: check ALL players for duplicates.
+ * Used by the admin "Scan All" button.
+ */
+export async function scanAllPlayersForDuplicates(
+    db: PrismaClient,
+): Promise<number> {
+    const players = await db.player.findMany({
+        select: { id: true },
+    });
+
+    let total = 0;
+    for (const player of players) {
+        total += await checkPlayerForDuplicates(player.id, db);
+    }
+    return total;
+}

@@ -1245,3 +1245,22 @@ model LocationTown {
   @@unique([name, districtId])
   @@index([districtId])
 }
+
+// ─── Duplicate Account Detection ─────────────────────────────
+
+/// Tracks suspected duplicate accounts flagged by automated checks.
+model DuplicateAlert {
+  id          String  @id @default(uuid())
+  player1Id   String
+  player2Id   String
+  matchType   String  // "PHONE" | "EMAIL" | "USERNAME"
+  matchValue  String  // the actual matching value
+  isReviewed  Boolean @default(false)
+  reviewNote  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([player1Id, player2Id, matchType])
+  @@index([isReviewed])
+}

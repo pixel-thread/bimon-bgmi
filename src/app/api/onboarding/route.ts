@@ -4,6 +4,7 @@ import { getAuthEmail, getAuthName, getAuthImage, userWhereEmail } from "@/lib/a
 import { type NextRequest } from "next/server";
 import { getSettings } from "@/lib/settings";
 import { GAME } from "@/lib/game-config";
+import { checkPlayerForDuplicates } from "@/lib/duplicate-check";
 
 /**
  * POST /api/onboarding
@@ -157,6 +158,9 @@ export async function POST(request: NextRequest) {
 
             return player;
         });
+
+        // Silent duplicate check — fire and forget, never blocks onboarding
+        checkPlayerForDuplicates(result.id, db).catch(() => {});
 
         return SuccessResponse({
             data: { playerId: result.id },
