@@ -108,12 +108,6 @@ export async function POST(req: NextRequest) {
             updateData.displayName = displayName;
             updateData.displayNameLastChangeAt = new Date();
         }
-        // Block bio editing for specific users (admin-locked bios)
-        const BIO_LOCKED_USERS = ["kohduhhh", "gonison"];
-        if (bio !== undefined && BIO_LOCKED_USERS.includes(user.username)) {
-            return ErrorResponse({ message: "Ki Ge lah edit rei", status: 403 });
-        }
-
         if (bio !== undefined) updateData.bio = bio;
         if (uid !== undefined) updateData.uid = uid;
         if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber || null;
