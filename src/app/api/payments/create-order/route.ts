@@ -4,6 +4,7 @@ import { getAuthEmail, userWhereEmail } from "@/lib/auth";
 import { type NextRequest } from "next/server";
 import Razorpay from "razorpay";
 import { z } from "zod";
+import { getGameConfig } from "@/lib/game-config";
 
 // Platform fee percentage (2.4%)
 const PLATFORM_FEE_PERCENT = 2.4;
@@ -32,6 +33,13 @@ const razorpay = new Razorpay({
  */
 export async function POST(req: NextRequest) {
     try {
+        // Guard: Razorpay payments are only enabled for BGMI
+        const { GAME: reqGame } = getGameConfig(req);
+        if (!reqGame.features.hasTopUps) {
+            console.error(`[Payment Create] Blocked — game ${reqGame.mode} does not support top-ups`);
+            return ErrorResponse({ message: "Payments not available for this game", status: 403 });
+        }
+
         const userId = await getAuthEmail();
         if (!userId) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });

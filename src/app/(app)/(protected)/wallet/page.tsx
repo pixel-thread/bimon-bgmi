@@ -235,6 +235,32 @@ export default function WalletPage() {
         staleTime: 5 * 60 * 1000,
     });
 
+    // ── Auto-recover missed payments (BGMI only) ──────────────
+    // On mobile, UPI intents redirect outside the browser. When the user returns,
+    // the Razorpay callback may not fire. This checks for "created" payments that
+    // were actually captured and credits the UC.
+    useEffect(() => {
+        if (!GAME.features.hasTopUps) return;
+        const recover = async () => {
+            try {
+                const res = await fetch("/api/payments/check-pending", { method: "POST" });
+                if (!res.ok) return;
+                const json = await res.json();
+                const recovered = json.data?.recovered ?? 0;
+                if (recovered > 0) {
+                    toast.success(`🎉 Recovered ${recovered} pending payment(s)! Your ${GAME.currency} has been credited.`);
+                    queryClient.invalidateQueries({ queryKey: ["wallet"] });
+                    queryClient.invalidateQueries({ queryKey: ["profile"] });
+                    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+                }
+            } catch {
+                // Silent fail — recovery is best-effort
+            }
+        };
+        recover();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // ── Public settings (UPI QR for non-Razorpay games) ─────
     const { data: publicSettings } = useQuery<{ upiQrImageUrl?: string; whatsAppGroups?: string[] }>({
         queryKey: ["public-settings-wallet"],
