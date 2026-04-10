@@ -3,6 +3,7 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
 import { type NextRequest } from "next/server";
+import { sendPush } from "@/lib/push";
 
 /**
  * POST /api/squads/remove-member
@@ -97,6 +98,13 @@ export async function POST(request: NextRequest) {
                     link: "/vote",
                 },
             });
+        });
+
+        // Push notification
+        sendPush(invite.playerId, {
+            title: "🛡 Removed from Squad",
+            body: `${captainName} removed you from "${squadName}" for ${tournamentName}. Your ${invite.squad.entryFee} ${GAME.currency} reservation has been released.`,
+            url: "/vote",
         });
 
         return SuccessResponse({

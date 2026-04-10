@@ -2,6 +2,7 @@ import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
+import { sendPush } from "@/lib/push";
 
 /**
  * POST /api/squads/[squadId]/cancel
@@ -81,6 +82,16 @@ export async function POST(
                 });
             }
         });
+
+        // Push notifications to all members
+        const otherMembers = squad.invites.filter((i) => i.playerId !== user.player!.id);
+        for (const inv of otherMembers) {
+            sendPush(inv.playerId, {
+                title: "🛡 Squad Cancelled",
+                body: `${captainName} cancelled "${squad.name}" for ${tournamentName}. Your ${squad.entryFee} ${GAME.currency} reservation has been released.`,
+                url: "/vote",
+            });
+        }
 
         return SuccessResponse({
             message: `Squad "${squad.name}" cancelled. All reserved ${GAME.currency} has been released.`,

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
 import { getAvailableBalance, transferWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { sendPush } from "@/lib/push";
 
 /**
  * PATCH /api/uc-transfers/[id]/approve
@@ -125,6 +126,14 @@ export async function PATCH(
             });
 
             return updated;
+        });
+
+        // Push notification
+        const approverPushName = transfer.toPlayer.displayName || transfer.toPlayer.user.username;
+        sendPush(transfer.fromPlayerId, {
+            title: `${GAME.currency} Request Approved`,
+            body: `${approverPushName} approved your request for ${transfer.amount} ${GAME.currency}`,
+            url: "/wallet",
         });
 
         return NextResponse.json({

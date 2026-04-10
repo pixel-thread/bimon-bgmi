@@ -3,6 +3,7 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
 import { type NextRequest } from "next/server";
+import { sendPush } from "@/lib/push";
 
 /**
  * POST /api/squads/respond-request
@@ -83,15 +84,15 @@ export async function POST(request: NextRequest) {
         const tournamentName = invite.squad.poll.tournament?.name ?? "tournament";
 
         if (action === "ACCEPT") {
+            // Check if squad is now full
+            const acceptedCount = invite.squad.invites.filter((i) => i.status === "ACCEPTED").length + 1;
+            const isFull = acceptedCount >= GAME.squadSize;
+
             await prisma.$transaction(async (tx) => {
                 await tx.squadInvite.update({
                     where: { id: inviteId },
                     data: { status: "ACCEPTED", respondedAt: new Date() },
                 });
-
-                // Check if squad is now full
-                const acceptedCount = invite.squad.invites.filter((i) => i.status === "ACCEPTED").length + 1;
-                const isFull = acceptedCount >= GAME.squadSize;
 
                 if (isFull) {
                     await tx.squad.update({
@@ -114,6 +115,13 @@ export async function POST(request: NextRequest) {
                     },
                 });
             });
+
+            // Push notification
+            const pushTitle = isFull ? "🛡 Squad Complete!" : "🛡 Request Accepted!";
+            const pushBody = isFull
+                ? `You joined "${squadName}" — the squad is now full for ${tournamentName}! 🎉`
+                : `Your request to join "${squadName}" was accepted!`;
+            sendPush(invite.playerId, { title: pushTitle, body: pushBody, url: "/vote" });
 
             return SuccessResponse({
                 message: `${playerName} has been added to the squad!`,
@@ -138,6 +146,13 @@ export async function POST(request: NextRequest) {
                     link: "/vote",
                 },
             });
+        });
+
+        // Push notification
+        sendPush(invite.playerId, {
+            title: "🛡 Request Declined",
+            body: `Your request to join "${squadName}" was declined`,
+            url: "/vote",
         });
 
         return SuccessResponse({ message: `Declined ${playerName}'s request` });

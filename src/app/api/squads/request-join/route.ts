@@ -4,6 +4,7 @@ import { getCurrentUser, getAuthEmail } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
 import { getAvailableBalance } from "@/lib/wallet-service";
 import { type NextRequest } from "next/server";
+import { sendPush } from "@/lib/push";
 
 /**
  * POST /api/squads/request-join
@@ -151,6 +152,13 @@ export async function POST(request: NextRequest) {
                     link: "/vote",
                 },
             });
+        });
+
+        // Push notification
+        sendPush(squad.captain.id, {
+            title: "🛡 Join Request",
+            body: `${playerName} wants to join "${squad.name}" for ${tournamentName}`,
+            url: "/notifications",
         });
 
         return SuccessResponse({

@@ -3,6 +3,7 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
 import { type NextRequest } from "next/server";
+import { sendPush } from "@/lib/push";
 
 /**
  * POST /api/squads/respond
@@ -88,16 +89,16 @@ export async function POST(request: NextRequest) {
         const tournamentName = invite.squad.poll.tournament?.name ?? "tournament";
 
         if (action === "ACCEPT") {
+            // Count accepted invites (including this one now)
+            const acceptedCount = invite.squad.invites.filter((i) => i.status === "ACCEPTED").length + 1;
+            const isFull = acceptedCount >= GAME.squadSize;
+
             // Mark accepted + check if squad is now full
             await prisma.$transaction(async (tx) => {
                 await tx.squadInvite.update({
                     where: { id: inviteId },
                     data: { status: "ACCEPTED", respondedAt: new Date() },
                 });
-
-                // Count accepted invites (including this one now)
-                const acceptedCount = invite.squad.invites.filter((i) => i.status === "ACCEPTED").length + 1;
-                const isFull = acceptedCount >= GAME.squadSize;
 
                 if (isFull) {
                     await tx.squad.update({
@@ -120,6 +121,13 @@ export async function POST(request: NextRequest) {
                     },
                 });
             });
+
+            // Push notification (outside transaction)
+            const pushTitle = isFull ? "🛡 Squad Complete!" : "🛡 Invite Accepted";
+            const pushBody = isFull
+                ? `${playerName} joined "${squadName}" — your squad is now full for ${tournamentName}! 🎉`
+                : `${playerName} accepted your invite to "${squadName}"`;
+            sendPush(captainPlayerId, { title: pushTitle, body: pushBody, url: "/vote" });
 
             return SuccessResponse({
                 message: `You joined "${squadName}"! Your ${invite.squad.entryFee} ${GAME.currency} entry fee is reserved.`,
@@ -144,6 +152,13 @@ export async function POST(request: NextRequest) {
                     link: "/vote",
                 },
             });
+        });
+
+        // Push notification
+        sendPush(captainPlayerId, {
+            title: "🛡 Invite Declined",
+            body: `${playerName} declined your invite to "${squadName}"`,
+            url: "/vote",
         });
 
         return SuccessResponse({ message: `Declined invite to "${squadName}"` });

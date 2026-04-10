@@ -41,6 +41,7 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { GAME } from "@/lib/game-config";
 import { CurrencyIcon } from "@/components/common/CurrencyIcon";
+import { PushPrompt } from "@/components/common/push-prompt";
 
 interface Notification {
     id: string;
@@ -386,6 +387,9 @@ export default function NotificationsPage() {
                     <p className="text-sm text-foreground/50">Last 7 days</p>
                 </div>
             </div>
+
+            {/* Soft push notification prompt */}
+            <PushPrompt />
 
             <div className="space-y-2">
                 {isLoading && (

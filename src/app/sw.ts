@@ -29,3 +29,55 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// ── Web Push Notifications ──────────────────────────────
+
+self.addEventListener("push", (event) => {
+    if (!event.data) return;
+
+    try {
+        const data = event.data.json();
+        const { title, body, icon, badge, tag, data: notifData } = data;
+
+        event.waitUntil(
+            self.registration.showNotification(title || "Bimon", {
+                body: body || "",
+                icon: icon || "/icons/icon-192x192.png",
+                badge: badge || "/icons/icon-72x72.png",
+                tag: tag || "bimon-notification",
+                data: notifData || { url: "/notifications" },
+                requireInteraction: false,
+            })
+        );
+    } catch {
+        // Fallback for non-JSON push
+        event.waitUntil(
+            self.registration.showNotification("Bimon", {
+                body: event.data.text(),
+                icon: "/icons/icon-192x192.png",
+            })
+        );
+    }
+});
+
+self.addEventListener("notificationclick", (event) => {
+    event.notification.close();
+
+    const url = event.notification.data?.url || "/notifications";
+
+    event.waitUntil(
+        self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+            // Focus existing tab if open
+            for (const client of clientList) {
+                if (client.url.includes(self.location.origin) && "focus" in client) {
+                    client.focus();
+                    client.navigate(url);
+                    return;
+                }
+            }
+            // Otherwise open new tab
+            return self.clients.openWindow(url);
+        })
+    );
+});
+

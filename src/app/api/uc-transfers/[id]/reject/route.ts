@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
+import { sendPush } from "@/lib/push";
 
 /**
  * PATCH /api/uc-transfers/[id]/reject
@@ -95,6 +96,14 @@ export async function PATCH(
             });
 
             return updated;
+        });
+
+        // Push notification
+        const rejecterPushName = transfer.toPlayer.displayName || transfer.toPlayer.user.username;
+        sendPush(transfer.fromPlayerId, {
+            title: `${GAME.currency} Request Rejected`,
+            body: `${rejecterPushName} rejected your request for ${transfer.amount} ${GAME.currency}`,
+            url: "/notifications",
         });
 
         return NextResponse.json({

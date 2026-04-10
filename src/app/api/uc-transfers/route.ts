@@ -3,6 +3,7 @@ import { prisma } from "@/lib/database";
 import { getCurrentUser } from "@/lib/auth";
 import { GAME } from "@/lib/game-config";
 import { getAvailableBalance, transferWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { sendPush } from "@/lib/push";
 
 /**
  * POST /api/uc-transfers
@@ -106,6 +107,13 @@ export async function POST(req: NextRequest) {
                 return created;
             });
 
+            // Push notification
+            sendPush(toPlayerId, {
+                title: `${GAME.currency} Received`,
+                body: `${senderName} sent you ${amount} ${GAME.currency}`,
+                url: "/wallet",
+            });
+
             return NextResponse.json({
                 success: true,
                 data: transfer,
@@ -140,6 +148,13 @@ export async function POST(req: NextRequest) {
                 });
 
                 return created;
+            });
+
+            // Push notification
+            sendPush(toPlayerId, {
+                title: `${GAME.currency} Request`,
+                body: `${senderName} requested ${amount} ${GAME.currency} from you`,
+                url: "/notifications",
             });
 
             const toName = toPlayer.displayName || toPlayer.user.username;
