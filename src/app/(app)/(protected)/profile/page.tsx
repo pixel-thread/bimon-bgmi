@@ -437,22 +437,10 @@ export default function ProfilePage() {
                                             return;
                                         }
                                         if (isVid) {
-                                            // Check duration — max 15 seconds
-                                            const tempVideo = document.createElement("video");
-                                            tempVideo.preload = "metadata";
-                                            tempVideo.onloadedmetadata = () => {
-                                                URL.revokeObjectURL(tempVideo.src);
-                                                if (tempVideo.duration > 15) {
-                                                    toast.error("Video must be 15 seconds or less.");
-                                                    e.target.value = "";
-                                                    return;
-                                                }
-                                                const url = URL.createObjectURL(file);
-                                                setPreviewCharacter({ url, isVideo: true });
-                                                setPendingCharacterFile(file);
-                                                setShowCharacterPreview(true);
-                                            };
-                                            tempVideo.src = URL.createObjectURL(file);
+                                            const url = URL.createObjectURL(file);
+                                            setPreviewCharacter({ url, isVideo: true });
+                                            setPendingCharacterFile(file);
+                                            setShowCharacterPreview(true);
                                         } else {
                                             const url = URL.createObjectURL(file);
                                             setPreviewCharacter({ url, isVideo: false });
