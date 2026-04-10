@@ -8,6 +8,12 @@ import {
     Chip,
     Skeleton,
     Tooltip,
+    Modal,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+    useDisclosure,
 } from "@heroui/react";
 import {
     UserX,
@@ -20,6 +26,9 @@ import {
     AlertCircle,
     Shield,
     Loader2,
+    Ban,
+    Merge,
+    ArrowRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useState } from "react";
@@ -145,11 +154,60 @@ export default function DuplicatesPage() {
         },
     });
 
+    // ── Ban / Merge state ────────────────────────────────
+    const banModal = useDisclosure();
+    const mergeModal = useDisclosure();
+    const [selectedAlert, setSelectedAlert] = useState<DuplicateAlert | null>(null);
+    const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+    const [keepPlayerId, setKeepPlayerId] = useState<string | null>(null);
+
+    const banPlayer = useMutation({
+        mutationFn: async (playerId: string) => {
+            const res = await fetch(`/api/players/${playerId}/ban`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ isBanned: true, reason: "Duplicate account" }),
+            });
+            if (!res.ok) throw new Error("Failed to ban player");
+        },
+        onSuccess: () => {
+            toast.success("Player banned");
+            banModal.onClose();
+            setSelectedAlert(null);
+            setSelectedPlayerId(null);
+            queryClient.invalidateQueries({ queryKey: ["duplicate-alerts"] });
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+
+    const mergePlayers = useMutation({
+        mutationFn: async ({ oldPlayerId, keepPlayer }: { oldPlayerId: string; keepPlayer: PlayerInfo }) => {
+            const query = keepPlayer.user?.username || keepPlayer.displayName || "";
+            const res = await fetch(`/api/players/${oldPlayerId}/link`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query }),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || json.message || "Failed to merge");
+            return json;
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Players merged successfully");
+            mergeModal.onClose();
+            setSelectedAlert(null);
+            setKeepPlayerId(null);
+            queryClient.invalidateQueries({ queryKey: ["duplicate-alerts"] });
+            queryClient.invalidateQueries({ queryKey: ["duplicate-count"] });
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+
     const filteredAlerts = data?.alerts.filter(
         (a) => showReviewed || !a.isReviewed
     ) ?? [];
 
-    return (
+    const mainContent = (
         <div className="space-y-5 p-4">
             {/* Header */}
             <div className="flex items-start justify-between">
@@ -300,17 +358,47 @@ export default function DuplicatesPage() {
                                     {/* Actions */}
                                     <div className="flex gap-2 pt-1">
                                         {!alert.isReviewed ? (
-                                            <Button
-                                                size="sm"
-                                                color="success"
-                                                variant="flat"
-                                                className="flex-1 font-semibold"
-                                                isDisabled={dismiss.isPending}
-                                                startContent={<Check className="h-3.5 w-3.5" />}
-                                                onPress={() => dismiss.mutate({ alertId: alert.id })}
-                                            >
-                                                Dismiss
-                                            </Button>
+                                            <>
+                                                <Button
+                                                    size="sm"
+                                                    color="danger"
+                                                    variant="flat"
+                                                    className="font-semibold"
+                                                    startContent={<Ban className="h-3.5 w-3.5" />}
+                                                    onPress={() => {
+                                                        setSelectedAlert(alert);
+                                                        setSelectedPlayerId(null);
+                                                        banModal.onOpen();
+                                                    }}
+                                                >
+                                                    Ban
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    color="warning"
+                                                    variant="flat"
+                                                    className="font-semibold"
+                                                    startContent={<Merge className="h-3.5 w-3.5" />}
+                                                    onPress={() => {
+                                                        setSelectedAlert(alert);
+                                                        setKeepPlayerId(null);
+                                                        mergeModal.onOpen();
+                                                    }}
+                                                >
+                                                    Merge
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    color="success"
+                                                    variant="flat"
+                                                    className="flex-1 font-semibold"
+                                                    isDisabled={dismiss.isPending}
+                                                    startContent={<Check className="h-3.5 w-3.5" />}
+                                                    onPress={() => dismiss.mutate({ alertId: alert.id })}
+                                                >
+                                                    Dismiss
+                                                </Button>
+                                            </>
                                         ) : (
                                             <Button
                                                 size="sm"
@@ -354,6 +442,154 @@ export default function DuplicatesPage() {
                 </motion.div>
             )}
         </div>
+    );
+
+    // Helper to get player display label
+    function playerLabel(p: PlayerInfo) {
+        return p.displayName || p.user?.username || p.id.slice(0, 8);
+    }
+
+    return (
+        <>
+            {mainContent}
+
+            {/* ── Ban Modal ─────────────────────────── */}
+            <Modal isOpen={banModal.isOpen} onOpenChange={banModal.onOpenChange} size="sm">
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <ModalHeader className="flex items-center gap-2 text-danger">
+                                <Ban className="h-4 w-4" /> Ban Player
+                            </ModalHeader>
+                            <ModalBody>
+                                <p className="text-sm text-foreground/60">Pick which account to ban:</p>
+                                {selectedAlert && (
+                                    <div className="flex flex-col gap-2">
+                                        {[selectedAlert.player1, selectedAlert.player2].map((p) => (
+                                            <button
+                                                key={p.id}
+                                                onClick={() => setSelectedPlayerId(p.id)}
+                                                className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+                                                    selectedPlayerId === p.id
+                                                        ? "border-danger bg-danger/10"
+                                                        : "border-divider hover:border-foreground/20"
+                                                }`}
+                                            >
+                                                {p.user?.imageUrl ? (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img src={p.user.imageUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+                                                ) : (
+                                                    <div className="h-8 w-8 rounded-full bg-default-100 flex items-center justify-center text-xs font-bold text-foreground/40">?</div>
+                                                )}
+                                                <div>
+                                                    <p className="text-sm font-semibold">{playerLabel(p)}</p>
+                                                    <p className="text-xs text-foreground/40">@{p.user?.username || "?"}</p>
+                                                </div>
+                                                {p.category === "BOT" && <Chip size="sm" variant="flat" className="ml-auto text-[8px] h-4">BOT</Chip>}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button size="sm" variant="flat" onPress={onClose}>Cancel</Button>
+                                <Button
+                                    size="sm"
+                                    color="danger"
+                                    isDisabled={!selectedPlayerId}
+                                    isLoading={banPlayer.isPending}
+                                    onPress={() => selectedPlayerId && banPlayer.mutate(selectedPlayerId)}
+                                >
+                                    Ban {selectedPlayerId ? playerLabel(
+                                        selectedAlert!.player1.id === selectedPlayerId ? selectedAlert!.player1 : selectedAlert!.player2
+                                    ) : ""}
+                                </Button>
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
+
+            {/* ── Merge Modal ─────────────────────────── */}
+            <Modal isOpen={mergeModal.isOpen} onOpenChange={mergeModal.onOpenChange} size="sm">
+                <ModalContent>
+                    {() => {
+                        const keepPlayer = selectedAlert && keepPlayerId
+                            ? (selectedAlert.player1.id === keepPlayerId ? selectedAlert.player1 : selectedAlert.player2)
+                            : null;
+                        const removePlayer = selectedAlert && keepPlayerId
+                            ? (selectedAlert.player1.id === keepPlayerId ? selectedAlert.player2 : selectedAlert.player1)
+                            : null;
+
+                        return (
+                            <>
+                                <ModalHeader className="flex items-center gap-2 text-warning">
+                                    <Merge className="h-4 w-4" /> Merge Players
+                                </ModalHeader>
+                                <ModalBody>
+                                    <p className="text-sm text-foreground/60">Pick which account to <strong>keep</strong>. The other will be merged into it and deleted.</p>
+                                    {selectedAlert && (
+                                        <div className="flex flex-col gap-2">
+                                            {[selectedAlert.player1, selectedAlert.player2].map((p) => (
+                                                <button
+                                                    key={p.id}
+                                                    onClick={() => setKeepPlayerId(p.id)}
+                                                    className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+                                                        keepPlayerId === p.id
+                                                            ? "border-warning bg-warning/10"
+                                                            : "border-divider hover:border-foreground/20"
+                                                    }`}
+                                                >
+                                                    {p.user?.imageUrl ? (
+                                                        // eslint-disable-next-line @next/next/no-img-element
+                                                        <img src={p.user.imageUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+                                                    ) : (
+                                                        <div className="h-8 w-8 rounded-full bg-default-100 flex items-center justify-center text-xs font-bold text-foreground/40">?</div>
+                                                    )}
+                                                    <div>
+                                                        <p className="text-sm font-semibold">{playerLabel(p)}</p>
+                                                        <p className="text-xs text-foreground/40">@{p.user?.username || "?"}</p>
+                                                    </div>
+                                                    {keepPlayerId === p.id && (
+                                                        <Chip size="sm" color="success" variant="flat" className="ml-auto text-[8px] h-5">KEEP</Chip>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {keepPlayer && removePlayer && (
+                                        <div className="mt-2 rounded-lg bg-warning/5 border border-warning/20 p-3 text-xs text-foreground/60 space-y-1">
+                                            <p className="font-semibold text-warning">This will:</p>
+                                            <p>• Move all history from <strong>{playerLabel(removePlayer)}</strong> → <strong>{playerLabel(keepPlayer)}</strong></p>
+                                            <p>• Combine wallet balances</p>
+                                            <p>• Delete <strong>{playerLabel(removePlayer)}</strong> permanently</p>
+                                        </div>
+                                    )}
+                                </ModalBody>
+                                <ModalFooter>
+                                    <Button size="sm" variant="flat" onPress={mergeModal.onClose}>Cancel</Button>
+                                    <Button
+                                        size="sm"
+                                        color="warning"
+                                        isDisabled={!keepPlayerId || !removePlayer}
+                                        isLoading={mergePlayers.isPending}
+                                        startContent={<ArrowRight className="h-3.5 w-3.5" />}
+                                        onPress={() => {
+                                            if (removePlayer && keepPlayer) {
+                                                mergePlayers.mutate({ oldPlayerId: removePlayer.id, keepPlayer });
+                                            }
+                                        }}
+                                    >
+                                        Merge into {keepPlayer ? playerLabel(keepPlayer) : ""}
+                                    </Button>
+                                </ModalFooter>
+                            </>
+                        );
+                    }}
+                </ModalContent>
+            </Modal>
+        </>
     );
 }
 
