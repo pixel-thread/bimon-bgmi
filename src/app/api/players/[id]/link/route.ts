@@ -96,7 +96,7 @@ export async function POST(
 
         const newPlayerId = newPlayer.id;
 
-        // 4. Merge: move all old player's records to the new player
+        // 4. Merge: move all old player's records to the new player (30s timeout for large histories)
         await prisma.$transaction(async (tx) => {
             // ── Move all foreign-key references from oldPlayerId → newPlayerId ──
 
@@ -260,7 +260,7 @@ export async function POST(
 
             // Finally delete the old player
             await tx.player.delete({ where: { id: oldPlayerId } });
-        });
+        }, { timeout: 30000 });
 
         return SuccessResponse({
             message: `Merged "${oldPlayer.displayName}" into "${newPlayer.displayName}" (${targetUser.email}). All history has been combined.`,

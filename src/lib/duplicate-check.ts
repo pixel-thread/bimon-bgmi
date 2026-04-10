@@ -12,6 +12,14 @@ function getUsernameBase(username: string): string {
 }
 
 /**
+ * Normalize a player pair so the smaller ID is always first.
+ * This prevents creating both A→B and B→A alerts.
+ */
+function normalizePair(id1: string, id2: string): [string, string] {
+    return id1 < id2 ? [id1, id2] : [id2, id1];
+}
+
+/**
  * Check a single player against all other players for duplicate signals.
  * Creates DuplicateAlert records for any matches found.
  *
@@ -52,11 +60,12 @@ export async function checkPlayerForDuplicates(
         });
 
         for (const match of phoneMatches) {
+            const [p1, p2] = normalizePair(playerId, match.id);
             try {
                 await db.duplicateAlert.create({
                     data: {
-                        player1Id: playerId,
-                        player2Id: match.id,
+                        player1Id: p1,
+                        player2Id: p2,
                         matchType: "PHONE",
                         matchValue: phoneNumber,
                     },
@@ -81,11 +90,12 @@ export async function checkPlayerForDuplicates(
 
         for (const match of emailMatches) {
             if (!match.player) continue;
+            const [p1, p2] = normalizePair(playerId, match.player.id);
             try {
                 await db.duplicateAlert.create({
                     data: {
-                        player1Id: playerId,
-                        player2Id: match.player.id,
+                        player1Id: p1,
+                        player2Id: p2,
                         matchType: "EMAIL",
                         matchValue: email,
                     },
@@ -109,11 +119,12 @@ export async function checkPlayerForDuplicates(
 
         for (const match of secMatches) {
             if (!match.player) continue;
+            const [p1, p2] = normalizePair(playerId, match.player.id);
             try {
                 await db.duplicateAlert.create({
                     data: {
-                        player1Id: playerId,
-                        player2Id: match.player.id,
+                        player1Id: p1,
+                        player2Id: p2,
                         matchType: "EMAIL",
                         matchValue: secondaryEmail,
                     },
@@ -142,11 +153,12 @@ export async function checkPlayerForDuplicates(
 
         for (const match of baseMatches) {
             if (!match.player) continue;
+            const [p1, p2] = normalizePair(playerId, match.player.id);
             try {
                 await db.duplicateAlert.create({
                     data: {
-                        player1Id: playerId,
-                        player2Id: match.player.id,
+                        player1Id: p1,
+                        player2Id: p2,
                         matchType: "USERNAME",
                         matchValue: `${username} ↔ ${match.username}`,
                     },
