@@ -20,6 +20,19 @@ function normalizePair(id1: string, id2: string): [string, string] {
 }
 
 /**
+ * Normalize a display name for similarity comparison.
+ * Strips special chars, diacritics, emoji, and lowercases.
+ * e.g. "tmx♡pukhleiñ" → "tmxpukhlein", "tmxpukhlien" → "tmxpukhlien"
+ */
+function normalizeDisplayName(name: string): string {
+    return name
+        .normalize("NFD")                    // decompose diacritics (ñ → n + combining tilde)
+        .replace(/[\u0300-\u036f]/g, "")     // strip combining characters
+        .replace(/[^a-zA-Z0-9]/g, "")        // strip emoji, symbols, spaces
+        .toLowerCase();
+}
+
+/**
  * Check a single player against all other players for duplicate signals.
  * Creates DuplicateAlert records for any matches found.
  *
@@ -166,6 +179,40 @@ export async function checkPlayerForDuplicates(
                 alertsCreated++;
             } catch {
                 // already flagged
+            }
+        }
+    }
+
+    // ── 4. Display name similarity ────────────────────────
+    if (displayName && displayName.length >= 3) {
+        const normalizedName = normalizeDisplayName(displayName);
+        if (normalizedName.length >= 3) {
+            const allPlayers = await db.player.findMany({
+                where: { id: { not: playerId } },
+                select: { id: true, displayName: true },
+            });
+
+            const nameMatches = allPlayers.filter((p) => {
+                if (!p.displayName) return false;
+                const otherNorm = normalizeDisplayName(p.displayName);
+                return otherNorm === normalizedName;
+            });
+
+            for (const match of nameMatches) {
+                const [p1, p2] = normalizePair(playerId, match.id);
+                try {
+                    await db.duplicateAlert.create({
+                        data: {
+                            player1Id: p1,
+                            player2Id: p2,
+                            matchType: "DISPLAY_NAME",
+                            matchValue: `${displayName} ↔ ${match.displayName}`,
+                        },
+                    });
+                    alertsCreated++;
+                } catch {
+                    // already flagged
+                }
             }
         }
     }

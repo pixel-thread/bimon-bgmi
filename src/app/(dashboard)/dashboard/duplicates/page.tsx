@@ -73,18 +73,21 @@ const MATCH_ICONS: Record<string, typeof Phone> = {
     PHONE: Phone,
     EMAIL: Mail,
     USERNAME: User,
+    DISPLAY_NAME: User,
 };
 
 const MATCH_COLORS: Record<string, "danger" | "warning" | "primary"> = {
     PHONE: "danger",
     EMAIL: "warning",
     USERNAME: "primary",
+    DISPLAY_NAME: "danger",
 };
 
 const MATCH_LABELS: Record<string, string> = {
     PHONE: "Same Phone",
     EMAIL: "Email Overlap",
     USERNAME: "Same Google Name",
+    DISPLAY_NAME: "Similar Name",
 };
 
 // ─── Component ──────────────────────────────────────────────
