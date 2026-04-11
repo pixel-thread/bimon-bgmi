@@ -145,9 +145,10 @@ export function Header() {
     });
     const duplicateCount = dupData?.count ?? 0;
 
-    // Red dot only shows for actionable items (unclaimed rewards, pending requests, duplicate alerts)
-    // Regular notifications auto-mark as read when page is visited
+    // Red dot on hamburger shows for ALL actionable items
     const totalActionCount = unclaimedRewardCount + (isAdmin ? duplicateCount : 0);
+    // Badge on "Notifications" label only shows notification-related counts
+    const notifActionCount = unclaimedRewardCount;
 
     // Fetch runtime settings (enableElitePass toggle from dashboard)
     const { data: publicSettings } = useQuery({
@@ -296,9 +297,9 @@ export function Header() {
                                         >
                                             <item.icon className="h-4 w-4" />
                                             {item.label}
-                                            {item.label === "Notifications" && totalActionCount > 0 && (
+                                            {item.label === "Notifications" && notifActionCount > 0 && (
                                                 <span className="ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                                                    {totalActionCount}
+                                                    {notifActionCount}
                                                 </span>
                                             )}
                                         </Link>
@@ -482,9 +483,9 @@ export function Header() {
                                                 <item.icon className="h-5 w-5" />
                                             )}
                                             {item.label}
-                                            {item.label === "Notifications" && totalActionCount > 0 && (
+                                            {item.label === "Notifications" && notifActionCount > 0 && (
                                                 <span className="ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                                                    {totalActionCount}
+                                                    {notifActionCount}
                                                 </span>
                                             )}
                                         </Link>

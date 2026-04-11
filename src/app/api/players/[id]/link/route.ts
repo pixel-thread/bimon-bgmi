@@ -166,14 +166,70 @@ export async function POST(
                 });
             }
 
-            // Simple foreign key updates (one-to-many, playerId column)
+            // ── Conflict-safe foreign key updates ──
+            // For tables with unique constraints involving playerId,
+            // delete old records that conflict before moving the rest.
+
+            // PlayerStats: @@unique([seasonId, playerId])
+            const newPlayerStats = await tx.playerStats.findMany({
+                where: { playerId: newPlayerId },
+                select: { seasonId: true },
+            });
+            const existingStatSeasons = newPlayerStats.map(s => s.seasonId).filter((s): s is string => s !== null);
+            if (existingStatSeasons.length > 0) {
+                await tx.playerStats.deleteMany({
+                    where: { playerId: oldPlayerId, seasonId: { in: existingStatSeasons } },
+                });
+            }
+            // Also handle null seasonId conflict
+            if (newPlayerStats.some(s => s.seasonId === null)) {
+                await tx.playerStats.deleteMany({
+                    where: { playerId: oldPlayerId, seasonId: null },
+                });
+            }
             await tx.playerStats.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
+
+            // TeamPlayerStats: @@unique([playerId, teamId, matchId])
+            const newTPS = await tx.teamPlayerStats.findMany({
+                where: { playerId: newPlayerId },
+                select: { teamId: true, matchId: true },
+            });
+            for (const tps of newTPS) {
+                await tx.teamPlayerStats.deleteMany({
+                    where: { playerId: oldPlayerId, teamId: tps.teamId, matchId: tps.matchId },
+                });
+            }
             await tx.teamPlayerStats.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
+
+            // MatchPlayerPlayed: @@unique([playerId, teamId, matchId]) — same pattern
+            // (no unique constraint on this table actually, but safe to just move)
             await tx.matchPlayerPlayed.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
+
+            // PlayerPollVote: @@unique([playerId, pollId])
+            const newPollVotes = await tx.playerPollVote.findMany({
+                where: { playerId: newPlayerId },
+                select: { pollId: true },
+            });
+            const existingPollVoteIds = new Set(newPollVotes.map(v => v.pollId));
+            await tx.playerPollVote.deleteMany({
+                where: { playerId: oldPlayerId, pollId: { in: [...existingPollVoteIds] } },
+            });
+            await tx.playerPollVote.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
+
+            // GameScore: @unique on playerId only
+            const newGameScore = await tx.gameScore.findUnique({
+                where: { playerId: newPlayerId },
+            });
+            if (newGameScore) {
+                // New player already has a game score, delete old one
+                await tx.gameScore.deleteMany({ where: { playerId: oldPlayerId } });
+            } else {
+                await tx.gameScore.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
+            }
+
+            // Simple moves (no conflicting unique constraints)
             await tx.transaction.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
             await tx.pendingReward.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
-            await tx.playerPollVote.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
-            await tx.gameScore.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
             await tx.prizePoolDonation.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
 
             // TeamStats (many-to-many via players)
@@ -234,6 +290,16 @@ export async function POST(
 
             // Community
             await tx.communityMessage.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
+            // CommunityPollVote: @@unique([pollId, playerId])
+            const newCPV = await tx.communityPollVote.findMany({
+                where: { playerId: newPlayerId },
+                select: { pollId: true },
+            });
+            if (newCPV.length > 0) {
+                await tx.communityPollVote.deleteMany({
+                    where: { playerId: oldPlayerId, pollId: { in: newCPV.map(v => v.pollId) } },
+                });
+            }
             await tx.communityPollVote.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
 
             // Royal passes
