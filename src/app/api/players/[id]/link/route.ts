@@ -96,216 +96,161 @@ export async function POST(
 
         const newPlayerId = newPlayer.id;
 
-        // 4. Merge: move all old player's records to the new player (30s timeout for large histories)
+        // 4. Merge: move all old player's records to the new player (120s timeout for large histories)
         await prisma.$transaction(async (tx) => {
-            // ── Move all foreign-key references from oldPlayerId → newPlayerId ──
+            // ── Phase 1: Gather all existing data in parallel ──
+            const [
+                existingTeams,
+                oldTeams,
+                existingMatches,
+                oldMatches,
+                existingSeasons,
+                oldSeasons,
+                newPlayerStats,
+                newTPS,
+                newPollVotes,
+                newGameScore,
+                oldTeamStats,
+                existingTeamStats,
+                oldPolls,
+                existingPolls,
+                newCPV,
+            ] = await Promise.all([
+                tx.team.findMany({ where: { players: { some: { id: newPlayerId } } }, select: { id: true } }),
+                tx.team.findMany({ where: { players: { some: { id: oldPlayerId } } }, select: { id: true } }),
+                tx.match.findMany({ where: { players: { some: { id: newPlayerId } } }, select: { id: true } }),
+                tx.match.findMany({ where: { players: { some: { id: oldPlayerId } } }, select: { id: true } }),
+                tx.season.findMany({ where: { players: { some: { id: newPlayerId } } }, select: { id: true } }),
+                tx.season.findMany({ where: { players: { some: { id: oldPlayerId } } }, select: { id: true } }),
+                tx.playerStats.findMany({ where: { playerId: newPlayerId }, select: { seasonId: true } }),
+                tx.teamPlayerStats.findMany({ where: { playerId: newPlayerId }, select: { teamId: true, matchId: true } }),
+                tx.playerPollVote.findMany({ where: { playerId: newPlayerId }, select: { pollId: true } }),
+                tx.gameScore.findUnique({ where: { playerId: newPlayerId } }),
+                tx.teamStats.findMany({ where: { players: { some: { id: oldPlayerId } } }, select: { id: true } }),
+                tx.teamStats.findMany({ where: { players: { some: { id: newPlayerId } } }, select: { id: true } }),
+                tx.poll.findMany({ where: { players: { some: { id: oldPlayerId } } }, select: { id: true } }),
+                tx.poll.findMany({ where: { players: { some: { id: newPlayerId } } }, select: { id: true } }),
+                tx.communityPollVote.findMany({ where: { playerId: newPlayerId }, select: { pollId: true } }),
+            ]);
 
-            // Team memberships
-            // Skip teams where the new player is already a member (avoid unique constraint)
-            const existingTeamIds = (await tx.team.findMany({
-                where: { players: { some: { id: newPlayerId } } },
-                select: { id: true },
-            })).map(t => t.id);
+            const existingTeamIds = new Set(existingTeams.map(t => t.id));
+            const existingMatchIds = new Set(existingMatches.map(m => m.id));
+            const existingSeasonIds = new Set(existingSeasons.map(s => s.id));
+            const existingTeamStatIds = new Set(existingTeamStats.map(ts => ts.id));
+            const existingPollIds = new Set(existingPolls.map(p => p.id));
 
-            // For teams, we need to use the many-to-many disconnect/connect
-            const oldTeams = await tx.team.findMany({
-                where: { players: { some: { id: oldPlayerId } } },
-                select: { id: true },
-            });
-            for (const team of oldTeams) {
-                await tx.team.update({
+            // ── Phase 2: Many-to-many disconnect/connect (batched) ──
+            await Promise.all([
+                // Teams
+                ...oldTeams.map(team => tx.team.update({
                     where: { id: team.id },
                     data: {
                         players: {
                             disconnect: { id: oldPlayerId },
-                            ...(existingTeamIds.includes(team.id) ? {} : { connect: { id: newPlayerId } }),
+                            ...(existingTeamIds.has(team.id) ? {} : { connect: { id: newPlayerId } }),
                         },
                     },
-                });
-            }
-
-            // Matches (many-to-many)
-            const oldMatches = await tx.match.findMany({
-                where: { players: { some: { id: oldPlayerId } } },
-                select: { id: true },
-            });
-            const existingMatchIds = (await tx.match.findMany({
-                where: { players: { some: { id: newPlayerId } } },
-                select: { id: true },
-            })).map(m => m.id);
-            for (const match of oldMatches) {
-                await tx.match.update({
+                })),
+                // Matches
+                ...oldMatches.map(match => tx.match.update({
                     where: { id: match.id },
                     data: {
                         players: {
                             disconnect: { id: oldPlayerId },
-                            ...(existingMatchIds.includes(match.id) ? {} : { connect: { id: newPlayerId } }),
+                            ...(existingMatchIds.has(match.id) ? {} : { connect: { id: newPlayerId } }),
                         },
                     },
-                });
-            }
-
-            // Season memberships (many-to-many via PlayerSeason)
-            const oldSeasons = await tx.season.findMany({
-                where: { players: { some: { id: oldPlayerId } } },
-                select: { id: true },
-            });
-            const existingSeasonIds = (await tx.season.findMany({
-                where: { players: { some: { id: newPlayerId } } },
-                select: { id: true },
-            })).map(s => s.id);
-            for (const season of oldSeasons) {
-                await tx.season.update({
+                })),
+                // Seasons
+                ...oldSeasons.map(season => tx.season.update({
                     where: { id: season.id },
                     data: {
                         players: {
                             disconnect: { id: oldPlayerId },
-                            ...(existingSeasonIds.includes(season.id) ? {} : { connect: { id: newPlayerId } }),
+                            ...(existingSeasonIds.has(season.id) ? {} : { connect: { id: newPlayerId } }),
                         },
                     },
-                });
-            }
+                })),
+            ]);
 
-            // ── Conflict-safe foreign key updates ──
-            // For tables with unique constraints involving playerId,
-            // delete old records that conflict before moving the rest.
-
-            // PlayerStats: @@unique([seasonId, playerId])
-            const newPlayerStats = await tx.playerStats.findMany({
-                where: { playerId: newPlayerId },
-                select: { seasonId: true },
-            });
+            // ── Phase 3: Conflict-safe deletes for unique constraints ──
             const existingStatSeasons = newPlayerStats.map(s => s.seasonId).filter((s): s is string => s !== null);
-            if (existingStatSeasons.length > 0) {
-                await tx.playerStats.deleteMany({
-                    where: { playerId: oldPlayerId, seasonId: { in: existingStatSeasons } },
-                });
-            }
-            // Also handle null seasonId conflict
-            if (newPlayerStats.some(s => s.seasonId === null)) {
-                await tx.playerStats.deleteMany({
-                    where: { playerId: oldPlayerId, seasonId: null },
-                });
-            }
-            await tx.playerStats.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
-
-            // TeamPlayerStats: @@unique([playerId, teamId, matchId])
-            const newTPS = await tx.teamPlayerStats.findMany({
-                where: { playerId: newPlayerId },
-                select: { teamId: true, matchId: true },
-            });
-            for (const tps of newTPS) {
-                await tx.teamPlayerStats.deleteMany({
-                    where: { playerId: oldPlayerId, teamId: tps.teamId, matchId: tps.matchId },
-                });
-            }
-            await tx.teamPlayerStats.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
-
-            // MatchPlayerPlayed: @@unique([playerId, teamId, matchId]) — same pattern
-            // (no unique constraint on this table actually, but safe to just move)
-            await tx.matchPlayerPlayed.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
-
-            // PlayerPollVote: @@unique([playerId, pollId])
-            const newPollVotes = await tx.playerPollVote.findMany({
-                where: { playerId: newPlayerId },
-                select: { pollId: true },
-            });
             const existingPollVoteIds = new Set(newPollVotes.map(v => v.pollId));
-            await tx.playerPollVote.deleteMany({
-                where: { playerId: oldPlayerId, pollId: { in: [...existingPollVoteIds] } },
-            });
-            await tx.playerPollVote.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
 
-            // GameScore: @unique on playerId only
-            const newGameScore = await tx.gameScore.findUnique({
-                where: { playerId: newPlayerId },
-            });
-            if (newGameScore) {
-                // New player already has a game score, delete old one
-                await tx.gameScore.deleteMany({ where: { playerId: oldPlayerId } });
-            } else {
-                await tx.gameScore.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
-            }
+            await Promise.all([
+                // PlayerStats conflicts
+                ...(existingStatSeasons.length > 0
+                    ? [tx.playerStats.deleteMany({ where: { playerId: oldPlayerId, seasonId: { in: existingStatSeasons } } })]
+                    : []),
+                ...(newPlayerStats.some(s => s.seasonId === null)
+                    ? [tx.playerStats.deleteMany({ where: { playerId: oldPlayerId, seasonId: null } })]
+                    : []),
+                // TeamPlayerStats conflicts
+                ...newTPS.map(tps => tx.teamPlayerStats.deleteMany({
+                    where: { playerId: oldPlayerId, teamId: tps.teamId, matchId: tps.matchId },
+                })),
+                // PlayerPollVote conflicts
+                ...(existingPollVoteIds.size > 0
+                    ? [tx.playerPollVote.deleteMany({ where: { playerId: oldPlayerId, pollId: { in: [...existingPollVoteIds] } } })]
+                    : []),
+                // GameScore conflict
+                ...(newGameScore
+                    ? [tx.gameScore.deleteMany({ where: { playerId: oldPlayerId } })]
+                    : []),
+                // CommunityPollVote conflicts
+                ...(newCPV.length > 0
+                    ? [tx.communityPollVote.deleteMany({ where: { playerId: oldPlayerId, pollId: { in: newCPV.map(v => v.pollId) } } })]
+                    : []),
+            ]);
 
-            // Simple moves (no conflicting unique constraints)
-            await tx.transaction.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
-            await tx.pendingReward.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
-            await tx.prizePoolDonation.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
+            // ── Phase 4: Bulk moves (all independent, run in parallel) ──
+            await Promise.all([
+                tx.playerStats.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } }),
+                tx.teamPlayerStats.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } }),
+                tx.matchPlayerPlayed.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } }),
+                tx.playerPollVote.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } }),
+                ...(!newGameScore
+                    ? [tx.gameScore.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } })]
+                    : []),
+                tx.transaction.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } }),
+                tx.pendingReward.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } }),
+                tx.prizePoolDonation.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } }),
+                tx.communityMessage.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } }),
+                tx.communityPollVote.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } }),
+                tx.royalPass.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } }),
+                tx.uCTransfer.updateMany({ where: { fromPlayerId: oldPlayerId }, data: { fromPlayerId: newPlayerId } }),
+                tx.uCTransfer.updateMany({ where: { toPlayerId: oldPlayerId }, data: { toPlayerId: newPlayerId } }),
+                tx.bracketMatch.updateMany({ where: { player1Id: oldPlayerId }, data: { player1Id: newPlayerId } }),
+                tx.bracketMatch.updateMany({ where: { player2Id: oldPlayerId }, data: { player2Id: newPlayerId } }),
+                tx.bracketMatch.updateMany({ where: { winnerId: oldPlayerId }, data: { winnerId: newPlayerId } }),
+                tx.bracketResult.updateMany({ where: { submittedById: oldPlayerId }, data: { submittedById: newPlayerId } }),
+                tx.playerMeritRating.updateMany({ where: { fromPlayerId: oldPlayerId }, data: { fromPlayerId: newPlayerId } }),
+                tx.playerMeritRating.updateMany({ where: { toPlayerId: oldPlayerId }, data: { toPlayerId: newPlayerId } }),
+            ]);
 
-            // TeamStats (many-to-many via players)
-            const oldTeamStats = await tx.teamStats.findMany({
-                where: { players: { some: { id: oldPlayerId } } },
-                select: { id: true },
-            });
-            const existingTeamStatIds = (await tx.teamStats.findMany({
-                where: { players: { some: { id: newPlayerId } } },
-                select: { id: true },
-            })).map(ts => ts.id);
-            for (const ts of oldTeamStats) {
-                await tx.teamStats.update({
+            // ── Phase 5: Many-to-many TeamStats + Polls (batched) ──
+            await Promise.all([
+                ...oldTeamStats.map(ts => tx.teamStats.update({
                     where: { id: ts.id },
                     data: {
                         players: {
                             disconnect: { id: oldPlayerId },
-                            ...(existingTeamStatIds.includes(ts.id) ? {} : { connect: { id: newPlayerId } }),
+                            ...(existingTeamStatIds.has(ts.id) ? {} : { connect: { id: newPlayerId } }),
                         },
                     },
-                });
-            }
-
-            // Polls (many-to-many via players)
-            const oldPolls = await tx.poll.findMany({
-                where: { players: { some: { id: oldPlayerId } } },
-                select: { id: true },
-            });
-            const existingPollIds = (await tx.poll.findMany({
-                where: { players: { some: { id: newPlayerId } } },
-                select: { id: true },
-            })).map(p => p.id);
-            for (const poll of oldPolls) {
-                await tx.poll.update({
+                })),
+                ...oldPolls.map(poll => tx.poll.update({
                     where: { id: poll.id },
                     data: {
                         players: {
                             disconnect: { id: oldPlayerId },
-                            ...(existingPollIds.includes(poll.id) ? {} : { connect: { id: newPlayerId } }),
+                            ...(existingPollIds.has(poll.id) ? {} : { connect: { id: newPlayerId } }),
                         },
                     },
-                });
-            }
+                })),
+            ]);
 
-            // UC Transfers
-            await tx.uCTransfer.updateMany({ where: { fromPlayerId: oldPlayerId }, data: { fromPlayerId: newPlayerId } });
-            await tx.uCTransfer.updateMany({ where: { toPlayerId: oldPlayerId }, data: { toPlayerId: newPlayerId } });
-
-            // Bracket matches
-            await tx.bracketMatch.updateMany({ where: { player1Id: oldPlayerId }, data: { player1Id: newPlayerId } });
-            await tx.bracketMatch.updateMany({ where: { player2Id: oldPlayerId }, data: { player2Id: newPlayerId } });
-            await tx.bracketMatch.updateMany({ where: { winnerId: oldPlayerId }, data: { winnerId: newPlayerId } });
-            await tx.bracketResult.updateMany({ where: { submittedById: oldPlayerId }, data: { submittedById: newPlayerId } });
-
-            // Merit ratings
-            await tx.playerMeritRating.updateMany({ where: { fromPlayerId: oldPlayerId }, data: { fromPlayerId: newPlayerId } });
-            await tx.playerMeritRating.updateMany({ where: { toPlayerId: oldPlayerId }, data: { toPlayerId: newPlayerId } });
-
-            // Community
-            await tx.communityMessage.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
-            // CommunityPollVote: @@unique([pollId, playerId])
-            const newCPV = await tx.communityPollVote.findMany({
-                where: { playerId: newPlayerId },
-                select: { pollId: true },
-            });
-            if (newCPV.length > 0) {
-                await tx.communityPollVote.deleteMany({
-                    where: { playerId: oldPlayerId, pollId: { in: newCPV.map(v => v.pollId) } },
-                });
-            }
-            await tx.communityPollVote.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
-
-            // Royal passes
-            await tx.royalPass.updateMany({ where: { playerId: oldPlayerId }, data: { playerId: newPlayerId } });
-
-            // Merge wallet balance: add old balance to new
+            // ── Phase 6: Wallet merge + cleanup ──
             const oldBalance = oldPlayer.wallet?.balance ?? 0;
             if (oldBalance !== 0 && newPlayer.wallet) {
                 await tx.wallet.update({
@@ -314,19 +259,21 @@ export async function POST(
                 });
             }
 
-            // Delete old player's unique dependents first
-            await tx.wallet.deleteMany({ where: { playerId: oldPlayerId } });
-            await tx.playerStreak.deleteMany({ where: { playerId: oldPlayerId } });
-            await tx.playerBan.deleteMany({ where: { playerId: oldPlayerId } });
-            await tx.pushSubscription.deleteMany({ where: { playerId: oldPlayerId } });
-            await tx.playerJobListing.deleteMany({ where: { playerId: oldPlayerId } });
-            await tx.referral.deleteMany({ where: { referredPlayerId: oldPlayerId } });
-            await tx.notification.deleteMany({ where: { playerId: oldPlayerId } });
-            await tx.jobListingReaction.deleteMany({ where: { playerId: oldPlayerId } });
+            // Delete old player's unique dependents
+            await Promise.all([
+                tx.wallet.deleteMany({ where: { playerId: oldPlayerId } }),
+                tx.playerStreak.deleteMany({ where: { playerId: oldPlayerId } }),
+                tx.playerBan.deleteMany({ where: { playerId: oldPlayerId } }),
+                tx.pushSubscription.deleteMany({ where: { playerId: oldPlayerId } }),
+                tx.playerJobListing.deleteMany({ where: { playerId: oldPlayerId } }),
+                tx.referral.deleteMany({ where: { referredPlayerId: oldPlayerId } }),
+                tx.notification.deleteMany({ where: { playerId: oldPlayerId } }),
+                tx.jobListingReaction.deleteMany({ where: { playerId: oldPlayerId } }),
+            ]);
 
             // Finally delete the old player
             await tx.player.delete({ where: { id: oldPlayerId } });
-        }, { timeout: 30000 });
+        }, { timeout: 120_000 });
 
         return SuccessResponse({
             message: `Merged "${oldPlayer.displayName}" into "${newPlayer.displayName}" (${targetUser.email}). All history has been combined.`,
