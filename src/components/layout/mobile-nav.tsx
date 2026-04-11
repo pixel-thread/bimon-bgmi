@@ -33,7 +33,7 @@ const tabs: Tab[] = [
     { label: "Vote", href: "/vote", icon: Vote },
     ...(GAME.features.hasBracket
         ? [{ label: "Matches", href: "/bracket", icon: Swords }]
-        : [{ label: "Community", href: "/community", icon: MessageCircle }]),
+        : [{ label: "__wallet__", href: "/wallet", icon: Wallet }]),
     { label: "Profile", href: "/profile" },
 ];
 
