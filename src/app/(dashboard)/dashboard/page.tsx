@@ -18,9 +18,12 @@ import {
     ShieldBan,
     AlertCircle,
     UsersRound,
+    AlertTriangle,
+    ChevronRight,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { GAME } from "@/lib/game-config";
+import Link from "next/link";
 
 interface DashboardStats {
     players: { total: number; banned: number };
@@ -102,6 +105,9 @@ export default function DashboardPage() {
                 )}
             </div>
 
+            {/* Duplicate alerts banner */}
+            <DuplicateAlertBanner />
+
             {error && (
                 <div className="flex items-center gap-2 rounded-lg bg-danger-50 p-4 text-sm text-danger dark:bg-danger-50/10">
                     <AlertCircle className="h-4 w-4 shrink-0" />
@@ -171,5 +177,46 @@ export default function DashboardPage() {
                 </>
             ) : null}
         </div>
+    );
+}
+
+// ─── Duplicate Alert Banner ────────────────────────────────
+function DuplicateAlertBanner() {
+    const { data } = useQuery<{ count: number }>({
+        queryKey: ["duplicate-count"],
+        queryFn: async () => {
+            const res = await fetch("/api/dashboard/duplicates/count");
+            if (!res.ok) return { count: 0 };
+            const json = await res.json();
+            return json.data as { count: number };
+        },
+        staleTime: 60 * 1000,
+    });
+
+    if (!data || data.count === 0) return null;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+        >
+            <Link
+                href="/dashboard/duplicates"
+                className="flex items-center gap-3 rounded-xl border border-danger/20 bg-danger/[0.04] px-4 py-3 transition-colors hover:bg-danger/[0.08] active:scale-[0.99]"
+            >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-danger/10">
+                    <AlertTriangle className="h-4 w-4 text-danger" />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-danger">
+                        {data.count} suspicious account{data.count !== 1 ? "s" : ""} detected
+                    </p>
+                    <p className="text-[11px] text-foreground/40">
+                        Tap to review duplicate accounts
+                    </p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-danger/40" />
+            </Link>
+        </motion.div>
     );
 }
