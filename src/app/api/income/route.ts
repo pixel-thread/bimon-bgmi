@@ -160,6 +160,17 @@ export async function GET(request: NextRequest) {
         const luckyTotal = luckyPolls.reduce((sum, p) => sum + (p.tournament?.fee ?? 0), 0);
         if (luckyTotal > 0) deductions.push({ category: "Lucky Voters", total: luckyTotal, count: luckyPolls.length });
 
+        // Welcome Back Coupons — org cost for returning player incentive
+        const welcomeBackCoupons = await prisma.welcomeBackCoupon.findMany({
+            where: {
+                isUsed: true,
+                usedForTournamentId: { in: tournamentIds },
+            },
+            select: { amount: true },
+        });
+        const welcomeBackTotal = welcomeBackCoupons.reduce((sum, c) => sum + c.amount, 0);
+        if (welcomeBackTotal > 0) deductions.push({ category: "Welcome Back Coupons", total: welcomeBackTotal, count: welcomeBackCoupons.length });
+
         // Name Change Fees (income from players breaking cooldown)
         const nameChangeFees = await prisma.transaction.aggregate({
             where: {
