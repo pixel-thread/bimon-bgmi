@@ -5,6 +5,7 @@ import { type NextRequest } from "next/server";
 import { getSettings } from "@/lib/settings";
 import { GAME } from "@/lib/game-config";
 import { getAvailableBalance } from "@/lib/wallet-service";
+import { checkAndGrantWelcomeBack } from "@/lib/logic/welcomeBack";
 
 /**
  * POST /api/polls/vote
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
             prisma.user.findFirst({
                 where: userWhereEmail(userId),
                 select: {
+                    id: true,
                     role: true,
                     player: {
                         select: {
@@ -329,6 +331,32 @@ export async function POST(request: NextRequest) {
                     }
                 }
             } // end enableLuckyVoters
+        }
+
+        // ─── Welcome Back Coupon — returning players (2+ seasons inactive) ───
+        // Non-blocking: grant coupon silently, player sees notification
+        if (isFirstVote && (vote === "IN" || vote === "SOLO")) {
+            try {
+                const coupon = await checkAndGrantWelcomeBack(
+                    playerId,
+                    poll.tournament?.seasonId,
+                );
+                if (coupon) {
+                    // Create in-app notification
+                    await prisma.notification.create({
+                        data: {
+                            userId: user.id,
+                            title: "🎉 Welcome Back!",
+                            message: `We missed you! Here's a free entry pass worth ${coupon.amount} ${GAME.currency} — it'll be auto-applied on your next tournament!`,
+                            type: "WELCOME_BACK",
+                            playerId,
+                        },
+                    });
+                }
+            } catch (err) {
+                // Non-critical — don't fail the vote
+                console.error("[polls/vote] Welcome back check failed:", err);
+            }
         }
 
         return SuccessResponse({

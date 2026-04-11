@@ -53,6 +53,9 @@ export interface AppSettings {
 
     // 📺 Social Links
     youtubeChannelUrl: string;
+
+    // 🎁 Welcome Back
+    welcomeBackCouponAmount: number; // UC value of welcome-back coupon for returning players
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -95,6 +98,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
     upiQrImageUrl: "",
 
     youtubeChannelUrl: "",
+
+    welcomeBackCouponAmount: 20,
 };
 
 /**

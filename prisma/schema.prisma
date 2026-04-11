@@ -236,6 +236,7 @@ model Player {
   bracketResultMVPs     BracketResult[]    @relation("BracketResultMVP")
   squadsAsCaptain       Squad[]            @relation("SquadCaptain")
   squadInvites          SquadInvite[]
+  welcomeBackCoupons    WelcomeBackCoupon[]
 
   @@index([userId])
   @@index([category])
@@ -1263,4 +1264,22 @@ model DuplicateAlert {
 
   @@unique([player1Id, player2Id, matchType])
   @@index([isReviewed])
+}
+
+// ─── Welcome Back Coupon ─────────────────────────────────────
+
+/// One-time welcome back coupon for returning players (inactive 2+ seasons).
+/// Value is applied as entry fee discount during team generation (auto-applied).
+model WelcomeBackCoupon {
+  id        String   @id @default(uuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  amount    Int      @default(20)   // Coupon value in game currency
+  isUsed    Boolean  @default(false)
+  usedAt    DateTime?
+  usedForTournamentId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([playerId, isUsed])
 }

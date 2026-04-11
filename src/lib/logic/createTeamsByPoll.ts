@@ -12,6 +12,7 @@ import { PlayerWithWeightT } from "@/types/models";
 import { getPreviousTournamentTeammates } from "./previousTeammates";
 import { isBirthdayWithinWindow } from "./birthdayCheck";
 import { debitWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { getActiveCoupon, redeemCoupon } from "@/lib/logic/welcomeBack";
 import { GAME } from "@/lib/game-config";
 
 // ─── Types ───────────────────────────────────────────────────
@@ -563,30 +564,66 @@ export async function createTeamsByPoll({
         },
     );
 
-    // ── Post-transaction: debit central wallets ──────────────────
+    // ── Post-transaction: debit wallets ──────────────────────────
     // Must happen OUTSIDE the prisma transaction because central wallet
     // is a separate database (Neon). This ensures the game DB records
     // are committed before we debit.
+    //
+    // Welcome Back Coupon: auto-applied here — covers up to coupon.amount
+    // of the entry fee. Remainder (if any) is debited from wallet.
     if (entryFee > 0 && playersToChargeList.length > 0) {
         await processBatches(playersToChargeList, BATCH_SIZE, async (player) => {
             const email = (player as any).user?.email || await getEmailByPlayerId(player.id);
             if (email) {
                 try {
-                    await debitWallet(email, entryFee, `Entry fee for ${tournamentName}`, "TOURNAMENT_ENTRY");
+                    // Check for welcome back coupon
+                    const coupon = await getActiveCoupon(player.id);
+                    if (coupon) {
+                        const discount = Math.min(coupon.amount, entryFee);
+                        const remaining = entryFee - discount;
+                        await redeemCoupon(coupon.id, tournamentId);
+                        if (remaining > 0) {
+                            await debitWallet(
+                                email,
+                                remaining,
+                                `Entry fee for ${tournamentName} (${discount} ${GAME.currency} welcome back coupon applied)`,
+                                "TOURNAMENT_ENTRY",
+                            );
+                        }
+                        console.log(`[createTeamsByPoll] Welcome back coupon applied for ${player.id}: ${discount} ${GAME.currency} off (${remaining} ${GAME.currency} charged)`);
+                    } else {
+                        await debitWallet(email, entryFee, `Entry fee for ${tournamentName}`, "TOURNAMENT_ENTRY");
+                    }
                 } catch (err) {
-                    console.error(`[createTeamsByPoll] Failed to debit central wallet for ${player.id}:`, err);
+                    console.error(`[createTeamsByPoll] Failed to debit wallet for ${player.id}:`, err);
                 }
             }
         });
     }
 
-    // Debit squad members (same entry fee, post-transaction)
+    // Debit squad members (same entry fee + coupon check, post-transaction)
     if (entryFee > 0 && squadPlayersToCharge.length > 0) {
         await processBatches(squadPlayersToCharge, BATCH_SIZE, async (member) => {
             const email = member.email || await getEmailByPlayerId(member.id);
             if (email) {
                 try {
-                    await debitWallet(email, entryFee, `Squad entry fee for ${tournamentName}`, "TOURNAMENT_ENTRY");
+                    const coupon = await getActiveCoupon(member.id);
+                    if (coupon) {
+                        const discount = Math.min(coupon.amount, entryFee);
+                        const remaining = entryFee - discount;
+                        await redeemCoupon(coupon.id, tournamentId);
+                        if (remaining > 0) {
+                            await debitWallet(
+                                email,
+                                remaining,
+                                `Squad entry fee for ${tournamentName} (${discount} ${GAME.currency} welcome back coupon applied)`,
+                                "TOURNAMENT_ENTRY",
+                            );
+                        }
+                        console.log(`[createTeamsByPoll] Welcome back coupon applied for squad member ${member.id}: ${discount} ${GAME.currency} off`);
+                    } else {
+                        await debitWallet(email, entryFee, `Squad entry fee for ${tournamentName}`, "TOURNAMENT_ENTRY");
+                    }
                 } catch (err) {
                     console.error(`[createTeamsByPoll] Failed to debit squad member ${member.id}:`, err);
                 }

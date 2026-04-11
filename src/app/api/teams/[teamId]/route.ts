@@ -4,6 +4,7 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { NextRequest, NextResponse } from "next/server";
 import { GAME } from "@/lib/game-config";
 import { creditWallet, debitWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { getActiveCoupon, redeemCoupon } from "@/lib/logic/welcomeBack";
 
 /**
  * PATCH /api/teams/[teamId]
@@ -137,7 +138,21 @@ export async function PATCH(
             for (const playerId of addPlayerIds) {
                 const email = await getEmailByPlayerId(playerId);
                 if (email) {
-                    await debitWallet(email, entryFee, `Entry fee: Added to team in ${tournamentName}`, "TOURNAMENT_ENTRY");
+                    try {
+                        const coupon = await getActiveCoupon(playerId);
+                        if (coupon) {
+                            const discount = Math.min(coupon.amount, entryFee);
+                            const remaining = entryFee - discount;
+                            await redeemCoupon(coupon.id, team.tournament?.id ?? "");
+                            if (remaining > 0) {
+                                await debitWallet(email, remaining, `Entry fee: Added to team in ${tournamentName} (${discount} ${GAME.currency} coupon applied)`, "TOURNAMENT_ENTRY");
+                            }
+                        } else {
+                            await debitWallet(email, entryFee, `Entry fee: Added to team in ${tournamentName}`, "TOURNAMENT_ENTRY");
+                        }
+                    } catch (err) {
+                        console.error(`[teams/PATCH] Failed to debit ${playerId}:`, err);
+                    }
                 }
             }
         }

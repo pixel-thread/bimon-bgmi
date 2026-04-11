@@ -4,6 +4,7 @@ import { SuccessResponse, ErrorResponse } from "@/lib/api-response";
 import { type NextRequest } from "next/server";
 import { GAME } from "@/lib/game-config";
 import { debitWallet, getEmailByPlayerId } from "@/lib/wallet-service";
+import { getActiveCoupon, redeemCoupon } from "@/lib/logic/welcomeBack";
 
 /**
  * POST /api/teams/create
@@ -176,15 +177,26 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // 6. UC deduction via central wallet (optional)
+        // 6. UC deduction via wallet (optional) — with welcome back coupon support
         const entryFee = tournament.fee || 0;
+        let couponAppliedCount = 0;
         if (deductUC && entryFee > 0) {
-            // Debit central wallets only — no local wallet/transaction records
             for (const playerId of playerIds) {
                 const email = await getEmailByPlayerId(playerId);
                 if (email) {
                     try {
-                        await debitWallet(email, entryFee, `Entry fee for ${tournament.name}`, "TOURNAMENT_ENTRY");
+                        const coupon = await getActiveCoupon(playerId);
+                        if (coupon) {
+                            const discount = Math.min(coupon.amount, entryFee);
+                            const remaining = entryFee - discount;
+                            await redeemCoupon(coupon.id, tournament.id);
+                            if (remaining > 0) {
+                                await debitWallet(email, remaining, `Entry fee for ${tournament.name} (${discount} ${GAME.currency} welcome back coupon applied)`, "TOURNAMENT_ENTRY");
+                            }
+                            couponAppliedCount++;
+                        } else {
+                            await debitWallet(email, entryFee, `Entry fee for ${tournament.name}`, "TOURNAMENT_ENTRY");
+                        }
                     } catch (err) {
                         console.error(`[teams/create] Failed to debit ${playerId}:`, err);
                     }
@@ -193,7 +205,7 @@ export async function POST(request: NextRequest) {
         }
 
         const baseMsg = deductUC && entryFee > 0
-            ? `Team created. ${entryFee} ${GAME.currency} debited from each player.`
+            ? `Team created. ${entryFee} ${GAME.currency} debited from each player.${couponAppliedCount > 0 ? ` (${couponAppliedCount} welcome back coupon(s) applied)` : ""}`
             : "Team created successfully";
         const propagateMsg = propagatedCount > 0
             ? ` Also added to ${propagatedCount} more match${propagatedCount > 1 ? "es" : ""}.`
