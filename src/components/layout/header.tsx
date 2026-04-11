@@ -259,6 +259,11 @@ export function Header() {
                                             <item.icon className="h-4 w-4" />
                                         )}
                                         {item.label}
+                                        {item.label === "Dashboard" && duplicateCount > 0 && (
+                                            <span className="rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                                                {duplicateCount}
+                                            </span>
+                                        )}
                                     </Link>
                                 </NavbarItem>
                             );
@@ -533,6 +538,36 @@ export function Header() {
                             )}
 
 
+                            {/* Admin Dashboard link with duplicate alert badge */}
+                            {isAdmin && (
+                                <NavbarMenuItem>
+                                    <div className="mt-1 border-t border-divider pt-2">
+                                        <Link
+                                            href="/dashboard"
+                                            onClick={() => {
+                                                if (!pathname.startsWith("/dashboard")) setNavigatingTo("/dashboard");
+                                                else setIsMenuOpen(false);
+                                            }}
+                                            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-colors ${pathname.startsWith("/dashboard")
+                                                ? "bg-primary/10 font-semibold text-primary"
+                                                : "text-foreground/70 hover:bg-default-100"
+                                                }`}
+                                        >
+                                            {navigatingTo === "/dashboard" && !pathname.startsWith("/dashboard") ? (
+                                                <Loader2 className="h-5 w-5 animate-spin" />
+                                            ) : (
+                                                <BarChart3 className="h-5 w-5" />
+                                            )}
+                                            Dashboard
+                                            {duplicateCount > 0 && (
+                                                <span className="ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                                                    {duplicateCount}
+                                                </span>
+                                            )}
+                                        </Link>
+                                    </div>
+                                </NavbarMenuItem>
+                            )}
                         </>
                     )}
 
