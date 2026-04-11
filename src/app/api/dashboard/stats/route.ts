@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
             activePollCount,
             walletAgg,
             bannedCount,
+            pushSubscribers,
         ] = await Promise.all([
             prisma.user.count(),
             prisma.tournament.count({
@@ -46,8 +47,11 @@ export async function GET(request: NextRequest) {
             prisma.poll.count({ where: { isActive: true } }),
             prisma.wallet.aggregate({ _sum: { balance: true } }),
             prisma.player.count({ where: { isBanned: true } }),
+            // Push notification subscribers
+            prisma.pushSubscription.groupBy({
+                by: ["playerId"],
+            }),
         ]);
-
         // Use TeamPlayerStats to count unique players per tournament (accurate source)
         const tournamentIds = (await prisma.tournament.findMany({
             where: tournamentWhere,
@@ -113,6 +117,9 @@ export async function GET(request: NextRequest) {
             },
             teams: {
                 avgPerTournament: avgPlayersPerTournament,
+            },
+            push: {
+                subscribedPlayers: pushSubscribers.length,
             },
         };
 

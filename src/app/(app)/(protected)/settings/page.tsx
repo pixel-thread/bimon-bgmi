@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardBody, Switch, Divider, Chip } from "@heroui/react";
+import { Card, CardBody, Divider, Chip } from "@heroui/react";
 import {
     Settings,
     Globe,
@@ -16,6 +16,7 @@ import { useTheme } from "next-themes";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { GAME } from "@/lib/game-config";
+import { usePushStatus } from "@/components/common/push-prompt";
 
 /**
  * /settings — App settings page.
@@ -26,7 +27,7 @@ export default function SettingsPage() {
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
-    const [notifications, setNotifications] = useState(true);
+    const { status: pushStatus, subscribing, handleEnable } = usePushStatus();
 
     return (
         <div className="mx-auto w-full max-w-2xl space-y-4 px-4 py-6 pb-24 sm:pb-6">
@@ -73,18 +74,32 @@ export default function SettingsPage() {
                     <CardBody className="p-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <Bell className="h-4 w-4 text-orange-500" />
+                                <Bell className={`h-4 w-4 ${pushStatus === "enabled" ? "text-success" : pushStatus === "denied" ? "text-foreground/30" : "text-orange-500"}`} />
                                 <span className="text-sm font-semibold">Push Notifications</span>
                             </div>
-                            <Switch
-                                size="sm"
-                                isSelected={notifications}
-                                onValueChange={setNotifications}
-                                color="primary"
-                            />
+                            {pushStatus === "loading" || pushStatus === "unsupported" ? (
+                                <Chip size="sm" variant="flat" color="default">—</Chip>
+                            ) : pushStatus === "enabled" ? (
+                                <Chip size="sm" variant="flat" color="success">Enabled</Chip>
+                            ) : pushStatus === "denied" ? (
+                                <Chip size="sm" variant="flat" color="danger">Blocked</Chip>
+                            ) : (
+                                <button
+                                    onClick={handleEnable}
+                                    disabled={subscribing}
+                                    className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50"
+                                >
+                                    {subscribing && <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
+                                    Enable
+                                </button>
+                            )}
                         </div>
                         <p className="mt-1.5 text-xs text-foreground/40">
-                            Get notified about tournaments, matches, and results
+                            {pushStatus === "enabled"
+                                ? "You'll receive alerts for UC requests, squad invites, and rewards"
+                                : pushStatus === "denied"
+                                ? "Notifications are blocked — enable in your browser settings"
+                                : `Get notified about ${GAME.currency} requests, squad invites & rewards`}
                         </p>
                     </CardBody>
                 </Card>
