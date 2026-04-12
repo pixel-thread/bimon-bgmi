@@ -13,6 +13,8 @@ import {
     Crown,
     ChevronsDown,
     AlertCircle,
+    Eye,
+    EyeOff,
 } from "lucide-react";
 import { useState } from "react";
 import { motion } from "motion/react";
@@ -57,6 +59,16 @@ export default function AdminPlayersPage() {
     const filters = usePlayerFilters();
     const { search, tier, sortBy, sortOrder, season } = filters;
     const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+    const [showExactUC, setShowExactUC] = useState(false);
+
+    /** Abbreviate UC amounts: 7918 → "~8k", -697 → "-<1k", 0 → "0" */
+    const abbrevUC = (n: number) => {
+        if (n === 0) return "0";
+        const abs = Math.abs(n);
+        const sign = n < 0 ? "-" : "";
+        if (abs < 1000) return `${sign}<1k`;
+        return `${sign}~${Math.round(abs / 1000)}k`;
+    };
 
     const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
         useInfiniteQuery<PlayersResponse>({
@@ -108,17 +120,30 @@ export default function AdminPlayersPage() {
                                 : "text-danger"
                                 }`}
                         >
-                            {(meta.totalBalance ?? 0).toLocaleString()} <CurrencyIcon size={12} />
+                            {showExactUC
+                                ? <>{(meta.totalBalance ?? 0).toLocaleString()} <CurrencyIcon size={12} /></>
+                                : <>{abbrevUC(meta.totalBalance ?? 0)} <CurrencyIcon size={12} /></>
+                            }
                         </span>
                     </div>
                     {(meta.negativeBalance ?? 0) < 0 && (
                         <div className="flex items-center gap-1.5 rounded-lg bg-danger-50 px-3 py-1.5 dark:bg-danger-50/10">
                             <span className="text-foreground/50">Negative:</span>
                             <span className="font-semibold text-danger">
-                                {(meta.negativeBalance ?? 0).toLocaleString()} <CurrencyIcon size={12} />
+                                {showExactUC
+                                    ? <>{(meta.negativeBalance ?? 0).toLocaleString()} <CurrencyIcon size={12} /></>
+                                    : <>{abbrevUC(meta.negativeBalance ?? 0)} <CurrencyIcon size={12} /></>
+                                }
                             </span>
                         </div>
                     )}
+                    <button
+                        onClick={() => setShowExactUC((v) => !v)}
+                        className="rounded-md p-1 text-foreground/40 transition-colors hover:bg-default-100 hover:text-foreground/70"
+                        title={showExactUC ? "Hide exact amounts" : "Show exact amounts"}
+                    >
+                        {showExactUC ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
                 </div>
             )}
 
@@ -185,7 +210,7 @@ export default function AdminPlayersPage() {
                                             {p.displayName || p.username}
                                         </p>
                                         <p className="truncate text-xs text-foreground/40 sm:hidden">
-                                            {p.category} · {p.balance} <CurrencyIcon size={10} />
+                                            {p.category} · {showExactUC ? p.balance : abbrevUC(p.balance)} <CurrencyIcon size={10} />
                                         </p>
                                     </div>
 
@@ -216,7 +241,7 @@ export default function AdminPlayersPage() {
                                                 : "text-foreground/40"
                                             }`}
                                     >
-                                        {p.balance} <CurrencyIcon size={12} />
+                                        {showExactUC ? p.balance : abbrevUC(p.balance)} <CurrencyIcon size={12} />
                                     </span>
 
                                     {/* Status */}
