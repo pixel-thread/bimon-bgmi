@@ -99,39 +99,37 @@ export default function AdminPlayersPage() {
             {/* Search + Filters */}
             <PlayerFiltersBar {...filters} />
 
-            {/* UC Balance Summary */}
+            {/* UC Balance Summary — hidden by default, click eye to reveal */}
             {meta && meta.totalBalance != null && (
                 <div className="flex items-center gap-4 text-xs">
-                    <div className="flex items-center gap-1.5 rounded-lg bg-default-100 px-3 py-1.5">
-                        <Wallet className="h-3 w-3 text-default-400" />
-                        <span className="text-foreground/50">Total:</span>
-                        <span
-                            className={`font-semibold ${(meta.totalBalance ?? 0) >= 0
-                                ? "text-success"
-                                : "text-danger"
-                                }`}
-                        >
-                            {showUC
-                                ? <>{(meta.totalBalance ?? 0).toLocaleString()} <CurrencyIcon size={12} /></>
-                                : <>••• <CurrencyIcon size={12} /></>
-                            }
-                        </span>
-                    </div>
-                    {(meta.negativeBalance ?? 0) < 0 && (
-                        <div className="flex items-center gap-1.5 rounded-lg bg-danger-50 px-3 py-1.5 dark:bg-danger-50/10">
-                            <span className="text-foreground/50">Negative:</span>
-                            <span className="font-semibold text-danger">
-                                {showUC
-                                    ? <>{(meta.negativeBalance ?? 0).toLocaleString()} <CurrencyIcon size={12} /></>
-                                    : <>••• <CurrencyIcon size={12} /></>
-                                }
-                            </span>
-                        </div>
+                    {showUC && (
+                        <>
+                            <div className="flex items-center gap-1.5 rounded-lg bg-default-100 px-3 py-1.5">
+                                <Wallet className="h-3 w-3 text-default-400" />
+                                <span className="text-foreground/50">Total:</span>
+                                <span
+                                    className={`font-semibold ${(meta.totalBalance ?? 0) >= 0
+                                        ? "text-success"
+                                        : "text-danger"
+                                        }`}
+                                >
+                                    {(meta.totalBalance ?? 0).toLocaleString()} <CurrencyIcon size={12} />
+                                </span>
+                            </div>
+                            {(meta.negativeBalance ?? 0) < 0 && (
+                                <div className="flex items-center gap-1.5 rounded-lg bg-danger-50 px-3 py-1.5 dark:bg-danger-50/10">
+                                    <span className="text-foreground/50">Negative:</span>
+                                    <span className="font-semibold text-danger">
+                                        {(meta.negativeBalance ?? 0).toLocaleString()} <CurrencyIcon size={12} />
+                                    </span>
+                                </div>
+                            )}
+                        </>
                     )}
                     <button
                         onClick={() => setShowUC((v) => !v)}
                         className="rounded-md p-1 text-foreground/40 transition-colors hover:bg-default-100 hover:text-foreground/70"
-                        title={showUC ? "Hide amounts" : "Show amounts"}
+                        title={showUC ? "Hide totals" : "Show totals"}
                     >
                         {showUC ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
@@ -201,7 +199,7 @@ export default function AdminPlayersPage() {
                                             {p.displayName || p.username}
                                         </p>
                                         <p className="truncate text-xs text-foreground/40 sm:hidden">
-                                            {p.category} · {showUC ? <>{p.balance} <CurrencyIcon size={10} /></> : <>•••</>}
+                                            {p.category} · {p.balance} <CurrencyIcon size={10} />
                                         </p>
                                     </div>
 
@@ -232,7 +230,7 @@ export default function AdminPlayersPage() {
                                                 : "text-foreground/40"
                                             }`}
                                     >
-                                        {showUC ? <>{p.balance} <CurrencyIcon size={12} /></> : "•••"}
+                                        {p.balance} <CurrencyIcon size={12} />
                                     </span>
 
                                     {/* Status */}
