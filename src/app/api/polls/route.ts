@@ -152,6 +152,15 @@ export async function POST(request: Request) {
             return ErrorResponse({ message: "question and tournamentId are required", status: 400 });
         }
 
+        // Guard against duplicate polls for the same tournament (tournamentId is @unique)
+        const existingPoll = await prisma.poll.findUnique({
+            where: { tournamentId },
+            select: { id: true },
+        });
+        if (existingPoll) {
+            return ErrorResponse({ message: "A poll already exists for this tournament. Please edit the existing poll instead.", status: 409 });
+        }
+
         // If tournamentType is provided (PES flow), update the linked tournament's type
         if (tournamentType && ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT", "BR"].includes(tournamentType)) {
             await prisma.tournament.update({
