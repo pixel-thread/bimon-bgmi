@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         // Find the player
         const user = await prisma.user.findFirst({
             where: userWhereEmail(userId),
-            select: { id: true, player: { select: { id: true } } },
+            select: { id: true, player: { select: { id: true, displayName: true } } },
         });
 
         if (!user?.player) {
@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
         const finalAmountInPaisa = amountInPaise ?? Math.round(amount * 100);
 
         // Create Razorpay order
+        // notes are only visible on the Razorpay dashboard, NOT to the customer
         const order = await razorpay.orders.create({
             amount: finalAmountInPaisa,
             currency: "INR",
@@ -72,6 +73,7 @@ export async function POST(req: NextRequest) {
             notes: {
                 userId: user.id,
                 playerId: user.player.id,
+                playerName: user.player.displayName ?? "Unknown",
             },
         });
 

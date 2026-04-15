@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Card, CardBody, Button, Textarea, Chip, Switch, Avatar, Input,
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
+    Skeleton,
 } from "@heroui/react";
 import {
     MessageCircle, Send, Heart, Lightbulb, Bug, Star, HelpCircle,
@@ -305,7 +306,7 @@ export default function CommunityPage() {
     const [pollOptions, setPollOptions] = useState(["", ""]);
 
     // Fetch community feed
-    const { data } = useQuery<{ messages: MessageDTO[]; unreadCount: number }>({
+    const { data, isPending: messagesLoading } = useQuery<{ messages: MessageDTO[]; unreadCount: number }>({
         queryKey: ["community-messages"],
         queryFn: async () => {
             const res = await fetch("/api/community");
@@ -316,7 +317,7 @@ export default function CommunityPage() {
     });
 
     // Fetch community polls
-    const { data: polls = [] } = useQuery<PollDTO[]>({
+    const { data: polls = [], isPending: pollsLoading } = useQuery<PollDTO[]>({
         queryKey: ["community-polls"],
         queryFn: async () => {
             const res = await fetch("/api/community/polls");
@@ -325,6 +326,8 @@ export default function CommunityPage() {
             return json.data;
         },
     });
+
+    const isLoading = messagesLoading || pollsLoading;
 
     // Submit message
     const submit = useMutation({
@@ -544,8 +547,57 @@ export default function CommunityPage() {
             {/* Cross-game promo — only games that share the central wallet */}
             <CrossGamePromo showAll />
 
+            {/* Loading skeletons */}
+            {isLoading && (
+                <div className="space-y-2.5">
+                    {/* Poll skeletons */}
+                    {[1, 2].map((i) => (
+                        <Card key={`poll-sk-${i}`} className="border border-divider">
+                            <CardBody className="p-3 space-y-2.5">
+                                <div className="flex items-start gap-2">
+                                    <Skeleton className="w-6 h-6 rounded-full shrink-0" />
+                                    <div className="flex-1 space-y-1.5">
+                                        <Skeleton className="h-4 w-3/4 rounded" />
+                                        <Skeleton className="h-2.5 w-1/3 rounded" />
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5 pl-8">
+                                    <Skeleton className="h-9 w-full rounded-lg" />
+                                    <Skeleton className="h-9 w-full rounded-lg" />
+                                    <Skeleton className="h-9 w-full rounded-lg" />
+                                </div>
+                            </CardBody>
+                        </Card>
+                    ))}
+                    {/* Message skeletons */}
+                    {[1, 2, 3].map((i) => (
+                        <Card key={`msg-sk-${i}`} className="border border-divider">
+                            <CardBody className="p-3 space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <Skeleton className="w-6 h-6 rounded-full shrink-0" />
+                                    <Skeleton className="h-3 w-20 rounded" />
+                                    <Skeleton className="h-5 w-16 rounded-full ml-auto" />
+                                </div>
+                                <div className="pl-8 space-y-1.5">
+                                    <Skeleton className="h-3 w-full rounded" />
+                                    <Skeleton className="h-3 w-4/5 rounded" />
+                                </div>
+                                <div className="flex items-center justify-between pl-8">
+                                    <Skeleton className="h-2.5 w-24 rounded" />
+                                    <div className="flex items-center gap-1">
+                                        <Skeleton className="h-7 w-7 rounded-lg" />
+                                        <Skeleton className="h-3 w-5 rounded" />
+                                        <Skeleton className="h-7 w-7 rounded-lg" />
+                                    </div>
+                                </div>
+                            </CardBody>
+                        </Card>
+                    ))}
+                </div>
+            )}
+
             {/* Active polls */}
-            {polls.length > 0 && (
+            {!isLoading && polls.length > 0 && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -570,7 +622,7 @@ export default function CommunityPage() {
             )}
 
             {/* Community feed */}
-            {data?.messages && data.messages.length > 0 && (
+            {!isLoading && data?.messages && data.messages.length > 0 && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -718,7 +770,7 @@ export default function CommunityPage() {
             )}
 
             {/* Empty state */}
-            {data?.messages && data.messages.length === 0 && polls.length === 0 && (
+            {!isLoading && data?.messages && data.messages.length === 0 && polls.length === 0 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
                     <Star className="h-10 w-10 text-foreground/15 mx-auto mb-3" />
                     <p className="text-sm text-foreground/40">Be the first to share your thoughts!</p>

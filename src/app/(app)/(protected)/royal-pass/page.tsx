@@ -4,21 +4,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     Card,
     CardBody,
-    CardHeader,
-    Divider,
     Chip,
     Skeleton,
     Button,
 } from "@heroui/react";
 import {
     Crown,
-    Star,
-    Zap,
-    Gift,
     AlertCircle,
     Flame,
-    Loader2,
-    ImagePlus,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
@@ -267,55 +260,7 @@ export default function RoyalPassPage() {
                         </motion.div>
                     )}
 
-                    {/* Pending rewards */}
-                    {data.hasRoyalPass && data.pendingRewards.length > 0 && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
-                        >
-                            <Card className="border border-divider">
-                                <CardHeader className="gap-2 pb-1">
-                                    <Star className="h-4 w-4 text-warning" />
-                                    <h3 className="text-sm font-semibold">Pending Rewards</h3>
-                                </CardHeader>
-                                <Divider />
-                                <CardBody className="space-y-2 pt-2">
-                                    {data.pendingRewards.map((reward, i) => (
-                                        <motion.div
-                                            key={reward.id}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            transition={{ delay: i * 0.03 }}
-                                            className="flex items-center justify-between rounded-lg bg-default-50 p-3"
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <Gift className="h-4 w-4 text-success" />
-                                                <div>
-                                                    <p className="text-sm font-medium">{reward.type}</p>
-                                                    <p className="text-[10px] text-foreground/30">
-                                                        {new Date(reward.createdAt).toLocaleDateString()}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-bold text-warning">
-                                                    {reward.amount} <CurrencyIcon size={12} />
-                                                </span>
-                                                <Chip
-                                                    size="sm"
-                                                    variant="flat"
-                                                    color={reward.isPending ? "warning" : "success"}
-                                                >
-                                                    {reward.isPending ? "Pending" : "Claimed"}
-                                                </Chip>
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </CardBody>
-                            </Card>
-                        </motion.div>
-                    )}
+
 
                     {/* How it works */}
                     <motion.div
