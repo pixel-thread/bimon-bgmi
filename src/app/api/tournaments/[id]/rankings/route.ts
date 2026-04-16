@@ -84,6 +84,7 @@ async function handleBRRankings(tournamentId: string, tournament: any) {
                 select: {
                     playerId: true,
                     kills: true,
+                    present: true,
                     player: {
                         select: {
                             id: true,
@@ -105,7 +106,7 @@ async function handleBRRankings(tournamentId: string, tournament: any) {
     const ucExemptPlayerIds = new Set<string>();
 
     for (const stat of teamStats) {
-        const kills = stat.teamPlayerStats.reduce((sum, ps) => sum + ps.kills, 0);
+        const kills = stat.teamPlayerStats.reduce((sum, ps) => sum + (ps.present !== false ? ps.kills : 0), 0);
         const pts = PLACEMENT_PTS[stat.position] ?? 0;
         const total = kills + pts;
 
