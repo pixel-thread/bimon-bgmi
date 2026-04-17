@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
     Users,
     Vote,
-    Wallet,
+    Gamepad2,
     LayoutDashboard,
     Loader2,
     MessageCircle,
@@ -33,7 +33,7 @@ const tabs: Tab[] = [
     { label: "Vote", href: "/vote", icon: Vote },
     ...(GAME.features.hasBracket
         ? [{ label: "Matches", href: "/bracket", icon: Swords }]
-        : [{ label: "__wallet__", href: "/wallet", icon: Wallet }]),
+        : [{ label: "Games", href: "/games", icon: Gamepad2 }]),
     { label: "Profile", href: "/profile" },
 ];
 
@@ -179,11 +179,8 @@ export function MobileNav() {
                                     strokeWidth={isActive ? 2.5 : 1.5}
                                 />
                             ) : null}
-                            <span className={`${tab.label !== "__wallet__" ? "max-w-[64px] truncate" : ""} ${isActive ? "font-semibold" : "font-normal"} ${tab.label === "__wallet__"
-                                ? (balance ?? 0) > 0 ? "text-success" : (balance ?? 0) < 0 ? "text-danger" : ""
-                                : ""
-                                }`}>
-                                {tab.label === "__wallet__" ? <>{(balance ?? 0).toLocaleString()} <CurrencyIcon size={12} /></> : isProfile ? profileLabel : tab.label}
+                            <span className={`max-w-[64px] truncate ${isActive ? "font-semibold" : "font-normal"}`}>
+                                {isProfile ? profileLabel : tab.label}
                             </span>
                             {isActive && (
                                 <div className="absolute top-0 h-0.5 w-8 rounded-full game-nav-active-bar" />
