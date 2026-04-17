@@ -35,7 +35,7 @@ const publicRoutes = [
 const DOMAIN_GAME_MAP: Record<string, string> = {
     // pixel-thread.in domains (new)
     "bgmi.pixel-thread": "bgmi",
-    "bimon-ff-pixel-thread": "freefire",
+    "ff.pixel-thread": "freefire",
     "pes.pixel-thread": "pes",
     "ml.pixel-thread": "mlbb",
     // vercel.app domains (legacy)
