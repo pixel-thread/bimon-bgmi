@@ -36,6 +36,25 @@ export async function GET() {
         rewards[s.key.replace("game_reward_", "")] = parseInt(s.value) || 0;
     }
 
+    // Get current user's personal best (if logged in)
+    let myBest = 0;
+    try {
+        const email = await getAuthEmail();
+        if (email) {
+            const user = await prisma.user.findFirst({
+                where: userWhereEmail(email),
+                select: { player: { select: { id: true } } },
+            });
+            if (user?.player) {
+                const myScore = await prisma.gameScore.findUnique({
+                    where: { playerId_difficulty: { playerId: user.player.id, difficulty: DIFFICULTY } },
+                    select: { score: true },
+                });
+                myBest = myScore?.score ?? 0;
+            }
+        }
+    } catch { /* guest user — no best */ }
+
     return NextResponse.json({
         scores: scores.map((s, i) => ({
             rank: i + 1,
@@ -47,6 +66,7 @@ export async function GET() {
             playerId: s.playerId,
         })),
         rewards,
+        myBest,
     });
 }
 
