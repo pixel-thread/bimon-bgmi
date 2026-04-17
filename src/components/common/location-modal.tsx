@@ -260,7 +260,7 @@ export function LocationModal({
                     {/* Search + list */}
                     <div className="space-y-2">
                         <Input
-                            placeholder={`${step === 3 && town ? town : step === 3 ? `Search or add ${stepLabels[step - 1].toLowerCase()}...` : `Search ${stepLabels[step - 1].toLowerCase()}...`}`}
+                            placeholder={`${step === 3 && town ? town : `Search ${stepLabels[step - 1].toLowerCase()}...`}`}
                             value={searchQuery}
                             onValueChange={setSearchQuery}
                             startContent={<Search className="h-4 w-4 text-default-400" />}
@@ -272,17 +272,6 @@ export function LocationModal({
                                 }
                             }}
                         />
-
-                        {/* Add new entry option */}
-                        {isNewEntry && (
-                            <button
-                                onClick={addNewEntry}
-                                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 text-sm text-primary hover:bg-primary/10 transition-colors"
-                            >
-                                <Plus className="h-4 w-4" />
-                                Add &ldquo;{searchQuery.trim()}&rdquo;
-                            </button>
-                        )}
 
                         {/* Loading skeleton */}
                         {isLoadingOptions && (
@@ -311,6 +300,28 @@ export function LocationModal({
                                     </ListboxItem>
                                 ))}
                             </Listbox>
+                        )}
+
+                        {/* Add new town button — always visible on step 3 */}
+                        {step === 3 && !town && (
+                            <button
+                                onClick={() => {
+                                    if (searchQuery.trim() && isNewEntry) {
+                                        addNewEntry();
+                                    } else {
+                                        // Focus the search input
+                                        const input = document.querySelector<HTMLInputElement>('input[placeholder*="Search"]');
+                                        input?.focus();
+                                    }
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg bg-primary/5 border border-dashed border-primary/30 text-sm text-primary hover:bg-primary/10 transition-colors"
+                            >
+                                <Plus className="h-4 w-4" />
+                                {searchQuery.trim() && isNewEntry
+                                    ? <>Add &ldquo;{searchQuery.trim()}&rdquo;</>
+                                    : "Add new town/village"
+                                }
+                            </button>
                         )}
 
                         {/* Selected town display */}
@@ -348,6 +359,7 @@ export function LocationModal({
                             color="primary"
                             size="sm"
                             isLoading={saving}
+                            isDisabled={!!searchQuery.trim()}
                             onPress={handleSave}
                         >
                             Save Location
