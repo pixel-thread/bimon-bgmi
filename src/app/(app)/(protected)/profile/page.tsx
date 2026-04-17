@@ -883,15 +883,10 @@ export default function ProfilePage() {
                                             </label>
                                             <Input
                                                 value={newUID}
+                                                onChange={(e) => setNewUID(e.target.value)}
                                                 placeholder={GAME.idPlaceholder}
                                                 size="lg"
                                                 variant="bordered"
-                                                onKeyDown={(e) => {
-                                                    const allowedKeys = ["Tab", "ArrowLeft", "ArrowRight", "Backspace", "Delete"];
-                                                    if (!allowedKeys.includes(e.key) && !(e.metaKey || e.ctrlKey)) {
-                                                        e.preventDefault();
-                                                    }
-                                                }}
                                                 onPaste={(e) => {
                                                     e.preventDefault();
                                                     const pasted = e.clipboardData.getData("text").trim();
