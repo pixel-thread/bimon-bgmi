@@ -85,30 +85,43 @@ export default function SocialsPage() {
             ) : (
                 <div className="space-y-3">
                     {links.map((link, i) => (
-                        <div key={i} className={`flex items-center gap-4 rounded-xl border p-4 transition-all duration-200 ${link.bgColor}`}>
-                            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-background/60 ${link.color}`}>
-                                {link.icon}
+                        <div key={i} className={`rounded-xl border p-4 transition-all duration-200 ${link.bgColor}`}>
+                            {/* Top row: icon + label */}
+                            <div className="flex items-center gap-3">
+                                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-background/60 ${link.color}`}>
+                                    {link.icon}
+                                </div>
+                                <div className="min-w-0">
+                                    <p className={`font-semibold text-sm whitespace-nowrap ${link.color}`}>{link.label}</p>
+                                    <p className="text-[11px] text-foreground/40">{link.description}</p>
+                                </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <p className={`font-semibold ${link.color}`}>{link.label}</p>
-                                <p className="text-xs text-foreground/40 mt-0.5">{link.description}</p>
+
+                            {/* URL preview with fade */}
+                            <div className="relative mt-3 rounded-lg bg-background/60 border border-divider overflow-hidden">
+                                <p className="px-3 py-2 text-xs font-mono text-foreground/50 whitespace-nowrap">
+                                    {link.url}
+                                </p>
+                                <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-background/90 to-transparent" />
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                                <button
-                                    onClick={() => copyLink(link.url, i)}
-                                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-background/80 border border-divider text-foreground/40 hover:text-foreground/70 transition-colors"
-                                    title="Copy link"
-                                >
-                                    {copiedIdx === i ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-                                </button>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2 mt-3">
                                 <a
                                     href={link.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className={`rounded-lg px-4 py-1.5 text-sm font-semibold ${link.color} bg-background/80 border border-divider hover:opacity-80 transition-opacity`}
+                                    className={`flex-1 text-center rounded-lg py-2 text-sm font-semibold ${link.color} bg-background/80 border border-divider hover:opacity-80 transition-opacity`}
                                 >
                                     {link.action}
                                 </a>
+                                <button
+                                    onClick={() => copyLink(link.url, i)}
+                                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-background/80 border border-divider text-foreground/40 hover:text-foreground/70 transition-colors"
+                                    title="Copy link"
+                                >
+                                    {copiedIdx === i ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+                                </button>
                             </div>
                         </div>
                     ))}
