@@ -23,6 +23,7 @@ const publicRoutes = [
     "/bracket",    // guests can view brackets
     "/community",  // guests can browse community
     "/winners",    // guests can see winners
+    "/games",      // guests can play memory game
     "/jobs",       // guests can see job listings
     "/help",       // guests can view help
     "/api/auth", // NextAuth handler
@@ -32,6 +33,12 @@ const publicRoutes = [
 
 // ─── Domain → Game Mode mapping ─────────────────────────────
 const DOMAIN_GAME_MAP: Record<string, string> = {
+    // pixel-thread.in domains (new)
+    "bgmi.pixel-thread": "bgmi",
+    "bimon-ff-pixel-thread": "freefire",
+    "pes.pixel-thread": "pes",
+    "ml.pixel-thread": "mlbb",
+    // vercel.app domains (legacy)
     "bimon-bgmi": "bgmi",
     "bimon-boo-yah": "freefire",
     "bimon-pes": "pes",
