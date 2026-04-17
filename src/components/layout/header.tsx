@@ -37,6 +37,7 @@ import {
     HelpCircle,
     Youtube,
     Gamepad2,
+    Share2,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useAuthUser } from "@/hooks/use-auth-user";
@@ -166,6 +167,7 @@ export function Header() {
     const showRoyalPass = GAME.features.hasRoyalPass && (publicSettings?.enableElitePass !== false);
     const showReferrals = publicSettings?.enableReferrals !== false;
     const youtubeUrl = publicSettings?.youtubeChannelUrl || "";
+    const whatsappUrl = (publicSettings?.whatsAppGroups || [])[0] || "";
 
 
     const handleSignOut = async () => {
@@ -325,18 +327,16 @@ export function Header() {
                                     <Settings className="h-4 w-4" />
                                     Settings
                                 </Link>
-                                {youtubeUrl && (
+                                {(youtubeUrl || whatsappUrl) && (
                                     <>
                                         <div className="my-1 border-t border-divider" />
-                                        <a
-                                            href={youtubeUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+                                        <Link
+                                            href="/socials"
+                                            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-foreground/70 hover:bg-default-100 transition-colors"
                                         >
-                                            <Youtube className="h-4 w-4" />
-                                            YouTube
-                                        </a>
+                                            <Share2 className="h-4 w-4" />
+                                            Socials
+                                        </Link>
                                     </>
                                 )}
                             </PopoverContent>
@@ -526,19 +526,17 @@ export function Header() {
                                 </NavbarMenuItem>
                             )}
 
-                            {/* YouTube Channel — external link */}
-                            {youtubeUrl && (
+                            {/* Socials */}
+                            {(youtubeUrl || whatsappUrl) && (
                                 <NavbarMenuItem>
-                                    <a
-                                        href={youtubeUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                    <Link
+                                        href="/socials"
                                         onClick={() => setIsMenuOpen(false)}
-                                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base text-red-500 transition-colors hover:bg-red-500/10"
+                                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base text-foreground/70 transition-colors hover:bg-default-100"
                                     >
-                                        <Youtube className="h-5 w-5" />
-                                        YouTube
-                                    </a>
+                                        <Share2 className="h-5 w-5" />
+                                        Socials
+                                    </Link>
                                 </NavbarMenuItem>
                             )}
 
