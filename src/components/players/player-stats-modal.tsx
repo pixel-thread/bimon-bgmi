@@ -177,7 +177,7 @@ export function PlayerStatsModal({
                 onClose={onClose}
                 size="md"
                 placement="center"
-                scrollBehavior="outside"
+                scrollBehavior="inside"
                 hideCloseButton
                 motionProps={{
                     variants: {
@@ -206,7 +206,7 @@ export function PlayerStatsModal({
                     {/* Custom close button */}
                     <button
                         onClick={onClose}
-                        className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+                        className="absolute right-3 top-3 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70 pointer-events-auto"
                     >
                         <X className="h-4 w-4" />
                     </button>

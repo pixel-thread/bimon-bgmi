@@ -48,7 +48,7 @@ export function CategoryBadge({ category, className, size = "sm" }: CategoryBadg
     return (
         <span
             className={`
-                inline-flex items-center rounded-full border font-semibold
+                inline-flex items-center rounded-md border font-semibold
                 ${size === "sm" ? "text-[10px] px-2 py-0.5" : size === "md" ? "text-xs px-2.5 py-1" : "text-sm px-3 py-1"}
                 ${style}
                 ${className || ""}

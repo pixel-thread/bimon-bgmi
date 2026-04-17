@@ -166,6 +166,7 @@ export function MemoryGame() {
     const [moves, setMoves] = useState(0);
     const [time, setTime] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
+    const [isStopped, setIsStopped] = useState(false);
     const [gameWon, setGameWon] = useState(false);
     const [isNewBest, setIsNewBest] = useState(false);
     const [hearts, setHearts] = useState(MAX_HEARTS);
@@ -173,6 +174,7 @@ export function MemoryGame() {
     const [hasStarted, setHasStarted] = useState(false);
     const [regenCountdown, setRegenCountdown] = useState("");
     const [personalBest, setPersonalBest] = useState(0);
+    const [gameCount, setGameCount] = useState(0);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Load personal best from server
@@ -232,19 +234,20 @@ export function MemoryGame() {
     const startGame = useCallback(() => {
         setCards(createCards());
         setFlippedIds([]); setWrongIds([]); setMoves(0); setTime(0);
-        setIsRunning(false); setGameWon(false); setIsNewBest(false);
+        setIsRunning(false); setIsStopped(false); setGameWon(false); setIsNewBest(false);
         setShowNoHearts(false); setHasStarted(true); setTab("play");
+        setGameCount(c => c + 1);
     }, []);
 
-    // Stop — abandon
+    // Stop — freeze timer + lock cards
     function stopGame() {
-        setIsRunning(false); setHasStarted(false); setCards([]);
-        setFlippedIds([]); setWrongIds([]); setMoves(0); setTime(0); setGameWon(false);
+        setIsRunning(false);
+        setIsStopped(true);
     }
 
     // Card click
     function handleCardClick(id: number) {
-        if (flippedIds.length >= 2 || gameWon) return;
+        if (flippedIds.length >= 2 || gameWon || isStopped) return;
         const card = cards.find(c => c.id === id);
         if (!card || card.isFlipped || card.isMatched) return;
 
@@ -342,7 +345,7 @@ export function MemoryGame() {
                                 </p>
                                 <p className="text-xs text-foreground/30 mt-1">until next heart</p>
                             </div>
-                            <AdSlot format="banner" className="mt-2 w-full rounded-lg overflow-hidden" />
+                            {gameCount >= 3 && <AdSlot format="banner" className="mt-2 w-full rounded-lg overflow-hidden" />}
                         </div>
                     ) : !hasStarted ? (
                         <div className="flex items-center justify-center py-16">
@@ -388,15 +391,19 @@ export function MemoryGame() {
                             </div>
 
                             {/* Stop + Reset below grid — only after first flip */}
-                            {(moves > 0 || isRunning) && !gameWon && (
-                                <div className="mt-3 flex gap-2">
-                                    <Button size="sm" variant="flat" color="danger" className="flex-1" onPress={stopGame} startContent={<Square className="h-3.5 w-3.5 fill-current" />}>
-                                        Stop
-                                    </Button>
-                                    <Button size="sm" variant="flat" className="flex-1" onPress={() => startGame()} startContent={<RotateCcw className="h-3.5 w-3.5" />}>
-                                        Reset
-                                    </Button>
-                                </div>
+                            {(moves > 0 || isRunning || isStopped) && !gameWon && (
+                                <>
+                                    <div className="mt-3 flex gap-2">
+                                        {!isStopped && (
+                                            <Button size="sm" variant="flat" color="danger" className="flex-1" onPress={stopGame} startContent={<Square className="h-3.5 w-3.5 fill-current" />}>
+                                                Stop
+                                            </Button>
+                                        )}
+                                        <Button size="sm" variant="flat" className="flex-1" onPress={() => startGame()} startContent={<RotateCcw className="h-3.5 w-3.5" />}>
+                                            Reset
+                                        </Button>
+                                    </div>
+                                </>
                             )}
 
                             {/* Win modal */}
@@ -413,7 +420,7 @@ export function MemoryGame() {
                                             <Button color="success" variant="flat" onPress={() => startGame()} startContent={<RotateCcw className="h-4 w-4" />}>Play Again</Button>
                                             <Button variant="flat" onPress={() => { setGameWon(false); setTab("leaderboard"); }} startContent={<Trophy className="h-4 w-4" />}>Leaderboard</Button>
                                         </div>
-                                        <AdSlot format="banner" className="mt-2 rounded-lg overflow-hidden" />
+                                        {gameCount >= 3 && gameCount % 3 === 0 && <AdSlot format="banner" className="mt-2 rounded-lg overflow-hidden" />}
                                     </div>
                                 </div>
                             )}

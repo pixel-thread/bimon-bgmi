@@ -277,6 +277,13 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
             }}
         >
             <ModalContent>
+                {/* Close button */}
+                <button
+                    onClick={onClose}
+                    className="absolute right-3 top-3 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+                >
+                    ✕
+                </button>
                 <ModalHeader className="flex-col gap-0 p-0 overflow-hidden">
                     {isLoading ? (
                         <div className="p-5 space-y-3">
@@ -417,43 +424,10 @@ export function PlayerDetailModal({ playerId, isOpen, onClose }: PlayerDetailMod
                                     </div>
                                 </div>
 
-                                {/* Stats row */}
-                                <div className="grid grid-cols-4 gap-2 mt-4">
-                                    <div className="rounded-lg bg-background/60 backdrop-blur-sm border border-divider/50 px-3 py-2 text-center">
-                                        <p className="text-base font-bold">{player?.stats.matches ?? 0}</p>
-                                        <p className="text-[9px] text-foreground/40 uppercase tracking-wide">Matches</p>
-                                    </div>
-                                    <div className="rounded-lg bg-background/60 backdrop-blur-sm border border-divider/50 px-3 py-2 text-center">
-                                        <p className="text-base font-bold">{player?.stats.kills ?? 0}</p>
-                                        <p className="text-[9px] text-foreground/40 uppercase tracking-wide">Kills</p>
-                                    </div>
-                                    <div className="rounded-lg bg-background/60 backdrop-blur-sm border border-divider/50 px-3 py-2 text-center">
-                                        <p className="text-base font-bold">{player?.stats.kd?.toFixed(1) ?? "0.0"}</p>
-                                        <p className="text-[9px] text-foreground/40 uppercase tracking-wide">K/D</p>
-                                    </div>
-                                    <div className="rounded-lg bg-background/60 backdrop-blur-sm border border-divider/50 px-3 py-2 text-center">
-                                        <div className="flex items-center justify-center gap-1">
-                                            <CurrencyIcon size={14} />
-                                            <p className={`text-base font-bold ${(player?.balance ?? 0) < 0 ? "text-danger" : ""}`}>
-                                                {player?.balance?.toLocaleString() ?? 0}
-                                            </p>
-                                        </div>
-                                        <p className="text-[9px] text-foreground/40 uppercase tracking-wide">Balance</p>
-                                    </div>
-                                </div>
 
-                                {/* Streak badges */}
-                                {(player?.streak?.current ?? 0) > 0 && (
-                                    <div className="flex items-center gap-2 mt-3">
-                                        <Chip size="sm" variant="flat" color="warning" startContent={<Flame className="h-3 w-3" />} className="h-5">
-                                            {player?.streak.current} streak
-                                        </Chip>
-                                        {(player?.streak?.longest ?? 0) > 1 && (
-                                            <Chip size="sm" variant="flat" className="h-5 text-foreground/50">
-                                                Best: {player?.streak.longest}
-                                            </Chip>
-                                        )}
-                                    </div>
+                                {/* Bio */}
+                                {player?.bio && (
+                                    <p className="text-xs italic text-foreground/40 mt-2">&ldquo;{player.bio}&rdquo;</p>
                                 )}
                             </div>
                         </div>
