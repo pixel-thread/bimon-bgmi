@@ -97,31 +97,29 @@ export default function SocialsPage() {
                                 </div>
                             </div>
 
-                            {/* URL preview with fade */}
-                            <div className="relative mt-3 rounded-lg bg-background/60 border border-divider overflow-hidden">
-                                <p className="px-3 py-2 text-xs font-mono text-foreground/50 whitespace-nowrap">
+                            {/* URL + actions inline */}
+                            <div className="relative mt-3 flex items-center rounded-lg bg-background/60 border border-divider overflow-hidden">
+                                <p className="flex-1 min-w-0 px-3 py-2 text-xs font-mono text-foreground/50 whitespace-nowrap overflow-hidden">
                                     {link.url}
                                 </p>
-                                <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-background/90 to-transparent" />
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex items-center gap-2 mt-3">
-                                <a
-                                    href={link.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`flex-1 text-center rounded-lg py-2 text-sm font-semibold ${link.color} bg-background/80 border border-divider hover:opacity-80 transition-opacity`}
-                                >
-                                    {link.action}
-                                </a>
-                                <button
-                                    onClick={() => copyLink(link.url, i)}
-                                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-background/80 border border-divider text-foreground/40 hover:text-foreground/70 transition-colors"
-                                    title="Copy link"
-                                >
-                                    {copiedIdx === i ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
-                                </button>
+                                <div className="absolute inset-y-0 right-20 w-16 bg-gradient-to-l from-background/95 to-transparent pointer-events-none" />
+                                <div className="relative flex items-center gap-1 shrink-0 pr-1.5 bg-background/95">
+                                    <button
+                                        onClick={() => copyLink(link.url, i)}
+                                        className="flex h-7 w-7 items-center justify-center rounded-md text-foreground/40 hover:text-foreground/70 hover:bg-default-100 transition-colors"
+                                        title="Copy link"
+                                    >
+                                        {copiedIdx === i ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                                    </button>
+                                    <a
+                                        href={link.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`rounded-md px-3 py-1 text-xs font-semibold ${link.color} hover:opacity-80 transition-opacity`}
+                                    >
+                                        {link.action}
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     ))}
