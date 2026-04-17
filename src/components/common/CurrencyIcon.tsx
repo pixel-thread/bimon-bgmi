@@ -24,12 +24,8 @@ export function CurrencyIcon({ size = 16, className, variant = "entry" }: Curren
         const fontSize = Math.max(size * 0.85, 10);
         return (
             <span
-                className={`inline-flex items-center justify-center font-bold text-primary ${className ?? ""}`}
-                style={{
-                    fontSize,
-                    lineHeight: 1,
-                    verticalAlign: "text-bottom",
-                }}
+                className={`font-bold text-primary ${className ?? ""}`}
+                style={{ fontSize, lineHeight: "inherit" }}
             >
                 {label}
             </span>
@@ -44,12 +40,8 @@ export function CurrencyIcon({ size = 16, className, variant = "entry" }: Curren
                 alt={GAME.currency}
                 width={size}
                 height={size}
-                className={`inline-block shrink-0 ${className ?? ""}`}
-                style={{
-                    width: size,
-                    height: size,
-                    verticalAlign: "text-bottom",
-                }}
+                className={`inline shrink-0 align-baseline ${className ?? ""}`}
+                style={{ width: size, height: size }}
                 unoptimized
             />
         );
@@ -63,12 +55,8 @@ export function CurrencyIcon({ size = 16, className, variant = "entry" }: Curren
                 alt={GAME.currency}
                 width={size}
                 height={size}
-                className={`inline-block shrink-0 ${className ?? ""}`}
-                style={{
-                    width: size,
-                    height: size,
-                    verticalAlign: "text-bottom",
-                }}
+                className={`inline shrink-0 align-baseline ${className ?? ""}`}
+                style={{ width: size, height: size }}
                 unoptimized
             />
         );
@@ -78,15 +66,10 @@ export function CurrencyIcon({ size = 16, className, variant = "entry" }: Curren
     const fontSize = Math.max(size * 0.85, 10);
     return (
         <span
-            className={`inline-flex items-center justify-center font-bold text-primary ${className ?? ""}`}
-            style={{
-                fontSize,
-                lineHeight: 1,
-                verticalAlign: "text-bottom",
-            }}
+            className={`font-bold text-primary ${className ?? ""}`}
+            style={{ fontSize, lineHeight: "inherit" }}
         >
             {GAME.currency}
         </span>
     );
 }
-
