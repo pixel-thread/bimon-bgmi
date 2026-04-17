@@ -201,6 +201,13 @@ body {
   opacity: 0.6;
 }
 
+/* Hide scrollbar when modal uses scrollBehavior="outside" */
+body[style*="overflow: hidden"] ::-webkit-scrollbar,
+body[data-scroll-locked] ::-webkit-scrollbar {
+  width: 0;
+  display: none;
+}
+
 /* Focus ring removed — HeroUI handles focus states */
 
 /* ─── Smooth animations ─── */

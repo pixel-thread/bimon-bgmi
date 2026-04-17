@@ -177,7 +177,7 @@ export function PlayerStatsModal({
                 onClose={onClose}
                 size="md"
                 placement="center"
-                scrollBehavior="inside"
+                scrollBehavior="outside"
                 hideCloseButton
                 motionProps={{
                     variants: {
