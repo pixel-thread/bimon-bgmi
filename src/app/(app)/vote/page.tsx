@@ -31,7 +31,7 @@ export default function VotePage() {
         <div className="mx-auto max-w-lg px-4 py-6 sm:px-6">
             <div className="mb-6 space-y-1">
                 <div className="flex items-center gap-2">
-                    <Vote className="h-5 w-5 text-primary" />
+                    <Vote className="h-5 w-5 game-text" />
                     <h1 className="text-lg font-bold">Tournament Polls</h1>
                 </div>
                 <p className="text-sm text-foreground/50">

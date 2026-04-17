@@ -225,14 +225,18 @@ function PollOptionRow({
                 ${isSelected
                     ? theme
                         ? `${theme.optionSelected.border} ${theme.optionSelected.bg} shadow-md`
-                        : "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md"
+                        : "shadow-md"
                     : theme
                         ? `${theme.optionUnselected.border} bg-white dark:bg-gray-800 hover:shadow-sm`
-                        : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 hover:shadow-sm"
+                        : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-sm"
                 }
                 ${isLoading ? "cursor-wait opacity-80" : "cursor-pointer"}
                 ${disabled && !isLoading ? "opacity-60 cursor-not-allowed" : ""}
             `}
+            style={isSelected && !theme ? {
+                borderColor: 'var(--game-primary)',
+                backgroundColor: 'color-mix(in srgb, var(--game-primary) 8%, transparent)',
+            } : undefined}
         >
             <div className="flex items-center justify-between">
                 {/* Radio + Label */}
@@ -243,12 +247,16 @@ function PollOptionRow({
                             ${isSelected
                                 ? theme
                                     ? `${theme.optionSelected.radio} shadow-sm`
-                                    : "border-blue-500 bg-blue-500 shadow-sm"
+                                    : "shadow-sm"
                                 : theme
                                     ? theme.optionUnselected.radio
                                     : "border-gray-300 dark:border-gray-600"
                             }
                         `}
+                        style={isSelected && !theme ? {
+                            borderColor: 'var(--game-primary)',
+                            backgroundColor: 'var(--game-primary)',
+                        } : undefined}
                     >
                         {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
                     </div>
@@ -256,7 +264,7 @@ function PollOptionRow({
                         className={`font-medium text-base truncate block ${isSelected
                             ? theme
                                 ? theme.optionSelected.text
-                                : "text-blue-700 dark:text-blue-300"
+                                : "game-text"
                             : "text-gray-900 dark:text-white"
                             }`}
                     >
@@ -299,9 +307,10 @@ function PollOptionRow({
                                 isSelected
                                     ? theme
                                         ? `h-full rounded-full ${theme.optionSelected.radio}`
-                                        : "h-full rounded-full bg-blue-500"
+                                        : "h-full rounded-full"
                                     : "h-full rounded-full bg-gray-400 dark:bg-gray-500"
                             }
+                            style={isSelected && !theme ? { backgroundColor: 'var(--game-primary)' } : undefined}
                             initial={{ width: 0 }}
                             animate={{ width: `${percentage}%` }}
                             transition={{ duration: 0.5, ease: "easeOut" }}
@@ -705,7 +714,7 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
             <div
                 className={`relative rounded-xl overflow-hidden transition-all duration-700 ease-in-out ${theme
                     ? theme.card
-                    : "bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700"
+                    : "bg-white dark:bg-gray-800 shadow-sm border game-card"
                     }`}
             >
                 {/* ─── Header with Prize Pool ─── */}
@@ -913,7 +922,8 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                         <button
                             type="button"
                             onClick={() => setShowVoters(true)}
-                            className="w-full text-center font-medium py-2.5 px-4 rounded-xl transition-all border shadow-sm cursor-pointer text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:shadow-md"
+                            className="w-full text-center font-medium py-2.5 px-4 rounded-xl transition-all border shadow-sm cursor-pointer hover:shadow-md"
+                            style={{ color: 'var(--game-primary)', backgroundColor: 'color-mix(in srgb, var(--game-primary) 8%, transparent)', borderColor: 'color-mix(in srgb, var(--game-primary) 20%, transparent)' }}
                         >
                             <span className="flex items-center justify-center gap-2">
                                 <Users className="w-4 h-4" />

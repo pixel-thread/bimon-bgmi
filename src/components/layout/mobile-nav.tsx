@@ -134,7 +134,7 @@ export function MobileNav() {
     const initials = user?.name?.[0]?.toUpperCase() || "?";
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-divider bg-background/80 backdrop-blur-xl lg:hidden">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-divider bg-background/80 backdrop-blur-xl lg:hidden game-bottom-nav">
             <div className="mx-auto flex max-w-lg items-center justify-around">
                 {allTabs.map((tab) => {
                     const isActive = pathname.startsWith(tab.href);
@@ -150,7 +150,7 @@ export function MobileNav() {
                                 if (!isActive) setNavigatingTo(tab.href);
                             }}
                             className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] transition-colors ${isActive
-                                ? "text-primary"
+                                ? "game-nav-active"
                                 : "text-foreground/50 active:text-foreground"
                                 }`}
                         >
@@ -186,7 +186,7 @@ export function MobileNav() {
                                 {tab.label === "__wallet__" ? <>{(balance ?? 0).toLocaleString()} <CurrencyIcon size={12} /></> : isProfile ? profileLabel : tab.label}
                             </span>
                             {isActive && (
-                                <div className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" />
+                                <div className="absolute top-0 h-0.5 w-8 rounded-full game-nav-active-bar" />
                             )}
                         </Link>
                     );

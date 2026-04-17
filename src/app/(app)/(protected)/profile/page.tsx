@@ -403,8 +403,8 @@ export default function ProfilePage() {
                                 />
                             )
                         ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                                <User className="h-16 w-16 text-primary/30" />
+                            <div className="flex h-full w-full items-center justify-center" style={{ background: 'linear-gradient(to bottom right, color-mix(in srgb, var(--game-primary) 20%, transparent), color-mix(in srgb, var(--game-primary) 5%, transparent))' }}>
+                                <User className="h-16 w-16" style={{ color: 'color-mix(in srgb, var(--game-primary) 30%, transparent)' }} />
                             </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
@@ -492,7 +492,8 @@ export default function ProfilePage() {
                                 <button
                                     onClick={() => profileInputRef.current?.click()}
                                     disabled={uploadingProfile}
-                                    className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white shadow-sm hover:scale-110 disabled:opacity-50"
+                                    className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full text-white shadow-sm hover:scale-110 disabled:opacity-50"
+                                    style={{ backgroundColor: 'var(--game-primary)' }}
                                 >
                                     {uploadingProfile ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
                                 </button>
@@ -595,7 +596,7 @@ export default function ProfilePage() {
                                     </p>
                                 </div>
                                 <div className="flex items-baseline justify-center gap-2">
-                                    <span className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                                    <span className="text-4xl font-bold game-gradient-text">
                                         {GAME.features.hasBR
                                             ? stats.kd.toFixed(2)
                                             : stats.matches > 0 ? `${stats.winRate}%` : "—"}

@@ -422,7 +422,7 @@ export default function WalletPage() {
             {/* Header */}
             <div className="mb-6 space-y-1">
                 <div className="flex items-center gap-2">
-                    <WalletIcon className="h-5 w-5 text-primary" />
+                    <WalletIcon className="h-5 w-5 game-text" />
                     <h1 className="text-lg font-bold">Wallet</h1>
                 </div>
                 <p className="text-sm text-foreground/50">
@@ -439,9 +439,12 @@ export default function WalletPage() {
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                     >
-                        <Card className="overflow-hidden border-none bg-gradient-to-br from-primary/20 via-primary/10 to-secondary/10">
+                        <Card
+                            className="overflow-hidden border-none"
+                            style={{ background: 'linear-gradient(to bottom right, color-mix(in srgb, var(--game-primary) 15%, transparent), color-mix(in srgb, var(--game-primary) 8%, transparent), color-mix(in srgb, var(--game-primary-light) 5%, transparent))' }}
+                        >
                             {/* Decorative elements */}
-                            <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
+                            <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full blur-2xl" style={{ backgroundColor: 'color-mix(in srgb, var(--game-primary) 10%, transparent)' }} />
                             <div className="pointer-events-none absolute -left-4 bottom-0 h-24 w-24 rounded-full bg-secondary/10 blur-xl" />
 
                             <CardBody className="relative z-10 gap-4 p-6">
@@ -525,8 +528,8 @@ export default function WalletPage() {
                         onClick={onCrossGameOpen}
                         className="w-full flex items-center gap-3 p-3.5 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 to-secondary/10 transition-all hover:scale-[1.01] active:scale-[0.99]"
                     >
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20">
-                            <ArrowRightLeft className="h-4 w-4 text-primary" />
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: 'color-mix(in srgb, var(--game-primary) 20%, transparent)' }}>
+                            <ArrowRightLeft className="h-4 w-4 game-text" />
                         </div>
                         <div className="text-left">
                             <p className="text-sm font-semibold">Transfer to Another Game</p>

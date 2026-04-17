@@ -20,11 +20,156 @@
   --color-success: #22c55e;
   --color-error: #ef4444;
   --color-warning: #f59e0b;
+
+  /* Game theming defaults (overridden per data-game) */
+  --game-primary: #6366f1;
+  --game-primary-light: #818cf8;
+  --game-primary-dark: #4f46e5;
+  --game-accent: #f59e0b;
+  --game-glow: rgba(99, 102, 241, 0.25);
+  --game-glow-strong: rgba(99, 102, 241, 0.4);
+  --game-bg: #0a0a0a;
+  --game-surface: #18181b;
+  --game-surface-hover: #1f1f23;
+  --game-border: rgba(99, 102, 241, 0.08);
+  --game-border-strong: rgba(99, 102, 241, 0.15);
+  --game-nav-from: #0a0a0a;
+  --game-nav-to: #18181b;
+  --game-gradient: linear-gradient(135deg, var(--game-primary), var(--game-primary-light));
+  --game-text-glow: 0 0 12px var(--game-glow);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   🎖️ BGMI / PUBG Mobile — Military Gold & Black
+   Brand: Gold #F2AA00, Military olive, dark backgrounds
+   ═══════════════════════════════════════════════════════════════ */
+[data-game="bgmi"] {
+  --game-primary: #F2AA00;
+  --game-primary-light: #FFD740;
+  --game-primary-dark: #E09800;
+  --game-accent: #4a5c3d;
+  --game-glow: rgba(242, 170, 0, 0.2);
+  --game-glow-strong: rgba(242, 170, 0, 0.35);
+  --game-bg: #0d0f0b;
+  --game-surface: #161a12;
+  --game-surface-hover: #1e2318;
+  --game-border: rgba(242, 170, 0, 0.06);
+  --game-border-strong: rgba(242, 170, 0, 0.12);
+  --game-nav-from: #0d0f0b;
+  --game-nav-to: #161a12;
+  --game-gradient: linear-gradient(135deg, #F2AA00, #FFD740);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   🔥 Free Fire — Fire Orange & Red on Black
+   Brand: Orange #FF6B00, Red #DC2626, dark ember backgrounds
+   ═══════════════════════════════════════════════════════════════ */
+[data-game="freefire"] {
+  --game-primary: #FF6B00;
+  --game-primary-light: #FF8C00;
+  --game-primary-dark: #E05500;
+  --game-accent: #DC2626;
+  --game-glow: rgba(255, 107, 0, 0.2);
+  --game-glow-strong: rgba(255, 107, 0, 0.35);
+  --game-bg: #0a0806;
+  --game-surface: #1a1410;
+  --game-surface-hover: #231a14;
+  --game-border: rgba(255, 107, 0, 0.06);
+  --game-border-strong: rgba(255, 107, 0, 0.12);
+  --game-nav-from: #0a0806;
+  --game-nav-to: #1a1410;
+  --game-gradient: linear-gradient(135deg, #FF6B00, #FF8C00);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ⚽ eFootball / PES — Clean Blue & Yellow
+   Brand: Blue #2563EB, Yellow #EAB308, modern sport UI
+   ═══════════════════════════════════════════════════════════════ */
+[data-game="pes"] {
+  --game-primary: #2563EB;
+  --game-primary-light: #3B82F6;
+  --game-primary-dark: #1D4ED8;
+  --game-accent: #EAB308;
+  --game-glow: rgba(37, 99, 235, 0.2);
+  --game-glow-strong: rgba(37, 99, 235, 0.35);
+  --game-bg: #080a12;
+  --game-surface: #101420;
+  --game-surface-hover: #161c2c;
+  --game-border: rgba(37, 99, 235, 0.06);
+  --game-border-strong: rgba(37, 99, 235, 0.12);
+  --game-nav-from: #080a12;
+  --game-nav-to: #101420;
+  --game-gradient: linear-gradient(135deg, #2563EB, #3B82F6);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   🛡️ MLBB / Mobile Legends — Dark Blue, Cyan & Gold
+   Brand: Cyan #06B6D4, Gold #F59E0B, deep navy backgrounds
+   ═══════════════════════════════════════════════════════════════ */
+[data-game="mlbb"] {
+  --game-primary: #06B6D4;
+  --game-primary-light: #22D3EE;
+  --game-primary-dark: #0891B2;
+  --game-accent: #F59E0B;
+  --game-glow: rgba(6, 182, 212, 0.2);
+  --game-glow-strong: rgba(6, 182, 212, 0.35);
+  --game-bg: #060B14;
+  --game-surface: #0C1624;
+  --game-surface-hover: #121e30;
+  --game-border: rgba(6, 182, 212, 0.06);
+  --game-border-strong: rgba(6, 182, 212, 0.12);
+  --game-nav-from: #060B14;
+  --game-nav-to: #0C1624;
+  --game-gradient: linear-gradient(135deg, #06B6D4, #22D3EE);
 }
 
 /* ─── Dark Mode Base ─── */
 .dark {
   color-scheme: dark;
+}
+
+/* ─── Game-Themed Dark Mode Backgrounds ─── */
+.dark[data-game="bgmi"],
+.dark[data-game="freefire"],
+.dark[data-game="pes"],
+.dark[data-game="mlbb"] {
+  background-color: var(--game-bg);
+}
+
+/* ─── Game-Themed Navbar ─── */
+.dark[data-game] nav[data-slot="base"] {
+  background: color-mix(in srgb, var(--game-nav-from) 70%, transparent) !important;
+  border-bottom-color: var(--game-border) !important;
+}
+
+/* ─── Game-Themed Mobile Menu ─── */
+.dark[data-game] [data-slot="menu"] {
+  background: color-mix(in srgb, var(--game-nav-from) 80%, transparent) !important;
+  border-right-color: var(--game-border) !important;
+}
+
+/* ─── Game-Themed Bottom Nav ─── */
+.dark[data-game] .game-bottom-nav {
+  background: color-mix(in srgb, var(--game-bg) 85%, transparent) !important;
+  border-top-color: var(--game-border) !important;
+}
+
+/* Active bottom nav tab glow */
+.dark[data-game] .game-nav-active {
+  color: var(--game-primary) !important;
+}
+.dark[data-game] .game-nav-active-bar {
+  background: var(--game-gradient) !important;
+  box-shadow: 0 0 8px var(--game-glow);
+}
+
+/* ─── Game-Themed Cards (HeroUI Card overrides) ─── */
+.dark[data-game] [data-slot="base"].game-themed-card {
+  background-color: var(--game-surface);
+  border-color: var(--game-border);
+}
+.dark[data-game] [data-slot="base"].game-themed-card:hover {
+  border-color: var(--game-border-strong);
 }
 
 /* ─── Reset & Base ─── */
@@ -37,7 +182,7 @@ body {
   overflow-x: hidden;
 }
 
-/* ─── Scrollbar ─── */
+/* ─── Game-Themed Scrollbar ─── */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -47,12 +192,13 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(0 0% 40% / 0.3);
+  background: var(--game-primary, hsl(0 0% 40% / 0.3));
+  opacity: 0.4;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(0 0% 40% / 0.5);
+  opacity: 0.6;
 }
 
 /* Focus ring removed — HeroUI handles focus states */
@@ -61,6 +207,113 @@ body {
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Game Theme Utility Classes
+   Use these in components for game-aware styling
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Subtle game-colored border on cards */
+.game-card {
+  border: 1px solid var(--game-border);
+  transition: border-color 0.3s ease;
+}
+.game-card:hover {
+  border-color: var(--game-border-strong);
+}
+
+/* Game-colored active menu item */
+.game-menu-active {
+  background-color: color-mix(in srgb, var(--game-primary) 10%, transparent);
+  color: var(--game-primary) !important;
+  font-weight: 600;
+}
+.game-menu-active-medium {
+  background-color: color-mix(in srgb, var(--game-primary) 10%, transparent);
+  color: var(--game-primary) !important;
+  font-weight: 500;
+}
+
+/* Game-colored glow on active elements */
+.game-glow {
+  box-shadow: 0 0 12px var(--game-glow), 0 0 4px var(--game-glow);
+}
+.game-glow-strong {
+  box-shadow: 0 0 20px var(--game-glow-strong), 0 0 8px var(--game-glow);
+}
+
+/* Game-colored text */
+.game-text {
+  color: var(--game-primary);
+}
+.game-text-light {
+  color: var(--game-primary-light);
+}
+
+/* Game-colored gradient text */
+.game-gradient-text {
+  background: var(--game-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Game-themed active indicator bar */
+.game-active-bar {
+  background: var(--game-gradient);
+  box-shadow: 0 0 8px var(--game-glow);
+}
+
+/* Game-themed glassmorphism surface */
+.game-glass {
+  background: color-mix(in srgb, var(--game-surface) 60%, transparent);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  border: 1px solid var(--game-border);
+}
+
+/* Subtle background shimmer — adds life to surfaces */
+.game-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.game-shimmer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--game-glow) 50%,
+    transparent 100%
+  );
+  animation: gameShimmer 4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes gameShimmer {
+  0% { left: -100%; }
+  50% { left: 150%; }
+  100% { left: 150%; }
+}
+
+/* Subtle ambient glow pulse — for accent elements */
+.game-pulse {
+  animation: gamePulse 3s ease-in-out infinite;
+}
+
+@keyframes gamePulse {
+  0%, 100% {
+    box-shadow: 0 0 8px var(--game-glow);
+  }
+  50% {
+    box-shadow: 0 0 16px var(--game-glow-strong), 0 0 4px var(--game-glow);
   }
 }
 
@@ -348,6 +601,11 @@ body {
   .pubgmi-letter,
   .pubgmi-fall-down,
   .pubgmi-roll-in {
+    animation: none !important;
+  }
+
+  .game-shimmer::before,
+  .game-pulse {
     animation: none !important;
   }
 }

@@ -186,9 +186,9 @@ export function Header() {
                 maxWidth="xl"
                 position="static"
                 classNames={{
-                    base: "!fixed !top-0 !left-0 !right-0 !z-40 bg-background/60 backdrop-blur-xl border-b border-divider",
+                    base: "!fixed !top-0 !left-0 !right-0 !z-40 backdrop-blur-xl border-b",
                     wrapper: "px-4 sm:px-6",
-                    menu: `!fixed !top-[var(--navbar-height)] !h-[calc(100dvh-var(--navbar-height))] !w-[280px] !max-w-[280px] border-r border-divider shadow-xl !bg-background/60 !backdrop-blur-xl !backdrop-saturate-150 !overflow-y-auto transition-transform duration-300 ease-out ${isMenuOpen ? "!translate-x-0" : "!-translate-x-full"
+                    menu: `!fixed !top-[var(--navbar-height)] !h-[calc(100dvh-var(--navbar-height))] !w-[280px] !max-w-[280px] border-r shadow-xl !backdrop-blur-xl !backdrop-saturate-150 !overflow-y-auto transition-transform duration-300 ease-out ${isMenuOpen ? "!translate-x-0" : "!-translate-x-full"
                         }`,
                     toggle: "w-10 h-10",
                 }}
@@ -203,7 +203,7 @@ export function Header() {
                         )}
                     </div>
                     <NavbarBrand>
-                        <PubgmiLogo variant="header" className="text-lg" />
+                        <PubgmiLogo variant="header" className="text-lg game-text" />
                     </NavbarBrand>
                 </NavbarContent>
 
@@ -220,9 +220,10 @@ export function Header() {
                                         if (!isActive) setNavigatingTo(item.href);
                                     }}
                                     className={`flex items-center gap-1.5 text-sm transition-colors ${isActive
-                                        ? "font-semibold text-primary"
+                                        ? "font-semibold"
                                         : "text-foreground/70 hover:text-foreground"
                                         }`}
+                                    style={isActive ? { color: 'var(--game-primary)' } : undefined}
                                 >
                                     {navigatingTo === item.href && !isActive ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -249,9 +250,10 @@ export function Header() {
                                             if (!isActive) setNavigatingTo(item.href);
                                         }}
                                         className={`flex items-center gap-1.5 text-sm transition-colors ${isActive
-                                            ? "font-semibold text-primary"
+                                            ? "font-semibold"
                                             : "text-foreground/70 hover:text-foreground"
                                             }`}
+                                        style={isActive ? { color: 'var(--game-primary)' } : undefined}
                                     >
                                         {navigatingTo === item.href && !isActive ? (
                                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -275,7 +277,7 @@ export function Header() {
                             <PopoverTrigger>
                                 <button
                                     className={`relative flex items-center gap-1 text-sm transition-colors ${[...moreItems.map(i => i.href), "/settings"].some((h) => pathname.startsWith(h))
-                                        ? "font-semibold text-primary"
+                                        ? "font-semibold game-text"
                                         : "text-foreground/70 hover:text-foreground"
                                         }`}
                                 >
@@ -296,7 +298,7 @@ export function Header() {
                                             key={item.href}
                                             href={item.href}
                                             className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${isActive
-                                                ? "bg-primary/10 font-medium text-primary"
+                                                ? "game-menu-active-medium"
                                                 : "text-foreground/70 hover:bg-default-100 hover:text-foreground"
                                                 }`}
                                         >
@@ -314,7 +316,7 @@ export function Header() {
                                 <Link
                                     href="/settings"
                                     className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${pathname.startsWith("/settings")
-                                        ? "bg-primary/10 font-medium text-primary"
+                                        ? "game-menu-active-medium"
                                         : "text-foreground/70 hover:bg-default-100 hover:text-foreground"
                                         }`}
                                 >
@@ -351,7 +353,8 @@ export function Header() {
                                         onClick={() => {
                                             if (!pathname.startsWith("/royal-pass")) setNavigatingTo("/royal-pass");
                                         }}
-                                        className="relative flex items-center justify-center rounded-full p-1.5 text-yellow-500 transition-opacity hover:opacity-80"
+                                        className="relative flex items-center justify-center rounded-full p-1.5 transition-opacity hover:opacity-80"
+                                        style={{ color: 'var(--game-accent, #eab308)' }}
                                     >
                                         {navigatingTo === "/royal-pass" && !pathname.startsWith("/royal-pass") ? (
                                             <Loader2 className="h-5 w-5 animate-spin" />
@@ -432,7 +435,7 @@ export function Header() {
                                                                 else setIsMenuOpen(false);
                                                             }}
                                                             className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${isActive
-                                                                ? "bg-primary/10 font-semibold text-primary"
+                                                                ? "game-menu-active"
                                                                 : "text-foreground/70 hover:bg-default-100"
                                                                 }`}
                                                         >
@@ -478,7 +481,7 @@ export function Header() {
                                                 else setIsMenuOpen(false);
                                             }}
                                             className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-colors ${isActive
-                                                ? "bg-primary/10 font-semibold text-primary"
+                                                ? "game-menu-active"
                                                 : "text-foreground/70 hover:bg-default-100"
                                                 }`}
                                         >
@@ -507,7 +510,7 @@ export function Header() {
                                             else setIsMenuOpen(false);
                                         }}
                                         className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-colors ${pathname.startsWith("/help")
-                                            ? "bg-primary/10 font-semibold text-primary"
+                                            ? "game-menu-active"
                                             : "text-foreground/70 hover:bg-default-100"
                                             }`}
                                     >
@@ -549,7 +552,7 @@ export function Header() {
                                                 else setIsMenuOpen(false);
                                             }}
                                             className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-colors ${pathname.startsWith("/dashboard")
-                                                ? "bg-primary/10 font-semibold text-primary"
+                                                ? "game-menu-active"
                                                 : "text-foreground/70 hover:bg-default-100"
                                                 }`}
                                         >
@@ -583,7 +586,7 @@ export function Header() {
                                             else setIsMenuOpen(false);
                                         }}
                                         className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-colors ${pathname.startsWith("/settings")
-                                            ? "bg-primary/10 font-semibold text-primary"
+                                            ? "game-menu-active"
                                             : "text-foreground/70 hover:bg-default-100"
                                             }`}
                                     >
