@@ -47,7 +47,15 @@ const GAME_LABELS: Record<string, { label: string; color: string }> = {
     bgmi: { label: "PUBGMI", color: "bg-amber-500/15 text-amber-500" },
     pes: { label: "KICKOFF", color: "bg-emerald-500/15 text-emerald-500" },
     freefire: { label: "BOOYAH", color: "bg-violet-500/15 text-violet-500" },
+    mlbb: { label: "MLBB", color: "bg-blue-500/15 text-blue-400" },
 };
+
+const ALL_GAMES = [
+    { mode: "bgmi", label: "PUBGMI" },
+    { mode: "pes", label: "KICKOFF" },
+    { mode: "freefire", label: "BOOYAH" },
+    { mode: "mlbb", label: "MLBB" },
+];
 
 interface PollOptionDTO {
     id: string;
@@ -300,14 +308,14 @@ export default function CommunityPage() {
     const [editingMsgText, setEditingMsgText] = useState("");
     const [category, setCategory] = useState("feedback");
     const [isAnonymous, setIsAnonymous] = useState(false);
-    const [gameFilter, setGameFilter] = useState<"mine" | "all">("mine");
+    const [gameFilter, setGameFilter] = useState<string>(GAME.mode);
 
     // Poll creation form
     const [pollQuestion, setPollQuestion] = useState("");
     const [pollOptions, setPollOptions] = useState(["", ""]);
 
     // Fetch community feed (filtered by game on server)
-    const gameQueryParam = gameFilter === "mine" ? GAME.mode : undefined;
+    const gameQueryParam = gameFilter === "all" ? undefined : gameFilter;
     const { data, isPending: messagesLoading } = useQuery<{ messages: MessageDTO[]; unreadCount: number }>({
         queryKey: ["community-messages", gameFilter],
         queryFn: async () => {
@@ -548,19 +556,39 @@ export default function CommunityPage() {
                 <div className="h-5 mt-1">
                     <RotatingSubtitle />
                 </div>
-                {/* Game filter tabs */}
-                <div className="flex gap-1 mt-3">
+            </motion.div>
+
+            {/* Cross-game promo — shows other games we run */}
+            <CrossGamePromo showAll />
+
+            {/* Game filter tabs */}
+            <div className="flex gap-1 flex-wrap">
+                    {/* Current game first */}
                     <button
-                        onClick={() => setGameFilter("mine")}
+                        onClick={() => setGameFilter(GAME.mode)}
                         className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                            gameFilter === "mine"
+                            gameFilter === GAME.mode
                                 ? "game-text font-semibold"
                                 : "text-foreground/40 hover:text-foreground/60"
                         }`}
-                        style={gameFilter === "mine" ? { backgroundColor: 'color-mix(in srgb, var(--game-primary) 12%, transparent)' } : {}}
+                        style={gameFilter === GAME.mode ? { backgroundColor: 'color-mix(in srgb, var(--game-primary) 12%, transparent)' } : {}}
                     >
                         {GAME.name}
                     </button>
+                    {/* Other games */}
+                    {ALL_GAMES.filter(g => g.mode !== GAME.mode).map((g) => (
+                        <button
+                            key={g.mode}
+                            onClick={() => setGameFilter(g.mode)}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                                gameFilter === g.mode
+                                    ? `font-semibold ${GAME_LABELS[g.mode]?.color || "bg-foreground/10 text-foreground"}`
+                                    : "text-foreground/40 hover:text-foreground/60"
+                            }`}
+                        >
+                            {g.label}
+                        </button>
+                    ))}
                     <button
                         onClick={() => setGameFilter("all")}
                         className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
@@ -569,14 +597,9 @@ export default function CommunityPage() {
                                 : "text-foreground/40 hover:text-foreground/60"
                         }`}
                     >
-                        All Games
+                        All
                     </button>
                 </div>
-            </motion.div>
-
-            {/* Cross-game promo — only games that share the central wallet */}
-            <CrossGamePromo showAll />
-
             {/* Loading skeletons */}
             {isLoading && (
                 <div className="space-y-2.5">
