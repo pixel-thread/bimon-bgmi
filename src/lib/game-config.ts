@@ -69,11 +69,17 @@ interface GameConfig {
     rewardCurrency?: string;          // e.g. "Diamond" — reward-only currency
     rewardCurrencyEmoji?: string;     // "💎"
     rewardCurrencyPlural?: string;    // "Diamonds"
+    // Exchange rates for cross-game transfers
+    // exchangeRateIn:  multiplier when RECEIVING transfers (e.g. 0.9 = get 90% of sent amount)
+    // exchangeRateOut: multiplier when SENDING transfers (e.g. 0.9 = send 90% of your amount)
+    // Both default to 1.0 (no conversion). For MLBB: in=0.9, out=0.9 → 50 UC→45 BP, 50 BP→45 UC
+    exchangeRateIn?: number;
+    exchangeRateOut?: number;
     // Feature flags
     features: GameFeatures;
 }
 
-const GAME_CONFIGS: Record<GameMode, GameConfig> = {
+export const GAME_CONFIGS: Record<GameMode, GameConfig> = {
     bgmi: {
         mode: "bgmi",
         name: "PUBGMI",
@@ -234,6 +240,8 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         rewardCurrency: "Diamond",
         rewardCurrencyEmoji: "💎",
         rewardCurrencyPlural: "Diamonds",
+        exchangeRateIn: 0.9,           // 50 UC → 45 BP (UC is worth more than BP)
+        exchangeRateOut: 1 / 0.9,      // 45 BP → 50 UC (inverse — round-trip is neutral)
         features: {
             hasTeamSizes: false,
             hasLuckyVoters: true,
@@ -295,5 +303,4 @@ export function getGameConfig(request?: Request) {
     };
 }
 
-/** Export configs for direct access if needed */
-export { GAME_CONFIGS };
+

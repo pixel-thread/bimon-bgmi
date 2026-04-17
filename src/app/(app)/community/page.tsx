@@ -78,10 +78,15 @@ interface PollDTO {
     pendingSuggestions: { id: string; text: string; suggestedBy: string }[];
 }
 
-const SUBTITLE_MESSAGES = [
-    "Send message kumno bin pynbha ia kanoi ka tournament",
-    "Pynbeit da n ong bakla lane ai ongmut ia u seng",
-];
+const SUBTITLE_MESSAGES = GAME.locale === "kha"
+    ? [
+        "Send message kumno bin pynbha ia kanoi ka tournament",
+        "Pynbeit da n ong bakla lane ai ongmut ia u seng",
+    ]
+    : [
+        "Share feedback, ideas, or report bugs",
+        "Vote on polls and help shape the community",
+    ];
 
 function RotatingSubtitle() {
     const [index, setIndex] = useState(0);

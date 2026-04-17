@@ -43,6 +43,32 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Cannot transfer to the same game" }, { status: 400 });
         }
 
+        // ── Anti-abuse: Short cooldown (1 min between transfers) ─
+        // No daily cap needed — exchange rate math guarantees every
+        // round-trip LOSES currency (e.g. 100 UC → 90 BP → 81 UC)
+        const COOLDOWN_SECONDS = 60;
+
+        try {
+            const cooldownSince = new Date(Date.now() - COOLDOWN_SECONDS * 1000);
+            const recentTransfer = await communityDb.crossGameTransfer.findFirst({
+                where: {
+                    playerEmail: user.email,
+                    createdAt: { gte: cooldownSince },
+                },
+                orderBy: { createdAt: "desc" },
+            });
+
+            if (recentTransfer) {
+                const waitSec = Math.ceil((recentTransfer.createdAt.getTime() + COOLDOWN_SECONDS * 1000 - Date.now()) / 1000);
+                return NextResponse.json(
+                    { error: `Please wait ${waitSec}s before your next transfer` },
+                    { status: 429 }
+                );
+            }
+        } catch (abuseCheckError) {
+            console.warn("[cross-game] Cooldown check failed, proceeding:", abuseCheckError);
+        }
+
         // ── Check source balance ────────────────────────────────
         const { available, reserved } = await getAvailableBalance(user.email);
         if (available < amount) {
@@ -66,6 +92,35 @@ export async function POST(req: NextRequest) {
                 { status: 400 }
             );
         }
+
+        // ── Compute exchange rate & validate clean amount ────────
+        const targetConfig = GAME_CONFIGS[targetGame];
+        const sourceOutRate = GAME.exchangeRateOut ?? 1;
+        const targetInRate = targetConfig.exchangeRateIn ?? 1;
+        const combinedRate = sourceOutRate * targetInRate;
+        const hasConversion = Math.abs(combinedRate - 1) > 0.001;
+
+        // Find minimum step for zero-rounding transfers
+        // e.g. rate 0.9 → step 10, rate 10/9 → step 9, rate 1.0 → step 1
+        let transferStep = 1;
+        if (hasConversion) {
+            for (let n = 1; n <= 100; n++) {
+                const result = n * combinedRate;
+                if (Math.abs(result - Math.round(result)) < 0.0001) {
+                    transferStep = n;
+                    break;
+                }
+            }
+        }
+
+        if (hasConversion && amount % transferStep !== 0) {
+            return NextResponse.json(
+                { error: `Amount must be a multiple of ${transferStep} for ${GAME.gameName} → ${targetConfig.gameName} transfers` },
+                { status: 400 }
+            );
+        }
+
+        const creditAmount = Math.round(amount * combinedRate);
 
         // ── Phase 1: Debit source game wallet ───────────────────
         const sourceDb = getPrisma(sourceGameMode);
@@ -98,9 +153,10 @@ export async function POST(req: NextRequest) {
         ]);
 
         // ── Phase 2: Credit target game wallet ──────────────────
+
         try {
             const targetBalance = targetUser.player.wallet?.balance ?? 0;
-            const newTargetBalance = targetBalance + amount;
+            const newTargetBalance = targetBalance + creditAmount;
 
             await targetDb.$transaction([
                 targetDb.wallet.upsert({
@@ -111,9 +167,11 @@ export async function POST(req: NextRequest) {
                 targetDb.transaction.create({
                     data: {
                         playerId: targetUser.player.id,
-                        amount,
+                        amount: creditAmount,
                         type: "CREDIT",
-                        description: `Transfer from ${GAME.gameName}`,
+                        description: hasConversion
+                            ? `Transfer from ${GAME.gameName} (${amount} ${GAME.currency} → ${creditAmount} ${targetConfig.entryCurrency || targetConfig.currency})`
+                            : `Transfer from ${GAME.gameName}`,
                     },
                 }),
             ]);
@@ -150,18 +208,28 @@ export async function POST(req: NextRequest) {
                     toGame: targetGame,
                     playerEmail: user.email,
                     amount,
-                    description: `${GAME.gameName} → ${GAME_CONFIGS[targetGame].gameName}`,
+                    description: hasConversion
+                        ? `${GAME.gameName} → ${targetConfig.gameName} (${amount} ${GAME.currency} → ${creditAmount} ${targetConfig.entryCurrency || targetConfig.currency})`
+                        : `${GAME.gameName} → ${targetConfig.gameName}`,
                 },
             });
         } catch (settlementError) {
             console.error("[cross-game] Settlement log failed (transfer still succeeded):", settlementError);
         }
 
+        const targetCurrencyLabel = targetConfig.entryCurrency || targetConfig.currency;
+        const sourceCurrencyLabel = GAME.entryCurrency || GAME.currency;
+        const message = hasConversion
+            ? `Transferred ${amount} ${sourceCurrencyLabel} → ${creditAmount} ${targetCurrencyLabel} to your ${targetConfig.gameName} account`
+            : `Transferred ${amount} ${sourceCurrencyLabel} to your ${targetConfig.gameName} account`;
+
         return NextResponse.json({
             success: true,
-            message: `Transferred ${amount} ${GAME.currency} to your ${GAME_CONFIGS[targetGame].gameName} account`,
+            message,
             data: {
                 amount,
+                creditAmount,
+                combinedRate,
                 fromGame: sourceGameMode,
                 toGame: targetGame,
                 newSourceBalance: newSourceBalance,

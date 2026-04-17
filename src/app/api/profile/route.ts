@@ -159,9 +159,12 @@ export async function GET() {
                     displayName: player.displayName || user.username,
                     uid: player.uid || null,
                     phoneNumber: player.phoneNumber || null,
-                    bio: player.bio || (GAME.locale === "kha"
-                        ? `Nga u ${player.displayName || user.username} dei u ${player.category.charAt(0) + player.category.slice(1).toLowerCase()}`
-                        : `I'm ${player.displayName || user.username}, a ${player.category.charAt(0) + player.category.slice(1).toLowerCase()} player`),
+                    bio: player.bio || (() => {
+                        const cat = player.category.charAt(0) + player.category.slice(1).toLowerCase();
+                        if (GAME.locale === "kha") return `Nga u ${player.displayName || user.username} dei u ${cat}`;
+                        const article = /^[aeiou]/i.test(cat) ? "an" : "a";
+                        return `I'm ${player.displayName || user.username}, ${article} ${cat} player`;
+                    })(),
                     category: player.category,
                     hasRoyalPass: player.hasRoyalPass,
                     isBanned: player.isBanned,

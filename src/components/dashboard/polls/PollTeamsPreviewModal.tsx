@@ -63,7 +63,7 @@ function getCategoryLabel(category: string): string {
 }
 
 function getDisplayName(displayName?: string | null, username?: string): string {
-    return displayName || username || "Unknown";
+    return (displayName?.trim()) || (username?.trim()) || "Unknown";
 }
 
 // ─── TeamCard ────────────────────────────────────────────────
@@ -92,8 +92,8 @@ function TeamCard({ team, entryFee }: { team: TeamPreview; entryFee: number }) {
                         key={player.id}
                         className="flex items-center justify-between rounded bg-default-100 px-2 py-1.5 text-xs"
                     >
-                        <div className="flex min-w-0 max-w-[55%] items-center gap-1">
-                            <span className="truncate font-medium">
+                        <div className="flex min-w-0 flex-1 items-center gap-1 mr-2">
+                            <span className="truncate font-medium min-w-[3ch]">
                                 {getDisplayName(player.displayName, player.username)}
                             </span>
                             <span className={`shrink-0 text-[9px] font-medium ${getCategoryColor(player.category)}`}>

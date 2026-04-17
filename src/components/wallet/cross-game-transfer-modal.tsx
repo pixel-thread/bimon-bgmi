@@ -15,7 +15,7 @@ import { ArrowRightLeft, Check, AlertCircle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { GAME, GAME_MODE, type GameMode } from "@/lib/game-config";
+import { GAME, GAME_MODE, GAME_CONFIGS, type GameMode } from "@/lib/game-config";
 import { CurrencyIcon } from "@/components/common/CurrencyIcon";
 
 // ─── Game options (exclude current game) ────────────────────
@@ -90,7 +90,29 @@ export function CrossGameTransferModal({
     });
 
     const numAmount = Number(amount) || 0;
-    const isValidAmount = numAmount > 0 && numAmount <= currentBalance && Number.isInteger(numAmount);
+
+    // Exchange rate: source outgoing × target incoming
+    const sourceOutRate = GAME.exchangeRateOut ?? 1;
+    const targetInRate = selectedGame ? (GAME_CONFIGS[selectedGame]?.exchangeRateIn ?? 1) : 1;
+    const combinedRate = sourceOutRate * targetInRate;
+    const hasConversion = Math.abs(combinedRate - 1) > 0.001;
+    const targetCurrencyLabel = selectedGame ? (GAME_CONFIGS[selectedGame]?.entryCurrency || GAME_CONFIGS[selectedGame]?.currency || "UC") : GAME.currency;
+    const sourceCurrencyLabel = GAME.entryCurrency || GAME.currency;
+
+    // Find minimum step for clean conversion (no rounding)
+    let transferStep = 1;
+    if (hasConversion) {
+        for (let n = 1; n <= 100; n++) {
+            const result = n * combinedRate;
+            if (Math.abs(result - Math.round(result)) < 0.0001) {
+                transferStep = n;
+                break;
+            }
+        }
+    }
+
+    const creditAmount = Math.round(numAmount * combinedRate);
+    const isValidAmount = numAmount > 0 && numAmount <= currentBalance && Number.isInteger(numAmount) && (!hasConversion || numAmount % transferStep === 0);
 
     const handleClose = () => {
         setSelectedGame(null);
@@ -130,7 +152,7 @@ export function CrossGameTransferModal({
                                 className="space-y-3"
                             >
                                 <p className="text-xs text-foreground/50">
-                                    Move {GAME.currency} from your {GAME.gameName} wallet to another game
+                                    Move {sourceCurrencyLabel} from your {GAME.gameName} wallet to another game
                                 </p>
 
                                 <div className="space-y-2">
@@ -221,20 +243,46 @@ export function CrossGameTransferModal({
                                         <Input
                                             type="number"
                                             label="Amount"
-                                            placeholder="Enter amount"
+                                            placeholder={hasConversion ? `Multiples of ${transferStep}` : "Enter amount"}
                                             value={amount}
                                             onValueChange={setAmount}
-                                            min={1}
+                                            min={transferStep}
                                             max={currentBalance}
+                                            step={transferStep}
                                             endContent={
-                                                <span className="text-xs text-foreground/40">{GAME.currency}</span>
+                                                <span className="text-xs text-foreground/40">{sourceCurrencyLabel}</span>
                                             }
-                                            description={`Available: ${currentBalance.toLocaleString()} ${GAME.currency}`}
+                                            description={
+                                                hasConversion
+                                                    ? `Available: ${currentBalance.toLocaleString()} ${sourceCurrencyLabel} · Multiples of ${transferStep}`
+                                                    : `Available: ${currentBalance.toLocaleString()} ${sourceCurrencyLabel}`
+                                            }
                                         />
+
+                                        {/* Exchange rate notice */}
+                                        {hasConversion && numAmount > 0 && numAmount % transferStep === 0 && (
+                                            <div className="rounded-lg bg-warning/5 border border-warning/15 px-3 py-2">
+                                                <p className="text-[11px] text-warning font-medium">
+                                                    {numAmount} {sourceCurrencyLabel} → {creditAmount} {targetCurrencyLabel}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* Invalid step warning */}
+                                        {hasConversion && numAmount > 0 && numAmount % transferStep !== 0 && (
+                                            <div className="rounded-lg bg-danger/5 border border-danger/15 px-3 py-2">
+                                                <p className="text-[11px] text-danger font-medium">
+                                                    Must be a multiple of {transferStep}
+                                                </p>
+                                            </div>
+                                        )}
 
                                         {/* Quick amount buttons */}
                                         <div className="flex gap-2">
-                                            {[10, 50, 100].filter(v => v <= currentBalance).map((v) => (
+                                            {(hasConversion
+                                                ? [transferStep, transferStep * 5, transferStep * 10]
+                                                : [10, 50, 100]
+                                            ).filter(v => v <= currentBalance).map((v) => (
                                                 <Button
                                                     key={v}
                                                     size="sm"
@@ -249,12 +297,12 @@ export function CrossGameTransferModal({
                                             {currentBalance > 0 && (
                                                 <Button
                                                     size="sm"
-                                                    variant={numAmount === currentBalance ? "solid" : "flat"}
-                                                    color={numAmount === currentBalance ? "primary" : "default"}
-                                                    onPress={() => setAmount(String(currentBalance))}
+                                                    variant={numAmount === Math.floor(currentBalance / transferStep) * transferStep ? "solid" : "flat"}
+                                                    color={numAmount === Math.floor(currentBalance / transferStep) * transferStep ? "primary" : "default"}
+                                                    onPress={() => setAmount(String(Math.floor(currentBalance / transferStep) * transferStep))}
                                                     className="flex-1"
                                                 >
-                                                    All
+                                                    Max
                                                 </Button>
                                             )}
                                         </div>
@@ -277,6 +325,11 @@ export function CrossGameTransferModal({
                                     <p className="text-3xl font-bold flex items-center justify-center gap-2">
                                         {numAmount.toLocaleString()} <CurrencyIcon size={24} />
                                     </p>
+                                    {hasConversion && (
+                                        <p className="text-sm font-semibold text-warning">
+                                            → {creditAmount.toLocaleString()} {targetCurrencyLabel}
+                                        </p>
+                                    )}
                                     <div className="flex items-center justify-center gap-2 text-sm text-foreground/60">
                                         <span className="font-medium">{GAME.gameName}</span>
                                         <ArrowRightLeft className="h-3 w-3" />
@@ -286,7 +339,10 @@ export function CrossGameTransferModal({
 
                                 <div className="rounded-xl bg-warning/10 border border-warning/20 p-3">
                                     <p className="text-[11px] text-warning font-medium">
-                                        This will deduct {numAmount} {GAME.currency} from your {GAME.gameName} wallet and add {numAmount} {targetInfo?.currency} to your {targetInfo?.gameName} wallet.
+                                        {hasConversion
+                                            ? `This will deduct ${numAmount} ${sourceCurrencyLabel} from your ${GAME.gameName} wallet and add ${creditAmount} ${targetCurrencyLabel} to your ${targetInfo?.gameName} wallet.`
+                                            : `This will deduct ${numAmount} ${sourceCurrencyLabel} from your ${GAME.gameName} wallet and add ${numAmount} ${targetCurrencyLabel} to your ${targetInfo?.gameName} wallet.`
+                                        }
                                     </p>
                                 </div>
                             </motion.div>
@@ -305,7 +361,10 @@ export function CrossGameTransferModal({
                                 </div>
                                 <p className="text-base font-bold">Transfer Complete!</p>
                                 <p className="text-xs text-foreground/50 text-center">
-                                    {numAmount} {GAME.currency} has been moved to your {targetInfo?.gameName} account
+                                    {hasConversion
+                                        ? `${numAmount} ${sourceCurrencyLabel} → ${creditAmount} ${targetCurrencyLabel} moved to your ${targetInfo?.gameName} account`
+                                        : `${numAmount} ${sourceCurrencyLabel} has been moved to your ${targetInfo?.gameName} account`
+                                    }
                                 </p>
                             </motion.div>
                         )}

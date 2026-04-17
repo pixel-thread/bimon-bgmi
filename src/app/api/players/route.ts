@@ -172,9 +172,11 @@ export async function GET(request: NextRequest) {
             return {
                 id: p.id,
                 displayName: p.displayName,
-                bio: p.bio || (GAME.locale === "kha"
-                    ? `nga u ${p.displayName || p.user.username} dei u ${category}`
-                    : `I'm ${p.displayName || p.user.username}, a ${category} player`),
+                bio: p.bio || (() => {
+                    if (GAME.locale === "kha") return `nga u ${p.displayName || p.user.username} dei u ${category}`;
+                    const article = /^[aeiou]/i.test(category) ? "an" : "a";
+                    return `I'm ${p.displayName || p.user.username}, ${article} ${category} player`;
+                })(),
                 username: p.user.username,
                 imageUrl: p.customProfileImageUrl || p.user.imageUrl,
                 category,
