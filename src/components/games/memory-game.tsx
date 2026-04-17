@@ -189,6 +189,10 @@ export function MemoryGame() {
             const saved = loadHearts();
             const current = getRegenedHearts(saved);
             setHearts(current);
+
+            // Auto-dismiss "out of hearts" when a heart regens
+            if (current > 0) setShowNoHearts(false);
+
             if (current < MAX_HEARTS) {
                 const elapsed = Date.now() - saved.lastUsed;
                 const heartsSoFar = Math.floor(elapsed / HEART_REGEN_MS);
@@ -248,7 +252,7 @@ export function MemoryGame() {
         if (!isRunning) {
             const saved = loadHearts();
             const current = getRegenedHearts(saved);
-            if (current <= 0) { setShowNoHearts(true); setHearts(0); return; }
+            if (current <= 0) { setShowNoHearts(true); setHearts(0); saveHearts(0); return; }
             setHearts(current - 1);
             saveHearts(current - 1);
             setIsRunning(true);
