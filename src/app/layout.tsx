@@ -3,8 +3,11 @@ import { Rajdhani } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { RouteTracker } from "@/components/common/route-tracker";
 import { AutoUpdater } from "@/components/common/auto-updater";
+import { ColorThemeProvider } from "@/components/common/color-theme-provider";
 
-import { GAME, GAME_MODE } from "@/lib/game-config";
+import { GAME } from "@/lib/game-config";
+
+const GAME_ID = process.env.NEXT_PUBLIC_GAME_MODE || "bgmi";
 
 import "./globals.css";
 
@@ -17,7 +20,7 @@ const rajdhani = Rajdhani({
 
 
 const ICON_DIRS: Record<string, string> = { freefire: "freefire", pes: "pes", mlbb: "mlbb" };
-const ICON_DIR = `/icons/${ICON_DIRS[GAME_MODE] ?? "bgmi"}`;
+const ICON_DIR = `/icons/${ICON_DIRS[GAME_ID] ?? "bgmi"}`;
 
 export const metadata: Metadata = {
   applicationName: GAME.name,
@@ -90,7 +93,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-game={GAME_MODE} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script
@@ -101,10 +104,12 @@ export default function RootLayout({
       </head>
       <body className={`${rajdhani.variable} font-sans antialiased`}>
         <Providers>
-          <RouteTracker />
-          <AutoUpdater />
+          <ColorThemeProvider>
+            <RouteTracker />
+            <AutoUpdater />
 
-          {children}
+            {children}
+          </ColorThemeProvider>
         </Providers>
       </body>
     </html>

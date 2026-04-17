@@ -47,7 +47,7 @@ const SISTER_GAMES = [
         name: "Mobile Legends",
         fullName: "Mobile Legends: Bang Bang",
         icon: "/icons/mlbb/icon-192x192.png",
-        tagline: "1v1 Mobile Legends tournaments",
+        tagline: "5v5 MOBA tournaments",
         url: "https://bimon-ml.vercel.app",
         gradient: "from-blue-500/20 to-cyan-500/20",
         border: "border-blue-500/20",

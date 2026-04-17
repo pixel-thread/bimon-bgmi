@@ -33,13 +33,21 @@ async function getPlayerInfo() {
 /**
  * GET /api/community/polls — List active community polls (central DB).
  */
-export async function GET() {
+export async function GET(req: Request) {
     try {
         const info = await getPlayerInfo();
         if (!info) return ErrorResponse({ message: "Unauthorized", status: 401 });
 
+        const { searchParams } = new URL(req.url);
+        const gameParam = searchParams.get("game");
+
+        const where: Record<string, unknown> = { isActive: true };
+        if (gameParam) {
+            where.game = gameParam;
+        }
+
         const polls = await communityDb.centralCommunityPoll.findMany({
-            where: { isActive: true },
+            where,
             orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
             take: 20,
             include: {

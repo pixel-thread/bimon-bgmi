@@ -19,12 +19,18 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const unreadOnly = searchParams.get("unread") === "true";
         const mine = searchParams.get("mine") === "true";
+        const gameParam = searchParams.get("game"); // Filter by specific game
 
-        const where = mine && email
+        const where: Record<string, unknown> = mine && email
             ? { email }
             : isAdmin && unreadOnly
                 ? { isRead: false }
                 : {};
+
+        // Apply game filter if provided
+        if (gameParam) {
+            where.game = gameParam;
+        }
 
         const messages = await communityDb.centralCommunityMessage.findMany({
             where,

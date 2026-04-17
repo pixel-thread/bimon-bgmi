@@ -81,12 +81,15 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
             >
                 <ModalContent>
                     <ModalHeader className="flex items-center gap-2">
-                        <Gamepad2 className="h-5 w-5 text-primary" />
-                        Bimon Tournament!
+                        <Gamepad2 className="h-5 w-5 game-text" />
+                        {GAME.name} Tournament!
                     </ModalHeader>
                     <ModalBody className="space-y-2">
                         <p className="text-sm text-foreground/70">
-                            The platform where <strong>pros and casuals</strong> team up for fair, balanced {GAME.name} tournaments.
+                            {GAME.features.hasBR
+                                ? <>The platform where <strong>pros and casuals</strong> team up for fair, balanced {GAME.name} tournaments.</>
+                                : <>The platform for <strong>fair, skill-based</strong> {GAME.name} tournaments where every player gets a chance to compete.</>
+                            }
                         </p>
                         <p className="text-sm text-foreground/70">
                             Sign in to participate or browse around to see how it works!
@@ -122,7 +125,7 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
             >
                 <ModalContent>
                     <ModalHeader className="flex items-center gap-2">
-                        <LogIn className="h-5 w-5 text-primary" />
+                        <LogIn className="h-5 w-5 game-text" />
                         Sign In Required
                     </ModalHeader>
                     <ModalBody>

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/database";
 import { SuccessResponse, ErrorResponse, CACHE } from "@/lib/api-response";
 import { getAuthEmail } from "@/lib/auth";
+import { GAME } from "@/lib/game-config";
 
 /**
  * GET /api/profile
@@ -158,7 +159,9 @@ export async function GET() {
                     displayName: player.displayName || user.username,
                     uid: player.uid || null,
                     phoneNumber: player.phoneNumber || null,
-                    bio: player.bio || `Nga u ${player.displayName || user.username} dei u ${player.category.charAt(0) + player.category.slice(1).toLowerCase()}`,
+                    bio: player.bio || (GAME.locale === "kha"
+                        ? `Nga u ${player.displayName || user.username} dei u ${player.category.charAt(0) + player.category.slice(1).toLowerCase()}`
+                        : `I'm ${player.displayName || user.username}, a ${player.category.charAt(0) + player.category.slice(1).toLowerCase()} player`),
                     category: player.category,
                     hasRoyalPass: player.hasRoyalPass,
                     isBanned: player.isBanned,

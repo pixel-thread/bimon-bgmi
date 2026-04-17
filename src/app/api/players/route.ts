@@ -172,7 +172,9 @@ export async function GET(request: NextRequest) {
             return {
                 id: p.id,
                 displayName: p.displayName,
-                bio: p.bio || `nga u ${p.displayName || p.user.username} dei u ${category}`,
+                bio: p.bio || (GAME.locale === "kha"
+                    ? `nga u ${p.displayName || p.user.username} dei u ${category}`
+                    : `I'm ${p.displayName || p.user.username}, a ${category} player`),
                 username: p.user.username,
                 imageUrl: p.customProfileImageUrl || p.user.imageUrl,
                 category,

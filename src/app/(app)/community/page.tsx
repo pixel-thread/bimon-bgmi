@@ -189,15 +189,15 @@ function PollCard({ poll, isSuperAdmin, onVote, onSuggest, onApprove, onReject, 
                             >
                                 {/* Bar fill */}
                                 <div
-                                    className={`absolute inset-y-0 left-0 transition-all duration-500 ${isSelected ? "bg-primary/20" : isWinning ? "bg-success/10" : "bg-foreground/5"}`}
+                                    className={`absolute inset-y-0 left-0 transition-all duration-500 ${isSelected ? "bg-foreground/10" : isWinning ? "bg-success/10" : "bg-foreground/5"}`}
                                     style={{ width: `${pct}%` }}
                                 />
                                 <div className="relative flex items-center justify-between px-3 py-2">
                                     <div className="flex items-center gap-1.5">
                                         {isSelected && (
-                                            <Check className="h-3 w-3 text-primary shrink-0" />
+                                            <Check className="h-3 w-3 shrink-0 game-text" />
                                         )}
-                                        <span className={`text-xs ${isSelected ? "font-semibold text-primary" : "font-medium"}`}>
+                                        <span className={`text-xs ${isSelected ? "font-semibold game-text" : "font-medium"}`}>
                                             {opt.text}
                                         </span>
                                         {opt.addedBy && (
@@ -300,27 +300,33 @@ export default function CommunityPage() {
     const [editingMsgText, setEditingMsgText] = useState("");
     const [category, setCategory] = useState("feedback");
     const [isAnonymous, setIsAnonymous] = useState(false);
+    const [gameFilter, setGameFilter] = useState<"mine" | "all">("mine");
 
     // Poll creation form
     const [pollQuestion, setPollQuestion] = useState("");
     const [pollOptions, setPollOptions] = useState(["", ""]);
 
-    // Fetch community feed
+    // Fetch community feed (filtered by game on server)
+    const gameQueryParam = gameFilter === "mine" ? GAME.mode : undefined;
     const { data, isPending: messagesLoading } = useQuery<{ messages: MessageDTO[]; unreadCount: number }>({
-        queryKey: ["community-messages"],
+        queryKey: ["community-messages", gameFilter],
         queryFn: async () => {
-            const res = await fetch("/api/community");
+            const params = new URLSearchParams();
+            if (gameQueryParam) params.set("game", gameQueryParam);
+            const res = await fetch(`/api/community?${params}`);
             if (!res.ok) throw new Error("Failed");
             const json = await res.json();
             return json.data;
         },
     });
 
-    // Fetch community polls
+    // Fetch community polls (filtered by game on server)
     const { data: polls = [], isPending: pollsLoading } = useQuery<PollDTO[]>({
-        queryKey: ["community-polls"],
+        queryKey: ["community-polls", gameFilter],
         queryFn: async () => {
-            const res = await fetch("/api/community/polls");
+            const params = new URLSearchParams();
+            if (gameQueryParam) params.set("game", gameQueryParam);
+            const res = await fetch(`/api/community/polls?${params}`);
             if (!res.ok) throw new Error("Failed");
             const json = await res.json();
             return json.data;
@@ -536,11 +542,35 @@ export default function CommunityPage() {
             {/* Header */}
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
                 <h1 className="text-xl font-bold flex items-center gap-2">
-                    <MessageCircle className="h-5 w-5 text-primary" />
+                    <MessageCircle className="h-5 w-5 game-text" />
                     Community
                 </h1>
                 <div className="h-5 mt-1">
                     <RotatingSubtitle />
+                </div>
+                {/* Game filter tabs */}
+                <div className="flex gap-1 mt-3">
+                    <button
+                        onClick={() => setGameFilter("mine")}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                            gameFilter === "mine"
+                                ? "game-text font-semibold"
+                                : "text-foreground/40 hover:text-foreground/60"
+                        }`}
+                        style={gameFilter === "mine" ? { backgroundColor: 'color-mix(in srgb, var(--game-primary) 12%, transparent)' } : {}}
+                    >
+                        {GAME.name}
+                    </button>
+                    <button
+                        onClick={() => setGameFilter("all")}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                            gameFilter === "all"
+                                ? "bg-foreground/10 text-foreground font-semibold"
+                                : "text-foreground/40 hover:text-foreground/60"
+                        }`}
+                    >
+                        All Games
+                    </button>
                 </div>
             </motion.div>
 
@@ -709,8 +739,8 @@ export default function CommunityPage() {
 
                                             {/* Admin reply */}
                                             {msg.adminReply && (
-                                                <div className="bg-primary/10 rounded-lg px-3 py-2 ml-8">
-                                                    <p className="text-[10px] text-primary font-semibold uppercase tracking-wider mb-0.5">
+                                                <div className="rounded-lg px-3 py-2 ml-8" style={{ backgroundColor: 'color-mix(in srgb, var(--game-primary) 10%, transparent)' }}>
+                                                    <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5 game-text">
                                                         Admin Reply
                                                     </p>
                                                     <p className="text-xs">{msg.adminReply}</p>
@@ -770,7 +800,7 @@ export default function CommunityPage() {
             )}
 
             {/* Empty state */}
-            {!isLoading && data?.messages && data.messages.length === 0 && polls.length === 0 && (
+            {!isLoading && (!data?.messages || data.messages.length === 0) && polls.length === 0 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
                     <Star className="h-10 w-10 text-foreground/15 mx-auto mb-3" />
                     <p className="text-sm text-foreground/40">Be the first to share your thoughts!</p>
@@ -857,7 +887,7 @@ export default function CommunityPage() {
             >
                 <ModalContent>
                     <ModalHeader className="flex items-center gap-2 pb-2">
-                        <Send className="h-4 w-4 text-primary" />
+                        <Send className="h-4 w-4 game-text" />
                         New Message
                     </ModalHeader>
                     <ModalBody className="space-y-3">

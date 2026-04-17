@@ -17,6 +17,15 @@ import { motion } from "motion/react";
 import Link from "next/link";
 import { GAME } from "@/lib/game-config";
 import { usePushStatus } from "@/components/common/push-prompt";
+import { useColorTheme, type ColorTheme } from "@/components/common/color-theme-provider";
+
+const COLOR_THEMES: { value: ColorTheme; label: string; gradient: string }[] = [
+    { value: "default", label: "Default", gradient: "linear-gradient(135deg, #888, #444)" },
+    { value: "bgmi", label: "Gold", gradient: "linear-gradient(135deg, #F2AA00, #8B6914)" },
+    { value: "freefire", label: "Fire", gradient: "linear-gradient(135deg, #FF6B00, #DC2626)" },
+    { value: "pes", label: "Blue", gradient: "linear-gradient(135deg, #2563EB, #1D4ED8)" },
+    { value: "mlbb", label: "Cyan", gradient: "linear-gradient(135deg, #06B6D4, #0891B2)" },
+];
 
 /**
  * /settings — App settings page.
@@ -25,6 +34,7 @@ import { usePushStatus } from "@/components/common/push-prompt";
 export default function SettingsPage() {
 
     const { theme, setTheme } = useTheme();
+    const { colorTheme, setColorTheme } = useColorTheme();
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
     const { status: pushStatus, subscribing, handleEnable } = usePushStatus();
@@ -112,24 +122,63 @@ export default function SettingsPage() {
                 transition={{ delay: 0.2 }}
             >
                 <Card className="border border-divider">
-                    <CardBody className="p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                            <Palette className="h-4 w-4 text-purple-500" />
-                            <span className="text-sm font-semibold">Theme</span>
+                    <CardBody className="p-4 space-y-4">
+                        {/* Light / Dark / System */}
+                        <div>
+                            <div className="flex items-center gap-2 mb-3">
+                                <Palette className="h-4 w-4 text-purple-500" />
+                                <span className="text-sm font-semibold">Appearance</span>
+                            </div>
+                            <div className="flex gap-2">
+                                {(["light", "dark", "system"] as const).map((t) => (
+                                    <button
+                                        key={t}
+                                        onClick={() => setTheme(t)}
+                                        className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium capitalize transition-colors ${mounted && theme === t
+                                            ? "border-primary bg-primary/10 text-primary"
+                                            : "border-divider bg-default-50 text-foreground/60 hover:bg-default-100"
+                                            }`}
+                                    >
+                                        {t}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                        <div className="flex gap-2">
-                            {(["light", "dark", "system"] as const).map((t) => (
-                                <button
-                                    key={t}
-                                    onClick={() => setTheme(t)}
-                                    className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium capitalize transition-colors ${mounted && theme === t
-                                        ? "border-primary bg-primary/10 text-primary"
-                                        : "border-divider bg-default-50 text-foreground/60 hover:bg-default-100"
+
+                        <Divider />
+
+                        {/* Color Theme */}
+                        <div>
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-sm font-semibold">Color Theme</span>
+                                <span className="text-[10px] text-foreground/30">Tap to switch</span>
+                            </div>
+                            <div className="grid grid-cols-5 gap-2">
+                                {COLOR_THEMES.map((ct) => (
+                                    <button
+                                        key={ct.value}
+                                        onClick={() => setColorTheme(ct.value)}
+                                        className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 transition-all ${
+                                            colorTheme === ct.value
+                                                ? "border-foreground/60 shadow-md scale-[1.02]"
+                                                : "border-divider hover:border-foreground/20"
                                         }`}
-                                >
-                                    {t}
-                                </button>
-                            ))}
+                                    >
+                                        <div
+                                            className="h-8 w-8 rounded-full shadow-inner"
+                                            style={{ background: ct.gradient }}
+                                        />
+                                        <span className="text-[10px] font-medium text-foreground/60">{ct.label}</span>
+                                        {colorTheme === ct.value && (
+                                            <div className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-foreground flex items-center justify-center">
+                                                <svg className="h-2.5 w-2.5 text-background" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </CardBody>
                 </Card>
