@@ -52,8 +52,8 @@ export default function SocialsPage() {
             icon: <Youtube className="h-6 w-6" />,
             color: "text-red-500",
             bgColor: "bg-red-500/10 border-red-500/20",
-            description: "Watch highlights, tutorials & tournament recaps",
-            action: "Watch",
+            description: "Subscribe for highlights, tutorials & recaps",
+            action: "Go",
         });
     }
 
