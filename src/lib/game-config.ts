@@ -245,7 +245,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasBR: false,
             hasLeague: false,
             hasGroupKnockout: true,
-            hasMultiEntry: true,
+            hasMultiEntry: false,
             hasSquads: true,           // Squad feature enabled for MLBB
         },
     },
