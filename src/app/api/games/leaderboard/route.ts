@@ -59,8 +59,6 @@ export async function GET() {
         scores: scores.map((s, i) => ({
             rank: i + 1,
             score: s.score,
-            moves: s.moves,
-            time: s.time,
             displayName: s.player.displayName || s.player.user.username,
             imageUrl: s.player.customProfileImageUrl || s.player.user.imageUrl,
             playerId: s.playerId,

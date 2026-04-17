@@ -23,7 +23,7 @@ const HEART_REGEN_MS = 10 * 60 * 1000;
 interface Card { id: number; emoji: string; isFlipped: boolean; isMatched: boolean; }
 
 interface ServerScore {
-    rank: number; score: number; moves: number; time: number;
+    rank: number; score: number;
     displayName: string; imageUrl: string | null; playerId: string;
 }
 
@@ -86,7 +86,7 @@ function Leaderboard() {
 
     const scores = data?.scores || [];
     const rewards = data?.rewards || {};
-    const hasRewards = Object.values(rewards).some(v => v > 0);
+    const topPrize = rewards["1"] || 0;
 
     if (isLoading) {
         return (
@@ -95,7 +95,6 @@ function Leaderboard() {
             </div>
         );
     }
-
     if (scores.length === 0) {
         return (
             <div className="flex flex-col items-center gap-3 rounded-xl bg-default-100 py-12 text-center">
@@ -109,41 +108,48 @@ function Leaderboard() {
     }
 
     return (
-        <div className="space-y-1">
+        <div className="space-y-2">
+            {/* Prize banner */}
+            {topPrize > 0 && (
+                <div className="flex items-center justify-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-2.5">
+                    <Trophy className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm font-semibold text-amber-500">
+                        #1 wins {topPrize} <CurrencyIcon size={12} />
+                    </span>
+                    {rewards["2"] && <span className="text-xs text-foreground/40">• #2: {rewards["2"]}</span>}
+                    {rewards["3"] && <span className="text-xs text-foreground/40">• #3: {rewards["3"]}</span>}
+                </div>
+            )}
+
+            {/* Header */}
             <div className="flex items-center gap-3 rounded-lg bg-default-100 px-4 py-2 text-xs font-semibold text-foreground/50">
                 <span className="w-8 text-center">#</span>
                 <span className="flex-1">Player</span>
-                <span className="w-14 text-right">Score</span>
-                <span className="w-12 text-right">Moves</span>
-                <span className="w-12 text-right">Time</span>
-                {hasRewards && <span className="w-12 text-right">Prize</span>}
+                <span className="w-16 text-right">Points</span>
             </div>
+
+            {/* Rows */}
             {scores.map((entry) => (
                 <div
                     key={entry.playerId}
-                    className={`flex items-center gap-3 rounded-lg px-4 py-2.5 ${
-                        entry.rank <= 3 ? "bg-amber-500/10" : "hover:bg-default-100"
+                    className={`flex items-center gap-3 rounded-lg px-4 py-2.5 transition-colors ${
+                        entry.rank === 1
+                            ? "bg-amber-500/15 border border-amber-500/25 shadow-sm"
+                            : entry.rank <= 3
+                                ? "bg-amber-500/5"
+                                : "hover:bg-default-100"
                     }`}
                 >
                     <span className={`w-8 text-center text-xs font-medium ${
-                        entry.rank === 1 ? "text-yellow-500" : entry.rank === 2 ? "text-foreground/50" : entry.rank === 3 ? "text-orange-400" : "text-foreground/30"
+                        entry.rank === 1 ? "text-yellow-500 text-sm" : entry.rank === 2 ? "text-foreground/50" : entry.rank === 3 ? "text-orange-400" : "text-foreground/30"
                     }`}>
                         {entry.rank <= 3 ? ["🥇", "🥈", "🥉"][entry.rank - 1] : entry.rank}
                     </span>
                     <div className="flex flex-1 items-center gap-2 min-w-0">
-                        <Avatar src={entry.imageUrl || undefined} name={entry.displayName} size="sm" className="h-7 w-7 shrink-0" />
-                        <span className="text-sm font-medium truncate">{entry.displayName}</span>
+                        <Avatar src={entry.imageUrl || undefined} name={entry.displayName} size="sm" className={`shrink-0 ${entry.rank === 1 ? "h-8 w-8 ring-2 ring-amber-500/50" : "h-7 w-7"}`} />
+                        <span className={`font-medium truncate ${entry.rank === 1 ? "text-sm text-amber-500" : "text-sm"}`}>{entry.displayName}</span>
                     </div>
-                    <span className="w-14 text-right text-sm font-bold game-text">{entry.score}</span>
-                    <span className="w-12 text-right text-xs text-foreground/60">{entry.moves}</span>
-                    <span className="w-12 text-right text-xs text-foreground/60">{formatTime(entry.time)}</span>
-                    {hasRewards && (
-                        <span className="w-12 text-right text-xs font-semibold text-success">
-                            {rewards[entry.rank.toString()] ? (
-                                <>{rewards[entry.rank.toString()]} <CurrencyIcon size={10} /></>
-                            ) : ""}
-                        </span>
-                    )}
+                    <span className={`w-16 text-right font-bold ${entry.rank === 1 ? "text-base game-text" : "text-sm game-text"}`}>{entry.score}</span>
                 </div>
             ))}
         </div>
