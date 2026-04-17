@@ -28,9 +28,7 @@ export function CurrencyIcon({ size = 16, className, variant = "entry" }: Curren
                 style={{
                     fontSize,
                     lineHeight: 1,
-                    verticalAlign: "middle",
-                    position: "relative",
-                    top: "-1px",
+                    verticalAlign: "text-bottom",
                 }}
             >
                 {label}
@@ -50,9 +48,7 @@ export function CurrencyIcon({ size = 16, className, variant = "entry" }: Curren
                 style={{
                     width: size,
                     height: size,
-                    verticalAlign: "middle",
-                    position: "relative",
-                    top: "-1px",
+                    verticalAlign: "text-bottom",
                 }}
                 unoptimized
             />
@@ -71,9 +67,7 @@ export function CurrencyIcon({ size = 16, className, variant = "entry" }: Curren
                 style={{
                     width: size,
                     height: size,
-                    verticalAlign: "middle",
-                    position: "relative",
-                    top: "-1px",
+                    verticalAlign: "text-bottom",
                 }}
                 unoptimized
             />
@@ -88,9 +82,7 @@ export function CurrencyIcon({ size = 16, className, variant = "entry" }: Curren
             style={{
                 fontSize,
                 lineHeight: 1,
-                verticalAlign: "middle",
-                position: "relative",
-                top: "-1px",
+                verticalAlign: "text-bottom",
             }}
         >
             {GAME.currency}
