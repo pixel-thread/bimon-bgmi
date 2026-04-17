@@ -252,7 +252,7 @@ export function MemoryGame() {
         if (!isRunning) {
             const saved = loadHearts();
             const current = getRegenedHearts(saved);
-            if (current <= 0) { setShowNoHearts(true); setHearts(0); saveHearts(0); return; }
+            if (current <= 0) { setShowNoHearts(true); setHearts(0); return; }
             setHearts(current - 1);
             saveHearts(current - 1);
             setIsRunning(true);
@@ -289,7 +289,7 @@ export function MemoryGame() {
     const score = calcScore(moves, time);
 
     function cardClass(card: Card) {
-        const c = ["flip-card", "aspect-square"];
+        const c = ["flip-card", "aspect-square", "select-none"];
         if (card.isMatched) c.push("flipped", "matched");
         else if (card.isFlipped) c.push("flipped");
         if (wrongIds.includes(card.id)) c.push("wrong");
@@ -336,10 +336,11 @@ export function MemoryGame() {
                             </div>
                             <div>
                                 <p className="font-medium text-foreground/60">Out of hearts!</p>
-                                <p className="text-sm text-foreground/40">
-                                    Hearts regenerate 1 every 10 minutes
-                                    {regenCountdown && <><br />Next heart in <span className="font-semibold text-foreground/60">{regenCountdown}</span></>}
+                                <p className="text-sm text-foreground/40 mt-1">Hearts regenerate 1 every 10 minutes</p>
+                                <p className="text-2xl font-bold text-foreground/70 mt-3">
+                                    ⏱ {regenCountdown || "..."}
                                 </p>
+                                <p className="text-xs text-foreground/30 mt-1">until next heart</p>
                             </div>
                             <AdSlot format="banner" className="mt-2 w-full rounded-lg overflow-hidden" />
                         </div>
@@ -367,7 +368,7 @@ export function MemoryGame() {
                             {/* 5×4 flip card grid */}
                             <div className={`grid ${COLS} gap-1.5 sm:gap-2`}>
                                 {cards.map(card => (
-                                    <div key={card.id} className={cardClass(card)} onClick={() => handleCardClick(card.id)}>
+                                    <div key={card.id} className={cardClass(card)} onClick={() => handleCardClick(card.id)} onDoubleClick={(e) => e.preventDefault()}>
                                         <div className="flip-card-inner">
                                             <div className="flip-card-front bg-default-100 border-2 border-default-200 hover:bg-default-200 transition-colors">
                                                 <span className="text-base sm:text-lg text-foreground/15 select-none">?</span>

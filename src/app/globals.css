@@ -611,7 +611,12 @@ body {
 }
 
 /* ── Memory Game ── */
-.flip-card { perspective: 600px; }
+.flip-card {
+  perspective: 600px;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
 .flip-card-inner {
   position: relative; width: 100%; height: 100%;
   transition: transform 0.4s ease;
