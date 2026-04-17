@@ -312,7 +312,11 @@ export function MemoryGame() {
             </div>
 
             {/* Tabs */}
-            <Tabs selectedKey={tab} onSelectionChange={(k) => setTab(k as string)} variant="underlined" classNames={{ tabList: "w-full", tab: "flex-1" }} className="mb-4">
+            <Tabs selectedKey={tab} onSelectionChange={(k) => {
+                const newTab = k as string;
+                if (newTab === "play" && gameWon) startGame();
+                setTab(newTab);
+            }} variant="underlined" classNames={{ tabList: "w-full", tab: "flex-1" }} className="mb-4">
                 <Tab key="play" title={<div className="flex items-center gap-1.5"><Gamepad2 className="h-4 w-4" /><span>Play</span></div>} />
                 <Tab key="leaderboard" title={<div className="flex items-center gap-1.5"><Trophy className="h-4 w-4" /><span>Leaderboard</span></div>} />
             </Tabs>
