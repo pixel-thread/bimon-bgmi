@@ -59,6 +59,7 @@ const sidebarItems: SidebarSection[] = [
     {
         section: "Platform",
         items: [
+            { label: "Games", href: "/dashboard/games", icon: Gamepad2 },
             { label: "Job Listings", href: "/dashboard/job-listings", icon: Briefcase },
             { label: "Merit", href: "/dashboard/merit", icon: Star, superAdminOnly: true, feature: "hasMerit" },
             { label: "Rules", href: "/dashboard/rules", icon: BookOpen },

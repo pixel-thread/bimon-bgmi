@@ -8,6 +8,7 @@ import type { PlayerDTO, PlayersMeta } from "@/hooks/use-players";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { GAME } from "@/lib/game-config";
 import { CurrencyIcon } from "@/components/common/CurrencyIcon";
+import { AdSlot } from "@/components/common/AdSlot";
 import { useRef, useEffect, useState } from "react";
 import { ImagePreview } from "@/components/common/image-preview";
 
@@ -91,10 +92,12 @@ export function PlayerTable({
                     const rank = startIndex + i + 1;
                     const kd = player.stats.kd;
                     const displayKd = isFinite(kd) ? kd.toFixed(2) : "0.00";
+                    // Show ad after 5th row (non-intrusive, collapses if no ad loads)
+                    const showAdAfter = (i + 1) % 5 === 0;
 
                     return (
+                        <div key={player.id}>
                         <div
-                            key={player.id}
                             onClick={() => onPlayerClick(player.id)}
                             className={`group flex cursor-pointer items-center gap-3 rounded-lg px-4 py-2.5 transition-colors ${player.hasRoyalPass
                                 ? "bg-amber-500/10 hover:bg-amber-500/20 active:bg-amber-500/25"
@@ -208,6 +211,8 @@ export function PlayerTable({
                                         : "—"
                                 )}
                             </span>
+                        </div>
+                        {showAdAfter && <AdSlot format="in-feed" className="my-1 rounded-lg" />}
                         </div>
                     );
                 })}

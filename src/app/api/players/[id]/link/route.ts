@@ -125,7 +125,7 @@ export async function POST(
                 tx.playerStats.findMany({ where: { playerId: newPlayerId }, select: { seasonId: true } }),
                 tx.teamPlayerStats.findMany({ where: { playerId: newPlayerId }, select: { teamId: true, matchId: true } }),
                 tx.playerPollVote.findMany({ where: { playerId: newPlayerId }, select: { pollId: true } }),
-                tx.gameScore.findUnique({ where: { playerId: newPlayerId } }),
+                tx.gameScore.findFirst({ where: { playerId: newPlayerId } }),
                 tx.teamStats.findMany({ where: { players: { some: { id: oldPlayerId } } }, select: { id: true } }),
                 tx.teamStats.findMany({ where: { players: { some: { id: newPlayerId } } }, select: { id: true } }),
                 tx.poll.findMany({ where: { players: { some: { id: oldPlayerId } } }, select: { id: true } }),

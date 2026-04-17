@@ -1034,11 +1034,18 @@ model Job {
 // ─── Games & Analytics ───────────────────────────────────────
 
 model GameScore {
-  playerId     String   @unique
-  highScore    Int
-  lastPlayedAt DateTime
+  id         String   @id @default(uuid())
+  playerId   String
+  difficulty String   // "easy" | "medium" | "hard"
+  score      Int      // Combined score: 1000 - (moves * 10) - time
+  moves      Int
+  time       Int      // seconds
+  createdAt  DateTime @default(now())
 
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, difficulty])
+  @@index([difficulty, score(sort: Desc)])
 }
 
 model Rule {

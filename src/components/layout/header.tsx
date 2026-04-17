@@ -36,6 +36,7 @@ import {
     MessageCircle,
     HelpCircle,
     Youtube,
+    Gamepad2,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useAuthUser } from "@/hooks/use-auth-user";
@@ -53,6 +54,7 @@ const navItems = [
 ];
 
 const moreItems = [
+    { label: "Games", href: "/games", icon: Gamepad2 },
     { label: "Community", href: "/community", icon: MessageCircle },
     { label: "Winners", href: "/winners", icon: Trophy },
     { label: "Refer", href: "/refer", icon: Gift },

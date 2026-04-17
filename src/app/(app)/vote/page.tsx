@@ -4,6 +4,7 @@ import { usePolls, useVote, useEntryMutation } from "@/hooks/use-polls";
 import { PollCard } from "@/components/vote/poll-card";
 import { MeritRatingSection } from "@/components/vote/merit-rating-gate";
 import { VotePageJobListings } from "@/components/vote/vote-page-jobs";
+import { AdSlot } from "@/components/common/AdSlot";
 import { Skeleton, Card, CardBody, Divider } from "@heroui/react";
 import { Vote, AlertCircle } from "lucide-react";
 import { useAuthGate } from "@/components/common/auth-gate-provider";
@@ -80,6 +81,7 @@ export default function VotePage() {
                                     Check back later for upcoming tournaments
                                 </p>
                             </div>
+                            <AdSlot format="banner" className="mt-4 w-full rounded-lg overflow-hidden" />
                         </div>
                     ) : (
                         polls.map((poll) => (
@@ -98,6 +100,9 @@ export default function VotePage() {
                     )}
                 </div>
             )}
+
+            {/* ── Ad (non-intrusive, collapses if empty) ──── */}
+            <AdSlot format="banner" className="my-6 rounded-xl overflow-hidden" />
 
             {/* ── Divider ────────────────────────────────────── */}
             <Divider className="my-8" />
