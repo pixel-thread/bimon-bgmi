@@ -470,73 +470,69 @@ export function Header() {
                     ) : (
                         /* Regular app view — grouped sections */
                         <>
-                            {/* ── Play ── */}
-                            <NavbarMenuItem>
-                                <p className="px-3 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground/30">Play</p>
-                            </NavbarMenuItem>
                             {[
-                                { label: "Games", href: "/games", icon: Gamepad2 },
-                                { label: "Winners", href: "/winners", icon: Trophy },
-                            ].map((item) => {
-                                const isActive = pathname.startsWith(item.href);
+                                {
+                                    section: "Play",
+                                    items: [
+                                        { label: "Games", href: "/games", icon: Gamepad2 },
+                                        { label: "Winners", href: "/winners", icon: Trophy },
+                                    ],
+                                    defaultCollapsed: false,
+                                },
+                                {
+                                    section: "Connect",
+                                    items: [
+                                        { label: "Community", href: "/community", icon: MessageCircle },
+                                        ...(showReferrals || isAdmin ? [{ label: "Refer", href: "/refer", icon: Gift }] : []),
+                                        ...((youtubeUrl || whatsappUrl) ? [{ label: "Socials", href: "/socials", icon: Share2 }] : []),
+                                        ...(GAME.mode === "mlbb" ? [{ label: "Help", href: "/help", icon: HelpCircle }] : []),
+                                    ],
+                                    defaultCollapsed: true,
+                                },
+                                {
+                                    section: "Account",
+                                    items: [
+                                        { label: "Wallet", href: "/wallet", icon: Wallet },
+                                        { label: "Notifications", href: "/notifications", icon: Bell },
+                                        { label: "Rules", href: "/rules", icon: BookOpen },
+                                    ],
+                                    defaultCollapsed: true,
+                                },
+                            ].map((group) => {
+                                const isCollapsed = mobileCollapsed[group.section] ?? group.defaultCollapsed;
+                                const hasActive = group.items.some((item) => pathname.startsWith(item.href));
                                 return (
-                                    <NavbarMenuItem key={item.href}>
-                                        <Link href={item.href} onClick={() => { if (!isActive) setNavigatingTo(item.href); else setIsMenuOpen(false); }}
-                                            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-colors ${isActive ? "game-menu-active" : "text-foreground/70 hover:bg-default-100"}`}
+                                    <NavbarMenuItem key={group.section}>
+                                        <button
+                                            onClick={() => toggleMobileSection(group.section)}
+                                            className={`flex w-full items-center justify-between rounded-lg px-3 py-1.5 mt-2 mb-1 transition-colors hover:bg-default-100 ${hasActive ? "text-foreground/60" : "text-foreground/40"}`}
                                         >
-                                            {navigatingTo === item.href && !isActive ? <Loader2 className="h-5 w-5 animate-spin" /> : <item.icon className="h-5 w-5" />}
-                                            {item.label}
-                                        </Link>
-                                    </NavbarMenuItem>
-                                );
-                            })}
-
-                            {/* ── Connect ── */}
-                            <NavbarMenuItem>
-                                <p className="px-3 pt-3 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground/30">Connect</p>
-                            </NavbarMenuItem>
-                            {[
-                                { label: "Community", href: "/community", icon: MessageCircle },
-                                ...(showReferrals || isAdmin ? [{ label: "Refer", href: "/refer", icon: Gift }] : []),
-                                ...((youtubeUrl || whatsappUrl) ? [{ label: "Socials", href: "/socials", icon: Share2 }] : []),
-                                ...(GAME.mode === "mlbb" ? [{ label: "Help", href: "/help", icon: HelpCircle }] : []),
-                            ].map((item) => {
-                                const isActive = pathname.startsWith(item.href);
-                                return (
-                                    <NavbarMenuItem key={item.href}>
-                                        <Link href={item.href} onClick={() => { if (!isActive) setNavigatingTo(item.href); else setIsMenuOpen(false); }}
-                                            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-colors ${isActive ? "game-menu-active" : "text-foreground/70 hover:bg-default-100"}`}
-                                        >
-                                            {navigatingTo === item.href && !isActive ? <Loader2 className="h-5 w-5 animate-spin" /> : <item.icon className="h-5 w-5" />}
-                                            {item.label}
-                                        </Link>
-                                    </NavbarMenuItem>
-                                );
-                            })}
-
-                            {/* ── Account ── */}
-                            <NavbarMenuItem>
-                                <p className="px-3 pt-3 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground/30">Account</p>
-                            </NavbarMenuItem>
-                            {[
-                                { label: "Wallet", href: "/wallet", icon: Wallet },
-                                { label: "Notifications", href: "/notifications", icon: Bell },
-                                { label: "Rules", href: "/rules", icon: BookOpen },
-                            ].map((item) => {
-                                const isActive = pathname.startsWith(item.href);
-                                return (
-                                    <NavbarMenuItem key={item.href}>
-                                        <Link href={item.href} onClick={() => { if (!isActive) setNavigatingTo(item.href); else setIsMenuOpen(false); }}
-                                            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-colors ${isActive ? "game-menu-active" : "text-foreground/70 hover:bg-default-100"}`}
-                                        >
-                                            {navigatingTo === item.href && !isActive ? <Loader2 className="h-5 w-5 animate-spin" /> : <item.icon className="h-5 w-5" />}
-                                            {item.label}
-                                            {item.label === "Notifications" && notifActionCount > 0 && (
-                                                <span className="ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                                                    {notifActionCount}
-                                                </span>
-                                            )}
-                                        </Link>
+                                            <span className="text-[11px] font-semibold uppercase tracking-wider">
+                                                {group.section}
+                                            </span>
+                                            <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""}`} />
+                                        </button>
+                                        <div className={`overflow-hidden transition-all duration-200 ${isCollapsed ? "max-h-0 opacity-0" : "max-h-96 opacity-100"}`}>
+                                            {group.items.map((item) => {
+                                                const isActive = pathname.startsWith(item.href);
+                                                return (
+                                                    <Link
+                                                        key={item.href}
+                                                        href={item.href}
+                                                        onClick={() => { if (!isActive) setNavigatingTo(item.href); else setIsMenuOpen(false); }}
+                                                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${isActive ? "game-menu-active" : "text-foreground/70 hover:bg-default-100"}`}
+                                                    >
+                                                        {navigatingTo === item.href && !isActive ? <Loader2 className="h-4 w-4 animate-spin" /> : <item.icon className="h-4 w-4" />}
+                                                        {item.label}
+                                                        {item.label === "Notifications" && notifActionCount > 0 && (
+                                                            <span className="ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                                                                {notifActionCount}
+                                                            </span>
+                                                        )}
+                                                    </Link>
+                                                );
+                                            })}
+                                        </div>
                                     </NavbarMenuItem>
                                 );
                             })}
