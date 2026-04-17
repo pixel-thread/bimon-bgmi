@@ -63,9 +63,11 @@ export async function GET(
 
 // ─── BR Rankings (existing logic) ─────────────────────────────
 async function handleBRRankings(tournamentId: string, tournament: any) {
+    // Order by match number so lastMatchPosition is correctly set from the final match
     const teamStats = await prisma.teamStats.findMany({
         where: { tournamentId },
         include: {
+            match: { select: { matchNumber: true } },
             team: {
                 select: {
                     id: true,
@@ -96,10 +98,12 @@ async function handleBRRankings(tournamentId: string, tournament: any) {
                 },
             },
         },
+        orderBy: { match: { matchNumber: "asc" } },
     });
 
     const teamMap = new Map<string, {
         teamId: string; name: string; total: number; kills: number; pts: number;
+        wins: number; lastMatchPosition: number;
         players: { id: string; name: string }[];
     }>();
     const allPlayerIds = new Set<string>();
@@ -115,6 +119,8 @@ async function handleBRRankings(tournamentId: string, tournament: any) {
             existing.kills += kills;
             existing.pts += pts;
             existing.total += total;
+            if (stat.position === 1) existing.wins++;
+            existing.lastMatchPosition = stat.position;
             for (const ps of stat.teamPlayerStats) {
                 allPlayerIds.add(ps.playerId);
                 if (!existing.players.some(p => p.id === ps.playerId)) {
@@ -139,11 +145,23 @@ async function handleBRRankings(tournamentId: string, tournament: any) {
                 if (ps.player.isUCExempt) ucExemptPlayerIds.add(ps.playerId);
             }
             const players = Array.from(playerMap.entries()).map(([pId, name]) => ({ id: pId, name }));
-            teamMap.set(stat.teamId, { teamId: stat.teamId, name: stat.team.name, total, kills, pts, players });
+            teamMap.set(stat.teamId, {
+                teamId: stat.teamId, name: stat.team.name, total, kills, pts,
+                wins: stat.position === 1 ? 1 : 0,
+                lastMatchPosition: stat.position,
+                players,
+            });
         }
     }
 
-    const rankings = Array.from(teamMap.values()).sort((a, b) => b.total - a.total);
+    // BGMI tiebreaker sort — must match standings-modal.tsx exactly
+    const rankings = Array.from(teamMap.values()).sort((a, b) => {
+        if (b.total !== a.total) return b.total - a.total;           // 1. Total points
+        if (b.wins !== a.wins) return b.wins - a.wins;               // 2. Chicken dinners
+        if (b.pts !== a.pts) return b.pts - a.pts;                   // 3. Placement points
+        if (b.kills !== a.kills) return b.kills - a.kills;           // 4. Total kills
+        return a.lastMatchPosition - b.lastMatchPosition;            // 5. Last match position (lower = better)
+    });
     const teamCount = teamMap.size;
     const avgTeamSize = teamCount > 0 ? Math.round(allPlayerIds.size / teamCount) : 2;
 
