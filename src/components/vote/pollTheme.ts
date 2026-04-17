@@ -101,11 +101,11 @@ export function getPollTheme(participantCount: number): PollTheme | null {
             optionUnselected: { border: "border-amber-200 dark:border-amber-600 hover:border-amber-400", radio: "border-amber-300 dark:border-amber-500" },
         };
     } else if (participantCount >= 1) {
-        // Starter — Slate
+        // Starter — Game-themed (uses CSS custom properties via game theme)
         return {
-            card: "bg-gradient-to-b from-slate-50 to-white dark:from-slate-950/30 dark:to-gray-800 border-2 border-slate-300 dark:border-slate-600 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/30",
-            header: "from-slate-500 via-slate-400 to-gray-500",
-            wave1: "rgba(100,116,139,0.3)",
+            card: "bg-white dark:bg-gray-800 border-2 shadow-lg game-card",
+            header: "from-gray-500 via-gray-400 to-gray-500",
+            wave1: "var(--game-glow, rgba(100,116,139,0.3))",
             wave2: "rgba(255,255,255,0.15)",
             sparkle: "bg-slate-300",
             badge: "bg-white/20 text-white backdrop-blur-sm",
