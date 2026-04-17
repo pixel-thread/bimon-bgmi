@@ -217,7 +217,7 @@ const GAME_CONFIGS: Record<GameMode, GameConfig> = {
         hasUID: true,
         ignLabel: "Game Name",
         pasteOnlyIGN: false,
-        locale: "kha",
+        locale: "en",
         scoringSystem: "bracket",
         booyahBonus: false,
         defaultTournamentType: "BRACKET_1V1",

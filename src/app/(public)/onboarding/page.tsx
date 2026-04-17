@@ -188,7 +188,7 @@ export default function OnboardingPage() {
     }
 
     return (
-        <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-primary/5 via-background to-background px-4">
+        <div className="flex min-h-dvh items-center justify-center px-4" style={{ background: 'linear-gradient(to bottom, color-mix(in srgb, var(--game-primary) 5%, transparent), var(--game-bg, #0a0a0a))' }}>
             {/* IGN Tutorial Modal (paste-only games) */}
             {GAME.pasteOnlyIGN && ignTutorial.Modal}
 
@@ -201,8 +201,8 @@ export default function OnboardingPage() {
                     {/* Header */}
                     <div className="bg-gradient-to-br from-primary/10 via-secondary/5 to-background px-6 pt-8 pb-6 text-center">
                         <div className="flex justify-center mb-4">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 ring-4 ring-primary/5">
-                                <Gamepad2 className="h-8 w-8 text-primary" />
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--game-primary) 10%, transparent)', outline: '4px solid color-mix(in srgb, var(--game-primary) 5%, transparent)', outlineOffset: '0px' }}>
+                                <Gamepad2 className="h-8 w-8 game-text" />
                             </div>
                         </div>
                         <h1 className="text-xl font-bold">Welcome to {GAME.name}</h1>
@@ -210,14 +210,14 @@ export default function OnboardingPage() {
                             {GAME.pasteOnlyIGN ? (
                                 <>
                                     {GAME.locale === "kha" ? "Copy bad paste ia" : "Copy and paste"}{" "}
-                                    <span className="font-semibold text-primary">
+                                    <span className="font-semibold game-text">
                                         {GAME.locale === "kha" ? `ka kyrteng ba na ${GAME.gameName}` : `your ${GAME.gameName} name`}
                                     </span>
                                 </>
                             ) : (
                                 <>
                                     {GAME.locale === "kha" ? "Enter ia" : "Enter"}{" "}
-                                    <span className="font-semibold text-primary">
+                                    <span className="font-semibold game-text">
                                         {GAME.locale === "kha" ? `ka kyrteng ba na ${GAME.gameName}` : `your ${GAME.gameName} name`}
                                     </span>
                                 </>
@@ -386,21 +386,16 @@ export default function OnboardingPage() {
                                 </label>
                                 <Input
                                     value={uid}
+                                    onChange={(e) => setUid(e.target.value)}
                                     placeholder={GAME.idPlaceholder}
                                     size="lg"
                                     variant="bordered"
-                                    onKeyDown={(e) => {
-                                        const allowedKeys = ["Tab", "ArrowLeft", "ArrowRight", "Backspace", "Delete"];
-                                        if (!allowedKeys.includes(e.key) && !(e.metaKey || e.ctrlKey)) {
-                                            e.preventDefault();
-                                        }
-                                    }}
                                     onPaste={(e) => {
                                         e.preventDefault();
                                         const pasted = e.clipboardData.getData("text").trim();
                                         if (pasted) setUid(pasted);
                                     }}
-                                    description={`Copy from ${GAME.gameName} profile → paste here (typing disabled)`}
+                                    description={`Copy from ${GAME.gameName} profile or type your ID`}
                                     isDisabled={isSubmitting}
                                     startContent={
                                         <span className="text-foreground/30 text-sm">🆔</span>
