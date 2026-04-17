@@ -30,11 +30,22 @@ export async function isReturningPlayer(
         where: { status: "INACTIVE" },
         orderBy: { startDate: "desc" },
         take: 2,
-        select: { id: true },
+        select: { id: true, startDate: true },
     });
 
     // Need at least 2 completed seasons to determine inactivity
     if (completedSeasons.length < 2) return false;
+
+    // Player must have been created BEFORE the oldest season we're checking.
+    // If they signed up after that season started, they're a new player — not returning.
+    const oldestCheckedSeason = completedSeasons[completedSeasons.length - 1];
+    const player = await prisma.player.findUnique({
+        where: { id: playerId },
+        select: { createdAt: true },
+    });
+    if (!player) return false;
+
+    if (player.createdAt >= oldestCheckedSeason.startDate) return false;
 
     const seasonIds = completedSeasons.map((s) => s.id);
 
@@ -63,19 +74,36 @@ export async function isReturningPlayer(
 
 /**
  * Grant a welcome back coupon to a returning player.
- * Skips if the player already has an unused coupon.
+ * Only one coupon allowed per active season — prevents farming.
  * Returns the coupon if created, or null if skipped.
  */
 export async function grantWelcomeBackCoupon(
     playerId: string,
 ): Promise<{ id: string; amount: number } | null> {
-    // Check if player already has an unused coupon
-    const existing = await prisma.welcomeBackCoupon.findFirst({
-        where: { playerId, isUsed: false },
-        select: { id: true },
+    // Get the current active season's start date
+    const activeSeason = await prisma.season.findFirst({
+        where: { status: "ACTIVE" },
+        select: { startDate: true },
     });
 
-    if (existing) return null; // Already has one
+    // Only one coupon per season — check if player already got one this season
+    if (activeSeason) {
+        const existing = await prisma.welcomeBackCoupon.findFirst({
+            where: {
+                playerId,
+                createdAt: { gte: activeSeason.startDate },
+            },
+            select: { id: true },
+        });
+        if (existing) return null;
+    } else {
+        // No active season — check for any unused coupon as fallback
+        const existing = await prisma.welcomeBackCoupon.findFirst({
+            where: { playerId, isUsed: false },
+            select: { id: true },
+        });
+        if (existing) return null;
+    }
 
     // Get configurable amount from settings
     const settings = await getSettings();
