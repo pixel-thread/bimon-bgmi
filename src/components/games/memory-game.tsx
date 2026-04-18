@@ -203,6 +203,7 @@ export function MemoryGame() {
     const [regenCountdown, setRegenCountdown] = useState("");
     const [personalBest, setPersonalBest] = useState(0);
     const [gameCount, setGameCount] = useState(0);
+    const [isScrambling, setIsScrambling] = useState(false);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Load personal best from server
@@ -258,15 +259,29 @@ export function MemoryGame() {
         } catch { /* silent */ }
     }, [queryClient]);
 
-    // Start / restart — just deal cards, no heart consumed yet
+    // Start / restart — scramble animation then deal fresh cards
     const startGame = useCallback(() => {
-        setCards(createCards());
-        setFlippedIds([]); setWrongIds([]); setMoves(0); setTime(0);
-        setIsRunning(false); setIsStopped(false); setGameWon(false); setIsNewBest(false);
-        setShowNoHearts(false); setHasStarted(true);
-        setGameCount(c => c + 1);
-        // Don't auto-switch tab — let the caller control it
-    }, []);
+        // Only animate if cards already exist (reset, not initial)
+        if (cards.length > 0) {
+            setIsScrambling(true);
+            // After scatter animation, deal new cards
+            setTimeout(() => {
+                setCards(createCards());
+                setFlippedIds([]); setWrongIds([]); setMoves(0); setTime(0);
+                setIsRunning(false); setIsStopped(false); setGameWon(false); setIsNewBest(false);
+                setShowNoHearts(false); setHasStarted(true);
+                setGameCount(c => c + 1);
+                // Let new cards settle in
+                setTimeout(() => setIsScrambling(false), 50);
+            }, 400);
+        } else {
+            setCards(createCards());
+            setFlippedIds([]); setWrongIds([]); setMoves(0); setTime(0);
+            setIsRunning(false); setIsStopped(false); setGameWon(false); setIsNewBest(false);
+            setShowNoHearts(false); setHasStarted(true);
+            setGameCount(c => c + 1);
+        }
+    }, [cards.length]);
 
     // Stop — freeze timer + lock cards
     function stopGame() {
@@ -399,8 +414,23 @@ export function MemoryGame() {
 
                             {/* 5×4 flip card grid */}
                             <div className={`grid ${COLS} gap-1.5 sm:gap-2`}>
-                                {cards.map(card => (
-                                    <div key={card.id} className={cardClass(card)} onClick={() => handleCardClick(card.id)} onDoubleClick={(e) => e.preventDefault()}>
+                                {cards.map((card, i) => (
+                                    <div
+                                        key={`${gameCount}-${card.id}`}
+                                        className={cardClass(card)}
+                                        onClick={() => handleCardClick(card.id)}
+                                        onDoubleClick={(e) => e.preventDefault()}
+                                        style={isScrambling ? {
+                                            transform: `translate(${(Math.random() - 0.5) * 120}px, ${(Math.random() - 0.5) * 120}px) rotate(${(Math.random() - 0.5) * 60}deg) scale(0.7)`,
+                                            opacity: 0.4,
+                                            transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        } : {
+                                            transform: 'translate(0, 0) rotate(0deg) scale(1)',
+                                            opacity: 1,
+                                            transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            transitionDelay: `${i * 20}ms`,
+                                        }}
+                                    >
                                         <div className="flip-card-inner">
                                             <div className="flip-card-front bg-default-100 border-2 border-default-200 hover:bg-default-200 transition-colors">
                                                 <span className="text-base sm:text-lg text-foreground/15 select-none">?</span>
