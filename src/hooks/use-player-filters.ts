@@ -33,6 +33,8 @@ export interface PlayerFilters {
     setLocationDistrict: (v: string) => void;
     locationTown: string;
     setLocationTown: (v: string) => void;
+    teamMode: "ranked" | "casual" | "all";
+    setTeamMode: (v: "ranked" | "casual" | "all") => void;
     hasActiveFilters: boolean;
     resetFilters: () => void;
     /** Call when popover opens to trigger lazy data fetching */
@@ -52,6 +54,7 @@ export function usePlayerFilters(): PlayerFilters {
     const [locationState, setLocationState] = useState("");
     const [locationDistrict, setLocationDistrict] = useState("");
     const [locationTown, setLocationTown] = useState("");
+    const [teamMode, setTeamMode] = useState<"ranked" | "casual" | "all">("all");
     const [filterOpened, setFilterOpened] = useState(false);
 
     const onFilterOpen = useCallback(() => setFilterOpened(true), []);
@@ -112,6 +115,7 @@ export function usePlayerFilters(): PlayerFilters {
         setLocationState("");
         setLocationDistrict("");
         setLocationTown("");
+        setTeamMode("all");
     }
 
     return {
@@ -134,6 +138,8 @@ export function usePlayerFilters(): PlayerFilters {
         setLocationDistrict,
         locationTown,
         setLocationTown,
+        teamMode,
+        setTeamMode,
         hasActiveFilters: !!hasActiveFilters,
         resetFilters,
         onFilterOpen,

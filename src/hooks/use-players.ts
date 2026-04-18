@@ -52,6 +52,7 @@ interface UsePlayersOptions {
     state?: string;
     district?: string;
     town?: string;
+    teamMode?: "ranked" | "casual" | "all";
     limit?: number;
 }
 
@@ -68,10 +69,11 @@ export function usePlayers({
     state = "",
     district = "",
     town = "",
+    teamMode = "all",
     limit = 10,
 }: UsePlayersOptions = {}) {
     return useInfiniteQuery<PlayersResponse>({
-        queryKey: ["players", { search, tier, sortBy, sortOrder, season, state, district, town }],
+        queryKey: ["players", { search, tier, sortBy, sortOrder, season, state, district, town, teamMode }],
         queryFn: async ({ pageParam }) => {
             const params = new URLSearchParams({
                 search,
@@ -82,6 +84,7 @@ export function usePlayers({
                 ...(state ? { state } : {}),
                 ...(district ? { district } : {}),
                 ...(town ? { town } : {}),
+                ...(teamMode !== "all" ? { teamMode } : {}),
                 limit: String(limit),
                 ...(pageParam ? { cursor: pageParam as string } : {}),
             });

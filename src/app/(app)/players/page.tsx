@@ -8,22 +8,24 @@ import { PlayerPodium } from "@/components/players/player-podium";
 import { PlayerTable } from "@/components/players/player-table";
 import { PlayerStatsModal } from "@/components/players/player-stats-modal";
 import { PlayersSkeleton } from "@/components/players/players-skeleton";
+import { GAME } from "@/lib/game-config";
 
 
 /**
  * /players — Main players page.
  * Features: search, tier filter, sort, top-3 podium, scrollable table,
  * player stats modal, infinite scroll.
+ * BGMI: Ranked / Casual / All tabs for separate leaderboards.
  */
 export default function PlayersPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const playerId = searchParams.get("player") ?? "";
     const filters = usePlayerFilters();
-    const { search, tier, sortBy, sortOrder, season, locationState, locationDistrict, locationTown } = filters;
+    const { search, tier, sortBy, sortOrder, season, locationState, locationDistrict, locationTown, teamMode } = filters;
 
     // Fetch players
-    const query = usePlayers({ search, tier, sortBy, sortOrder, season, state: locationState, district: locationDistrict, town: locationTown });
+    const query = usePlayers({ search, tier, sortBy, sortOrder, season, state: locationState, district: locationDistrict, town: locationTown, teamMode });
     const { players, meta } = flattenPlayers(query.data);
 
     const isLoading = query.isLoading;
@@ -55,6 +57,34 @@ export default function PlayersPage() {
     return (
         <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
             <div className="space-y-6">
+                {/* Ranked / Casual tabs — BGMI only */}
+                {GAME.features.hasRankedCasual && (
+                    <div className="flex items-center justify-center gap-1 p-1 rounded-xl bg-default-100">
+                        {([
+                            { key: "all", label: "All", icon: "📊" },
+                            { key: "ranked", label: "Ranked", icon: "🏆" },
+                            { key: "casual", label: "Casual", icon: "🎮" },
+                        ] as const).map(({ key, label, icon }) => (
+                            <button
+                                key={key}
+                                type="button"
+                                onClick={() => filters.setTeamMode(key)}
+                                className={`
+                                    flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium
+                                    transition-all duration-200 cursor-pointer
+                                    ${teamMode === key
+                                        ? "bg-background shadow-sm text-foreground"
+                                        : "text-foreground/50 hover:text-foreground/70"
+                                    }
+                                `}
+                            >
+                                <span>{icon}</span>
+                                <span>{label}</span>
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 <PlayerFiltersBar {...filters} />
 
                 {/* Content */}

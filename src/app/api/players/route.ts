@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
         const locationState = searchParams.get("state") ?? "";
         const locationDistrict = searchParams.get("district") ?? "";
         const locationTown = searchParams.get("town") ?? "";
+        const teamMode = searchParams.get("teamMode") ?? "all"; // "ranked" | "casual" | "all"
         const cursor = searchParams.get("cursor");
         const limit = Math.min(
             Number(searchParams.get("limit") ?? "20"),
@@ -117,6 +118,12 @@ export async function GET(request: NextRequest) {
         const tpsWhere: Record<string, unknown> = { playerId: { in: playerIds } };
         if (seasonId) {
             tpsWhere.seasonId = seasonId;
+        }
+        // Filter by teamMode: ranked (allowSquads=true) vs casual (allowSquads=false)
+        if (teamMode === "ranked") {
+            tpsWhere.match = { tournament: { poll: { allowSquads: true } } };
+        } else if (teamMode === "casual") {
+            tpsWhere.match = { tournament: { poll: { allowSquads: false } } };
         }
         const tpsAgg = await prisma.teamPlayerStats.groupBy({
             by: ["playerId"],

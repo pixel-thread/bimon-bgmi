@@ -31,6 +31,7 @@ interface GameFeatures {
     hasGroupKnockout: boolean;   // Group stage → knockout (World Cup style)
     hasMultiEntry: boolean;      // Allow multiple bracket entries per player (PES only)
     hasSquads: boolean;          // Player-created premade squads
+    hasRankedCasual: boolean;    // Separate Ranked (squad) vs Casual (random) leaderboards
     usesCentralWallet?: never;  // REMOVED — all games use local wallet now
 }
 
@@ -120,6 +121,7 @@ export const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasGroupKnockout: false,
             hasMultiEntry: false,
             hasSquads: true,           // Per-poll toggle — admin decides per tournament
+            hasRankedCasual: true,     // Ranked/Casual tabs on players page
         },
     },
     freefire: {
@@ -162,6 +164,7 @@ export const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasGroupKnockout: false,
             hasMultiEntry: false,
             hasSquads: false,
+            hasRankedCasual: false,
         },
     },
     pes: {
@@ -204,6 +207,7 @@ export const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasGroupKnockout: true,     // Group → Knockout (World Cup)
             hasMultiEntry: true,        // PES players can enter multiple times
             hasSquads: false,
+            hasRankedCasual: false,
         },
     },
     mlbb: {
@@ -255,6 +259,7 @@ export const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasGroupKnockout: true,
             hasMultiEntry: false,
             hasSquads: true,           // Squad feature enabled for MLBB
+            hasRankedCasual: false,
         },
     },
 };
