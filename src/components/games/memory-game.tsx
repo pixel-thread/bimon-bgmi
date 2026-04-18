@@ -62,8 +62,13 @@ function loadHearts(): { count: number; lastUsed: number } {
     return { count: MAX_HEARTS, lastUsed: Date.now() };
 }
 
-function saveHearts(count: number) {
-    localStorage.setItem("memory-hearts", JSON.stringify({ count, lastUsed: Date.now() }));
+function saveHearts(count: number, preserveLastUsed?: boolean) {
+    try {
+        const existing = loadHearts();
+        // Only update lastUsed when hearts actually decrease (a life was consumed)
+        const lastUsed = preserveLastUsed ? existing.lastUsed : Date.now();
+        localStorage.setItem("memory-hearts", JSON.stringify({ count, lastUsed }));
+    } catch { /* ignore */ }
 }
 
 function getRegenedHearts(saved: { count: number; lastUsed: number }): number {
@@ -235,8 +240,9 @@ export function MemoryGame() {
         setCards(createCards());
         setFlippedIds([]); setWrongIds([]); setMoves(0); setTime(0);
         setIsRunning(false); setIsStopped(false); setGameWon(false); setIsNewBest(false);
-        setShowNoHearts(false); setHasStarted(true); setTab("play");
+        setShowNoHearts(false); setHasStarted(true);
         setGameCount(c => c + 1);
+        // Don't auto-switch tab — let the caller control it
     }, []);
 
     // Stop — freeze timer + lock cards
@@ -391,7 +397,7 @@ export function MemoryGame() {
                             </div>
 
                             {/* Stop + Reset below grid — only after first flip */}
-                            {(moves > 0 || isRunning || isStopped) && !gameWon && (
+                            {(isRunning || isStopped) && !gameWon && (
                                 <>
                                     <div className="mt-3 flex gap-2">
                                         {!isStopped && (
@@ -417,8 +423,8 @@ export function MemoryGame() {
                                             <p className="text-sm text-foreground/50 mt-1">{moves} moves • {formatTime(time)}</p>
                                         </div>
                                         <div className="flex gap-2 justify-center">
-                                            <Button color="success" variant="flat" onPress={() => startGame()} startContent={<RotateCcw className="h-4 w-4" />}>Play Again</Button>
-                                            <Button variant="flat" onPress={() => { setGameWon(false); setTab("leaderboard"); }} startContent={<Trophy className="h-4 w-4" />}>Leaderboard</Button>
+                                            <Button color="success" variant="flat" onPress={() => { startGame(); setTab("play"); }} startContent={<RotateCcw className="h-4 w-4" />}>Play Again</Button>
+                                            <Button variant="flat" onPress={() => setTab("leaderboard")} startContent={<Trophy className="h-4 w-4" />}>Leaderboard</Button>
                                         </div>
                                         {gameCount >= 3 && gameCount % 3 === 0 && <AdSlot format="banner" className="mt-2 rounded-lg overflow-hidden" />}
                                     </div>
