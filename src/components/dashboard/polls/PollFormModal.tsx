@@ -29,6 +29,7 @@ interface PollDTO {
     question: string;
     days: string;
     teamType: string;
+    allowSquads?: boolean;
     isActive: boolean;
     options?: PollOptionDTO[];
     tournament?: { id: string; name: string; fee: number; type?: string };
@@ -64,6 +65,7 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
     const [tournamentFormat, setTournamentFormat] = useState(GAME.defaultTournamentType ?? "BRACKET_1V1");
     const [tournamentId, setTournamentId] = useState("");
     const [isActive, setIsActive] = useState(true);
+    const [allowSquads, setAllowSquads] = useState(false);
     const [options, setOptions] = useState<PollOptionDTO[]>([]);
     const [saving, setSaving] = useState(false);
 
@@ -88,6 +90,7 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
             setTournamentId(poll.tournament?.id ?? "");
             setTournamentFormat(poll.tournament?.type ?? GAME.defaultTournamentType ?? "BRACKET_1V1");
             setIsActive(poll.isActive);
+            setAllowSquads(poll.allowSquads ?? false);
             setOptions(poll.options?.map(o => ({ ...o })) ?? []);
         } else {
             setQuestion("");
@@ -96,6 +99,7 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
             setTournamentFormat(GAME.defaultTournamentType ?? "BRACKET_1V1");
             setTournamentId("");
             setIsActive(true);
+            setAllowSquads(false);
             // Pre-populate default options for create
             const defaultOpts: PollOptionDTO[] = GAME.features.hasTeamSizes
                 ? [
@@ -134,13 +138,13 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
         try {
             const body = isEdit
                 ? {
-                    id: poll!.id, question, days, teamType, isActive,
+                    id: poll!.id, question, days, teamType, isActive, allowSquads,
                     options: options.map(o => ({ id: o.id, name: o.name })),
                     // Send tournament format on edit too (PES)
                     ...(!GAME.features.hasTeamSizes && { tournamentType: tournamentFormat }),
                 }
                 : {
-                    question, days, teamType, tournamentId,
+                    question, days, teamType, tournamentId, allowSquads,
                     // For PES: send format so poll creation can update tournament type
                     ...(!GAME.features.hasTeamSizes && { tournamentType: tournamentFormat }),
                     // Send custom option names
@@ -164,7 +168,7 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
         } finally {
             setSaving(false);
         }
-    }, [isEdit, poll, question, days, teamType, tournamentId, tournamentFormat, isActive, options, onSaved, onClose]);
+    }, [isEdit, poll, question, days, teamType, tournamentId, tournamentFormat, isActive, allowSquads, options, onSaved, onClose]);
 
     const handleOptionNameChange = useCallback((optionId: string, newName: string) => {
         setOptions(prev => prev.map(o => o.id === optionId ? { ...o, name: newName } : o));
@@ -277,6 +281,21 @@ export function PollFormModal({ isOpen, onClose, poll, onSaved }: PollFormModalP
                                 size="sm"
                                 isSelected={isActive}
                                 onValueChange={setIsActive}
+                            />
+                        </div>
+                    )}
+
+                    {/* Allow Squads toggle — for games that support squads */}
+                    {GAME.features.hasSquads && (
+                        <div className="flex items-center justify-between rounded-lg bg-default-100 px-3 py-2">
+                            <div>
+                                <span className="text-sm">Allow Squads</span>
+                                <p className="text-xs text-foreground/40">Players can form their own teams</p>
+                            </div>
+                            <Switch
+                                size="sm"
+                                isSelected={allowSquads}
+                                onValueChange={setAllowSquads}
                             />
                         </div>
                     )}

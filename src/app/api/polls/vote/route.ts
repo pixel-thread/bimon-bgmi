@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
                 select: {
                     id: true,
                     isActive: true,
+                    allowSquads: true,
                     luckyVoterId: true,
                     tournament: { select: { fee: true, seasonId: true } },
                 },
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Block squad members from voting IN/SOLO individually
-        if (GAME.features.hasSquads && (vote === "IN" || vote === "SOLO")) {
+        if (poll.allowSquads && (vote === "IN" || vote === "SOLO")) {
             const inSquad = await prisma.squadInvite.findFirst({
                 where: {
                     playerId: user.player.id,

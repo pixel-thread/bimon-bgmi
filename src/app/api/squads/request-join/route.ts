@@ -13,10 +13,6 @@ import { sendPush } from "@/lib/push";
  */
 export async function POST(request: NextRequest) {
     try {
-        if (!GAME.features.hasSquads) {
-            return ErrorResponse({ message: "Squads are not available for this game", status: 400 });
-        }
-
         const email = await getAuthEmail();
         if (!email) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
@@ -51,6 +47,7 @@ export async function POST(request: NextRequest) {
                     select: {
                         id: true,
                         isActive: true,
+                        allowSquads: true,
                         tournament: { select: { name: true, fee: true } },
                     },
                 },
@@ -67,9 +64,13 @@ export async function POST(request: NextRequest) {
             return ErrorResponse({ message: "You are the captain of this squad", status: 400 });
         }
 
-        // Poll must be active
+        // Poll must be active and allow squads
         if (!squad.poll.isActive) {
             return ErrorResponse({ message: "This poll is no longer active", status: 400 });
+        }
+
+        if (!squad.poll.allowSquads) {
+            return ErrorResponse({ message: "Squads are not enabled for this tournament", status: 400 });
         }
 
         // Squad must be FORMING

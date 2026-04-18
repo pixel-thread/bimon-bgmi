@@ -101,10 +101,6 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
-        if (!GAME.features.hasSquads) {
-            return ErrorResponse({ message: "Squads are not available for this game", status: 400 });
-        }
-
         const email = await getAuthEmail();
         if (!email) {
             return ErrorResponse({ message: "Unauthorized", status: 401 });
@@ -139,6 +135,10 @@ export async function POST(request: NextRequest) {
 
         if (!poll || !poll.isActive) {
             return ErrorResponse({ message: "Poll is not active", status: 400 });
+        }
+
+        if (!poll.allowSquads) {
+            return ErrorResponse({ message: "Squads are not enabled for this tournament", status: 400 });
         }
 
         const entryFee = poll.tournament?.fee ?? 0;

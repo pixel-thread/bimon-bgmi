@@ -100,6 +100,7 @@ export async function GET(request: Request) {
                 question: poll.question,
                 days: poll.days,
                 teamType: poll.teamType,
+                allowSquads: poll.allowSquads,
                 tournament: poll.tournament,
                 luckyVoterId: poll.luckyVoterId,
                 options: poll.options,
@@ -146,7 +147,7 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { question, days, teamType, tournamentId, tournamentType, options: customOptions } = body;
+        const { question, days, teamType, tournamentId, tournamentType, options: customOptions, allowSquads } = body;
 
         if (!question || !tournamentId) {
             return ErrorResponse({ message: "question and tournamentId are required", status: 400 });
@@ -192,6 +193,7 @@ export async function POST(request: Request) {
                 question,
                 days: days || "Monday",
                 teamType: teamType || "DUO",
+                allowSquads: allowSquads ?? false,
                 tournamentId,
                 options: {
                     create: pollOptions,
@@ -221,7 +223,7 @@ export async function PATCH(request: Request) {
         }
 
         const body = await request.json();
-        const { id, question, days, teamType, isActive, options, tournamentType } = body;
+        const { id, question, days, teamType, isActive, options, tournamentType, allowSquads } = body;
 
         if (!id) {
             return ErrorResponse({ message: "id is required", status: 400 });
@@ -232,6 +234,7 @@ export async function PATCH(request: Request) {
         if (days !== undefined) updateData.days = days;
         if (teamType !== undefined) updateData.teamType = teamType;
         if (isActive !== undefined) updateData.isActive = isActive;
+        if (allowSquads !== undefined) updateData.allowSquads = allowSquads;
 
         // If tournamentType is provided, update the linked tournament's type
         if (tournamentType && ["BRACKET_1V1", "LEAGUE", "GROUP_KNOCKOUT", "BR"].includes(tournamentType)) {

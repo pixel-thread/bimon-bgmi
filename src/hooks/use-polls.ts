@@ -10,6 +10,7 @@ export interface PollDTO {
     question: string;
     days: string;
     teamType: string;
+    allowSquads: boolean;
     tournament: {
         id: string;
         name: string;

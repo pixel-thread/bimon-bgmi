@@ -119,7 +119,7 @@ export const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasLeague: false,
             hasGroupKnockout: false,
             hasMultiEntry: false,
-            hasSquads: false,
+            hasSquads: true,           // Per-poll toggle — admin decides per tournament
         },
     },
     freefire: {

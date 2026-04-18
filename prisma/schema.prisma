@@ -742,6 +742,7 @@ model Poll {
   days         String    @default("Monday")
   teamType     TeamType  @default(DUO)
   isActive     Boolean   @default(true)
+  allowSquads  Boolean   @default(false)
   startDate    DateTime  @default(now())
   endDate      DateTime?
   tournamentId String    @unique

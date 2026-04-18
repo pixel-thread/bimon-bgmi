@@ -109,12 +109,14 @@ export async function createTeamsByPoll({
 
     // Get lucky voter from the poll
     let luckyVoterId: string | null = null;
+    let pollAllowSquads = false;
     if (pollId) {
         const poll = await prisma.poll.findUnique({
             where: { id: pollId },
-            select: { luckyVoterId: true },
+            select: { luckyVoterId: true, allowSquads: true },
         });
         luckyVoterId = poll?.luckyVoterId || null;
+        pollAllowSquads = poll?.allowSquads ?? false;
     }
 
     // Season scoring config
@@ -174,7 +176,7 @@ export async function createTeamsByPoll({
     let squadsCancelled = 0;
     let squadPlayersToCharge: { id: string; email?: string }[] = [];
 
-    if (GAME.features.hasSquads) {
+    if (pollAllowSquads) {
         const squads = await prisma.squad.findMany({
             where: {
                 pollId,

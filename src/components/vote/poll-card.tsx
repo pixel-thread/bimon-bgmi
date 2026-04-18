@@ -448,7 +448,7 @@ function VotersDialog({
                                     while (p * 2 <= totalIn) p *= 2;
                                     cutoffSize = totalIn >= 2 ? p : 0;
                                     cutoffLabel = `⚔️ Bracket: ${cutoffSize} players`;
-                                } else if (inSoloVoters && GAME.features.hasSquads && selectedGroup === "IN") {
+                                } else if (inSoloVoters && poll.allowSquads && selectedGroup === "IN") {
                                     // Squad-based games (MLBB 5v5): multiples of squad size
                                     const inCount = votersByVote["IN"]?.length ?? 0;
                                     const sqSize = GAME.squadSize ?? 5;
@@ -879,8 +879,8 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                     </div>
                 )}
 
-                {/* Note for squad-based games (MLBB) */}
-                {GAME.features.hasSquads && (
+                {/* Note for squad-based polls */}
+                {poll.allowSquads && (
                     <p className="px-6 -mt-1 pb-2 text-xs text-foreground/50 text-center">
                         🛡 Players who vote in will be matched with random teammates into teams of {GAME.squadSize ?? 5}
                     </p>
@@ -891,10 +891,10 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                     className={`px-6 pb-5 transition-all duration-700 ease-in-out ${theme ? theme.footer : ""}`}
                 >
                     <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
-                        <span className="flex items-center space-x-1">
+                            <span className="flex items-center space-x-1">
                             <Users className="w-4 h-4" />
                             <span>
-                                {GAME.features.hasSquads
+                                {poll.allowSquads
                                     ? `${poll.totalVotes} player${poll.totalVotes !== 1 ? "s" : ""}`
                                     : `${poll.totalVotes} vote${poll.totalVotes !== 1 ? "s" : ""}`
                                 }
@@ -932,8 +932,8 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                         </button>
                     )}
 
-                    {/* Squad buttons — only for games with hasSquads */}
-                    {GAME.features.hasSquads && (
+                    {/* Squad buttons — only for polls with allowSquads */}
+                    {poll.allowSquads && (
                         <div className="space-y-2">
                             <button
                                 type="button"
@@ -973,7 +973,7 @@ export function PollCard({ poll, onVote, votingPollId, votingVote, currentPlayer
                 />
 
                 {/* Squad Center Modal */}
-                {GAME.features.hasSquads && (
+                {poll.allowSquads && (
                     <>
                         <SquadCenter
                             isOpen={showSquads}
