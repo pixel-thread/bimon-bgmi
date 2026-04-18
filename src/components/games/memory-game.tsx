@@ -62,20 +62,43 @@ function loadHearts(): { count: number; lastUsed: number } {
     return { count: MAX_HEARTS, lastUsed: Date.now() };
 }
 
-function saveHearts(count: number, preserveLastUsed?: boolean) {
-    try {
-        const existing = loadHearts();
-        // Only update lastUsed when hearts actually decrease (a life was consumed)
-        const lastUsed = preserveLastUsed ? existing.lastUsed : Date.now();
-        localStorage.setItem("memory-hearts", JSON.stringify({ count, lastUsed }));
-    } catch { /* ignore */ }
-}
-
 function getRegenedHearts(saved: { count: number; lastUsed: number }): number {
     if (saved.count >= MAX_HEARTS) return MAX_HEARTS;
     const elapsed = Date.now() - saved.lastUsed;
     const regened = Math.floor(elapsed / HEART_REGEN_MS);
     return Math.min(MAX_HEARTS, saved.count + regened);
+}
+
+/**
+ * Consume one heart, preserving partial regen progress.
+ * 
+ * If the regen timer was 5 min into a 10 min cycle, after consuming
+ * a heart the timer continues from 5 min (not reset to 10:00).
+ */
+function consumeHeart(): number {
+    const saved = loadHearts();
+    const actual = getRegenedHearts(saved);
+    if (actual <= 0) return 0;
+
+    const newActual = actual - 1;
+
+    if (newActual >= MAX_HEARTS) {
+        // Still at max — no regen needed
+        localStorage.setItem("memory-hearts", JSON.stringify({
+            count: newActual, lastUsed: Date.now(),
+        }));
+    } else {
+        // Preserve partial progress toward the next heart
+        // elapsed % period = how far into current regen cycle we are
+        const elapsed = Date.now() - saved.lastUsed;
+        const partialProgress = actual < MAX_HEARTS ? (elapsed % HEART_REGEN_MS) : 0;
+        localStorage.setItem("memory-hearts", JSON.stringify({
+            count: newActual,
+            lastUsed: Date.now() - partialProgress,
+        }));
+    }
+
+    return newActual;
 }
 
 /* ── Leaderboard ────────────────────────────────────────── */
@@ -262,8 +285,8 @@ export function MemoryGame() {
             const saved = loadHearts();
             const current = getRegenedHearts(saved);
             if (current <= 0) { setShowNoHearts(true); setHearts(0); return; }
-            setHearts(current - 1);
-            saveHearts(current - 1);
+            const remaining = consumeHeart();
+            setHearts(remaining);
             setIsRunning(true);
         }
 
