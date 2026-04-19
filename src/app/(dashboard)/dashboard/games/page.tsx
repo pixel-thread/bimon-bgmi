@@ -83,7 +83,7 @@ export default function AdminGamesPage() {
             });
             if (publicSettings) {
                 await fetch("/api/settings", {
-                    method: "PATCH",
+                    method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         ...publicSettings,
