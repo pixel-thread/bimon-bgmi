@@ -309,8 +309,9 @@ export default function SettingsPage() {
                             size="sm"
                             value={settings.upiWhatsAppNumber ?? ""}
                             onValueChange={(v) => update("upiWhatsAppNumber", v)}
-                            placeholder="1234567890"
-                            description="Players will send payment screenshots to this number (with country code, no +)"
+                            placeholder="8837011018"
+                            startContent={<span className="text-sm text-foreground/50">+91</span>}
+                            description="Enter 10-digit number without country code"
                         />
                     </CardBody>
                 </Card>

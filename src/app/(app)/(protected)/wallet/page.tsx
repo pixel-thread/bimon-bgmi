@@ -897,7 +897,7 @@ export default function WalletPage() {
                         </div>
 
                         <p className="text-[10px] text-center text-foreground/30">
-                            Send screenshot via WhatsApp · {GAME.currency} credited after verification
+                            Send screenshot via WhatsApp{publicSettings?.upiWhatsAppNumber ? ` +91 ${publicSettings.upiWhatsAppNumber}` : ''} · {GAME.currency} credited after verification
                         </p>
                     </ModalBody>
 
@@ -916,7 +916,8 @@ export default function WalletPage() {
                                 <WhatsAppIcon className="h-4 w-4" />
                             }
                             onPress={() => {
-                                const num = publicSettings?.upiWhatsAppNumber || "918837011018";
+                                const raw = publicSettings?.upiWhatsAppNumber || "8837011018";
+                                const num = raw.startsWith("91") ? raw : `91${raw}`;
                                 window.open(`https://wa.me/${num}?text=${encodeURIComponent(`Hi, I just paid for ${GAME.currency} top-up. Sending screenshot.`)}`, "_blank");
                             }}
                         >
