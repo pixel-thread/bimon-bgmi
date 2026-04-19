@@ -166,10 +166,12 @@ function Leaderboard() {
                             Free {topPrize} <CurrencyIcon size={16} />
                         </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-foreground/50">
-                        {rewards["2"] > 0 && <span>#2: {rewards["2"]} <CurrencyIcon size={10} /></span>}
-                        {rewards["3"] > 0 && <span>#3: {rewards["3"]} <CurrencyIcon size={10} /></span>}
-                    </div>
+                    {(rewards["2"] > 0 || rewards["3"] > 0) && (
+                        <div className="flex items-center gap-3 text-xs text-foreground/50">
+                            {rewards["2"] > 0 && <span>#2: {rewards["2"]} <CurrencyIcon size={10} /></span>}
+                            {rewards["3"] > 0 && <span>#3: {rewards["3"]} <CurrencyIcon size={10} /></span>}
+                        </div>
+                    )}
                     {endDate && timeLeft && timeLeft !== "Ended" && (
                         <div className="flex items-center gap-1.5 mt-1">
                             <Timer className="h-3 w-3 text-warning" />
