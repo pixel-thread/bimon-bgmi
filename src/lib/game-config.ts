@@ -114,7 +114,7 @@ export const GAME_CONFIGS: Record<GameMode, GameConfig> = {
             hasRoyalPass: true,
             hasMerit: true,
             hasReferrals: true,
-            hasTopUps: true,
+            hasTopUps: false,            // Razorpay disabled — using manual UPI QR flow
             hasBracket: false,
             hasBR: true,
             hasLeague: false,

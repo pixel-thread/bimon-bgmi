@@ -66,6 +66,7 @@ interface Settings {
     meritBanThreshold: number;
     meritSoloRestrictThreshold: number;
     upiQrImageUrl: string;
+    upiId: string;
     matchDeadlineGroupHours: number;
     matchDeadlineKOHours: number;
     deadlineCutoffTime: string;
@@ -398,6 +399,15 @@ export default function SettingsPage() {
                                 </label>
                             </div>
                         )}
+                        <Divider />
+                        <Input
+                            label="UPI ID"
+                            size="sm"
+                            value={settings.upiId ?? ""}
+                            onValueChange={(v) => update("upiId", v)}
+                            placeholder="yourname@upi"
+                            description="Players can click to pay directly via UPI apps"
+                        />
                     </CardBody>
                 </Card>
             )}
