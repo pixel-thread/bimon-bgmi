@@ -275,138 +275,24 @@ export default function SettingsPage() {
                 </CardBody>
             </Card>
 
-            {/* Manual Top-Up QR — only for games WITHOUT Razorpay */}
+            {/* Manual Top-Up (UPI) */}
             {!GAME.features.hasTopUps && (
                 <Card>
                     <CardHeader className="flex gap-2 items-center pb-0">
-                        <ImageIcon className="h-5 w-5 text-success" />
+                        <DollarSign className="h-5 w-5 text-success" />
                         <div>
-                            <h2 className="text-lg font-semibold">Manual Top-Up (UPI QR)</h2>
-                            <p className="text-xs text-foreground/50">Upload a UPI QR code for players to pay manually</p>
+                            <h2 className="text-lg font-semibold">Manual Top-Up (UPI)</h2>
+                            <p className="text-xs text-foreground/50">QR code is auto-generated from UPI ID</p>
                         </div>
                     </CardHeader>
                     <CardBody className="gap-4">
-                        {settings.upiQrImageUrl ? (
-                            <div className="space-y-3">
-                                <div className="relative mx-auto w-48 h-48 rounded-xl overflow-hidden border border-divider bg-white">
-                                    <img src={settings.upiQrImageUrl} alt="UPI QR Code" className="w-full h-full object-contain" />
-                                </div>
-                                <div className="flex gap-2 justify-center">
-                                    <Button
-                                        size="sm"
-                                        variant="flat"
-                                        color="danger"
-                                        startContent={<Trash2 className="h-3.5 w-3.5" />}
-                                        onPress={() => {
-                                            update("upiQrImageUrl", "");
-                                        }}
-                                    >
-                                        Remove
-                                    </Button>
-                                    <label>
-                                        <Button
-                                            as="span"
-                                            size="sm"
-                                            variant="flat"
-                                            startContent={<Upload className="h-3.5 w-3.5" />}
-                                            isLoading={uploadingQr}
-                                            className="cursor-pointer"
-                                        >
-                                            Replace
-                                        </Button>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={async (e) => {
-                                                const file = e.target.files?.[0];
-                                                if (!file) return;
-                                                setUploadingQr(true);
-                                                try {
-                                                    const form = new FormData();
-                                                    form.append("image", file);
-                                                    const res = await fetch("/api/settings/upload-qr", { method: "POST", body: form });
-                                                    const json = await res.json();
-                                                    if (json.success) {
-                                                        update("upiQrImageUrl", json.data.upiQrImageUrl);
-                                                        setOriginal((prev) => prev ? { ...prev, upiQrImageUrl: json.data.upiQrImageUrl } : prev);
-                                                        toast.success("QR code uploaded!");
-                                                    } else {
-                                                        toast.error(json.message || "Upload failed");
-                                                    }
-                                                } catch {
-                                                    toast.error("Upload failed");
-                                                } finally {
-                                                    setUploadingQr(false);
-                                                    e.target.value = "";
-                                                }
-                                            }}
-                                        />
-                                    </label>
-                                </div>
-                                <p className="text-[10px] text-center text-foreground/30">
-                                    Players will see this QR code when they tap &quot;Add {GAME.currency}&quot; on the wallet page.
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center gap-3 py-4">
-                                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-success/10 border-2 border-dashed border-success/30">
-                                    <Upload className="h-6 w-6 text-success/60" />
-                                </div>
-                                <p className="text-xs text-foreground/40 text-center">
-                                    Upload your UPI payment QR code.<br />
-                                    Players will scan this to pay for {GAME.currency}.
-                                </p>
-                                <label>
-                                    <Button
-                                        as="span"
-                                        size="sm"
-                                        color="success"
-                                        startContent={<Upload className="h-3.5 w-3.5" />}
-                                        isLoading={uploadingQr}
-                                        className="cursor-pointer"
-                                    >
-                                        Upload QR Code
-                                    </Button>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={async (e) => {
-                                            const file = e.target.files?.[0];
-                                            if (!file) return;
-                                            setUploadingQr(true);
-                                            try {
-                                                const form = new FormData();
-                                                form.append("image", file);
-                                                const res = await fetch("/api/settings/upload-qr", { method: "POST", body: form });
-                                                const json = await res.json();
-                                                if (json.success) {
-                                                    update("upiQrImageUrl", json.data.upiQrImageUrl);
-                                                    setOriginal((prev) => prev ? { ...prev, upiQrImageUrl: json.data.upiQrImageUrl } : prev);
-                                                    toast.success("QR code uploaded!");
-                                                } else {
-                                                    toast.error(json.message || "Upload failed");
-                                                }
-                                            } catch {
-                                                toast.error("Upload failed");
-                                            } finally {
-                                                setUploadingQr(false);
-                                                e.target.value = "";
-                                            }
-                                        }}
-                                    />
-                                </label>
-                            </div>
-                        )}
-                        <Divider />
                         <Input
                             label="UPI ID"
                             size="sm"
                             value={settings.upiId ?? ""}
                             onValueChange={(v) => update("upiId", v)}
                             placeholder="yourname@upi"
-                            description="Players can click to pay directly via UPI apps"
+                            description="A QR code with your game icon will be auto-generated for players"
                         />
                     </CardBody>
                 </Card>

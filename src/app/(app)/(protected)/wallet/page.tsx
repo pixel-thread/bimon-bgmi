@@ -38,8 +38,12 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
-import { GAME } from "@/lib/game-config";
+import { GAME, GAME_MODE } from "@/lib/game-config";
 import { CurrencyIcon } from "@/components/common/CurrencyIcon";
+import { QRCodeSVG } from "qrcode.react";
+
+const ICON_DIRS: Record<string, string> = { freefire: "freefire", pes: "pes", mlbb: "mlbb" };
+const GAME_ICON = `/icons/${ICON_DIRS[GAME_MODE] ?? "bgmi"}/icon-192x192.png`;
 
 function WhatsAppIcon({ className }: { className?: string }) {
     return (
@@ -455,56 +459,48 @@ export default function WalletPage() {
                             <div className="pointer-events-none absolute -left-4 bottom-0 h-24 w-24 rounded-full bg-secondary/10 blur-xl" />
 
                             <CardBody className="relative z-10 gap-4 p-6">
-                                <div className="flex items-start justify-between">
-                                    <div className="space-y-1">
-                                        <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-foreground/50">
-                                            <Sparkles className="h-3 w-3" />
-                                            Available Balance
+                                <div className="space-y-1">
+                                    <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-foreground/50">
+                                        <Sparkles className="h-3 w-3" />
+                                        Available Balance
+                                    </span>
+                                    <p
+                                        className={`whitespace-nowrap text-4xl font-bold tracking-tight ${(wallet?.balance ?? 0) < 0
+                                            ? "text-danger"
+                                            : "text-foreground"
+                                            }`}
+                                    >
+                                        {(
+                                            wallet?.balance ?? 0
+                                        ).toLocaleString()}{" "}
+                                        <span className="text-lg font-semibold text-foreground/40 inline-flex items-center gap-1">
+                                            {GAME.hasDualCurrency ? GAME.entryCurrency : <CurrencyIcon size={18} />}
                                         </span>
-                                        <p
-                                            className={`whitespace-nowrap text-4xl font-bold tracking-tight ${(wallet?.balance ?? 0) < 0
-                                                ? "text-danger"
-                                                : "text-foreground"
-                                                }`}
-                                        >
-                                            {(
-                                                wallet?.balance ?? 0
-                                            ).toLocaleString()}{" "}
-                                            <span className="text-lg font-semibold text-foreground/40 inline-flex items-center gap-1">
-                                                {GAME.hasDualCurrency ? GAME.entryCurrency : <CurrencyIcon size={18} />}
+                                    </p>
+                                    {GAME.hasDualCurrency && (
+                                        <p className="text-lg font-semibold text-foreground/60 mt-1">
+                                            {(wallet?.diamondBalance ?? 0).toLocaleString()}{" "}
+                                            <span className="text-sm font-semibold text-foreground/40">
+                                                {GAME.rewardCurrencyEmoji} {GAME.rewardCurrency}
                                             </span>
                                         </p>
-                                        {GAME.hasDualCurrency && (
-                                            <p className="text-lg font-semibold text-foreground/60 mt-1">
-                                                {(wallet?.diamondBalance ?? 0).toLocaleString()}{" "}
-                                                <span className="text-sm font-semibold text-foreground/40">
-                                                    {GAME.rewardCurrencyEmoji} {GAME.rewardCurrency}
-                                                </span>
-                                            </p>
-                                        )}
-                                    </div>
-                                    {publicSettings?.upiQrImageUrl && (
-                                    <Button
-                                        size="sm"
-                                        color="success"
-                                        className="font-semibold"
-                                        startContent={
-                                            <QrCode className="h-4 w-4" />
-                                        }
-                                        onPress={onQrOpen}
-                                    >
-                                        Add {GAME.currency}
-                                    </Button>
                                     )}
                                 </div>
 
-                                {/* Vote to earn promo */}
-                                <div className="flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2">
-                                    <span className="text-xs">🎯</span>
-                                    <p className="text-[11px] font-medium text-success">
-                                        Vote in polls to earn free {GAME.currency}!
-                                    </p>
-                                </div>
+                                {(publicSettings?.upiId || publicSettings?.upiQrImageUrl) && (
+                                <Button
+                                    size="lg"
+                                    color="success"
+                                    className="w-full font-semibold text-white text-base"
+                                    startContent={
+                                        <Plus className="h-5 w-5" />
+                                    }
+                                    onPress={onQrOpen}
+                                >
+                                    Add {GAME.currency}
+                                </Button>
+                                )}
+
                             </CardBody>
                         </Card>
                     </motion.div>
@@ -835,8 +831,24 @@ export default function WalletPage() {
                     </ModalHeader>
 
                     <ModalBody className="gap-4">
-                        {/* QR Code */}
-                        {publicSettings?.upiQrImageUrl && (
+                        {/* QR Code — auto-generated from UPI ID */}
+                        {publicSettings?.upiId ? (
+                            <div className="mx-auto rounded-2xl bg-white p-4 shadow-sm">
+                                <QRCodeSVG
+                                    value={`upi://pay?pa=${encodeURIComponent(publicSettings.upiId)}&pn=${encodeURIComponent(GAME.name)}`}
+                                    size={200}
+                                    level="H"
+                                    bgColor="#ffffff"
+                                    fgColor="#1a1a2e"
+                                    imageSettings={{
+                                        src: GAME_ICON,
+                                        height: 40,
+                                        width: 40,
+                                        excavate: true,
+                                    }}
+                                />
+                            </div>
+                        ) : publicSettings?.upiQrImageUrl ? (
                             <div className="mx-auto w-52 h-52 rounded-xl overflow-hidden border border-divider bg-white p-2">
                                 <img
                                     src={publicSettings.upiQrImageUrl}
@@ -844,21 +856,30 @@ export default function WalletPage() {
                                     className="w-full h-full object-contain"
                                 />
                             </div>
-                        )}
+                        ) : null}
 
                         {/* UPI ID click-to-pay */}
                         {publicSettings?.upiId && (
-                            <button
-                                onClick={() => {
-                                    window.location.href = `upi://pay?pa=${encodeURIComponent(publicSettings.upiId!)}&pn=${encodeURIComponent(GAME.name)}`;
-                                }}
-                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3 transition-all hover:bg-primary/20 active:scale-[0.98]"
-                            >
-                                <IndianRupee className="h-4 w-4 text-primary" />
-                                <span className="text-sm font-semibold text-primary">
-                                    Pay via UPI: {publicSettings.upiId}
-                                </span>
-                            </button>
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-center gap-2 rounded-xl bg-default-50 border border-divider px-4 py-2.5">
+                                    <span className="text-xs text-foreground/50">UPI ID:</span>
+                                    <span className="text-sm font-semibold">{publicSettings.upiId}</span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        window.location.href = `upi://pay?pa=${encodeURIComponent(publicSettings.upiId!)}&pn=${encodeURIComponent(GAME.name)}`;
+                                    }}
+                                    className="w-full flex items-center justify-center gap-2.5 rounded-xl bg-[#1a73e8] px-4 py-3 transition-all hover:bg-[#1557b0] active:scale-[0.98]"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+                                        <path fill="#e64a19" d="M42.858,11.975c-4.546-2.624-10.359-1.065-12.985,3.481L23.25,26.927c-1.916,3.312,0.551,4.47,3.301,6.119l6.372,3.678c2.158,1.245,4.914,0.506,6.158-1.649l6.807-11.789C48.176,19.325,46.819,14.262,42.858,11.975z" />
+                                        <path fill="#fbc02d" d="M35.365,16.723l-6.372-3.678c-3.517-1.953-5.509-2.082-6.954,0.214l-9.398,16.275c-2.624,4.543-1.062,10.353,3.481,12.971c3.961,2.287,9.024,0.93,11.311-3.031l9.578-16.59C38.261,20.727,37.523,17.968,35.365,16.723z" />
+                                        <path fill="#43a047" d="M36.591,8.356l-4.476-2.585c-4.95-2.857-11.28-1.163-14.137,3.787L9.457,24.317c-1.259,2.177-0.511,4.964,1.666,6.22l5.012,2.894c2.475,1.43,5.639,0.582,7.069-1.894l9.735-16.86c2.017-3.492,6.481-4.689,9.974-2.672L36.591,8.356z" />
+                                        <path fill="#1e88e5" d="M19.189,13.781l-4.838-2.787c-2.158-1.242-4.914-0.506-6.158,1.646l-5.804,10.03c-2.857,4.936-1.163,11.252,3.787,14.101l3.683,2.121l4.467,2.573l1.939,1.115c-3.442-2.304-4.535-6.92-2.43-10.555l1.503-2.596l5.504-9.51C22.083,17.774,21.344,15.023,19.189,13.781z" />
+                                    </svg>
+                                    <span className="text-sm font-semibold text-white">Pay with GPay / UPI</span>
+                                </button>
+                            </div>
                         )}
 
                         {/* Steps */}
