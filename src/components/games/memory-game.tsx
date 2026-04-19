@@ -103,7 +103,7 @@ function consumeHeart(): number {
 
 /* ── Leaderboard ────────────────────────────────────────── */
 function Leaderboard() {
-    const { data, isLoading } = useQuery<{ scores: ServerScore[]; rewards: Record<string, number> }>({
+    const { data, isLoading } = useQuery<{ scores: ServerScore[]; rewards: Record<string, number>; gameRewardEndDate?: string }>({
         queryKey: ["game-leaderboard"],
         queryFn: async () => {
             const res = await fetch("/api/games/leaderboard");
@@ -115,6 +115,26 @@ function Leaderboard() {
     const scores = data?.scores || [];
     const rewards = data?.rewards || {};
     const topPrize = rewards["1"] || 0;
+    const endDate = data?.gameRewardEndDate ? new Date(data.gameRewardEndDate) : null;
+
+    // Countdown
+    const [timeLeft, setTimeLeft] = useState("");
+    useEffect(() => {
+        if (!endDate) return;
+        const tick = () => {
+            const diff = endDate.getTime() - Date.now();
+            if (diff <= 0) { setTimeLeft("Ended"); return; }
+            const d = Math.floor(diff / 86400000);
+            const h = Math.floor((diff % 86400000) / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            setTimeLeft(d > 0 ? `${d}d ${h}h ${m}m` : `${h}h ${m}m ${s}s`);
+        };
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [endDate?.getTime()]);
 
     if (isLoading) {
         return (
@@ -137,15 +157,28 @@ function Leaderboard() {
 
     return (
         <div className="space-y-2">
-            {/* Prize banner */}
+            {/* Prize banner — "Free X UC" */}
             {topPrize > 0 && (
-                <div className="flex items-center justify-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-2.5">
-                    <Trophy className="h-4 w-4 text-amber-500" />
-                    <span className="text-sm font-semibold text-amber-500">
-                        #1 wins {topPrize} <CurrencyIcon size={12} />
-                    </span>
-                    {rewards["2"] && <span className="text-xs text-foreground/40">• #2: {rewards["2"]}</span>}
-                    {rewards["3"] && <span className="text-xs text-foreground/40">• #3: {rewards["3"]}</span>}
+                <div className="flex flex-col items-center gap-1 rounded-xl bg-success/10 border border-success/20 px-4 py-3">
+                    <div className="flex items-center gap-2">
+                        <Trophy className="h-5 w-5 text-success" />
+                        <span className="text-xl font-bold text-success">
+                            Free {topPrize} <CurrencyIcon size={16} />
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-foreground/50">
+                        {rewards["2"] && <span>#2: {rewards["2"]} <CurrencyIcon size={10} /></span>}
+                        {rewards["3"] && <span>#3: {rewards["3"]} <CurrencyIcon size={10} /></span>}
+                    </div>
+                    {endDate && timeLeft && timeLeft !== "Ended" && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                            <Timer className="h-3 w-3 text-warning" />
+                            <span className="text-xs font-semibold text-warning">{timeLeft}</span>
+                        </div>
+                    )}
+                    {timeLeft === "Ended" && (
+                        <span className="text-[10px] text-foreground/30 mt-0.5">Event ended</span>
+                    )}
                 </div>
             )}
 

@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button, Card, CardBody, Input, Divider, Avatar } from "@heroui/react";
 import { Gamepad2, Trophy, RotateCcw, Banknote, AlertCircle } from "lucide-react";
 import { CurrencyIcon } from "@/components/common/CurrencyIcon";
+import { GAME } from "@/lib/game-config";
 
 interface LeaderboardEntry {
     rank: number;
@@ -18,9 +19,8 @@ interface LeaderboardEntry {
 
 export default function AdminGamesPage() {
     const queryClient = useQueryClient();
-    const [reward1, setReward1] = useState("");
-    const [reward2, setReward2] = useState("");
-    const [reward3, setReward3] = useState("");
+    const [rewards, setRewards] = useState<{ place: number; amount: string }[]>([{ place: 1, amount: "" }]);
+    const [endDate, setEndDate] = useState("");
 
     // Fetch settings
     const { data: settings } = useQuery({
@@ -35,33 +35,67 @@ export default function AdminGamesPage() {
     const { data: leaderboard } = useQuery({
         queryKey: ["admin-games-lb"],
         queryFn: async () => {
-            const res = await fetch("/api/games/leaderboard");
+            const res = await fetch("/api/games/leaderboard?all=1");
             return res.json();
+        },
+    });
+
+    // Fetch public settings for endDate
+    const { data: publicSettings } = useQuery({
+        queryKey: ["admin-games-settings"],
+        queryFn: async () => {
+            const res = await fetch("/api/settings");
+            if (!res.ok) return null;
+            const json = await res.json();
+            return json.data;
         },
     });
 
     // Sync reward inputs when settings load
     useEffect(() => {
         if (settings?.rewards) {
-            setReward1(settings.rewards["1"]?.toString() || "");
-            setReward2(settings.rewards["2"]?.toString() || "");
-            setReward3(settings.rewards["3"]?.toString() || "");
+            const entries = Object.entries(settings.rewards as Record<string, number>)
+                .filter(([, v]) => v > 0)
+                .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                .map(([k, v]) => ({ place: parseInt(k), amount: v.toString() }));
+            if (entries.length > 0) setRewards(entries);
         }
     }, [settings]);
 
-    const updateRewards = useMutation({
+    // Sync end date
+    useEffect(() => {
+        if (publicSettings?.gameRewardEndDate) {
+            const d = new Date(publicSettings.gameRewardEndDate);
+            setEndDate(d.toISOString().slice(0, 16));
+        }
+    }, [publicSettings]);
+
+    const updateRewardsMut = useMutation({
         mutationFn: async () => {
-            const res = await fetch("/api/admin/games", {
+            const rewardMap: Record<string, number> = {};
+            for (const r of rewards) {
+                rewardMap[r.place.toString()] = parseInt(r.amount) || 0;
+            }
+            await fetch("/api/admin/games", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    action: "updateRewards",
-                    rewards: { "1": parseInt(reward1) || 0, "2": parseInt(reward2) || 0, "3": parseInt(reward3) || 0 },
-                }),
+                body: JSON.stringify({ action: "updateRewards", rewards: rewardMap }),
             });
-            return res.json();
+            if (publicSettings) {
+                await fetch("/api/settings", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        ...publicSettings,
+                        gameRewardEndDate: endDate ? new Date(endDate).toISOString() : "",
+                    }),
+                });
+            }
         },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-games"] }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["admin-games"] });
+            queryClient.invalidateQueries({ queryKey: ["admin-games-settings"] });
+        },
     });
 
     const resetScores = useMutation({
@@ -97,6 +131,7 @@ export default function AdminGamesPage() {
     });
 
     const scores: LeaderboardEntry[] = leaderboard?.scores || [];
+    const placeEmojis = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
 
     return (
         <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:px-6">
@@ -115,17 +150,57 @@ export default function AdminGamesPage() {
                 <CardBody className="space-y-4 p-4">
                     <div className="flex items-center gap-2">
                         <Trophy className="h-4 w-4 text-yellow-500" />
-                        <h2 className="text-sm font-semibold">UC Rewards</h2>
+                        <h2 className="text-sm font-semibold">Free {GAME.currency} Rewards</h2>
                     </div>
                     <p className="text-xs text-foreground/50">
-                        Set UC prizes for top scores. Click &quot;Distribute&quot; to credit wallets.
+                        Set free {GAME.currency} prizes for top scores. Players see &quot;Free X {GAME.currency}&quot; with a countdown.
                     </p>
-                    <div className="grid grid-cols-3 gap-3">
-                        <Input label="🥇 1st" type="number" size="sm" value={reward1} onValueChange={setReward1} endContent={<CurrencyIcon size={14} />} />
-                        <Input label="🥈 2nd" type="number" size="sm" value={reward2} onValueChange={setReward2} endContent={<CurrencyIcon size={14} />} />
-                        <Input label="🥉 3rd" type="number" size="sm" value={reward3} onValueChange={setReward3} endContent={<CurrencyIcon size={14} />} />
+                    <div className="space-y-2">
+                        {rewards.map((r, i) => (
+                            <div key={r.place} className="flex items-center gap-2">
+                                <Input
+                                    label={`${placeEmojis[r.place - 1] || `#${r.place}`} ${r.place === 1 ? "1st" : r.place === 2 ? "2nd" : r.place === 3 ? "3rd" : `${r.place}th`}`}
+                                    type="number"
+                                    size="sm"
+                                    value={r.amount}
+                                    onValueChange={(v) => {
+                                        const updated = [...rewards];
+                                        updated[i] = { ...r, amount: v };
+                                        setRewards(updated);
+                                    }}
+                                    endContent={<CurrencyIcon size={14} />}
+                                    className="flex-1"
+                                />
+                                {i > 0 && (
+                                    <Button
+                                        isIconOnly
+                                        size="sm"
+                                        variant="flat"
+                                        color="danger"
+                                        onPress={() => setRewards(rewards.filter((_, j) => j !== i))}
+                                    >
+                                        ✕
+                                    </Button>
+                                )}
+                            </div>
+                        ))}
+                        <Button
+                            size="sm"
+                            variant="flat"
+                            onPress={() => setRewards([...rewards, { place: rewards.length + 1, amount: "" }])}
+                        >
+                            + Add Place
+                        </Button>
                     </div>
-                    <Button color="primary" size="sm" onPress={() => updateRewards.mutate()} isLoading={updateRewards.isPending}>
+                    <Input
+                        label="Ends On"
+                        type="datetime-local"
+                        size="sm"
+                        value={endDate}
+                        onValueChange={setEndDate}
+                        description="Countdown timer shown on the games page"
+                    />
+                    <Button color="primary" size="sm" onPress={() => updateRewardsMut.mutate()} isLoading={updateRewardsMut.isPending}>
                         Save Rewards
                     </Button>
                 </CardBody>
@@ -148,8 +223,6 @@ export default function AdminGamesPage() {
                             <span className="w-8 text-center">#</span>
                             <span className="flex-1">Player</span>
                             <span className="w-14 text-right">Score</span>
-                            <span className="w-12 text-right">Moves</span>
-                            <span className="w-12 text-right">Time</span>
                         </div>
                         {scores.map((entry) => (
                             <div key={entry.playerId} className={`flex items-center gap-3 rounded-lg px-4 py-2.5 ${entry.rank <= 3 ? "bg-amber-500/10" : "hover:bg-default-100"}`}>
@@ -161,8 +234,6 @@ export default function AdminGamesPage() {
                                     <span className="text-sm font-medium truncate">{entry.displayName}</span>
                                 </div>
                                 <span className="w-14 text-right text-sm font-bold game-text">{entry.score}</span>
-                                <span className="w-12 text-right text-xs text-foreground/60">{entry.moves}</span>
-                                <span className="w-12 text-right text-xs text-foreground/60">{Math.floor(entry.time / 60)}:{(entry.time % 60).toString().padStart(2, "0")}</span>
                             </div>
                         ))}
                     </div>

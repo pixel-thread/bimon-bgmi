@@ -54,6 +54,9 @@ export interface AppSettings {
     upiPayeeName: string;
     upiWhatsAppNumber: string;
 
+    // 🎮 Game Rewards
+    gameRewardEndDate: string; // ISO date string
+
     // 📺 Social Links
     youtubeChannelUrl: string;
 
@@ -102,6 +105,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
     upiId: "",
     upiPayeeName: "",
     upiWhatsAppNumber: "",
+
+    gameRewardEndDate: "",
 
     youtubeChannelUrl: "",
 

@@ -10,11 +10,14 @@ const MIN_TIME = 10;      // Can't finish in under 10 seconds realistically
  * GET /api/games/leaderboard
  * Returns top 10 scores (single global leaderboard)
  */
-export async function GET() {
+export async function GET(req: Request) {
+    const { searchParams } = new URL(req.url);
+    const showAll = searchParams.get("all") === "1";
+
     const scores = await prisma.gameScore.findMany({
         where: { difficulty: DIFFICULTY },
         orderBy: { score: "desc" },
-        take: 10,
+        ...(showAll ? {} : { take: 10 }),
         include: {
             player: {
                 select: {
@@ -55,6 +58,18 @@ export async function GET() {
         }
     } catch { /* guest user — no best */ }
 
+    // Get reward end date from settings
+    const endDateSetting = await prisma.appSetting.findUnique({
+        where: { key: "app_settings" },
+    });
+    let gameRewardEndDate = "";
+    if (endDateSetting) {
+        try {
+            const parsed = JSON.parse(endDateSetting.value);
+            gameRewardEndDate = parsed.gameRewardEndDate || "";
+        } catch { /* ignore */ }
+    }
+
     return NextResponse.json({
         scores: scores.map((s, i) => ({
             rank: i + 1,
@@ -65,6 +80,7 @@ export async function GET() {
         })),
         rewards,
         myBest,
+        gameRewardEndDate,
     });
 }
 
