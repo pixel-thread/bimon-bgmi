@@ -274,7 +274,7 @@ export default function WalletPage() {
     }, []);
 
     // ── Public settings (UPI QR for non-Razorpay games) ─────
-    const { data: publicSettings } = useQuery<{ upiQrImageUrl?: string; upiId?: string; whatsAppGroups?: string[] }>({
+    const { data: publicSettings } = useQuery<{ upiQrImageUrl?: string; upiId?: string; upiPayeeName?: string; upiWhatsAppNumber?: string; whatsAppGroups?: string[] }>({
         queryKey: ["public-settings-wallet"],
         queryFn: async () => {
             const res = await fetch("/api/settings/public");
@@ -830,26 +830,26 @@ export default function WalletPage() {
                         </span>
                     </ModalHeader>
 
-                    <ModalBody className="gap-4">
+                    <ModalBody className="gap-3 py-3">
                         {/* QR Code — auto-generated from UPI ID */}
                         {publicSettings?.upiId ? (
-                            <div className="mx-auto rounded-2xl bg-white p-4 shadow-sm">
+                            <div className="mx-auto rounded-2xl bg-white p-3">
                                 <QRCodeSVG
-                                    value={`upi://pay?pa=${encodeURIComponent(publicSettings.upiId)}&pn=${encodeURIComponent(GAME.name)}`}
-                                    size={200}
+                                    value={`upi://pay?pa=${encodeURIComponent(publicSettings.upiId)}&pn=${encodeURIComponent(publicSettings.upiPayeeName || GAME.name)}`}
+                                    size={160}
                                     level="H"
                                     bgColor="#ffffff"
                                     fgColor="#1a1a2e"
                                     imageSettings={{
                                         src: GAME_ICON,
-                                        height: 40,
-                                        width: 40,
+                                        height: 32,
+                                        width: 32,
                                         excavate: true,
                                     }}
                                 />
                             </div>
                         ) : publicSettings?.upiQrImageUrl ? (
-                            <div className="mx-auto w-52 h-52 rounded-xl overflow-hidden border border-divider bg-white p-2">
+                            <div className="mx-auto w-44 h-44 rounded-xl overflow-hidden border border-divider bg-white p-2">
                                 <img
                                     src={publicSettings.upiQrImageUrl}
                                     alt="UPI QR Code"
@@ -858,61 +858,46 @@ export default function WalletPage() {
                             </div>
                         ) : null}
 
-                        {/* UPI ID click-to-pay */}
-                        {publicSettings?.upiId && (
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-center gap-2 rounded-xl bg-default-50 border border-divider px-4 py-2.5">
-                                    <span className="text-xs text-foreground/50">UPI ID:</span>
-                                    <span className="text-sm font-semibold">{publicSettings.upiId}</span>
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        window.location.href = `upi://pay?pa=${encodeURIComponent(publicSettings.upiId!)}&pn=${encodeURIComponent(GAME.name)}`;
-                                    }}
-                                    className="w-full flex items-center justify-center gap-2.5 rounded-xl bg-[#1a73e8] px-4 py-3 transition-all hover:bg-[#1557b0] active:scale-[0.98]"
-                                >
-                                    <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
-                                        <path fill="#e64a19" d="M42.858,11.975c-4.546-2.624-10.359-1.065-12.985,3.481L23.25,26.927c-1.916,3.312,0.551,4.47,3.301,6.119l6.372,3.678c2.158,1.245,4.914,0.506,6.158-1.649l6.807-11.789C48.176,19.325,46.819,14.262,42.858,11.975z" />
-                                        <path fill="#fbc02d" d="M35.365,16.723l-6.372-3.678c-3.517-1.953-5.509-2.082-6.954,0.214l-9.398,16.275c-2.624,4.543-1.062,10.353,3.481,12.971c3.961,2.287,9.024,0.93,11.311-3.031l9.578-16.59C38.261,20.727,37.523,17.968,35.365,16.723z" />
-                                        <path fill="#43a047" d="M36.591,8.356l-4.476-2.585c-4.95-2.857-11.28-1.163-14.137,3.787L9.457,24.317c-1.259,2.177-0.511,4.964,1.666,6.22l5.012,2.894c2.475,1.43,5.639,0.582,7.069-1.894l9.735-16.86c2.017-3.492,6.481-4.689,9.974-2.672L36.591,8.356z" />
-                                        <path fill="#1e88e5" d="M19.189,13.781l-4.838-2.787c-2.158-1.242-4.914-0.506-6.158,1.646l-5.804,10.03c-2.857,4.936-1.163,11.252,3.787,14.101l3.683,2.121l4.467,2.573l1.939,1.115c-3.442-2.304-4.535-6.92-2.43-10.555l1.503-2.596l5.504-9.51C22.083,17.774,21.344,15.023,19.189,13.781z" />
-                                    </svg>
-                                    <span className="text-sm font-semibold text-white">Pay with GPay / UPI</span>
-                                </button>
-                            </div>
+                        {/* Payee name for trust */}
+                        {publicSettings?.upiPayeeName && (
+                            <p className="text-xs text-center font-medium text-foreground/60">
+                                Paying to: <span className="text-foreground">{publicSettings.upiPayeeName}</span>
+                            </p>
                         )}
 
-                        {/* Steps */}
-                        <div className="space-y-2">
-                            <div className="flex items-start gap-3 rounded-lg bg-default-50 px-3 py-2.5">
-                                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success/20 text-[10px] font-bold text-success">1</div>
-                                <div>
-                                    <p className="text-xs font-medium">Scan & Pay</p>
-                                    <p className="text-[10px] text-foreground/40">Open any UPI app and scan the QR code above</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3 rounded-lg bg-default-50 px-3 py-2.5">
-                                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">2</div>
-                                <div>
-                                    <p className="text-xs font-medium flex items-center gap-1"><Camera className="h-3 w-3" /> Take Screenshot</p>
-                                    <p className="text-[10px] text-foreground/40">Screenshot the payment confirmation</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3 rounded-lg bg-default-50 px-3 py-2.5">
-                                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-warning/20 text-[10px] font-bold text-warning">3</div>
-                                <div>
-                                    <p className="text-xs font-medium flex items-center gap-1"><WhatsAppIcon className="h-3 w-3 text-[#25D366]" /> Send Screenshot</p>
-                                    <p className="text-[10px] text-foreground/40">Send the screenshot to WhatsApp +91 8837011018 to get your {GAME.currency} credited</p>
-                                </div>
-                            </div>
+                        {/* GPay pay button */}
+                        {publicSettings?.upiId && (
+                            <button
+                                onClick={() => {
+                                    window.location.href = `upi://pay?pa=${encodeURIComponent(publicSettings.upiId!)}&pn=${encodeURIComponent(publicSettings.upiPayeeName || GAME.name)}`;
+                                }}
+                                className="w-full flex items-center justify-center gap-2.5 rounded-xl bg-[#1a73e8] px-4 py-2.5 transition-all hover:bg-[#1557b0] active:scale-[0.98]"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+                                    <path fill="#e64a19" d="M42.858,11.975c-4.546-2.624-10.359-1.065-12.985,3.481L23.25,26.927c-1.916,3.312,0.551,4.47,3.301,6.119l6.372,3.678c2.158,1.245,4.914,0.506,6.158-1.649l6.807-11.789C48.176,19.325,46.819,14.262,42.858,11.975z" />
+                                    <path fill="#fbc02d" d="M35.365,16.723l-6.372-3.678c-3.517-1.953-5.509-2.082-6.954,0.214l-9.398,16.275c-2.624,4.543-1.062,10.353,3.481,12.971c3.961,2.287,9.024,0.93,11.311-3.031l9.578-16.59C38.261,20.727,37.523,17.968,35.365,16.723z" />
+                                    <path fill="#43a047" d="M36.591,8.356l-4.476-2.585c-4.95-2.857-11.28-1.163-14.137,3.787L9.457,24.317c-1.259,2.177-0.511,4.964,1.666,6.22l5.012,2.894c2.475,1.43,5.639,0.582,7.069-1.894l9.735-16.86c2.017-3.492,6.481-4.689,9.974-2.672L36.591,8.356z" />
+                                    <path fill="#1e88e5" d="M19.189,13.781l-4.838-2.787c-2.158-1.242-4.914-0.506-6.158,1.646l-5.804,10.03c-2.857,4.936-1.163,11.252,3.787,14.101l3.683,2.121l4.467,2.573l1.939,1.115c-3.442-2.304-4.535-6.92-2.43-10.555l1.503-2.596l5.504-9.51C22.083,17.774,21.344,15.023,19.189,13.781z" />
+                                </svg>
+                                <span className="text-sm font-semibold text-white">Pay with GPay</span>
+                            </button>
+                        )}
+
+                        {/* Compact steps */}
+                        <div className="flex items-center justify-between gap-1 text-[10px] text-foreground/50 px-1">
+                            <span className="flex items-center gap-1"><span className="text-success font-bold">1.</span> Scan & Pay</span>
+                            <span>→</span>
+                            <span className="flex items-center gap-1"><span className="text-primary font-bold">2.</span> Screenshot</span>
+                            <span>→</span>
+                            <span className="flex items-center gap-1"><span className="text-warning font-bold">3.</span> Send</span>
                         </div>
 
                         <p className="text-[10px] text-center text-foreground/30">
-                            Your {GAME.currency} will be added once the admin verifies payment.
+                            Send screenshot via WhatsApp · {GAME.currency} credited after verification
                         </p>
                     </ModalBody>
 
-                    <ModalFooter className="gap-2">
+                    <ModalFooter className="gap-2 pt-1">
                         <Button
                             variant="flat"
                             onPress={onQrClose}
@@ -921,17 +906,18 @@ export default function WalletPage() {
                             Close
                         </Button>
                         <Button
-                                color="success"
-                                className="flex-1 font-semibold text-white"
-                                startContent={
-                                    <WhatsAppIcon className="h-4 w-4" />
-                                }
-                                onPress={() => {
-                                    window.open(`https://wa.me/918837011018?text=${encodeURIComponent(`Hi, I just paid for ${GAME.currency} top-up. Sending screenshot.`)}`, "_blank");
-                                }}
-                            >
-                                WhatsApp
-                            </Button>
+                            color="success"
+                            className="flex-1 font-semibold text-white"
+                            startContent={
+                                <WhatsAppIcon className="h-4 w-4" />
+                            }
+                            onPress={() => {
+                                const num = publicSettings?.upiWhatsAppNumber || "918837011018";
+                                window.open(`https://wa.me/${num}?text=${encodeURIComponent(`Hi, I just paid for ${GAME.currency} top-up. Sending screenshot.`)}`, "_blank");
+                            }}
+                        >
+                            WhatsApp
+                        </Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>

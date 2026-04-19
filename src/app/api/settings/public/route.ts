@@ -44,6 +44,8 @@ export async function GET() {
                 customRules: settings.customRules,
                 upiQrImageUrl: settings.upiQrImageUrl,
                 upiId: settings.upiId,
+                upiPayeeName: settings.upiPayeeName,
+                upiWhatsAppNumber: settings.upiWhatsAppNumber,
                 youtubeChannelUrl: settings.youtubeChannelUrl,
             },
             cache: CACHE.NONE, // Settings must be fresh — admin may change at any time

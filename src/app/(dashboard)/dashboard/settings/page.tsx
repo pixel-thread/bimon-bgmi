@@ -67,6 +67,8 @@ interface Settings {
     meritSoloRestrictThreshold: number;
     upiQrImageUrl: string;
     upiId: string;
+    upiPayeeName: string;
+    upiWhatsAppNumber: string;
     matchDeadlineGroupHours: number;
     matchDeadlineKOHours: number;
     deadlineCutoffTime: string;
@@ -293,6 +295,22 @@ export default function SettingsPage() {
                             onValueChange={(v) => update("upiId", v)}
                             placeholder="yourname@upi"
                             description="A QR code with your game icon will be auto-generated for players"
+                        />
+                        <Input
+                            label="Payee Name"
+                            size="sm"
+                            value={settings.upiPayeeName ?? ""}
+                            onValueChange={(v) => update("upiPayeeName", v)}
+                            placeholder="Arjun Sharma"
+                            description="Shown to players so they know they are paying the right person"
+                        />
+                        <Input
+                            label="WhatsApp Number"
+                            size="sm"
+                            value={settings.upiWhatsAppNumber ?? ""}
+                            onValueChange={(v) => update("upiWhatsAppNumber", v)}
+                            placeholder="918837011018"
+                            description="Players will send payment screenshots to this number (with country code, no +)"
                         />
                     </CardBody>
                 </Card>
