@@ -42,10 +42,30 @@ function createPrismaClient(databaseUrl: string) {
         max: 5, // limit pool size for serverless
     });
     const adapter = new PrismaPg(pool);
-    return new PrismaClient({
+    const client = new PrismaClient({
         adapter,
         log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
     });
+
+    // Sanitize Player.displayName on every read — macron vowels (ĀāĒēĪīŌōŪū)
+    // are invisible characters in BGMI and should be replaced with spaces.
+    // Uses $extends so it works for ALL queries, including nested includes.
+    return client.$extends({
+        result: {
+            player: {
+                displayName: {
+                    needs: { displayName: true },
+                    compute(player) {
+                        if (!player.displayName) return null;
+                        return player.displayName
+                            .replace(/[ĀāĒēĪīŌōŪū]/g, " ")
+                            .replace(/\s+/g, " ")
+                            .trim();
+                    },
+                },
+            },
+        },
+    }) as unknown as PrismaClient;
 }
 
 // Cache clients per game mode to avoid creating new connections

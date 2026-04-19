@@ -31,6 +31,12 @@ export function ReferralPromoModal() {
             if (localStorage.getItem(PROMO_KEY)) return;
             // Don't show for non-onboarded users
             if (!user?.isOnboarded) return;
+            // Don't show right after onboarding — give them time to explore
+            const justOnboarded = localStorage.getItem("onboarded-at");
+            if (justOnboarded) {
+                const elapsed = Date.now() - Number(justOnboarded);
+                if (elapsed < 60 * 60 * 1000) return; // skip for 1 hour after onboarding
+            }
             // Check if referrals are enabled
             try {
                 const res = await fetch("/api/settings/public");

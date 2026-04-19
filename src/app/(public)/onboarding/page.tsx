@@ -149,6 +149,7 @@ export default function OnboardingPage() {
             }
 
             setJustCompleted(true);
+            localStorage.setItem("onboarded-at", String(Date.now()));
             toast.success(`Welcome to ${GAME.name}! 🎮`);
             // Refresh auth cache immediately so coming back from WhatsApp
             // doesn't redirect to /onboarding again
