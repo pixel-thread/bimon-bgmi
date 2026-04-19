@@ -301,7 +301,7 @@ export default function SettingsPage() {
                             size="sm"
                             value={settings.upiPayeeName ?? ""}
                             onValueChange={(v) => update("upiPayeeName", v)}
-                            placeholder="Arjun Sharma"
+                            placeholder="Joe"
                             description="Shown to players so they know they are paying the right person"
                         />
                         <Input
@@ -309,7 +309,7 @@ export default function SettingsPage() {
                             size="sm"
                             value={settings.upiWhatsAppNumber ?? ""}
                             onValueChange={(v) => update("upiWhatsAppNumber", v)}
-                            placeholder="918837011018"
+                            placeholder="1234567890"
                             description="Players will send payment screenshots to this number (with country code, no +)"
                         />
                     </CardBody>

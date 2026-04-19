@@ -110,6 +110,8 @@ interface TransactionsResponse {
 interface WalletData {
     balance: number;
     diamondBalance: number;
+    displayName: string;
+    email: string;
 }
 
 // ─── Payment Methods Badge ──────────────────────────────────
@@ -227,6 +229,8 @@ export default function WalletPage() {
             return {
                 balance: json.data?.player?.wallet?.balance ?? 0,
                 diamondBalance: json.data?.player?.wallet?.diamondBalance ?? 0,
+                displayName: json.data?.player?.displayName ?? "",
+                email: json.data?.email ?? "",
             };
         },
         staleTime: 30 * 1000,
@@ -835,7 +839,7 @@ export default function WalletPage() {
                         {publicSettings?.upiId ? (
                             <div className="mx-auto rounded-2xl bg-white p-3">
                                 <QRCodeSVG
-                                    value={`upi://pay?pa=${encodeURIComponent(publicSettings.upiId)}&pn=${encodeURIComponent(publicSettings.upiPayeeName || GAME.name)}`}
+                                    value={`upi://pay?pa=${encodeURIComponent(publicSettings.upiId)}&pn=${encodeURIComponent(publicSettings.upiPayeeName || GAME.name)}&tn=${encodeURIComponent(`${GAME.name} - ${wallet?.displayName || 'Player'}${wallet?.email ? ` (${wallet.email})` : ''}`)}`}
                                     size={160}
                                     level="H"
                                     bgColor="#ffffff"
@@ -869,7 +873,7 @@ export default function WalletPage() {
                         {publicSettings?.upiId && (
                             <button
                                 onClick={() => {
-                                    window.location.href = `upi://pay?pa=${encodeURIComponent(publicSettings.upiId!)}&pn=${encodeURIComponent(publicSettings.upiPayeeName || GAME.name)}`;
+                                    window.location.href = `upi://pay?pa=${encodeURIComponent(publicSettings.upiId!)}&pn=${encodeURIComponent(publicSettings.upiPayeeName || GAME.name)}&tn=${encodeURIComponent(`${GAME.name} - ${wallet?.displayName || 'Player'}${wallet?.email ? ` (${wallet.email})` : ''}`)}`;
                                 }}
                                 className="w-full flex items-center justify-center gap-2.5 rounded-xl bg-[#1a73e8] px-4 py-2.5 transition-all hover:bg-[#1557b0] active:scale-[0.98]"
                             >
